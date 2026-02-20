@@ -1,0 +1,126 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 5, 8, 0.75);
+  backdrop-filter: blur(2px);
+}
+
+.spotlight {
+  position: absolute;
+  border-radius: 6px;
+  box-shadow: 0 0 0 9999px rgba(5, 5, 8, 0.75);
+  transition: all 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: 801;
+  pointer-events: none;
+}
+
+.tooltip {
+  position: absolute;
+  width: 300px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 20px 22px;
+  z-index: 802;
+}
+
+.mustNote {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  color: var(--amber);
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  background: var(--amber-dim);
+  border: 1px solid rgba(245, 166, 35, 0.2);
+}
+
+.stepEye {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.stepTitle {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+
+.stepDesc {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--muted);
+  font-weight: 400;
+  margin-bottom: 18px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 20px;
+  height: 3px;
+  background: var(--border2);
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+
+.dotDone {
+  background: rgba(200, 241, 53, 0.4);
+}
+
+.dotActive {
+  width: 32px;
+  background: var(--accent);
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.skip {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 6px 0;
+  cursor: none;
+}
+
+.skip:hover {
+  color: var(--text);
+}
+
+.next {
+  background: var(--accent);
+  color: #050508;
+  border: none;
+  font-family: var(--font-syne), sans-serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 8px 18px;
+  cursor: none;
+}

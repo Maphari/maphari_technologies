@@ -1,0 +1,33 @@
+export const EventTopics = {
+  notificationRequested: "notifications.requested",
+  userLoggedIn: "auth.user.logged-in",
+  tokenRefreshed: "auth.token.refreshed",
+  projectCreated: "core.project.created",
+  projectStatusUpdated: "core.project.status-updated",
+  projectCompleted: "core.project.completed",
+  bookingCreated: "core.booking.created",
+  proposalSigned: "core.proposal.signed",
+  onboardingSubmitted: "core.onboarding.submitted",
+  maintenanceCheckCompleted: "ops.maintenance.check-completed",
+  securityIncidentDetected: "security.incident.detected",
+  reportGenerated: "reporting.report.generated",
+  testimonialReceived: "growth.testimonial.received",
+  clientReengagementDue: "growth.client.reengagement-due",
+  aiLeadQualified: "ai.lead.qualified",
+  aiProposalDrafted: "ai.proposal.drafted",
+  aiEstimateGenerated: "ai.estimate.generated",
+  leadCreated: "core.lead.created",
+  leadStatusUpdated: "core.lead.status-updated",
+  leadFollowUpDue: "core.lead.follow-up-due",
+  clientCreated: "core.client.created",
+  clientStatusUpdated: "core.client.status-updated",
+  clientRenewalDue: "core.client.renewal-due",
+  conversationCreated: "chat.conversation.created",
+  messageCreated: "chat.message.created",
+  fileUploaded: "files.file.uploaded",
+  invoiceIssued: "billing.invoice.issued",
+  invoicePaid: "billing.invoice.paid",
+  invoiceOverdue: "billing.invoice.overdue"
+} as const;
+
+export type EventTopic = (typeof EventTopics)[keyof typeof EventTopics];

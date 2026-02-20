@@ -1,0 +1,287 @@
+openapi: 3.0.3
+info:
+  title: Maphari Gateway API - Phase 7 Services
+  version: 1.0.0
+  description: >
+    OpenAPI contract for AI, analytics, notifications, and public API endpoints exposed by the Gateway under /api/v1.
+servers:
+  - url: http://localhost:4000/api/v1
+    description: Local development gateway
+tags:
+  - name: AI
+  - name: Analytics
+  - name: Notifications
+  - name: Public API
+security:
+  - bearerAuth: []
+paths:
+  /ai/generate:
+    post:
+      tags: [AI]
+      summary: Generate AI output for a tenant-scoped prompt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiGenerateRequest"
+      responses:
+        "200":
+          description: AI job completed
+  /ai/jobs:
+    get:
+      tags: [AI]
+      summary: List AI jobs in caller tenant scope
+      responses:
+        "200":
+          description: AI jobs list
+  /analytics/events:
+    post:
+      tags: [Analytics]
+      summary: Ingest analytics event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsEventRequest"
+      responses:
+        "200":
+          description: Event ingested
+  /analytics/metrics:
+    get:
+      tags: [Analytics]
+      summary: Query aggregated analytics metrics
+      parameters:
+        - name: eventName
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: interval
+          in: query
+          schema:
+            type: string
+            enum: [hour, day, week, month]
+      responses:
+        "200":
+          description: Aggregated analytics metrics
+  /notifications/jobs:
+    post:
+      tags: [Notifications]
+      summary: Enqueue notification job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationJobRequest"
+      responses:
+        "200":
+          description: Notification job queued
+    get:
+      tags: [Notifications]
+      summary: List notification jobs in caller tenant scope
+      responses:
+        "200":
+          description: Notification jobs list
+  /notifications/process:
+    post:
+      tags: [Notifications]
+      summary: Process queued notifications (staff/admin)
+      responses:
+        "200":
+          description: Job processed
+  /notifications/provider-callback:
+    post:
+      tags: [Notifications]
+      summary: Provider callback endpoint with signature verification
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderCallbackRequest"
+      responses:
+        "200":
+          description: Callback accepted
+  /public-api/keys:
+    post:
+      tags: [Public API]
+      summary: Issue partner API key (staff/admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicApiKeyIssueRequest"
+      responses:
+        "200":
+          description: API key issued
+    get:
+      tags: [Public API]
+      summary: List partner API keys (staff/admin)
+      responses:
+        "200":
+          description: API keys list
+  /public-api/projects:
+    post:
+      tags: [Public API]
+      summary: Create partner project (key + signature auth)
+      security: []
+      parameters:
+        - name: x-api-key-id
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: x-api-signature
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicApiProjectCreateRequest"
+      responses:
+        "200":
+          description: Partner project created
+    get:
+      tags: [Public API]
+      summary: List partner projects (key + signature auth)
+      security: []
+      parameters:
+        - name: x-api-key-id
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: x-api-signature
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Partner projects list
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AiGenerateRequest:
+      type: object
+      required: [prompt]
+      properties:
+        clientId:
+          type: string
+          format: uuid
+        prompt:
+          type: string
+          minLength: 2
+          maxLength: 8000
+        model:
+          type: string
+          minLength: 2
+          maxLength: 120
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+    AnalyticsEventRequest:
+      type: object
+      required: [eventName]
+      properties:
+        clientId:
+          type: string
+          format: uuid
+        eventName:
+          type: string
+          minLength: 2
+          maxLength: 120
+        category:
+          type: string
+          minLength: 2
+          maxLength: 120
+        value:
+          type: number
+        occurredAt:
+          type: string
+          format: date-time
+    NotificationJobRequest:
+      type: object
+      required: [channel, recipient, message]
+      properties:
+        clientId:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum: [EMAIL, SMS, PUSH]
+        recipient:
+          type: string
+          minLength: 3
+          maxLength: 255
+        subject:
+          type: string
+          minLength: 2
+          maxLength: 200
+        message:
+          type: string
+          minLength: 1
+          maxLength: 5000
+    ProviderCallbackRequest:
+      type: object
+      required: [provider, externalId, status]
+      properties:
+        provider:
+          type: string
+          minLength: 2
+          maxLength: 64
+        externalId:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          type: string
+          enum: [queued, sent, delivered, failed]
+        reason:
+          type: string
+          maxLength: 500
+    PublicApiKeyIssueRequest:
+      type: object
+      required: [clientId, label]
+      properties:
+        clientId:
+          type: string
+          format: uuid
+        label:
+          type: string
+          minLength: 2
+          maxLength: 120
+    PublicApiProjectCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 160
+        description:
+          type: string
+          maxLength: 5000

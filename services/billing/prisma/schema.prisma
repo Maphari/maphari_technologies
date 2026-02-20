@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Invoice {
+  id          String        @id @default(uuid())
+  clientId    String
+  number      String
+  amountCents BigInt
+  currency    String        @default("USD")
+  status      InvoiceStatus @default(DRAFT)
+  issuedAt    DateTime?
+  dueAt       DateTime?
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  payments Payment[]
+
+  @@unique([clientId, number])
+  @@index([clientId, status, createdAt])
+  @@map("invoices")
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  clientId       String
+  invoiceId      String
+  amountCents    BigInt
+  status         PaymentStatus @default(PENDING)
+  provider       String?
+  transactionRef String?
+  paidAt         DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, invoiceId, createdAt])
+  @@map("payments")
+}

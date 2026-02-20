@@ -1,0 +1,22 @@
+1. pnpm infra:up
+2. pnpm db:generate
+3. pnpm db:migrate
+4. Start apps: pnpm dev:auth, pnpm dev:core, pnpm dev:gateway, pnpm dev:web
+
+
+Full platform (all services):
+
+  pnpm infra:up && pnpm db:migrate && \
+  pnpm dev:auth & \
+  pnpm dev:gateway & \
+  pnpm dev:core & \
+  pnpm dev:chat & \
+  pnpm dev:files & \
+  pnpm dev:billing & \
+  pnpm dev:automation & \
+  pnpm dev:ai & \
+  pnpm dev:analytics & \
+  pnpm dev:notifications & \
+  pnpm dev:public-api & \
+  pnpm dev:web & \
+  wait

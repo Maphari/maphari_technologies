@@ -1,0 +1,37 @@
+{
+  "name": "maphari-technologies",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.29.3",
+  "scripts": {
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "validate:openapi": "node scripts/validate-openapi.mjs",
+    "validate:alerts": "node scripts/validate-alert-rules.mjs",
+    "validate:contracts": "pnpm validate:openapi && pnpm validate:alerts",
+    "infra:up": "docker compose -f infrastructure/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infrastructure/docker-compose.yml down -v",
+    "infra:logs": "docker compose -f infrastructure/docker-compose.yml logs -f",
+    "db:generate": "pnpm --filter @maphari/auth prisma:generate && pnpm --filter @maphari/core prisma:generate && pnpm --filter @maphari/chat prisma:generate && pnpm --filter @maphari/files prisma:generate && pnpm --filter @maphari/billing prisma:generate && pnpm --filter @maphari/notifications prisma:generate",
+    "db:migrate": "pnpm --filter @maphari/auth prisma:deploy && pnpm --filter @maphari/core prisma:deploy && pnpm --filter @maphari/chat prisma:deploy && pnpm --filter @maphari/files prisma:deploy && pnpm --filter @maphari/billing prisma:deploy && pnpm --filter @maphari/notifications prisma:deploy",
+    "dev:web": "pnpm --filter @maphari/web dev",
+    "dev:gateway": "pnpm --filter @maphari/gateway start:dev",
+    "dev:auth": "pnpm --filter @maphari/auth dev",
+    "dev:core": "pnpm --filter @maphari/core dev",
+    "dev:chat": "pnpm --filter @maphari/chat dev",
+    "dev:files": "pnpm --filter @maphari/files dev",
+    "dev:billing": "pnpm --filter @maphari/billing dev",
+    "dev:automation": "pnpm --filter @maphari/automation dev",
+    "dev:ai": "pnpm --filter @maphari/ai dev",
+    "dev:analytics": "pnpm --filter @maphari/analytics dev",
+    "dev:notifications": "pnpm --filter @maphari/notifications dev",
+    "dev:public-api": "pnpm --filter @maphari/public-api dev",
+    "dev:all": "pnpm infra:up && pnpm db:migrate && (pnpm dev:auth & pnpm dev:gateway & pnpm dev:core & pnpm dev:chat & pnpm dev:files & pnpm dev:billing & pnpm dev:automation & pnpm dev:ai & pnpm dev:analytics & pnpm dev:notifications & pnpm dev:public-api & pnpm dev:web & wait)",
+    "dev:all:min": "pnpm infra:up && pnpm db:migrate && (pnpm dev:auth & pnpm dev:gateway & pnpm dev:web & wait)"
+  },
+  "devDependencies": {
+    "yaml": "^2.8.1"
+  }
+}

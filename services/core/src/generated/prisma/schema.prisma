@@ -1,0 +1,447 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id                 String                     @id @default(uuid())
+  name               String
+  status             String                     @default("ACTIVE")
+  priority           String                     @default("MEDIUM")
+  tier               String                     @default("STARTER")
+  timezone           String?
+  billingEmail       String?
+  ownerName          String?
+  contractStartAt    DateTime?
+  contractRenewalAt  DateTime?
+  slaTier            String                     @default("STANDARD")
+  slaResponseHours   Int                        @default(24)
+  notes              String?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  projects           Project[]
+  leads              Lead[]
+  contacts           ClientContact[]
+  activities         ClientActivity[]
+  statusHistory      ClientStatusHistory[]
+  milestoneApprovals MilestoneApproval[]
+  timeEntries        ProjectTimeEntry[]
+  blockers           ProjectBlocker[]
+  changeRequests     ProjectChangeRequest[]
+  collaborators      ProjectTaskCollaborator[]
+  collaborationNotes ProjectCollaborationNote[]
+  workSessions       ProjectWorkSession[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([tier])
+  @@index([contractRenewalAt])
+  @@map("clients")
+}
+
+model ClientContact {
+  id        String   @id @default(uuid())
+  clientId  String
+  name      String
+  email     String
+  phone     String?
+  role      String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, createdAt])
+  @@index([email])
+  @@map("client_contacts")
+}
+
+model ClientActivity {
+  id        String   @id @default(uuid())
+  clientId  String
+  type      String
+  message   String
+  actorId   String?
+  actorRole String?
+  metadata  String?
+  createdAt DateTime @default(now())
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, createdAt])
+  @@map("client_activities")
+}
+
+model ClientStatusHistory {
+  id         String   @id @default(uuid())
+  clientId   String
+  fromStatus String?
+  toStatus   String
+  reason     String?
+  actorId    String?
+  actorRole  String?
+  changedAt  DateTime @default(now())
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, changedAt])
+  @@map("client_status_history")
+}
+
+model Project {
+  id                 String                     @id @default(uuid())
+  clientId           String
+  name               String
+  description        String?
+  status             String                     @default("PLANNING")
+  ownerName          String?
+  priority           String                     @default("MEDIUM")
+  riskLevel          String                     @default("LOW")
+  startAt            DateTime?
+  dueAt              DateTime?
+  completedAt        DateTime?
+  budgetCents        BigInt                     @default(0)
+  progressPercent    Int                        @default(0)
+  slaDueAt           DateTime?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  client             Client                     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  milestones         ProjectMilestone[]
+  tasks              ProjectTask[]
+  dependencies       ProjectDependency[]        @relation("ProjectDependencies")
+  blocking           ProjectDependency[]        @relation("ProjectBlocking")
+  activities         ProjectActivity[]
+  milestoneApprovals MilestoneApproval[]
+  timeEntries        ProjectTimeEntry[]
+  blockers           ProjectBlocker[]
+  changeRequests     ProjectChangeRequest[]
+  collaborators      ProjectTaskCollaborator[]
+  collaborationNotes ProjectCollaborationNote[]
+  workSessions       ProjectWorkSession[]
+
+  @@index([clientId, createdAt])
+  @@index([status])
+  @@index([priority])
+  @@index([riskLevel])
+  @@index([dueAt])
+  @@map("projects")
+}
+
+model ProjectMilestone {
+  id        String             @id @default(uuid())
+  projectId String
+  title     String
+  status    String             @default("PENDING")
+  dueAt     DateTime?
+  fileId    String?            @db.Uuid
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  approval  MilestoneApproval?
+
+  @@index([projectId, createdAt])
+  @@index([status])
+  @@map("project_milestones")
+}
+
+model MilestoneApproval {
+  id          String           @id @default(uuid())
+  milestoneId String           @db.Uuid
+  projectId   String
+  clientId    String
+  status      String           @default("PENDING")
+  comment     String?
+  decidedAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  milestone   ProjectMilestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client      Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([milestoneId])
+  @@index([clientId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([status])
+  @@map("milestone_approvals")
+}
+
+model ConversationNote {
+  id             String   @id @default(uuid())
+  conversationId String
+  authorId       String?
+  authorRole     String?
+  content        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([conversationId, createdAt])
+  @@map("conversation_notes")
+}
+
+model ConversationEscalation {
+  id             String    @id @default(uuid())
+  conversationId String
+  messageId      String?
+  severity       String    @default("MEDIUM")
+  status         String    @default("OPEN")
+  reason         String
+  ownerAdminId   String?
+  resolvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([conversationId, createdAt])
+  @@index([status])
+  @@map("conversation_escalations")
+}
+
+model ProjectTask {
+  id            String                    @id @default(uuid())
+  projectId     String
+  title         String
+  assigneeName  String?
+  status        String                    @default("TODO")
+  dueAt         DateTime?
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  project       Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  collaborators ProjectTaskCollaborator[]
+  workSessions  ProjectWorkSession[]
+
+  @@index([projectId, createdAt])
+  @@index([status])
+  @@map("project_tasks")
+}
+
+model ProjectTaskCollaborator {
+  id                String      @id @default(uuid())
+  projectId         String
+  taskId            String
+  clientId          String
+  staffUserId       String?     @db.Uuid
+  staffName         String
+  role              String?     @default("CONTRIBUTOR")
+  allocationPercent Int         @default(0)
+  active            Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  project           Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task              ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  client            Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@index([taskId, createdAt])
+  @@index([clientId, createdAt])
+  @@map("project_task_collaborators")
+}
+
+model ProjectCollaborationNote {
+  id         String   @id @default(uuid())
+  projectId  String
+  clientId   String
+  authorId   String?  @db.Uuid
+  authorRole String?
+  authorName String?
+  visibility String   @default("INTERNAL")
+  workstream String?
+  message    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@index([clientId, createdAt])
+  @@index([visibility, createdAt])
+  @@map("project_collaboration_notes")
+}
+
+model ProjectWorkSession {
+  id         String       @id @default(uuid())
+  projectId  String
+  clientId   String
+  taskId     String?
+  memberId   String?      @db.Uuid
+  memberName String
+  memberRole String       @default("STAFF")
+  workstream String?
+  status     String       @default("ACTIVE")
+  startedAt  DateTime     @default(now())
+  endedAt    DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  project    Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client     Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  task       ProjectTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@index([clientId, createdAt])
+  @@index([status, startedAt])
+  @@map("project_work_sessions")
+}
+
+model ProjectTimeEntry {
+  id          String    @id @default(uuid())
+  projectId   String
+  clientId    String
+  staffUserId String?   @db.Uuid
+  staffName   String?
+  taskLabel   String
+  minutes     Int
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, createdAt])
+  @@index([projectId, createdAt])
+  @@map("project_time_entries")
+}
+
+model ProjectDependency {
+  id                 String   @id @default(uuid())
+  projectId          String
+  blockedByProjectId String
+  type               String   @default("BLOCKS")
+  createdAt          DateTime @default(now())
+  project            Project  @relation("ProjectDependencies", fields: [projectId], references: [id], onDelete: Cascade)
+  blockedByProject   Project  @relation("ProjectBlocking", fields: [blockedByProjectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@index([blockedByProjectId])
+  @@map("project_dependencies")
+}
+
+model ProjectActivity {
+  id        String   @id @default(uuid())
+  projectId String
+  clientId  String
+  type      String
+  details   String?
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@index([clientId, createdAt])
+  @@map("project_activities")
+}
+
+model ProjectBlocker {
+  id          String    @id @default(uuid())
+  projectId   String
+  clientId    String
+  title       String
+  description String?
+  severity    String    @default("MEDIUM")
+  status      String    @default("OPEN")
+  ownerRole   String?
+  ownerName   String?
+  etaAt       DateTime?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([status, severity])
+  @@map("project_blockers")
+}
+
+model ProjectChangeRequest {
+  id                  String    @id @default(uuid())
+  projectId           String
+  clientId            String
+  title               String
+  description         String?
+  reason              String?
+  impactSummary       String?
+  status              String    @default("SUBMITTED")
+  requestedByRole     String?
+  requestedByName     String?
+  requestedAt         DateTime  @default(now())
+  estimatedHours      Float?
+  estimatedCostCents  BigInt?
+  staffAssessment     String?
+  estimatedAt         DateTime?
+  estimatedByRole     String?
+  estimatedByName     String?
+  adminDecisionNote   String?
+  adminDecidedAt      DateTime?
+  adminDecidedByRole  String?
+  adminDecidedByName  String?
+  clientDecisionNote  String?
+  clientDecidedAt     DateTime?
+  clientDecidedByRole String?
+  clientDecidedByName String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  project             Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client              Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([status, createdAt])
+  @@map("project_change_requests")
+}
+
+model Lead {
+  id             String         @id @default(uuid())
+  clientId       String
+  title          String
+  source         String?
+  status         String         @default("NEW")
+  notes          String?
+  contactName    String?
+  contactEmail   String?
+  contactPhone   String?
+  company        String?
+  ownerName      String?
+  nextFollowUpAt DateTime?
+  lostReason     String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  client         Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  activities     LeadActivity[]
+
+  @@index([clientId, createdAt])
+  @@index([status])
+  @@index([nextFollowUpAt])
+  @@index([contactEmail])
+  @@index([contactPhone])
+  @@map("leads")
+}
+
+model LeadActivity {
+  id        String   @id @default(uuid())
+  leadId    String
+  clientId  String
+  type      String
+  details   String?
+  createdAt DateTime @default(now())
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, createdAt])
+  @@index([clientId, createdAt])
+  @@map("lead_activities")
+}
+
+model UserPreference {
+  id        String   @id @default(uuid())
+  userId    String
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, key])
+  @@index([userId])
+  @@map("user_preferences")
+}

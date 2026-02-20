@@ -1,0 +1,91 @@
+groups:
+  - name: maphari-phase7-services
+    rules:
+      - alert: Phase7High5xxRate
+        expr: |
+          (
+            sum(rate(http_requests_total{service=~"ai|analytics|notifications|public-api",status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_requests_total{service=~"ai|analytics|notifications|public-api"}[5m])), 0.001)
+          ) > 0.05
+        for: 10m
+        labels:
+          severity: critical
+          team: platform
+          service_group: phase7
+        annotations:
+          summary: "Phase7 service 5xx rate above 5% for 10m"
+          description: "Sustained server-side failures detected across AI/analytics/notifications/public-api services."
+          runbook: "infrastructure/runbooks/phase7-services.md#phase7high5xxrate"
+
+      - alert: AnalyticsIngestFailureRateHigh
+        expr: |
+          (
+            sum(rate(analytics_ingest_failures_total{service="analytics"}[10m]))
+            /
+            clamp_min(sum(rate(analytics_ingest_total{service="analytics"}[10m])), 0.001)
+          ) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service_group: phase7
+        annotations:
+          summary: "Analytics ingest failures exceed 10%"
+          description: "Analytics ingest validation or upstream issues are causing elevated failure ratios."
+          runbook: "infrastructure/runbooks/phase7-services.md#analyticsingestfailureratehigh"
+
+      - alert: AnalyticsIngestLagHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(analytics_ingest_lag_ms_bucket{service="analytics"}[5m]))
+          ) > 5000
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service_group: phase7
+        annotations:
+          summary: "Analytics ingest lag p95 above 5s"
+          description: "Analytics events are arriving significantly later than expected."
+          runbook: "infrastructure/runbooks/phase7-services.md#analyticsingestlaghigh"
+
+      - alert: NotificationRetryBacklogHigh
+        expr: |
+          sum(rate(notification_job_retries_total{service="notifications"}[15m])) > 1
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          service_group: phase7
+        annotations:
+          summary: "Notification retries are elevated"
+          description: "Notification provider or adapter instability is causing retry churn."
+          runbook: "infrastructure/runbooks/phase7-services.md#notificationretrybackloghigh"
+
+      - alert: NotificationInvalidCallbacksHigh
+        expr: |
+          sum(rate(notification_callback_invalid_total{service="notifications"}[10m])) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service_group: phase7
+        annotations:
+          summary: "Invalid notification callbacks detected"
+          description: "Provider callback signatures are failing or callback traffic may be malformed."
+          runbook: "infrastructure/runbooks/phase7-services.md#notificationinvalidcallbackshigh"
+
+      - alert: PublicApiAuthFailuresHigh
+        expr: |
+          sum(rate(public_api_auth_failures_total{service="public-api"}[10m])) > 0.2
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service_group: phase7
+        annotations:
+          summary: "Public API auth failures elevated"
+          description: "Partner requests are failing key/signature validation at a sustained rate."
+          runbook: "infrastructure/runbooks/phase7-services.md#publicapiauthfailureshigh"

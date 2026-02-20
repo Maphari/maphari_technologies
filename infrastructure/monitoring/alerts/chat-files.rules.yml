@@ -1,0 +1,91 @@
+groups:
+  - name: maphari-chat-files
+    rules:
+      - alert: ChatFilesHigh5xxRate
+        expr: |
+          (
+            sum(rate(http_requests_total{service=~"chat|files",status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_requests_total{service=~"chat|files"}[5m])), 0.001)
+          ) > 0.05
+        for: 10m
+        labels:
+          severity: critical
+          team: platform
+          service_group: chat-files
+        annotations:
+          summary: "Chat/files 5xx rate above 5% for 10m"
+          description: "Sustained server-side failures detected across chat/files services."
+          runbook: "infrastructure/runbooks/alert-thresholds.md#chatfileshigh5xxrate"
+      - alert: ChatFilesP95LatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, service) (rate(http_request_duration_ms_bucket{service=~"chat|files"}[5m]))
+          ) > 750
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service_group: chat-files
+        annotations:
+          summary: "Chat/files p95 latency above 750ms for 10m"
+          description: "Customer-facing response times are elevated in chat/files APIs."
+          runbook: "infrastructure/runbooks/alert-thresholds.md#chatfilesp95latencyhigh"
+      - alert: ChatFilesTrafficDrop
+        expr: |
+          sum(rate(http_requests_total{service=~"chat|files"}[15m])) < 0.05
+        for: 20m
+        labels:
+          severity: warning
+          team: platform
+          service_group: chat-files
+        annotations:
+          summary: "Chat/files traffic near zero for 20m"
+          description: "Unexpected traffic drop may indicate routing, auth, or upstream availability issues."
+          runbook: "infrastructure/runbooks/alert-thresholds.md#chatfilestrafficdrop"
+      - alert: ChatFilesDbP95LatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, service) (rate(db_query_duration_ms_bucket{service=~"chat|files"}[5m]))
+          ) > 200
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service_group: chat-files
+        annotations:
+          summary: "Chat/files DB query p95 above 200ms for 10m"
+          description: "Database latency degradation is impacting chat/files request paths."
+          runbook: "infrastructure/runbooks/alert-thresholds.md#chatfilesdbp95latencyhigh"
+      - alert: FilesUploadBacklogHigh
+        expr: |
+          max(files_upload_confirm_backlog{service="files"}) > 100
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          service_group: chat-files
+        annotations:
+          summary: "Files upload confirmation backlog above 100 for 15m"
+          description: "Upload issue->confirm flow is backing up and may indicate stuck client uploads or downstream persistence failures."
+          runbook: "infrastructure/runbooks/alert-thresholds.md#filesuploadbackloghigh"
+      - alert: ChatSocketConnectionsDrop
+        expr: |
+          (
+            max(chat_socket_connections_current{service="chat"}) < 1
+          )
+          and
+          (
+            sum(rate(http_requests_total{service="chat"}[5m])) > 0.2
+          )
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service_group: chat-files
+        annotations:
+          summary: "Chat socket connections dropped to zero while HTTP traffic remains active"
+          description: "Realtime chat channel appears unavailable despite continued API traffic."
+          runbook: "infrastructure/runbooks/alert-thresholds.md#chatsocketconnectionsdrop"

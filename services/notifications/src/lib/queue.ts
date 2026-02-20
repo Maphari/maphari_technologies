@@ -1,0 +1,298 @@
+import type { NotificationJob as PrismaNotificationJob, Prisma } from "@prisma/client";
+import type { CreateNotificationJobInput } from "@maphari/contracts";
+import { createHash, randomUUID } from "node:crypto";
+import { prisma } from "./prisma.js";
+
+export interface NotificationJob {
+  id: string;
+  clientId: string;
+  channel: "EMAIL" | "SMS" | "PUSH";
+  recipient: string;
+  subject: string | null;
+  message: string;
+  tab: "dashboard" | "projects" | "invoices" | "messages" | "settings" | "operations";
+  metadata: Record<string, string | number | boolean>;
+  status: "QUEUED" | "SENT" | "FAILED";
+  failureReason: string | null;
+  attempts: number;
+  maxAttempts: number;
+  readAt: string | null;
+  readByUserId: string | null;
+  readByRole: "ADMIN" | "STAFF" | "CLIENT" | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+type QueueActor = { userId?: string; role?: "ADMIN" | "STAFF" | "CLIENT" };
+
+function toRecord(value: Prisma.JsonValue | null): Record<string, string | number | boolean> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const candidate = value as Record<string, unknown>;
+  const result: Record<string, string | number | boolean> = {};
+  Object.entries(candidate).forEach(([key, inner]) => {
+    if (typeof inner === "string" || typeof inner === "number" || typeof inner === "boolean") {
+      result[key] = inner;
+    }
+  });
+  return result;
+}
+
+function mapJob(job: PrismaNotificationJob): NotificationJob {
+  return {
+    id: job.id,
+    clientId: job.clientId,
+    channel: job.channel as NotificationJob["channel"],
+    recipient: job.recipient,
+    subject: job.subject,
+    message: job.message,
+    tab: job.tab as NotificationJob["tab"],
+    metadata: toRecord(job.metadata),
+    status: job.status as NotificationJob["status"],
+    failureReason: job.failureReason,
+    attempts: job.attempts,
+    maxAttempts: job.maxAttempts,
+    readAt: job.readAt ? job.readAt.toISOString() : null,
+    readByUserId: job.readByUserId,
+    readByRole: (job.readByRole as NotificationJob["readByRole"]) ?? null,
+    createdAt: job.createdAt.toISOString(),
+    updatedAt: job.updatedAt.toISOString()
+  };
+}
+
+function makeIdempotencyKey(input: CreateNotificationJobInput & { clientId: string }, requestId?: string): string {
+  const eventId = typeof input.metadata?.eventId === "string" ? input.metadata.eventId : "";
+  const basis = [
+    requestId ?? "",
+    eventId,
+    input.clientId,
+    input.channel,
+    input.recipient,
+    input.subject ?? "",
+    input.message,
+    input.tab ?? "dashboard"
+  ].join("|");
+  return createHash("sha256").update(basis).digest("hex");
+}
+
+function asMetadata(input: Record<string, string | number | boolean> | undefined): Prisma.InputJsonValue {
+  return input ?? {};
+}
+
+async function toDeadLetter(job: PrismaNotificationJob, reason: string): Promise<void> {
+  await prisma.notificationDeadLetter.upsert({
+    where: { jobId: job.id },
+    create: {
+      id: randomUUID(),
+      jobId: job.id,
+      reason,
+      payload: {
+        id: job.id,
+        clientId: job.clientId,
+        channel: job.channel,
+        recipient: job.recipient,
+        subject: job.subject,
+        message: job.message,
+        metadata: job.metadata,
+        attempts: job.attempts,
+        maxAttempts: job.maxAttempts
+      }
+    },
+    update: {
+      reason,
+      payload: {
+        id: job.id,
+        clientId: job.clientId,
+        channel: job.channel,
+        recipient: job.recipient,
+        subject: job.subject,
+        message: job.message,
+        metadata: job.metadata,
+        attempts: job.attempts,
+        maxAttempts: job.maxAttempts
+      }
+    }
+  });
+}
+
+export async function enqueueJob(
+  input: CreateNotificationJobInput & { clientId: string },
+  options: { requestId?: string } = {}
+): Promise<NotificationJob> {
+  const now = new Date();
+  const idempotencyKey = makeIdempotencyKey(input, options.requestId);
+  const existing = await prisma.notificationJob.findUnique({ where: { idempotencyKey } });
+  if (existing) return mapJob(existing);
+
+  const created = await prisma.notificationJob.create({
+    data: {
+      id: randomUUID(),
+      clientId: input.clientId,
+      channel: input.channel,
+      recipient: input.recipient,
+      subject: input.subject ?? null,
+      message: input.message,
+      tab: input.tab ?? "dashboard",
+      metadata: asMetadata(input.metadata),
+      status: "QUEUED",
+      failureReason: null,
+      attempts: 0,
+      maxAttempts: 3,
+      readAt: null,
+      readByUserId: null,
+      readByRole: null,
+      nextAttemptAt: now,
+      idempotencyKey
+    }
+  });
+
+  return mapJob(created);
+}
+
+export async function listJobs(
+  clientId?: string,
+  options: { unreadOnly?: boolean; tab?: NotificationJob["tab"] } = {}
+): Promise<NotificationJob[]> {
+  const rows = await prisma.notificationJob.findMany({
+    where: {
+      clientId: clientId ?? undefined,
+      readAt: options.unreadOnly ? null : undefined,
+      tab: options.tab ?? undefined
+    },
+    orderBy: { createdAt: "desc" }
+  });
+  return rows.map(mapJob);
+}
+
+export async function processNextJob(): Promise<NotificationJob | null> {
+  const now = new Date();
+  const queuedJob = await prisma.notificationJob.findFirst({
+    where: {
+      status: "QUEUED",
+      nextAttemptAt: { lte: now }
+    },
+    orderBy: { createdAt: "asc" }
+  });
+  if (!queuedJob) return null;
+
+  const nextAttempts = queuedJob.attempts + 1;
+  const updatedBase = await prisma.notificationJob.update({
+    where: { id: queuedJob.id },
+    data: {
+      attempts: { increment: 1 },
+      lastAttemptAt: now
+    }
+  });
+
+  if (updatedBase.recipient.includes("fail") && !updatedBase.recipient.includes("hard-fail") && nextAttempts < updatedBase.maxAttempts) {
+    const retryDelayMs = Math.min(60_000, 5_000 * nextAttempts);
+    const queued = await prisma.notificationJob.update({
+      where: { id: updatedBase.id },
+      data: {
+        failureReason: "Provider temporary failure",
+        nextAttemptAt: new Date(now.getTime() + retryDelayMs)
+      }
+    });
+    return mapJob(queued);
+  }
+
+  if (updatedBase.recipient.includes("hard-fail") || nextAttempts >= updatedBase.maxAttempts) {
+    const failedReason = updatedBase.recipient.includes("hard-fail")
+      ? "Provider rejected recipient"
+      : "Exceeded max retry attempts";
+
+    const failed = await prisma.notificationJob.update({
+      where: { id: updatedBase.id },
+      data: {
+        status: "FAILED",
+        failureReason: failedReason,
+        deadLetteredAt: now
+      }
+    });
+    await toDeadLetter(failed, failedReason);
+    return mapJob(failed);
+  }
+
+  const sent = await prisma.notificationJob.update({
+    where: { id: updatedBase.id },
+    data: {
+      status: "SENT",
+      failureReason: null,
+      nextAttemptAt: now
+    }
+  });
+  return mapJob(sent);
+}
+
+export async function applyProviderCallback(
+  externalId: string,
+  status: "queued" | "sent" | "delivered" | "failed",
+  reason?: string
+): Promise<NotificationJob | null> {
+  const existing = await prisma.notificationJob.findUnique({ where: { id: externalId } });
+  if (!existing) return null;
+
+  const now = new Date();
+  const nextStatus = status === "failed" ? "FAILED" : status === "queued" ? "QUEUED" : "SENT";
+  const updated = await prisma.notificationJob.update({
+    where: { id: externalId },
+    data: {
+      status: nextStatus,
+      failureReason: reason ?? null,
+      deadLetteredAt: nextStatus === "FAILED" ? now : null,
+      nextAttemptAt: nextStatus === "QUEUED" ? now : undefined
+    }
+  });
+
+  if (nextStatus === "FAILED") {
+    await toDeadLetter(updated, reason ?? "Provider callback failure");
+  }
+
+  return mapJob(updated);
+}
+
+export async function setNotificationReadState(
+  id: string,
+  read: boolean,
+  actor?: QueueActor
+): Promise<NotificationJob | null> {
+  const existing = await prisma.notificationJob.findUnique({ where: { id } });
+  if (!existing) return null;
+  const now = new Date();
+  const updated = await prisma.notificationJob.update({
+    where: { id },
+    data: {
+      readAt: read ? now : null,
+      readByUserId: read ? actor?.userId ?? null : null,
+      readByRole: read ? actor?.role ?? null : null
+    }
+  });
+  return mapJob(updated);
+}
+
+export async function unreadCounts(clientId?: string): Promise<{ total: number; byTab: Record<NotificationJob["tab"], number> }> {
+  const rows = await prisma.notificationJob.findMany({
+    where: {
+      clientId: clientId ?? undefined,
+      readAt: null
+    },
+    select: { tab: true }
+  });
+  const byTab: Record<NotificationJob["tab"], number> = {
+    dashboard: 0,
+    projects: 0,
+    invoices: 0,
+    messages: 0,
+    settings: 0,
+    operations: 0
+  };
+  rows.forEach((row) => {
+    const tab = row.tab as NotificationJob["tab"];
+    if (tab in byTab) byTab[tab] += 1;
+  });
+  return { total: rows.length, byTab };
+}
+
+export async function clearNotificationQueue(): Promise<void> {
+  await prisma.notificationDeadLetter.deleteMany({});
+  await prisma.notificationJob.deleteMany({});
+}

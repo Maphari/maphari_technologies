@@ -1,0 +1,95 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(11, 18, 32, 0.92);
+  backdrop-filter: blur(10px);
+}
+
+.logoGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.logoMark {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--teal);
+  color: var(--navy);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-syne), sans-serif;
+  font-weight: 800;
+}
+
+.logoText {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 1.18rem;
+  font-weight: 700;
+}
+
+.logoText span {
+  color: var(--teal);
+}
+
+.nav {
+  margin-inline: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.navLink {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.38rem 0.74rem;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--offwhite);
+  opacity: 0.9;
+}
+
+.navLink:hover {
+  border-color: rgba(18, 214, 197, 0.5);
+  color: var(--teal);
+}
+
+.navLinkActive {
+  border-color: rgba(18, 214, 197, 0.62);
+  background: rgba(18, 214, 197, 0.12);
+  color: var(--teal);
+  opacity: 1;
+}
+
+.action {
+  border-radius: 12px;
+  background: var(--teal);
+  border: 1px solid var(--teal);
+  color: var(--navy);
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0.62rem 0.92rem;
+  cursor: pointer;
+}
+
+@media (max-width: 960px) {
+  .header {
+    flex-wrap: wrap;
+  }
+
+  .nav {
+    order: 3;
+    width: 100%;
+    margin-inline: 0;
+  }
+}

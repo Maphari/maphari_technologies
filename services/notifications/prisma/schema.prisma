@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model NotificationJob {
+  id            String  @id @default(uuid())
+  clientId      String
+  channel       String
+  recipient     String
+  subject       String?
+  message       String
+  tab           String  @default("dashboard")
+  metadata      Json?
+  status        String  @default("QUEUED")
+  failureReason String?
+  attempts      Int     @default(0)
+  maxAttempts   Int     @default(3)
+  readAt        DateTime?
+  readByUserId  String?
+  readByRole    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  nextAttemptAt DateTime @default(now())
+  lastAttemptAt DateTime?
+  deadLetteredAt DateTime?
+  idempotencyKey String? @unique
+  deadLetter     NotificationDeadLetter?
+
+  @@index([clientId, createdAt])
+  @@index([status, nextAttemptAt])
+  @@index([tab, readAt])
+  @@map("notification_jobs")
+}
+
+model NotificationDeadLetter {
+  id        String   @id @default(uuid())
+  jobId     String   @unique
+  reason    String
+  payload   Json?
+  createdAt DateTime @default(now())
+  job       NotificationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@map("notification_dead_letters")
+}

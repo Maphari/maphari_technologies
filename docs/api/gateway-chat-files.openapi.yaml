@@ -1,0 +1,329 @@
+openapi: 3.0.3
+info:
+  title: Maphari Gateway API - Chat and Files
+  version: 1.0.0
+  description: >
+    OpenAPI contract for the chat and files endpoints exposed by the Gateway under /api/v1.
+servers:
+  - url: http://localhost:4000/api/v1
+    description: Local development gateway
+tags:
+  - name: Chat
+  - name: Files
+security:
+  - bearerAuth: []
+paths:
+  /conversations:
+    get:
+      tags: [Chat]
+      summary: List conversations in caller tenant scope
+      responses:
+        "200":
+          description: Conversations list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationListResponse"
+    post:
+      tags: [Chat]
+      summary: Create a conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConversationRequest"
+      responses:
+        "200":
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationResponse"
+        "400":
+          description: Validation error
+  /conversations/{conversationId}/messages:
+    get:
+      tags: [Chat]
+      summary: List messages for a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Messages list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageListResponse"
+        "403":
+          description: Forbidden for tenant scope
+        "404":
+          description: Conversation not found
+  /messages:
+    post:
+      tags: [Chat]
+      summary: Create a message in an existing conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMessageRequest"
+      responses:
+        "200":
+          description: Message created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Validation error
+  /files:
+    get:
+      tags: [Files]
+      summary: List file metadata records in caller tenant scope
+      responses:
+        "200":
+          description: File records list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileListResponse"
+    post:
+      tags: [Files]
+      summary: Create a file metadata record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFileRequest"
+      responses:
+        "200":
+          description: File metadata created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResponse"
+        "400":
+          description: Validation error
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiMeta:
+      type: object
+      properties:
+        requestId:
+          type: string
+        cache:
+          type: string
+          enum: [hit, miss]
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    CreateConversationRequest:
+      type: object
+      required: [subject]
+      properties:
+        clientId:
+          type: string
+          format: uuid
+        subject:
+          type: string
+          minLength: 2
+          maxLength: 200
+        projectId:
+          type: string
+          format: uuid
+    CreateMessageRequest:
+      type: object
+      required: [conversationId, content]
+      properties:
+        conversationId:
+          type: string
+          format: uuid
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+    CreateFileRequest:
+      type: object
+      required: [fileName, storageKey, mimeType, sizeBytes]
+      properties:
+        clientId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        storageKey:
+          type: string
+          minLength: 1
+          maxLength: 512
+        mimeType:
+          type: string
+          minLength: 3
+          maxLength: 120
+        sizeBytes:
+          type: integer
+          minimum: 1
+          maximum: 5000000000
+    Conversation:
+      type: object
+      required: [id, clientId, subject, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          type: string
+          format: uuid
+        subject:
+          type: string
+        status:
+          type: string
+        projectId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Message:
+      type: object
+      required: [id, clientId, conversationId, content, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    FileRecord:
+      type: object
+      required: [id, clientId, fileName, storageKey, mimeType, sizeBytes, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        storageKey:
+          type: string
+        mimeType:
+          type: string
+        sizeBytes:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ConversationResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          $ref: "#/components/schemas/Conversation"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    ConversationListResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Conversation"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    MessageResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          $ref: "#/components/schemas/Message"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    MessageListResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    FileResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          $ref: "#/components/schemas/FileRecord"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    FileListResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileRecord"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"

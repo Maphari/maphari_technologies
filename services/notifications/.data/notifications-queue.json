@@ -1,0 +1,24 @@
+[
+  {
+    "id": "93e42e9a-2487-4e32-8885-d6ca1dac1705",
+    "clientId": "system",
+    "channel": "EMAIL",
+    "recipient": "test@gmail.com",
+    "subject": "Maphari notification",
+    "message": "Your Maphari client portal is ready for test. Sign in with your email to access your dashboard.",
+    "tab": "dashboard",
+    "metadata": {
+      "eventId": "ad9822d6-e3e0-4033-b274-e548c861adc2",
+      "topic": "notifications.requested"
+    },
+    "status": "QUEUED",
+    "failureReason": null,
+    "attempts": 0,
+    "maxAttempts": 3,
+    "readAt": null,
+    "readByUserId": null,
+    "readByRole": null,
+    "createdAt": "2026-02-19T23:16:26.615Z",
+    "updatedAt": "2026-02-19T23:16:26.615Z"
+  }
+]

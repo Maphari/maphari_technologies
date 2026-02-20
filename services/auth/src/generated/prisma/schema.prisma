@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  role                String               @default("CLIENT")
+  clientId            String?
+  isActive            Boolean              @default(true)
+  passwordHash        String?
+  passwordSalt        String?
+  otpCode             String?
+  otpExpiresAt        DateTime?
+  otpVerifiedAt       DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  refreshTokens       RefreshToken[]
+  loginEvents         LoginEvent[]
+  staffAccessRequests StaffAccessRequest[] @relation("StaffAccessRequestUser")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model LoginEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  requestId String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model StaffAccessRequest {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  pin              String
+  passwordHash     String?
+  passwordSalt     String?
+  status           String    @default("PENDING_ADMIN")
+  requestedAt      DateTime  @default(now())
+  approvedAt       DateTime?
+  approvedByUserId String?
+  verifiedAt       DateTime?
+  revokedAt        DateTime?
+  expiresAt        DateTime
+  userId           String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User?     @relation("StaffAccessRequestUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, requestedAt])
+  @@index([expiresAt])
+}
