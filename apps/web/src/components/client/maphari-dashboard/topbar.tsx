@@ -1,4 +1,4 @@
-import { cx, styles } from "./style";
+import { styles } from "./style";
 
 type TopbarDateRange = "7d" | "30d" | "90d" | "all";
 
@@ -27,52 +27,70 @@ export function ClientTopbar({
   onDateRangeChange,
   onOpenCommandSearch,
   onOpenNotifications,
-  onOpenMessages
+  onOpenMessages,
 }: TopbarProps) {
   return (
     <div className={styles.topbar}>
+
+      {/* ── Breadcrumb title (editorial) ─────────────────────────── */}
       <div className={styles.topbarTitle}>
-        {topbarEyebrow} <span>/ {topbarTitle}</span>
+        <span className={styles.topbarEyebrow}>{topbarEyebrow} ›</span>{" "}
+        {topbarTitle}
       </div>
-      <select
-        className={styles.topbarSelect}
-        aria-label="Filter by project"
-        value={activeProjectId ?? "__all__"}
-        onChange={(event) => onProjectChange(event.target.value === "__all__" ? null : event.target.value)}
+
+      {/* ── Search pill (center) ─────────────────────────────────── */}
+      <button
+        className={styles.shortcutButton}
+        type="button"
+        aria-label="Open command search"
+        onClick={onOpenCommandSearch}
       >
-        <option value="__all__">All projects</option>
-        {projectOptions.map((project) => (
-          <option key={project.id} value={project.id}>
-            {project.name}
-          </option>
-        ))}
-      </select>
-      <select
-        className={styles.topbarSelect}
-        aria-label="Date range"
-        value={dateRange}
-        onChange={(event) => onDateRangeChange(event.target.value as TopbarDateRange)}
-      >
-        <option value="7d">Last 7 days</option>
-        <option value="30d">Last 30 days</option>
-        <option value="90d">Last 90 days</option>
-        <option value="all">All time</option>
-      </select>
-      <div className={styles.topbarActions}>
-        <button
-          className={styles.shortcutButton}
-          type="button"
-          aria-label="Open command search"
-          onClick={onOpenCommandSearch}
+        Search
+        <span>⌘K</span>
+      </button>
+
+      {/* ── Filters ─────────────────────────────────────────────── */}
+      <div className={styles.topbarFilters}>
+        <select
+          className={styles.topbarSelect}
+          aria-label="Filter by project"
+          value={activeProjectId ?? "__all__"}
+          onChange={(event) =>
+            onProjectChange(event.target.value === "__all__" ? null : event.target.value)
+          }
         >
-          Search
-          <span>⌘K</span>
-        </button>
+          <option value="__all__">All projects</option>
+          {projectOptions.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className={styles.topbarSelect}
+          aria-label="Date range"
+          value={dateRange}
+          onChange={(event) => onDateRangeChange(event.target.value as TopbarDateRange)}
+        >
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+          <option value="90d">Last 90 days</option>
+          <option value="all">All time</option>
+        </select>
+      </div>
+
+      {/* ── Actions ─────────────────────────────────────────────── */}
+      <div className={styles.topbarActions}>
         <button
           className={styles.iconButton}
           title="Notifications"
           type="button"
-          aria-label={notificationCount > 0 ? `Notifications (${notificationCount} unread)` : "Notifications"}
+          aria-label={
+            notificationCount > 0
+              ? `Notifications (${notificationCount} unread)`
+              : "Notifications"
+          }
           onClick={onOpenNotifications}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
@@ -82,10 +100,18 @@ export function ClientTopbar({
             />
           </svg>
           {notificationCount > 0 ? (
-            <span className={styles.notifCount}>{notificationCount > 99 ? "99+" : String(notificationCount)}</span>
+            <span className={styles.notifCount}>
+              {notificationCount > 99 ? "99+" : String(notificationCount)}
+            </span>
           ) : null}
         </button>
-        <button className={cx("button", "buttonAccent")} type="button" onClick={onOpenMessages} aria-label="Compose a new message">
+
+        <button
+          className={`${styles.button} ${styles.buttonAccent}`}
+          type="button"
+          onClick={onOpenMessages}
+          aria-label="Compose a new message"
+        >
           + Message
         </button>
       </div>

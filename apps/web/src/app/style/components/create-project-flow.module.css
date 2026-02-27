@@ -1,0 +1,421 @@
+/* ─────────────────────────────────────────────────────────────
+   CREATE PROJECT FLOW — CSS MODULE
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Stepper ─────────────────────────────────────────────────── */
+.stepper {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--b1);
+  padding: 0 28px;
+  overflow-x: auto;
+  background: var(--s2);
+  flex-shrink: 0;
+}
+
+.stepperItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 16px 0;
+  margin-right: 28px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: color 0.18s;
+}
+
+.stepperActive {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+}
+
+.stepperDone {
+  color: rgba(200, 241, 53, 0.6);
+}
+
+.stepperNum {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--b2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.stepperActive .stepperNum {
+  border-color: var(--accent);
+  background: var(--lime-d);
+  color: var(--accent);
+}
+
+.stepperDone .stepperNum {
+  background: var(--accent);
+  color: #050508;
+  border-color: var(--accent);
+  font-size: 0;
+}
+
+.stepperDone .stepperNum::after {
+  content: "✓";
+  font-size: 0.68rem;
+}
+
+.stepperLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.stepperActive .stepperLabel {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ── Step body ───────────────────────────────────────────────── */
+.stepBody {
+  display: grid;
+  gap: 18px;
+}
+
+.stepTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.stepSub {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: -10px;
+}
+
+/* ── Service card grid ──────────────────────────────────────── */
+.serviceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.serviceCard {
+  border: 1px solid var(--b2);
+  background: var(--s2);
+  border-radius: var(--r-md);
+  padding: 18px 16px 16px;
+  text-align: left;
+  color: var(--text);
+  cursor: none;
+  transition: all 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.serviceCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: background 0.18s;
+}
+
+.serviceCard:hover {
+  border-color: var(--b3);
+  background: var(--s3);
+}
+
+.serviceCard:hover::before {
+  background: var(--b3);
+}
+
+.serviceCardSelected {
+  border-color: rgba(200, 241, 53, 0.3);
+  background: var(--lime-d);
+}
+
+.serviceCardSelected::before {
+  background: var(--lime);
+}
+
+.serviceIcon {
+  font-size: 1.4rem;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.serviceName {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+  color: var(--text);
+}
+
+.serviceDesc {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.servicePrice {
+  margin-top: 10px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+/* ── Form grids ─────────────────────────────────────────────── */
+.formGrid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.formGrid3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* ── Field ──────────────────────────────────────────────────── */
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.fieldLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── Feature / add-on grid ──────────────────────────────────── */
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.featureCard {
+  border: 1px solid var(--b2);
+  background: var(--s2);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  cursor: none;
+  transition: all 0.15s;
+}
+
+.featureCard:hover {
+  border-color: var(--b3);
+  background: var(--s3);
+}
+
+.featureCardSelected {
+  border-color: rgba(200, 241, 53, 0.3);
+  background: var(--lime-d);
+  color: var(--accent);
+}
+
+.featureCost {
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--accent);
+  font-size: 0.58rem;
+  flex-shrink: 0;
+}
+
+/* ── Sub-label ──────────────────────────────────────────────── */
+.subLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+
+/* ── Pill chips (integrations, platforms) ───────────────────── */
+.pillWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.pill {
+  border: 1px solid var(--b2);
+  background: transparent;
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 7px 13px;
+  cursor: none;
+  transition: all 0.15s;
+}
+
+.pill:hover {
+  border-color: var(--b3);
+  color: var(--text);
+}
+
+.pillSelected {
+  border-color: rgba(200, 241, 53, 0.35);
+  color: var(--accent);
+  background: var(--lime-d);
+}
+
+/* ── Disclosure box ─────────────────────────────────────────── */
+.disclosure {
+  background: rgba(245, 166, 35, 0.07);
+  border: 1px solid rgba(245, 166, 35, 0.22);
+  border-radius: var(--r-md);
+  padding: 20px;
+}
+
+.disclosureTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--amber);
+  margin-bottom: 10px;
+}
+
+.disclosureList {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.ackRow {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--text);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+/* ── Agreement step ─────────────────────────────────────────── */
+.actionsRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.uploadMsg {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.64rem;
+  color: var(--accent);
+}
+
+.recentFiles {
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.fileRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--b1);
+  font-size: 0.74rem;
+}
+
+.fileRow:last-child {
+  border-bottom: none;
+}
+
+/* ── Validation warnings ─────────────────────────────────────── */
+.warnBox {
+  padding: 12px 14px;
+  border: 1px solid rgba(245, 166, 35, 0.28);
+  border-radius: var(--r-sm);
+  background: rgba(245, 166, 35, 0.07);
+  color: var(--amber);
+  font-size: 0.72rem;
+  display: grid;
+  gap: 5px;
+  line-height: 1.45;
+}
+
+/* ── Footer row ─────────────────────────────────────────────── */
+.footer {
+  border-top: 1px solid var(--b1);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.footerLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.footerValue {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+}
+
+.footerActions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .serviceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .formGrid3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .serviceGrid,
+  .formGrid2,
+  .formGrid3,
+  .featureGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .footerActions {
+    justify-content: flex-end;
+  }
+}

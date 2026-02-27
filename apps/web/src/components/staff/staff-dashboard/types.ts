@@ -1,11 +1,5 @@
-export type PageId = "dashboard" | "tasks" | "kanban" | "clients" | "deliverables" | "timelog" | "automations" | "settings";
-
-export type NavItem = {
-  id: PageId;
-  label: string;
-  section: string;
-  badge?: { value: string; tone: "blue" | "green" | "amber" | "red" };
-};
+// ─── Re-exports for backward compatibility ───
+export type { PageId, NavItem } from "./config";
 
 export type TaskContext = {
   id: string;

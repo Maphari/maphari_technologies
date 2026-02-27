@@ -1,4 +1,4 @@
-import { LogoutPageClient } from "./logout-page-client";
+import { LogoutPageClient } from "@/components/auth/logout-page-client";
 
 interface LogoutPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;

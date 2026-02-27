@@ -1,34 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { useDashboardToasts, DashboardToastStack } from "../shared/dashboard-core";
 import { DM_Mono, Instrument_Serif, Syne } from "next/font/google";
 import {
-  createConversationWithRefresh,
-  createProjectHandoffExportWithRefresh,
-  downloadProjectHandoffExportWithRefresh,
-  createProjectBlockerWithRefresh,
-  createProjectMilestoneWithRefresh,
-  createProjectTaskWithRefresh,
-  createProjectWorkSessionWithRefresh,
-  getProjectPreferenceWithRefresh,
-  loadProjectCollaborationWithRefresh,
-  loadProjectChangeRequestsWithRefresh,
-  loadProjectHandoffExportsWithRefresh,
   loadNotificationJobsWithRefresh,
   processNotificationQueueWithRefresh,
-  loadProjectBlockersWithRefresh,
-  loadProjectDetailWithRefresh,
-  loadTimelineWithRefresh,
   setNotificationReadStateWithRefresh,
-  setProjectPreferenceWithRefresh,
-  updateMessageDeliveryWithRefresh,
-  updateProjectChangeRequestWithRefresh,
-  updateProjectMilestoneWithRefresh,
-  updateProjectWorkSessionWithRefresh,
-  updateProjectTaskWithRefresh,
   type ProjectChangeRequest,
-  type ProjectDetail,
-  type ProjectCollaborationSnapshot,
   type ProjectHandoffExportRecord
 } from "../../lib/api/admin";
 import { useStaffWorkspace } from "../../lib/auth/use-staff-workspace";
@@ -36,41 +15,62 @@ import { useRealtimeRefresh } from "../../lib/auth/use-realtime-refresh";
 import { useCursorTrail } from "../shared/use-cursor-trail";
 import { useDelayedFlag } from "../shared/use-delayed-flag";
 import { pageTitles } from "./staff-dashboard/constants";
-import { StaffSidebar } from "./staff-dashboard/StaffSidebar";
-import { StaffTopbar } from "./staff-dashboard/StaffTopbar";
-import { ClientsPage } from "./staff-dashboard/pages/ClientsPage";
-import { DashboardPage } from "./staff-dashboard/pages/DashboardPage";
-import { DeliverablesPage } from "./staff-dashboard/pages/DeliverablesPage";
-import { KanbanPage } from "./staff-dashboard/pages/KanbanPage";
-import { AutomationsPage } from "./staff-dashboard/pages/AutomationsPage";
-import { SettingsPage } from "./staff-dashboard/pages/SettingsPage";
-import { TasksPage } from "./staff-dashboard/pages/TasksPage";
-import { TimeLogPage } from "./staff-dashboard/pages/TimeLogPage";
+import { StaffSidebar } from "./staff-dashboard/sidebar";
+import { StaffTopbar } from "./staff-dashboard/topbar";
+import { ClientsPage } from "./staff-dashboard/pages/clients-page";
+import { ClientHealthPage } from "./staff-dashboard/pages/client-health-page";
+import { DashboardPage } from "./staff-dashboard/pages/dashboard-page";
+import { NotificationsPage } from "./staff-dashboard/pages/notifications-page";
+import { DailyStandupPage } from "./staff-dashboard/pages/daily-standup-page";
+import { DeliverablesPage } from "./staff-dashboard/pages/deliverables-page";
+import { EndOfDayWrapPage } from "./staff-dashboard/pages/end-of-day-wrap-page";
+import { MilestoneSignOffPage } from "./staff-dashboard/pages/milestone-sign-off-page";
+import { MeetingPrepPage } from "./staff-dashboard/pages/meeting-prep-page";
+import { CommunicationHistoryPage } from "./staff-dashboard/pages/communication-history-page";
+import { ClientOnboardingPage } from "./staff-dashboard/pages/client-onboarding-page";
+import { ResponseTimePage } from "./staff-dashboard/pages/response-time-page";
+import { SentimentFlagsPage } from "./staff-dashboard/pages/sentiment-flags-page";
+import { LastTouchedPage } from "./staff-dashboard/pages/last-touched-page";
+import { PortalActivityPage } from "./staff-dashboard/pages/portal-activity-page";
+import { SmartSuggestionsPage } from "./staff-dashboard/pages/smart-suggestions-page";
+import { SprintPlanningPage } from "./staff-dashboard/pages/sprint-planning-page";
+import { TaskDependenciesPage } from "./staff-dashboard/pages/task-dependencies-page";
+import { RecurringTasksPage } from "./staff-dashboard/pages/recurring-tasks-page";
+import { FocusModePage } from "./staff-dashboard/pages/focus-mode-page";
+import { PeerRequestsPage } from "./staff-dashboard/pages/peer-requests-page";
+import { TriggerLogPage } from "./staff-dashboard/pages/trigger-log-page";
+import { PrivateNotesPage } from "./staff-dashboard/pages/private-notes-page";
+import { KeyboardShortcutsPage } from "./staff-dashboard/pages/keyboard-shortcuts-page";
+import { EstimatesVsActualsPage } from "./staff-dashboard/pages/estimates-vs-actuals-page";
+import { SatisfactionScoresPage } from "./staff-dashboard/pages/satisfaction-scores-page";
+import { KnowledgeBasePage } from "./staff-dashboard/pages/knowledge-base-page";
+import { DecisionLogPage } from "./staff-dashboard/pages/decision-log-page";
+import { HandoverChecklistPage } from "./staff-dashboard/pages/handover-checklist-page";
+import { CloseOutReportPage } from "./staff-dashboard/pages/close-out-report-page";
+import { StaffHandoversPage } from "./staff-dashboard/pages/staff-handovers-page";
+import { PersonalPerformancePage } from "./staff-dashboard/pages/personal-performance-page";
+import { ProjectContextPage } from "./staff-dashboard/pages/project-context-page";
+import { RetainerBurnPage } from "./staff-dashboard/pages/retainer-burn-page";
+import { KanbanPage } from "./staff-dashboard/pages/kanban-page";
+import { AutomationsPage } from "./staff-dashboard/pages/automations-page";
+import { AutoDraftUpdatesPage } from "./staff-dashboard/pages/auto-draft-updates-page";
+import { SettingsPage } from "./staff-dashboard/pages/settings-page";
+import { TasksPage } from "./staff-dashboard/pages/tasks-page";
+import { TimeLogPage } from "./staff-dashboard/pages/time-log-page";
 import { styles } from "./staff-dashboard/style";
-import type {
-  ActivityItem,
-  ClientThread,
-  DashboardDigestItem,
-  DashboardFocusItem,
-  DashboardInboxItem,
-  DeliverableGroup,
-  KanbanColumn,
-  NavItem,
-  PageId,
-  SlaWatchItem,
-  TaskContext,
-  TimeEntrySummary
-} from "./staff-dashboard/types";
-import {
-  estimateMinutes,
-  formatDateLong,
-  formatDateShort,
-  formatRelative,
-  formatStatus,
-  formatTimer,
-  getInitials,
-  startOfWeek
-} from "./staff-dashboard/utils";
+import type { NavItem, PageId } from "./staff-dashboard/types";
+import { formatDateLong, getInitials } from "./staff-dashboard/utils";
+import { useStaffData } from "./staff-dashboard/hooks/use-staff-data";
+import { useStaffTasks } from "./staff-dashboard/hooks/use-staff-tasks";
+import { useStaffKanban } from "./staff-dashboard/hooks/use-staff-kanban";
+import { useStaffDeliverables } from "./staff-dashboard/hooks/use-staff-deliverables";
+import { useStaffMessages } from "./staff-dashboard/hooks/use-staff-messages";
+import { useStaffTimer } from "./staff-dashboard/hooks/use-staff-timer";
+import { useStaffNotifications } from "./staff-dashboard/hooks/use-staff-notifications";
+import { useStaffSettings } from "./staff-dashboard/hooks/use-staff-settings";
+import { useStaffActivity } from "./staff-dashboard/hooks/use-staff-activity";
+import { useStaffWorkflow } from "./staff-dashboard/hooks/use-staff-workflow";
+import { useStaffSla } from "./staff-dashboard/hooks/use-staff-sla";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -92,128 +92,22 @@ const instrument = Instrument_Serif({
 });
 
 export function MaphariStaffDashboard() {
+  // ─── Navigation + UI state kept in orchestrator ───
   const [activePage, setActivePage] = useState<PageId>("dashboard");
-  const [activeTaskTab, setActiveTaskTab] = useState<"all" | "in_progress" | "todo" | "blocked" | "done">("all");
-  const [highPriorityOnly, setHighPriorityOnly] = useState(false);
-  const [showTaskComposer, setShowTaskComposer] = useState(false);
-  const [creatingTask, setCreatingTask] = useState(false);
-  const [newTaskDraft, setNewTaskDraft] = useState({
-    projectId: "",
-    title: "",
-    assigneeName: "",
-    dueAt: ""
-  });
-  const [showDeliverableComposer, setShowDeliverableComposer] = useState(false);
-  const [creatingDeliverable, setCreatingDeliverable] = useState(false);
-  const [newDeliverableDraft, setNewDeliverableDraft] = useState({
-    projectId: "",
-    title: "",
-    dueAt: ""
-  });
-  const [projectDetails, setProjectDetails] = useState<ProjectDetail[]>([]);
-  const [projectCollaboration, setProjectCollaboration] = useState<Record<string, ProjectCollaborationSnapshot>>({});
-  const [activeWorkSessionId, setActiveWorkSessionId] = useState<string | null>(null);
-  const [composeMessage, setComposeMessage] = useState("");
-  const [noteText, setNoteText] = useState("");
-  const [escalationReason, setEscalationReason] = useState("");
-  const [escalationSeverity, setEscalationSeverity] = useState<"LOW" | "MEDIUM" | "HIGH" | "CRITICAL">("MEDIUM");
-  const [sentMessageIds, setSentMessageIds] = useState<string[]>([]);
-  const [selectedTimerProjectId, setSelectedTimerProjectId] = useState<string>("");
-  const [timerTaskLabel, setTimerTaskLabel] = useState("");
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [timerSeconds, setTimerSeconds] = useState(0);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [threadSearch, setThreadSearch] = useState("");
-  const [threadFilter, setThreadFilter] = useState<"all" | "open" | "unread" | "project" | "general">("all");
-  const [topbarSearch, setTopbarSearch] = useState("");
-  const [newThreadSubject, setNewThreadSubject] = useState("");
-  const [newThreadClientId, setNewThreadClientId] = useState("");
-  const [creatingThread, setCreatingThread] = useState(false);
-  const [settingsProfile, setSettingsProfile] = useState({
-    fullName: "Staff",
-    email: "",
-    avatarUrl: "",
-    weeklyTargetHours: 40
-  });
-  const [savedSettingsProfile, setSavedSettingsProfile] = useState({
-    fullName: "Staff",
-    email: "",
-    avatarUrl: "",
-    weeklyTargetHours: 40
-  });
-  const [settingsNotifications, setSettingsNotifications] = useState({
-    taskAssignments: true,
-    clientMessages: true,
-    deliverableReminders: true,
-    standupReminders: false,
-    weeklyTimeSummary: true
-  });
-  const [savedSettingsNotifications, setSavedSettingsNotifications] = useState({
-    taskAssignments: true,
-    clientMessages: true,
-    deliverableReminders: true,
-    standupReminders: false,
-    weeklyTimeSummary: true
-  });
-  const [settingsWorkspace, setSettingsWorkspace] = useState({
-    timezone: "Africa/Johannesburg",
-    workStart: "08:00",
-    workEnd: "17:00",
-    defaultStatus: "Available" as "Available" | "Focused" | "In a meeting"
-  });
-  const [savedSettingsWorkspace, setSavedSettingsWorkspace] = useState({
-    timezone: "Africa/Johannesburg",
-    workStart: "08:00",
-    workEnd: "17:00",
-    defaultStatus: "Available" as "Available" | "Focused" | "In a meeting"
-  });
-  const [dashboardLastSeenAt, setDashboardLastSeenAt] = useState<string | null | undefined>(undefined);
-  const [kanbanBlockDraft, setKanbanBlockDraft] = useState<{ taskId: string; projectId: string; title: string } | null>(null);
-  const [kanbanBlockReason, setKanbanBlockReason] = useState("");
-  const [kanbanBlockSeverity, setKanbanBlockSeverity] = useState<"LOW" | "MEDIUM" | "HIGH" | "CRITICAL">("MEDIUM");
-  const [kanbanBlockEta, setKanbanBlockEta] = useState("");
-  const [creatingKanbanBlocker, setCreatingKanbanBlocker] = useState(false);
-  const [processingAutomationQueue, setProcessingAutomationQueue] = useState(false);
-  const [acknowledgingAutomationFailures, setAcknowledgingAutomationFailures] = useState(false);
-  const [kanbanViewMode, setKanbanViewMode] = useState<"all" | "my_work" | "urgent" | "client_waiting" | "blocked">("all");
-  const [kanbanSwimlane, setKanbanSwimlane] = useState<"status" | "project" | "client">("status");
-  const [kanbanAnnouncement, setKanbanAnnouncement] = useState("");
-  const [notificationJobs, setNotificationJobs] = useState<Array<{
-    id: string;
-    status: string;
-    tab: "dashboard" | "projects" | "invoices" | "messages" | "settings" | "operations";
-    readAt: string | null;
-  }>>([]);
-  const [projectBlockers, setProjectBlockers] = useState<Array<{
-    id: string;
-    projectId: string;
-    clientId: string;
-    title: string;
-    severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-    status: "OPEN" | "IN_PROGRESS" | "RESOLVED";
-    etaAt: string | null;
-    ownerName: string | null;
-    updatedAt: string;
-  }>>([]);
-  const [timelineEvents, setTimelineEvents] = useState<Array<{
-    id: string;
-    category: "PROJECT" | "LEAD" | "BLOCKER";
-    title: string;
-    detail: string | null;
-    createdAt: string;
-  }>>([]);
-  const [changeRequests, setChangeRequests] = useState<ProjectChangeRequest[]>([]);
-  const [estimateDrafts, setEstimateDrafts] = useState<Record<string, { hours: string; costCents: string; assessment: string }>>({});
-  const [handoffExports, setHandoffExports] = useState<ProjectHandoffExportRecord[]>([]);
-  const [generatingHandoffExport, setGeneratingHandoffExport] = useState(false);
-  const [actionFeedback, setActionFeedback] = useState<{ tone: "success" | "error"; message: string } | null>(null);
   const [staffTourOpen, setStaffTourOpen] = useState(false);
   const [staffTourStep, setStaffTourStep] = useState(0);
-  const timerRef = useRef<number | null>(null);
-  const timerStartRef = useRef<string | null>(null);
-  const dashboardSeenMarkedRef = useRef(false);
+  const [topbarSearch, setTopbarSearch] = useState("");
+  const { toasts, setFeedback } = useDashboardToasts({ dismissMs: 4200 });
+
+  // ─── Automations page state (not extracted into a hook yet) ───
+  const [processingAutomationQueue, setProcessingAutomationQueue] = useState(false);
+  const [acknowledgingAutomationFailures, setAcknowledgingAutomationFailures] = useState(false);
+
   const cursorRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
+
+  // ─── Workspace ───
   const {
     session,
     snapshot,
@@ -239,24 +133,18 @@ export function MaphariStaffDashboard() {
   useCursorTrail(cursorRef, ringRef, { cursorOffset: 4, ringOffset: 15, easing: 0.1 });
   const animateProgress = useDelayedFlag(activePage, 200);
 
-  useEffect(() => {
-    if (!timerRunning) return;
-    timerRef.current = window.setInterval(() => {
-      setTimerSeconds((prev) => prev + 1);
-    }, 1000);
-    return () => {
-      if (timerRef.current) {
-        window.clearInterval(timerRef.current);
-      }
-    };
-  }, [timerRunning]);
+  // ─── Derived workspace values ───
+  const projects = useMemo(() => snapshot.projects ?? [], [snapshot.projects]);
+  const clients = useMemo(() => snapshot.clients ?? [], [snapshot.clients]);
 
-  useEffect(() => {
-    if (!actionFeedback) return;
-    const timeoutId = window.setTimeout(() => setActionFeedback(null), 4200);
-    return () => window.clearTimeout(timeoutId);
-  }, [actionFeedback]);
+  const staffEmail = session?.user.email ?? "staff@maphari.co.za";
+  const staffName = staffEmail.split("@")[0]?.replace(/\./g, " ") ?? "Staff";
+  const staffInitials = getInitials(staffName);
+  const staffRole = session?.user.role ?? "STAFF";
 
+  const searchQuery = topbarSearch.trim().toLowerCase();
+
+  // ─── Tour auto-open ───
   useEffect(() => {
     if (!session?.user?.email) return;
     const key = `maphari:tour:staff:${session.user.email}`;
@@ -265,1178 +153,378 @@ export function MaphariStaffDashboard() {
     }
   }, [session?.user?.email]);
 
-  useEffect(() => {
-    dashboardSeenMarkedRef.current = false;
-  }, [session?.user.id]);
+  // ─── Hook 1: Notifications ───
+  const {
+    notificationJobs,
+    setNotificationJobs,
+    unreadByTab,
+    totalUnreadNotifications,
+    handleMarkNotificationRead,
+    handleMarkAllNotificationsRead
+  } = useStaffNotifications({ session, activePage });
 
-  const projects = useMemo(() => snapshot.projects ?? [], [snapshot.projects]);
-  const clients = useMemo(() => snapshot.clients ?? [], [snapshot.clients]);
-
-  const effectiveNewThreadClientId = newThreadClientId || clients[0]?.id || "";
-
-  useEffect(() => {
-    if (!session || projects.length === 0) return;
-    let cancelled = false;
-    void (async () => {
-      const results = await Promise.all(
-        projects.map((project) => loadProjectDetailWithRefresh(session, project.id))
-      );
-      if (cancelled) return;
-      const details = results
-        .map((result) => result.data)
-        .filter((detail): detail is ProjectDetail => Boolean(detail));
-      setProjectDetails(details);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [projects, session]);
-
-  useEffect(() => {
-    if (!session || projects.length === 0) return;
-    let cancelled = false;
-    void (async () => {
-      const results = await Promise.all(
-        projects.map((project) => loadProjectCollaborationWithRefresh(session, project.id))
-      );
-      if (cancelled) return;
-      const next: Record<string, ProjectCollaborationSnapshot> = {};
-      results.forEach((result) => {
-        if (result.data) next[result.data.projectId] = result.data;
-      });
-      setProjectCollaboration(next);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [projects, session]);
-
-  useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    void (async () => {
-      const result = await loadNotificationJobsWithRefresh(session);
-      if (cancelled || !result.nextSession) return;
-      setNotificationJobs((result.data ?? []).map((job) => ({ id: job.id, status: job.status, tab: job.tab, readAt: job.readAt })));
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
-
-  const handleRealtimeRefresh = useCallback(() => {
-    if (!session) return;
-    void (async () => {
-      const [jobsResult, blockersResult, timelineResult, changeRequestsResult, exportsResult] = await Promise.all([
-        loadNotificationJobsWithRefresh(session),
-        loadProjectBlockersWithRefresh(session, { limit: 80 }),
-        loadTimelineWithRefresh(session, { limit: 80 }),
-        loadProjectChangeRequestsWithRefresh(session, { limit: 80 }),
-        loadProjectHandoffExportsWithRefresh(session)
-      ]);
-      if (jobsResult.data) {
-        setNotificationJobs(jobsResult.data.map((job) => ({
-          id: job.id,
-          status: job.status,
-          tab: job.tab,
-          readAt: job.readAt
-        })));
-      }
-      if (blockersResult.data) setProjectBlockers(blockersResult.data);
-      if (timelineResult.data) setTimelineEvents(timelineResult.data);
-      if (changeRequestsResult.data) setChangeRequests(changeRequestsResult.data);
-      if (exportsResult.data) setHandoffExports(exportsResult.data);
-      if (projects.length > 0) {
-        const collaborationResults = await Promise.all(
-          projects.map((project) => loadProjectCollaborationWithRefresh(session, project.id))
-        );
-        const next: Record<string, ProjectCollaborationSnapshot> = {};
-        collaborationResults.forEach((result) => {
-          if (result.data) next[result.data.projectId] = result.data;
-        });
-        setProjectCollaboration(next);
-      }
-    })();
-  }, [projects, session]);
+  // ─── Hook 2: Data ───
+  const {
+    projectDetails,
+    setProjectDetails,
+    projectCollaboration,
+    projectBlockers,
+    timelineEvents,
+    changeRequests,
+    setChangeRequests,
+    estimateDrafts,
+    setEstimateDrafts,
+    handoffExports,
+    setHandoffExports,
+    generatingHandoffExport,
+    setGeneratingHandoffExport,
+    dashboardLastSeenAt,
+    setDashboardLastSeenAt,
+    effectiveProjectDetails,
+    clientById,
+    projectById,
+    fileById,
+    nowTs,
+    handleRealtimeRefresh
+  } = useStaffData({
+    session,
+    snapshot,
+    projects,
+    clients,
+    files,
+    activePage,
+    loading,
+    setNotificationJobs
+  });
 
   useRealtimeRefresh(session, handleRealtimeRefresh);
 
-  useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    void (async () => {
-      const [blockersResult, timelineResult, changeRequestsResult, exportsResult] = await Promise.all([
-        loadProjectBlockersWithRefresh(session, { limit: 80 }),
-        loadTimelineWithRefresh(session, { limit: 80 }),
-        loadProjectChangeRequestsWithRefresh(session, { limit: 80 }),
-        loadProjectHandoffExportsWithRefresh(session)
-      ]);
-      if (cancelled) return;
-      setProjectBlockers(blockersResult.data ?? []);
-      setTimelineEvents(timelineResult.data ?? []);
-      setChangeRequests(changeRequestsResult.data ?? []);
-      setHandoffExports(exportsResult.data ?? []);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
+  // ─── Hook 3a: Tasks ───
+  const {
+    activeTaskTab,
+    setActiveTaskTab,
+    highPriorityOnly,
+    setHighPriorityOnly,
+    showTaskComposer,
+    setShowTaskComposer,
+    creatingTask,
+    newTaskDraft,
+    setNewTaskDraft,
+    taskContexts,
+    taskCounts,
+    taskTabs,
+    filteredTasks,
+    priorityTasks,
+    unreadProjectIds,
+    inProgressCount,
+    overdueTasksCount,
+    highPriorityTasks,
+    highPriorityClients,
+    handleTaskAction,
+    handleMoveTask,
+    handleCreateTask
+  } = useStaffTasks({
+    session,
+    projectDetails,
+    setProjectDetails,
+    topbarSearch,
+    clientById,
+    nowTs,
+    effectiveProjectDetails,
+    setFeedback,
+    conversations,
+    selectedConversationId,
+    refreshWorkspace,
+    inProgressLimit: 3
+  });
 
-  useEffect(() => {
-    if (!session) return;
-    const pageToTab: Record<PageId, "dashboard" | "projects" | "invoices" | "messages" | "settings" | "operations"> = {
-      dashboard: "dashboard",
-      tasks: "operations",
-      kanban: "operations",
-      clients: "messages",
-      deliverables: "projects",
-      timelog: "operations",
-      automations: "operations",
-      settings: "settings"
-    };
-    const activeTab = pageToTab[activePage];
-    const unread = notificationJobs.filter((job) => !job.readAt && job.tab === activeTab);
-    if (unread.length === 0) return;
-    void Promise.all(unread.map((job) => setNotificationReadStateWithRefresh(session, job.id, true))).then(() => {
-      setNotificationJobs((previous) =>
-        previous.map((job) =>
-          unread.some((target) => target.id === job.id)
-            ? { ...job, readAt: new Date().toISOString() }
-            : job
-        )
-      );
-    });
-  }, [activePage, notificationJobs, session]);
-
-  const effectiveProjectDetails = useMemo(
-    () => (projects.length === 0 ? [] : projectDetails),
-    [projectDetails, projects.length]
-  );
-
-  const clientById = useMemo(() => new Map(clients.map((client) => [client.id, client])), [clients]);
-  const projectById = useMemo(() => new Map(projects.map((project) => [project.id, project])), [projects]);
-  const fileById = useMemo(() => new Map(files.map((file) => [file.id, file])), [files]);
-  const nowTs = useMemo(() => new Date().getTime(), []);
-  const searchQuery = topbarSearch.trim().toLowerCase();
-
-  const taskContexts = useMemo<TaskContext[]>(() => {
-    const now = nowTs;
-    const soonThreshold = 1000 * 60 * 60 * 24 * 3;
-    const mediumThreshold = 1000 * 60 * 60 * 24 * 7;
-
-    return effectiveProjectDetails.flatMap((project) => {
-      const clientName = clientById.get(project.clientId)?.name ?? "Client";
-      return project.tasks.map((task) => {
-        const dueTs = task.dueAt ? new Date(task.dueAt).getTime() : null;
-        const isOverdue = Boolean(dueTs && dueTs < now && task.status !== "DONE");
-        const dueSoon = Boolean(dueTs && dueTs < now + soonThreshold);
-        const dueMedium = Boolean(dueTs && dueTs < now + mediumThreshold);
-        const priority: TaskContext["priority"] = task.status === "BLOCKED" || isOverdue ? "high" : dueSoon ? "med" : dueMedium ? "med" : "low";
-        const statusTone =
-          task.status === "DONE"
-            ? "green"
-            : task.status === "IN_PROGRESS"
-              ? "blue"
-              : task.status === "BLOCKED"
-                ? "red"
-                : "muted";
-        const badgeTone = statusTone === "muted" ? "blue" : statusTone;
-
-        return {
-          id: task.id,
-          projectId: project.id,
-          title: task.title,
-          subtitle: task.assigneeName ? `${project.name} · ${task.assigneeName}` : `${project.name} · Unassigned`,
-          projectName: project.name,
-          clientName,
-          status: task.status,
-          statusLabel: formatStatus(task.status),
-          statusTone,
-          badgeTone,
-          dueAt: task.dueAt ?? null,
-          dueLabel: task.dueAt ? formatDateShort(task.dueAt) : "TBD",
-          dueTone: isOverdue ? "var(--red)" : dueSoon ? "var(--amber)" : "var(--muted)",
-          priority,
-          estimateMinutes: estimateMinutes(task.createdAt, task.updatedAt),
-          updatedAt: task.updatedAt,
-          createdAt: task.createdAt,
-          progress: project.progressPercent,
-          assigneeInitials: getInitials(task.assigneeName ?? "Maphari Staff")
-        };
-      });
-    });
-  }, [clientById, effectiveProjectDetails, nowTs]);
-
-  const taskCounts = useMemo(() => ({
-    all: taskContexts.length,
-    in_progress: taskContexts.filter((task) => task.status === "IN_PROGRESS").length,
-    todo: taskContexts.filter((task) => task.status === "TODO").length,
-    blocked: taskContexts.filter((task) => task.status === "BLOCKED").length,
-    done: taskContexts.filter((task) => task.status === "DONE").length
-  }), [taskContexts]);
-
-  const taskTabs = useMemo(
-    () => ([
-      { id: "all", label: `All (${taskCounts.all})` },
-      { id: "in_progress", label: `In Progress (${taskCounts.in_progress})` },
-      { id: "todo", label: `To Do (${taskCounts.todo})` },
-      { id: "blocked", label: `Blocked (${taskCounts.blocked})` },
-      { id: "done", label: "Done" }
-    ]) as Array<{ id: string; label: string }>,
-    [taskCounts]
-  );
-
-  const filteredTasks = useMemo(() => {
-    const scoped =
-      activeTaskTab === "in_progress"
-        ? taskContexts.filter((task) => task.status === "IN_PROGRESS")
-        : activeTaskTab === "todo"
-        ? taskContexts.filter((task) => task.status === "TODO")
-        : activeTaskTab === "blocked"
-        ? taskContexts.filter((task) => task.status === "BLOCKED")
-        : activeTaskTab === "done"
-        ? taskContexts.filter((task) => task.status === "DONE")
-        : taskContexts;
-    const priorityScoped = highPriorityOnly ? scoped.filter((task) => task.priority === "high") : scoped;
-    if (!searchQuery) return priorityScoped;
-    return priorityScoped.filter((task) => {
-      const haystack = `${task.title} ${task.subtitle} ${task.projectName} ${task.clientName} ${task.statusLabel}`.toLowerCase();
-      return haystack.includes(searchQuery);
-    });
-  }, [activeTaskTab, highPriorityOnly, searchQuery, taskContexts]);
-
-  const priorityTasks = useMemo(() => {
-    const order = { high: 3, med: 2, low: 1 } as const;
-    const scoped = searchQuery
-      ? taskContexts.filter((task) => {
-          const haystack = `${task.title} ${task.subtitle} ${task.projectName} ${task.clientName}`.toLowerCase();
-          return haystack.includes(searchQuery);
-        })
-      : taskContexts;
-    return [...scoped]
-      .sort((a, b) => {
-        if (order[b.priority] !== order[a.priority]) return order[b.priority] - order[a.priority];
-        if (a.dueAt && b.dueAt) return new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime();
-        if (a.dueAt) return -1;
-        if (b.dueAt) return 1;
-        return 0;
-      })
-      .slice(0, 5);
-  }, [searchQuery, taskContexts]);
-
-  const unreadProjectIds = useMemo(() => {
-    const ids = new Set<string>();
-    conversations.forEach((conversation) => {
-      if (!conversation.projectId || conversation.status !== "OPEN") return;
-      if (conversation.id === selectedConversationId) return;
-      ids.add(conversation.projectId);
-    });
-    return ids;
-  }, [conversations, selectedConversationId]);
-
-  const filteredKanbanTasks = useMemo(() => {
-    const currentStaffName = (session?.user.email ?? "")
-      .split("@")[0]
-      ?.replace(/\./g, " ")
-      .toLowerCase();
-    const scoped =
-      kanbanViewMode === "my_work"
-        ? taskContexts.filter((task) => !currentStaffName || task.subtitle.toLowerCase().includes(currentStaffName))
-        : kanbanViewMode === "urgent"
-          ? taskContexts.filter((task) => task.priority === "high" || task.dueTone === "var(--red)")
-          : kanbanViewMode === "client_waiting"
-            ? taskContexts.filter((task) => unreadProjectIds.has(task.projectId))
-            : kanbanViewMode === "blocked"
-              ? taskContexts.filter((task) => task.status === "BLOCKED")
-              : taskContexts;
-    if (!searchQuery) return scoped;
-    return scoped.filter((task) =>
-      `${task.title} ${task.projectName} ${task.clientName} ${task.statusLabel}`.toLowerCase().includes(searchQuery)
-    );
-  }, [kanbanViewMode, searchQuery, session?.user.email, taskContexts, unreadProjectIds]);
-
-  const kanbanFlowMetrics = useMemo(() => {
-    const now = new Date();
-    const dayMs = 1000 * 60 * 60 * 24;
-    const start = new Date(now.getTime() - dayMs * 13);
-    const points = Array.from({ length: 14 }, (_, index) => {
-      const dayStart = new Date(start.getTime() + dayMs * index);
-      const dayEnd = new Date(dayStart.getTime() + dayMs);
-      const created = taskContexts.filter((task) => {
-        const ts = new Date(task.createdAt).getTime();
-        return ts >= dayStart.getTime() && ts < dayEnd.getTime();
-      }).length;
-      const completed = taskContexts.filter((task) => {
-        if (task.status !== "DONE") return false;
-        const ts = new Date(task.updatedAt).getTime();
-        return ts >= dayStart.getTime() && ts < dayEnd.getTime();
-      }).length;
-      const blocked = taskContexts.filter((task) => {
-        if (task.status !== "BLOCKED") return false;
-        const ts = new Date(task.updatedAt).getTime();
-        return ts >= dayStart.getTime() && ts < dayEnd.getTime();
-      }).length;
-      return { label: new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(dayStart), created, completed, blocked };
-    });
-    const recent = points.slice(7);
-    const previous = points.slice(0, 7);
-    const throughput7d = recent.reduce((sum, point) => sum + point.completed, 0);
-    const throughputPrev7d = previous.reduce((sum, point) => sum + point.completed, 0);
-    const completedDurations = taskContexts
-      .filter((task) => task.status === "DONE")
-      .map((task) => Math.max(0, new Date(task.updatedAt).getTime() - new Date(task.createdAt).getTime()));
-    const cycleDays =
-      completedDurations.length === 0
-        ? 0
-        : Math.round(
-            (completedDurations.reduce((sum, duration) => sum + duration, 0) /
-              completedDurations.length /
-              dayMs) *
-              10
-          ) / 10;
-    return { points: recent, throughput7d, throughputPrev7d, cycleDays };
-  }, [taskContexts]);
-
-  const kanbanColumns = useMemo<KanbanColumn[]>(() => {
-    const nowTsCurrent = nowTs;
-    const toKanbanTasks = (
-      items: typeof taskContexts,
-      variant: "progress" | "blocked" | "done" | "default",
-      tagResolver?: (task: TaskContext) => string
-    ): KanbanColumn["tasks"] =>
-      items.map((task) => {
-        const ageDays = Math.max(0, Math.floor((nowTsCurrent - new Date(task.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
-        const ageTone: "muted" | "amber" | "red" =
-          ageDays >= 7 ? "red" : ageDays >= 3 ? "amber" : "muted";
-        return {
-          id: task.id,
-          projectId: task.projectId,
-          clientName: task.clientName,
-          status: task.status,
-          tag: tagResolver ? tagResolver(task) : `${task.projectName}`,
-          title: task.title,
-          priority: task.priority,
-          due: task.status === "DONE" ? `${formatDateShort(task.dueAt)} ✓` : task.dueAt ? formatDateShort(task.dueAt) : "TBD",
-          dueAt: task.dueAt,
-          createdAt: task.createdAt,
-          dueTone: task.dueAt && task.dueTone === "var(--red)" ? "today" : undefined,
-          ageDays,
-          ageTone,
-          progress: variant === "progress" ? { value: task.progress ?? 0, tone: "blue" } : undefined,
-          meta: { avatar: task.assigneeInitials },
-          faded: variant === "done",
-          blocked: variant === "blocked"
-        };
-      });
-
-    if (kanbanSwimlane === "project") {
-      const groups = new Map<string, typeof filteredKanbanTasks>();
-      filteredKanbanTasks.forEach((task) => {
-        const key = task.projectName;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key)?.push(task);
-      });
-      return Array.from(groups.entries())
-        .map(([projectName, items]) => ({
-          id: `project-${projectName}`,
-          title: projectName,
-          count: String(items.length),
-          policyHint: "Keep at most 2 active cards per project stream",
-          tasks: toKanbanTasks(items, "default", () => "Project lane")
-        }))
-        .slice(0, 6);
-    }
-
-    if (kanbanSwimlane === "client") {
-      const groups = new Map<string, typeof filteredKanbanTasks>();
-      filteredKanbanTasks.forEach((task) => {
-        const key = task.clientName;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key)?.push(task);
-      });
-      return Array.from(groups.entries())
-        .map(([clientName, items]) => ({
-          id: `client-${clientName}`,
-          title: clientName,
-          count: String(items.length),
-          policyHint: "Resolve client blockers before adding new in-progress work",
-          tasks: toKanbanTasks(items, "default", () => "Client lane")
-        }))
-        .slice(0, 6);
-    }
-
-    const backlog = filteredKanbanTasks.filter((task) => task.status === "TODO");
-    const inProgress = filteredKanbanTasks.filter((task) => task.status === "IN_PROGRESS");
-    const blocked = filteredKanbanTasks.filter((task) => task.status === "BLOCKED");
-    const done = filteredKanbanTasks.filter((task) => task.status === "DONE");
-
-    return [
-      {
-        id: "todo",
-        title: "Backlog",
-        count: String(backlog.length),
-        policyHint: "Ready: clear title, assignee, and due date",
-        tasks: toKanbanTasks(backlog, "default")
-      },
-      {
-        id: "in_progress",
-        title: "In Progress",
-        count: String(inProgress.length),
-        tone: "var(--accent)",
-        countTone: "var(--accent)",
-        countBg: "var(--accent-d)",
-        border: "var(--accent)",
-        policyHint: "Limit WIP and keep client-visible updates frequent",
-        tasks: toKanbanTasks(inProgress, "progress")
-      },
-      {
-        id: "blocked",
-        title: "In Review",
-        count: String(blocked.length),
-        tone: "var(--amber)",
-        countTone: "var(--amber)",
-        countBg: "var(--amber-d)",
-        border: "var(--amber)",
-        policyHint: "Blocked work must include owner, reason, and ETA",
-        tasks: toKanbanTasks(blocked, "blocked")
-      },
-      {
-        id: "done",
-        title: "Done",
-        count: String(done.length),
-        tone: "var(--green)",
-        countTone: "var(--green)",
-        countBg: "var(--green-d)",
-        border: "var(--green)",
-        policyHint: "Done: QA complete and client/admin update posted",
-        tasks: toKanbanTasks(done, "done")
-      }
-    ];
-  }, [filteredKanbanTasks, kanbanSwimlane, nowTs]);
-
-  const messagePreview = useMemo(() => {
-    if (!selectedConversationId) return "";
-    const last = conversationMessages[conversationMessages.length - 1];
-    return last?.content ?? "";
-  }, [conversationMessages, selectedConversationId]);
-
-  const allThreadItems = useMemo<ClientThread[]>(() => {
-    const palette = [
-      { bg: "rgba(200,241,53,0.15)", color: "#c8f135" },
-      { bg: "rgba(245,166,35,0.15)", color: "var(--amber)" },
-      { bg: "rgba(167,139,250,0.15)", color: "var(--purple)" },
-      { bg: "rgba(52,217,139,0.12)", color: "var(--green)" }
-    ];
-    return conversations.map((conversation, index) => {
-      const clientName = clientById.get(conversation.clientId)?.name ?? "Client";
-      const projectName = conversation.projectId ? projectById.get(conversation.projectId)?.name : null;
-      const paletteItem = palette[index % palette.length];
-      const preview =
-        conversation.id === selectedConversationId
-          ? messagePreview || "No messages yet."
-          : "No messages yet.";
-      return {
-        id: conversation.id,
-        name: clientName,
-        time: formatRelative(conversation.updatedAt),
-        project: projectName ? `${projectName}` : "General",
-        preview,
-        avatar: { label: getInitials(clientName), bg: paletteItem.bg, color: paletteItem.color },
-        unread: conversation.status === "OPEN" && conversation.id !== selectedConversationId
-      };
-    });
-  }, [clientById, conversations, messagePreview, projectById, selectedConversationId]);
-
-  const threadItems = useMemo<ClientThread[]>(() => {
-    const q = [searchQuery, threadSearch.trim().toLowerCase()].filter(Boolean).join(" ");
-    if (!q) return allThreadItems;
-    return allThreadItems.filter((thread) => {
-      return (
-        thread.name.toLowerCase().includes(q) ||
-        thread.project.toLowerCase().includes(q) ||
-        thread.preview.toLowerCase().includes(q)
-      );
-    });
-  }, [allThreadItems, searchQuery, threadSearch]);
-
-  const threadCounts = useMemo(
-    () => ({
-      all: allThreadItems.length,
-      open: allThreadItems.filter((thread) => thread.unread).length,
-      unread: allThreadItems.filter((thread) => thread.unread).length,
-      project: allThreadItems.filter((thread) => thread.project !== "General").length,
-      general: allThreadItems.filter((thread) => thread.project === "General").length
-    }),
-    [allThreadItems]
-  );
-
-  const visibleThreadItems = useMemo(() => {
-    const scoped =
-      threadFilter === "open" || threadFilter === "unread"
-        ? threadItems.filter((thread) => thread.unread)
-        : threadFilter === "project"
-          ? threadItems.filter((thread) => thread.project !== "General")
-          : threadFilter === "general"
-            ? threadItems.filter((thread) => thread.project === "General")
-            : threadItems;
-    return scoped;
-  }, [threadFilter, threadItems]);
-
-  const conversationByProjectId = useMemo(() => {
-    const map = new Map<string, string>();
-    conversations.forEach((conversation) => {
-      if (!conversation.projectId) return;
-      if (!map.has(conversation.projectId)) {
-        map.set(conversation.projectId, conversation.id);
-      }
-    });
-    return map;
-  }, [conversations]);
-
-  const selectedConversation = useMemo(
-    () => conversations.find((conversation) => conversation.id === selectedConversationId) ?? null,
-    [conversations, selectedConversationId]
-  );
-
-  const selectedThread = useMemo(
-    () => allThreadItems.find((thread) => thread.id === selectedConversationId) ?? null,
-    [allThreadItems, selectedConversationId]
-  );
-
-  const deliverableGroups = useMemo<DeliverableGroup[]>(() => {
-    const groups = effectiveProjectDetails.map((project) => {
-      const clientName = clientById.get(project.clientId)?.name ?? "Client";
-      const tone: DeliverableGroup["badge"]["tone"] =
-        project.riskLevel === "HIGH"
-          ? "amber"
-          : project.riskLevel === "MEDIUM"
-            ? "purple"
-            : "green";
-      const items = project.milestones.map((milestone) => {
-        const status: DeliverableGroup["items"][number]["status"] =
-          milestone.status === "COMPLETED" ? "done" : milestone.status === "IN_PROGRESS" ? "doing" : "";
-        const dueLabel = milestone.dueAt ? formatDateShort(milestone.dueAt) : "TBD";
-        const meta =
-          milestone.status === "COMPLETED"
-            ? `Delivered · ${dueLabel}`
-            : milestone.dueAt
-              ? `Due ${dueLabel} · ${formatStatus(milestone.status)}`
-              : "Not scheduled";
-        const metaTone = milestone.status === "IN_PROGRESS" ? "var(--accent)" : milestone.status === "COMPLETED" ? "var(--muted)" : undefined;
-        const fileName = milestone.fileId ? fileById.get(milestone.fileId)?.fileName ?? null : null;
-        return {
-          status,
-          milestoneStatus:
-            milestone.status === "COMPLETED"
-              ? "COMPLETED"
-              : milestone.status === "IN_PROGRESS"
-                ? "IN_PROGRESS"
-                : "PENDING",
-          dueAt: milestone.dueAt ?? null,
-          title: milestone.title,
-          meta,
-          titleTone: milestone.status === "COMPLETED" ? "var(--muted)" : undefined,
-          metaTone,
-          fileId: milestone.fileId,
-          fileName,
-          projectId: project.id,
-          milestoneId: milestone.id
-        };
-      });
-      return { title: project.name, clientId: project.clientId, badge: { label: clientName, tone }, items };
-    });
-    if (!searchQuery) return groups;
-    return groups
-      .map((group) => {
-        const filteredItems = group.items.filter((item) => {
-          const haystack = `${item.title} ${item.meta} ${item.fileName ?? ""}`.toLowerCase();
-          return haystack.includes(searchQuery);
-        });
-        if (group.title.toLowerCase().includes(searchQuery)) {
-          return group;
-        }
-        return { ...group, items: filteredItems };
-      })
-      .filter((group) => group.items.length > 0 || group.title.toLowerCase().includes(searchQuery));
-  }, [clientById, effectiveProjectDetails, fileById, searchQuery]);
-
-  const milestoneStats = useMemo(() => {
-    const now = nowTs;
-    const weekAhead = now + 1000 * 60 * 60 * 24 * 7;
-    let overdue = 0;
-    let dueThisWeek = 0;
-    let deliveredThisMonth = 0;
-    const currentMonth = new Date().getMonth();
-    effectiveProjectDetails.forEach((project) => {
-      project.milestones.forEach((milestone) => {
-        const dueTs = milestone.dueAt ? new Date(milestone.dueAt).getTime() : null;
-        if (milestone.status === "COMPLETED") {
-          const completedAt = milestone.updatedAt ? new Date(milestone.updatedAt).getMonth() : null;
-          if (completedAt === currentMonth) deliveredThisMonth += 1;
-          return;
-        }
-        if (dueTs && dueTs < now) overdue += 1;
-        if (dueTs && dueTs >= now && dueTs <= weekAhead) dueThisWeek += 1;
-      });
-    });
-    return { overdue, dueThisWeek, deliveredThisMonth };
-  }, [effectiveProjectDetails, nowTs]);
-
-  const timeEntrySource = useMemo<TimeEntrySummary[]>(() => {
-    return timeEntries.map((entry) => {
-      const projectName = projectById.get(entry.projectId)?.name ?? "Project";
-      return {
-        id: entry.id,
-        project: projectName,
-        task: entry.taskLabel,
-        minutes: entry.minutes,
-        loggedAt: entry.endedAt ?? entry.createdAt,
-        color: "var(--accent)"
-      };
-    });
-  }, [projectById, timeEntries]);
-
-  const recentTimeEntries = useMemo(() => {
-    return [...timeEntrySource]
-      .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime())
-      .slice(0, 6);
-  }, [timeEntrySource]);
-
-  const weekData = useMemo(() => {
-    const weekStart = startOfWeek(new Date());
-    const days = Array.from({ length: 5 }, (_, index) => {
-      const date = new Date(weekStart);
-      date.setDate(weekStart.getDate() + index);
-      return { date, label: new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date) };
-    });
-    const dailyMinutes = new Array(5).fill(0);
-    timeEntrySource.forEach((entry) => {
-      const date = new Date(entry.loggedAt);
-      const dayIndex = Math.floor((date.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24));
-      if (dayIndex >= 0 && dayIndex < 5) {
-        dailyMinutes[dayIndex] += entry.minutes;
-      }
-    });
-    return { days, dailyMinutes };
-  }, [timeEntrySource]);
-
-  const todayMinutes = useMemo(() => {
-    const today = new Date();
-    return timeEntrySource.reduce((sum, entry) => {
-      const date = new Date(entry.loggedAt);
-      if (
-        date.getFullYear() === today.getFullYear() &&
-        date.getMonth() === today.getMonth() &&
-        date.getDate() === today.getDate()
-      ) {
-        return sum + entry.minutes;
-      }
-      return sum;
-    }, 0);
-  }, [timeEntrySource]);
-
-  const weekMinutes = useMemo(() => weekData.dailyMinutes.reduce((sum, value) => sum + value, 0), [weekData]);
-  const weekMax = Math.max(...weekData.dailyMinutes, 0);
-  const weeklyTargetHours = projects.length > 0 ? 40 : 0;
-  const timezoneOptions = useMemo(() => {
-    const defaults = [
-      "Africa/Johannesburg",
-      "UTC",
-      "Europe/London",
-      "America/New_York",
-      "America/Los_Angeles"
-    ];
-    const available = typeof Intl.supportedValuesOf === "function"
-      ? Intl.supportedValuesOf("timeZone")
-      : defaults;
-    const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const merged = new Set<string>([localTz, ...defaults, ...available]);
-    return Array.from(merged).sort((a, b) => a.localeCompare(b));
-  }, []);
-  const hasProfileChanges = useMemo(
-    () => JSON.stringify(settingsProfile) !== JSON.stringify(savedSettingsProfile),
-    [savedSettingsProfile, settingsProfile]
-  );
-  const hasNotificationsChanges = useMemo(
-    () => JSON.stringify(settingsNotifications) !== JSON.stringify(savedSettingsNotifications),
-    [savedSettingsNotifications, settingsNotifications]
-  );
-  const hasWorkspaceChanges = useMemo(
-    () => JSON.stringify(settingsWorkspace) !== JSON.stringify(savedSettingsWorkspace),
-    [savedSettingsWorkspace, settingsWorkspace]
-  );
-
-  const projectTimeBreakdown = useMemo(() => {
-    const totals = new Map<string, number>();
-    timeEntrySource.forEach((entry) => {
-      totals.set(entry.project, (totals.get(entry.project) ?? 0) + entry.minutes);
-    });
-    return Array.from(totals.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4);
-  }, [timeEntrySource]);
-
-  const maxProjectMinutes = useMemo(
-    () => Math.max(...projectTimeBreakdown.map((entry) => entry[1]), 0),
-    [projectTimeBreakdown]
-  );
-
-  const activityFeed = useMemo<ActivityItem[]>(() => {
-    const items: ActivityItem[] = [];
-
-    effectiveProjectDetails.forEach((project) => {
-      const clientName = clientById.get(project.clientId)?.name ?? "Client";
-      project.activities.forEach((activity) => {
-        const icon = activity.type.includes("COMPLETE") ? "✓" : activity.type.includes("BLOCK") ? "⚑" : "•";
-        const tone = activity.type.includes("BLOCK") ? "var(--red-d)" : activity.type.includes("COMPLETE") ? "var(--green-d)" : "var(--accent-d)";
-        const color = activity.type.includes("BLOCK") ? "var(--red)" : activity.type.includes("COMPLETE") ? "var(--green)" : "var(--accent)";
-        items.push({
-          id: activity.id,
-          icon,
-          tone,
-          color,
-          text: activity.details ?? formatStatus(activity.type),
-          detail: `${project.name} · ${clientName}`,
-          time: formatDateLong(activity.createdAt),
-          timestamp: new Date(activity.createdAt).getTime()
-        });
-      });
-    });
-
-    taskContexts
-      .filter((task) => task.status === "DONE")
-      .forEach((task) => {
-        items.push({
-          id: `task-${task.id}`,
-          icon: "✓",
-          tone: "var(--green-d)",
-          color: "var(--green)",
-          text: task.title,
-          detail: `${task.projectName} · Marked complete`,
-          time: formatDateLong(task.updatedAt),
-          timestamp: new Date(task.updatedAt).getTime()
-        });
-      });
-
-    timelineEvents.forEach((event) => {
-      const tone =
-        event.category === "BLOCKER"
-          ? "var(--amber-d)"
-          : event.category === "LEAD"
-          ? "var(--purple-d)"
-          : "var(--accent-d)";
-      const color =
-        event.category === "BLOCKER"
-          ? "var(--amber)"
-          : event.category === "LEAD"
-          ? "var(--purple)"
-          : "var(--accent)";
-      items.push({
-        id: `timeline-${event.id}`,
-        icon: event.category === "BLOCKER" ? "⚠" : event.category === "LEAD" ? "◎" : "•",
-        tone,
-        color,
-        text: event.title,
-        detail: event.detail ?? "Shared timeline event",
-        time: formatDateLong(event.createdAt),
-        timestamp: new Date(event.createdAt).getTime()
-      });
-    });
-
-    const sorted = items.sort((a, b) => b.timestamp - a.timestamp);
-    if (!searchQuery) return sorted.slice(0, 6);
-    return sorted
-      .filter((item) => `${item.text} ${item.detail}`.toLowerCase().includes(searchQuery))
-      .slice(0, 6);
-  }, [clientById, effectiveProjectDetails, searchQuery, taskContexts, timelineEvents]);
-
-  const openConversations = useMemo(() => conversations.filter((thread) => thread.status === "OPEN"), [conversations]);
-  const openTasks = useMemo(() => taskContexts.filter((task) => task.status !== "DONE"), [taskContexts]);
-  const focusQueue = useMemo<DashboardFocusItem[]>(() => {
-    const scored: Array<DashboardFocusItem & { score: number }> = [];
-    const now = nowTs;
-
-    taskContexts
-      .filter((task) => task.status !== "DONE")
-      .forEach((task) => {
-        const dueTs = task.dueAt ? new Date(task.dueAt).getTime() : null;
-        const isOverdue = Boolean(dueTs && dueTs < now);
-        if (!(task.priority === "high" || isOverdue)) return;
-        scored.push({
-          id: `task-${task.id}`,
-          title: task.title,
-          detail: `${task.projectName} · ${task.clientName} · ${task.dueLabel}`,
-          urgency: isOverdue || task.priority === "high" ? "high" : task.priority,
-          actionLabel: "Open Task",
-          action: "tasks",
-          score: isOverdue ? 100 : 80
-        });
-      });
-
-    threadItems
-      .filter((thread) => thread.unread)
-      .forEach((thread) => {
-        scored.push({
-          id: `thread-${thread.id}`,
-          title: `Reply needed: ${thread.name}`,
-          detail: `${thread.project} · ${thread.preview}`,
-          urgency: "med",
-          actionLabel: "Reply",
-          action: "clients",
-          threadId: thread.id,
-          score: 70
-        });
-      });
-
-    projectBlockers
-      .filter((blocker) => blocker.status !== "RESOLVED")
-      .forEach((blocker) => {
-        const clientName = clientById.get(blocker.clientId)?.name ?? "Client";
-        const severity = blocker.severity === "CRITICAL" || blocker.severity === "HIGH" ? "high" : "med";
-        scored.push({
-          id: `blocker-${blocker.id}`,
-          title: blocker.title,
-          detail: `${clientName} · ${formatStatus(blocker.severity)} blocker`,
-          urgency: severity,
-          actionLabel: "Resolve",
-          action: "deliverables",
-          score: blocker.severity === "CRITICAL" ? 95 : blocker.severity === "HIGH" ? 85 : 60
-        });
-      });
-
-    changeRequests
-      .filter((request) => request.status === "SUBMITTED")
-      .forEach((request) => {
-        const projectName = projectById.get(request.projectId)?.name ?? "Project";
-        scored.push({
-          id: `change-${request.id}`,
-          title: request.title,
-          detail: `${projectName} · Estimate pending`,
-          urgency: "med",
-          actionLabel: "Estimate",
-          action: "deliverables",
-          score: 65
-        });
-      });
-
-    return scored
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5)
-      .map((item) => ({
-        id: item.id,
-        title: item.title,
-        detail: item.detail,
-        urgency: item.urgency,
-        actionLabel: item.actionLabel,
-        action: item.action,
-        threadId: item.threadId
-      }));
-  }, [changeRequests, clientById, nowTs, projectBlockers, projectById, taskContexts, threadItems]);
-
-  const actionInbox = useMemo<DashboardInboxItem[]>(() => {
-    const failedNotifications = notificationJobs.filter((job) => job.status === "FAILED").length;
-    const submittedChangeRequests = changeRequests.filter((request) => request.status === "SUBMITTED").length;
-    const unreadThreads = threadItems.filter((thread) => thread.unread).length;
-    const openCriticalBlockers = projectBlockers.filter(
-      (blocker) =>
-        blocker.status !== "RESOLVED" &&
-        (blocker.severity === "CRITICAL" || blocker.severity === "HIGH")
-    ).length;
-
-    const items: DashboardInboxItem[] = [
-      {
-        id: "inbox-unread-client",
-        label: "Client replies waiting",
-        detail: "Unanswered client threads across active projects",
-        count: unreadThreads,
-        tone: unreadThreads > 0 ? "amber" : "green",
-        actionLabel: "Open Threads",
-        action: "clients"
-      },
-      {
-        id: "inbox-critical-blockers",
-        label: "Critical blockers",
-        detail: "Issues that can delay delivery if not handled now",
-        count: openCriticalBlockers,
-        tone: openCriticalBlockers > 0 ? "red" : "green",
-        actionLabel: "Open Blockers",
-        action: "deliverables"
-      },
-      {
-        id: "inbox-change-requests",
-        label: "Change requests pending estimate",
-        detail: "Client scope updates requiring staff estimates",
-        count: submittedChangeRequests,
-        tone: submittedChangeRequests > 0 ? "blue" : "green",
-        actionLabel: "Review",
-        action: "deliverables"
-      },
-      {
-        id: "inbox-notification-failures",
-        label: "Notification delivery failures",
-        detail: "Cross-portal alerts that need retry attention",
-        count: failedNotifications,
-        tone: failedNotifications > 0 ? "red" : "green",
-        actionLabel: "Check Ops",
-        action: "timelog"
-      }
-    ];
-
-    return items.filter((item) => item.count > 0);
-  }, [changeRequests, notificationJobs, projectBlockers, threadItems]);
-
-  const digestItems = useMemo<DashboardDigestItem[]>(() => {
-    if (!dashboardLastSeenAt) return [];
-    const sinceTs = new Date(dashboardLastSeenAt).getTime();
-    if (!Number.isFinite(sinceTs)) return [];
-
-    const digest: DashboardDigestItem[] = [];
-
-    timelineEvents
-      .filter((event) => new Date(event.createdAt).getTime() > sinceTs)
-      .forEach((event) => {
-        digest.push({
-          id: `timeline-${event.id}`,
-          title: event.title,
-          detail: event.detail ?? formatStatus(event.category),
-          occurredAt: event.createdAt
-        });
-      });
-
-    conversations
-      .filter((conversation) => new Date(conversation.updatedAt).getTime() > sinceTs)
-      .forEach((conversation) => {
-        const clientName = clientById.get(conversation.clientId)?.name ?? "Client";
-        digest.push({
-          id: `conversation-${conversation.id}`,
-          title: `Thread updated: ${conversation.subject}`,
-          detail: `${clientName} · ${formatStatus(conversation.status)}`,
-          occurredAt: conversation.updatedAt
-        });
-      });
-
-    taskContexts
-      .filter((task) => new Date(task.updatedAt).getTime() > sinceTs)
-      .forEach((task) => {
-        digest.push({
-          id: `task-${task.id}`,
-          title: `Task update: ${task.title}`,
-          detail: `${task.projectName} · ${task.statusLabel}`,
-          occurredAt: task.updatedAt
-        });
-      });
-
-    projectBlockers
-      .filter((blocker) => new Date(blocker.updatedAt).getTime() > sinceTs)
-      .forEach((blocker) => {
-        const clientName = clientById.get(blocker.clientId)?.name ?? "Client";
-        digest.push({
-          id: `blocker-${blocker.id}`,
-          title: `Blocker update: ${blocker.title}`,
-          detail: `${clientName} · ${formatStatus(blocker.status)}`,
-          occurredAt: blocker.updatedAt
-        });
-      });
-
-    return digest
-      .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
-      .slice(0, 8);
-  }, [clientById, conversations, dashboardLastSeenAt, projectBlockers, taskContexts, timelineEvents]);
-
-  const collaborationRows = useMemo(() => {
-    const rows = Object.values(projectCollaboration)
-      .flatMap((entry) =>
-        entry.contributors.map((member) => ({
-          projectId: entry.projectId,
-          projectName: projectById.get(entry.projectId)?.name ?? "Project",
-          name: member.name,
-          role: formatStatus(member.role),
-          activeSessions: member.activeSessions,
-          taskCount: member.taskCount
-        }))
-      )
-      .sort((a, b) => b.activeSessions - a.activeSessions || b.taskCount - a.taskCount);
-    return rows.slice(0, 6);
-  }, [projectById, projectCollaboration]);
-  const highPriorityTasks = useMemo(() => taskContexts.filter((task) => task.priority === "high"), [taskContexts]);
-  const blockedTasksCount = useMemo(
-    () => taskContexts.filter((task) => task.status === "BLOCKED").length,
-    [taskContexts]
-  );
-  const inProgressCount = useMemo(
-    () => taskContexts.filter((task) => task.status === "IN_PROGRESS").length,
-    [taskContexts]
-  );
   const inProgressLimit = useMemo(
     () => Math.max(3, Math.ceil(Math.max(taskContexts.length, 1) / 3)),
     [taskContexts.length]
   );
-  const overdueTasksCount = useMemo(() => {
-    const now = nowTs;
-    return taskContexts.filter(
-      (task) => task.status !== "DONE" && task.dueAt && new Date(task.dueAt).getTime() < now
-    ).length;
-  }, [nowTs, taskContexts]);
-  const kanbanHealth = useMemo(
-    () => ({
-      wipBreach: inProgressCount >= inProgressLimit,
-      agingTasks: filteredKanbanTasks.filter((task) => {
-        if (task.status === "DONE") return false;
-        const ageDays = Math.floor((nowTs - new Date(task.createdAt).getTime()) / (1000 * 60 * 60 * 24));
-        return ageDays >= 3;
-      }).length,
-      blockedTasks: filteredKanbanTasks.filter((task) => task.status === "BLOCKED").length,
-      clientWaiting: filteredKanbanTasks.filter((task) => unreadProjectIds.has(task.projectId)).length
-    }),
-    [filteredKanbanTasks, inProgressCount, inProgressLimit, nowTs, unreadProjectIds]
-  );
-  const highPriorityClients = useMemo(() => {
-    const clientsSet = new Set<string>();
-    highPriorityTasks.forEach((task) => {
-      clientsSet.add(task.clientName);
-    });
-    return Array.from(clientsSet);
-  }, [highPriorityTasks]);
 
-  const averageProgress = useMemo(() => {
-    if (projects.length === 0) return 0;
-    const total = projects.reduce((sum, project) => sum + project.progressPercent, 0);
-    return Math.round(total / projects.length);
-  }, [projects]);
+  // ─── Hook 3b: Kanban ───
+  const {
+    kanbanViewMode,
+    setKanbanViewMode,
+    kanbanSwimlane,
+    setKanbanSwimlane,
+    kanbanAnnouncement,
+    setKanbanAnnouncement,
+    kanbanBlockDraft,
+    setKanbanBlockDraft,
+    kanbanBlockReason,
+    setKanbanBlockReason,
+    kanbanBlockSeverity,
+    setKanbanBlockSeverity,
+    kanbanBlockEta,
+    setKanbanBlockEta,
+    creatingKanbanBlocker,
+    filteredKanbanTasks,
+    kanbanColumns,
+    kanbanFlowMetrics,
+    kanbanHealth,
+    blockedTasksCount,
+    handleSubmitKanbanBlock
+  } = useStaffKanban({
+    session,
+    taskContexts,
+    unreadProjectIds,
+    inProgressCount,
+    inProgressLimit,
+    nowTs,
+    topbarSearch,
+    setProjectDetails,
+    setFeedback,
+    refreshWorkspace,
+    staffName
+  });
 
-  const nextDueDate = useMemo(() => {
-    const dueDates = projects
-      .map((project) => (project.dueAt ? new Date(project.dueAt).getTime() : null))
-      .filter((value): value is number => value !== null);
-    if (dueDates.length === 0) return null;
-    return new Date(Math.min(...dueDates));
-  }, [projects]);
+  // ─── Hook 3c: Deliverables ───
+  const {
+    showDeliverableComposer,
+    setShowDeliverableComposer,
+    creatingDeliverable,
+    newDeliverableDraft,
+    setNewDeliverableDraft,
+    deliverableGroups,
+    milestoneStats,
+    handleCreateDeliverable,
+    handleMilestoneAttachment,
+    handleMilestoneStatusUpdate,
+    handleEstimateDraftChange,
+    handleEstimateChangeRequest,
+    handleGenerateHandoffExport,
+    handleDownloadHandoffExport
+  } = useStaffDeliverables({
+    session,
+    projectDetails,
+    setProjectDetails,
+    changeRequests,
+    setChangeRequests,
+    clientById,
+    fileById,
+    nowTs,
+    effectiveProjectDetails,
+    topbarSearch,
+    estimateDrafts,
+    setEstimateDrafts,
+    handoffExports,
+    setHandoffExports,
+    generatingHandoffExport,
+    setGeneratingHandoffExport,
+    setFeedback,
+    refreshWorkspace
+  });
+
+  // ─── Hook 4: Messages ───
+  const {
+    threadSearch,
+    setThreadSearch,
+    threadFilter,
+    setThreadFilter,
+    composeMessage,
+    setComposeMessage,
+    noteText,
+    setNoteText,
+    escalationReason,
+    setEscalationReason,
+    escalationSeverity,
+    setEscalationSeverity,
+    newThreadSubject,
+    setNewThreadSubject,
+    newThreadClientId,
+    setNewThreadClientId,
+    creatingThread,
+    sentMessageIds,
+    effectiveNewThreadClientId,
+    threadItems,
+    threadCounts,
+    visibleThreadItems,
+    conversationByProjectId,
+    selectedConversation,
+    selectedThread,
+    openConversations,
+    handleClientClick,
+    handleSendMessage,
+    handleCreateThread,
+    handleAddNote,
+    handleEscalate,
+    handleAssignConversationToMe,
+    handleUnassignConversation,
+    handleCreateTaskFromThread,
+    handleOpenConversationTaskContext,
+    handleOpenConversationFiles,
+    handleOpenDashboardThread,
+    handleOpenTaskThread
+  } = useStaffMessages({
+    session,
+    conversations,
+    conversationMessages,
+    selectedConversationId,
+    topbarSearch,
+    clients,
+    clientById,
+    projectById,
+    setFeedback,
+    setActivePage,
+    setShowTaskComposer,
+    setNewTaskDraft,
+    selectConversation,
+    sendMessage,
+    addConversationNote,
+    escalateConversation,
+    updateConversationAssignee: async (conversationId: string, userId: string | null) => {
+      const result = await updateConversationAssignee(conversationId, userId);
+      return result !== null;
+    },
+    refreshWorkspace,
+    staffName
+  });
+
+  // ─── Hook 5: Timer ───
+  const {
+    selectedTimerProjectId,
+    setSelectedTimerProjectId,
+    timerTaskLabel,
+    setTimerTaskLabel,
+    timerRunning,
+    effectiveSelectedTimerProjectId,
+    timerDisplay,
+    timeEntrySource,
+    recentTimeEntries,
+    weekData,
+    todayMinutes,
+    weekMinutes,
+    projectTimeBreakdown,
+    maxProjectMinutes,
+    handleTimerToggle,
+    handleTimerStop,
+    handleExportTimeLog,
+    handleExportTimeLogJson
+  } = useStaffTimer({
+    session,
+    snapshot,
+    timeEntries,
+    projects,
+    projectById,
+    clientById,
+    addTimeEntry,
+    setFeedback,
+    staffName
+  });
+
+  // ─── Hook 6: Settings ───
+  const {
+    settingsProfile,
+    setSettingsProfile,
+    settingsNotifications,
+    setSettingsNotifications,
+    settingsWorkspace,
+    setSettingsWorkspace,
+    hasProfileChanges,
+    hasNotificationsChanges,
+    hasWorkspaceChanges,
+    timezoneOptions,
+    handleSaveStaffProfile,
+    handleResetStaffProfile,
+    handleSaveStaffNotifications,
+    handleResetStaffNotifications,
+    handleSaveStaffWorkspace,
+    handleResetStaffWorkspace,
+    handleProfileAvatarChange,
+    handleUseLocalTimezone
+  } = useStaffSettings({
+    session,
+    staffEmail,
+    staffName,
+    kanbanViewMode,
+    kanbanSwimlane,
+    setDashboardLastSeenAt,
+    setFeedback,
+    setKanbanViewMode,
+    setKanbanSwimlane
+  });
+
+  // ─── Hook 7a: Activity views ───
+  const {
+    activityFeed,
+    focusQueue,
+    actionInbox,
+    digestItems
+  } = useStaffActivity({
+    conversations,
+    clientById,
+    projectById,
+    nowTs,
+    effectiveProjectDetails,
+    taskContexts,
+    threadItems,
+    projectBlockers,
+    timelineEvents,
+    changeRequests,
+    notificationJobs,
+    dashboardLastSeenAt,
+    searchQuery
+  });
+
+  // ─── Hook 7b: Workflow / team views ───
+  const {
+    staffWorkflowRows,
+    collaborationRows,
+    averageProgress,
+    nextDueDate
+  } = useStaffWorkflow({
+    projects,
+    projectById,
+    projectBlockers,
+    timelineEvents,
+    projectCollaboration,
+    milestoneStats,
+    notificationJobs,
+    openConversations
+  });
+
+  // ─── Hook 7c: SLA and health metrics ───
+  const {
+    slaWatchlist,
+    slaBurn,
+    flowHealth
+  } = useStaffSla({
+    projects,
+    clientById,
+    projectBlockers,
+    taskContexts,
+    milestoneStats,
+    nowTs,
+    searchQuery
+  });
+
+  // ─── Computed values for the render tree ───
+  const openTasks = useMemo(() => taskContexts.filter((task) => task.status !== "DONE"), [taskContexts]);
+
+  const effectiveTaskDraftProjectId = newTaskDraft.projectId || projects[0]?.id || "";
+  const effectiveDeliverableDraftProjectId = newDeliverableDraft.projectId || projects[0]?.id || "";
+
+  const timerProjectName =
+    (effectiveSelectedTimerProjectId && projectById.get(effectiveSelectedTimerProjectId)?.name) ||
+    "Select a project";
+  const timerTaskName = timerTaskLabel || "No active session";
+
+  const weekMax = Math.max(...weekData.dailyMinutes, 0);
+  const weeklyTargetHours = projects.length > 0 ? 40 : 0;
 
   const nextDueLabel = nextDueDate ? formatDateLong(nextDueDate.toISOString()) : "No upcoming due dates";
   const daysLeft = nextDueDate ? Math.max(0, Math.ceil((nextDueDate.getTime() - nowTs) / 86400000)) : null;
 
-  const slaWatchlist = useMemo<SlaWatchItem[]>(() => {
-    const now = nowTs;
-    const weekAhead = now + 1000 * 60 * 60 * 24 * 7;
-    const upcomingSla = projects
-      .filter((project) => project.slaDueAt)
-      .map((project) => ({
-        ...project,
-        slaTs: project.slaDueAt ? new Date(project.slaDueAt).getTime() : null
-      }))
-      .filter((project) => project.slaTs !== null && project.slaTs <= weekAhead)
-      .sort((a, b) => (a.slaTs ?? 0) - (b.slaTs ?? 0))
-      .slice(0, 4)
-      .map((project) => ({
-        id: project.id,
-        name: project.name,
-        clientName: clientById.get(project.clientId)?.name ?? "Client",
-        statusLabel: formatStatus(project.status),
-        slaDueAt: project.slaDueAt ?? null
-      }));
-
-    const blockerRows = projectBlockers
-      .filter((blocker) => blocker.status !== "RESOLVED")
-      .slice(0, 4)
-      .map((blocker) => ({
-        id: `blocker-${blocker.id}`,
-        name: blocker.title,
-        clientName: clientById.get(blocker.clientId)?.name ?? "Client",
-        statusLabel: `Blocker · ${formatStatus(blocker.severity)}`,
-        slaDueAt: blocker.etaAt
-      }));
-
-    const rows = [...blockerRows, ...upcomingSla];
-    if (!searchQuery) return rows.slice(0, 4);
-    return rows
-      .filter((item) => `${item.name} ${item.clientName} ${item.statusLabel}`.toLowerCase().includes(searchQuery))
-      .slice(0, 4);
-  }, [clientById, nowTs, projectBlockers, projects, searchQuery]);
-
-  const slaBurn = useMemo(() => {
-    const now = nowTs;
-    const dayMs = 1000 * 60 * 60 * 24;
-    const horizon = now + dayMs * 7;
-    const openCriticalBlockers = projectBlockers.filter(
-      (blocker) =>
-        blocker.status !== "RESOLVED" &&
-        (blocker.severity === "CRITICAL" || blocker.severity === "HIGH")
-    ).length;
-    const upcomingSla = projects.filter((project) => {
-      if (!project.slaDueAt) return false;
-      const ts = new Date(project.slaDueAt).getTime();
-      return ts >= now && ts <= horizon;
-    }).length;
-    const overdueMilestones = milestoneStats.overdue;
-    const riskCount = openCriticalBlockers + overdueMilestones;
-    const watchCount = upcomingSla;
-    const tone: "red" | "amber" | "green" =
-      riskCount > 0 ? "red" : watchCount > 0 ? "amber" : "green";
-    const statusLabel =
-      tone === "red" ? "Fast burn risk" : tone === "amber" ? "Watch burn" : "On track";
-    const detail =
-      tone === "red"
-        ? `${openCriticalBlockers} critical blocker${openCriticalBlockers === 1 ? "" : "s"} · ${overdueMilestones} overdue deliverable${overdueMilestones === 1 ? "" : "s"}`
-        : tone === "amber"
-          ? `${upcomingSla} SLA deadline${upcomingSla === 1 ? "" : "s"} in next 7 days`
-          : "No immediate SLA pressure";
-    return { tone, statusLabel, detail, riskCount, watchCount };
-  }, [milestoneStats.overdue, nowTs, projectBlockers, projects]);
-
-  const flowHealth = useMemo(() => {
-    const now = nowTs;
-    const sevenDaysAgo = now - 1000 * 60 * 60 * 24 * 7;
-    const open = taskContexts.filter((task) => task.status !== "DONE");
-    const blocked = taskContexts.filter((task) => task.status === "BLOCKED");
-    const completedRecent = taskContexts.filter(
-      (task) => task.status === "DONE" && new Date(task.updatedAt).getTime() >= sevenDaysAgo
-    );
-    const completedDurations = taskContexts
-      .filter((task) => task.status === "DONE")
-      .map((task) => Math.max(0, new Date(task.updatedAt).getTime() - new Date(task.createdAt).getTime()));
-    const avgCycleDays =
-      completedDurations.length === 0
-        ? 0
-        : Math.round(
-            (completedDurations.reduce((sum, duration) => sum + duration, 0) /
-              completedDurations.length /
-              (1000 * 60 * 60 * 24)) *
-              10
-          ) / 10;
-    const blockedPercent = open.length === 0 ? 0 : Math.round((blocked.length / open.length) * 100);
-    return {
-      wipCount: open.length,
-      blockedPercent,
-      throughput7d: completedRecent.length,
-      avgCycleDays
-    };
-  }, [nowTs, taskContexts]);
-
-  const unreadByTab = useMemo(() => {
-    const counts = {
-      dashboard: 0,
-      projects: 0,
-      invoices: 0,
-      messages: 0,
-      settings: 0,
-      operations: 0
-    };
-    notificationJobs.forEach((job) => {
-      if (job.readAt) return;
-      counts[job.tab] += 1;
-    });
-    return counts;
-  }, [notificationJobs]);
-  const totalUnreadNotifications = useMemo(
-    () =>
-      unreadByTab.dashboard +
-      unreadByTab.projects +
-      unreadByTab.invoices +
-      unreadByTab.messages +
-      unreadByTab.settings +
-      unreadByTab.operations,
-    [unreadByTab]
+  const today = new Date();
+  const todayLabel = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric" }).format(today);
+  const weekNumber = Math.ceil(
+    ((today.getTime() - new Date(today.getFullYear(), 0, 1).getTime()) / 86400000 + new Date(today.getFullYear(), 0, 1).getDay() + 1) / 7
   );
 
-  const navSections = useMemo(() => {
+  // ─── Navigation sections ───
+  const allNavSections = useMemo(() => {
     const taskCount = openTasks.length;
     const threadCount = openConversations.length;
     const overdueDeliverables = milestoneStats.overdue;
@@ -1447,6 +535,12 @@ export function MaphariStaffDashboard() {
         label: "My Dashboard",
         section: "Workspace",
         badge: unreadByTab.dashboard > 0 ? { value: String(unreadByTab.dashboard), tone: "blue" } : undefined
+      },
+      {
+        id: "notifications",
+        label: "Notifications",
+        section: "Workspace",
+        badge: totalUnreadNotifications > 0 ? { value: String(totalUnreadNotifications), tone: "amber" } : undefined
       },
       {
         id: "tasks",
@@ -1465,6 +559,198 @@ export function MaphariStaffDashboard() {
         label: "Client Threads",
         section: "Client Work",
         badge: Math.max(threadCount, unreadByTab.messages) > 0 ? { value: String(Math.max(threadCount, unreadByTab.messages)), tone: "amber" } : undefined
+      },
+      {
+        id: "autodraft",
+        label: "Auto-draft Updates",
+        section: "Client Work",
+        badge: unreadByTab.messages > 0 ? { value: String(unreadByTab.messages), tone: "amber" } : undefined
+      },
+      {
+        id: "meetingprep",
+        label: "Meeting Prep",
+        section: "Client Work",
+        badge: unreadByTab.messages > 0 ? { value: String(unreadByTab.messages), tone: "amber" } : undefined
+      },
+      {
+        id: "comms",
+        label: "Communication History",
+        section: "Client Work",
+        badge: unreadByTab.messages > 0 ? { value: String(unreadByTab.messages), tone: "amber" } : undefined
+      },
+      {
+        id: "onboarding",
+        label: "Client Onboarding",
+        section: "Client Work",
+        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
+      },
+      {
+        id: "health",
+        label: "Client Health",
+        section: "Client Work",
+        badge:
+          Math.max(openBlockersCount, milestoneStats.overdue) > 0
+            ? { value: String(Math.max(openBlockersCount, milestoneStats.overdue)), tone: "red" }
+            : undefined
+      },
+      {
+        id: "response",
+        label: "Response Time",
+        section: "Client Work",
+        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
+      },
+      {
+        id: "sentiment",
+        label: "Sentiment Flags",
+        section: "Client Work",
+        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
+      },
+      {
+        id: "lasttouched",
+        label: "Last Touched",
+        section: "Client Work",
+        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
+      },
+      {
+        id: "portal",
+        label: "Portal Activity",
+        section: "Client Work",
+        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
+      },
+      {
+        id: "smartsuggestions",
+        label: "Smart Suggestions",
+        section: "Client Work",
+        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
+      },
+      {
+        id: "sprintplanning",
+        label: "Sprint Planning",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "taskdependencies",
+        label: "Task Dependencies",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "recurringtasks",
+        label: "Recurring Tasks",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "focusmode",
+        label: "Focus Mode",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "peerrequests",
+        label: "Peer Requests",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "triggerlog",
+        label: "Trigger Log",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "amber" } : undefined
+      },
+      {
+        id: "privatenotes",
+        label: "Private Notes",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "keyboardshortcuts",
+        label: "Keyboard Shortcuts",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "estimatesactuals",
+        label: "Estimates vs Actuals",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "satisfactionscores",
+        label: "Satisfaction Scores",
+        section: "Client Work",
+        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
+      },
+      {
+        id: "knowledge",
+        label: "Knowledge Base",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "decisionlog",
+        label: "Decision Log",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "handoverchecklist",
+        label: "Handover Checklist",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "closeoutreport",
+        label: "Close-out Report",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "staffhandovers",
+        label: "Staff Handovers",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "context",
+        label: "Project Context",
+        section: "Client Work",
+        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
+      },
+      {
+        id: "signoff",
+        label: "Milestone Sign-off",
+        section: "Client Work",
+        badge:
+          Math.max(milestoneStats.overdue, unreadByTab.projects) > 0
+            ? { value: String(Math.max(milestoneStats.overdue, unreadByTab.projects)), tone: "red" }
+            : undefined
+      },
+      {
+        id: "standup",
+        label: "Daily Standup",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "retainer",
+        label: "Retainer Burn",
+        section: "Client Work",
+        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
+      },
+      {
+        id: "performance",
+        label: "My Performance",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
+      },
+      {
+        id: "eodwrap",
+        label: "End-of-day Wrap",
+        section: "Tracking",
+        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
       },
       {
         id: "deliverables",
@@ -1500,358 +786,37 @@ export function MaphariStaffDashboard() {
       sections.get(item.section)?.push(item);
     });
     return Array.from(sections.entries());
-  }, [milestoneStats.overdue, openConversations.length, openTasks.length, projectBlockers, unreadByTab]);
+  }, [milestoneStats.overdue, openConversations.length, openTasks.length, projectBlockers, totalUnreadNotifications, unreadByTab]);
 
-  const staffEmail = session?.user.email ?? "staff@maphari.co.za";
-  const staffName = staffEmail.split("@")[0]?.replace(/\./g, " ") ?? "Staff";
-  const staffInitials = getInitials(staffName);
-  const staffRole = session?.user.role ?? "STAFF";
-  const today = new Date();
-  const todayLabel = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric" }).format(today);
-  const weekNumber = Math.ceil(
-    ((today.getTime() - new Date(today.getFullYear(), 0, 1).getTime()) / 86400000 + new Date(today.getFullYear(), 0, 1).getDay() + 1) / 7
-  );
-  const effectiveSelectedTimerProjectId =
-    selectedTimerProjectId && projects.some((project) => project.id === selectedTimerProjectId)
-      ? selectedTimerProjectId
-      : projects[0]?.id ?? "";
-  const timerProjectName =
-    (effectiveSelectedTimerProjectId && projectById.get(effectiveSelectedTimerProjectId)?.name) ||
-    "Select a project";
-  const timerTaskName = timerTaskLabel || "No active session";
+  const navSections = useMemo(() => {
+    const primarySidebarIds = new Set<PageId>([
+      "dashboard",
+      "notifications",
+      "tasks",
+      "kanban",
+      "clients",
+      "meetingprep",
+      "health",
+      "deliverables",
+      "timelog",
+      "settings"
+    ]);
 
-  const [topbarEyebrow, topbarTitle] = pageTitles[activePage];
-  const topbarSearchPlaceholder: Record<PageId, string> = {
-    dashboard: "Search tasks, messages, alerts…",
-    tasks: "Search tasks, clients…",
-    kanban: "Search kanban cards…",
-    clients: "Search conversations, projects…",
-    deliverables: "Search milestones, attachments…",
-    timelog: "Search time entries, projects…",
-    automations: "Search workflows, retries, escalations…",
-    settings: "Search settings…"
-  };
-  const staffWorkflowRows = useMemo(
-    () => [
-      {
-        id: "staff-msg-routing",
-        name: "Client Message Routing",
-        trigger: "Conversation updates",
-        status: openConversations.length > 0 ? "active" as const : "draft" as const,
-        coverage: `${openConversations.length} open thread${openConversations.length === 1 ? "" : "s"}`,
-        lastRun: timelineEvents[0] ? formatRelative(timelineEvents[0].createdAt) : "No events yet"
-      },
-      {
-        id: "staff-deliverable-reminders",
-        name: "Deliverable Reminder Engine",
-        trigger: "Milestone due windows",
-        status: milestoneStats.overdue > 0 ? "risk" as const : milestoneStats.dueThisWeek > 0 ? "watch" as const : "active" as const,
-        coverage: `${milestoneStats.dueThisWeek} due this week`,
-        lastRun: timelineEvents[1] ? formatRelative(timelineEvents[1].createdAt) : "No events yet"
-      },
-      {
-        id: "staff-blocker-escalation",
-        name: "Blocker Escalation",
-        trigger: "Blocker severity + ETA",
-        status: projectBlockers.some((blocker) => blocker.severity === "CRITICAL" && blocker.status !== "RESOLVED")
-          ? "risk" as const
-          : projectBlockers.some((blocker) => blocker.status !== "RESOLVED")
-          ? "watch" as const
-          : "active" as const,
-        coverage: `${projectBlockers.filter((blocker) => blocker.status !== "RESOLVED").length} open blocker${projectBlockers.filter((blocker) => blocker.status !== "RESOLVED").length === 1 ? "" : "s"}`,
-        lastRun: timelineEvents[2] ? formatRelative(timelineEvents[2].createdAt) : "No events yet"
-      },
-      {
-        id: "staff-notification-delivery",
-        name: "Notification Delivery",
-        trigger: "Queue processing + retries",
-        status: notificationJobs.some((job) => job.status === "FAILED")
-          ? "risk" as const
-          : notificationJobs.some((job) => job.readAt === null && job.tab === "operations")
-          ? "watch" as const
-          : "active" as const,
-        coverage: `${notificationJobs.filter((job) => job.tab === "operations").length} operations alert${notificationJobs.filter((job) => job.tab === "operations").length === 1 ? "" : "s"}`,
-        lastRun: timelineEvents[3] ? formatRelative(timelineEvents[3].createdAt) : "No events yet"
-      }
-    ],
-    [milestoneStats.dueThisWeek, milestoneStats.overdue, notificationJobs, openConversations.length, projectBlockers, timelineEvents]
-  );
-  const timerDisplay = formatTimer(timerSeconds);
+    return allNavSections
+      .map(([section, items]) => [section, items.filter((item) => primarySidebarIds.has(item.id))] as [string, NavItem[]])
+      .filter(([, items]) => items.length > 0);
+  }, [allNavSections]);
 
-  useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    void (async () => {
-      const [profilePref, workspacePref, notificationsPref, dashboardSeenPref, kanbanPrefs] = await Promise.all([
-        getProjectPreferenceWithRefresh(session, "settingsProfile"),
-        getProjectPreferenceWithRefresh(session, "settingsWorkspace"),
-        getProjectPreferenceWithRefresh(session, "settingsNotifications"),
-        getProjectPreferenceWithRefresh(session, "dashboardLastSeenAt"),
-        getProjectPreferenceWithRefresh(session, "kanbanBoardPrefs")
-      ]);
-      if (cancelled) return;
+  // ─── Handlers that stay in the orchestrator ───
 
-      const parse = (value?: string | null): Record<string, unknown> | null => {
-        if (!value) return null;
-        try {
-          const parsed = JSON.parse(value);
-          return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
-        } catch {
-          return null;
-        }
-      };
+  const handleLogout = useCallback(async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    await signOut();
+    window.location.href = "/internal-login";
+  }, [loggingOut, signOut]);
 
-      const profile = parse(profilePref.data?.value);
-      if (profile) {
-        const nextProfile = {
-          fullName: typeof profile.fullName === "string" ? profile.fullName : staffName,
-          email: typeof profile.email === "string" ? profile.email : staffEmail,
-          avatarUrl: typeof profile.avatarUrl === "string" ? profile.avatarUrl : "",
-          weeklyTargetHours:
-            typeof profile.weeklyTargetHours === "number"
-              ? profile.weeklyTargetHours
-              : 40
-        };
-        setSettingsProfile(nextProfile);
-        setSavedSettingsProfile(nextProfile);
-      } else {
-        const nextProfile = {
-          fullName: staffName,
-          email: staffEmail,
-          avatarUrl: "",
-          weeklyTargetHours: 40
-        };
-        setSettingsProfile((previous) => ({
-          fullName: previous.fullName === "Staff" ? staffName : previous.fullName,
-          email: previous.email || staffEmail,
-          avatarUrl: previous.avatarUrl || "",
-          weeklyTargetHours: previous.weeklyTargetHours
-        }));
-        setSavedSettingsProfile(nextProfile);
-      }
-
-      const workspace = parse(workspacePref.data?.value);
-      if (workspace) {
-        const nextWorkspace = {
-          timezone: typeof workspace.timezone === "string" ? workspace.timezone : "Africa/Johannesburg",
-          workStart: typeof workspace.workStart === "string" ? workspace.workStart : "08:00",
-          workEnd: typeof workspace.workEnd === "string" ? workspace.workEnd : "17:00",
-          defaultStatus:
-            workspace.defaultStatus === "Focused" || workspace.defaultStatus === "In a meeting"
-              ? workspace.defaultStatus
-              : "Available"
-        };
-        setSettingsWorkspace(nextWorkspace);
-        setSavedSettingsWorkspace(nextWorkspace);
-      } else {
-        setSavedSettingsWorkspace({
-          timezone: "Africa/Johannesburg",
-          workStart: "08:00",
-          workEnd: "17:00",
-          defaultStatus: "Available"
-        });
-      }
-
-      const notifications = parse(notificationsPref.data?.value);
-      if (notifications) {
-        const nextNotifications = {
-          taskAssignments: Boolean(notifications.taskAssignments),
-          clientMessages: Boolean(notifications.clientMessages),
-          deliverableReminders: Boolean(notifications.deliverableReminders),
-          standupReminders: Boolean(notifications.standupReminders),
-          weeklyTimeSummary: Boolean(notifications.weeklyTimeSummary)
-        };
-        setSettingsNotifications(nextNotifications);
-        setSavedSettingsNotifications(nextNotifications);
-      } else {
-        setSavedSettingsNotifications({
-          taskAssignments: true,
-          clientMessages: true,
-          deliverableReminders: true,
-          standupReminders: false,
-          weeklyTimeSummary: true
-        });
-      }
-
-      const dashboardSeen = parse(dashboardSeenPref.data?.value);
-      setDashboardLastSeenAt(
-        dashboardSeen && typeof dashboardSeen.seenAt === "string" ? dashboardSeen.seenAt : null
-      );
-
-      const kanban = parse(kanbanPrefs.data?.value);
-      if (kanban) {
-        if (
-          kanban.viewMode === "all" ||
-          kanban.viewMode === "my_work" ||
-          kanban.viewMode === "urgent" ||
-          kanban.viewMode === "client_waiting" ||
-          kanban.viewMode === "blocked"
-        ) {
-          setKanbanViewMode(kanban.viewMode);
-        }
-        if (kanban.swimlane === "status" || kanban.swimlane === "project" || kanban.swimlane === "client") {
-          setKanbanSwimlane(kanban.swimlane);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [session, staffEmail, staffName]);
-
-  useEffect(() => {
-    if (!session) return;
-    void setProjectPreferenceWithRefresh(session, {
-      key: "kanbanBoardPrefs",
-      value: JSON.stringify({ viewMode: kanbanViewMode, swimlane: kanbanSwimlane })
-    });
-  }, [kanbanSwimlane, kanbanViewMode, session]);
-
-  useEffect(() => {
-    if (!session || !selectedConversationId || conversationMessages.length === 0) return;
-    const inbound = conversationMessages
-      .filter((message) => (message.authorRole ?? "").toUpperCase() === "CLIENT")
-      .filter((message) => message.deliveryStatus !== "READ")
-      .slice(-8);
-    if (inbound.length === 0) return;
-    void Promise.all(
-      inbound.map((message) =>
-        updateMessageDeliveryWithRefresh(session, message.id, {
-          status: "READ",
-          deliveredAt: message.deliveredAt ?? new Date().toISOString(),
-          readAt: new Date().toISOString()
-        })
-      )
-    );
-  }, [conversationMessages, selectedConversationId, session]);
-
-  useEffect(() => {
-    if (!session || loading || activePage !== "dashboard" || dashboardLastSeenAt === undefined) return;
-    if (dashboardSeenMarkedRef.current) return;
-    dashboardSeenMarkedRef.current = true;
-    const seenAt = new Date().toISOString();
-    void setProjectPreferenceWithRefresh(session, {
-      key: "dashboardLastSeenAt",
-      value: JSON.stringify({ seenAt })
-    });
-  }, [activePage, dashboardLastSeenAt, loading, session]);
-
-  const handleTimerToggle = () => {
-    if (!effectiveSelectedTimerProjectId) {
-      setActionFeedback({ tone: "error", message: "Select a project before starting the timer." });
-      return;
-    }
-    if (timerRunning) {
-      setTimerRunning(false);
-      if (session && effectiveSelectedTimerProjectId && activeWorkSessionId) {
-        void updateProjectWorkSessionWithRefresh(session, effectiveSelectedTimerProjectId, activeWorkSessionId, {
-          status: "PAUSED"
-        });
-      }
-      return;
-    }
-    timerStartRef.current = new Date().toISOString();
-    setTimerRunning(true);
-    if (session && effectiveSelectedTimerProjectId) {
-      void (async () => {
-        const created = await createProjectWorkSessionWithRefresh(session, effectiveSelectedTimerProjectId, {
-          taskId: null,
-          memberName: staffName,
-          memberRole: "STAFF",
-          workstream: timerTaskLabel || "Execution",
-          status: "ACTIVE"
-        });
-        if (created.data) {
-          setActiveWorkSessionId(created.data.id);
-        }
-      })();
-    }
-  };
-
-  const handleTimerStop = async () => {
-    setTimerRunning(false);
-    if (session && effectiveSelectedTimerProjectId && activeWorkSessionId) {
-      await updateProjectWorkSessionWithRefresh(session, effectiveSelectedTimerProjectId, activeWorkSessionId, {
-        status: "DONE",
-        endedAt: new Date().toISOString()
-      });
-      setActiveWorkSessionId(null);
-    }
-    if (effectiveSelectedTimerProjectId && timerSeconds > 0) {
-      const minutes = Math.max(1, Math.round(timerSeconds / 60));
-      await addTimeEntry({
-        projectId: effectiveSelectedTimerProjectId,
-        taskLabel: timerTaskLabel || "General work",
-        minutes,
-        startedAt: timerStartRef.current ?? undefined,
-        endedAt: new Date().toISOString(),
-        staffName
-      });
-    }
-    timerStartRef.current = null;
-    setTimerSeconds(0);
-  };
-
-  const handleClientClick = (id: string) => {
-    selectConversation(id);
-  };
-
-  const handleOpenConversationTaskContext = () => {
-    const conversation = conversations.find((item) => item.id === selectedConversationId);
-    if (!conversation?.projectId) {
-      setActionFeedback({ tone: "error", message: "This thread is not linked to a project yet." });
-      return;
-    }
-    setActivePage("tasks");
-    setShowTaskComposer(true);
-    setNewTaskDraft((previous) => ({
-      ...previous,
-      projectId: conversation.projectId ?? previous.projectId,
-      title: previous.title || `Follow-up: ${conversation.subject}`
-    }));
-  };
-
-  const handleOpenConversationFiles = () => {
-    const conversation = conversations.find((item) => item.id === selectedConversationId);
-    if (!conversation?.projectId) {
-      setActionFeedback({ tone: "error", message: "Link this thread to a project before adding files." });
-      return;
-    }
-    setActivePage("deliverables");
-    setActionFeedback({ tone: "success", message: "Open Deliverables to attach files to this project." });
-  };
-
-  const handleCreateTaskFromThread = () => {
-    const conversation = conversations.find((item) => item.id === selectedConversationId);
-    if (!conversation?.projectId) {
-      setActionFeedback({ tone: "error", message: "This thread is not linked to a project yet." });
-      return;
-    }
-    setActivePage("tasks");
-    setShowTaskComposer(true);
-    setNewTaskDraft((previous) => ({
-      ...previous,
-      projectId: conversation.projectId ?? previous.projectId,
-      title: `Thread action: ${conversation.subject}`
-    }));
-  };
-
-  const handleOpenDashboardThread = (threadId: string) => {
-    setActivePage("clients");
-    selectConversation(threadId);
-  };
-
-  const handleOpenTaskThread = (projectId: string) => {
-    const conversationId = conversationByProjectId.get(projectId);
-    if (!conversationId) {
-      setActionFeedback({ tone: "error", message: "No client thread is linked to this project yet." });
-      return;
-    }
-    setActivePage("clients");
-    selectConversation(conversationId);
-  };
-
-  const handleRunDashboardAction = (action: "tasks" | "clients" | "deliverables" | "timelog", threadId?: string) => {
+  const handleRunDashboardAction = useCallback((action: "tasks" | "clients" | "deliverables" | "timelog", threadId?: string) => {
     if (action === "clients") {
       setActivePage("clients");
       if (threadId) {
@@ -1868,542 +833,9 @@ export function MaphariStaffDashboard() {
       return;
     }
     setActivePage("timelog");
-  };
+  }, [selectConversation]);
 
-  const handleSendMessage = async () => {
-    if (!selectedConversationId || !composeMessage.trim()) return;
-    const created = await sendMessage(selectedConversationId, composeMessage.trim());
-    if (created?.id) {
-      setSentMessageIds((prev) => [...prev, created.id]);
-      setComposeMessage("");
-    }
-  };
-
-  const handleCreateThread = async () => {
-    if (!session || creatingThread) return;
-    if (!effectiveNewThreadClientId || newThreadSubject.trim().length < 2) {
-      setActionFeedback({ tone: "error", message: "Select a client and provide a thread subject." });
-      return;
-    }
-    setCreatingThread(true);
-    const result = await createConversationWithRefresh(session, {
-      clientId: effectiveNewThreadClientId,
-      subject: newThreadSubject.trim()
-    });
-    setCreatingThread(false);
-    if (!result.data) {
-      setActionFeedback({ tone: "error", message: result.error?.message ?? "Unable to create thread." });
-      return;
-    }
-    setNewThreadSubject("");
-    selectConversation(result.data.id);
-    await refreshWorkspace(result.nextSession ?? session, { background: true });
-    setActionFeedback({ tone: "success", message: "Thread created." });
-  };
-
-  const handleAddNote = async () => {
-    if (!selectedConversationId || !noteText.trim()) return;
-    const created = await addConversationNote(selectedConversationId, noteText.trim());
-    if (created?.id) {
-      setNoteText("");
-    }
-  };
-
-  const handleEscalate = async () => {
-    if (!selectedConversationId || !escalationReason.trim()) return;
-    const latestMessageId = conversationMessages[conversationMessages.length - 1]?.id;
-    const reason = escalationReason.trim();
-    const created = await escalateConversation({
-      conversationId: selectedConversationId,
-      messageId: latestMessageId,
-      severity: escalationSeverity,
-      reason
-    });
-    if (created?.id) {
-      const conversationProjectId =
-        conversations.find((conversation) => conversation.id === selectedConversationId)?.projectId ?? null;
-      if (session && conversationProjectId) {
-        await createProjectBlockerWithRefresh(session, {
-          projectId: conversationProjectId,
-          title: reason,
-          description: `Auto-created from conversation escalation (${escalationSeverity})`,
-          severity: escalationSeverity,
-          status: "OPEN",
-          ownerRole: "STAFF",
-          ownerName: staffName
-        });
-      }
-      setEscalationReason("");
-      setEscalationSeverity("MEDIUM");
-    }
-  };
-
-  const handleAssignConversationToMe = async () => {
-    if (!selectedConversationId || !session?.user.id) return;
-    const updated = await updateConversationAssignee(selectedConversationId, session.user.id);
-    setActionFeedback({
-      tone: updated ? "success" : "error",
-      message: updated ? "Thread assigned to you." : "Unable to assign thread."
-    });
-  };
-
-  const handleUnassignConversation = async () => {
-    if (!selectedConversationId) return;
-    const updated = await updateConversationAssignee(selectedConversationId, null);
-    setActionFeedback({
-      tone: updated ? "success" : "error",
-      message: updated ? "Thread unassigned." : "Unable to unassign thread."
-    });
-  };
-
-  const handleTaskAction = async (taskId: string, projectId: string, status: TaskContext["status"]) => {
-    if (!session) return;
-    const nextStatus =
-      status === "TODO"
-        ? "IN_PROGRESS"
-        : status === "IN_PROGRESS"
-          ? "DONE"
-        : status === "BLOCKED"
-            ? "IN_PROGRESS"
-            : "DONE";
-    if (
-      nextStatus === "IN_PROGRESS" &&
-      status !== "IN_PROGRESS" &&
-      inProgressCount >= inProgressLimit
-    ) {
-      setActionFeedback({
-        tone: "error",
-        message: `In Progress WIP limit reached (${inProgressCount}/${inProgressLimit}). Complete or unblock work first.`
-      });
-      return;
-    }
-    const result = await updateProjectTaskWithRefresh(session, projectId, taskId, { status: nextStatus });
-    if (result.data) {
-      const taskName = taskContexts.find((task) => task.id === taskId)?.title ?? "Task";
-      setProjectDetails((prev) =>
-        prev.map((project) =>
-          project.id !== projectId
-            ? project
-            : {
-                ...project,
-                tasks: project.tasks.map((task) => (task.id === taskId ? result.data! : task))
-              }
-        )
-      );
-      setKanbanAnnouncement(`${taskName} moved to ${formatStatus(nextStatus)}.`);
-    }
-    await refreshWorkspace(result.nextSession ?? session);
-  };
-
-  const handleMoveTask = async (
-    taskId: string,
-    projectId: string,
-    currentStatus: TaskContext["status"],
-    nextStatus: TaskContext["status"]
-  ) => {
-    if (!session || nextStatus === currentStatus) return;
-    if (nextStatus === "IN_PROGRESS" && currentStatus !== "IN_PROGRESS" && inProgressCount >= inProgressLimit) {
-      setActionFeedback({
-        tone: "error",
-        message: `In Progress WIP limit reached (${inProgressCount}/${inProgressLimit}).`
-      });
-      return;
-    }
-    const result = await updateProjectTaskWithRefresh(session, projectId, taskId, { status: nextStatus });
-    if (result.data) {
-      const taskName = taskContexts.find((task) => task.id === taskId)?.title ?? "Task";
-      setProjectDetails((prev) =>
-        prev.map((project) =>
-          project.id !== projectId
-            ? project
-            : {
-                ...project,
-                tasks: project.tasks.map((task) => (task.id === taskId ? result.data! : task))
-              }
-        )
-      );
-      setKanbanAnnouncement(`${taskName} moved to ${formatStatus(nextStatus)}.`);
-    }
-    await refreshWorkspace(result.nextSession ?? session);
-  };
-
-  const handleSubmitKanbanBlock = async () => {
-    if (!session || !kanbanBlockDraft || creatingKanbanBlocker) return;
-    if (kanbanBlockReason.trim().length < 4) {
-      setActionFeedback({ tone: "error", message: "Provide a clear blocker reason." });
-      return;
-    }
-    setCreatingKanbanBlocker(true);
-    const blockerResult = await createProjectBlockerWithRefresh(session, {
-      projectId: kanbanBlockDraft.projectId,
-      title: `Task blocked: ${kanbanBlockDraft.title}`,
-      description: kanbanBlockReason.trim(),
-      severity: kanbanBlockSeverity,
-      status: "OPEN",
-      ownerRole: "STAFF",
-      ownerName: staffName,
-      etaAt: kanbanBlockEta || undefined
-    });
-    if (!blockerResult.data) {
-      setCreatingKanbanBlocker(false);
-      setActionFeedback({ tone: "error", message: blockerResult.error?.message ?? "Unable to create blocker." });
-      return;
-    }
-    const taskResult = await updateProjectTaskWithRefresh(session, kanbanBlockDraft.projectId, kanbanBlockDraft.taskId, { status: "BLOCKED" });
-    setCreatingKanbanBlocker(false);
-    setKanbanBlockDraft(null);
-    setKanbanBlockReason("");
-    setKanbanBlockSeverity("MEDIUM");
-    setKanbanBlockEta("");
-    setActionFeedback({ tone: "success", message: "Task marked blocked and escalated." });
-    await refreshWorkspace(taskResult.nextSession ?? blockerResult.nextSession ?? session);
-  };
-
-  const effectiveTaskDraftProjectId = newTaskDraft.projectId || projects[0]?.id || "";
-  const effectiveDeliverableDraftProjectId = newDeliverableDraft.projectId || projects[0]?.id || "";
-
-  const handleCreateTask = async () => {
-    if (!session) return;
-    const projectId = effectiveTaskDraftProjectId;
-    if (!projectId || newTaskDraft.title.trim().length < 3) {
-      setActionFeedback({ tone: "error", message: "Select a project and enter a task title." });
-      return;
-    }
-    setCreatingTask(true);
-    const result = await createProjectTaskWithRefresh(session, projectId, {
-      title: newTaskDraft.title.trim(),
-      assigneeName: newTaskDraft.assigneeName.trim() || undefined,
-      dueAt: newTaskDraft.dueAt || undefined
-    });
-    setCreatingTask(false);
-    if (!result.data) {
-      setActionFeedback({ tone: "error", message: result.error?.message ?? "Unable to create task." });
-      return;
-    }
-    setProjectDetails((previous) =>
-      previous.map((project) =>
-        project.id === projectId
-          ? { ...project, tasks: [result.data!, ...project.tasks] }
-          : project
-      )
-    );
-    setNewTaskDraft({
-      projectId,
-      title: "",
-      assigneeName: "",
-      dueAt: ""
-    });
-    setShowTaskComposer(false);
-    setActionFeedback({ tone: "success", message: "Task created." });
-    await refreshWorkspace(result.nextSession ?? session, { background: true });
-  };
-
-  const handleCreateDeliverable = async () => {
-    if (!session) return;
-    const projectId = effectiveDeliverableDraftProjectId;
-    if (!projectId || newDeliverableDraft.title.trim().length < 3) {
-      setActionFeedback({ tone: "error", message: "Select a project and enter a deliverable title." });
-      return;
-    }
-    setCreatingDeliverable(true);
-    const result = await createProjectMilestoneWithRefresh(session, projectId, {
-      title: newDeliverableDraft.title.trim(),
-      dueAt: newDeliverableDraft.dueAt || undefined
-    });
-    setCreatingDeliverable(false);
-    if (!result.data) {
-      setActionFeedback({ tone: "error", message: result.error?.message ?? "Unable to create deliverable." });
-      return;
-    }
-    setProjectDetails((previous) =>
-      previous.map((project) =>
-        project.id === projectId
-          ? { ...project, milestones: [result.data!, ...project.milestones] }
-          : project
-      )
-    );
-    setNewDeliverableDraft({
-      projectId,
-      title: "",
-      dueAt: ""
-    });
-    setShowDeliverableComposer(false);
-    setActionFeedback({ tone: "success", message: "Deliverable created." });
-    await refreshWorkspace(result.nextSession ?? session, { background: true });
-  };
-
-  const handleMilestoneAttachment = async (projectId: string, milestoneId: string, fileId: string | null) => {
-    if (!session) return;
-    const result = await updateProjectMilestoneWithRefresh(session, projectId, milestoneId, { fileId });
-    if (result.data) {
-      setProjectDetails((prev) =>
-        prev.map((project) =>
-          project.id !== projectId
-            ? project
-            : {
-                ...project,
-                milestones: project.milestones.map((milestone) => (milestone.id === milestoneId ? result.data! : milestone))
-              }
-        )
-      );
-    }
-    await refreshWorkspace(result.nextSession ?? session);
-  };
-
-  const handleMilestoneStatusUpdate = async (
-    projectId: string,
-    milestoneId: string,
-    status: "PENDING" | "IN_PROGRESS" | "COMPLETED"
-  ) => {
-    if (!session) return;
-    const result = await updateProjectMilestoneWithRefresh(session, projectId, milestoneId, { status });
-    if (result.data) {
-      setProjectDetails((prev) =>
-        prev.map((project) =>
-          project.id !== projectId
-            ? project
-            : {
-                ...project,
-                milestones: project.milestones.map((milestone) => (milestone.id === milestoneId ? result.data! : milestone))
-              }
-        )
-      );
-      setActionFeedback({ tone: "success", message: `Deliverable moved to ${formatStatus(status)}.` });
-    }
-    await refreshWorkspace(result.nextSession ?? session);
-  };
-
-  const handleEstimateDraftChange = (
-    changeRequestId: string,
-    field: "hours" | "costCents" | "assessment",
-    value: string
-  ) => {
-    setEstimateDrafts((previous) => ({
-      ...previous,
-      [changeRequestId]: {
-        hours: previous[changeRequestId]?.hours ?? "",
-        costCents: previous[changeRequestId]?.costCents ?? "",
-        assessment: previous[changeRequestId]?.assessment ?? "",
-        [field]: value
-      }
-    }));
-  };
-
-  const handleEstimateChangeRequest = async (changeRequestId: string) => {
-    if (!session) return;
-    const draft = estimateDrafts[changeRequestId] ?? { hours: "", costCents: "", assessment: "" };
-    const estimatedHours = Number(draft.hours);
-    const estimatedCostCents = Number(draft.costCents);
-    const result = await updateProjectChangeRequestWithRefresh(session, changeRequestId, {
-      status: "ESTIMATED",
-      estimatedHours: Number.isFinite(estimatedHours) && estimatedHours > 0 ? estimatedHours : undefined,
-      estimatedCostCents: Number.isFinite(estimatedCostCents) && estimatedCostCents > 0 ? estimatedCostCents : undefined,
-      staffAssessment: draft.assessment.trim() || undefined
-    });
-    if (!result.data) {
-      setActionFeedback({ tone: "error", message: result.error?.message ?? "Unable to submit estimate." });
-      return;
-    }
-    setChangeRequests((previous) =>
-      previous.map((item) => (item.id === changeRequestId ? result.data! : item))
-    );
-    setActionFeedback({ tone: "success", message: "Estimate submitted for admin review." });
-  };
-
-  const handleLogout = async () => {
-    if (loggingOut) return;
-    setLoggingOut(true);
-    await signOut();
-    window.location.href = "/internal-login";
-  };
-
-  const handleSaveStaffProfile = async () => {
-    if (!session) return;
-    const result = await setProjectPreferenceWithRefresh(session, {
-      key: "settingsProfile",
-      value: JSON.stringify(settingsProfile)
-    });
-    if (result.data) {
-      setSavedSettingsProfile(settingsProfile);
-    }
-    setActionFeedback({
-      tone: result.data ? "success" : "error",
-      message: result.data ? "Profile settings saved." : result.error?.message ?? "Unable to save profile settings."
-    });
-  };
-
-  const handleProfileAvatarChange = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      if (!result) return;
-      setSettingsProfile((previous) => ({ ...previous, avatarUrl: result }));
-      setActionFeedback({ tone: "success", message: "Profile photo updated. Save changes to persist it." });
-    };
-    reader.onerror = () => {
-      setActionFeedback({ tone: "error", message: "Unable to load selected image." });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleResetStaffProfile = () => {
-    setSettingsProfile(savedSettingsProfile);
-    setActionFeedback({ tone: "success", message: "Profile changes reverted." });
-  };
-
-  const handleResetStaffNotifications = () => {
-    setSettingsNotifications(savedSettingsNotifications);
-    setActionFeedback({ tone: "success", message: "Notification changes reverted." });
-  };
-
-  const handleResetStaffWorkspace = () => {
-    setSettingsWorkspace(savedSettingsWorkspace);
-    setActionFeedback({ tone: "success", message: "Workspace changes reverted." });
-  };
-
-  const handleUseLocalTimezone = () => {
-    const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    setSettingsWorkspace((previous) => ({ ...previous, timezone: localTz }));
-  };
-
-  const handleSaveStaffNotifications = async () => {
-    if (!session) return;
-    const result = await setProjectPreferenceWithRefresh(session, {
-      key: "settingsNotifications",
-      value: JSON.stringify(settingsNotifications)
-    });
-    if (result.data) {
-      setSavedSettingsNotifications(settingsNotifications);
-    }
-    setActionFeedback({
-      tone: result.data ? "success" : "error",
-      message: result.data ? "Notification settings saved." : result.error?.message ?? "Unable to save notification settings."
-    });
-  };
-
-  const handleSaveStaffWorkspace = async () => {
-    if (!session) return;
-    const result = await setProjectPreferenceWithRefresh(session, {
-      key: "settingsWorkspace",
-      value: JSON.stringify(settingsWorkspace)
-    });
-    if (result.data) {
-      setSavedSettingsWorkspace(settingsWorkspace);
-    }
-    setActionFeedback({
-      tone: result.data ? "success" : "error",
-      message: result.data ? "Workspace settings saved." : result.error?.message ?? "Unable to save workspace settings."
-    });
-  };
-
-  const handleGenerateHandoffExport = async (format: "json" | "markdown") => {
-    if (!session || generatingHandoffExport) return;
-    setGeneratingHandoffExport(true);
-    const result = await createProjectHandoffExportWithRefresh(session, { format });
-    setGeneratingHandoffExport(false);
-    if (!result.data) {
-      setActionFeedback({ tone: "error", message: result.error?.message ?? "Unable to create handoff export." });
-      return;
-    }
-    const download = await downloadProjectHandoffExportWithRefresh(session, result.data.record.id);
-    if (download.data?.downloadUrl) {
-      const anchor = document.createElement("a");
-      anchor.href = download.data.downloadUrl;
-      anchor.download = download.data.fileName;
-      anchor.rel = "noopener noreferrer";
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-    }
-    setHandoffExports((previous) => [result.data!.record, ...previous.filter((entry) => entry.id !== result.data!.record.id)].slice(0, 25));
-    setActionFeedback({ tone: "success", message: `Handoff export ready: ${result.data.record.fileName}` });
-  };
-
-  const handleExportTimeLog = () => {
-    if (timeEntrySource.length === 0) {
-      setActionFeedback({ tone: "error", message: "No time entries to export yet." });
-      return;
-    }
-
-    const escapeCsv = (value: string) => `"${value.replace(/"/g, "\"\"")}"`;
-    const header = ["Entry ID", "Project", "Task", "Minutes", "Duration", "Logged At"];
-    const rows = timeEntrySource
-      .slice()
-      .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime())
-      .map((entry) => [
-        entry.id,
-        entry.project,
-        entry.task,
-        String(entry.minutes),
-        formatDuration(entry.minutes),
-        new Date(entry.loggedAt).toISOString()
-      ]);
-    const csv = [header, ...rows]
-      .map((row) => row.map((cell) => escapeCsv(cell)).join(","))
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `staff-time-log-${new Date().toISOString().slice(0, 10)}.csv`;
-    anchor.rel = "noopener noreferrer";
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
-    setActionFeedback({ tone: "success", message: "Time log exported." });
-  };
-
-  const handleExportTimeLogJson = () => {
-    if (timeEntrySource.length === 0) {
-      setActionFeedback({ tone: "error", message: "No time entries to export yet." });
-      return;
-    }
-    const payload = {
-      generatedAt: new Date().toISOString(),
-      entries: timeEntrySource
-        .slice()
-        .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime())
-        .map((entry) => ({
-          id: entry.id,
-          project: entry.project,
-          task: entry.task,
-          minutes: entry.minutes,
-          duration: formatDuration(entry.minutes),
-          loggedAt: new Date(entry.loggedAt).toISOString()
-        }))
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `staff-time-log-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.rel = "noopener noreferrer";
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
-    setActionFeedback({ tone: "success", message: "Time log JSON exported." });
-  };
-
-  const handleDownloadHandoffExport = async (exportId: string) => {
-    if (!session) return;
-    const result = await downloadProjectHandoffExportWithRefresh(session, exportId);
-    if (!result.data) {
-      setActionFeedback({ tone: "error", message: result.error?.message ?? "Unable to download handoff export." });
-      return;
-    }
-    const anchor = document.createElement("a");
-    anchor.href = result.data.downloadUrl;
-    anchor.download = result.data.fileName;
-    anchor.rel = "noopener noreferrer";
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-  };
-
-  const handleProcessAutomationQueue = async () => {
+  const handleProcessAutomationQueue = useCallback(async () => {
     if (!session || processingAutomationQueue) return;
     setProcessingAutomationQueue(true);
     let processedCount = 0;
@@ -2419,17 +851,17 @@ export function MaphariStaffDashboard() {
       );
     }
     setProcessingAutomationQueue(false);
-    setActionFeedback({
+    setFeedback({
       tone: "success",
       message: processedCount > 0 ? `Processed ${processedCount} queued notification job${processedCount === 1 ? "" : "s"}.` : "Queue already clear."
     });
-  };
+  }, [processingAutomationQueue, session, setNotificationJobs]);
 
-  const handleAcknowledgeAutomationFailures = async () => {
+  const handleAcknowledgeAutomationFailures = useCallback(async () => {
     if (!session || acknowledgingAutomationFailures) return;
     const failedUnread = notificationJobs.filter((job) => job.status === "FAILED" && !job.readAt);
     if (failedUnread.length === 0) {
-      setActionFeedback({ tone: "success", message: "No failed alerts to acknowledge." });
+      setFeedback({ tone: "success", message: "No failed alerts to acknowledge." });
       return;
     }
     setAcknowledgingAutomationFailures(true);
@@ -2442,9 +874,55 @@ export function MaphariStaffDashboard() {
       )
     );
     setAcknowledgingAutomationFailures(false);
-    setActionFeedback({ tone: "success", message: `${failedUnread.length} failed alert${failedUnread.length === 1 ? "" : "s"} acknowledged.` });
+    setFeedback({ tone: "success", message: `${failedUnread.length} failed alert${failedUnread.length === 1 ? "" : "s"} acknowledged.` });
+  }, [acknowledgingAutomationFailures, notificationJobs, session, setNotificationJobs]);
+
+  // ─── Topbar / page titles ───
+  const [topbarEyebrow, topbarTitle] = pageTitles[activePage];
+  const topbarSearchPlaceholder: Record<PageId, string> = {
+    dashboard: "Search tasks, messages, alerts…",
+    notifications: "Search alerts, mentions, invoices, and approvals…",
+    tasks: "Search tasks, clients…",
+    kanban: "Search kanban cards…",
+    clients: "Search conversations, projects…",
+    autodraft: "Search client update drafts…",
+    meetingprep: "Search meeting prep notes and agendas…",
+    comms: "Search communication history and timeline events…",
+    onboarding: "Search onboarding checklists and client setup…",
+    health: "Search client health records…",
+    response: "Search response time analytics and logs…",
+    sentiment: "Search sentiment flags and updates…",
+    lasttouched: "Search last touched timeline and actions…",
+    portal: "Search portal activity events and sessions…",
+    smartsuggestions: "Search smart suggestions and recommended actions…",
+    sprintplanning: "Search sprint plans, backlog, and day assignments…",
+    taskdependencies: "Search dependency chains and blockers…",
+    recurringtasks: "Search recurring tasks, cadence, and streaks…",
+    focusmode: "Search focus sessions, timers, and outcomes…",
+    peerrequests: "Search incoming/outgoing peer collaboration requests…",
+    triggerlog: "Search automation trigger runs, failures, and payloads…",
+    privatenotes: "Search private notes and personal context…",
+    keyboardshortcuts: "Search shortcuts, keys, and command mappings…",
+    estimatesactuals: "Search estimates, actuals, and variances…",
+    satisfactionscores: "Search satisfaction scores and client sentiment trends…",
+    knowledge: "Search SOPs, policies, and internal docs…",
+    decisionlog: "Search decisions, rationale, and impact tags…",
+    handoverchecklist: "Search handover items, section notes, and close-out status…",
+    closeoutreport: "Search project close-out summaries, finance, and retrospectives…",
+    staffhandovers: "Search incoming/outgoing staff handovers and ownership notes…",
+    context: "Search project context cards…",
+    signoff: "Search milestone sign-off records…",
+    standup: "Search standup logs…",
+    retainer: "Search retainer burn records…",
+    performance: "Search personal performance insights…",
+    eodwrap: "Search end-of-day wraps…",
+    deliverables: "Search milestones, attachments…",
+    timelog: "Search time entries, projects…",
+    automations: "Search workflows, retries, escalations…",
+    settings: "Search settings…"
   };
 
+  // ─── Tour steps ───
   const staffTourSteps = [
     { title: "Dashboard", detail: "Check priorities, workload distribution, and SLA health." },
     { title: "Tasks + Kanban", detail: "Plan delivery work, move status, and escalate blockers." },
@@ -2452,14 +930,16 @@ export function MaphariStaffDashboard() {
     { title: "Deliverables + Time", detail: "Manage milestones, change estimates, and time logs." }
   ] as const;
 
+  // ─── Render ───
   return (
-    <div className={`${styles.staffRoot} ${syne.variable} ${dmMono.variable} ${instrument.variable}`}>
+    <div className={`${styles.staffRoot} dashboardScale dashboardThemeStaff ${syne.variable} ${dmMono.variable} ${instrument.variable}`}>
       <div className={styles.cursor} ref={cursorRef} />
       <div className={styles.cursorRing} ref={ringRef} />
 
       <div className={styles.shell}>
         <StaffSidebar
           navSections={navSections}
+          allPagesSections={allNavSections}
           activePage={activePage}
           onNavigate={setActivePage}
           staffInitials={staffInitials}
@@ -2474,31 +954,16 @@ export function MaphariStaffDashboard() {
             searchValue={topbarSearch}
             searchPlaceholder={topbarSearchPlaceholder[activePage]}
             onSearchChange={setTopbarSearch}
-            notificationCount={totalUnreadNotifications}
-            onOpenNotifications={() => setActivePage("automations")}
             onNewTask={() => setActivePage("tasks")}
-            onQuickTime={() => setActivePage("timelog")}
             onLogout={() => void handleLogout()}
+            staffInitials={staffInitials}
+            staffEmail={staffEmail}
+            staffRole={staffRole}
             isLoggingOut={loggingOut}
           />
 
           <div className={styles.content}>
-            {actionFeedback ? (
-              <div
-                className={styles.card}
-                style={{
-                  marginBottom: 12,
-                  borderColor: actionFeedback.tone === "error" ? "rgba(255,95,124,0.4)" : "rgba(77,155,255,0.4)",
-                  background: actionFeedback.tone === "error" ? "rgba(255,95,124,0.08)" : "rgba(77,155,255,0.1)"
-                }}
-              >
-                <div className={styles.cardBody} style={{ paddingTop: 10, paddingBottom: 10 }}>
-                  <div className={styles.pageSub} style={{ color: actionFeedback.tone === "error" ? "var(--red)" : "var(--accent)" }}>
-                    {actionFeedback.message}
-                  </div>
-                </div>
-              </div>
-            ) : null}
+            <DashboardToastStack toasts={toasts} />
             {staffTourOpen ? (
               <div className={styles.card} style={{ marginBottom: 12 }}>
                 <div className={styles.cardHeader}>
@@ -2597,6 +1062,8 @@ export function MaphariStaffDashboard() {
               flowHealth={flowHealth}
             />
 
+            <NotificationsPage isActive={activePage === "notifications"} />
+
             <TasksPage
               isActive={activePage === "tasks"}
               openTasksCount={openTasks.length}
@@ -2626,7 +1093,7 @@ export function MaphariStaffDashboard() {
                 }))
               }
               creatingTask={creatingTask}
-              onCreateTask={() => void handleCreateTask()}
+              onCreateTask={() => void handleCreateTask(projects)}
               filteredTasks={filteredTasks}
               onTaskAction={handleTaskAction}
               onOpenTaskThread={handleOpenTaskThread}
@@ -2744,6 +1211,68 @@ export function MaphariStaffDashboard() {
               onUnassign={() => void handleUnassignConversation()}
             />
 
+            <AutoDraftUpdatesPage isActive={activePage === "autodraft"} />
+
+            <MeetingPrepPage isActive={activePage === "meetingprep"} />
+
+            <CommunicationHistoryPage isActive={activePage === "comms"} />
+
+            <ClientOnboardingPage isActive={activePage === "onboarding"} />
+
+            <ClientHealthPage isActive={activePage === "health"} />
+
+            <ResponseTimePage isActive={activePage === "response"} />
+
+            <SentimentFlagsPage isActive={activePage === "sentiment"} />
+
+            <LastTouchedPage isActive={activePage === "lasttouched"} />
+
+            <PortalActivityPage isActive={activePage === "portal"} />
+
+            <SmartSuggestionsPage isActive={activePage === "smartsuggestions"} />
+
+            <SprintPlanningPage isActive={activePage === "sprintplanning"} />
+
+            <TaskDependenciesPage isActive={activePage === "taskdependencies"} />
+
+            <RecurringTasksPage isActive={activePage === "recurringtasks"} />
+
+            <FocusModePage isActive={activePage === "focusmode"} />
+
+            <PeerRequestsPage isActive={activePage === "peerrequests"} />
+
+            <TriggerLogPage isActive={activePage === "triggerlog"} />
+
+            <PrivateNotesPage isActive={activePage === "privatenotes"} />
+
+            <KeyboardShortcutsPage isActive={activePage === "keyboardshortcuts"} />
+
+            <EstimatesVsActualsPage isActive={activePage === "estimatesactuals"} />
+
+            <SatisfactionScoresPage isActive={activePage === "satisfactionscores"} />
+
+            <KnowledgeBasePage isActive={activePage === "knowledge"} />
+
+            <DecisionLogPage isActive={activePage === "decisionlog"} />
+
+            <HandoverChecklistPage isActive={activePage === "handoverchecklist"} />
+
+            <CloseOutReportPage isActive={activePage === "closeoutreport"} />
+
+            <StaffHandoversPage isActive={activePage === "staffhandovers"} />
+
+            <ProjectContextPage isActive={activePage === "context"} />
+
+            <MilestoneSignOffPage isActive={activePage === "signoff"} />
+
+            <DailyStandupPage isActive={activePage === "standup"} />
+
+            <RetainerBurnPage isActive={activePage === "retainer"} />
+
+            <PersonalPerformancePage isActive={activePage === "performance"} />
+
+            <EndOfDayWrapPage isActive={activePage === "eodwrap"} />
+
             <DeliverablesPage
               isActive={activePage === "deliverables"}
               nowTs={nowTs}
@@ -2768,7 +1297,7 @@ export function MaphariStaffDashboard() {
                 }))
               }
               creatingDeliverable={creatingDeliverable}
-              onCreateDeliverable={() => void handleCreateDeliverable()}
+              onCreateDeliverable={() => void handleCreateDeliverable(projects)}
               deliverableGroups={deliverableGroups}
               files={files}
               onMilestoneAttachment={handleMilestoneAttachment}

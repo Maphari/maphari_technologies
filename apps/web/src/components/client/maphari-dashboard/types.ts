@@ -1,11 +1,5 @@
-export type PageId = "dashboard" | "projects" | "create" | "docs" | "invoices" | "messages" | "automations" | "settings";
-
-export type NavItem = {
-  id: PageId;
-  label: string;
-  section: string;
-  badge?: { value: string; tone?: "amber" | "red" };
-};
+// ─── Re-exports for backward compatibility ───
+export type { PageId, NavItem } from "./config";
 
 export type Thread = {
   id: string;

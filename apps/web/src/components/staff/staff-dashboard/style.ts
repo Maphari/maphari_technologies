@@ -1,6 +1,12 @@
-import styles from "../../../app/style/maphari-staff-dashboard.module.css";
+/**
+ * Staff dashboard CSS module and cx utility.
+ *
+ * The cx function is created via the shared createCx factory,
+ * bound to the staff-specific CSS module.
+ */
+import styles from "@/app/style/staff/maphari-staff-dashboard.module.css";
+import { createCx } from "@/lib/utils/cx";
 
-const cx = (...names: Array<string | false | null | undefined>) =>
-  names.filter(Boolean).map((name) => styles[name as keyof typeof styles] ?? name).join(" ");
+const cx = createCx(styles);
 
 export { styles, cx };

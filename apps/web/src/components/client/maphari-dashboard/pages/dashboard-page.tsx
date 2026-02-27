@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { capitalize } from "../utils";
 import type {
@@ -15,6 +16,33 @@ import type {
   TimelineItem
 } from "../types";
 import type { InvoiceSummaryRow, MilestoneRow, ProjectRow } from "./types";
+import { CLIENT_INVOICES_PAYMENTS_BUDGETS } from "./invoices-page";
+
+/* ── Feature 6: Portfolio Health Ring ─────────────────────── */
+function HealthRing({ score, animate }: { score: number; animate: boolean }) {
+  const r = 44;
+  const circ = 2 * Math.PI * r;
+  const fill = circ * (score / 100);
+  const color = score >= 80 ? "var(--green)" : score >= 50 ? "var(--amber)" : "var(--red)";
+  return (
+    <svg width={110} height={110} viewBox="0 0 100 100" style={{ flexShrink: 0 }}>
+      <circle cx={50} cy={50} r={r} fill="none" stroke="var(--border)" strokeWidth={8} />
+      <circle
+        cx={50} cy={50} r={r} fill="none"
+        stroke={color} strokeWidth={8} strokeLinecap="round"
+        strokeDasharray={circ}
+        strokeDashoffset={animate ? circ - fill : circ}
+        style={{
+          transformOrigin: "50% 50%",
+          transform: "rotate(-90deg)",
+          transition: animate ? "stroke-dashoffset 1.4s cubic-bezier(.23,1,.32,1)" : "none"
+        }}
+      />
+      <text x={50} y={45} textAnchor="middle" fontSize={22} fontWeight={400} fill="var(--text)" style={{ fontFamily: "var(--font-instrument), serif" }}>{score}</text>
+      <text x={50} y={60} textAnchor="middle" fontSize={9} fill="var(--muted)">/ 100</text>
+    </svg>
+  );
+}
 
 type DashboardPageProps = {
   active: boolean;
@@ -96,6 +124,39 @@ export function ClientDashboardPage({
   onApproveMilestone,
   onRejectMilestone
 }: DashboardPageProps) {
+  /* Feature 6 — portfolio health score */
+  const healthScore = useMemo(() => {
+    let s = 70;
+    const atRisk = actionCenter.find((i) => i.id === "at_risk");
+    if (atRisk && Number(atRisk.value) === 0) s += 10;
+    else if (atRisk && Number(atRisk.value) >= 2) s -= 15;
+    const overdueCount = invoiceRows.filter((r) => r.badge.tone === "red").length;
+    if (overdueCount === 0) s += 10;
+    else s -= overdueCount * 8;
+    const avgProg = projectRows.length
+      ? projectRows.reduce((sum, p) => sum + p.progress, 0) / projectRows.length
+      : 50;
+    if (avgProg >= 70) s += 5;
+    return Math.max(0, Math.min(100, Math.round(s)));
+  }, [actionCenter, invoiceRows, projectRows]);
+
+  /* ── Pinned projects ──────────────────────────────────── */
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
+  const togglePin = (id: string) => {
+    setPinnedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const sortedProjectRows = useMemo(() => {
+    return [...projectRows].sort((a, b) => {
+      const aPinned = pinnedIds.has(a.id) ? 0 : 1;
+      const bPinned = pinnedIds.has(b.id) ? 0 : 1;
+      return aPinned - bPinned;
+    });
+  }, [projectRows, pinnedIds]);
+
   const openTarget = (target: ActionCenterItem["target"]) => {
     if (target === "projects") {
       onOpenProjects();
@@ -112,11 +173,11 @@ export function ClientDashboardPage({
     <section className={cx("page", active && "pageActive")} id="page-dashboard">
       <div className={styles.pageHeader} id="tour-page-dashboard">
         <div>
-          <div className={styles.pageEyebrow}>Good morning, {userGreetingName}</div>
-          <div className={styles.pageTitle}>Your Project Overview</div>
+          <div className={styles.eyebrow}>Command Centre</div>
+          <div className={styles.pageTitle}>Welcome back, {userGreetingName}</div>
           <div className={styles.pageSub}>Here&apos;s where everything stands across your active engagements.</div>
         </div>
-        <div className={styles.pageActions}>
+        <div className={styles.headerRight}>
           <button className={cx("button", "buttonGhost")} type="button" onClick={onOpenProjects}>View Projects</button>
           <button className={cx("button", "buttonAccent")} type="button" onClick={onOpenMessages}>Message Team</button>
         </div>
@@ -144,7 +205,6 @@ export function ClientDashboardPage({
                 openTarget(item.target);
               }
             }}
-            style={{ cursor: "none" }}
           >
             <div
               className={styles.statTopBar}
@@ -179,6 +239,81 @@ export function ClientDashboardPage({
         ))}
       </div>
 
+      <div className={styles.dashboardBody}>
+
+      {/* ── F6: Portfolio Health Score ───────────────────────── */}
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <span className={styles.cardHeaderTitle}>Portfolio Health</span>
+          <span className={styles.cardLink}>Live score</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 32, padding: "20px 24px" }}>
+          <HealthRing score={healthScore} animate={animateProgress} />
+          <div className={styles.healthBreakdown}>
+            {[
+              { lbl: "Active Projects", val: String(projectRows.length), dot: "var(--accent)" },
+              {
+                lbl: "Milestones Pending",
+                val: String(milestoneRows.filter((m) => m.approval === "PENDING").length),
+                dot: "var(--amber)"
+              },
+              {
+                lbl: "Overdue Invoices",
+                val: String(invoiceRows.filter((r) => r.badge.tone === "red").length),
+                dot: "var(--red)"
+              },
+              {
+                lbl: "Avg Progress",
+                val: projectRows.length
+                  ? `${Math.round(projectRows.reduce((s, p) => s + p.progress, 0) / projectRows.length)}%`
+                  : "–",
+                dot: "var(--green)"
+              }
+            ].map((m) => (
+              <div key={m.lbl} className={styles.healthMetric}>
+                <div className={styles.healthMetricDot} style={{ background: m.dot }} />
+                <div className={styles.healthMetricVal}>{m.val}</div>
+                <div className={styles.healthMetricLbl}>{m.lbl}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── F7: Budget Pulse ─────────────────────────────────── */}
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <span className={styles.cardHeaderTitle}>Budget Pulse</span>
+          <span className={styles.cardLink}>Spend vs allocated</span>
+        </div>
+        <div className={styles.cardBody}>
+          {CLIENT_INVOICES_PAYMENTS_BUDGETS.map((b) => {
+            const pct = Math.round((b.spent / b.total) * 100);
+            const tone = pct >= 90 ? "var(--red)" : pct >= 70 ? "var(--amber)" : "var(--accent)";
+            return (
+              <div key={b.project} className={styles.budgetRow}>
+                <div className={styles.budgetLabel}>{b.project}</div>
+                <div className={styles.budgetBar}>
+                  <div
+                    className={styles.budgetFill}
+                    style={{
+                      width: `${pct}%`,
+                      background: tone,
+                      transition: animateProgress ? "width 1.2s cubic-bezier(.23,1,.32,1)" : "none"
+                    }}
+                  />
+                </div>
+                <div className={styles.budgetMeta}>
+                  <span>R {b.spent.toLocaleString()}</span>
+                  <span className={styles.budgetTotal}>/ R {b.total.toLocaleString()}</span>
+                  <span style={{ color: tone, fontWeight: 700 }}>{pct}%</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className={styles.grid32}>
         <div className={styles.card}>
           <div className={styles.cardHeader}>
@@ -202,16 +337,28 @@ export function ClientDashboardPage({
               </tr>
             </thead>
             <tbody>
-              {projectRows.length === 0 ? (
+              {sortedProjectRows.length === 0 ? (
                 <tr>
                   <td colSpan={4} className={styles.emptyState}>No projects available yet.</td>
                 </tr>
               ) : (
-                projectRows.map((project) => (
+                sortedProjectRows.map((project) => (
                   <tr key={project.id}>
                     <td>
-                      <div className={styles.tableName}>{project.name}</div>
-                      <div className={styles.tableSub}>{project.subtitle}</div>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <button
+                          type="button"
+                          className={cx("star", pinnedIds.has(project.id) && "starActive")}
+                          onClick={(e) => { e.stopPropagation(); togglePin(project.id); }}
+                          style={{ marginRight: 6 }}
+                        >
+                          &#9733;
+                        </button>
+                        <div>
+                          <div className={styles.tableName}>{project.name}</div>
+                          <div className={styles.tableSub}>{project.subtitle}</div>
+                        </div>
+                      </div>
                     </td>
                     <td><span className={cx("badge", project.statusTone)}>{project.status}</span></td>
                     <td>
@@ -724,6 +871,8 @@ export function ClientDashboardPage({
           </div>
         </div>
       </div>
+
+      </div>{/* end dashboardBody */}
     </section>
   );
 }

@@ -71,7 +71,7 @@ export function MessagesPanel({ threads, selectedId, onSelect }: Props) {
                 <div
                   style={{
                     background: message.from === "you" ? "var(--accent-dim)" : "var(--surface)",
-                    border: `1px solid ${message.from === "you" ? "rgba(200,241,53,0.2)" : "var(--border)"}`,
+                    border: `1px solid ${message.from === "you" ? "color-mix(in srgb, var(--primary,#12d6c5) 20%, transparent)" : "var(--border)"}`,
                     padding: "12px 16px",
                     fontSize: "0.83rem",
                     lineHeight: 1.6,

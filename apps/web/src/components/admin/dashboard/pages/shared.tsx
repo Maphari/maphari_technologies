@@ -1,57 +1,41 @@
-import styles from "../../../../app/style/maphari-dashboard.module.css";
+/**
+ * Admin dashboard shared utilities and components.
+ *
+ * Core implementations live in the shared foundation (@/lib/utils/*
+ * and @/components/shared/ui/*). This file re-exports them under
+ * their original names so existing admin page imports work unchanged.
+ */
+import type { ReactNode } from "react";
+import { styles } from "../style";
 import type { LeadPipelineStatus } from "../../../../lib/api/admin";
-import { formatMoneyCents } from "../../../../lib/i18n/currency";
 
-export function EmptyState({
-  title,
-  subtitle,
-  compact = false,
-  variant = "data"
-}: {
+// ─── Re-export shared formatting ───
+
+export { formatDateLong as formatDate } from "@/lib/utils/format-date";
+export { formatMoney } from "@/lib/utils/format-money";
+
+// ─── Re-export shared UI components under original admin names ───
+
+export { DashboardTabs as AdminTabs } from "@/components/shared/ui/tabs";
+export { DashboardFilterBar as AdminFilterBar } from "@/components/shared/ui/filter-bar";
+
+// ─── EmptyState with admin CSS module pre-bound ───
+
+import { EmptyState as SharedEmptyState } from "@/components/shared/ui/empty-state";
+
+/** Empty-state component pre-bound to the admin dashboard CSS module */
+export function EmptyState(props: {
   title: string;
   subtitle?: string;
   compact?: boolean;
   variant?: "data" | "message" | "security";
 }) {
-  return (
-    <div className={`${styles.emptyState} ${compact ? styles.emptyStateCompact : ""}`}>
-      <div className={styles.emptyIcon}>
-        {variant === "message" ? (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8A2.5 2.5 0 0 1 17.5 16H11l-3.5 4V16H6.5A2.5 2.5 0 0 1 4 13.5z" />
-            <path d="M8 8h8M8 11h5" />
-          </svg>
-        ) : null}
-        {variant === "security" ? (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3 19 6v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
-            <path d="m9.5 12.2 1.8 1.8 3.2-3.2" />
-          </svg>
-        ) : null}
-        {variant === "data" ? (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 9.5a2.5 2.5 0 0 1 2.5-2.5h11A2.5 2.5 0 0 1 20 9.5v7A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z" />
-            <path d="M8 7V5.8A1.8 1.8 0 0 1 9.8 4h4.4A1.8 1.8 0 0 1 16 5.8V7" />
-            <path d="M4 11h16" />
-          </svg>
-        ) : null}
-      </div>
-      <div className={styles.emptyTitle}>{title}</div>
-      {subtitle ? <div className={styles.emptySub}>{subtitle}</div> : null}
-    </div>
-  );
+  return <SharedEmptyState {...props} styles={styles} />;
 }
 
-export function formatMoney(cents: number, currency: string): string {
-  return formatMoneyCents(cents, { currency: currency === "AUTO" ? null : currency });
-}
+// ─── Domain-specific logic (not shared) ───
 
-export function formatDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "N/A";
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit", year: "numeric" }).format(date);
-}
-
+/** Return the valid next pipeline statuses for a given lead status */
 export function nextStatuses(current: LeadPipelineStatus): LeadPipelineStatus[] {
   switch (current) {
     case "NEW":

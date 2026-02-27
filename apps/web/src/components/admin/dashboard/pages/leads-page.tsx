@@ -1,21 +1,60 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  bulkUpdateLeadStatusWithRefresh,
-  getLeadPreferenceWithRefresh,
-  loadLeadActivitiesWithRefresh,
-  loadLeadAnalyticsWithRefresh,
-  mergeLeadsWithRefresh,
-  setLeadPreferenceWithRefresh,
-  updateLeadWithRefresh,
-  type LeadActivity,
-  type LeadPipelineStatus
-} from "../../../../lib/api/admin";
+import type { LeadPipelineStatus } from "../../../../lib/api/admin";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
-import styles from "../../../../app/style/maphari-dashboard.module.css";
-import { EmptyState, formatDate, nextStatuses } from "./shared";
+
+const C = {
+  bg: "#050508",
+  surface: "#0d0d14",
+  border: "#1a1a2e",
+  primary: "#a78bfa",
+  blue: "#60a5fa",
+  amber: "#f5c518",
+  red: "#ff4444",
+  muted: "#a0a0b0",
+  text: "#e8e8f0"
+} as const;
+
+const STAGES: LeadPipelineStatus[] = ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL", "WON", "LOST"];
+
+type ViewMode = "list" | "kanban";
+
+function tone(status: LeadPipelineStatus): string {
+  if (status === "NEW") return C.blue;
+  if (status === "QUALIFIED") return C.amber;
+  if (status === "LOST") return C.red;
+  return C.primary;
+}
+
+function label(status: LeadPipelineStatus): string {
+  return status.replace("_", " ");
+}
+
+function formatDate(value?: string | null): string {
+  if (!value) return "Not set";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not set";
+  return new Intl.DateTimeFormat("en-ZA", { month: "short", day: "2-digit" }).format(date);
+}
+
+function leadScore(lead: ReturnType<typeof useAdminWorkspaceContext>["snapshot"]["leads"][number], now: number): number {
+  const base: Record<LeadPipelineStatus, number> = {
+    NEW: 20,
+    CONTACTED: 35,
+    QUALIFIED: 55,
+    PROPOSAL: 75,
+    WON: 90,
+    LOST: 5
+  };
+  const sourceBonus: Record<string, number> = { referral: 16, linkedin: 12, website: 10, google: 9, meta: 6 };
+  const staleDays = Math.max(0, Math.floor((now - new Date(lead.updatedAt).getTime()) / 86400000));
+  const freshness = staleDays <= 2 ? 10 : staleDays <= 7 ? 4 : -10;
+  const notes = lead.notes && lead.notes.trim().length > 24 ? 6 : 0;
+  const raw = base[lead.status] + (sourceBonus[(lead.source ?? "").toLowerCase()] ?? 0) + freshness + notes;
+  return Math.max(0, Math.min(100, raw));
+}
 
 export function LeadsPage({
   leads,
@@ -34,659 +73,225 @@ export function LeadsPage({
   onNotify: (tone: "success" | "error", message: string) => void;
   clock: number;
 }) {
-  type LeadWithMeta = (typeof leads)[number] & {
-    score: number;
-    priority: "Hot" | "Warm" | "Cold";
-    staleDays: number;
-  };
-  type SavedView = "ALL" | "HOT" | "FOLLOW_UP" | "PROPOSAL" | "LOST";
-  type LeadSlaConfig = { followUpDays: number; breachDays: number };
-
-  const isClientRole = session?.user.role === "CLIENT";
-  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(leads[0]?.id ?? null);
-  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
-  const [search, setSearch] = useState("");
+  const isClient = session?.user.role === "CLIENT";
+  const [view, setView] = useState<ViewMode>("list");
+  const [query, setQuery] = useState("");
+  const [stageFilter, setStageFilter] = useState<"ALL" | LeadPipelineStatus>("ALL");
   const [sourceFilter, setSourceFilter] = useState("ALL");
-  const [priorityFilter, setPriorityFilter] = useState<"ALL" | "Hot" | "Warm" | "Cold">("ALL");
-  const [savedView, setSavedView] = useState<SavedView>("ALL");
-  const [bulkStatus, setBulkStatus] = useState<LeadPipelineStatus>("CONTACTED");
-  const [lostReasons, setLostReasons] = useState<Record<string, string>>({});
-  const [leadHistory, setLeadHistory] = useState<Record<string, LeadActivity[]>>({});
-  const [editTitle, setEditTitle] = useState("");
-  const [editSource, setEditSource] = useState("");
-  const [editContactName, setEditContactName] = useState("");
-  const [editContactEmail, setEditContactEmail] = useState("");
-  const [editContactPhone, setEditContactPhone] = useState("");
-  const [editCompany, setEditCompany] = useState("");
-  const [editOwnerName, setEditOwnerName] = useState("");
-  const [editFollowUpAt, setEditFollowUpAt] = useState("");
-  const [editNotes, setEditNotes] = useState("");
-  const [savingLead, setSavingLead] = useState(false);
-  const [slaConfig, setSlaConfig] = useState<LeadSlaConfig>({ followUpDays: 3, breachDays: 5 });
-  const [analyticsSummary, setAnalyticsSummary] = useState<{ avgTimeInStageDays: number; conversionRate: number } | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(leads[0]?.id ?? null);
 
-  const columns: Array<{ status: LeadPipelineStatus; label: string }> = [
-    { status: "NEW", label: "New" },
-    { status: "CONTACTED", label: "Contacted" },
-    { status: "QUALIFIED", label: "Qualified" },
-    { status: "PROPOSAL", label: "Proposal" },
-    { status: "WON", label: "Won" },
-    { status: "LOST", label: "Lost" }
-  ];
-
-  const sourceOptions = useMemo(() => {
-    return Array.from(new Set(leads.map((lead) => lead.source?.trim()).filter((value): value is string => Boolean(value))));
-  }, [leads]);
-
-  const leadsWithMeta = useMemo<LeadWithMeta[]>(() => {
-    const now = clock;
+  const rows = useMemo(() => {
     return leads.map((lead) => {
-      const statusBase: Record<LeadPipelineStatus, number> = {
-        NEW: 20,
-        CONTACTED: 35,
-        QUALIFIED: 55,
-        PROPOSAL: 75,
-        WON: 90,
-        LOST: 5
-      };
-      const sourceBonus: Record<string, number> = {
-        referral: 16,
-        linkedin: 12,
-        website: 10,
-        google: 9,
-        meta: 6
-      };
-      const normalizedSource = (lead.source ?? "").toLowerCase();
-      const noteBonus = lead.notes && lead.notes.trim().length > 24 ? 6 : 0;
-      const daysSinceUpdate = Math.max(
-        0,
-        Math.floor((now - new Date(lead.updatedAt).getTime()) / (1000 * 60 * 60 * 24))
-      );
-      const freshnessDelta = daysSinceUpdate <= 2 ? 10 : daysSinceUpdate <= 7 ? 4 : -10;
-      const rawScore = statusBase[lead.status] + (sourceBonus[normalizedSource] ?? 0) + noteBonus + freshnessDelta;
-      const score = Math.max(0, Math.min(100, rawScore));
-      const priority: "Hot" | "Warm" | "Cold" = score >= 75 ? "Hot" : score >= 45 ? "Warm" : "Cold";
-      return { ...lead, score, priority, staleDays: daysSinceUpdate };
+      const staleDays = Math.max(0, Math.floor((clock - new Date(lead.updatedAt).getTime()) / 86400000));
+      const score = leadScore(lead, clock);
+      const priority = score >= 75 ? "Hot" : score >= 45 ? "Warm" : "Cold";
+      return { ...lead, staleDays, score, priority };
     });
   }, [leads, clock]);
 
   useEffect(() => {
-    if (selectedLeadId && !leads.some((lead) => lead.id === selectedLeadId)) {
-      queueMicrotask(() => setSelectedLeadId(leads[0]?.id ?? null));
-    }
-  }, [leads, selectedLeadId]);
+    if (selectedId && !rows.some((row) => row.id === selectedId)) setSelectedId(rows[0]?.id ?? null);
+  }, [rows, selectedId]);
 
-  useEffect(() => {
-    if (!session) return;
-    void (async () => {
-      const [viewPref, slaPref] = await Promise.all([
-        getLeadPreferenceWithRefresh(session, "savedView"),
-        getLeadPreferenceWithRefresh(session, "slaConfig")
-      ]);
-      if (viewPref.nextSession && viewPref.data?.value) {
-        const candidate = viewPref.data.value as SavedView;
-        if (["ALL", "HOT", "FOLLOW_UP", "PROPOSAL", "LOST"].includes(candidate)) {
-          setSavedView(candidate);
-        }
-      }
-      if (slaPref.nextSession && slaPref.data?.value) {
-        try {
-          const parsed = JSON.parse(slaPref.data.value) as Partial<LeadSlaConfig>;
-          setSlaConfig({
-            followUpDays: Math.max(1, Math.min(30, Number(parsed.followUpDays ?? 3))),
-            breachDays: Math.max(1, Math.min(60, Number(parsed.breachDays ?? 5)))
-          });
-        } catch {
-          // keep defaults
-        }
-      }
-    })();
-  }, [session]);
+  const sources = useMemo(
+    () => Array.from(new Set(rows.map((row) => row.source?.trim()).filter((v): v is string => Boolean(v)))),
+    [rows]
+  );
 
-  useEffect(() => {
-    if (!session) return;
-    void setLeadPreferenceWithRefresh(session, { key: "savedView", value: savedView });
-  }, [savedView, session]);
-
-  useEffect(() => {
-    if (!session) return;
-    void setLeadPreferenceWithRefresh(session, { key: "slaConfig", value: JSON.stringify(slaConfig) });
-  }, [session, slaConfig]);
-
-  const filteredLeads = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return leadsWithMeta.filter((lead) => {
-      if (query) {
-        const matchesQuery =
-          lead.title.toLowerCase().includes(query) ||
-          (lead.source ?? "").toLowerCase().includes(query) ||
-          (lead.notes ?? "").toLowerCase().includes(query);
-        if (!matchesQuery) return false;
-      }
-      if (sourceFilter !== "ALL" && (lead.source ?? "Unknown") !== sourceFilter) return false;
-      if (priorityFilter !== "ALL" && lead.priority !== priorityFilter) return false;
-      if (savedView === "HOT" && lead.priority !== "Hot") return false;
-      if (savedView === "FOLLOW_UP" && (lead.staleDays < slaConfig.followUpDays || ["WON", "LOST"].includes(lead.status))) return false;
-      if (savedView === "PROPOSAL" && lead.status !== "PROPOSAL") return false;
-      if (savedView === "LOST" && lead.status !== "LOST") return false;
-      return true;
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (stageFilter !== "ALL" && row.status !== stageFilter) return false;
+      if (sourceFilter !== "ALL" && (row.source ?? "Unknown") !== sourceFilter) return false;
+      if (!q) return true;
+      return row.title.toLowerCase().includes(q) || (row.notes ?? "").toLowerCase().includes(q) || (row.source ?? "").toLowerCase().includes(q);
     });
-  }, [leadsWithMeta, priorityFilter, savedView, search, sourceFilter, slaConfig.followUpDays]);
+  }, [rows, query, sourceFilter, stageFilter]);
 
-  const selectedLead = filteredLeads.find((lead) => lead.id === selectedLeadId) ?? leadsWithMeta.find((lead) => lead.id === selectedLeadId) ?? null;
-  const selectedTimeline = selectedLead ? (leadHistory[selectedLead.id] ?? []) : [];
+  const selected = filtered.find((row) => row.id === selectedId) ?? rows.find((row) => row.id === selectedId) ?? null;
 
-  useEffect(() => {
-    if (!selectedLead) return;
-    queueMicrotask(() => {
-      setEditTitle(selectedLead.title);
-      setEditSource(selectedLead.source ?? "");
-      setEditContactName(selectedLead.contactName ?? "");
-      setEditContactEmail(selectedLead.contactEmail ?? "");
-      setEditContactPhone(selectedLead.contactPhone ?? "");
-      setEditCompany(selectedLead.company ?? "");
-      setEditOwnerName(selectedLead.ownerName ?? "");
-      setEditFollowUpAt(
-        selectedLead.nextFollowUpAt
-          ? new Date(selectedLead.nextFollowUpAt).toISOString().slice(0, 16)
-          : ""
-      );
-      setEditNotes(selectedLead.notes ?? "");
-    });
-  }, [selectedLead]);
+  const won = rows.filter((row) => row.status === "WON").length;
+  const lost = rows.filter((row) => row.status === "LOST").length;
+  const active = rows.filter((row) => row.status !== "WON" && row.status !== "LOST").length;
+  const hot = rows.filter((row) => row.priority === "Hot").length;
+  const followUps = rows.filter((row) => row.status !== "WON" && row.status !== "LOST" && row.staleDays >= 3).length;
+  const winRate = won + lost > 0 ? Math.round((won / (won + lost)) * 100) : 0;
 
-  useEffect(() => {
-    if (!session || !selectedLeadId) return;
-    void (async () => {
-      const result = await loadLeadActivitiesWithRefresh(session, selectedLeadId);
-      if (!result.nextSession) {
-        onNotify("error", result.error?.message ?? "Session expired. Please sign in again.");
-        return;
-      }
-      if (result.error) {
-        onNotify("error", result.error.message);
-      }
-      if (result.data) {
-        setLeadHistory((current) => ({ ...current, [selectedLeadId]: result.data ?? [] }));
-      }
-    })();
-  }, [onNotify, selectedLeadId, session]);
-
-  useEffect(() => {
-    if (!session) return;
-    void (async () => {
-      const result = await loadLeadAnalyticsWithRefresh(session);
-      if (result.nextSession && result.data) {
-        setAnalyticsSummary({
-          avgTimeInStageDays: result.data.avgTimeInStageDays,
-          conversionRate: result.data.conversionRate
-        });
-      }
-    })();
-  }, [session, leads.length]);
-
-  const followUpQueue = useMemo(() => {
-    const now = clock;
-    return leadsWithMeta
-      .filter((lead) => {
-        if (["WON", "LOST"].includes(lead.status)) return false;
-        const dueBySchedule = lead.nextFollowUpAt ? new Date(lead.nextFollowUpAt).getTime() <= now : false;
-        return lead.staleDays >= slaConfig.followUpDays || dueBySchedule;
-      })
-      .sort((a, b) => b.staleDays - a.staleDays)
-      .slice(0, 5);
-  }, [leadsWithMeta, slaConfig.followUpDays, clock]);
-
-  const duplicates = useMemo(() => {
-    const byKey = new Map<string, LeadWithMeta[]>();
-    for (const lead of leadsWithMeta) {
-      const keys = [
-        lead.contactEmail ? `email:${lead.contactEmail.trim().toLowerCase()}` : "",
-        lead.contactPhone ? `phone:${lead.contactPhone.replace(/\D/g, "")}` : "",
-        lead.company ? `company:${lead.company.trim().toLowerCase()}::title:${lead.title.trim().toLowerCase()}` : ""
-      ].filter(Boolean);
-      for (const key of keys) {
-        const group = byKey.get(key) ?? [];
-        group.push(lead);
-        byKey.set(key, group);
-      }
-    }
-    return Array.from(byKey.values()).filter((group) => group.length > 1).slice(0, 6);
-  }, [leadsWithMeta]);
-
-  const hotCount = leadsWithMeta.filter((lead) => lead.priority === "Hot").length;
-  const wonCount = leadsWithMeta.filter((lead) => lead.status === "WON").length;
-  const followUpCount = leadsWithMeta.filter((lead) => {
-    if (["WON", "LOST"].includes(lead.status)) return false;
-    const dueBySchedule = lead.nextFollowUpAt ? new Date(lead.nextFollowUpAt).getTime() <= clock : false;
-    return lead.staleDays >= slaConfig.followUpDays || dueBySchedule;
-  }).length;
-  const breachCount = leadsWithMeta.filter((lead) => !["WON", "LOST"].includes(lead.status) && lead.staleDays >= slaConfig.breachDays).length;
-  const conversionPct = (() => {
-    if (analyticsSummary) return analyticsSummary.conversionRate.toFixed(1);
-    const pipeline = leadsWithMeta.filter((lead) => !["WON", "LOST"].includes(lead.status)).length;
-    const won = leadsWithMeta.filter((lead) => lead.status === "WON").length;
-    return pipeline + won > 0 ? ((won / (pipeline + won)) * 100).toFixed(1) : "0.0";
-  })();
-  const avgTimeInStageDays = (() => {
-    if (analyticsSummary) return analyticsSummary.avgTimeInStageDays.toFixed(1);
-    if (leadsWithMeta.length === 0) return "0.0";
-    const totalDays = leadsWithMeta.reduce((sum, lead) => sum + lead.staleDays, 0);
-    return (totalDays / leadsWithMeta.length).toFixed(1);
-  })();
-
-  async function moveLeadWithExtras(lead: LeadWithMeta, nextStatus: LeadPipelineStatus): Promise<void> {
-    let reason = "";
-    if (nextStatus === "LOST") {
-      reason = window.prompt("Why was this lead lost?", lostReasons[lead.id] ?? "No budget / delayed decision")?.trim() ?? "";
-      if (!reason) return;
-    }
-
-    const success = await onMoveLead(lead.id, nextStatus, nextStatus === "LOST" ? { lostReason: reason } : {});
-    if (!success) return;
-
-    if (nextStatus === "LOST") {
-      setLostReasons((current) => ({ ...current, [lead.id]: reason }));
-    }
-    await onRefreshSnapshot(session ?? undefined);
-    onNotify("success", `Lead moved to ${nextStatus}.`);
-  }
-
-  async function applyBulkMove(): Promise<void> {
-    if (!session || selectedLeadIds.length === 0) return;
+  async function moveLead(id: string, status: LeadPipelineStatus): Promise<void> {
+    if (isClient) return;
     let lostReason = "";
-    if (bulkStatus === "LOST") {
-      lostReason = window.prompt("Reason for marking selected leads as LOST", "No budget / no response")?.trim() ?? "";
+    if (status === "LOST") {
+      lostReason = window.prompt("Reason for marking lead as LOST", "No budget / delayed decision")?.trim() ?? "";
       if (!lostReason) return;
     }
-
-    const result = await bulkUpdateLeadStatusWithRefresh(session, {
-      leadIds: selectedLeadIds,
-      status: bulkStatus,
-      lostReason: bulkStatus === "LOST" ? lostReason : undefined
-    });
-
-    if (!result.nextSession) {
-      onNotify("error", result.error?.message ?? "Session expired. Please sign in again.");
-      return;
-    }
-
-    if (result.error) {
-      onNotify("error", result.error.message);
-      return;
-    }
-
-    if (bulkStatus === "LOST") {
-      const next: Record<string, string> = {};
-      for (const leadId of selectedLeadIds) next[leadId] = lostReason;
-      setLostReasons((current) => ({ ...current, ...next }));
-    }
-
-    await onRefreshSnapshot(result.nextSession);
-    onNotify("success", "Bulk status update completed.");
-    setSelectedLeadIds([]);
-  }
-
-  async function saveLeadDetails(): Promise<void> {
-    if (!session || !selectedLead) return;
-    setSavingLead(true);
-    const result = await updateLeadWithRefresh(session, selectedLead.id, {
-      title: editTitle.trim(),
-      source: editSource.trim() || undefined,
-      contactName: editContactName.trim() || undefined,
-      contactEmail: editContactEmail.trim() || undefined,
-      contactPhone: editContactPhone.trim() || undefined,
-      company: editCompany.trim() || undefined,
-      ownerName: editOwnerName.trim() || undefined,
-      notes: editNotes.trim() || undefined,
-      nextFollowUpAt: editFollowUpAt ? new Date(editFollowUpAt).toISOString() : null
-    });
-    setSavingLead(false);
-
-    if (!result.nextSession) {
-      onNotify("error", result.error?.message ?? "Session expired. Please sign in again.");
-      return;
-    }
-    if (result.error) {
-      onNotify("error", result.error.message);
-      return;
-    }
-    await onRefreshSnapshot(result.nextSession);
-    onNotify("success", "Lead details saved.");
-  }
-
-  async function mergeDuplicateLeads(primaryLeadId: string, duplicateLeadId: string): Promise<void> {
-    if (!session) return;
-    const primary = leadsWithMeta.find((lead) => lead.id === primaryLeadId);
-    const duplicate = leadsWithMeta.find((lead) => lead.id === duplicateLeadId);
-    const preview = [
-      "Merge Preview",
-      `Primary: ${primary?.title ?? primaryLeadId} (${primary?.source ?? "unknown"})`,
-      `Duplicate: ${duplicate?.title ?? duplicateLeadId} (${duplicate?.source ?? "unknown"})`,
-      "The duplicate will be deleted and details merged into primary."
-    ].join("\n");
-    const confirmed = window.confirm(preview);
-    if (!confirmed) return;
-    const result = await mergeLeadsWithRefresh(session, { primaryLeadId, duplicateLeadId });
-    if (!result.nextSession) {
-      onNotify("error", result.error?.message ?? "Session expired. Please sign in again.");
-      return;
-    }
-    if (result.error) {
-      onNotify("error", result.error.message);
-      return;
-    }
-    await onRefreshSnapshot(result.nextSession);
-    onNotify("success", "Duplicate leads merged.");
+    const ok = await onMoveLead(id, status, status === "LOST" ? { lostReason } : undefined);
+    if (!ok) return;
+    await onRefreshSnapshot(session ?? undefined);
+    onNotify("success", `Lead moved to ${label(status)}.`);
   }
 
   return (
-    <div className={styles.pageBody}>
-      <div className={styles.projHeader}>
+    <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: "Syne, sans-serif", padding: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>
-          <div className={styles.projEyebrow}>Operations</div>
-          <div className={styles.projName}>Leads Pipeline</div>
-          <div className={styles.projMeta}>Pipeline control, follow-ups, and conversion insights in one workspace.</div>
+          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / OPERATIONS</div>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>Leads Pipeline</h1>
+          <div style={{ marginTop: 4, fontSize: 13, color: C.muted }}>Stage tracking · Next actions · Conversion control</div>
+        </div>
+        <button style={{ background: C.primary, color: C.bg, border: "none", padding: "8px 16px", fontFamily: "DM Mono, monospace", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ New Lead</button>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+        {[
+          { label: "Pipeline Leads", value: rows.length.toString(), sub: `${active} active`, color: C.primary },
+          { label: "Hot Leads", value: hot.toString(), sub: rows.length > 0 ? `${Math.round((hot / rows.length) * 100)}% high intent` : "0% high intent", color: C.primary },
+          { label: "Follow-ups Due", value: followUps.toString(), sub: "Idle 3d+", color: followUps > 0 ? C.amber : C.primary },
+          { label: "Win Rate", value: `${winRate}%`, sub: `${won} won · ${lost} lost`, color: winRate >= 50 ? C.primary : C.amber }
+        ].map((kpi) => (
+          <div key={kpi.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
+            <div style={{ fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{kpi.label}</div>
+            <div style={{ fontFamily: "DM Mono, monospace", fontSize: 26, fontWeight: 800, color: kpi.color, marginBottom: 4 }}>{kpi.value}</div>
+            <div style={{ fontSize: 11, color: C.muted }}>{kpi.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 16 }}>
+        {STAGES.map((stage) => {
+          const count = filtered.filter((row) => row.status === stage).length;
+          const pct = filtered.length > 0 ? Math.round((count / filtered.length) * 100) : 0;
+          return (
+            <div key={stage} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 12 }}>
+              <div style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: tone(stage), letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{label(stage)}</div>
+              <div style={{ fontFamily: "DM Mono, monospace", fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 2 }}>{count}</div>
+              <div style={{ fontSize: 10, color: C.muted }}>{pct}% of filtered</div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 14, marginBottom: 16 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search lead, source, notes" style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", minWidth: 260, fontFamily: "DM Mono, monospace", fontSize: 12 }} />
+          <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value as "ALL" | LeadPipelineStatus)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+            <option value="ALL">All stages</option>
+            {STAGES.map((stage) => <option key={stage} value={stage}>{label(stage)}</option>)}
+          </select>
+          <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+            <option value="ALL">All sources</option>
+            {sources.map((source) => <option key={source} value={source}>{source}</option>)}
+          </select>
+          <button onClick={() => { setQuery(""); setStageFilter("ALL"); setSourceFilter("ALL"); }} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.muted, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, cursor: "pointer" }}>Reset</button>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+            <button onClick={() => setView("list")} style={{ background: view === "list" ? C.primary : C.bg, color: view === "list" ? C.bg : C.muted, border: `1px solid ${view === "list" ? C.primary : C.border}`, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, cursor: "pointer" }}>List</button>
+            <button onClick={() => setView("kanban")} style={{ background: view === "kanban" ? C.primary : C.bg, color: view === "kanban" ? C.bg : C.muted, border: `1px solid ${view === "kanban" ? C.primary : C.border}`, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, cursor: "pointer" }}>Kanban</button>
+          </div>
         </div>
       </div>
 
-      <div className={`${styles.statsRow} ${styles.statsRowCols4}`}>
-        <div className={`${styles.statCard} ${styles.green}`}>
-          <div className={styles.statLabel}>Pipeline Leads</div>
-          <div className={styles.statValue}>{leadsWithMeta.length}</div>
-          <div className={styles.statDelta}>Across all active stages</div>
-        </div>
-        <div className={`${styles.statCard} ${styles.purple}`}>
-          <div className={styles.statLabel}>Hot Leads</div>
-          <div className={styles.statValue}>{hotCount}</div>
-          <div className={styles.statDelta}>
-            {leadsWithMeta.length > 0 ? `${Math.round((hotCount / leadsWithMeta.length) * 100)}%` : "0%"} high-intent
-          </div>
-        </div>
-        <div className={`${styles.statCard} ${styles.amber}`}>
-          <div className={styles.statLabel}>Needs Follow-up</div>
-          <div className={styles.statValue}>{followUpCount}</div>
-          <div className={`${styles.statDelta} ${followUpCount > 0 ? styles.deltaDown : ""}`}>Queue requiring action</div>
-        </div>
-        <div className={`${styles.statCard} ${styles.green}`}>
-          <div className={styles.statLabel}>Win Rate</div>
-          <div className={styles.statValue}>{conversionPct}%</div>
-          <div className={`${styles.statDelta} ${wonCount > 0 ? styles.deltaUp : ""}`}>{wonCount} won opportunities</div>
-        </div>
-      </div>
-
-      {leadsWithMeta.length === 0 ? (
-        <article className={styles.card}>
-          <div className={styles.cardInner}>
-            <EmptyState
-              title="Nothing yet"
-              subtitle="No leads have been created yet. New inquiries from forms or manual entries will appear here before any stage movement."
-            />
-          </div>
-        </article>
-      ) : null}
-
-      <article className={styles.card}>
-        <div className={styles.cardInner}>
-          <div className={styles.inlineActions} style={{ flexWrap: "wrap", justifyContent: "space-between", gap: 14 }}>
-            <div className={styles.inlineActions} style={{ flexWrap: "wrap", gap: 8 }}>
-              <button type="button" className={`${styles.btnSm} ${savedView === "ALL" ? styles.btnAccent : styles.btnGhost}`} onClick={() => setSavedView("ALL")}>All</button>
-              <button type="button" className={`${styles.btnSm} ${savedView === "HOT" ? styles.btnAccent : styles.btnGhost}`} onClick={() => setSavedView("HOT")}>Hot Leads</button>
-              <button type="button" className={`${styles.btnSm} ${savedView === "FOLLOW_UP" ? styles.btnAccent : styles.btnGhost}`} onClick={() => setSavedView("FOLLOW_UP")}>Needs Follow-up</button>
-              <button type="button" className={`${styles.btnSm} ${savedView === "PROPOSAL" ? styles.btnAccent : styles.btnGhost}`} onClick={() => setSavedView("PROPOSAL")}>Proposal</button>
-              <button type="button" className={`${styles.btnSm} ${savedView === "LOST" ? styles.btnAccent : styles.btnGhost}`} onClick={() => setSavedView("LOST")}>Lost</button>
-            </div>
-            <div className={styles.inlineActions} style={{ flexWrap: "wrap", gap: 8 }}>
-              <input className={styles.msgInput} style={{ width: 210 }} placeholder="Search lead, source, notes" value={search} onChange={(event) => setSearch(event.target.value)} />
-              <select className={styles.msgInput} style={{ width: 160 }} value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
-                <option value="ALL">All sources</option>
-                {sourceOptions.map((source) => <option key={source} value={source}>{source}</option>)}
-              </select>
-              <select className={styles.msgInput} style={{ width: 140 }} value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value as typeof priorityFilter)}>
-                <option value="ALL">All priority</option>
-                <option value="Hot">Hot</option>
-                <option value="Warm">Warm</option>
-                <option value="Cold">Cold</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </article>
-
-      <div className={styles.twoCol}>
-        <article className={styles.card}>
-          <div className={styles.cardHd}><span className={styles.cardHdTitle}>Follow-up Queue</span></div>
-          <table className={styles.projTable}>
-            <thead><tr><th>Lead</th><th>Stage</th><th>Idle</th><th>Action</th></tr></thead>
-            <tbody>
-              {followUpQueue.length > 0 ? (
-                followUpQueue.map((lead) => (
-                  <tr key={lead.id}>
-                    <td>{lead.title}</td>
-                    <td>{lead.status}</td>
-                    <td>{lead.staleDays}d</td>
-                    <td><button type="button" className={`${styles.btnSm} ${styles.btnGhost} ${styles.btnInline}`} onClick={() => setSelectedLeadId(lead.id)}>Open</button></td>
-                  </tr>
-                ))
-              ) : (
-                <tr><td colSpan={4} className={styles.emptyCell}><EmptyState title="Nothing yet" subtitle="This section updates when follow-up risks are detected." compact /></td></tr>
-              )}
-            </tbody>
-          </table>
-        </article>
-
-        <article className={styles.card}>
-          <div className={styles.cardHd}><span className={styles.cardHdTitle}>Bulk Actions</span></div>
-          <div className={styles.cardInner}>
-            {isClientRole ? (
-              <EmptyState title="Read-only" subtitle="Switch to an admin or staff role to use bulk stage updates." compact />
-            ) : selectedLeadIds.length === 0 ? (
-              <EmptyState title="Nothing yet" subtitle="Select at least one lead to enable bulk stage movement." compact />
-            ) : (
-              <>
-                <div className={styles.projMeta}>Selected leads: <strong>{selectedLeadIds.length}</strong></div>
-                <div className={styles.inlineActions} style={{ marginTop: 10, flexWrap: "wrap" }}>
-                  <select className={styles.msgInput} style={{ width: 180 }} value={bulkStatus} onChange={(event) => setBulkStatus(event.target.value as LeadPipelineStatus)}>
-                    {columns.map((column) => <option key={column.status} value={column.status}>{column.label}</option>)}
-                  </select>
-                  <button type="button" className={`${styles.btnSm} ${styles.btnAccent}`} onClick={() => void applyBulkMove()}>
-                    Apply to selected
-                  </button>
-                  <button type="button" className={`${styles.btnSm} ${styles.btnGhost}`} onClick={() => setSelectedLeadIds([])}>Clear</button>
+      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 16 }}>
+        <div>
+          {view === "list" ? (
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1.3fr 100px 100px 70px 80px 120px 90px", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                {[
+                  "Lead", "Stage", "Source", "Score", "Idle", "Follow-up", "Open"
+                ].map((h) => <span key={h}>{h}</span>)}
+              </div>
+              {filtered.length > 0 ? filtered.map((row, i) => (
+                <div key={row.id} style={{ display: "grid", gridTemplateColumns: "1.3fr 100px 100px 70px 80px 120px 90px", padding: "14px 20px", borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", background: row.id === selectedId ? `${C.primary}12` : "transparent" }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700 }}>{row.title}</div>
+                    <div style={{ fontSize: 11, color: C.muted }}>{row.company ?? "No company"}</div>
+                  </div>
+                  <span style={{ fontSize: 10, fontFamily: "DM Mono, monospace", color: tone(row.status), background: `${tone(row.status)}20`, padding: "3px 8px" }}>{label(row.status)}</span>
+                  <span style={{ fontSize: 12, color: C.muted }}>{row.source ?? "Unknown"}</span>
+                  <span style={{ fontFamily: "DM Mono, monospace", color: C.primary }}>{row.score}</span>
+                  <span style={{ fontFamily: "DM Mono, monospace", color: row.staleDays >= 5 ? C.red : C.muted }}>{row.staleDays}d</span>
+                  <span style={{ fontSize: 11, color: C.muted }}>{formatDate(row.nextFollowUpAt)}</span>
+                  <button onClick={() => setSelectedId(row.id)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "6px 10px", fontFamily: "DM Mono, monospace", fontSize: 11, cursor: "pointer" }}>Open</button>
                 </div>
-              </>
-            )}
-          </div>
-        </article>
-      </div>
-
-      <div className={styles.twoCol}>
-        <article className={styles.card}>
-          <div className={styles.cardHd}><span className={styles.cardHdTitle}>Duplicate Detection</span></div>
-          <table className={styles.projTable}>
-            <thead><tr><th>Primary</th><th>Duplicate</th><th>Action</th></tr></thead>
-            <tbody>
-              {!isClientRole && duplicates.length > 0 ? (
-                duplicates.map((group) => {
-                  const [primary, ...rest] = group;
-                  const duplicate = rest[0];
-                  if (!duplicate) return null;
-                  return (
-                    <tr key={`${primary.id}:${duplicate.id}`}>
-                      <td>{primary.title}</td>
-                      <td>{duplicate.title}</td>
-                      <td>
-                        <button type="button" className={`${styles.btnSm} ${styles.btnGhost} ${styles.btnInline}`} onClick={() => void mergeDuplicateLeads(primary.id, duplicate.id)}>
-                          Merge
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr><td colSpan={3} className={styles.emptyCell}><EmptyState title={isClientRole ? "Read-only" : "Nothing yet"} subtitle={isClientRole ? "Duplicate merge is restricted to admin role." : "No duplicate leads detected."} compact /></td></tr>
-              )}
-            </tbody>
-          </table>
-        </article>
-
-        <article className={styles.card}>
-          <div className={styles.cardHd}><span className={styles.cardHdTitle}>Conversion Analytics</span></div>
-          <div className={styles.cardInner}>
-            <div className={`${styles.statsRow} ${styles.statsRowCols3}`}>
-              <div className={`${styles.statCard} ${styles.green}`}>
-                <div className={styles.statLabel}>Win Rate</div>
-                <div className={styles.statValue}>{conversionPct}%</div>
-                <div className={styles.statDelta}>Won vs closed opportunities</div>
-              </div>
-              <div className={`${styles.statCard} ${styles.purple}`}>
-                <div className={styles.statLabel}>Avg Time In Stage</div>
-                <div className={styles.statValue}>{avgTimeInStageDays}d</div>
-                <div className={styles.statDelta}>Pipeline movement pace</div>
-              </div>
-              <div className={`${styles.statCard} ${styles.red}`}>
-                <div className={styles.statLabel}>SLA Breaches</div>
-                <div className={styles.statValue}>{breachCount}</div>
-                <div className={`${styles.statDelta} ${breachCount > 0 ? styles.deltaDown : ""}`}>Leads past threshold</div>
-              </div>
+              )) : <div style={{ padding: 20, color: C.muted, fontSize: 12 }}>No leads match current filters.</div>}
             </div>
-            <div className={styles.inlineActions} style={{ marginTop: 12, gap: 12, flexWrap: "wrap" }}>
-              <label className={styles.formGroup} style={{ marginBottom: 0 }}>
-                <span>Follow-up SLA (days)</span>
-                <input
-                  className={styles.msgInput}
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={slaConfig.followUpDays}
-                  disabled={isClientRole}
-                  onChange={(event) => setSlaConfig((current) => ({ ...current, followUpDays: Math.max(1, Math.min(30, Number(event.target.value || 1))) }))}
-                />
-              </label>
-              <label className={styles.formGroup} style={{ marginBottom: 0 }}>
-                <span>Breach threshold (days)</span>
-                <input
-                  className={styles.msgInput}
-                  type="number"
-                  min={1}
-                  max={60}
-                  value={slaConfig.breachDays}
-                  disabled={isClientRole}
-                  onChange={(event) => setSlaConfig((current) => ({ ...current, breachDays: Math.max(1, Math.min(60, Number(event.target.value || 1))) }))}
-                />
-              </label>
-            </div>
-          </div>
-        </article>
-      </div>
-
-      <div className={styles.leadsBoardLayout}>
-        <div className={styles.leadsKanban}>
-          {columns.map((column) => {
-            const items = filteredLeads.filter((lead) => lead.status === column.status);
-            return (
-              <article key={column.status} className={styles.card}>
-                <div className={styles.cardHd}>
-                  <span className={styles.cardHdTitle}>{column.label}</span>
-                  <span className={styles.metaMono}>{items.length}</span>
-                </div>
-                <div className={styles.cardInner}>
-                  {items.length === 0 ? <EmptyState title="Nothing yet" subtitle="This section updates once leads enter this stage." compact /> : null}
-                  {items.map((lead) => (
-                    <div key={lead.id} className={styles.card} style={{ marginBottom: 10, borderColor: selectedLeadId === lead.id ? "var(--accent)" : undefined }}>
-                      <div className={styles.cardInner}>
-                        <div className={styles.inlineActions} style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <label className={styles.inlineActions} style={{ gap: 8, alignItems: "center" }}>
-                            <input
-                              type="checkbox"
-                              checked={selectedLeadIds.includes(lead.id)}
-                              disabled={isClientRole}
-                              onChange={(event) =>
-                                setSelectedLeadIds((current) =>
-                                  event.target.checked ? Array.from(new Set([...current, lead.id])) : current.filter((id) => id !== lead.id)
-                                )
-                              }
-                            />
-                            <span className={styles.cellStrong} style={{ marginBottom: 0 }}>{lead.title}</span>
-                          </label>
-                          <span className={`${styles.badge} ${lead.priority === "Hot" ? styles.badgeRed : lead.priority === "Warm" ? styles.badgeAmber : styles.badgeGreen}`}>{lead.priority}</span>
-                        </div>
-                        <div className={styles.cellSub}>{lead.source ?? "Unknown source"} · Score {lead.score}</div>
-                        <div className={styles.cellSub}>Idle {lead.staleDays}d</div>
-                        <div className={styles.inlineActions} style={{ marginTop: 10, flexWrap: "wrap" }}>
-                          <button type="button" className={`${styles.btnSm} ${styles.btnGhost} ${styles.btnInline}`} onClick={() => setSelectedLeadId(lead.id)}>Details</button>
-                          {!isClientRole ? nextStatuses(lead.status).map((nextStatus) => (
-                            <button
-                              key={nextStatus}
-                              type="button"
-                              className={`${styles.btnSm} ${styles.btnGhost} ${styles.btnInline}`}
-                              disabled={transitioningLeadId === lead.id}
-                              onClick={() => void moveLeadWithExtras(lead, nextStatus)}
-                            >
-                              {transitioningLeadId === lead.id ? "Saving..." : `Move ${nextStatus}`}
-                            </button>
-                          )) : null}
-                        </div>
-                      </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+              {STAGES.map((stage) => {
+                const items = filtered.filter((row) => row.status === stage);
+                return (
+                  <div key={stage} style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+                    <div style={{ padding: "12px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, letterSpacing: "0.08em", color: tone(stage), textTransform: "uppercase" }}>{label(stage)}</span>
+                      <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{items.length}</span>
                     </div>
-                  ))}
-                </div>
-              </article>
-            );
-          })}
-        </div>
-
-        <article className={styles.card}>
-          <div className={styles.cardHd}><span className={styles.cardHdTitle}>Lead Details</span></div>
-          <div className={styles.cardInner}>
-            {selectedLead ? (
-              <>
-                <div className={styles.inlineActions} style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <div className={styles.cellStrong} style={{ marginBottom: 0 }}>Lead Profile</div>
-                  <button type="button" className={`${styles.btnSm} ${styles.btnAccent}`} disabled={savingLead || isClientRole} onClick={() => void saveLeadDetails()}>
-                    {savingLead ? "Saving..." : "Save"}
-                  </button>
-                </div>
-                <div className={styles.formGroup}><label>Title</label><input className={styles.msgInput} value={editTitle} onChange={(event) => setEditTitle(event.target.value)} disabled={isClientRole} /></div>
-                <div className={styles.formGroup}><label>Source</label><input className={styles.msgInput} value={editSource} onChange={(event) => setEditSource(event.target.value)} disabled={isClientRole} /></div>
-                <div className={styles.formGroup}><label>Contact Name</label><input className={styles.msgInput} value={editContactName} onChange={(event) => setEditContactName(event.target.value)} disabled={isClientRole} /></div>
-                <div className={styles.formGroup}><label>Contact Email</label><input className={styles.msgInput} value={editContactEmail} onChange={(event) => setEditContactEmail(event.target.value)} disabled={isClientRole} /></div>
-                <div className={styles.formGroup}><label>Contact Phone</label><input className={styles.msgInput} value={editContactPhone} onChange={(event) => setEditContactPhone(event.target.value)} disabled={isClientRole} /></div>
-                <div className={styles.formGroup}><label>Company</label><input className={styles.msgInput} value={editCompany} onChange={(event) => setEditCompany(event.target.value)} disabled={isClientRole} /></div>
-                <div className={styles.formGroup}><label>Owner</label><input className={styles.msgInput} value={editOwnerName} onChange={(event) => setEditOwnerName(event.target.value)} placeholder="Assign owner" disabled={isClientRole} /></div>
-                <div className={styles.formGroup}><label>Next Follow-up</label><input className={styles.msgInput} type="datetime-local" value={editFollowUpAt} onChange={(event) => setEditFollowUpAt(event.target.value)} disabled={isClientRole} /></div>
-                <div className={styles.formGroup}><label>Notes</label><textarea className={styles.msgInput} value={editNotes} onChange={(event) => setEditNotes(event.target.value)} rows={4} disabled={isClientRole} /></div>
-                <div className={styles.cellSub}>Priority: {selectedLead.priority} · Score {selectedLead.score}</div>
-                <div className={styles.cellSub}>Status: {selectedLead.status}</div>
-                <div className={styles.cellSub}>Last updated: {formatDate(selectedLead.updatedAt)}</div>
-                <div className={styles.cellSub}>SLA: {selectedLead.staleDays >= slaConfig.breachDays ? "Breached" : "On track"}</div>
-                {selectedLead.status === "LOST" && (selectedLead.lostReason ?? lostReasons[selectedLead.id]) ? <div className={styles.projMeta} style={{ marginTop: 10 }}>Lost reason: {selectedLead.lostReason ?? lostReasons[selectedLead.id]}</div> : null}
-                <div className={styles.card} style={{ marginTop: 14 }}>
-                  <div className={styles.cardHd}><span className={styles.cardHdTitle}>Timeline</span></div>
-                  <div className={styles.cardInner} style={{ paddingTop: 8, paddingBottom: 8 }}>
-                    <div className={styles.activityList}>
-                      {selectedTimeline.length > 0 ? (
-                        [...selectedTimeline].slice(0, 8).map((entry) => (
-                          <div key={entry.id} className={styles.activityItem}>
-                            <div className={styles.activityDot} style={{ background: "var(--accent)" }} />
-                            <div className={styles.activityText}>
-                              <div className={styles.activityMain}>{entry.type}{entry.details ? ` · ${entry.details}` : ""}</div>
-                              <div className={styles.activityTime}>{formatDate(entry.createdAt)}</div>
-                            </div>
+                    <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                      {items.length > 0 ? items.map((row) => (
+                        <div key={row.id} style={{ background: C.bg, border: `1px solid ${row.id === selectedId ? `${C.primary}66` : C.border}`, padding: 10 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700 }}>{row.title}</div>
+                            <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: row.priority === "Hot" ? C.red : row.priority === "Warm" ? C.amber : C.primary }}>{row.priority}</span>
                           </div>
-                        ))
-                      ) : (
-                        <EmptyState title="Nothing yet" subtitle="This section updates once lead events are logged." compact />
-                      )}
+                          <div style={{ fontSize: 10, color: C.muted, marginBottom: 8 }}>{row.source ?? "Unknown"} · Score {row.score}</div>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <button onClick={() => setSelectedId(row.id)} style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "5px 8px", fontFamily: "DM Mono, monospace", fontSize: 10, cursor: "pointer" }}>Details</button>
+                            {!isClient ? STAGES.filter((next) => next !== row.status).slice(0, 2).map((next) => (
+                              <button key={next} onClick={() => void moveLead(row.id, next)} disabled={transitioningLeadId === row.id} style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.muted, padding: "5px 8px", fontFamily: "DM Mono, monospace", fontSize: 10, cursor: "pointer" }}>
+                                {transitioningLeadId === row.id ? "Saving..." : `Move ${label(next)}`}
+                              </button>
+                            )) : null}
+                          </div>
+                        </div>
+                      )) : <div style={{ padding: 10, color: C.muted, fontSize: 11 }}>No leads</div>}
                     </div>
                   </div>
-                </div>
-              </>
-            ) : (
-              <EmptyState title="Nothing yet" subtitle="Select a lead to load detailed context." />
-            )}
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 700 }}>Lead Detail</div>
+            <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted }}>{selected?.id.slice(0, 8) ?? "No lead"}</span>
           </div>
-        </article>
+          {selected ? (
+            <>
+              <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 4 }}>{selected.title}</div>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>{selected.company ?? "No company"} · {selected.source ?? "Unknown"}</div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                {[
+                  { label: "Stage", value: label(selected.status), color: tone(selected.status) },
+                  { label: "Score", value: String(selected.score), color: C.primary },
+                  { label: "Idle", value: `${selected.staleDays}d`, color: selected.staleDays >= 5 ? C.red : C.muted },
+                  { label: "Priority", value: selected.priority, color: selected.priority === "Hot" ? C.red : selected.priority === "Warm" ? C.amber : C.primary }
+                ].map((m) => (
+                  <div key={m.label} style={{ background: C.bg, border: `1px solid ${C.border}`, padding: 10 }}>
+                    <div style={{ fontSize: 9, color: C.muted, textTransform: "uppercase", marginBottom: 4 }}>{m.label}</div>
+                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: m.color }}>{m.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>Next Follow-up: {formatDate(selected.nextFollowUpAt)}</div>
+              <div style={{ background: C.bg, border: `1px solid ${C.border}`, padding: 12, fontSize: 12, minHeight: 90 }}>
+                {selected.notes?.trim() || "No notes available."}
+              </div>
+
+              {!isClient ? (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                  {STAGES.filter((next) => next !== selected.status).map((next) => (
+                    <button key={next} onClick={() => void moveLead(selected.id, next)} disabled={transitioningLeadId === selected.id} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.muted, padding: "6px 10px", fontFamily: "DM Mono, monospace", fontSize: 10, cursor: "pointer" }}>
+                      {transitioningLeadId === selected.id ? "Saving..." : `Move ${label(next)}`}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <div style={{ color: C.muted, fontSize: 12 }}>Select a lead to view details.</div>
+          )}
+        </div>
       </div>
     </div>
   );

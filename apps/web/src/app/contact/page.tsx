@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ContactPageClient } from "./contact-page-client";
+import { ContactPageClient } from "@/components/marketing/contact-page-client";
 
 export const metadata: Metadata = {
   title: "Contact | Maphari Technologies",

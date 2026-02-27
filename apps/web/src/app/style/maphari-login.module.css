@@ -516,6 +516,7 @@
   font-size: 0.9rem;
   cursor: none;
   transition: color 0.18s ease;
+  -webkit-user-select: none;
   user-select: none;
   background: none;
   border: none;

@@ -74,3 +74,21 @@ export type InvoiceTab = {
   id: "all" | "outstanding" | "paid";
   label: string;
 };
+
+export type TeamMember = {
+  id: string;
+  name: string;
+  initials: string;
+  avatarBg: string;
+  role: string;
+  specialties: string[];
+  projectIds: string[];
+};
+
+export type SupportTicket = {
+  id: string;
+  subject: string;
+  status: "open" | "in_progress" | "resolved";
+  priority: "low" | "medium" | "high";
+  createdAt: string;
+};

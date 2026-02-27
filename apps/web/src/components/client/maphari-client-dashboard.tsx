@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { DM_Mono, Instrument_Serif, Syne } from "next/font/google";
 import {
   createPortalConversationWithRefresh,
@@ -9,17 +9,6 @@ import {
   createPortalPaymentWithRefresh,
   createPortalProjectRequestWithRefresh,
   generatePortalHandoffSummaryWithRefresh,
-  getPortalPreferenceWithRefresh,
-  loadConversationMessagesWithRefresh,
-  loadPortalChangeRequestsWithRefresh,
-  loadPortalMilestoneApprovalsWithRefresh,
-  loadPortalBlockersWithRefresh,
-  loadPortalNotificationsWithRefresh,
-  loadPortalProjectCollaborationWithRefresh,
-  loadPortalProjectDetailWithRefresh,
-  loadPortalTimelineWithRefresh,
-  setPortalNotificationReadStateWithRefresh,
-  setPortalPreferenceWithRefresh,
   updatePortalChangeRequestWithRefresh,
   updatePortalMessageDeliveryWithRefresh,
   updatePortalMilestoneApprovalWithRefresh,
@@ -28,17 +17,13 @@ import {
   type PortalProjectRequestDesignPackage,
   type PortalProjectRequestAddonOption,
   type PortalProjectRequestServiceOption,
-  type PortalProjectRequestServiceType,
-  type PortalProjectChangeRequest,
-  type PortalProjectCollaboration,
-  type PortalMilestoneApproval,
-  type PortalMessage,
-  type PortalProjectDetail
+  type PortalProjectRequestServiceType
 } from "../../lib/api/portal";
 import { usePortalWorkspace } from "../../lib/auth/use-portal-workspace";
 import { useRealtimeRefresh } from "../../lib/auth/use-realtime-refresh";
-import { useCursorTrail } from "../shared/use-cursor-trail";
+import { useTheme } from "./maphari-dashboard/hooks/use-theme";
 import { useDelayedFlag } from "../shared/use-delayed-flag";
+import { useCurrencyConverter } from "../../lib/i18n/exchange-rates";
 import { pageTitles } from "./maphari-dashboard/constants";
 import { cx, styles } from "./maphari-dashboard/style";
 import { ClientSidebar } from "./maphari-dashboard/sidebar";
@@ -48,38 +33,44 @@ import { ClientAutomationPage } from "./maphari-dashboard/pages/automation-page"
 import { ClientInvoicesPage } from "./maphari-dashboard/pages/invoices-page";
 import { ClientMessagesPage } from "./maphari-dashboard/pages/messages-page";
 import { ClientProjectsPage } from "./maphari-dashboard/pages/projects-page";
+import { ClientMilestonesPage } from "./maphari-dashboard/pages/milestones-page";
+import { ClientReportsPage } from "./maphari-dashboard/pages/reports-page";
+import { ClientAiAutomationPage } from "./maphari-dashboard/pages/ai-automation-page";
+import { ClientOnboardingPage } from "./maphari-dashboard/pages/onboarding-page";
 import { ClientSettingsPage } from "./maphari-dashboard/pages/settings-page";
 import { ClientCreateProjectPage } from "./maphari-dashboard/pages/create-project-page";
 import { ClientDocumentsPage } from "./maphari-dashboard/pages/documents-page";
-import onboardingTourStyles from "./maphari-dashboard/pages/onboarding-tour.module.css";
-import type {
-  ActionCenterItem,
-  ActionItem,
-  ActivityItem,
-  ApprovalQueueItem,
-  ConfidenceSummary,
-  DashboardStat,
-  DecisionLogItem,
-  LoginDigestItem,
-  NavItem,
-  OnboardingChecklistItem,
-  PageId,
-  RiskItem,
-  ThreadPreview,
-  TimelineItem
-} from "./maphari-dashboard/types";
-import { formatDateLong, formatDateShort, formatMoney, formatRelative, formatStatus, getInitials, isPast } from "./maphari-dashboard/utils";
-import { useCurrencyConverter } from "../../lib/i18n/exchange-rates";
+import onboardingTourStyles from "../../app/style/components/onboarding-tour.module.css";
+import type { NavItem, PageId } from "./maphari-dashboard/types";
+import type { TeamMember, SupportTicket } from "./maphari-dashboard/pages/types";
+import { formatDateLong, formatMoney, formatStatus, getInitials } from "./maphari-dashboard/utils";
+import { useDashboardToasts, DashboardToastStack } from "../shared/dashboard-core";
+import { DashboardProvider } from "./maphari-dashboard/context/dashboard-context";
+import { usePortalData } from "./maphari-dashboard/hooks/use-portal-data";
+import { useNotifications } from "./maphari-dashboard/hooks/use-notifications";
+import { useCommandSearch, type CommandResult } from "./maphari-dashboard/hooks/use-command-search";
+import { useQuickCompose } from "./maphari-dashboard/hooks/use-quick-compose";
+import { useClientTour } from "./maphari-dashboard/hooks/use-client-tour";
+import { useSettings } from "./maphari-dashboard/hooks/use-settings";
+import { useDashboardViews } from "./maphari-dashboard/hooks/use-dashboard-views";
+import { ClientNotificationsPage } from "./maphari-dashboard/pages/notifications-page";
+import { ClientSupportPage } from "./maphari-dashboard/pages/support-page";
+import { ClientReviewsPage } from "./maphari-dashboard/pages/reviews-page";
+import { ClientAnalyticsPage } from "./maphari-dashboard/pages/analytics-page";
+import { ClientPaymentsPage } from "./maphari-dashboard/pages/payments-page";
+import { ClientContractsPage } from "./maphari-dashboard/pages/contracts-page";
+import { ClientCalendarPage } from "./maphari-dashboard/pages/calendar-page";
+import { ClientBrandPage } from "./maphari-dashboard/pages/brand-page";
+import { ClientFeedbackPage } from "./maphari-dashboard/pages/feedback-page";
+import { ClientExportsPage } from "./maphari-dashboard/pages/exports-page";
+import { ClientResourcesPage } from "./maphari-dashboard/pages/resources-page";
+import { ClientReferralsPage } from "./maphari-dashboard/pages/referrals-page";
+import { ClientIntegrationsPage } from "./maphari-dashboard/pages/integrations-page";
+import { useKeyboardShortcuts, SHORTCUTS } from "./maphari-dashboard/hooks/use-keyboard-shortcuts";
+import { useSessionTimeout } from "./maphari-dashboard/hooks/use-session-timeout";
+import type { DashboardNotificationJobLite } from "../../lib/types/dashboard";
 
 type TopbarDateRange = "7d" | "30d" | "90d" | "all";
-
-type CommandResult =
-  | { id: string; kind: "page"; label: string; detail: string; page: PageId }
-  | { id: string; kind: "project"; label: string; detail: string; projectId: string }
-  | { id: string; kind: "conversation"; label: string; detail: string; conversationId: string }
-  | { id: string; kind: "invoice"; label: string; detail: string }
-  | { id: string; kind: "milestone"; label: string; detail: string; projectId: string }
-  | { id: string; kind: "notification"; label: string; detail: string; page: PageId; notificationId: string };
 
 type ClientProjectEstimate = {
   totalCents: number;
@@ -89,13 +80,6 @@ type ClientProjectEstimate = {
   confidence: "LOW" | "MEDIUM" | "HIGH";
   lineItems: Array<{ label: string; amountCents: number }>;
   assumptions: string[];
-};
-
-type ClientTourStep = {
-  title: string;
-  detail: string;
-  mustComplete?: boolean;
-  targetId?: string;
 };
 
 const SERVICE_TO_LEGACY_TYPE: Record<PortalProjectRequestServiceOption, PortalProjectRequestServiceType> = {
@@ -149,46 +133,12 @@ const instrument = Instrument_Serif({
 
 
 export function MaphariClientDashboard() {
+  /* ── navigation & interaction state (stays in orchestrator) ── */
   const [activePage, setActivePage] = useState<PageId>("dashboard");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [topbarProjectId, setTopbarProjectId] = useState<string | null>(null);
   const [topbarDateRange, setTopbarDateRange] = useState<TopbarDateRange>("30d");
   const [activeInvoiceTab, setActiveInvoiceTab] = useState<"all" | "outstanding" | "paid">("all");
-  const [projectDetails, setProjectDetails] = useState<PortalProjectDetail[]>([]);
-  const [projectCollaborationById, setProjectCollaborationById] = useState<Record<string, PortalProjectCollaboration>>({});
-  const [milestoneApprovals, setMilestoneApprovals] = useState<Record<string, PortalMilestoneApproval>>({});
-  const [messagePreviewMap, setMessagePreviewMap] = useState<Record<string, PortalMessage | null>>({});
-  const [notificationJobs, setNotificationJobs] = useState<Array<{
-    id: string;
-    status: string;
-    tab: "dashboard" | "projects" | "invoices" | "messages" | "settings" | "operations";
-    readAt: string | null;
-  }>>([]);
-  const [lastLoginAt, setLastLoginAt] = useState<string | null>(null);
-  const [handoffSummary, setHandoffSummary] = useState<{
-    docs: number;
-    decisions: number;
-    blockers: number;
-    generatedAt: string;
-  } | null>(null);
-  const [blockers, setBlockers] = useState<Array<{
-    id: string;
-    projectId: string;
-    title: string;
-    severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-    status: "OPEN" | "IN_PROGRESS" | "RESOLVED";
-    ownerName: string | null;
-    etaAt: string | null;
-    updatedAt: string;
-  }>>([]);
-  const [timelineEvents, setTimelineEvents] = useState<Array<{
-    id: string;
-    category: "PROJECT" | "LEAD" | "BLOCKER";
-    title: string;
-    detail: string | null;
-    createdAt: string;
-  }>>([]);
-  const [changeRequests, setChangeRequests] = useState<PortalProjectChangeRequest[]>([]);
   const [changeRequestForm, setChangeRequestForm] = useState({
     projectId: "",
     title: "",
@@ -197,6 +147,7 @@ export function MaphariClientDashboard() {
     impactSummary: ""
   });
   const [submittingChangeRequest, setSubmittingChangeRequest] = useState(false);
+  const { toasts, setFeedback } = useDashboardToasts({ dismissMs: 4200 });
   const [projectRequestForm, setProjectRequestForm] = useState({
     name: "",
     description: "",
@@ -222,49 +173,17 @@ export function MaphariClientDashboard() {
   const [projectRequestEstimate, setProjectRequestEstimate] = useState<ClientProjectEstimate | null>(null);
   const [projectEstimateModalOpen, setProjectEstimateModalOpen] = useState(false);
   const [projectRequestPhase, setProjectRequestPhase] = useState<"idle" | "creating_deposit" | "submitting_request">("idle");
-  const [clientTourOpen, setClientTourOpen] = useState(false);
-  const [clientTourStep, setClientTourStep] = useState(0);
-  const [clientTourLayout, setClientTourLayout] = useState<{
-    spotlight: { top: number; left: number; width: number; height: number } | null;
-    tooltip: { top?: number; left?: number; right?: number; bottom?: number; transform?: string };
-  }>({
-    spotlight: null,
-    tooltip: { top: 0, left: 0 }
-  });
   const [submittingProjectRequest, setSubmittingProjectRequest] = useState(false);
-  const [actionFeedback, setActionFeedback] = useState<{ tone: "success" | "error"; message: string } | null>(null);
   const [composeMessage, setComposeMessage] = useState("");
   const [threadSearch, setThreadSearch] = useState("");
-  const [topbarSearch, setTopbarSearch] = useState("");
-  const [commandSearchOpen, setCommandSearchOpen] = useState(false);
-  const [commandSearchValue, setCommandSearchValue] = useState("");
-  const [notificationsTrayOpen, setNotificationsTrayOpen] = useState(false);
   const [newThreadSubject, setNewThreadSubject] = useState("");
   const [creatingThread, setCreatingThread] = useState(false);
-  const [quickComposeOpen, setQuickComposeOpen] = useState(false);
-  const [quickComposeSubject, setQuickComposeSubject] = useState("");
-  const [quickComposeBody, setQuickComposeBody] = useState("");
-  const [quickComposeProjectId, setQuickComposeProjectId] = useState<string | null>(null);
-  const [quickComposeCreating, setQuickComposeCreating] = useState(false);
-  const [settingsProfile, setSettingsProfile] = useState({
-    fullName: "there",
-    email: "",
-    company: "Client",
-    phone: "",
-    currency: "AUTO"
-  });
-  const [settingsNotifications, setSettingsNotifications] = useState({
-    projectUpdates: true,
-    invoiceReminders: true,
-    newMessages: true,
-    weeklyDigest: false,
-    marketingEmails: false
-  });
-  const cursorRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
-  const commandSearchInputRef = useRef<HTMLInputElement>(null);
-  const quickComposeSubjectRef = useRef<HTMLInputElement>(null);
-  const savedViewBaseRef = useRef<Record<string, unknown>>({});
+  const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
+
+  /* ── theme ── */
+  const { resolvedTheme, toggleTheme } = useTheme();
+
+  /* ── workspace ── */
   const {
     session,
     snapshot,
@@ -278,573 +197,438 @@ export function MaphariClientDashboard() {
     refreshSnapshot
   } = usePortalWorkspace();
 
-  useCursorTrail(cursorRef, ringRef, { cursorOffset: 5, ringOffset: 17, easing: 0.11 });
   const animateProgress = useDelayedFlag(activePage, 200);
 
-  useEffect(() => {
-    if (!session?.user?.email) return;
-    const key = `maphari:last-login:${session.user.email}`;
-    const previous = window.localStorage.getItem(key);
-    queueMicrotask(() => {
-      setLastLoginAt(previous);
-    });
-    window.localStorage.setItem(key, new Date().toISOString());
-  }, [session?.user?.email]);
-
-  useEffect(() => {
-    if (!session?.user?.email) return;
-    const tourKey = `maphari:tour:client:${session.user.email}`;
-    if (!window.localStorage.getItem(tourKey)) {
-      queueMicrotask(() => setClientTourOpen(true));
-    }
-  }, [session?.user?.email]);
-
-  useEffect(() => {
-    if (!actionFeedback) return;
-    const timeoutId = window.setTimeout(() => setActionFeedback(null), 4200);
-    return () => window.clearTimeout(timeoutId);
-  }, [actionFeedback]);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setCommandSearchValue(topbarSearch);
-        setCommandSearchOpen(true);
-        return;
-      }
-      if (event.key === "Escape") {
-        setCommandSearchOpen(false);
-        setQuickComposeOpen(false);
-        setNotificationsTrayOpen(false);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [topbarSearch]);
-
-  useEffect(() => {
-    if (!commandSearchOpen) return;
-    commandSearchInputRef.current?.focus();
-  }, [commandSearchOpen]);
-
-  useEffect(() => {
-    if (!quickComposeOpen) return;
-    quickComposeSubjectRef.current?.focus();
-  }, [quickComposeOpen]);
-
-
+  /* ── resolved IDs ── */
   const projects = useMemo(() => snapshot.projects ?? [], [snapshot.projects]);
-  const invoices = useMemo(() => snapshot.invoices ?? [], [snapshot.invoices]);
-  const displayCurrency = settingsProfile.currency || invoices[0]?.currency || "AUTO";
-  const { convert: convertMoney } = useCurrencyConverter(displayCurrency);
-  const conversations = useMemo(() => snapshot.conversations ?? [], [snapshot.conversations]);
-  const fileById = useMemo(() => new Map(snapshot.files.map((file) => [file.id, file])), [snapshot.files]);
-  const sortedProjects = useMemo(() => {
-    return [...projects].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [projects]);
-  const resolvedSelectedProjectId = selectedProjectId && projects.some((project) => project.id === selectedProjectId)
-    ? selectedProjectId
-    : null;
-  const resolvedTopbarProjectId = topbarProjectId && projects.some((project) => project.id === topbarProjectId)
-    ? topbarProjectId
-    : null;
+  const resolvedSelectedProjectId = selectedProjectId && projects.some((p) => p.id === selectedProjectId) ? selectedProjectId : null;
+  const resolvedTopbarProjectId = topbarProjectId && projects.some((p) => p.id === topbarProjectId) ? topbarProjectId : null;
   const projectScopeId = resolvedTopbarProjectId ?? resolvedSelectedProjectId;
-  const resolvedQuickComposeProjectId =
-    quickComposeProjectId && projects.some((project) => project.id === quickComposeProjectId)
-      ? quickComposeProjectId
-      : null;
-  const nowTs = useMemo(() => new Date().getTime(), []);
-  const isWithinSelectedDateRange = useCallback(
-    (dateValue?: string | null): boolean => {
-      if (topbarDateRange === "all") return true;
-      if (!dateValue) return false;
-      const timestamp = new Date(dateValue).getTime();
-      if (Number.isNaN(timestamp)) return false;
-      const now = Date.now();
-      const days = topbarDateRange === "7d" ? 7 : topbarDateRange === "30d" ? 30 : 90;
-      return now - timestamp <= days * 24 * 60 * 60 * 1000;
-    },
-    [topbarDateRange]
-  );
-  const projectScopedConversations = useMemo(
-    () =>
-      conversations.filter((conversation) => {
-        if (projectScopeId && conversation.projectId !== projectScopeId) return false;
-        return isWithinSelectedDateRange(conversation.updatedAt);
-      }),
-    [conversations, isWithinSelectedDateRange, projectScopeId]
-  );
-  const projectScopedProjects = useMemo(
-    () =>
-      projects.filter((project) => {
-        if (projectScopeId && project.id !== projectScopeId) return false;
-        return isWithinSelectedDateRange(project.updatedAt);
-      }),
-    [isWithinSelectedDateRange, projectScopeId, projects]
-  );
-  const sortedScopedProjects = useMemo(
-    () => [...projectScopedProjects].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-    [projectScopedProjects]
-  );
-  const openThreads = useMemo(
-    () => projectScopedConversations.filter((conversation) => conversation.status === "OPEN"),
-    [projectScopedConversations]
-  );
-  const dateScopedInvoices = useMemo(
-    () => invoices.filter((invoice) => isWithinSelectedDateRange(invoice.updatedAt)),
-    [invoices, isWithinSelectedDateRange]
-  );
-  const scopedOutstandingInvoices = useMemo(
-    () => dateScopedInvoices.filter((invoice) => invoice.status === "ISSUED" || invoice.status === "OVERDUE"),
-    [dateScopedInvoices]
-  );
-  const outstandingInvoices = scopedOutstandingInvoices;
-  const overdueInvoices = useMemo(
-    () => dateScopedInvoices.filter((invoice) => invoice.status === "OVERDUE"),
-    [dateScopedInvoices]
-  );
-  const effectiveProjectDetails = useMemo(
-    () => (projects.length === 0 ? [] : projectDetails),
-    [projectDetails, projects.length]
-  );
-  const scopedProjectDetails = useMemo(
-    () =>
-      effectiveProjectDetails.filter((detail) => {
-        if (projectScopeId && detail.id !== projectScopeId) return false;
-        return true;
-      }),
-    [effectiveProjectDetails, projectScopeId]
-  );
-  const effectiveMessagePreviewMap = useMemo(
-    () => (conversations.length === 0 ? {} : messagePreviewMap),
-    [conversations.length, messagePreviewMap]
-  );
-  const projectDetailsLoading = Boolean(session && projectScopedProjects.length > 0 && scopedProjectDetails.length === 0);
 
-  useEffect(() => {
-    if (!session || projects.length === 0) {
-      return;
-    }
+  /* ── portal data hook ── */
+  const portalData = usePortalData({
+    session,
+    snapshot,
+    topbarDateRange,
+    projectScopeId
+  });
 
-    let cancelled = false;
-
-    void (async () => {
-      const detailResponses = await Promise.all(
-        projects.map((project) => loadPortalProjectDetailWithRefresh(session, project.id))
-      );
-
-      if (cancelled) return;
-      const details = detailResponses
-        .map((result) => result.data)
-        .filter((detail): detail is PortalProjectDetail => Boolean(detail));
-
-      setProjectDetails(details);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [projects, session]);
-
-  useEffect(() => {
-    if (!session || projects.length === 0) return;
-    let cancelled = false;
-    void (async () => {
-      const responses = await Promise.all(
-        projects.map((project) => loadPortalProjectCollaborationWithRefresh(session, project.id))
-      );
-      if (cancelled) return;
-      const next: Record<string, PortalProjectCollaboration> = {};
-      responses.forEach((response) => {
-        if (response.data) {
-          next[response.data.projectId] = response.data;
-        }
-      });
-      setProjectCollaborationById(next);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [projects, session]);
-
-  useEffect(() => {
-    if (!session || projects.length === 0) return;
-    let cancelled = false;
-    void (async () => {
-      const approvals = await loadPortalMilestoneApprovalsWithRefresh(session);
-      if (cancelled) return;
-      const map: Record<string, PortalMilestoneApproval> = {};
-      (approvals.data ?? []).forEach((approval) => {
-        map[approval.milestoneId] = approval;
-      });
-      setMilestoneApprovals(map);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [projects.length, session]);
-
-  useEffect(() => {
-    if (!session || conversations.length === 0) {
-      return;
-    }
-
-    let cancelled = false;
-    const topThreads = [...conversations]
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, 4);
-
-    void (async () => {
-      const results = await Promise.all(
-        topThreads.map(async (conversation) => {
-          const messages = await loadConversationMessagesWithRefresh(session, conversation.id);
-          const lastMessage = messages.data?.[messages.data.length - 1] ?? null;
-          return [conversation.id, lastMessage] as const;
-        })
-      );
-
-      if (cancelled) return;
-      const nextMap: Record<string, PortalMessage | null> = {};
-      results.forEach(([id, message]) => {
-        nextMap[id] = message;
-      });
-      setMessagePreviewMap(nextMap);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [conversations, session]);
-
-  useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    void (async () => {
-      const [blockersResult, timelineResult, changeRequestsResult] = await Promise.all([
-        loadPortalBlockersWithRefresh(session, { limit: 80 }),
-        loadPortalTimelineWithRefresh(session, { limit: 80 }),
-        loadPortalChangeRequestsWithRefresh(session, { limit: 80 })
-      ]);
-      if (cancelled) return;
-      setBlockers(blockersResult.data ?? []);
-      setTimelineEvents(timelineResult.data ?? []);
-      setChangeRequests(changeRequestsResult.data ?? []);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
-
-  useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    void (async () => {
-      const result = await loadPortalNotificationsWithRefresh(session, { unreadOnly: false });
-      if (cancelled || !result.nextSession) return;
-      setNotificationJobs(result.data ?? []);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
-
-  const handleRealtimeRefresh = useCallback(() => {
-    if (!session) return;
-    void (async () => {
-      const [notificationsResult, blockersResult, timelineResult, changeRequestsResult] = await Promise.all([
-        loadPortalNotificationsWithRefresh(session, { unreadOnly: false }),
-        loadPortalBlockersWithRefresh(session, { limit: 80 }),
-        loadPortalTimelineWithRefresh(session, { limit: 80 }),
-        loadPortalChangeRequestsWithRefresh(session, { limit: 80 })
-      ]);
-      if (notificationsResult.data) setNotificationJobs(notificationsResult.data);
-      if (blockersResult.data) setBlockers(blockersResult.data);
-      if (timelineResult.data) setTimelineEvents(timelineResult.data);
-      if (changeRequestsResult.data) setChangeRequests(changeRequestsResult.data);
-    })();
-  }, [session]);
+  const {
+    invoices,
+    conversations,
+    sortedProjects,
+    projectScopedConversations,
+    projectScopedProjects,
+    dateScopedInvoices,
+    scopedOutstandingInvoices,
+    overdueInvoices,
+    scopedProjectDetails,
+    scopedBlockers,
+    scopedChangeRequests,
+    milestoneApprovals,
+    setMilestoneApprovals,
+    changeRequests: _changeRequests,
+    setChangeRequests,
+    handoffSummary,
+    setHandoffSummary,
+    handleRealtimeRefresh
+  } = portalData;
 
   useRealtimeRefresh(session, handleRealtimeRefresh);
 
-  useEffect(() => {
-    if (!session) return;
-    const tab = activePage === "dashboard" ? "dashboard" : activePage === "automations" ? "operations" : activePage;
-    const unreadForTab = notificationJobs.filter((job) => !job.readAt && job.tab === tab);
-    if (unreadForTab.length === 0) return;
-    void Promise.all(
-      unreadForTab.map((job) => setPortalNotificationReadStateWithRefresh(session, job.id, true))
-    ).then(() => {
-      setNotificationJobs((previous) =>
-        previous.map((job) =>
-          unreadForTab.some((target) => target.id === job.id)
-            ? { ...job, readAt: new Date().toISOString() }
-            : job
-        )
-      );
-    });
-  }, [activePage, notificationJobs, session]);
+  /* ── currency ── */
+  const displayCurrency = portalData.invoices[0]?.currency || "AUTO";
+  const { convert: convertMoney } = useCurrencyConverter(displayCurrency);
 
-  const unreadByTab = useMemo(() => {
-    const map = {
-      dashboard: 0,
-      projects: 0,
-      invoices: 0,
-      messages: 0,
-      operations: 0,
-      settings: 0
-    };
-    notificationJobs.forEach((job) => {
-      if (job.readAt) return;
-      if (job.tab in map) {
-        map[job.tab as keyof typeof map] += 1;
-      }
-    });
-    return map;
-  }, [notificationJobs]);
-  const totalUnreadNotifications = useMemo(
-    () =>
-      unreadByTab.dashboard +
-      unreadByTab.projects +
-      unreadByTab.invoices +
-      unreadByTab.messages +
-      unreadByTab.operations +
-      unreadByTab.settings,
-    [unreadByTab]
-  );
-  const scopedBlockers = useMemo(
-    () =>
-      blockers.filter((item) => {
-        if (projectScopeId && item.projectId !== projectScopeId) return false;
-        return true;
-      }),
-    [blockers, projectScopeId]
-  );
-  const scopedTimelineEvents = useMemo(
-    () =>
-      timelineEvents.filter((event) => {
-        if (!projectScopeId) return true;
-        return event.projectId === projectScopeId;
-      }),
-    [projectScopeId, timelineEvents]
-  );
-  const scopedChangeRequests = useMemo(
-    () =>
-      changeRequests.filter((request) => {
-        if (projectScopeId && request.projectId !== projectScopeId) return false;
-        return true;
-      }),
-    [changeRequests, projectScopeId]
-  );
+  /* ── notifications hook ── */
+  const notifications = useNotifications({ session, activePage });
+  const {
+    notificationJobs,
+    notificationsTrayOpen,
+    setNotificationsTrayOpen,
+    unreadByTab,
+    totalUnreadNotifications,
+    toPageFromNotificationTab,
+    handleMarkNotificationRead,
+    handleMarkAllNotificationsRead
+  } = notifications;
 
-  const navItems = useMemo<NavItem[]>(
-    () => {
-      return [
-        {
-          id: "dashboard",
-          label: "Dashboard",
-          section: "Overview",
-          badge: unreadByTab.dashboard > 0 ? { value: String(unreadByTab.dashboard) } : undefined
-        },
-        {
-          id: "projects",
-          label: "My Projects",
-          section: "Projects",
-          badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects) } : undefined
-        },
-        {
-          id: "create",
-          label: "Create Request",
-          section: "Projects"
-        },
-        {
-          id: "docs",
-          label: "Documents",
-          section: "Projects"
-        },
-        {
-          id: "invoices",
-          label: "Invoices",
-          section: "Finance",
-          badge: unreadByTab.invoices > 0
-            ? {
-                value: String(unreadByTab.invoices),
-                tone: overdueInvoices.length > 0 ? "red" : "amber"
-              }
-            : undefined
-        },
-        {
-          id: "messages",
-          label: "Messages",
-          section: "Communication",
-          badge: unreadByTab.messages > 0 ? { value: String(unreadByTab.messages), tone: "amber" } : undefined
-        },
-        {
-          id: "automations",
-          label: "Automations",
-          section: "Communication",
-          badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "amber" } : undefined
-        },
-        {
-          id: "settings",
-          label: "Settings",
-          section: "Account",
-          badge: unreadByTab.settings > 0 ? { value: String(unreadByTab.settings) } : undefined
+  /* ── derived identity values ── */
+  const userEmail = session?.user.email ?? "client@maphari.co.za";
+  const userGreetingName = session?.user.email ? session.user.email.split("@")[0] : "there";
+  const userInitials = getInitials(userGreetingName);
+  const clientBadge = session?.user.clientId ? `Client ${session.user.clientId.slice(0, 6).toUpperCase()}` : "Client";
+  const defaultProjectName = sortedProjects[0]?.name ?? "Unassigned";
+  const activeProjectId = resolvedSelectedProjectId ? resolvedSelectedProjectId : sortedProjects[0]?.id ?? null;
+  const activeProjectName = projects.find((p) => p.id === activeProjectId)?.name ?? "No active project";
+
+  /* ── team members (derived from project collaboration data) ── */
+  const teamMembers: TeamMember[] = useMemo(() => {
+    const AVATAR_COLORS = ["#a78bfa", "#34d98b", "#f5a623", "#60a5fa", "#c8f135", "#ff5f5f", "#38bdf8", "#fb923c"];
+    const seen = new Map<string, TeamMember>();
+    Object.entries(portalData.projectCollaborationById).forEach(([projectId, collab]) => {
+      collab.contributors.forEach((contributor, idx) => {
+        const key = contributor.name.toLowerCase();
+        if (!seen.has(key)) {
+          const colorIndex = seen.size % AVATAR_COLORS.length;
+          const parts = contributor.name.trim().split(" ");
+          const initials = parts.length >= 2
+            ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+            : contributor.name.slice(0, 2).toUpperCase();
+          const specialty = contributor.role === "ADMIN" ? ["Product Strategy", "Quality Assurance"]
+            : contributor.role === "STAFF" ? ["Development", "Delivery"]
+            : ["Design", "Review"];
+          seen.set(key, {
+            id: `tm-${idx}-${key.replace(/\s/g, "-")}`,
+            name: contributor.name,
+            initials,
+            avatarBg: AVATAR_COLORS[colorIndex],
+            role: contributor.role,
+            specialties: specialty,
+            projectIds: [projectId]
+          });
+        } else {
+          const existing = seen.get(key)!;
+          if (!existing.projectIds.includes(projectId)) {
+            existing.projectIds.push(projectId);
+          }
         }
-      ];
-    },
+      });
+    });
+    return Array.from(seen.values());
+  }, [portalData.projectCollaborationById]);
+
+  /* ── open support tickets (derived from project blockers) ── */
+  const openTickets: SupportTicket[] = useMemo(() => {
+    return portalData.scopedBlockers
+      .filter((b) => b.status !== "RESOLVED")
+      .map((b) => ({
+        id: b.id,
+        subject: b.title,
+        status: b.status === "IN_PROGRESS" ? "in_progress" : "open",
+        priority: b.severity === "CRITICAL" || b.severity === "HIGH" ? "high"
+          : b.severity === "MEDIUM" ? "medium" : "low",
+        createdAt: b.updatedAt
+      }));
+  }, [portalData.scopedBlockers]);
+
+  /* ── first views pass (empty search) — feeds commandSearch data ── */
+  const views = useDashboardViews({
+    sortedScopedProjects: portalData.sortedScopedProjects,
+    projectScopedProjects,
+    projectScopedConversations,
+    scopedProjectDetails,
+    effectiveProjectDetails: portalData.effectiveProjectDetails,
+    effectiveMessagePreviewMap: portalData.effectiveMessagePreviewMap,
+    projectCollaborationById: portalData.projectCollaborationById,
+    milestoneApprovals,
+    dateScopedInvoices,
+    scopedOutstandingInvoices,
+    overdueInvoices,
+    outstandingInvoices: portalData.outstandingInvoices,
+    scopedBlockers,
+    scopedTimelineEvents: portalData.scopedTimelineEvents,
+    scopedChangeRequests,
+    allMilestones: portalData.allMilestones,
+    scopedMilestones: portalData.scopedMilestones,
+    projects: portalData.projects,
+    snapshot,
+    fileById: portalData.fileById,
+    nowTs: portalData.nowTs,
+    lastLoginAt: portalData.lastLoginAt,
+    searchQuery: "", // placeholder, see below
+    threadSearch,
+    displayCurrency,
+    convertMoney,
+    activeInvoiceTab,
+    projectScopeId,
+    openThreads: portalData.openThreads,
+    unreadByTab,
+    defaultProjectName
+  });
+
+  /* ── command search hook ── */
+  const commandSearch = useCommandSearch({
+    projectScopedProjects: projectScopedProjects.map((p) => ({
+      id: p.id,
+      name: p.name,
+      status: p.status,
+      description: p.description
+    })),
+    allMessageThreads: views.allMessageThreads,
+    dateScopedInvoices: dateScopedInvoices.map((inv) => ({
+      id: inv.id,
+      number: inv.number,
+      status: inv.status,
+      amountCents: inv.amountCents,
+      currency: inv.currency
+    })),
+    milestoneRows: views.milestoneRows,
+    allMilestones: portalData.allMilestones.map((e) => ({
+      milestone: { id: e.milestone.id },
+      projectId: e.projectId
+    })),
+    notificationJobs: notificationJobs.map((j) => ({
+      id: j.id,
+      status: j.status,
+      tab: j.tab,
+      readAt: j.readAt
+    })),
+    convertMoney,
+    displayCurrency,
+    setActivePage,
+    setTopbarProjectId,
+    setSelectedProjectId,
+    selectConversation,
+    handleMarkNotificationRead,
+    setNotificationsTrayOpen,
+    setQuickComposeOpen: () => {} // will be wired after quick compose hook
+  });
+
+  const {
+    commandSearchOpen,
+    setCommandSearchOpen,
+    commandSearchValue,
+    setCommandSearchValue,
+    topbarSearch,
+    commandSearchInputRef,
+    commandResults,
+    handleCommandResultSelect
+  } = commandSearch;
+
+  /* ── quick compose hook ── */
+  const quickCompose = useQuickCompose({
+    session,
+    projects: sortedProjects.map((p) => ({ id: p.id, name: p.name })),
+    sendMessage,
+    refreshSnapshot,
+    selectConversation,
+    setActivePage,
+    setNotificationsTrayOpen,
+    setFeedback
+  });
+
+  const {
+    quickComposeOpen,
+    setQuickComposeOpen,
+    quickComposeSubject,
+    setQuickComposeSubject,
+    quickComposeBody,
+    setQuickComposeBody,
+    quickComposeProjectId: _quickComposeProjectId,
+    setQuickComposeProjectId,
+    quickComposeCreating,
+    quickComposeSubjectRef,
+    resolvedQuickComposeProjectId,
+    handleQuickComposeSubmit
+  } = quickCompose;
+
+  /* ── client tour hook ── */
+  const tour = useClientTour({ session });
+  const {
+    clientTourOpen,
+    clientTourStep,
+    clientTourLayout,
+    clientTourSteps,
+    activeTourStep,
+    setClientTourOpen,
+    setClientTourStep
+  } = tour;
+
+  /* ── settings hook (needs commandSearch.topbarSearch + setTopbarSearch) ── */
+  const settings = useSettings({
+    session,
+    activePage,
+    topbarDateRange,
+    projectScopeId,
+    topbarSearch,
+    userEmail,
+    userGreetingName,
+    clientBadge,
+    setActivePage,
+    setTopbarSearch: commandSearch.setTopbarSearch,
+    setTopbarDateRange,
+    setTopbarProjectId,
+    setSelectedProjectId,
+    setFeedback
+  });
+
+  const {
+    settingsProfile,
+    setSettingsProfile,
+    settingsNotifications,
+    setSettingsNotifications,
+    handleSaveClientProfile,
+    handleSaveClientNotifications
+  } = settings;
+
+  /* ── final views pass with real search query ── */
+  const realSearchQuery = topbarSearch.trim().toLowerCase();
+  const viewsFinal = useDashboardViews({
+    sortedScopedProjects: portalData.sortedScopedProjects,
+    projectScopedProjects,
+    projectScopedConversations,
+    scopedProjectDetails,
+    effectiveProjectDetails: portalData.effectiveProjectDetails,
+    effectiveMessagePreviewMap: portalData.effectiveMessagePreviewMap,
+    projectCollaborationById: portalData.projectCollaborationById,
+    milestoneApprovals,
+    dateScopedInvoices,
+    scopedOutstandingInvoices,
+    overdueInvoices,
+    outstandingInvoices: portalData.outstandingInvoices,
+    scopedBlockers,
+    scopedTimelineEvents: portalData.scopedTimelineEvents,
+    scopedChangeRequests,
+    allMilestones: portalData.allMilestones,
+    scopedMilestones: portalData.scopedMilestones,
+    projects: portalData.projects,
+    snapshot,
+    fileById: portalData.fileById,
+    nowTs: portalData.nowTs,
+    lastLoginAt: portalData.lastLoginAt,
+    searchQuery: realSearchQuery,
+    threadSearch,
+    displayCurrency,
+    convertMoney,
+    activeInvoiceTab,
+    projectScopeId,
+    openThreads: portalData.openThreads,
+    unreadByTab,
+    defaultProjectName
+  });
+
+  /* ── keyboard shortcuts ── */
+  const { shortcutsOpen, setShortcutsOpen } = useKeyboardShortcuts({
+    onNavigate: setActivePage,
+    onOpenSearch: () => setCommandSearchOpen(true),
+  });
+
+  /* ── session timeout ── */
+  const { showWarning: showTimeoutWarning, remainingSeconds, extendSession, formatTime } = useSessionTimeout();
+
+  /* ── last login tracking ── */
+  useEffect(() => {
+    if (!session?.user?.email) return;
+    const key = `maphari:last-login:${session.user.email}`;
+    window.localStorage.getItem(key); // read only; portal data hook reads lastLoginAt
+    window.localStorage.setItem(key, new Date().toISOString());
+  }, [session?.user?.email]);
+
+  /* ── mark inbound messages read ── */
+  useEffect(() => {
+    if (!session || !selectedConversationId || conversationMessages.length === 0) return;
+    const inbound = conversationMessages
+      .filter((message) => (message.authorRole ?? "").toUpperCase() !== "CLIENT")
+      .filter((message) => message.deliveryStatus !== "READ")
+      .slice(-8);
+    if (inbound.length === 0) return;
+
+    void Promise.all(
+      inbound.map((message) =>
+        updatePortalMessageDeliveryWithRefresh(session, message.id, {
+          status: "READ",
+          deliveredAt: message.deliveredAt ?? new Date().toISOString(),
+          readAt: new Date().toISOString()
+        })
+      )
+    );
+  }, [conversationMessages, selectedConversationId, session]);
+
+  /* ── nav items ── */
+  const navItems = useMemo<NavItem[]>(
+    () => [
+      /* ── Command ── */
+      { id: "dashboard", label: "Dashboard", section: "Command", badge: unreadByTab.dashboard > 0 ? { value: String(unreadByTab.dashboard) } : undefined },
+
+      /* ── Work ── */
+      { id: "projects", label: "Projects", section: "Work", badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects) } : undefined },
+      { id: "milestones", label: "Milestones", section: "Work" },
+      { id: "docs", label: "Documents", section: "Work" },
+      { id: "messages", label: "Messages", section: "Work", badge: unreadByTab.messages > 0 ? { value: String(unreadByTab.messages), tone: "amber" } : undefined },
+      { id: "reviews", label: "Reviews", section: "Work" },
+      { id: "calendar", label: "Calendar", section: "Work" },
+      { id: "brand", label: "Brand Assets", section: "Work" },
+
+      /* ── Finance ── */
+      {
+        id: "invoices",
+        label: "Invoices",
+        section: "Finance",
+        badge: unreadByTab.invoices > 0
+          ? { value: String(unreadByTab.invoices), tone: overdueInvoices.length > 0 ? "red" : "amber" }
+          : undefined
+      },
+      { id: "payments", label: "Payments", section: "Finance" },
+      { id: "contracts", label: "Contracts", section: "Finance" },
+
+      /* ── Intelligence ── */
+      { id: "reports", label: "Reports", section: "Intelligence" },
+      { id: "ai", label: "AI & Automation", section: "Intelligence" },
+      { id: "automations", label: "Scheduling", section: "Intelligence", badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "amber" } : undefined },
+      { id: "analytics", label: "Analytics", section: "Intelligence" },
+
+      /* ── Account ── */
+      { id: "settings", label: "Settings", section: "Account", badge: unreadByTab.settings > 0 ? { value: String(unreadByTab.settings) } : undefined },
+      { id: "team", label: "Team", section: "Account" },
+      { id: "support", label: "Help & Support", section: "Account" },
+      { id: "feedback", label: "Feedback", section: "Account" },
+      { id: "exports", label: "Exports", section: "Account" },
+      { id: "resources", label: "Resources", section: "Account" },
+      { id: "referrals", label: "Referrals", section: "Account" },
+      { id: "integrations", label: "Integrations", section: "Account" }
+    ],
     [overdueInvoices.length, unreadByTab]
   );
 
   const navSections = useMemo(() => {
     const sections = new Map<string, NavItem[]>();
     navItems.forEach((item) => {
-      if (!sections.has(item.section)) {
-        sections.set(item.section, []);
-      }
+      if (!sections.has(item.section)) sections.set(item.section, []);
       sections.get(item.section)?.push(item);
     });
     return Array.from(sections.entries());
   }, [navItems]);
 
   const [topbarEyebrow, topbarTitle] = pageTitles[activePage];
-  const searchQuery = topbarSearch.trim().toLowerCase();
 
-  const activeProjectId =
-    resolvedSelectedProjectId
-      ? resolvedSelectedProjectId
-      : sortedProjects[0]?.id ?? null;
-  const activeProjectName = projects.find((project) => project.id === activeProjectId)?.name ?? "No active project";
-  const defaultProjectName = sortedProjects[0]?.name ?? "Unassigned";
-
-  const projectRows = useMemo(
-    () =>
-      sortedScopedProjects.slice(0, 3).map((project) => {
-        const status = project.status;
-        const statusTone =
-          status === "IN_PROGRESS" || status === "COMPLETED"
-            ? "bgGreen"
-            : status === "REVIEW"
-            ? "bgAmber"
-            : status === "PLANNING"
-            ? "bgPurple"
-            : status === "ON_HOLD" || status === "CANCELLED"
-            ? "bgRed"
-            : "bgMuted";
-        const progressTone =
-          status === "IN_PROGRESS" || status === "COMPLETED"
-            ? "pfGreen"
-            : status === "REVIEW"
-            ? "pfAmber"
-            : status === "PLANNING"
-            ? "pfPurple"
-            : "pfGreen";
-        return {
-          id: project.id,
-          name: project.name,
-          subtitle: project.description ?? `${project.priority} priority`,
-          status: formatStatus(status),
-          statusTone,
-          progress: project.progressPercent ?? 0,
-          progressTone,
-          due: project.dueAt ? formatDateShort(project.dueAt) : "TBD",
-          dueTone: project.dueAt && isPast(project.dueAt) ? "var(--red)" : "var(--muted)"
-        };
-      }),
-    [sortedScopedProjects]
+  /* ── selected conversation ── */
+  const selectedConversation = useMemo(
+    () => projectScopedConversations.find((c) => c.id === selectedConversationId) ?? null,
+    [projectScopedConversations, selectedConversationId]
   );
+  const selectedProjectName = projectScopedProjects.find((p) => p.id === selectedConversation?.projectId)?.name ?? "General";
+  const selectedAgreementFile = snapshot.files.find((f) => f.id === projectRequestForm.agreementFileId) ?? null;
 
-  const allMilestones = useMemo(() => {
-    return scopedProjectDetails.flatMap((detail) =>
-      detail.milestones.map((milestone) => ({ milestone, projectId: detail.id }))
-    );
+  /* ── lookup maps for navigation handlers ── */
+  const milestoneProjectById = useMemo(() => {
+    const map = new Map<string, string>();
+    portalData.allMilestones.forEach((e) => map.set(e.milestone.id, e.projectId));
+    return map;
+  }, [portalData.allMilestones]);
+  const taskProjectById = useMemo(() => {
+    const map = new Map<string, string>();
+    scopedProjectDetails.forEach((p) => p.tasks.forEach((t) => map.set(t.id, p.id)));
+    return map;
   }, [scopedProjectDetails]);
-  const scopedMilestones = useMemo(
-    () =>
-      allMilestones.filter((entry) => {
-        return isWithinSelectedDateRange(entry.milestone.updatedAt);
-      }),
-    [allMilestones, isWithinSelectedDateRange]
-  );
+  const projectActivityById = useMemo(() => {
+    const map = new Map<string, string>();
+    scopedProjectDetails.forEach((p) => p.activities.forEach((a) => map.set(a.id, p.id)));
+    return map;
+  }, [scopedProjectDetails]);
+  const changeRequestProjectById = useMemo(() => {
+    const map = new Map<string, string>();
+    scopedChangeRequests.forEach((r) => map.set(r.id, r.projectId));
+    return map;
+  }, [scopedChangeRequests]);
+  const timelineEventById = useMemo(() => {
+    const map = new Map<string, { category: "PROJECT" | "LEAD" | "BLOCKER"; projectId: string | null }>();
+    portalData.scopedTimelineEvents.forEach((e) => map.set(e.id, { category: e.category, projectId: e.projectId }));
+    return map;
+  }, [portalData.scopedTimelineEvents]);
 
-  const milestoneRows = useMemo(() => {
-    return scopedMilestones
-      .filter((entry) => entry.milestone.dueAt || entry.milestone.status !== "COMPLETED")
-      .sort((a, b) => {
-        const aTime = a.milestone.dueAt ? new Date(a.milestone.dueAt).getTime() : Number.POSITIVE_INFINITY;
-        const bTime = b.milestone.dueAt ? new Date(b.milestone.dueAt).getTime() : Number.POSITIVE_INFINITY;
-        return aTime - bTime;
-      })
-      .slice(0, 6)
-      .map((entry) => {
-        const milestone = entry.milestone;
-        const status: "" | "done" | "now" =
-          milestone.status === "COMPLETED" ? "done" : milestone.status === "IN_PROGRESS" ? "now" : "";
-        const dateLabel = milestone.dueAt ? `${isPast(milestone.dueAt) ? "Overdue" : "Due"} · ${formatDateShort(milestone.dueAt)}` : "Planned";
-        const fileName = milestone.fileId ? fileById.get(milestone.fileId)?.fileName ?? null : null;
-        return {
-          id: milestone.id,
-          title: milestone.title,
-          date: dateLabel,
-          status,
-          highlight: milestone.status === "IN_PROGRESS" || isPast(milestone.dueAt ?? null),
-          fileName,
-          approval: milestoneApprovals[milestone.id]?.status ?? "PENDING"
-        };
-      });
-  }, [fileById, milestoneApprovals, scopedMilestones]);
-  const pendingApprovalCount = milestoneRows.filter((row) => row.approval === "PENDING").length;
-
-  const clientAutomationRows = useMemo(
-    () => [
-      {
-        id: "client-status-sync",
-        name: "Project Status Sync",
-        trigger: "Project and milestone updates",
-        status: projectScopedProjects.length > 0 ? "active" as const : "draft" as const,
-        impact: `${projectScopedProjects.length} project${projectScopedProjects.length === 1 ? "" : "s"} tracked`,
-        lastEvent: scopedTimelineEvents[0] ? formatRelative(scopedTimelineEvents[0].createdAt) : "No events yet"
-      },
-      {
-        id: "client-invoice-reminders",
-        name: "Invoice Reminder Engine",
-        trigger: "Invoice due and overdue dates",
-        status: overdueInvoices.length > 0 ? "risk" as const : outstandingInvoices.length > 0 ? "watch" as const : "active" as const,
-        impact: `${outstandingInvoices.length} outstanding invoice${outstandingInvoices.length === 1 ? "" : "s"}`,
-        lastEvent: scopedTimelineEvents[1] ? formatRelative(scopedTimelineEvents[1].createdAt) : "No events yet"
-      },
-      {
-        id: "client-approvals",
-        name: "Milestone Approval Requests",
-        trigger: "Milestones waiting on client decision",
-        status: pendingApprovalCount > 0 ? "watch" as const : "active" as const,
-        impact: `${pendingApprovalCount} pending approval${pendingApprovalCount === 1 ? "" : "s"}`,
-        lastEvent: scopedTimelineEvents[2] ? formatRelative(scopedTimelineEvents[2].createdAt) : "No events yet"
-      },
-      {
-        id: "client-thread-alerts",
-        name: "Thread Response Alerts",
-        trigger: "New messages and escalation notices",
-        status: unreadByTab.messages > 0 ? "watch" as const : "active" as const,
-        impact: `${openThreads.length} active thread${openThreads.length === 1 ? "" : "s"}`,
-        lastEvent: scopedTimelineEvents[3] ? formatRelative(scopedTimelineEvents[3].createdAt) : "No events yet"
-      }
-    ],
-    [
-      openThreads.length,
-      outstandingInvoices.length,
-      overdueInvoices.length,
-      pendingApprovalCount,
-      projectScopedProjects.length,
-      scopedTimelineEvents,
-      unreadByTab.messages
-    ]
-  );
-
-  const handleMilestoneApproval = async (
-    milestoneId: string,
-    status: "APPROVED" | "REJECTED"
-  ) => {
+  /* ── interaction handlers ── */
+  const handleMilestoneApproval = async (milestoneId: string, status: "APPROVED" | "REJECTED") => {
     if (!session) return;
     const result = await updatePortalMilestoneApprovalWithRefresh(session, milestoneId, { status });
     const approval = result.data;
@@ -864,17 +648,11 @@ export function MaphariClientDashboard() {
       impactSummary: changeRequestForm.impactSummary.trim() || undefined
     });
     if (created.data) {
-      setChangeRequests((previous) => [created.data!, ...previous]);
-      setChangeRequestForm((previous) => ({
-        ...previous,
-        title: "",
-        description: "",
-        reason: "",
-        impactSummary: ""
-      }));
-      setActionFeedback({ tone: "success", message: "Change request submitted successfully." });
+      setChangeRequests((prev) => [created.data!, ...prev]);
+      setChangeRequestForm((prev) => ({ ...prev, title: "", description: "", reason: "", impactSummary: "" }));
+      setFeedback({ tone: "success", message: "Change request submitted successfully." });
     } else {
-      setActionFeedback({ tone: "error", message: created.error?.message ?? "Unable to submit change request." });
+      setFeedback({ tone: "error", message: created.error?.message ?? "Unable to submit change request." });
     }
     setSubmittingChangeRequest(false);
   };
@@ -893,13 +671,11 @@ export function MaphariClientDashboard() {
       additionalPaymentId: metadata?.additionalPaymentId
     });
     if (!updated.data) {
-      setActionFeedback({ tone: "error", message: updated.error?.message ?? "Unable to update change request." });
+      setFeedback({ tone: "error", message: updated.error?.message ?? "Unable to update change request." });
       return;
     }
-    setChangeRequests((previous) =>
-      previous.map((item) => (item.id === changeRequestId ? updated.data! : item))
-    );
-    setActionFeedback({
+    setChangeRequests((prev) => prev.map((item) => (item.id === changeRequestId ? updated.data! : item)));
+    setFeedback({
       tone: "success",
       message: status === "CLIENT_APPROVED" ? "Change request accepted." : "Change request rejected."
     });
@@ -1003,8 +779,7 @@ export function MaphariClientDashboard() {
       deposit50Cents: Math.ceil(totalCents * 0.5),
       milestone30Cents: Math.ceil(totalCents * 0.3),
       handoff20Cents: totalCents - Math.ceil(totalCents * 0.5) - Math.ceil(totalCents * 0.3),
-      confidence:
-        form.selectedServices.length === 0 || form.scopePrompt.trim().length < 20 ? "MEDIUM" : "HIGH",
+      confidence: form.selectedServices.length === 0 || form.scopePrompt.trim().length < 20 ? "MEDIUM" : "HIGH",
       lineItems,
       assumptions: [
         "Domain, hosting, and third-party subscription costs are paid directly by the client.",
@@ -1013,7 +788,6 @@ export function MaphariClientDashboard() {
       ]
     };
   }, []);
-  void buildProjectEstimate;
 
   const handleConfirmProjectRequest = async () => {
     if (!session || !projectRequestEstimate || submittingProjectRequest) return;
@@ -1034,7 +808,7 @@ export function MaphariClientDashboard() {
     if (!invoice.data) {
       setSubmittingProjectRequest(false);
       setProjectRequestPhase("idle");
-      setActionFeedback({ tone: "error", message: invoice.error?.message ?? "Unable to create deposit invoice." });
+      setFeedback({ tone: "error", message: invoice.error?.message ?? "Unable to create deposit invoice." });
       return;
     }
 
@@ -1049,7 +823,7 @@ export function MaphariClientDashboard() {
     if (!payment.data) {
       setSubmittingProjectRequest(false);
       setProjectRequestPhase("idle");
-      setActionFeedback({ tone: "error", message: payment.error?.message ?? "Deposit payment failed." });
+      setFeedback({ tone: "error", message: payment.error?.message ?? "Deposit payment failed." });
       return;
     }
 
@@ -1088,1129 +862,34 @@ export function MaphariClientDashboard() {
     setProjectRequestPhase("idle");
     setProjectEstimateModalOpen(false);
     if (!created.data) {
-      setActionFeedback({ tone: "error", message: created.error?.message ?? "Unable to submit project request." });
+      setFeedback({ tone: "error", message: created.error?.message ?? "Unable to submit project request." });
       return;
     }
 
     setProjectRequestForm({
-      name: "",
-      description: "",
-      serviceType: "AUTO_RECOMMEND",
-      selectedServices: ["WEB_DEVELOPMENT"],
-      addonServices: [],
-      buildMode: "AUTO",
-      complexity: "STANDARD",
-      designPackage: "NONE",
-      websitePageCount: "5",
-      appScreenCount: "6",
-      integrationsCount: "1",
-      targetPlatforms: ["WEB"],
-      requiresContentSupport: true,
-      requiresDomainAndHosting: true,
-      scopePrompt: "",
-      desiredStartAt: "",
-      desiredDueAt: "",
-      estimatedBudgetCents: "",
-      priority: "MEDIUM",
-      agreementFileId: ""
+      name: "", description: "", serviceType: "AUTO_RECOMMEND",
+      selectedServices: ["WEB_DEVELOPMENT"], addonServices: [],
+      buildMode: "AUTO", complexity: "STANDARD", designPackage: "NONE",
+      websitePageCount: "5", appScreenCount: "6", integrationsCount: "1",
+      targetPlatforms: ["WEB"], requiresContentSupport: true, requiresDomainAndHosting: true,
+      scopePrompt: "", desiredStartAt: "", desiredDueAt: "", estimatedBudgetCents: "",
+      priority: "MEDIUM", agreementFileId: ""
     });
     setProjectRequestEstimate(null);
     await refreshSnapshot(created.nextSession ?? payment.nextSession ?? invoice.nextSession ?? session, { background: true });
-    setActionFeedback({ tone: "success", message: "Project request submitted with 50% deposit confirmation." });
+    setFeedback({ tone: "success", message: "Project request submitted with 50% deposit confirmation." });
   };
-
-  const projectCards = useMemo(() => {
-    const source = effectiveProjectDetails.length
-      ? scopedProjectDetails
-      : projectScopedProjects.map((project) => ({
-          ...project,
-          milestones: [],
-          tasks: [],
-          dependencies: [],
-          activities: []
-        }));
-    return source.map((project) => {
-      const collaboration = projectCollaborationById[project.id];
-      const collaborators = collaboration?.contributors ?? [];
-      const activeSessions = collaboration?.sessions?.filter((session) => session.status === "ACTIVE").length ?? 0;
-      const statusTone =
-        project.status === "IN_PROGRESS" || project.status === "COMPLETED"
-          ? "bgGreen"
-          : project.status === "REVIEW"
-          ? "bgAmber"
-          : project.status === "PLANNING"
-          ? "bgPurple"
-          : project.status === "ON_HOLD" || project.status === "CANCELLED"
-          ? "bgRed"
-          : "bgMuted";
-      const progressTone =
-        project.status === "IN_PROGRESS" || project.status === "COMPLETED"
-          ? "pfGreen"
-          : project.status === "REVIEW"
-          ? "pfAmber"
-          : project.status === "PLANNING"
-          ? "pfPurple"
-          : "pfGreen";
-      return {
-        id: project.id,
-        name: project.name,
-        status: project.status,
-        statusTone,
-        progressTone,
-        progressPercent: project.progressPercent ?? 0,
-        dueAt: project.dueAt,
-        description: project.description,
-        priority: project.priority,
-        ownerName: project.ownerName,
-        budgetCents: project.budgetCents ?? 0,
-        collaborators,
-        activeSessions,
-        milestones: project.milestones ?? []
-      };
-    });
-  }, [effectiveProjectDetails.length, projectCollaborationById, projectScopedProjects, scopedProjectDetails]);
-
-  const recentThreads = useMemo<ThreadPreview[]>(() => {
-    const palette = ["var(--accent)", "var(--purple)", "var(--amber)"];
-    return [...projectScopedConversations]
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, 3)
-      .map((conversation, index) => {
-        const lastMessage = effectiveMessagePreviewMap[conversation.id];
-        const projectName = projects.find((project) => project.id === conversation.projectId)?.name ?? "General";
-        return {
-          id: conversation.id,
-          sender: conversation.subject,
-          project: projectName,
-          time: formatRelative(conversation.updatedAt),
-          preview: lastMessage?.content ?? conversation.subject,
-          avatar: {
-            label: getInitials(conversation.subject),
-            bg: palette[index % palette.length],
-            color: index % palette.length === 1 ? "#fff" : "#050508"
-          },
-          unread: conversation.status === "OPEN"
-        };
-      });
-  }, [effectiveMessagePreviewMap, projectScopedConversations, projects]);
-
-  const allMessageThreads = useMemo<ThreadPreview[]>(() => {
-    const palette = ["var(--accent)", "var(--purple)", "var(--amber)", "var(--surface2)"];
-    return [...projectScopedConversations]
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .map((conversation, index) => {
-        const lastMessage = effectiveMessagePreviewMap[conversation.id];
-        const projectName = projects.find((project) => project.id === conversation.projectId)?.name ?? "General";
-        return {
-          id: conversation.id,
-          sender: conversation.subject,
-          project: projectName,
-          time: formatRelative(conversation.updatedAt),
-          preview: lastMessage?.content ?? conversation.subject,
-          avatar: {
-            label: getInitials(conversation.subject),
-            bg: palette[index % palette.length],
-            color: index % palette.length === 1 ? "#fff" : index % palette.length === 3 ? "var(--muted)" : "#050508",
-            bordered: index % palette.length === 3
-          },
-          unread: conversation.status === "OPEN"
-        };
-      });
-  }, [effectiveMessagePreviewMap, projectScopedConversations, projects]);
-
-  const messageThreads = useMemo<ThreadPreview[]>(() => {
-    const q = [searchQuery, threadSearch.trim().toLowerCase()].filter(Boolean).join(" ");
-    if (!q) return allMessageThreads;
-    return allMessageThreads.filter((thread) => {
-      return (
-        thread.sender.toLowerCase().includes(q) ||
-        thread.project.toLowerCase().includes(q) ||
-        thread.preview.toLowerCase().includes(q)
-      );
-    });
-  }, [allMessageThreads, searchQuery, threadSearch]);
-
-  const commandResults = useMemo<CommandResult[]>(() => {
-    const q = commandSearchValue.trim().toLowerCase();
-    const include = (value: string) => !q || value.toLowerCase().includes(q);
-    const results: CommandResult[] = [];
-
-    [
-      { id: "dashboard", label: "Open Dashboard", detail: "Navigate to overview", page: "dashboard" as const },
-      { id: "projects", label: "Open Projects", detail: "Navigate to project workspace", page: "projects" as const },
-      { id: "invoices", label: "Open Invoices", detail: "Navigate to billing", page: "invoices" as const },
-      { id: "messages", label: "Open Messages", detail: "Navigate to threads", page: "messages" as const },
-      { id: "automations", label: "Open Automations", detail: "Navigate to automation stream", page: "automations" as const },
-      { id: "settings", label: "Open Settings", detail: "Navigate to account settings", page: "settings" as const }
-    ].forEach((item) => {
-      if (include(`${item.label} ${item.detail}`)) {
-        results.push({ id: `page-${item.id}`, kind: "page", label: item.label, detail: item.detail, page: item.page });
-      }
-    });
-
-    projectScopedProjects.slice(0, 12).forEach((project) => {
-      if (include(`${project.name} ${project.status} ${project.description ?? ""}`)) {
-        results.push({
-          id: `project-${project.id}`,
-          kind: "project",
-          label: project.name,
-          detail: `Project · ${formatStatus(project.status)}`,
-          projectId: project.id
-        });
-      }
-    });
-
-    allMessageThreads.slice(0, 12).forEach((thread) => {
-      if (include(`${thread.sender} ${thread.project} ${thread.preview}`)) {
-        results.push({
-          id: `conversation-${thread.id}`,
-          kind: "conversation",
-          label: thread.sender,
-          detail: `Thread · ${thread.project}`,
-          conversationId: thread.id
-        });
-      }
-    });
-
-    dateScopedInvoices.slice(0, 8).forEach((invoice) => {
-      const label = `Invoice ${invoice.number}`;
-      if (include(`${label} ${invoice.status}`)) {
-        results.push({
-          id: `invoice-${invoice.id}`,
-          kind: "invoice",
-          label,
-          detail: `${formatStatus(invoice.status)} · ${formatMoney(convertMoney(invoice.amountCents, invoice.currency), displayCurrency)}`
-        });
-      }
-    });
-
-    milestoneRows.slice(0, 12).forEach((milestone) => {
-      const projectId = allMilestones.find((entry) => entry.milestone.id === milestone.id)?.projectId;
-      if (!projectId) return;
-      if (include(`${milestone.title} ${milestone.date} ${milestone.approval}`)) {
-        results.push({
-          id: `milestone-${milestone.id}`,
-          kind: "milestone",
-          label: milestone.title,
-          detail: `Milestone · ${milestone.date}`,
-          projectId
-        });
-      }
-    });
-
-    notificationJobs.slice(0, 12).forEach((job) => {
-      const page =
-        job.tab === "operations"
-          ? "automations"
-          : (job.tab as Exclude<PageId, "automations">);
-      const label = job.readAt ? "Notification (Read)" : "Notification (Unread)";
-      const detail = `${job.tab} · ${formatStatus(job.status)}`;
-      if (include(`${label} ${detail}`)) {
-        results.push({
-          id: `notification-${job.id}`,
-          kind: "notification",
-          label,
-          detail,
-          page,
-          notificationId: job.id
-        });
-      }
-    });
-
-    return results.slice(0, 16);
-  }, [
-    allMessageThreads,
-    allMilestones,
-    commandSearchValue,
-    convertMoney,
-    displayCurrency,
-    dateScopedInvoices,
-    milestoneRows,
-    notificationJobs,
-    projectScopedProjects
-  ]);
-
-  const invoiceRows = useMemo(() => {
-    return dateScopedInvoices.map((invoice) => {
-      const badgeTone =
-        invoice.status === "OVERDUE"
-          ? "red"
-          : invoice.status === "PAID"
-          ? "green"
-          : invoice.status === "ISSUED"
-          ? "amber"
-          : "muted";
-      return {
-        id: invoice.number,
-        sourceId: invoice.id,
-        issued: invoice.issuedAt ? formatDateLong(invoice.issuedAt) : formatDateLong(invoice.createdAt),
-        amount: formatMoney(convertMoney(invoice.amountCents, invoice.currency), displayCurrency),
-        amountTone: invoice.status === "OVERDUE" ? "var(--red)" : undefined,
-        badge: {
-          label: invoice.status === "ISSUED" ? "Due Soon" : formatStatus(invoice.status),
-          tone: badgeTone === "muted" ? "amber" : (badgeTone as "amber" | "red" | "green")
-        },
-        action: {
-          label: invoice.status === "PAID" ? "PDF" : "Pay",
-          tone: (invoice.status === "PAID" ? "ghost" : "accent") as "accent" | "ghost"
-        }
-      };
-    });
-  }, [convertMoney, dateScopedInvoices, displayCurrency]);
-
-  const invoiceTableRows = useMemo(() => {
-    return dateScopedInvoices.map((invoice) => {
-      const badgeTone =
-        invoice.status === "OVERDUE"
-          ? "red"
-          : invoice.status === "PAID"
-          ? "green"
-          : invoice.status === "ISSUED"
-          ? "amber"
-          : "muted";
-      return {
-        id: invoice.number,
-        sourceId: invoice.id,
-        status: invoice.status,
-        project: defaultProjectName,
-        issued: formatDateLong(invoice.issuedAt ?? invoice.createdAt),
-        due: invoice.dueAt ? formatDateLong(invoice.dueAt) : "TBD",
-        dueTone: invoice.dueAt && isPast(invoice.dueAt) ? "var(--red)" : "var(--muted)",
-        amount: formatMoney(convertMoney(invoice.amountCents, invoice.currency), displayCurrency),
-        amountTone: invoice.status === "OVERDUE" ? "var(--red)" : "var(--text)",
-        badge: {
-          label: invoice.status === "ISSUED" ? "Due Soon" : formatStatus(invoice.status),
-          tone: badgeTone === "muted" ? "amber" : (badgeTone as "amber" | "red" | "green")
-        },
-        action: {
-          label: invoice.status === "PAID" ? "Download PDF" : "Pay Now",
-          tone: (invoice.status === "PAID" ? "ghost" : "accent") as "accent" | "ghost"
-        }
-      };
-    });
-  }, [convertMoney, dateScopedInvoices, defaultProjectName, displayCurrency]);
-
-  const filteredInvoiceTable = useMemo(() => {
-    if (activeInvoiceTab === "paid") {
-      return invoiceTableRows.filter((row) => row.status === "PAID");
-    }
-    if (activeInvoiceTab === "outstanding") {
-      return invoiceTableRows.filter((row) => row.status === "ISSUED" || row.status === "OVERDUE");
-    }
-    return invoiceTableRows;
-  }, [activeInvoiceTab, invoiceTableRows]);
-
-  const searchedProjectRows = useMemo(() => {
-    if (!searchQuery) return projectRows;
-    return projectRows.filter((row) => `${row.name} ${row.subtitle} ${row.status} ${row.due}`.toLowerCase().includes(searchQuery));
-  }, [projectRows, searchQuery]);
-
-  const searchedMilestoneRows = useMemo(() => {
-    if (!searchQuery) return milestoneRows;
-    return milestoneRows.filter((row) =>
-      `${row.title} ${row.date} ${row.fileName ?? ""} ${row.approval}`.toLowerCase().includes(searchQuery)
-    );
-  }, [milestoneRows, searchQuery]);
-
-  const searchedRecentThreads = useMemo(() => {
-    if (!searchQuery) return recentThreads;
-    return recentThreads.filter((row) =>
-      `${row.sender} ${row.project} ${row.preview}`.toLowerCase().includes(searchQuery)
-    );
-  }, [recentThreads, searchQuery]);
-
-  const searchedInvoiceRows = useMemo(() => {
-    if (!searchQuery) return invoiceRows;
-    return invoiceRows.filter((row) =>
-      `${row.id} ${row.amount} ${row.badge.label}`.toLowerCase().includes(searchQuery)
-    );
-  }, [invoiceRows, searchQuery]);
-
-  const searchedProjectCards = useMemo(() => {
-    const scopedCards = projectScopeId ? projectCards.filter((row) => row.id === projectScopeId) : projectCards;
-    if (!searchQuery) return scopedCards;
-    return scopedCards.filter((row) =>
-      `${row.name} ${row.description ?? ""} ${row.status} ${row.ownerName ?? ""}`.toLowerCase().includes(searchQuery)
-    );
-  }, [projectCards, projectScopeId, searchQuery]);
-
-  const searchedFilteredInvoiceTable = useMemo(() => {
-    if (!searchQuery) return filteredInvoiceTable;
-    return filteredInvoiceTable.filter((row) =>
-      `${row.id} ${row.project} ${row.amount} ${row.badge.label} ${row.status}`.toLowerCase().includes(searchQuery)
-    );
-  }, [filteredInvoiceTable, searchQuery]);
-
-  const invoiceTabs = useMemo(
-    () => [
-      { id: "all" as const, label: `All (${invoiceTableRows.length})` },
-      {
-        id: "outstanding" as const,
-        label: `Outstanding (${invoiceTableRows.filter((row) => row.status === "ISSUED" || row.status === "OVERDUE").length})`
-      },
-      { id: "paid" as const, label: `Paid (${invoiceTableRows.filter((row) => row.status === "PAID").length})` }
-    ],
-    [invoiceTableRows]
-  );
-
-  const invoiceSummaryStats = useMemo<DashboardStat[]>(() => {
-    const outstandingTotal = scopedOutstandingInvoices.reduce((sum, invoice) => sum + convertMoney(invoice.amountCents, invoice.currency), 0);
-    const paidThisMonth = dateScopedInvoices.filter((invoice) => {
-      if (!invoice.paidAt) return false;
-      const paidDate = new Date(invoice.paidAt);
-      const now = new Date();
-      return paidDate.getMonth() === now.getMonth() && paidDate.getFullYear() === now.getFullYear();
-    });
-    const paidTotal = paidThisMonth.reduce((sum, invoice) => sum + convertMoney(invoice.amountCents, invoice.currency), 0);
-    const year = new Date().getFullYear();
-    const billedYtd = dateScopedInvoices
-      .filter((invoice) => {
-        const created = new Date(invoice.createdAt);
-        return created.getFullYear() === year;
-      })
-      .reduce((sum, invoice) => sum + convertMoney(invoice.amountCents, invoice.currency), 0);
-
-    return [
-      {
-        label: "Outstanding",
-        value: formatMoney(outstandingTotal, displayCurrency),
-        delta: `${scopedOutstandingInvoices.length} invoice${scopedOutstandingInvoices.length === 1 ? "" : "s"} due`,
-        tone: "var(--amber)",
-        deltaTone: scopedOutstandingInvoices.length > 0 ? "deltaWarn" : "deltaUp"
-      },
-      {
-        label: "Paid This Month",
-        value: formatMoney(paidTotal, displayCurrency),
-        delta: `${paidThisMonth.length} invoice${paidThisMonth.length === 1 ? "" : "s"} settled`,
-        tone: "var(--accent)",
-        deltaTone: "deltaUp"
-      },
-      {
-        label: "Total Billed (YTD)",
-        value: formatMoney(billedYtd, displayCurrency),
-        delta: `${projectScopedProjects.length} scoped project${projectScopedProjects.length === 1 ? "" : "s"}`,
-        tone: "transparent",
-        deltaTone: ""
-      }
-    ];
-  }, [convertMoney, dateScopedInvoices, displayCurrency, projectScopedProjects.length, scopedOutstandingInvoices]);
-
-  const dashboardStats = useMemo<DashboardStat[]>(() => {
-    const activeProjects = projectScopedProjects.filter((project) => project.status !== "COMPLETED" && project.status !== "CANCELLED");
-    const completedMilestones = scopedMilestones.filter((entry) => entry.milestone.status === "COMPLETED");
-    const completedLast30 = completedMilestones.filter((entry) => {
-      const date = new Date(entry.milestone.updatedAt);
-      return nowTs - date.getTime() < 30 * 24 * 60 * 60 * 1000;
-    });
-    const updatedThreads = projectScopedConversations.filter((conversation) => {
-      const date = new Date(conversation.updatedAt);
-      return nowTs - date.getTime() < 7 * 24 * 60 * 60 * 1000;
-    });
-
-    return [
-      {
-        label: "Active Projects",
-        value: String(activeProjects.length),
-        delta: `${activeProjects.length} live engagement${activeProjects.length === 1 ? "" : "s"}`,
-        tone: "var(--accent)",
-        deltaTone: "deltaUp"
-      },
-      {
-        label: "Milestones Done",
-        value: String(completedMilestones.length),
-        delta: `${completedLast30.length} completed in 30 days`,
-        tone: "var(--purple)",
-        deltaTone: completedLast30.length > 0 ? "deltaUp" : "deltaWarn"
-      },
-      {
-        label: "Outstanding Balance",
-        value: formatMoney(scopedOutstandingInvoices.reduce((sum, invoice) => sum + convertMoney(invoice.amountCents, invoice.currency), 0), displayCurrency),
-        delta: `${scopedOutstandingInvoices.length} invoice${scopedOutstandingInvoices.length === 1 ? "" : "s"} due`,
-        tone: "var(--amber)",
-        deltaTone: scopedOutstandingInvoices.length > 0 ? "deltaWarn" : "deltaUp"
-      },
-      {
-        label: "Unread Messages",
-        value: String(updatedThreads.length),
-        delta: `${updatedThreads.length} thread${updatedThreads.length === 1 ? "" : "s"} updated this week`,
-        tone: "var(--purple)",
-        deltaTone: "deltaUp"
-      }
-    ];
-  }, [convertMoney, displayCurrency, nowTs, projectScopedConversations, projectScopedProjects, scopedMilestones, scopedOutstandingInvoices]);
-
-  const nextActions = useMemo<ActionItem[]>(() => {
-    const actions: ActionItem[] = [];
-    const overdue = dateScopedInvoices.filter((invoice) => invoice.status === "OVERDUE");
-    overdue.slice(0, 2).forEach((invoice) => {
-      actions.push({
-        id: `invoice-${invoice.id}`,
-        title: `Pay invoice ${invoice.number}`,
-        meta: invoice.dueAt ? `Overdue · ${formatDateShort(invoice.dueAt)}` : "Overdue",
-        tone: "red"
-      });
-    });
-
-    const upcomingMilestones = allMilestones
-      .filter((entry) => entry.milestone.status !== "COMPLETED")
-      .filter((entry) => entry.milestone.dueAt && !isPast(entry.milestone.dueAt))
-      .sort((a, b) => new Date(a.milestone.dueAt ?? 0).getTime() - new Date(b.milestone.dueAt ?? 0).getTime())
-      .slice(0, 2);
-    upcomingMilestones.forEach((entry) => {
-      actions.push({
-        id: `milestone-${entry.milestone.id}`,
-        title: `Review milestone: ${entry.milestone.title}`,
-        meta: `Due · ${formatDateShort(entry.milestone.dueAt)}`,
-        tone: "amber"
-      });
-    });
-
-    const blockedTasks = scopedProjectDetails.flatMap((detail) => detail.tasks.filter((task) => task.status === "BLOCKED"));
-    blockedTasks.slice(0, 2).forEach((task) => {
-      actions.push({
-        id: `task-${task.id}`,
-        title: `Unblock task: ${task.title}`,
-        meta: task.dueAt ? `Due · ${formatDateShort(task.dueAt)}` : "Needs attention",
-        tone: "purple"
-      });
-    });
-
-    if (actions.length === 0) {
-      actions.push({
-        id: "action-none",
-        title: "All caught up",
-        meta: "No urgent actions right now",
-        tone: "accent"
-      });
-    }
-
-    return actions.slice(0, 5);
-  }, [allMilestones, dateScopedInvoices, scopedProjectDetails]);
-
-  const slaAlerts = useMemo<RiskItem[]>(() => {
-    const risks: RiskItem[] = [];
-    const soonCutoff = nowTs + 1000 * 60 * 60 * 24 * 3;
-    projectScopedProjects
-      .filter((project) => project.riskLevel === "HIGH")
-      .forEach((project) => {
-        risks.push({
-          id: `risk-${project.id}`,
-          title: `${project.name} marked high risk`,
-          meta: `Due ${project.dueAt ? formatDateShort(project.dueAt) : "TBD"}`,
-          tone: "red"
-        });
-      });
-
-    allMilestones
-      .filter((entry) => entry.milestone.status !== "COMPLETED")
-      .filter((entry) => entry.milestone.dueAt && isPast(entry.milestone.dueAt))
-      .forEach((entry) => {
-        risks.push({
-          id: `milestone-risk-${entry.milestone.id}`,
-          title: `Milestone overdue: ${entry.milestone.title}`,
-          meta: `Due ${formatDateShort(entry.milestone.dueAt)}`,
-          tone: "amber"
-        });
-      });
-
-    dateScopedInvoices
-      .filter((invoice) => invoice.status === "OVERDUE")
-      .forEach((invoice) => {
-        risks.push({
-          id: `invoice-risk-${invoice.id}`,
-          title: `Invoice ${invoice.number} overdue`,
-          meta: invoice.dueAt ? `Due ${formatDateShort(invoice.dueAt)}` : "Overdue",
-          tone: "red"
-        });
-      });
-
-    scopedProjectDetails
-      .flatMap((detail) => detail.tasks.filter((task) => task.status === "BLOCKED"))
-      .slice(0, 3)
-      .forEach((task) => {
-        risks.push({
-          id: `task-blocked-${task.id}`,
-          title: `Blocked task: ${task.title}`,
-          meta: task.dueAt ? `Due ${formatDateShort(task.dueAt)}` : "No ETA yet",
-          tone: "amber"
-        });
-      });
-
-    allMilestones
-      .filter((entry) => entry.milestone.status !== "COMPLETED")
-      .filter((entry) => entry.milestone.dueAt)
-      .filter((entry) => new Date(entry.milestone.dueAt ?? 0).getTime() <= soonCutoff)
-      .forEach((entry) => {
-        risks.push({
-          id: `milestone-soon-${entry.milestone.id}`,
-          title: `SLA window closing: ${entry.milestone.title}`,
-          meta: `Due ${formatDateShort(entry.milestone.dueAt)}`,
-          tone: "amber"
-        });
-      });
-
-    scopedBlockers
-      .filter((blocker) => blocker.status !== "RESOLVED")
-      .forEach((blocker) => {
-        risks.push({
-          id: `blocker-${blocker.id}`,
-          title: `Blocker: ${blocker.title}`,
-          meta: blocker.etaAt ? `ETA ${formatDateShort(blocker.etaAt)}` : "No ETA set",
-          tone: blocker.severity === "HIGH" || blocker.severity === "CRITICAL" ? "red" : "amber"
-        });
-      });
-
-    return risks.slice(0, 5);
-  }, [allMilestones, dateScopedInvoices, nowTs, projectScopedProjects, scopedBlockers, scopedProjectDetails]);
-
-  const onboardingChecklist = useMemo<OnboardingChecklistItem[]>(() => {
-    const firstProject = scopedProjectDetails[0];
-    if (!firstProject) return [];
-    const ownerAssigned = Boolean(firstProject.ownerName);
-    const hasMilestones = firstProject.milestones.length > 0;
-    const requiredFiles = snapshot.files.length > 0;
-    const etaDefined = Boolean(firstProject.dueAt);
-    return [
-      {
-        id: "owner",
-        label: "Delivery owner assigned",
-        status: ownerAssigned ? "done" : "pending",
-        detail: ownerAssigned ? `Owner: ${firstProject.ownerName}` : "Assign an owner in project settings."
-      },
-      {
-        id: "milestones",
-        label: "Milestones mapped",
-        status: hasMilestones ? "done" : "pending",
-        detail: hasMilestones ? `${firstProject.milestones.length} milestones planned.` : "No milestones yet."
-      },
-      {
-        id: "files",
-        label: "Required files uploaded",
-        status: requiredFiles ? "done" : "pending",
-        detail: requiredFiles ? `${snapshot.files.length} file(s) on record.` : "Upload kickoff files."
-      },
-      {
-        id: "eta",
-        label: "Delivery ETA confirmed",
-        status: etaDefined ? "done" : "pending",
-        detail: etaDefined ? `ETA: ${formatDateShort(firstProject.dueAt)}` : "No delivery ETA set."
-      }
-    ];
-  }, [scopedProjectDetails, snapshot.files]);
-
-  const digestItems = useMemo<LoginDigestItem[]>(() => {
-    if (!lastLoginAt) return [];
-    const sinceTs = new Date(lastLoginAt).getTime();
-    if (Number.isNaN(sinceTs)) return [];
-    const digest: LoginDigestItem[] = [];
-
-    projectScopedConversations
-      .filter((conversation) => new Date(conversation.updatedAt).getTime() > sinceTs)
-      .slice(0, 2)
-      .forEach((conversation) => {
-        digest.push({
-          id: `digest-thread-${conversation.id}`,
-          change: `Thread updated: ${conversation.subject}`,
-          impact: "Communication is active on this workstream",
-          action: "Open messages to review and reply",
-          time: formatRelative(conversation.updatedAt)
-        });
-      });
-
-    dateScopedInvoices
-      .filter((invoice) => new Date(invoice.updatedAt).getTime() > sinceTs)
-      .slice(0, 2)
-      .forEach((invoice) => {
-        digest.push({
-          id: `digest-invoice-${invoice.id}`,
-          change: `Invoice ${invoice.number} changed to ${formatStatus(invoice.status)}`,
-          impact: formatMoney(convertMoney(invoice.amountCents, invoice.currency), displayCurrency),
-          action: invoice.status === "OVERDUE" ? "Review overdue balance in billing" : "Review billing updates",
-          time: formatRelative(invoice.updatedAt)
-        });
-      });
-
-    allMilestones
-      .filter((entry) => new Date(entry.milestone.updatedAt).getTime() > sinceTs)
-      .slice(0, 2)
-      .forEach((entry) => {
-        digest.push({
-          id: `digest-milestone-${entry.milestone.id}`,
-          change: `Milestone update: ${entry.milestone.title}`,
-          impact: `Status ${formatStatus(entry.milestone.status)}`,
-          action:
-            (milestoneApprovals[entry.milestone.id]?.status ?? "PENDING") === "PENDING"
-              ? "Review pending milestone approval"
-              : "Track delivery progress",
-          time: formatRelative(entry.milestone.updatedAt)
-        });
-      });
-
-    return digest.slice(0, 6);
-  }, [allMilestones, convertMoney, dateScopedInvoices, displayCurrency, lastLoginAt, milestoneApprovals, projectScopedConversations]);
-
-  const actionCenter = useMemo<ActionCenterItem[]>(() => {
-    const pendingApprovals = scopedMilestones.filter(
-      (entry) => (milestoneApprovals[entry.milestone.id]?.status ?? "PENDING") === "PENDING"
-    ).length;
-    const unreadMessages = projectScopedConversations.filter((conversation) => conversation.status === "OPEN").length;
-    const overdueInvoicesCount = dateScopedInvoices.filter((invoice) => invoice.status === "OVERDUE").length;
-    const checklistGaps = onboardingChecklist.filter((item) => item.status === "pending").length;
-
-    return [
-      {
-        id: "center-approvals",
-        label: "Pending approvals",
-        value: pendingApprovals,
-        detail: pendingApprovals > 0 ? "needs review" : "all clear",
-        tone: pendingApprovals > 0 ? "amber" : "accent",
-        target: "projects"
-      },
-      {
-        id: "center-messages",
-        label: "Unread messages",
-        value: unreadMessages,
-        detail: unreadMessages > 0 ? "inbox active" : "all clear",
-        tone: unreadMessages > 0 ? "purple" : "accent",
-        target: "messages"
-      },
-      {
-        id: "center-overdue",
-        label: "Overdue invoices",
-        value: overdueInvoicesCount,
-        detail: overdueInvoicesCount > 0 ? "payment risk" : "on track",
-        tone: overdueInvoicesCount > 0 ? "red" : "accent",
-        target: "invoices"
-      },
-      {
-        id: "center-gaps",
-        label: "Checklist gaps",
-        value: checklistGaps,
-        detail: checklistGaps > 0 ? "action needed" : "ready",
-        tone: checklistGaps > 0 ? "amber" : "accent",
-        target: "projects"
-      }
-    ];
-  }, [dateScopedInvoices, milestoneApprovals, onboardingChecklist, projectScopedConversations, scopedMilestones]);
-
-  const approvalQueue = useMemo<ApprovalQueueItem[]>(() => {
-    const queue: ApprovalQueueItem[] = [];
-
-    allMilestones
-      .filter((entry) => (milestoneApprovals[entry.milestone.id]?.status ?? "PENDING") === "PENDING")
-      .slice(0, 4)
-      .forEach((entry) => {
-        queue.push({
-          id: `approval-milestone-${entry.milestone.id}`,
-          title: entry.milestone.title,
-          detail: entry.milestone.dueAt ? `Milestone approval pending · Due ${formatDateShort(entry.milestone.dueAt)}` : "Milestone approval pending",
-          priority: entry.milestone.dueAt && isPast(entry.milestone.dueAt) ? "high" : "normal"
-        });
-      });
-
-    scopedChangeRequests
-      .filter((request) => request.status === "SUBMITTED" || request.status === "ESTIMATED" || request.status === "ADMIN_APPROVED")
-      .slice(0, 3)
-      .forEach((request) => {
-        queue.push({
-          id: `approval-change-${request.id}`,
-          title: request.title,
-          detail: `Change request · ${formatStatus(request.status)}`,
-          priority: request.status === "ADMIN_APPROVED" ? "high" : "normal"
-        });
-      });
-
-    return queue.slice(0, 6);
-  }, [allMilestones, milestoneApprovals, scopedChangeRequests]);
-
-  const decisionLog = useMemo<DecisionLogItem[]>(() => {
-    const entries: Array<DecisionLogItem & { ts: number }> = [];
-
-    allMilestones
-      .filter((entry) => {
-        const status = milestoneApprovals[entry.milestone.id]?.status ?? "PENDING";
-        return status === "APPROVED" || status === "REJECTED";
-      })
-      .forEach((entry) => {
-        const ts = new Date(entry.milestone.updatedAt).getTime();
-        const decision = milestoneApprovals[entry.milestone.id]?.status ?? "PENDING";
-        entries.push({
-          id: `decision-milestone-${entry.milestone.id}`,
-          title: `${entry.milestone.title} ${decision === "APPROVED" ? "approved" : "rejected"}`,
-          detail: `Milestone · ${formatStatus(entry.milestone.status)}`,
-          time: formatRelative(entry.milestone.updatedAt),
-          ts: Number.isNaN(ts) ? 0 : ts
-        });
-      });
-
-    scopedChangeRequests
-      .filter((request) => request.status === "ADMIN_REJECTED" || request.status === "CLIENT_APPROVED" || request.status === "CLIENT_REJECTED")
-      .forEach((request) => {
-        const ts = new Date(request.updatedAt).getTime();
-        entries.push({
-          id: `decision-change-${request.id}`,
-          title: `${request.title} ${formatStatus(request.status).toLowerCase()}`,
-          detail: "Change request decision",
-          time: formatRelative(request.updatedAt),
-          ts: Number.isNaN(ts) ? 0 : ts
-        });
-      });
-
-    return entries
-      .sort((a, b) => b.ts - a.ts)
-      .slice(0, 6)
-      .map((entry) => ({
-        id: entry.id,
-        title: entry.title,
-        detail: entry.detail,
-        time: entry.time
-      }));
-  }, [allMilestones, milestoneApprovals, scopedChangeRequests]);
-
-  const confidenceSummary = useMemo<ConfidenceSummary>(() => {
-    const overdueMilestones = allMilestones.filter(
-      (entry) => entry.milestone.dueAt && isPast(entry.milestone.dueAt) && entry.milestone.status !== "COMPLETED"
-    ).length;
-    const blockedTasks = scopedProjectDetails.flatMap((detail) => detail.tasks.filter((task) => task.status === "BLOCKED")).length;
-    const highRiskProjects = projectScopedProjects.filter((project) => project.riskLevel === "HIGH").length;
-    const totalSignals = Math.max(allMilestones.length + scopedProjectDetails.length, 1);
-    const penalties = overdueMilestones * 16 + blockedTasks * 12 + highRiskProjects * 18;
-    const score = Math.max(5, Math.min(97, 100 - Math.round((penalties / totalSignals) * 10)));
-    const tone: ConfidenceSummary["tone"] = score < 45 ? "red" : score < 70 ? "amber" : "accent";
-    const label: ConfidenceSummary["label"] = score < 45 ? "At Risk" : score < 70 ? "Needs Attention" : "On Track";
-    const reasons = [
-      `${overdueMilestones} overdue milestone${overdueMilestones === 1 ? "" : "s"}`,
-      `${blockedTasks} blocked task${blockedTasks === 1 ? "" : "s"}`,
-      `${highRiskProjects} high-risk project${highRiskProjects === 1 ? "" : "s"}`
-    ];
-    const nextActionsConfidence = [
-      "Prioritize blocked tasks with owner assignment",
-      "Confirm near-term milestone approvals",
-      "Resolve overdue invoices impacting delivery cadence"
-    ];
-    return {
-      score,
-      tone,
-      label,
-      reasons,
-      nextActions: nextActionsConfidence
-    };
-  }, [allMilestones, projectScopedProjects, scopedProjectDetails]);
-
-  const activityFeed = useMemo<ActivityItem[]>(() => {
-    const items: ActivityItem[] = [];
-
-    scopedProjectDetails.forEach((detail) => {
-      detail.activities.slice(0, 10).forEach((activity) => {
-        const timestamp = new Date(activity.createdAt).getTime();
-        items.push({
-          id: activity.id,
-          icon: "✓",
-          title: activity.type.replace(/_/g, " ").toLowerCase(),
-          detail: activity.details ?? detail.name,
-          time: formatRelative(activity.createdAt),
-          tone: "accent",
-          timestamp: Number.isNaN(timestamp) ? 0 : timestamp
-        });
-      });
-    });
-
-    dateScopedInvoices.forEach((invoice) => {
-      const timestamp = new Date(invoice.updatedAt).getTime();
-      items.push({
-        id: `invoice-${invoice.id}`,
-        icon: invoice.status === "PAID" ? "✓" : "🧾",
-        title: `Invoice ${invoice.number}`,
-        detail: `${invoice.status.toLowerCase()} · ${formatMoney(convertMoney(invoice.amountCents, invoice.currency), displayCurrency)}`,
-        time: formatRelative(invoice.updatedAt),
-        tone: invoice.status === "OVERDUE" ? "red" : invoice.status === "PAID" ? "accent" : "amber",
-        timestamp: Number.isNaN(timestamp) ? 0 : timestamp
-      });
-    });
-
-    snapshot.files.forEach((file) => {
-      const timestamp = new Date(file.createdAt).getTime();
-      items.push({
-        id: `file-${file.id}`,
-        icon: "📄",
-        title: file.fileName,
-        detail: "File uploaded",
-        time: formatRelative(file.createdAt),
-        tone: "purple",
-        timestamp: Number.isNaN(timestamp) ? 0 : timestamp
-      });
-    });
-
-    projectScopedConversations.forEach((conversation) => {
-      const timestamp = new Date(conversation.updatedAt).getTime();
-      items.push({
-        id: `thread-${conversation.id}`,
-        icon: "💬",
-        title: conversation.subject,
-        detail: "Thread updated",
-        time: formatRelative(conversation.updatedAt),
-        tone: "accent",
-        timestamp: Number.isNaN(timestamp) ? 0 : timestamp
-      });
-    });
-
-    scopedTimelineEvents.forEach((event) => {
-      const timestamp = new Date(event.createdAt).getTime();
-      items.push({
-        id: `timeline-${event.id}`,
-        icon: event.category === "BLOCKER" ? "⚠" : event.category === "LEAD" ? "◎" : "✓",
-        title: event.title,
-        detail: event.detail ?? "Shared timeline update",
-        time: formatRelative(event.createdAt),
-        tone: event.category === "BLOCKER" ? "amber" : event.category === "LEAD" ? "purple" : "accent",
-        timestamp: Number.isNaN(timestamp) ? 0 : timestamp
-      });
-    });
-
-    return items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 8);
-  }, [convertMoney, dateScopedInvoices, displayCurrency, projectScopedConversations, scopedProjectDetails, scopedTimelineEvents, snapshot.files]);
-
-  const timelineItems = useMemo<TimelineItem[]>(() => {
-    const items: TimelineItem[] = [];
-    allMilestones.forEach((entry) => {
-      if (!entry.milestone.dueAt) return;
-      const timestamp = new Date(entry.milestone.dueAt).getTime();
-      items.push({
-        id: entry.milestone.id,
-        title: entry.milestone.title,
-        meta: projectScopedProjects.find((project) => project.id === entry.projectId)?.name ?? "Project",
-        dateLabel: formatDateShort(entry.milestone.dueAt),
-        tone: entry.milestone.status === "COMPLETED" ? "muted" : "accent",
-        timestamp: Number.isNaN(timestamp) ? 0 : timestamp
-      });
-    });
-    dateScopedInvoices.forEach((invoice) => {
-      if (!invoice.dueAt) return;
-      const timestamp = new Date(invoice.dueAt).getTime();
-      items.push({
-        id: `invoice-${invoice.id}`,
-        title: `Invoice ${invoice.number} due`,
-        meta: formatMoney(convertMoney(invoice.amountCents, invoice.currency), displayCurrency),
-        dateLabel: formatDateShort(invoice.dueAt),
-        tone: invoice.status === "OVERDUE" ? "amber" : "purple",
-        timestamp: Number.isNaN(timestamp) ? 0 : timestamp
-      });
-    });
-    return items.sort((a, b) => a.timestamp - b.timestamp).slice(0, 6);
-  }, [allMilestones, convertMoney, dateScopedInvoices, displayCurrency, projectScopedProjects]);
-
-  const lastUpdatedAt = useMemo(() => {
-    const dates = [
-      ...projectScopedProjects.map((project) => project.updatedAt),
-      ...projectScopedConversations.map((conversation) => conversation.updatedAt),
-      ...dateScopedInvoices.map((invoice) => invoice.updatedAt),
-      ...snapshot.files.map((file) => file.updatedAt)
-    ];
-    const latest = dates
-      .map((value) => new Date(value).getTime())
-      .filter((value) => !Number.isNaN(value))
-      .sort((a, b) => b - a)[0];
-    return latest ? new Date(latest).toISOString() : null;
-  }, [dateScopedInvoices, projectScopedConversations, projectScopedProjects, snapshot.files]);
-  const lastSyncedLabel = lastUpdatedAt ? formatRelative(lastUpdatedAt) : "Awaiting data";
-
-  const selectedConversation = useMemo(
-    () => projectScopedConversations.find((conversation) => conversation.id === selectedConversationId) ?? null,
-    [projectScopedConversations, selectedConversationId]
-  );
-  const selectedProjectName =
-    projectScopedProjects.find((project) => project.id === selectedConversation?.projectId)?.name ?? "General";
-  const userEmail = session?.user.email ?? "client@maphari.co.za";
-  const userGreetingName = session?.user.email ? session.user.email.split("@")[0] : "there";
-  const userInitials = getInitials(userGreetingName);
-  const clientBadge = session?.user.clientId ? `Client ${session.user.clientId.slice(0, 6).toUpperCase()}` : "Client";
-  const milestoneProjectById = useMemo(() => {
-    const map = new Map<string, string>();
-    allMilestones.forEach((entry) => {
-      map.set(entry.milestone.id, entry.projectId);
-    });
-    return map;
-  }, [allMilestones]);
-  const taskProjectById = useMemo(() => {
-    const map = new Map<string, string>();
-    scopedProjectDetails.forEach((project) => {
-      project.tasks.forEach((task) => {
-        map.set(task.id, project.id);
-      });
-    });
-    return map;
-  }, [scopedProjectDetails]);
-  const projectActivityById = useMemo(() => {
-    const map = new Map<string, string>();
-    scopedProjectDetails.forEach((project) => {
-      project.activities.forEach((activity) => {
-        map.set(activity.id, project.id);
-      });
-    });
-    return map;
-  }, [scopedProjectDetails]);
-  const changeRequestProjectById = useMemo(() => {
-    const map = new Map<string, string>();
-    scopedChangeRequests.forEach((request) => {
-      map.set(request.id, request.projectId);
-    });
-    return map;
-  }, [scopedChangeRequests]);
-  const timelineEventById = useMemo(() => {
-    const map = new Map<string, { category: "PROJECT" | "LEAD" | "BLOCKER"; projectId: string | null }>();
-    scopedTimelineEvents.forEach((event) => {
-      map.set(event.id, { category: event.category, projectId: event.projectId });
-    });
-    return map;
-  }, [scopedTimelineEvents]);
-
-  useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    void (async () => {
-      const [profilePref, notificationsPref, savedViewPref] = await Promise.all([
-        getPortalPreferenceWithRefresh(session, "settingsProfile"),
-        getPortalPreferenceWithRefresh(session, "settingsNotifications"),
-        getPortalPreferenceWithRefresh(session, "savedView")
-      ]);
-      if (cancelled) return;
-
-      const parse = (value?: string | null): Record<string, unknown> | null => {
-        if (!value) return null;
-        try {
-          const parsed = JSON.parse(value);
-          return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
-        } catch {
-          return null;
-        }
-      };
-
-      const profile = parse(profilePref.data?.value);
-      if (profile) {
-        setSettingsProfile({
-          fullName: typeof profile.fullName === "string" ? profile.fullName : userGreetingName,
-          email: typeof profile.email === "string" ? profile.email : userEmail,
-          company: typeof profile.company === "string" ? profile.company : clientBadge,
-          phone: typeof profile.phone === "string" ? profile.phone : "",
-          currency: typeof profile.currency === "string" ? profile.currency : "AUTO"
-        });
-      } else {
-        setSettingsProfile((previous) => ({
-          fullName: previous.fullName === "there" ? userGreetingName : previous.fullName,
-          email: previous.email || userEmail,
-          company: previous.company === "Client" ? clientBadge : previous.company,
-          phone: previous.phone,
-          currency: previous.currency || "AUTO"
-        }));
-      }
-
-      const notifications = parse(notificationsPref.data?.value);
-      if (notifications) {
-        setSettingsNotifications({
-          projectUpdates: Boolean(notifications.projectUpdates),
-          invoiceReminders: Boolean(notifications.invoiceReminders),
-          newMessages: Boolean(notifications.newMessages),
-          weeklyDigest: Boolean(notifications.weeklyDigest),
-          marketingEmails: Boolean(notifications.marketingEmails)
-        });
-      }
-
-      const savedView = parse(savedViewPref.data?.value);
-      if (savedView) {
-        savedViewBaseRef.current = savedView;
-      }
-      const topbar = savedView?.clientDashboardTopbar;
-      if (topbar && typeof topbar === "object") {
-        const topbarRecord = topbar as Record<string, unknown>;
-        if (typeof topbarRecord.search === "string") {
-          setTopbarSearch(topbarRecord.search);
-        }
-        if (
-          topbarRecord.dateRange === "7d" ||
-          topbarRecord.dateRange === "30d" ||
-          topbarRecord.dateRange === "90d" ||
-          topbarRecord.dateRange === "all"
-        ) {
-          setTopbarDateRange(topbarRecord.dateRange);
-        }
-        if (typeof topbarRecord.projectId === "string" || topbarRecord.projectId === null) {
-          const nextProjectId = (topbarRecord.projectId as string | null) ?? null;
-          setTopbarProjectId(nextProjectId);
-          setSelectedProjectId(nextProjectId);
-        }
-        if (
-          topbarRecord.activePage === "dashboard" ||
-          topbarRecord.activePage === "projects" ||
-          topbarRecord.activePage === "invoices" ||
-          topbarRecord.activePage === "messages" ||
-          topbarRecord.activePage === "automations" ||
-          topbarRecord.activePage === "settings"
-        ) {
-          setActivePage(topbarRecord.activePage);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [clientBadge, session, userEmail, userGreetingName]);
-
-  useEffect(() => {
-    if (!session) return;
-    const timeoutId = window.setTimeout(() => {
-      const nextSavedView = {
-        ...savedViewBaseRef.current,
-        clientDashboardTopbar: {
-          activePage,
-          search: topbarSearch,
-          dateRange: topbarDateRange,
-          projectId: projectScopeId
-        }
-      };
-      savedViewBaseRef.current = nextSavedView;
-      void setPortalPreferenceWithRefresh(session, {
-        key: "savedView",
-        value: JSON.stringify(nextSavedView)
-      });
-    }, 450);
-    return () => window.clearTimeout(timeoutId);
-  }, [activePage, projectScopeId, session, topbarDateRange, topbarSearch]);
-
-  const handleThreadClick = (id: string) => {
-    selectConversation(id);
-  };
-
-  useEffect(() => {
-    if (!session || !selectedConversationId || conversationMessages.length === 0) return;
-    const inbound = conversationMessages
-      .filter((message) => (message.authorRole ?? "").toUpperCase() !== "CLIENT")
-      .filter((message) => message.deliveryStatus !== "READ")
-      .slice(-8);
-    if (inbound.length === 0) return;
-
-    void Promise.all(
-      inbound.map((message) =>
-        updatePortalMessageDeliveryWithRefresh(session, message.id, {
-          status: "READ",
-          deliveredAt: message.deliveredAt ?? new Date().toISOString(),
-          readAt: new Date().toISOString()
-        })
-      )
-    );
-  }, [conversationMessages, selectedConversationId, session]);
 
   const handleSendMessage = async () => {
     if (!selectedConversationId || !composeMessage.trim()) return;
     const created = await sendMessage(selectedConversationId, composeMessage.trim());
-    if (created) {
-      setComposeMessage("");
-    }
+    if (created) setComposeMessage("");
   };
 
   const handleCreateThread = async () => {
     if (!session || creatingThread) return;
     if (newThreadSubject.trim().length < 2) {
-      setActionFeedback({ tone: "error", message: "Thread subject is required." });
+      setFeedback({ tone: "error", message: "Thread subject is required." });
       return;
     }
     setCreatingThread(true);
@@ -2220,123 +899,31 @@ export function MaphariClientDashboard() {
     });
     setCreatingThread(false);
     if (!result.data) {
-      setActionFeedback({ tone: "error", message: result.error?.message ?? "Unable to create thread." });
+      setFeedback({ tone: "error", message: result.error?.message ?? "Unable to create thread." });
       return;
     }
     setNewThreadSubject("");
     selectConversation(result.data.id);
     await refreshSnapshot(result.nextSession ?? session, { background: true });
-    setActionFeedback({ tone: "success", message: "Thread created." });
-  };
-
-  const toPageFromNotificationTab = (
-    tab: "dashboard" | "projects" | "invoices" | "messages" | "settings" | "operations"
-  ): PageId => {
-    return tab === "operations" ? "automations" : tab;
-  };
-
-  const handleMarkNotificationRead = async (notificationId: string, nextRead: boolean) => {
-    if (!session) return;
-    const result = await setPortalNotificationReadStateWithRefresh(session, notificationId, nextRead);
-    if (!result.data) return;
-    setNotificationJobs((previous) =>
-      previous.map((job) => (job.id === notificationId ? result.data! : job))
-    );
-  };
-
-  const handleMarkAllNotificationsRead = async () => {
-    if (!session) return;
-    const unread = notificationJobs.filter((job) => !job.readAt);
-    if (unread.length === 0) return;
-    const updates = await Promise.all(
-      unread.map((job) => setPortalNotificationReadStateWithRefresh(session, job.id, true))
-    );
-    setNotificationJobs((previous) =>
-      previous.map((job) => {
-        const updated = updates.find((candidate) => candidate.data?.id === job.id)?.data;
-        return updated ?? job;
-      })
-    );
-  };
-
-  const handleQuickComposeSubmit = async () => {
-    if (!session) return;
-    if (quickComposeSubject.trim().length < 2) {
-      setActionFeedback({ tone: "error", message: "Subject must be at least 2 characters." });
-      return;
-    }
-    setQuickComposeCreating(true);
-    const created = await createPortalConversationWithRefresh(session, {
-      clientId: session.user.clientId ?? undefined,
-      subject: quickComposeSubject.trim(),
-      projectId: resolvedQuickComposeProjectId ?? undefined
-    });
-    if (!created.data) {
-      setQuickComposeCreating(false);
-      setActionFeedback({ tone: "error", message: created.error?.message ?? "Unable to create thread." });
-      return;
-    }
-
-    if (quickComposeBody.trim()) {
-      await sendMessage(created.data.id, quickComposeBody.trim());
-    }
-
-    await refreshSnapshot(created.nextSession ?? session, { background: true });
-    selectConversation(created.data.id);
-    setActivePage("messages");
-    setQuickComposeOpen(false);
-    setNotificationsTrayOpen(false);
-    setQuickComposeSubject("");
-    setQuickComposeBody("");
-    setQuickComposeProjectId(null);
-    setQuickComposeCreating(false);
-    setActionFeedback({ tone: "success", message: "New thread started from top bar." });
-  };
-
-  const handleCommandResultSelect = async (result: CommandResult) => {
-    if (result.kind === "page") {
-      setActivePage(result.page);
-    }
-    if (result.kind === "project") {
-      setTopbarProjectId(result.projectId);
-      setSelectedProjectId(result.projectId);
-      setActivePage("projects");
-    }
-    if (result.kind === "conversation") {
-      selectConversation(result.conversationId);
-      setActivePage("messages");
-    }
-    if (result.kind === "invoice") {
-      setActivePage("invoices");
-    }
-    if (result.kind === "milestone") {
-      setTopbarProjectId(result.projectId);
-      setSelectedProjectId(result.projectId);
-      setActivePage("projects");
-    }
-    if (result.kind === "notification") {
-      setActivePage(result.page);
-      await handleMarkNotificationRead(result.notificationId, true);
-    }
-    setCommandSearchOpen(false);
+    setFeedback({ tone: "success", message: "Thread created." });
   };
 
   const handleMessageAttachmentUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!selectedConversationId) {
-      setActionFeedback({ tone: "error", message: "Select a thread before attaching a file." });
+      setFeedback({ tone: "error", message: "Select a thread before attaching a file." });
       event.target.value = "";
       return;
     }
     const uploaded = await uploadFile(file);
     if (!uploaded) {
-      setActionFeedback({ tone: "error", message: "Unable to upload attachment." });
+      setFeedback({ tone: "error", message: "Unable to upload attachment." });
       event.target.value = "";
       return;
     }
     await sendMessage(selectedConversationId, `Shared file: ${file.name}`);
-    setActionFeedback({ tone: "success", message: `Attachment uploaded: ${uploaded.fileName}` });
+    setFeedback({ tone: "success", message: `Attachment uploaded: ${uploaded.fileName}` });
     event.target.value = "";
   };
 
@@ -2345,14 +932,14 @@ export function MaphariClientDashboard() {
     if (!file) return;
     const uploaded = await uploadFile(file);
     if (!uploaded) {
-      setActionFeedback({ tone: "error", message: "Unable to upload project file." });
+      setFeedback({ tone: "error", message: "Unable to upload project file." });
       event.target.value = "";
       return;
     }
     if (/agreement|contract|addendum/i.test(uploaded.fileName)) {
-      setProjectRequestForm((previous) => ({ ...previous, agreementFileId: uploaded.id }));
+      setProjectRequestForm((prev) => ({ ...prev, agreementFileId: uploaded.id }));
     }
-    setActionFeedback({ tone: "success", message: `Uploaded: ${uploaded.fileName}` });
+    setFeedback({ tone: "success", message: `Uploaded: ${uploaded.fileName}` });
     event.target.value = "";
   };
 
@@ -2366,74 +953,35 @@ export function MaphariClientDashboard() {
     if (!session) return;
     const result = await generatePortalHandoffSummaryWithRefresh(session);
     if (!result.data) {
-      setActionFeedback({ tone: "error", message: result.error?.message ?? "Unable to generate handoff package." });
+      setFeedback({ tone: "error", message: result.error?.message ?? "Unable to generate handoff package." });
       return;
     }
     setHandoffSummary({
       docs: result.data.docs,
       decisions: result.data.decisions,
       blockers: result.data.blockers,
-      generatedAt: formatRelative(result.data.generatedAt)
+      generatedAt: result.data.generatedAt
     });
-    setActionFeedback({ tone: "success", message: "Handoff package refreshed." });
-  };
-
-  const handleSaveClientProfile = async () => {
-    if (!session) return;
-    const result = await setPortalPreferenceWithRefresh(session, {
-      key: "settingsProfile",
-      value: JSON.stringify(settingsProfile)
-    });
-    setActionFeedback({
-      tone: result.data ? "success" : "error",
-      message: result.data ? "Profile settings saved." : result.error?.message ?? "Unable to save profile settings."
-    });
-  };
-
-  const handleSaveClientNotifications = async () => {
-    if (!session) return;
-    const result = await setPortalPreferenceWithRefresh(session, {
-      key: "settingsNotifications",
-      value: JSON.stringify(settingsNotifications)
-    });
-    setActionFeedback({
-      tone: result.data ? "success" : "error",
-      message: result.data ? "Notification settings saved." : result.error?.message ?? "Unable to save notification settings."
-    });
+    setFeedback({ tone: "success", message: "Handoff package refreshed." });
   };
 
   const handleExportProjects = () => {
-    if (searchedProjectCards.length === 0) {
-      setActionFeedback({ tone: "error", message: "No projects available to export." });
+    if (viewsFinal.searchedProjectCards.length === 0) {
+      setFeedback({ tone: "error", message: "No projects available to export." });
       return;
     }
     const escapeCsv = (value: string | number | null | undefined) => {
       const text = value === null || value === undefined ? "" : String(value);
       return /[",\n]/.test(text) ? `"${text.replace(/"/g, "\"\"")}"` : text;
     };
-    const header = [
-      "Project",
-      "Status",
-      "Priority",
-      "Progress (%)",
-      "Due Date",
-      "Budget",
-      "Owner",
-      "Milestones",
-      "Open Milestones"
-    ];
-    const lines = searchedProjectCards.map((project) => {
-      const openMilestones = project.milestones.filter((milestone) => milestone.status !== "COMPLETED").length;
+    const header = ["Project", "Status", "Priority", "Progress (%)", "Due Date", "Budget", "Owner", "Milestones", "Open Milestones"];
+    const lines = viewsFinal.searchedProjectCards.map((project) => {
+      const openMilestones = project.milestones.filter((m) => m.status !== "COMPLETED").length;
       return [
-        escapeCsv(project.name),
-        escapeCsv(formatStatus(project.status)),
-        escapeCsv(formatStatus(project.priority)),
-        escapeCsv(project.progressPercent),
-        escapeCsv(project.dueAt ? formatDateLong(project.dueAt) : "TBD"),
-        escapeCsv(formatMoney(project.budgetCents, displayCurrency)),
-        escapeCsv(project.ownerName ?? ""),
-        escapeCsv(project.milestones.length),
-        escapeCsv(openMilestones)
+        escapeCsv(project.name), escapeCsv(formatStatus(project.status)), escapeCsv(formatStatus(project.priority)),
+        escapeCsv(project.progressPercent), escapeCsv(project.dueAt ? formatDateLong(project.dueAt) : "TBD"),
+        escapeCsv(formatMoney(project.budgetCents, displayCurrency)), escapeCsv(project.ownerName ?? ""),
+        escapeCsv(project.milestones.length), escapeCsv(openMilestones)
       ].join(",");
     });
     const csv = [header.join(","), ...lines].join("\n");
@@ -2446,12 +994,12 @@ export function MaphariClientDashboard() {
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
-    setActionFeedback({ tone: "success", message: "Projects export downloaded." });
+    setFeedback({ tone: "success", message: "Projects export downloaded." });
   };
 
   const handleExportInvoices = () => {
-    if (searchedFilteredInvoiceTable.length === 0) {
-      setActionFeedback({ tone: "error", message: "No invoices available to export." });
+    if (viewsFinal.searchedFilteredInvoiceTable.length === 0) {
+      setFeedback({ tone: "error", message: "No invoices available to export." });
       return;
     }
     const escapeCsv = (value: string | number | null | undefined) => {
@@ -2459,15 +1007,8 @@ export function MaphariClientDashboard() {
       return /[",\n]/.test(text) ? `"${text.replace(/"/g, "\"\"")}"` : text;
     };
     const header = ["Invoice #", "Project", "Issued", "Due", "Amount", "Status"];
-    const lines = searchedFilteredInvoiceTable.map((invoice) =>
-      [
-        escapeCsv(invoice.id),
-        escapeCsv(invoice.project),
-        escapeCsv(invoice.issued),
-        escapeCsv(invoice.due),
-        escapeCsv(invoice.amount),
-        escapeCsv(invoice.badge.label)
-      ].join(",")
+    const lines = viewsFinal.searchedFilteredInvoiceTable.map((inv) =>
+      [escapeCsv(inv.id), escapeCsv(inv.project), escapeCsv(inv.issued), escapeCsv(inv.due), escapeCsv(inv.amount), escapeCsv(inv.badge.label)].join(",")
     );
     const csv = [header.join(","), ...lines].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -2479,247 +1020,21 @@ export function MaphariClientDashboard() {
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
-    setActionFeedback({ tone: "success", message: "Invoices export downloaded." });
+    setFeedback({ tone: "success", message: "Invoices export downloaded." });
   };
-
-  const openProjectContext = (projectId?: string | null) => {
-    if (projectId) {
-      setSelectedProjectId(projectId);
-      setTopbarProjectId(projectId);
-    }
-    setActivePage("projects");
-  };
-
-  const handleOpenThreadFromDashboard = (threadId: string) => {
-    selectConversation(threadId);
-    setActivePage("messages");
-  };
-
-  const handleOpenInvoiceFromDashboard = (invoiceId: string) => {
-    const invoice = dateScopedInvoices.find((item) => item.id === invoiceId);
-    if (invoice?.status === "PAID") {
-      setActiveInvoiceTab("paid");
-    } else if (invoice) {
-      setActiveInvoiceTab("outstanding");
-    }
-    setActivePage("invoices");
-  };
-
-  const handleOpenActionItem = (id: string) => {
-    if (id.startsWith("invoice-")) {
-      handleOpenInvoiceFromDashboard(id.replace("invoice-", ""));
-      return;
-    }
-    if (id.startsWith("milestone-")) {
-      const projectId = milestoneProjectById.get(id.replace("milestone-", ""));
-      openProjectContext(projectId ?? projectScopeId);
-      return;
-    }
-    if (id.startsWith("task-")) {
-      const projectId = taskProjectById.get(id.replace("task-", ""));
-      openProjectContext(projectId ?? projectScopeId);
-      return;
-    }
-    openProjectContext(projectScopeId);
-  };
-
-  const handleOpenRiskItem = (id: string) => {
-    if (id.startsWith("invoice-risk-")) {
-      handleOpenInvoiceFromDashboard(id.replace("invoice-risk-", ""));
-      return;
-    }
-    if (id.startsWith("milestone-risk-")) {
-      const projectId = milestoneProjectById.get(id.replace("milestone-risk-", ""));
-      openProjectContext(projectId ?? projectScopeId);
-      return;
-    }
-    if (id.startsWith("milestone-soon-")) {
-      const projectId = milestoneProjectById.get(id.replace("milestone-soon-", ""));
-      openProjectContext(projectId ?? projectScopeId);
-      return;
-    }
-    if (id.startsWith("task-blocked-")) {
-      const projectId = taskProjectById.get(id.replace("task-blocked-", ""));
-      openProjectContext(projectId ?? projectScopeId);
-      return;
-    }
-    if (id.startsWith("risk-")) {
-      openProjectContext(id.replace("risk-", ""));
-      return;
-    }
-    if (id.startsWith("blocker-")) {
-      openProjectContext(projectScopeId);
-      return;
-    }
-    openProjectContext(projectScopeId);
-  };
-
-  const handleOpenApprovalItem = (id: string) => {
-    if (id.startsWith("approval-milestone-")) {
-      const projectId = milestoneProjectById.get(id.replace("approval-milestone-", ""));
-      openProjectContext(projectId ?? projectScopeId);
-      return;
-    }
-    if (id.startsWith("approval-change-")) {
-      const projectId = changeRequestProjectById.get(id.replace("approval-change-", ""));
-      openProjectContext(projectId ?? projectScopeId);
-      return;
-    }
-    openProjectContext(projectScopeId);
-  };
-
-  const handleOpenDecisionItem = (id: string) => {
-    if (id.startsWith("decision-milestone-")) {
-      const projectId = milestoneProjectById.get(id.replace("decision-milestone-", ""));
-      openProjectContext(projectId ?? projectScopeId);
-      return;
-    }
-    if (id.startsWith("decision-change-")) {
-      const projectId = changeRequestProjectById.get(id.replace("decision-change-", ""));
-      openProjectContext(projectId ?? projectScopeId);
-      return;
-    }
-    openProjectContext(projectScopeId);
-  };
-
-  const handleOpenActivityItem = (id: string) => {
-    if (id.startsWith("thread-")) {
-      handleOpenThreadFromDashboard(id.replace("thread-", ""));
-      return;
-    }
-    if (id.startsWith("invoice-")) {
-      handleOpenInvoiceFromDashboard(id.replace("invoice-", ""));
-      return;
-    }
-    if (id.startsWith("timeline-")) {
-      const eventInfo = timelineEventById.get(id.replace("timeline-", ""));
-      if (eventInfo?.projectId) {
-        openProjectContext(eventInfo.projectId);
-        return;
-      }
-      openProjectContext(projectScopeId);
-      return;
-    }
-    if (id.startsWith("file-")) {
-      openProjectContext(projectScopeId);
-      return;
-    }
-    const projectId = projectActivityById.get(id);
-    openProjectContext(projectId ?? projectScopeId);
-  };
-
-  const handleOpenTimelineItem = (id: string) => {
-    if (id.startsWith("invoice-")) {
-      handleOpenInvoiceFromDashboard(id.replace("invoice-", ""));
-      return;
-    }
-    const projectId = milestoneProjectById.get(id);
-    openProjectContext(projectId ?? projectScopeId);
-  };
-
-  const clientTourSteps = useMemo<ClientTourStep[]>(
-    () => [
-      {
-        title: "Welcome to Maphari",
-        detail:
-          "This is your client portal — your central hub for managing every project with us. Let's take 60 seconds to show you around.",
-        mustComplete: true
-      },
-      {
-        targetId: "nav-dashboard",
-        title: "Your Dashboard",
-        detail:
-          "Start here every time. See all active projects, upcoming milestones, recent messages, and outstanding invoices at a glance."
-      },
-      {
-        targetId: "nav-projects",
-        title: "My Projects",
-        detail: "View detailed progress on every project, including milestones, team members, deadlines, and budgets."
-      },
-      {
-        targetId: "nav-request",
-        title: "New Project Request",
-        detail:
-          "Click here to start a new project. Our system will guide you through selecting a service, describing your needs, and getting an instant price estimate."
-      },
-      {
-        targetId: "nav-invoices",
-        title: "Invoices & Payments",
-        detail: "View all invoices, pay outstanding balances via Paystack, and download receipts. Your 3-part payment schedule lives here."
-      },
-      {
-        targetId: "nav-docs",
-        title: "Documents Library",
-        detail:
-          "All contracts, signed agreements, quotes, and handover documents are stored here. You can also download template documents like our NDA. That's the tour — let's get started!"
-      }
-    ],
-    []
-  );
-  const activeTourStep = clientTourSteps[clientTourStep] ?? clientTourSteps[0];
-  const selectedAgreementFile = snapshot.files.find((file) => file.id === projectRequestForm.agreementFileId) ?? null;
-
-  useEffect(() => {
-    if (!clientTourOpen) return;
-    const updateTourLayout = () => {
-      if (!activeTourStep?.targetId) {
-        setClientTourLayout({
-          spotlight: null,
-          tooltip: { top: window.innerHeight / 2, left: window.innerWidth / 2, transform: "translate(-50%, -50%)" }
-        });
-        return;
-      }
-
-      const target = document.getElementById(activeTourStep.targetId);
-      if (!target) {
-        setClientTourLayout({
-          spotlight: null,
-          tooltip: { top: 120, left: 260, transform: "none" }
-        });
-        return;
-      }
-
-      const rect = target.getBoundingClientRect();
-      const pad = 6;
-      setClientTourLayout({
-        spotlight: {
-          top: rect.top - pad,
-          left: rect.left - pad,
-          width: rect.width + pad * 2,
-          height: rect.height + pad * 2
-        },
-        tooltip: {
-          top: Math.max(14, rect.top - pad),
-          left: Math.min(window.innerWidth - 328, rect.right + pad + 20),
-          transform: "none"
-        }
-      });
-    };
-
-    updateTourLayout();
-    window.addEventListener("resize", updateTourLayout);
-    window.addEventListener("scroll", updateTourLayout, true);
-    return () => {
-      window.removeEventListener("resize", updateTourLayout);
-      window.removeEventListener("scroll", updateTourLayout, true);
-    };
-  }, [activeTourStep, clientTourOpen]);
 
   const handleDownloadAgreementTemplate = () => {
     const content = [
-      "MAPHARI PROJECT AGREEMENT",
-      "",
+      "MAPHARI PROJECT AGREEMENT", "",
       `Project: ${projectRequestForm.name || "Untitled Project"}`,
-      `Client: ${settingsProfile.company || "Client"}`,
-      "",
+      `Client: ${settingsProfile.company || "Client"}`, "",
       "Terms:",
       "1) Client confirms submitted scope details are accurate.",
       "2) A 50% deposit is required before request submission is sent.",
       "3) 30% is due at approved milestone stage.",
       "4) Final 20% is due before project handoff.",
       "5) Domain, hosting, and third-party subscriptions are paid by the client.",
-      "6) Scope changes may increase price and timeline.",
-      "",
+      "6) Scope changes may increase price and timeline.", "",
       "Client Signature: _________________________",
       "Date: _________________________"
     ].join("\n");
@@ -2734,26 +1049,101 @@ export function MaphariClientDashboard() {
     URL.revokeObjectURL(url);
   };
 
-  return (
-    <div className={`${styles.clientRoot} ${syne.variable} ${dmMono.variable} ${instrument.variable}`}>
-      <div className={styles.cursor} ref={cursorRef} />
-      <div className={styles.cursorRing} ref={ringRef} />
+  /* ── navigation helpers ── */
+  const openProjectContext = (projectId?: string | null) => {
+    if (projectId) {
+      setSelectedProjectId(projectId);
+      setTopbarProjectId(projectId);
+    }
+    setActivePage("projects");
+  };
 
+  const handleOpenThreadFromDashboard = (threadId: string) => {
+    selectConversation(threadId);
+    setActivePage("messages");
+  };
+
+  const handleOpenInvoiceFromDashboard = (invoiceId: string) => {
+    const inv = dateScopedInvoices.find((i) => i.id === invoiceId);
+    if (inv?.status === "PAID") setActiveInvoiceTab("paid");
+    else if (inv) setActiveInvoiceTab("outstanding");
+    setActivePage("invoices");
+  };
+
+  const handleOpenActionItem = (id: string) => {
+    if (id.startsWith("invoice-")) { handleOpenInvoiceFromDashboard(id.replace("invoice-", "")); return; }
+    if (id.startsWith("milestone-")) { openProjectContext(milestoneProjectById.get(id.replace("milestone-", "")) ?? projectScopeId); return; }
+    if (id.startsWith("task-")) { openProjectContext(taskProjectById.get(id.replace("task-", "")) ?? projectScopeId); return; }
+    openProjectContext(projectScopeId);
+  };
+
+  const handleOpenRiskItem = (id: string) => {
+    if (id.startsWith("invoice-risk-")) { handleOpenInvoiceFromDashboard(id.replace("invoice-risk-", "")); return; }
+    if (id.startsWith("milestone-risk-")) { openProjectContext(milestoneProjectById.get(id.replace("milestone-risk-", "")) ?? projectScopeId); return; }
+    if (id.startsWith("milestone-soon-")) { openProjectContext(milestoneProjectById.get(id.replace("milestone-soon-", "")) ?? projectScopeId); return; }
+    if (id.startsWith("task-blocked-")) { openProjectContext(taskProjectById.get(id.replace("task-blocked-", "")) ?? projectScopeId); return; }
+    if (id.startsWith("risk-")) { openProjectContext(id.replace("risk-", "")); return; }
+    if (id.startsWith("blocker-")) { openProjectContext(projectScopeId); return; }
+    openProjectContext(projectScopeId);
+  };
+
+  const handleOpenApprovalItem = (id: string) => {
+    if (id.startsWith("approval-milestone-")) { openProjectContext(milestoneProjectById.get(id.replace("approval-milestone-", "")) ?? projectScopeId); return; }
+    if (id.startsWith("approval-change-")) { openProjectContext(changeRequestProjectById.get(id.replace("approval-change-", "")) ?? projectScopeId); return; }
+    openProjectContext(projectScopeId);
+  };
+
+  const handleOpenDecisionItem = (id: string) => {
+    if (id.startsWith("decision-milestone-")) { openProjectContext(milestoneProjectById.get(id.replace("decision-milestone-", "")) ?? projectScopeId); return; }
+    if (id.startsWith("decision-change-")) { openProjectContext(changeRequestProjectById.get(id.replace("decision-change-", "")) ?? projectScopeId); return; }
+    openProjectContext(projectScopeId);
+  };
+
+  const handleOpenActivityItem = (id: string) => {
+    if (id.startsWith("thread-")) { handleOpenThreadFromDashboard(id.replace("thread-", "")); return; }
+    if (id.startsWith("invoice-")) { handleOpenInvoiceFromDashboard(id.replace("invoice-", "")); return; }
+    if (id.startsWith("timeline-")) {
+      const info = timelineEventById.get(id.replace("timeline-", ""));
+      if (info?.projectId) { openProjectContext(info.projectId); return; }
+      openProjectContext(projectScopeId); return;
+    }
+    if (id.startsWith("file-")) { openProjectContext(projectScopeId); return; }
+    openProjectContext(projectActivityById.get(id) ?? projectScopeId);
+  };
+
+  const handleOpenTimelineItem = (id: string) => {
+    if (id.startsWith("invoice-")) { handleOpenInvoiceFromDashboard(id.replace("invoice-", "")); return; }
+    openProjectContext(milestoneProjectById.get(id) ?? projectScopeId);
+  };
+
+  /* ── render ── */
+  return (
+    <DashboardProvider value={{
+      activePage,
+      setActivePage,
+      resolvedTheme,
+      toggleTheme,
+      setFeedback,
+      projectScopeId,
+      dateRange: topbarDateRange,
+    }}>
+    <div className={`${styles.clientRoot} ${resolvedTheme === "light" ? styles.clientRootLight : ""} ${syne.variable} ${dmMono.variable} ${instrument.variable}`}>
       <div className={styles.shell}>
         <ClientSidebar
           navSections={navSections}
           activePage={activePage}
           onChangePage={setActivePage}
-          projects={sortedProjects.map((project) => ({ id: project.id, name: project.name }))}
+          projects={sortedProjects.map((p) => ({ id: p.id, name: p.name }))}
           selectedProjectId={activeProjectId}
           onSelectProject={(projectId) => {
             setSelectedProjectId(projectId);
             setTopbarProjectId(projectId);
           }}
-          currentProjectName={activeProjectName}
           userInitials={userInitials}
           userGreetingName={userGreetingName}
           clientBadge={clientBadge}
+          resolvedTheme={resolvedTheme}
+          onToggleTheme={toggleTheme}
         />
 
         <div className={styles.main}>
@@ -2761,7 +1151,7 @@ export function MaphariClientDashboard() {
             topbarEyebrow={topbarEyebrow}
             topbarTitle={topbarTitle}
             activeProjectId={projectScopeId}
-            projectOptions={sortedProjects.map((project) => ({ id: project.id, name: project.name }))}
+            projectOptions={sortedProjects.map((p) => ({ id: p.id, name: p.name }))}
             dateRange={topbarDateRange}
             notificationCount={totalUnreadNotifications}
             onProjectChange={(projectId) => {
@@ -2774,7 +1164,7 @@ export function MaphariClientDashboard() {
               setCommandSearchOpen(true);
             }}
             onOpenNotifications={() => {
-              setNotificationsTrayOpen((previous) => !previous);
+              setNotificationsTrayOpen((prev) => !prev);
               setQuickComposeOpen(false);
               setCommandSearchOpen(false);
             }}
@@ -2790,9 +1180,21 @@ export function MaphariClientDashboard() {
             <div className={styles.topbarOverlay} role="dialog" aria-label="Notifications">
               <div className={styles.overlayHeader}>
                 <div className={styles.overlayTitle}>Notifications</div>
-                <button className={styles.overlayLink} type="button" onClick={() => void handleMarkAllNotificationsRead()}>
-                  Mark all read
-                </button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    className={styles.overlayLink}
+                    type="button"
+                    onClick={() => {
+                      setNotificationsTrayOpen(false);
+                      setActivePage("notifications");
+                    }}
+                  >
+                    View all
+                  </button>
+                  <button className={styles.overlayLink} type="button" onClick={() => void handleMarkAllNotificationsRead()}>
+                    Mark all read
+                  </button>
+                </div>
               </div>
               <div className={styles.overlayBody}>
                 {notificationJobs.length === 0 ? (
@@ -2888,6 +1290,7 @@ export function MaphariClientDashboard() {
                   <div className={styles.field}>
                     <label className={styles.fieldLabel}>Project</label>
                     <select
+                      title="project-selector"
                       className={styles.fieldInput}
                       value={resolvedQuickComposeProjectId ?? ""}
                       onChange={(event) => setQuickComposeProjectId(event.target.value || null)}
@@ -3068,46 +1471,30 @@ export function MaphariClientDashboard() {
             </div>
           ) : null}
 
+          <DashboardToastStack toasts={toasts} />
+
           <div className={styles.content}>
-            {actionFeedback ? (
-              <div
-                className={styles.card}
-                role="status"
-                aria-live="polite"
-                style={{
-                  marginBottom: 12,
-                  borderColor: actionFeedback.tone === "error" ? "rgba(255,95,124,0.4)" : "rgba(44,211,165,0.35)",
-                  background: actionFeedback.tone === "error" ? "rgba(255,95,124,0.08)" : "rgba(44,211,165,0.08)"
-                }}
-              >
-                <div className={styles.cardBody} style={{ paddingTop: 10, paddingBottom: 10 }}>
-                  <div className={styles.pageSub} style={{ color: actionFeedback.tone === "error" ? "var(--red)" : "var(--green)" }}>
-                    {actionFeedback.message}
-                  </div>
-                </div>
-              </div>
-            ) : null}
             <ClientDashboardPage
               active={activePage === "dashboard"}
               userGreetingName={userGreetingName}
-              lastSyncedLabel={lastSyncedLabel}
-              projectDetailsLoading={projectDetailsLoading}
-              dashboardStats={dashboardStats}
-              projectRows={searchedProjectRows}
+              lastSyncedLabel={viewsFinal.lastSyncedLabel}
+              projectDetailsLoading={portalData.projectDetailsLoading}
+              dashboardStats={viewsFinal.dashboardStats}
+              projectRows={viewsFinal.searchedProjectRows}
               animateProgress={animateProgress}
-              actionCenter={actionCenter}
-              milestoneRows={searchedMilestoneRows}
-              recentThreads={searchedRecentThreads}
-              invoiceRows={searchedInvoiceRows}
-              nextActions={nextActions}
-              activityFeed={activityFeed}
-              timelineItems={timelineItems}
-              onboardingChecklist={onboardingChecklist}
-              digestItems={digestItems}
-              approvalQueue={approvalQueue}
-              decisionLog={decisionLog}
-              slaAlerts={slaAlerts}
-              confidenceSummary={confidenceSummary}
+              actionCenter={viewsFinal.actionCenter}
+              milestoneRows={viewsFinal.searchedMilestoneRows}
+              recentThreads={viewsFinal.searchedRecentThreads}
+              invoiceRows={viewsFinal.searchedInvoiceRows}
+              nextActions={viewsFinal.nextActions}
+              activityFeed={viewsFinal.activityFeed}
+              timelineItems={viewsFinal.timelineItems}
+              onboardingChecklist={viewsFinal.onboardingChecklist}
+              digestItems={viewsFinal.digestItems}
+              approvalQueue={viewsFinal.approvalQueue}
+              decisionLog={viewsFinal.decisionLog}
+              slaAlerts={viewsFinal.slaAlerts}
+              confidenceSummary={viewsFinal.confidenceSummary}
               handoffSummary={handoffSummary}
               onGenerateHandoff={handleGenerateHandoff}
               onOpenProjects={() => setActivePage("projects")}
@@ -3124,10 +1511,26 @@ export function MaphariClientDashboard() {
               onApproveMilestone={(milestoneId) => void handleMilestoneApproval(milestoneId, "APPROVED")}
               onRejectMilestone={(milestoneId) => void handleMilestoneApproval(milestoneId, "REJECTED")}
             />
+            <ClientReportsPage
+              active={activePage === "reports"}
+              invoices={snapshot.invoices}
+              projects={portalData.projects}
+              allMilestones={portalData.allMilestones}
+              convertMoney={convertMoney}
+              displayCurrency={displayCurrency}
+            />
+            <ClientAiAutomationPage
+              active={activePage === "ai"}
+              automationRows={viewsFinal.clientAutomationRows}
+              projects={portalData.projects}
+              convertMoney={convertMoney}
+              displayCurrency={displayCurrency}
+            />
+            <ClientOnboardingPage active={activePage === "onboarding"} />
             <ClientProjectsPage
               active={activePage === "projects"}
               projectsCount={projectScopedProjects.length}
-              projectCards={searchedProjectCards}
+              projectCards={viewsFinal.searchedProjectCards}
               animateProgress={animateProgress}
               milestoneApprovals={milestoneApprovals}
               onApproveMilestone={(milestoneId) => void handleMilestoneApproval(milestoneId, "APPROVED")}
@@ -3144,8 +1547,14 @@ export function MaphariClientDashboard() {
                 void handleClientChangeRequestDecision(changeRequestId, status, metadata)
               }
             />
+            <ClientMilestonesPage
+              active={activePage === "milestones"}
+              onApproveMilestone={(id) => void handleMilestoneApproval(id, "APPROVED")}
+              onRejectMilestone={(id) => void handleMilestoneApproval(id, "REJECTED")}
+            />
             <ClientCreateProjectPage
               active={activePage === "create"}
+              onClose={() => setActivePage("projects")}
               files={snapshot.files}
               uploadState={uploadState}
               uploadMessage={null}
@@ -3164,18 +1573,18 @@ export function MaphariClientDashboard() {
             />
             <ClientInvoicesPage
               active={activePage === "invoices"}
-              invoiceSummaryStats={invoiceSummaryStats}
-              invoiceTabs={invoiceTabs}
+              invoiceSummaryStats={viewsFinal.invoiceSummaryStats}
+              invoiceTabs={viewsFinal.invoiceTabs}
               activeInvoiceTab={activeInvoiceTab}
               onInvoiceTabChange={setActiveInvoiceTab}
               onOpenInvoice={handleOpenInvoiceFromDashboard}
               onExportInvoices={handleExportInvoices}
-              filteredInvoiceTable={searchedFilteredInvoiceTable}
+              filteredInvoiceTable={viewsFinal.searchedFilteredInvoiceTable}
             />
             <ClientMessagesPage
               active={activePage === "messages"}
-              openThreadsCount={openThreads.length}
-              messageThreads={messageThreads}
+              openThreadsCount={portalData.openThreads.length}
+              messageThreads={viewsFinal.messageThreads}
               threadSearch={threadSearch}
               onThreadSearchChange={setThreadSearch}
               newThreadSubject={newThreadSubject}
@@ -3183,7 +1592,7 @@ export function MaphariClientDashboard() {
               creatingThread={creatingThread}
               onCreateThread={() => void handleCreateThread()}
               selectedConversationId={selectedConversationId}
-              onThreadClick={handleThreadClick}
+              onThreadClick={(id) => selectConversation(id)}
               selectedConversation={selectedConversation}
               selectedProjectName={selectedProjectName}
               messagesLoading={messagesLoading}
@@ -3198,9 +1607,9 @@ export function MaphariClientDashboard() {
               active={activePage === "automations"}
               queuedJobs={notificationJobs.filter((job) => job.status === "QUEUED").length}
               overdueInvoices={overdueInvoices.length}
-              pendingApprovals={pendingApprovalCount}
+              pendingApprovals={viewsFinal.pendingApprovalCount}
               openBlockers={scopedBlockers.filter((item) => item.status !== "RESOLVED").length}
-              workflowRows={clientAutomationRows}
+              workflowRows={viewsFinal.clientAutomationRows}
               onOpenMessages={() => setActivePage("messages")}
               onOpenInvoices={() => setActivePage("invoices")}
               onOpenProjects={() => setActivePage("projects")}
@@ -3212,18 +1621,89 @@ export function MaphariClientDashboard() {
               userEmail={userEmail}
               profile={settingsProfile}
               onProfileChange={(key, value) =>
-                setSettingsProfile((previous) => ({ ...previous, [key]: value }))
+                setSettingsProfile((prev) => ({ ...prev, [key]: value }))
               }
               onSaveProfile={() => void handleSaveClientProfile()}
               notifications={settingsNotifications}
               onNotificationChange={(key, value) =>
-                setSettingsNotifications((previous) => ({ ...previous, [key]: value }))
+                setSettingsNotifications((prev) => ({ ...prev, [key]: value }))
               }
               onSaveNotifications={() => void handleSaveClientNotifications()}
             />
+            <ClientNotificationsPage
+              active={activePage === "notifications"}
+              notifications={notificationJobs as DashboardNotificationJobLite[]}
+              selectedNotificationId={selectedNotificationId}
+              timelineEvents={portalData.scopedTimelineEvents}
+              onClose={() => setActivePage("dashboard")}
+              onSelectNotification={(id) => setSelectedNotificationId(id)}
+              onToggleRead={(id, nextRead) => void handleMarkNotificationRead(id, nextRead)}
+              onMarkAllRead={() => void handleMarkAllNotificationsRead()}
+            />
+            <ClientSupportPage
+              active={activePage === "support" || activePage === "team"}
+              teamMembers={teamMembers}
+              onOpenMessages={() => setActivePage("messages")}
+              openTickets={openTickets}
+              onSubmitTicket={(subject, _category, _priority, _message) => {
+                setFeedback({ tone: "success", message: `Support ticket submitted: ${subject}` });
+              }}
+            />
+            <ClientReviewsPage active={activePage === "reviews"} />
+            <ClientCalendarPage active={activePage === "calendar"} />
+            <ClientBrandPage active={activePage === "brand"} />
+            <ClientAnalyticsPage active={activePage === "analytics"} />
+            <ClientPaymentsPage active={activePage === "payments"} />
+            <ClientContractsPage active={activePage === "contracts"} />
+            <ClientFeedbackPage active={activePage === "feedback"} />
+            <ClientExportsPage active={activePage === "exports"} />
+            <ClientResourcesPage active={activePage === "resources"} />
+            <ClientReferralsPage active={activePage === "referrals"} />
+            <ClientIntegrationsPage active={activePage === "integrations"} />
           </div>
         </div>
       </div>
+
+      {/* ── Keyboard Shortcuts Modal ── */}
+      {shortcutsOpen ? (
+        <div className={cx("overlay")} onClick={() => setShortcutsOpen(false)}>
+          <div className={`${cx("modal")} ${cx("modalShortcuts")}`} onClick={e => e.stopPropagation()}>
+            <div className={cx("modalHeader")}>
+              <span className={cx("modalTitle")}>Keyboard Shortcuts</span>
+              <button className={cx("modalClose")} onClick={() => setShortcutsOpen(false)} type="button">&#x2715;</button>
+            </div>
+            <div className={cx("shortcutGrid")}>
+              {SHORTCUTS.map(s => (
+                <div key={s.key} className={cx("shortcutRow")}>
+                  <span className={cx("shortcutKey")}>{s.key}</span>
+                  <span className={cx("shortcutDesc")}>{s.description}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Session Timeout Modal ── */}
+      {showTimeoutWarning ? (
+        <div className={cx("overlay")}>
+          <div className={`${cx("modal")} ${cx("modalTimeout")}`} onClick={e => e.stopPropagation()}>
+            <div className={cx("modalHeader")}>
+              <span className={cx("modalTitle")}>Session Expiring</span>
+            </div>
+            <div className={cx("modalTimeoutBody")}>
+              <div className={cx("timeoutCountdown")}>{formatTime(remainingSeconds)}</div>
+              <div className={cx("timeoutText")}>Your session is about to expire due to inactivity. Would you like to continue?</div>
+              <div className={cx("timeoutActions")}>
+                <button className={`${cx("button")} ${cx("buttonAccent")}`} onClick={extendSession} type="button">Extend Session</button>
+                <button className={`${cx("button")} ${cx("buttonGhost")}`} onClick={() => window.location.href = "/logout"} type="button">Log Out</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
     </div>
+    </DashboardProvider>
   );
 }

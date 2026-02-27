@@ -1,12 +1,30 @@
 import type { PageId } from "./types";
 
 export const pageTitles: Record<PageId, [string, string]> = {
-  dashboard: ["Overview", "Dashboard"],
-  projects: ["My Engagements", "Projects"],
-  create: ["Project Intake", "Create Request"],
-  docs: ["Documents", "Document Library"],
-  invoices: ["Finance", "Invoices"],
-  messages: ["Communication", "Messages"],
-  automations: ["Operations", "Automations"],
-  settings: ["Account", "Settings"]
+  dashboard:     ["Command",       "Dashboard"],
+  reports:       ["Intelligence",  "Reports"],
+  ai:            ["Intelligence",  "AI & Automation"],
+  onboarding:    ["Welcome",       "Onboarding"],
+  projects:      ["Work",          "Projects"],
+  milestones:    ["Work",          "Milestones"],
+  create:        ["Work",          "New Request"],
+  docs:          ["Work",          "Documents"],
+  invoices:      ["Finance",       "Invoices"],
+  messages:      ["Work",          "Messages"],
+  automations:   ["Intelligence",  "Scheduling"],
+  settings:      ["Account",       "Settings"],
+  notifications: ["Account",       "Notifications"],
+  team:          ["Account",       "Team"],
+  support:       ["Account",       "Help & Support"],
+  reviews:       ["Work",          "Deliverable Review"],
+  calendar:      ["Work",          "Calendar"],
+  brand:         ["Work",          "Brand Assets"],
+  payments:      ["Finance",       "Payment Portal"],
+  contracts:     ["Finance",       "Contracts"],
+  analytics:     ["Intelligence",  "Analytics"],
+  feedback:      ["Account",       "Feedback"],
+  exports:       ["Account",       "Export Center"],
+  resources:     ["Account",       "Resources"],
+  referrals:     ["Account",       "Referrals"],
+  integrations:  ["Account",       "Integrations"]
 };
