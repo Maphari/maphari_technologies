@@ -193,16 +193,24 @@ export function AdminShell() {
                       <span>Yearly</span>
                     </div>
                     <div className={styles.chartBars}>
-                      {bars.map((bar) => (
-                        <div key={bar.label} className={styles.barWrap}>
-                          <div
-                            className={`${styles.bar} ${bar.value === maxBar ? styles.barHighlight : ""}`}
-                            style={{ height: `${Math.max((bar.value / maxBar) * 190, 8)}px` }}
-                            title={`${bar.label}: ${currency(bar.value)}`}
-                          />
-                          <small>{bar.label}</small>
-                        </div>
-                      ))}
+                      {bars.map((bar) => {
+                        const height = Math.max((bar.value / maxBar) * 190, 8);
+                        return (
+                          <div key={bar.label} className={styles.barWrap}>
+                            <svg
+                              className={`${styles.bar} ${bar.value === maxBar ? styles.barHighlight : ""}`}
+                              viewBox="0 0 20 190"
+                              preserveAspectRatio="none"
+                              aria-hidden="true"
+                              focusable="false"
+                            >
+                              <title>{`${bar.label}: ${currency(bar.value)}`}</title>
+                              <rect className={styles.barRect} x="0.5" y={190 - height} width="19" height={height} rx="2.4" ry="2.4" />
+                            </svg>
+                            <small>{bar.label}</small>
+                          </div>
+                        );
+                      })}
                     </div>
                   </article>
                 </div>

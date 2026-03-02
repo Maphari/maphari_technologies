@@ -4,6 +4,13 @@ import { cx, styles } from "../style";
 import type { ClientThread } from "../types";
 import { formatRelative } from "../utils";
 
+function avatarToneClass(color?: string) {
+  if (color === "var(--amber)") return "clientAvatarToneAmber";
+  if (color === "var(--purple)") return "clientAvatarTonePurple";
+  if (color === "var(--green)") return "clientAvatarToneGreen";
+  return "clientAvatarToneAccent";
+}
+
 type ClientMessage = {
   id: string;
   content: string;
@@ -119,17 +126,17 @@ export function ClientsPage({
   onUnassign
 }: ClientsPageProps) {
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-clients">
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-clients">
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>Client Communication</div>
           <div className={styles.pageTitle}>Client Threads</div>
           <div className={styles.pageSub}>Messages from clients assigned to your projects.</div>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div className={cx("flexRow", "gap8")}>
           <select
-            className={styles.composeInput}
-            style={{ width: 170 }}
+            className={cx("composeInput", "clClientSelect")}
+            aria-label="Select client for new thread"
             value={newThreadClientId}
             onChange={(event) => onNewThreadClientIdChange(event.target.value)}
           >
@@ -139,8 +146,7 @@ export function ClientsPage({
             ))}
           </select>
           <input
-            className={styles.composeInput}
-            style={{ width: 240 }}
+            className={cx("composeInput", "clSubjectInput")}
             value={newThreadSubject}
             onChange={(event) => onNewThreadSubjectChange(event.target.value)}
             placeholder="Thread subject"
@@ -162,31 +168,28 @@ export function ClientsPage({
             <span className={styles.clientThreadListTitle}>Conversations</span>
             <span className={cx("badge", "badgeAmber")}>{openConversationsCount} unread</span>
           </div>
-          <div style={{ padding: "10px 10px 0" }}>
+          <div className={styles.clSearchArea}>
             <input
-              className={styles.composeInput}
-              style={{ width: "100%" }}
+              className={cx("composeInput", "wFull")}
               value={threadSearch}
               onChange={(event) => onThreadSearchChange(event.target.value)}
               placeholder="Search conversations..."
             />
           </div>
-          <div className={styles.filterTabs} style={{ padding: "8px 10px 0", gap: 8, borderBottom: "1px solid var(--border)" }}>
-            {[
-              { id: "all", label: `All (${threadCounts.all})` },
-              { id: "unread", label: `Unread (${threadCounts.unread})` },
-              { id: "project", label: `Project (${threadCounts.project})` },
-              { id: "general", label: `General (${threadCounts.general})` }
-            ].map((filter) => (
-              <button
-                key={filter.id}
-                className={cx("filterTab", threadFilter === filter.id && "filterTabActive")}
-                type="button"
-                onClick={() => onThreadFilterChange(filter.id as "all" | "open" | "unread" | "project" | "general")}
-              >
-                {filter.label}
-              </button>
-            ))}
+          <div className={cx("filterRow", "clThreadFilterArea")}>
+            <select
+              className={cx("filterSelect")}
+              aria-label="Filter conversations"
+              value={threadFilter}
+              onChange={(event) =>
+                onThreadFilterChange(event.target.value as "all" | "open" | "unread" | "project" | "general")
+              }
+            >
+              <option value="all">All ({threadCounts.all})</option>
+              <option value="unread">Unread ({threadCounts.unread})</option>
+              <option value="project">Project ({threadCounts.project})</option>
+              <option value="general">General ({threadCounts.general})</option>
+            </select>
           </div>
           <div className={styles.clientThreadScroll}>
             {threadItems.length === 0 ? (
@@ -206,12 +209,12 @@ export function ClientsPage({
                     }
                   }}
                 >
-                  <div className={styles.clientAvatar} style={{ background: thread.avatar.bg, color: thread.avatar.color, width: 34, height: 34 }}>
+                  <div className={cx("clientAvatar", "clAvatarSm", avatarToneClass(thread.avatar.color))}>
                     {thread.avatar.label}
                   </div>
                   <div className={styles.clientBody}>
                     <div className={styles.clientMeta}>
-                      <span className={styles.clientName} style={{ color: "var(--text)" }}>{thread.name}</span>
+                      <span className={cx("clientName", "colorText")}>{thread.name}</span>
                       <span className={styles.clientTime}>{thread.time}</span>
                     </div>
                     <div className={styles.clientProject}>{thread.project}</div>
@@ -226,7 +229,7 @@ export function ClientsPage({
 
         <div className={styles.clientThreadMain}>
           <div className={styles.clientThreadHeader}>
-            <div className={styles.clientThreadAvatar} style={{ background: selectedThread?.avatar.bg ?? "color-mix(in srgb, var(--accent) 12%, transparent)", color: selectedThread?.avatar.color ?? "var(--accent)" }}>
+            <div className={cx("clientThreadAvatar", avatarToneClass(selectedThread?.avatar.color))}>
               {selectedThread?.avatar.label ?? "CL"}
             </div>
             <div className={styles.clientThreadInfo}>
@@ -249,24 +252,22 @@ export function ClientsPage({
                   : "Unassigned"}
               </span>
               <button
-                className={cx("button", "buttonGhost")}
+                className={cx("btnAssign", "buttonGhost")}
                 type="button"
-                style={{ padding: "5px 12px", fontSize: "0.62rem" }}
                 onClick={onAssignToMe}
                 disabled={!selectedConversationId || !viewerUserId || selectedConversation?.assigneeUserId === viewerUserId}
               >
                 Assign to me
               </button>
               <button
-                className={cx("button", "buttonGhost")}
+                className={cx("btnAssign", "buttonGhost")}
                 type="button"
-                style={{ padding: "5px 12px", fontSize: "0.62rem" }}
                 onClick={onUnassign}
                 disabled={!selectedConversationId || !selectedConversation?.assigneeUserId}
               >
                 Unassign
               </button>
-              <button className={cx("button", "buttonGhost")} type="button" style={{ padding: "5px 12px", fontSize: "0.62rem" }} onClick={onOpenThreadTask}>
+              <button className={cx("btnAssign", "buttonGhost")} type="button" onClick={onOpenThreadTask}>
                 View Task
               </button>
             </div>
@@ -288,14 +289,7 @@ export function ClientsPage({
                     : "Sent";
                 return (
                   <div key={message.id} className={isStaff ? styles.messageStaff : styles.messageClient}>
-                    <div
-                      className={styles.messageAvatar}
-                      style={
-                        isStaff
-                          ? { background: "var(--accent)", color: "#07090f" }
-                          : { background: selectedThread?.avatar.bg ?? "color-mix(in srgb, var(--accent) 12%, transparent)", color: selectedThread?.avatar.color ?? "var(--accent)" }
-                      }
-                    >
+                    <div className={cx("messageAvatar", isStaff ? "clAvatarStaff" : avatarToneClass(selectedThread?.avatar.color))}>
                       {isStaff ? staffInitials : selectedThread?.avatar.label ?? "CL"}
                     </div>
                     <div className={cx(styles.messageContent, isStaff && styles.messageContentStaff)}>
@@ -327,15 +321,15 @@ export function ClientsPage({
                 }
               }}
             />
-            <button className={cx("button", "buttonGhost")} type="button" style={{ padding: "7px 11px", flexShrink: 0, fontSize: "0.8rem" }} onClick={onOpenThreadFiles}>📎</button>
-            <button className={cx("button", "buttonGhost")} type="button" style={{ padding: "7px 11px", flexShrink: 0, fontSize: "0.62rem" }} onClick={onCreateTaskFromThread}># Task</button>
-            <button className={cx("button", "buttonBlue")} type="button" style={{ flexShrink: 0 }} onClick={onSendMessage} disabled={!selectedConversationId || !composeMessage.trim()}>
+            <button className={cx("btnComposeIcon", "buttonGhost")} type="button" onClick={onOpenThreadFiles}>📎</button>
+            <button className={cx("btnComposeTask", "buttonGhost")} type="button" onClick={onCreateTaskFromThread}># Task</button>
+            <button className={cx("btnComposeSend", "button", "buttonBlue")} type="button" onClick={onSendMessage} disabled={!selectedConversationId || !composeMessage.trim()}>
               Send
             </button>
           </div>
 
-          <div className={styles.cardBody} style={{ borderTop: "1px solid var(--border)" }}>
-            <div className={styles.cardHeader} style={{ paddingLeft: 0, paddingRight: 0 }}>
+          <div className={cx("cardBody", "borderT")}>
+            <div className={cx("cardHeader", "pl0", "pr0")}>
               <span className={styles.cardHeaderTitle}>Internal Notes</span>
             </div>
             <div className={styles.timeBars}>
@@ -350,7 +344,7 @@ export function ClientsPage({
                 ))
               )}
             </div>
-            <div className={styles.clientThreadCompose} style={{ marginTop: 10 }}>
+            <div className={cx("clientThreadCompose", "mt10")}>
               <input
                 className={styles.composeInput}
                 placeholder="Add internal note..."
@@ -363,8 +357,8 @@ export function ClientsPage({
             </div>
           </div>
 
-          <div className={styles.cardBody} style={{ borderTop: "1px solid var(--border)" }}>
-            <div className={styles.cardHeader} style={{ paddingLeft: 0, paddingRight: 0 }}>
+          <div className={cx("cardBody", "borderT")}>
+            <div className={cx("cardHeader", "pl0", "pr0")}>
               <span className={styles.cardHeaderTitle}>Escalations</span>
             </div>
             <div className={styles.timeBars}>
@@ -377,7 +371,7 @@ export function ClientsPage({
                       <span>{item.reason}</span>
                       <span className={styles.timeRowValue}>{item.status}</span>
                     </div>
-                    <div className={styles.timeRow} style={{ fontSize: "0.68rem", color: "var(--muted)" }}>
+                    <div className={cx("timeRow", "text11", "colorMuted")}>
                       <span>{item.severity}</span>
                       <span>{formatRelative(item.createdAt)}</span>
                     </div>
@@ -385,12 +379,12 @@ export function ClientsPage({
                 ))
               )}
             </div>
-            <div className={styles.clientThreadCompose} style={{ marginTop: 10 }}>
+            <div className={cx("clientThreadCompose", "mt10")}>
               <select
-                className={styles.composeInput}
+                aria-label="Escalation severity"
+                className={cx("composeInput", "dlEscalationSelect")}
                 value={escalationSeverity}
                 onChange={(event) => onEscalationSeverityChange(event.target.value as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL")}
-                style={{ maxWidth: 140 }}
               >
                 <option value="LOW">LOW</option>
                 <option value="MEDIUM">MEDIUM</option>

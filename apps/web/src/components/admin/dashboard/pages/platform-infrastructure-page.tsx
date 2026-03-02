@@ -1,20 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0",
-};
+import { cx, styles } from "../style";
+import { colorClass, toneClass } from "./admin-page-utils";
 
 type ServiceStatus = "healthy" | "degraded" | "down";
 
@@ -70,9 +58,9 @@ const tabs = ["services", "database", "error log", "sessions", "feature flags"] 
 type Tab = (typeof tabs)[number];
 
 const statusConfig: Record<ServiceStatus, { color: string; label: string; dot: string }> = {
-  healthy: { color: C.lime, label: "Healthy", dot: C.lime },
-  degraded: { color: C.amber, label: "Degraded", dot: C.amber },
-  down: { color: C.red, label: "Down", dot: C.red },
+  healthy: { color: "var(--accent)", label: "Healthy", dot: "var(--accent)" },
+  degraded: { color: "var(--amber)", label: "Degraded", dot: "var(--amber)" },
+  down: { color: "var(--red)", label: "Down", dot: "var(--red)" },
 };
 
 export function PlatformInfrastructurePage() {
@@ -93,234 +81,206 @@ export function PlatformInfrastructurePage() {
   const avgUptime = (services.reduce((s, sv) => s + sv.uptime, 0) / services.length).toFixed(2);
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={cx(styles.pageBody, styles.pifRoot)}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.lime, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / PLATFORM HEALTH</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Platform &amp; Infrastructure</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Live monitoring - API health - Sessions - Feature flags</div>
+          <div className={styles.pageEyebrow}>ADMIN / PLATFORM HEALTH</div>
+          <h1 className={styles.pageTitle}>Platform &amp; Infrastructure</h1>
+          <div className={styles.pageSub}>Live monitoring - API health - Sessions - Feature flags</div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: C.surface, border: `1px solid ${statusConfig[overallHealth].color}44`, borderRadius: 8 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: statusConfig[overallHealth].color, boxShadow: `0 0 6px ${statusConfig[overallHealth].color}`, animation: "pulse 1.5s infinite" }} />
-            <span style={{ fontSize: 12, color: statusConfig[overallHealth].color, fontFamily: "DM Mono, monospace" }}>System {statusConfig[overallHealth].label}</span>
+        <div className={styles.pifHeadActions}>
+          <div className={cx(styles.pifHealthBadge, styles.pifHealthBadgeTone, toneClass(statusConfig[overallHealth].color))}>
+            <div
+              className={cx(styles.pifHealthDot, styles.pifHealthDotTone, toneClass(statusConfig[overallHealth].color))}
+            />
+            <span className={cx(styles.pifHealthText, colorClass(statusConfig[overallHealth].color))}>
+              System {statusConfig[overallHealth].label}
+            </span>
           </div>
-          <button style={{ background: C.border, color: C.text, padding: "8px 16px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>View Status Page</button>
+          <button type="button" className={cx("btnSm", "btnGhost")}>View Status Page</button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "mb28") }>
         {[
-          { label: "Avg Uptime (30d)", value: `${avgUptime}%`, color: C.lime, sub: "All services" },
-          { label: "Active Sessions", value: activeSessions.length.toString(), color: C.blue, sub: "Staff + clients now" },
-          { label: "Errors (24h)", value: errorLog.reduce((s, e) => s + e.count, 0).toString(), color: errorLog.some((e) => e.code === "503") ? C.amber : C.lime, sub: "Across all services" },
-          { label: "DB Usage", value: `${dbMetrics.usage}%`, color: dbMetrics.usage > 80 ? C.red : dbMetrics.usage > 65 ? C.amber : C.lime, sub: `${dbMetrics.connections}/${dbMetrics.maxConnections} connections` },
+          { label: "Avg Uptime (30d)", value: `${avgUptime}%`, color: "var(--accent)", sub: "All services" },
+          { label: "Active Sessions", value: activeSessions.length.toString(), color: "var(--blue)", sub: "Staff + clients now" },
+          { label: "Errors (24h)", value: errorLog.reduce((s, e) => s + e.count, 0).toString(), color: errorLog.some((e) => e.code === "503") ? "var(--amber)" : "var(--accent)", sub: "Across all services" },
+          { label: "DB Usage", value: `${dbMetrics.usage}%`, color: dbMetrics.usage > 80 ? "var(--red)" : dbMetrics.usage > 65 ? "var(--amber)" : "var(--accent)", sub: `${dbMetrics.connections}/${dbMetrics.maxConnections} connections` },
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            style={{
-              background: "none",
-              border: "none",
-              color: activeTab === t ? C.lime : C.muted,
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontFamily: "Syne, sans-serif",
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              borderBottom: `2px solid ${activeTab === t ? C.lime : "transparent"}`,
-              marginBottom: -1,
-              transition: "all 0.2s",
-            }}
-          >
-            {t}
-          </button>
-        ))}
+      <div className={styles.filterRow}>
+        <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
-      {activeTab === "services" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {activeTab === "services" ? (
+        <div className={cx("flexCol", "gap12") }>
           {services.map((svc) => {
             const cfg = statusConfig[svc.status];
             return (
-              <div key={svc.name} style={{ background: C.surface, border: `1px solid ${svc.status !== "healthy" ? `${cfg.color}55` : C.border}`, borderRadius: 10, padding: 20, display: "grid", gridTemplateColumns: "1fr 100px 100px 100px 100px auto", alignItems: "center", gap: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: cfg.dot, boxShadow: svc.status !== "healthy" ? `0 0 8px ${cfg.dot}` : "none", flexShrink: 0 }} />
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>{svc.name}</span>
+              <div key={svc.name} className={cx(styles.pifServiceRow, svc.status !== "healthy" && styles.pifServiceRowAlert, toneClass(cfg.color))}>
+                <div className={styles.pifServiceNameCell}>
+                  <div className={cx(styles.pifServiceDot, styles.pifServiceDotTone, svc.status !== "healthy" && styles.pifServiceDotAlert, toneClass(cfg.dot))} />
+                  <span className={styles.pifServiceName}>{svc.name}</span>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Uptime (30d)</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: svc.uptime >= 99.9 ? C.lime : svc.uptime >= 99 ? C.amber : C.red }}>{svc.uptime}%</div>
+                  <div className={styles.pifLabel}>Uptime (30d)</div>
+                  <div className={cx(styles.pifMono, svc.uptime >= 99.9 ? "colorAccent" : svc.uptime >= 99 ? "colorAmber" : "colorRed")}>{svc.uptime}%</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Latency</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", color: svc.latency < 200 ? C.lime : svc.latency < 500 ? C.amber : C.red }}>{svc.latency}ms</div>
+                  <div className={styles.pifLabel}>Latency</div>
+                  <div className={cx(styles.pifMono, svc.latency < 200 ? "colorAccent" : svc.latency < 500 ? "colorAmber" : "colorRed")}>{svc.latency}ms</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Requests (24h)</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", color: C.blue }}>{svc.requests24h.toLocaleString()}</div>
+                  <div className={styles.pifLabel}>Requests (24h)</div>
+                  <div className={styles.pifMonoBlue}>{svc.requests24h.toLocaleString()}</div>
                 </div>
-                <span style={{ fontSize: 10, color: cfg.color, background: `${cfg.color}18`, padding: "3px 10px", borderRadius: 4, fontFamily: "DM Mono, monospace" }}>{cfg.label}</span>
-                <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>View Logs</button>
+                <span className={cx(styles.pifStatusPill, styles.pifStatusPillTone, toneClass(cfg.color))}>{cfg.label}</span>
+                <button type="button" className={cx("btnSm", "btnGhost")}>View Logs</button>
               </div>
             );
           })}
         </div>
-      )}
+      ) : null}
 
-      {activeTab === "database" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Database Health</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {activeTab === "database" ? (
+        <div className={styles.pifDbSplit}>
+          <div className={cx("card", "p24") }>
+            <div className={styles.pifSectionTitle}>Database Health</div>
+            <div className={cx("flexCol", "gap20") }>
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ fontSize: 13 }}>Storage Used</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: dbMetrics.usage > 80 ? C.red : C.amber }}>{dbMetrics.usage}% - {dbMetrics.size}</span>
+                <div className={styles.pifMetricHead}>
+                  <span className={styles.text13}>Storage Used</span>
+                  <span className={cx(styles.pifMono, dbMetrics.usage > 80 ? "colorRed" : "colorAmber")}>{dbMetrics.usage}% - {dbMetrics.size}</span>
                 </div>
-                <div style={{ height: 12, background: C.border, borderRadius: 6 }}>
-                  <div style={{ height: "100%", width: `${dbMetrics.usage}%`, background: dbMetrics.usage > 80 ? C.red : C.amber, borderRadius: 6 }} />
-                </div>
+                <progress className={cx(styles.pifProgress, dbMetrics.usage > 80 ? styles.pifProgRed : styles.pifProgAmber)} max={100} value={dbMetrics.usage} aria-label={`Database storage usage ${dbMetrics.usage}%`} />
               </div>
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ fontSize: 13 }}>Active Connections</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.blue }}>{dbMetrics.connections}/{dbMetrics.maxConnections}</span>
+                <div className={styles.pifMetricHead}>
+                  <span className={styles.text13}>Active Connections</span>
+                  <span className={styles.pifMonoBlue}>{dbMetrics.connections}/{dbMetrics.maxConnections}</span>
                 </div>
-                <div style={{ height: 12, background: C.border, borderRadius: 6 }}>
-                  <div style={{ height: "100%", width: `${(dbMetrics.connections / dbMetrics.maxConnections) * 100}%`, background: C.blue, borderRadius: 6 }} />
-                </div>
+                <progress className={cx(styles.pifProgress, styles.pifProgBlue)} max={dbMetrics.maxConnections} value={dbMetrics.connections} aria-label={`Database connections ${dbMetrics.connections} of ${dbMetrics.maxConnections}`} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className={styles.pifMiniGrid}>
                 {[
-                  { label: "Avg Query Time", value: `${dbMetrics.queryAvg}ms`, color: C.lime },
-                  { label: "Slow Queries (24h)", value: dbMetrics.slowQueries.toString(), color: dbMetrics.slowQueries > 5 ? C.red : C.amber },
-                  { label: "Last Backup", value: dbMetrics.backupAge, color: C.lime },
-                  { label: "Backup Status", value: "Success", color: C.lime },
+                  { label: "Avg Query Time", value: `${dbMetrics.queryAvg}ms`, color: "var(--accent)" },
+                  { label: "Slow Queries (24h)", value: dbMetrics.slowQueries.toString(), color: dbMetrics.slowQueries > 5 ? "var(--red)" : "var(--amber)" },
+                  { label: "Last Backup", value: dbMetrics.backupAge, color: "var(--accent)" },
+                  { label: "Backup Status", value: "Success", color: "var(--accent)" },
                 ].map((m) => (
-                  <div key={m.label} style={{ padding: 12, background: C.bg, borderRadius: 8 }}>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>{m.label}</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: m.color }}>{m.value}</div>
+                  <div key={m.label} className={styles.pifMiniCard}>
+                    <div className={styles.pifLabel}>{m.label}</div>
+                    <div className={cx(styles.pifMono, colorClass(m.color))}>{m.value}</div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.amber}33`, borderRadius: 10, padding: 20 }}>
-              <div style={{ fontWeight: 700, color: C.amber, marginBottom: 8 }}>Storage Advisory</div>
-              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7 }}>Database at 68% capacity. At current growth rate (~2% per month), will hit 80% threshold in approximately 6 months. Consider archiving old client comms or upgrading storage tier.</div>
-              <button style={{ marginTop: 12, background: C.amber, color: C.bg, border: "none", padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Upgrade Storage</button>
+
+          <div className={cx("flexCol", "gap16") }>
+            <div className={styles.pifAdvisoryCard}>
+              <div className={styles.pifAdvisoryTitle}>Storage Advisory</div>
+              <div className={styles.pifAdvisoryText}>
+                Database at 68% capacity. At current growth rate (~2% per month), will hit 80% threshold in approximately 6 months. Consider archiving old client comms or upgrading storage tier.
+              </div>
+              <button type="button" className={cx("btnSm", "btnAccent")}>Upgrade Storage</button>
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Quick Actions</div>
-              {["Run Manual Backup", "Clear Cache", "View Query Log", "Database Console"].map((action) => (
-                <button key={action} style={{ display: "block", width: "100%", background: C.border, border: "none", color: C.text, padding: "10px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", marginBottom: 8, textAlign: "left" }}>
-                  {action} -&gt;
-                </button>
-              ))}
+            <div className={cx("card", "p24") }>
+              <div className={styles.pifSectionTitle}>Quick Actions</div>
+              <div className={cx("flexCol", "gap8") }>
+                {["Run Manual Backup", "Clear Cache", "View Query Log", "Database Console"].map((action) => (
+                  <button key={action} type="button" className={styles.pifQuickBtn}>
+                    {action} -&gt;
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {activeTab === "error log" && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "80px 160px 60px 1fr 60px auto", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+      {activeTab === "error log" ? (
+        <div className={styles.pifTableCard}>
+          <div className={cx(styles.pifErrorHead, "fontMono", "text10", "colorMuted", "uppercase")}>
             {["Time", "Service", "Code", "Message", "Count", ""].map((h) => <span key={h}>{h}</span>)}
           </div>
           {errorLog.map((err, i) => (
-            <div key={err.time + err.service} style={{ display: "grid", gridTemplateColumns: "80px 160px 60px 1fr 60px auto", padding: "14px 24px", borderBottom: i < errorLog.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", background: err.code === "503" ? C.surface : "transparent" }}>
-              <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{err.time}</span>
-              <span style={{ fontSize: 12, fontWeight: 600 }}>{err.service}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: err.code.startsWith("5") ? C.red : err.code.startsWith("4") ? C.amber : C.muted }}>{err.code}</span>
-              <span style={{ fontSize: 12, color: C.muted }}>{err.message}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: err.count > 5 ? C.red : C.amber }}>{err.count}</span>
-              <button style={{ background: C.border, border: "none", color: C.text, padding: "4px 10px", borderRadius: 4, fontSize: 11, cursor: "pointer" }}>Inspect</button>
+            <div key={err.time + err.service} className={cx(styles.pifErrorRow, i < errorLog.length - 1 && "borderB", err.code === "503" && styles.pifErrorWarn)}>
+              <span className={cx("fontMono", "text11", "colorMuted")}>{err.time}</span>
+              <span className={cx("text12", "fw600")}>{err.service}</span>
+              <span className={cx("fontMono", "text12", err.code.startsWith("5") ? "colorRed" : err.code.startsWith("4") ? "colorAmber" : "colorMuted")}>{err.code}</span>
+              <span className={cx("text12", "colorMuted")}>{err.message}</span>
+              <span className={cx("fontMono", "text12", err.count > 5 ? "colorRed" : "colorAmber")}>{err.count}</span>
+              <button type="button" className={cx("btnSm", "btnGhost")}>Inspect</button>
             </div>
           ))}
         </div>
-      )}
+      ) : null}
 
-      {activeTab === "sessions" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>{activeSessions.length} active sessions - Last refreshed {lastRefresh.toLocaleTimeString()}</div>
+      {activeTab === "sessions" ? (
+        <div className={cx("flexCol", "gap12") }>
+          <div className={cx("text12", "colorMuted", "mb4")}>{activeSessions.length} active sessions - Last refreshed {lastRefresh.toLocaleTimeString()}</div>
           {activeSessions.map((s) => (
-            <div key={s.user + s.started} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20, display: "grid", gridTemplateColumns: "200px 160px 140px 1fr 140px auto", alignItems: "center", gap: 20 }}>
+            <div key={s.user + s.started} className={styles.pifSessionRow}>
               <div>
-                <div style={{ fontWeight: 600, fontSize: 13 }}>{s.user}</div>
-                <div style={{ fontSize: 11, color: C.muted }}>{s.role}</div>
+                <div className={cx("fw600", "text13")}>{s.user}</div>
+                <div className={cx("text11", "colorMuted")}>{s.role}</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>IP Address</div>
-                <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12 }}>{s.ip}</div>
+                <div className={styles.pifLabel}>IP Address</div>
+                <div className={cx("fontMono", "text12")}>{s.ip}</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Session Start</div>
-                <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12 }}>{s.started}</div>
+                <div className={styles.pifLabel}>Session Start</div>
+                <div className={cx("fontMono", "text12")}>{s.started}</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Current Page</div>
-                <div style={{ fontSize: 12, color: C.blue }}>{s.page}</div>
+                <div className={styles.pifLabel}>Current Page</div>
+                <div className={cx("text12", "colorBlue")}>{s.page}</div>
               </div>
-              <div style={{ fontSize: 11, color: C.muted }}>{s.device}</div>
-              <button style={{ background: C.surface, color: C.red, border: "none", padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>Terminate</button>
+              <div className={cx("text11", "colorMuted")}>{s.device}</div>
+              <button type="button" className={styles.pifTerminateBtn}>Terminate</button>
             </div>
           ))}
         </div>
-      )}
+      ) : null}
 
-      {activeTab === "feature flags" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.blue}33`, borderRadius: 10, padding: 16, fontSize: 12, color: C.muted }}>
+      {activeTab === "feature flags" ? (
+        <div className={cx("flexCol", "gap12") }>
+          <div className={styles.pifInfoCard}>
             Feature flags allow you to enable or disable platform features without deploying new code. Use with caution - changes take effect immediately for all users in the specified scope.
           </div>
           {featureFlags.map((flag) => (
-            <div key={flag.name} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20, display: "grid", gridTemplateColumns: "1fr 1fr 160px 80px", alignItems: "center", gap: 20 }}>
+            <div key={flag.name} className={styles.pifFlagRow}>
               <div>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>{flag.name}</div>
-                <div style={{ fontSize: 12, color: C.muted }}>{flag.description}</div>
+                <div className={cx("fw700", "mb4")}>{flag.name}</div>
+                <div className={cx("text12", "colorMuted")}>{flag.description}</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Scope</div>
-                <div style={{ fontSize: 12, color: flag.enabled ? C.blue : C.muted }}>{flag.scope}</div>
+                <div className={styles.pifLabel}>Scope</div>
+                <div className={cx("text12", flag.enabled ? "colorBlue" : "colorMuted")}>{flag.scope}</div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div
-                  style={{
-                    width: 48,
-                    height: 26,
-                    borderRadius: 13,
-                    background: flag.enabled ? C.lime : C.border,
-                    cursor: "pointer",
-                    position: "relative",
-                    transition: "background 0.2s",
-                    flexShrink: 0,
-                  }}
-                >
-                  <div style={{ position: "absolute", top: 3, left: flag.enabled ? 24 : 3, width: 20, height: 20, borderRadius: "50%", background: flag.enabled ? C.bg : "#666", transition: "left 0.2s" }} />
+              <div className={styles.pifToggleWrap}>
+                <div className={cx(styles.pifToggle, flag.enabled && styles.pifToggleOn)}>
+                  <div className={cx(styles.pifToggleKnob, flag.enabled && styles.pifToggleKnobOn)} />
                 </div>
-                <span style={{ fontSize: 12, color: flag.enabled ? C.lime : C.muted, fontFamily: "DM Mono, monospace" }}>{flag.enabled ? "On" : "Off"}</span>
+                <span className={cx(styles.pifToggleText, flag.enabled ? "colorAccent" : "colorMuted")}>{flag.enabled ? "On" : "Off"}</span>
               </div>
-              <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>Edit</button>
+              <button type="button" className={cx("btnSm", "btnGhost")}>Edit</button>
             </div>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

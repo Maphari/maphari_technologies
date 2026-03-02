@@ -31,11 +31,11 @@ type RecurringTaskItem = {
 
 const clients: ClientRow[] = [
   { id: 1, name: "Volta Studios", avatar: "VS", color: "var(--accent)" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "#a78bfa" },
-  { id: 3, name: "Mira Health", avatar: "MH", color: "#60a5fa" },
-  { id: 4, name: "Dune Collective", avatar: "DC", color: "#f5c518" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "#ff8c00" },
-  { id: 0, name: "Internal", avatar: "IN", color: "#a0a0b0" }
+  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "var(--purple)" },
+  { id: 3, name: "Mira Health", avatar: "MH", color: "var(--blue)" },
+  { id: 4, name: "Dune Collective", avatar: "DC", color: "var(--amber)" },
+  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "var(--amber)" },
+  { id: 0, name: "Internal", avatar: "IN", color: "var(--muted)" }
 ];
 
 const frequencies: Frequency[] = ["Daily", "Weekly", "Bi-weekly", "Monthly"];
@@ -55,30 +55,39 @@ const initialTasks: RecurringTaskItem[] = [
   { id: 10, clientId: 4, title: "Dune Collective follow-up message", frequency: "Weekly", dayOfWeek: "Tue", estimate: 0.25, category: "Comms", active: true, lastDone: "Feb 17", nextDue: "Feb 24", streak: 0, totalDone: 3 }
 ];
 
-const freqColors: Record<Frequency, string> = {
-  Daily: "var(--accent)",
-  Weekly: "#60a5fa",
-  "Bi-weekly": "#a78bfa",
-  Monthly: "#f5c518"
-};
+function frequencyToneClass(frequency: Frequency) {
+  if (frequency === "Daily") return "rtFreqDaily";
+  if (frequency === "Weekly") return "rtFreqWeekly";
+  if (frequency === "Bi-weekly") return "rtFreqBiWeekly";
+  return "rtFreqMonthly";
+}
 
-const catColors: Record<Category, string> = {
-  Admin: "#a0a0b0",
-  Comms: "#60a5fa",
-  Design: "#a78bfa",
-  Finance: "var(--accent)",
-  Strategy: "#f5c518",
-  Reporting: "#ff8c00"
-};
+function categoryToneClass(category: Category) {
+  if (category === "Admin") return "rtCatAdmin";
+  if (category === "Comms") return "rtCatComms";
+  if (category === "Design") return "rtCatDesign";
+  if (category === "Finance") return "rtCatFinance";
+  if (category === "Strategy") return "rtCatStrategy";
+  return "rtCatReporting";
+}
+
+function clientToneClass(clientId?: number) {
+  if (clientId === 1) return "rtClientOne";
+  if (clientId === 2) return "rtClientTwo";
+  if (clientId === 3) return "rtClientThree";
+  if (clientId === 4) return "rtClientFour";
+  if (clientId === 5) return "rtClientFive";
+  return "rtClientInternal";
+}
 
 function StreakBadge({ streak }: { streak: number }) {
-  if (streak === 0) return <span style={{ fontSize: 10, color: "var(--muted2)" }}>No streak</span>;
-  const color = streak >= 10 ? "var(--accent)" : streak >= 5 ? "#f5c518" : "#a0a0b0";
+  if (streak === 0) return <span className={cx("text10", "colorMuted2")}>No streak</span>;
+  const tone = streak >= 10 ? "rtStreakHot" : streak >= 5 ? "rtStreakWarm" : "rtStreakMild";
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-      <span style={{ fontSize: 11, color }}>◆</span>
-      <span style={{ fontSize: 11, color, fontWeight: 500 }}>{streak}</span>
-      <span style={{ fontSize: 10, color: "var(--muted2)" }}>streak</span>
+    <div className={cx("flexRow", "gap4")}>
+      <span className={cx("rtStreakDot", tone)}>◆</span>
+      <span className={cx("rtStreakValue", tone)}>{streak}</span>
+      <span className={cx("text10", "colorMuted2")}>streak</span>
     </div>
   );
 }
@@ -159,100 +168,75 @@ export function RecurringTasksPage({ isActive }: { isActive: boolean }) {
   const freqOrder: Frequency[] = ["Daily", "Weekly", "Bi-weekly", "Monthly"];
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-recurring-tasks">
-      <style>{`
-        input, select, textarea { outline: none; font-family: 'DM Mono', monospace; }
-        input:focus, select:focus { border-color: color-mix(in srgb, var(--accent) 30%, transparent) !important; }
-        .rt-filter-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .rt-task-row { transition: all 0.12s ease; }
-        .rt-task-row:hover .rt-task-hover-actions { opacity: 1 !important; }
-        .rt-done-btn { transition: all 0.15s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .rt-done-btn:hover { background: color-mix(in srgb, var(--accent) 15%, transparent) !important; border-color: color-mix(in srgb, var(--accent) 40%, transparent) !important; color: var(--accent) !important; }
-        .rt-toggle-btn { transition: all 0.15s ease; cursor: pointer; }
-        .rt-toggle-btn:hover { opacity: 0.75; }
-        .rt-add-main-btn { transition: all 0.15s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .rt-add-main-btn:hover { background: #a8d420 !important; }
-        .rt-save-btn { transition: all 0.15s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .rt-save-btn:hover:not(:disabled) { background: #a8d420 !important; }
-        .rt-save-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-recurring-tasks">
+      <div className={cx("pageHeaderBar", "rtHeaderBar")}>
+        <div className={cx("flexBetween", "mb20", "rtHeaderTop")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-              Staff Dashboard / Planning
-            </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              Recurring Tasks
-            </h1>
+            <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Planning</div>
+            <h1 className={cx("pageTitleText")}>Recurring Tasks</h1>
           </div>
-          <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+          <div className={cx("flexRow", "gap20", "rtHeaderActions")}>
             {[
-              { label: "Active", value: activeCount, color: "#a0a0b0" },
-              { label: "Due soon", value: dueSoon, color: dueSoon > 0 ? "#f5c518" : "var(--muted2)" },
-              { label: "Weekly overhead", value: `${Math.round(totalWeeklyHours * 10) / 10}h`, color: "#a0a0b0" }
+              { label: "Active", value: activeCount, valueClass: "colorMuted" },
+              { label: "Due soon", value: dueSoon, valueClass: dueSoon > 0 ? "colorAmber" : "colorMuted2" },
+              { label: "Weekly overhead", value: `${Math.round(totalWeeklyHours * 10) / 10}h`, valueClass: "colorMuted" }
             ].map((stat) => (
-              <div key={stat.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+              <div key={stat.label} className={cx("textRight")}>
+                <div className={cx("statLabelNew")}>{stat.label}</div>
+                <div className={cx("statValueNew", stat.valueClass)}>{stat.value}</div>
               </div>
             ))}
-            <button
-              className="rt-add-main-btn"
-              onClick={() => setAdding((value) => !value)}
-              style={{ padding: "10px 18px", background: "var(--accent)", color: "#050508", border: "none", borderRadius: 3, fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", marginLeft: 8 }}
-            >
+            <button type="button" className={cx("rtAddMainBtn", "rtPrimaryBtn", "uppercase", "tracking")} onClick={() => setAdding((value) => !value)}>
               + New task
             </button>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          {[
-            { key: "all" as const, label: "All" },
-            { key: "active" as const, label: "Active" },
-            { key: "paused" as const, label: "Paused" }
-          ].map((item) => (
-            <button
-              key={item.key}
-              className="rt-filter-btn"
-              onClick={() => setFilter(item.key)}
-              style={{ padding: "5px 12px", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: 2, background: filter === item.key ? "rgba(255,255,255,0.08)" : "transparent", color: filter === item.key ? "var(--text)" : "var(--muted2)" }}
-            >
-              {item.label}
-            </button>
-          ))}
-          <div style={{ width: 1, height: 18, background: "rgba(255,255,255,0.08)" }} />
-          {(["all", ...frequencies] as Array<"all" | Frequency>).map((frequency) => (
-            <button
-              key={frequency}
-              className="rt-filter-btn"
-              onClick={() => setFreqFilter(frequency)}
-              style={{ padding: "5px 12px", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: 2, background: freqFilter === frequency ? frequency === "all" ? "rgba(255,255,255,0.08)" : `${freqColors[frequency]}15` : "transparent", color: freqFilter === frequency ? frequency === "all" ? "var(--text)" : freqColors[frequency] : "var(--muted2)", border: freqFilter === frequency && frequency !== "all" ? `1px solid ${freqColors[frequency]}30` : "1px solid transparent" }}
-            >
-              {frequency === "all" ? "All frequency" : frequency}
-            </button>
-          ))}
+        <div className={cx("filterRow")}>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter recurring tasks by status"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value as "all" | "active" | "paused")}
+          >
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+          </select>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter recurring tasks by frequency"
+            value={freqFilter}
+            onChange={(event) => setFreqFilter(event.target.value as "all" | Frequency)}
+          >
+            <option value="all">All frequency</option>
+            {frequencies.map((frequency) => (
+              <option key={frequency} value={frequency}>
+                {frequency}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: adding ? "1fr 340px" : "1fr", minHeight: "calc(100vh - 165px)" }}>
-        <div style={{ padding: "24px 32px", borderRight: adding ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+      <div className={cx("rtLayout", adding && "rtLayoutWithForm")}>
+        <div className={cx("rtListPane", adding && "rtListPaneWithForm")}>
           {freqOrder.map((frequency) => {
             const items = [...grouped[frequency]].sort((a, b) => Number(b.active) - Number(a.active));
             if (items.length === 0) return null;
-            const frequencyColor = freqColors[frequency];
+            const freqTone = frequencyToneClass(frequency);
             return (
-              <div key={frequency} style={{ marginBottom: 28 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: frequencyColor }} />
-                  <span style={{ fontSize: 10, color: frequencyColor, letterSpacing: "0.12em", textTransform: "uppercase" }}>{frequency}</span>
-                  <div style={{ flex: 1, height: 1, background: `${frequencyColor}20` }} />
-                  <span style={{ fontSize: 10, color: "var(--muted2)" }}>{items.length} task{items.length > 1 ? "s" : ""}</span>
+              <div key={frequency} className={cx("rtFreqGroup")}>
+                <div className={cx("rtFreqHeader")}>
+                  <div className={cx("rtFreqDot", freqTone)} />
+                  <span className={cx("text10", "uppercase", "rtFreqLabel", freqTone)}>{frequency}</span>
+                  <div className={cx("rtFreqLine", freqTone)} />
+                  <span className={cx("text10", "colorMuted2")}>
+                    {items.length} task{items.length > 1 ? "s" : ""}
+                  </span>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div className={cx("flexCol", "gap6")}>
                   {items.map((task) => {
                     const client = clients.find((candidate) => candidate.id === task.clientId);
                     const isDone = markingDone === task.id;
@@ -260,56 +244,47 @@ export function RecurringTasksPage({ isActive }: { isActive: boolean }) {
                     return (
                       <div
                         key={task.id}
-                        className="rt-task-row"
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 14,
-                          padding: "13px 16px",
-                          border: `1px solid ${isDueToday && task.active ? "rgba(245,197,24,0.2)" : "rgba(255,255,255,0.05)"}`,
-                          borderLeft: `3px solid ${task.active ? frequencyColor : "rgba(255,255,255,0.1)"}`,
-                          borderRadius: "0 4px 4px 0",
-                          background: task.active ? "rgba(255,255,255,0.01)" : "rgba(255,255,255,0.005)",
-                          opacity: task.active ? 1 : 0.45
-                        }}
+                        className={cx(
+                          "rtTaskRow",
+                          "rtTaskCard",
+                          frequencyToneClass(task.frequency),
+                          !task.active && "rtTaskPaused",
+                          isDueToday && task.active && "rtTaskDueSoon"
+                        )}
                       >
-                        <button
-                          className="rt-done-btn"
-                          onClick={() => markDone(task.id)}
-                          style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, border: `1.5px solid ${isDone ? "var(--accent)" : "rgba(255,255,255,0.15)"}`, background: isDone ? "color-mix(in srgb, var(--accent) 15%, transparent)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "var(--accent)" }}
-                        >
+                        <button type="button" className={cx("rtDoneBtn", "rtDoneCircle", isDone && "rtDoneCircleActive")} onClick={() => markDone(task.id)}>
                           {isDone ? "✓" : ""}
                         </button>
 
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                            <span style={{ fontSize: 13, color: "var(--text)" }}>{task.title}</span>
-                            {isDueToday && task.active ? <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 2, background: "rgba(245,197,24,0.12)", color: "#f5c518", letterSpacing: "0.08em", textTransform: "uppercase" }}>Due today</span> : null}
+                        <div className={cx("flex1", "minW0")}>
+                          <div className={cx("flexRow", "gap8", "mb4")}>
+                            <span className={cx("text13", "colorText")}>{task.title}</span>
+                            {isDueToday && task.active ? <span className={cx("rtDueBadge")}>Due today</span> : null}
                           </div>
-                          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                            <span style={{ fontSize: 10, color: client?.color }}>{client?.name}</span>
-                            <span style={{ fontSize: 10, color: catColors[task.category] }}>{task.category}</span>
-                            {task.dayOfWeek ? <span style={{ fontSize: 10, color: "var(--muted2)" }}>{task.dayOfWeek}s</span> : null}
-                            <span style={{ fontSize: 10, color: "var(--muted2)" }}>{task.estimate}h</span>
+                          <div className={cx("flexRow", "gap10")}>
+                            <span className={cx("text10", clientToneClass(client?.id))}>{client?.name}</span>
+                            <span className={cx("text10", categoryToneClass(task.category))}>{task.category}</span>
+                            {task.dayOfWeek ? <span className={cx("text10", "colorMuted2")}>{task.dayOfWeek}s</span> : null}
+                            <span className={cx("text10", "colorMuted2")}>{task.estimate}h</span>
                           </div>
                         </div>
 
                         <StreakBadge streak={task.streak} />
 
-                        <div style={{ textAlign: "right", flexShrink: 0 }}>
-                          <div style={{ fontSize: 10, color: isDueToday ? "#f5c518" : "var(--muted2)" }}>Next: {task.nextDue}</div>
-                          <div style={{ fontSize: 10, color: "#333344", marginTop: 2 }}>Done {task.totalDone}x</div>
+                        <div className={cx("textRight", "noShrink")}>
+                          <div className={cx("text10", isDueToday ? "rtDueSoonText" : "colorMuted2")}>Next: {task.nextDue}</div>
+                          <div className={cx("text10", "mt4", "colorMuted2")}>Done {task.totalDone}x</div>
                         </div>
 
-                        <div className="rt-task-hover-actions" style={{ display: "flex", gap: 6, opacity: 0, transition: "opacity 0.12s", flexShrink: 0 }}>
+                        <div className={cx("rtTaskHoverActions", "flexRow", "gap6", "noShrink")}>
                           <button
-                            className="rt-toggle-btn"
+                            type="button"
+                            className={cx("rtToggleBtn", "rtTogglePill", "text10", "tracking", task.active ? "rtTogglePause" : "rtToggleResume")}
                             onClick={() => toggleActive(task.id)}
-                            style={{ fontSize: 10, padding: "4px 8px", borderRadius: 2, background: task.active ? "rgba(255,255,255,0.06)" : "color-mix(in srgb, var(--accent) 8%, transparent)", border: "none", color: task.active ? "var(--muted2)" : "var(--accent)", cursor: "pointer", fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em" }}
                           >
                             {task.active ? "Pause" : "Resume"}
                           </button>
-                          <button onClick={() => deleteTask(task.id)} style={{ fontSize: 13, background: "none", border: "none", color: "#333344", cursor: "pointer", padding: "0 4px" }}>
+                          <button type="button" className={cx("rtDeleteBtn")} onClick={() => deleteTask(task.id)}>
                             ×
                           </button>
                         </div>
@@ -323,25 +298,26 @@ export function RecurringTasksPage({ isActive }: { isActive: boolean }) {
         </div>
 
         {adding ? (
-          <div style={{ padding: "24px 24px", display: "flex", flexDirection: "column", gap: 18 }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff" }}>New Recurring Task</div>
+          <div className={cx("rtFormPane", "flexCol", "gap16")}>
+            <div className={cx("rtFormTitle")}>New Recurring Task</div>
 
             <div>
-              <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Task title</label>
+              <label className={cx("rtFormLabel")}>Task title</label>
               <input
                 value={draft.title}
                 onChange={(event) => setDraft((previous) => ({ ...previous, title: event.target.value }))}
                 placeholder="e.g. Send weekly retainer report"
-                style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }}
+                className={cx("rtFormInput")}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Project / Client</label>
+              <label className={cx("rtFormLabel")}>Project / Client</label>
               <select
+                aria-label="Recurring task client"
                 value={draft.clientId}
                 onChange={(event) => setDraft((previous) => ({ ...previous, clientId: event.target.value }))}
-                style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }}
+                className={cx("rtFormSelect")}
               >
                 {clients.map((client) => (
                   <option key={client.id} value={String(client.id)}>
@@ -351,13 +327,14 @@ export function RecurringTasksPage({ isActive }: { isActive: boolean }) {
               </select>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className={cx("formGrid2", "gap12")}>
               <div>
-                <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Frequency</label>
+                <label className={cx("rtFormLabel")}>Frequency</label>
                 <select
+                  aria-label="Recurring task frequency"
                   value={draft.frequency}
                   onChange={(event) => setDraft((previous) => ({ ...previous, frequency: event.target.value as Frequency }))}
-                  style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }}
+                  className={cx("rtFormSelect")}
                 >
                   {frequencies.map((frequency) => (
                     <option key={frequency} value={frequency}>
@@ -367,11 +344,12 @@ export function RecurringTasksPage({ isActive }: { isActive: boolean }) {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Day</label>
+                <label className={cx("rtFormLabel")}>Day</label>
                 <select
+                  aria-label="Recurring task day"
                   value={draft.dayOfWeek ?? ""}
                   onChange={(event) => setDraft((previous) => ({ ...previous, dayOfWeek: (event.target.value || null) as Weekday | null }))}
-                  style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }}
+                  className={cx("rtFormSelect")}
                 >
                   <option value="">Any day</option>
                   {days.map((day) => (
@@ -383,13 +361,14 @@ export function RecurringTasksPage({ isActive }: { isActive: boolean }) {
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className={cx("formGrid2", "gap12")}>
               <div>
-                <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Category</label>
+                <label className={cx("rtFormLabel")}>Category</label>
                 <select
+                  aria-label="Recurring task category"
                   value={draft.category}
                   onChange={(event) => setDraft((previous) => ({ ...previous, category: event.target.value as Category }))}
-                  style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }}
+                  className={cx("rtFormSelect")}
                 >
                   {categories.map((category) => (
                     <option key={category} value={category}>
@@ -399,7 +378,7 @@ export function RecurringTasksPage({ isActive }: { isActive: boolean }) {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Est. hours</label>
+                <label className={cx("rtFormLabel")}>Est. hours</label>
                 <input
                   type="number"
                   min="0.1"
@@ -407,24 +386,16 @@ export function RecurringTasksPage({ isActive }: { isActive: boolean }) {
                   step="0.25"
                   value={draft.estimate}
                   onChange={(event) => setDraft((previous) => ({ ...previous, estimate: event.target.value }))}
-                  style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }}
+                  className={cx("rtFormInput")}
                 />
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-              <button
-                className="rt-save-btn"
-                disabled={!draft.title.trim()}
-                onClick={addTask}
-                style={{ padding: "11px 24px", background: "var(--accent)", color: "#050508", border: "none", borderRadius: 3, fontSize: 12, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}
-              >
+            <div className={cx("flexRow", "gap10", "mt4")}>
+              <button type="button" className={cx("rtSaveBtn", "rtPrimaryBtnSm", "uppercase", "tracking")} disabled={!draft.title.trim()} onClick={addTask}>
                 Create task
               </button>
-              <button
-                onClick={() => setAdding(false)}
-                style={{ padding: "11px 16px", background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--muted2)", fontSize: 11, cursor: "pointer", fontFamily: "'DM Mono', monospace" }}
-              >
+              <button type="button" className={cx("rtFilterBtn", "rtCancelBtn")} onClick={() => setAdding(false)}>
                 Cancel
               </button>
             </div>

@@ -1,21 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  lime: "#c8f135",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { toneClass } from "./admin-page-utils";
 
 type DimensionScore = {
   score: number;
@@ -25,8 +12,6 @@ type DimensionScore = {
 };
 
 type DimensionMap = Record<string, DimensionScore>;
-
-type Trend = "stable" | "declining" | "improving";
 
 type ScorecardClient = {
   client: string;
@@ -46,7 +31,7 @@ type ScorecardClient = {
 const scorecardData: ScorecardClient[] = [
   {
     client: "Volta Studios",
-    color: C.lime,
+    color: "var(--green)",
     avatar: "VS",
     tier: "Growth",
     am: "Nomsa Dlamini",
@@ -68,7 +53,7 @@ const scorecardData: ScorecardClient[] = [
   },
   {
     client: "Kestrel Capital",
-    color: C.purple,
+    color: "var(--accent)",
     avatar: "KC",
     tier: "Core",
     am: "Nomsa Dlamini",
@@ -90,7 +75,7 @@ const scorecardData: ScorecardClient[] = [
   },
   {
     client: "Mira Health",
-    color: C.blue,
+    color: "var(--blue)",
     avatar: "MH",
     tier: "Core",
     am: "Nomsa Dlamini",
@@ -112,7 +97,7 @@ const scorecardData: ScorecardClient[] = [
   },
   {
     client: "Dune Collective",
-    color: C.amber,
+    color: "var(--amber)",
     avatar: "DC",
     tier: "Core",
     am: "Renzo Fabbri",
@@ -134,7 +119,7 @@ const scorecardData: ScorecardClient[] = [
   },
   {
     client: "Okafor & Sons",
-    color: C.orange,
+    color: "var(--amber)",
     avatar: "OS",
     tier: "Core",
     am: "Tapiwa Moyo",
@@ -162,6 +147,30 @@ function calcHealthScore(dimensions: DimensionMap): number {
   return Math.round((rows.reduce((s, d) => s + (d.score / 10) * d.weight, 0) / totalWeight) * 100);
 }
 
+function healthColor(health: number): string {
+  if (health >= 70) return "var(--green)";
+  if (health >= 50) return "var(--amber)";
+  return "var(--red)";
+}
+
+function dimColor(score: number): string {
+  if (score >= 8) return "var(--green)";
+  if (score >= 6) return "var(--blue)";
+  if (score >= 4) return "var(--amber)";
+  return "var(--red)";
+}
+
+function churnColor(risk: number): string {
+  if (risk >= 50) return "var(--red)";
+  if (risk >= 25) return "var(--amber)";
+  return "var(--green)";
+}
+
+function renewalColor(prob: number): string {
+  if (prob >= 75) return "var(--green)";
+  return "var(--amber)";
+}
+
 const tabs = ["scorecard grid", "deep dive", "risk summary"] as const;
 type Tab = (typeof tabs)[number];
 
@@ -174,73 +183,56 @@ export function ClientHealthScorecardPage() {
   const totalMRRAtRisk = scorecardData.filter((c) => c.churnRisk >= 50).reduce((s, c) => s + c.mrr, 0);
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / REPORTING & INTELLIGENCE</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Client Health Scorecard</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>7-dimension weighted health model · Churn risk · Renewal probability</div>
+          <div className={styles.pageEyebrow}>ADMIN / REPORTING & INTELLIGENCE</div>
+          <h1 className={styles.pageTitle}>Client Health Scorecard</h1>
+          <div className={styles.pageSub}>7-dimension weighted health model · Churn risk · Renewal probability</div>
         </div>
-        <button style={{ background: C.primary, color: C.bg, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>Export Scorecard</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent")}>Export Scorecard</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Portfolio Avg Health", value: avgHealth.toString(), color: avgHealth >= 70 ? C.lime : C.amber, sub: "Weighted score" },
-          { label: "Clients at Risk", value: atRisk.toString(), color: atRisk > 0 ? C.red : C.lime, sub: "Churn risk >= 50%" },
-          { label: "MRR at Risk", value: `R${(totalMRRAtRisk / 1000).toFixed(0)}k`, color: C.red, sub: "From at-risk clients" },
-          { label: "Renewal Probability", value: `${Math.round(scorecardData.reduce((s, c) => s + c.renewalProbability, 0) / scorecardData.length)}%`, color: C.blue, sub: "Portfolio average" }
+          { label: "Portfolio Avg Health", value: avgHealth.toString(), color: healthColor(avgHealth), sub: "Weighted score" },
+          { label: "Clients at Risk", value: atRisk.toString(), color: atRisk > 0 ? "var(--red)" : "var(--green)", sub: "Churn risk >= 50%" },
+          { label: "MRR at Risk", value: `R${(totalMRRAtRisk / 1000).toFixed(0)}k`, color: "var(--red)", sub: "From at-risk clients" },
+          { label: "Renewal Probability", value: `${Math.round(scorecardData.reduce((s, c) => s + c.renewalProbability, 0) / scorecardData.length)}%`, color: "var(--blue)", sub: "Portfolio average" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx("statValue", styles.healthToneText, toneClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            style={{
-              background: "none",
-              border: "none",
-              color: activeTab === t ? C.primary : C.muted,
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontFamily: "Syne, sans-serif",
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              borderBottom: `2px solid ${activeTab === t ? C.primary : "transparent"}`,
-              marginBottom: -1
-            }}
-          >
-            {t}
-          </button>
-        ))}
+      <div className={styles.filterRow}>
+        <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
       {activeTab === "scorecard grid" && (
         <div>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "auto", marginBottom: 20 }}>
-            <div style={{ minWidth: 900 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "180px repeat(7, 1fr) 80px 80px 60px", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, gap: 8 }}>
-                <span style={{ fontSize: 10, color: C.muted }}>Client</span>
+          <div className={cx("card", "overflowAuto", "mb20")}>
+            <div className={styles.healthMinW900}>
+              <div className={cx("healthGridHead")}>
+                <span className={cx("text10", "colorMuted")}>Client</span>
                 {Object.keys(scorecardData[0].dimensions).map((d) => (
-                  <span key={d} style={{ fontSize: 9, color: C.muted, textAlign: "center" }}>{d.split(" ")[0]}</span>
+                  <span key={d} className={cx("textXs", "colorMuted", "textCenter")}>{d.split(" ")[0]}</span>
                 ))}
-                <span style={{ fontSize: 10, color: C.muted, textAlign: "center" }}>Score</span>
-                <span style={{ fontSize: 10, color: C.muted, textAlign: "center" }}>Churn%</span>
-                <span style={{ fontSize: 10, color: C.muted, textAlign: "center" }}>Issues</span>
+                <span className={cx("text10", "colorMuted", "textCenter")}>Score</span>
+                <span className={cx("text10", "colorMuted", "textCenter")}>Churn%</span>
+                <span className={cx("text10", "colorMuted", "textCenter")}>Issues</span>
               </div>
 
               {[...scorecardData]
                 .sort((a, b) => calcHealthScore(a.dimensions) - calcHealthScore(b.dimensions))
-                .map((c, i) => {
+                .map((c) => {
                   const health = calcHealthScore(c.dimensions);
                   return (
                     <div
@@ -249,45 +241,36 @@ export function ClientHealthScorecardPage() {
                         setSelected(c);
                         setActiveTab("deep dive");
                       }}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "180px repeat(7, 1fr) 80px 80px 60px",
-                        padding: "14px 20px",
-                        borderBottom: i < scorecardData.length - 1 ? `1px solid ${C.border}` : "none",
-                        gap: 8,
-                        alignItems: "center",
-                        cursor: "pointer",
-                        background: c.churnRisk >= 50 ? "#0f0505" : "transparent"
-                      }}
+                      className={cx("healthGridRow", "pointerCursor", c.churnRisk >= 50 && styles.healthRowAtRisk)}
                     >
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: c.color }} />
-                        <span style={{ fontWeight: 600, fontSize: 13, color: c.color }}>{c.client.split(" ")[0]}</span>
+                      <div className={cx("flexRow", "gap8")}>
+                        <div className={cx(styles.healthDot8, toneClass(c.color))} />
+                        <span className={cx("fw600", "text13", styles.healthToneText, toneClass(c.color))}>{c.client.split(" ")[0]}</span>
                       </div>
 
                       {Object.values(c.dimensions).map((d, di) => {
                         const score = d.score;
-                        const color = score >= 8 ? C.lime : score >= 6 ? C.blue : score >= 4 ? C.amber : C.red;
+                        const color = dimColor(score);
                         return (
-                          <div key={`${c.client}-${di}`} style={{ textAlign: "center" }}>
-                            <div style={{ height: 4, background: C.border, borderRadius: 2, marginBottom: 2 }}>
-                              <div style={{ height: "100%", width: `${(score / 10) * 100}%`, background: color, borderRadius: 2 }} />
+                          <div key={`${c.client}-${di}`} className={cx("textCenter")}>
+                            <div className={styles.healthTinyTrack}>
+                              <progress className={cx(styles.healthTinyFill, "uiProgress", toneClass(color))} max={100} value={(score / 10) * 100} />
                             </div>
-                            <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color }}>{score.toFixed(1)}</span>
+                            <span className={cx("fontMono", "text10", styles.healthToneText, toneClass(color))}>{score.toFixed(1)}</span>
                           </div>
                         );
                       })}
 
-                      <div style={{ textAlign: "center", fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 18, color: health >= 70 ? C.lime : health >= 50 ? C.amber : C.red }}>{health}</div>
-                      <div style={{ textAlign: "center", fontFamily: "DM Mono, monospace", color: c.churnRisk >= 50 ? C.red : C.muted }}>{c.churnRisk}%</div>
-                      <div style={{ textAlign: "center", color: c.openIssues > 0 ? C.red : C.muted }}>{c.openIssues > 0 ? `! ${c.openIssues}` : "—"}</div>
+                      <div className={cx("textCenter", "fontMono", "fw800", styles.healthScore18, styles.healthToneText, toneClass(healthColor(health)))}>{health}</div>
+                      <div className={cx("textCenter", "fontMono", styles.healthToneText, toneClass(churnColor(c.churnRisk)))}>{c.churnRisk}%</div>
+                      <div className={cx("textCenter", styles.healthToneText, c.openIssues > 0 ? "toneRed" : "toneMuted")}>{c.openIssues > 0 ? `! ${c.openIssues}` : "\u2014"}</div>
                     </div>
                   );
                 })}
             </div>
           </div>
 
-          <div style={{ fontSize: 11, color: C.muted, display: "flex", gap: 4 }}>
+          <div className={cx("text11", "colorMuted", "flexRow", "gap4")}>
             <span>Click any row to open deep dive.</span>
             <span>Dimension weights: NPS 20%, Invoice 15%, Comms 15%, Delivery 20%, Scope 10%, Growth 10%, Relationship 10%</span>
           </div>
@@ -295,110 +278,105 @@ export function ClientHealthScorecardPage() {
       )}
 
       {activeTab === "deep dive" && (
-        <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 20 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div className={styles.healthDeepDiveSplit}>
+          <div className={cx("flexCol", "gap8")}>
             {scorecardData.map((c) => {
               const h = calcHealthScore(c.dimensions);
               return (
                 <div
                   key={c.client}
                   onClick={() => setSelected(c)}
-                  style={{
-                    padding: "12px 16px",
-                    background: selected.client === c.client ? `${c.color}15` : C.surface,
-                    border: `1px solid ${selected.client === c.client ? c.color + "55" : C.border}`,
-                    cursor: "pointer"
-                  }}
+                  className={cx("pointerCursor", styles.healthSelectCard, selected.client === c.client && styles.healthSelectCardActive, selected.client === c.client && toneClass(c.color))}
                 >
-                  <div style={{ fontWeight: 600, fontSize: 12, color: selected.client === c.client ? c.color : C.text }}>{c.client.split(" ")[0]}</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 16, color: h >= 70 ? C.lime : h >= 50 ? C.amber : C.red }}>{h}</div>
+                  <div className={cx("fw600", "text12", selected.client === c.client && styles.healthToneText, selected.client === c.client && toneClass(c.color))}>{c.client.split(" ")[0]}</div>
+                  <div className={cx("fontMono", "fw800", styles.healthScore16, styles.healthToneText, toneClass(healthColor(h)))}>{h}</div>
                 </div>
               );
             })}
           </div>
 
-          <div style={{ background: C.surface, border: `1px solid ${selected.color}33`, padding: 28 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 28 }}>
+          <div className={cx("card", "p24", styles.healthDetailCard, toneClass(selected.color))}>
+            <div className={cx("flexBetween", "mb28")}>
               <div>
-                <div style={{ fontWeight: 800, fontSize: 22, color: selected.color }}>{selected.client}</div>
-                <div style={{ color: C.muted, fontSize: 13 }}>{selected.tier} · {selected.am} · {selected.months} months</div>
+                <div className={cx("fw800", styles.healthTitle22, styles.healthToneText, toneClass(selected.color))}>{selected.client}</div>
+                <div className={cx("colorMuted", "text13")}>{selected.tier} · {selected.am} · {selected.months} months</div>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 40, color: selected.churnRisk >= 50 ? C.red : C.lime }}>{calcHealthScore(selected.dimensions)}</div>
-                <div style={{ fontSize: 11, color: C.muted }}>Health Score</div>
+              <div className={cx("textRight")}>
+                <div className={cx("fontMono", "fw800", styles.healthScore40, styles.healthToneText, churnColor(selected.churnRisk) === "var(--red)" ? "toneRed" : "toneAccent")} >{calcHealthScore(selected.dimensions)}</div>
+                <div className={cx("text11", "colorMuted")}>Health Score</div>
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+            <div className={cx("flexCol", "gap10", "mb24")}>
               {Object.entries(selected.dimensions).map(([dim, data]) => {
-                const color = data.score >= 8 ? C.lime : data.score >= 6 ? C.blue : data.score >= 4 ? C.amber : C.red;
+                const color = dimColor(data.score);
                 const delta = (data.score - data.prev).toFixed(1);
                 return (
-                  <div key={dim} style={{ padding: 14, background: C.bg, display: "grid", gridTemplateColumns: "180px 1fr 60px 40px 60px", alignItems: "center", gap: 12 }}>
+                  <div key={dim} className={styles.healthDimRow}>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 12 }}>{dim}</div>
-                      <div style={{ fontSize: 10, color: C.muted }}>Weight: {data.weight}%</div>
+                      <div className={cx("fw600", "text12")}>{dim}</div>
+                      <div className={cx("text10", "colorMuted")}>Weight: {data.weight}%</div>
                     </div>
                     <div>
-                      <div style={{ height: 8, background: C.border }}>
-                        <div style={{ height: "100%", width: `${(data.score / 10) * 100}%`, background: color }} />
+                      <div className={cx("h6", styles.healthTrackBg)}>
+                        <progress className={cx(styles.healthFillFull, "uiProgress", toneClass(color))} max={100} value={(data.score / 10) * 100} />
                       </div>
-                      <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{data.note}</div>
+                      <div className={cx("text10", "colorMuted", "mt4")}>{data.note}</div>
                     </div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 18, color, textAlign: "center" }}>{data.score.toFixed(1)}</div>
-                    <span style={{ fontSize: 12, color: Number.parseFloat(delta) > 0 ? C.lime : Number.parseFloat(delta) < 0 ? C.red : C.muted, textAlign: "center" }}>
-                      {Number.parseFloat(delta) > 0 ? "▲" : Number.parseFloat(delta) < 0 ? "▼" : "→"}
+                    <div className={cx("fontMono", "fw800", "textCenter", styles.healthScore18, styles.healthToneText, toneClass(color))}>{data.score.toFixed(1)}</div>
+                    <span className={cx("text12", "textCenter", styles.healthToneText, Number.parseFloat(delta) > 0 ? "toneAccent" : Number.parseFloat(delta) < 0 ? "toneRed" : "toneMuted")}>
+                      {Number.parseFloat(delta) > 0 ? "\u25B2" : Number.parseFloat(delta) < 0 ? "\u25BC" : "\u2192"}
                     </span>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted, textAlign: "center" }}>prev {data.prev.toFixed(1)}</span>
+                    <span className={cx("fontMono", "text10", "colorMuted", "textCenter")}>prev {data.prev.toFixed(1)}</span>
                   </div>
                 );
               })}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+            <div className={cx("grid3", "mb20")}>
               {[
-                { label: "Churn Risk", value: `${selected.churnRisk}%`, color: selected.churnRisk >= 50 ? C.red : selected.churnRisk >= 25 ? C.amber : C.lime },
-                { label: "Renewal Probability", value: `${selected.renewalProbability}%`, color: selected.renewalProbability >= 75 ? C.lime : C.amber },
-                { label: "MRR at Stake", value: `R${(selected.mrr / 1000).toFixed(0)}k`, color: C.blue }
+                { label: "Churn Risk", value: `${selected.churnRisk}%`, color: churnColor(selected.churnRisk) },
+                { label: "Renewal Probability", value: `${selected.renewalProbability}%`, color: renewalColor(selected.renewalProbability) },
+                { label: "MRR at Stake", value: `R${(selected.mrr / 1000).toFixed(0)}k`, color: "var(--blue)" }
               ].map((m) => (
-                <div key={m.label} style={{ padding: 14, background: C.bg, textAlign: "center" }}>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 24, color: m.color }}>{m.value}</div>
-                  <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{m.label}</div>
+                <div key={m.label} className={cx("bgBg", "p14", "textCenter")}>
+                  <div className={cx("fontMono", "fw800", styles.healthScore24, styles.healthToneText, toneClass(m.color))}>{m.value}</div>
+                  <div className={cx("text10", "colorMuted", "mt4")}>{m.label}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: "flex", gap: 8 }}>
-              {selected.churnRisk >= 50 ? <button style={{ background: C.red, color: "#fff", border: "none", padding: "10px 20px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Log Intervention</button> : null}
-              <button style={{ background: C.primary, color: C.bg, border: "none", padding: "10px 20px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>View Client</button>
+            <div className={cx("flexRow", "gap8")}>
+              {selected.churnRisk >= 50 ? <button type="button" className={cx("btnSm", styles.healthDangerBtn, styles.healthBtnPad)}>Log Intervention</button> : null}
+              <button type="button" className={cx("btnSm", "btnAccent", styles.healthBtnPad)}>View Client</button>
             </div>
           </div>
         </div>
       )}
 
       {activeTab === "risk summary" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className={cx("flexCol", "gap16")}>
           {[...scorecardData].sort((a, b) => b.churnRisk - a.churnRisk).map((c) => {
             const health = calcHealthScore(c.dimensions);
             const worstDim = Object.entries(c.dimensions).reduce<[string, DimensionScore]>((a, [k, v]) => (v.score < a[1].score ? [k, v] : a), Object.entries(c.dimensions)[0]);
             return (
-              <div key={c.client} style={{ background: C.surface, border: `1px solid ${c.churnRisk >= 50 ? C.red + "44" : C.border}`, padding: 24 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "180px 80px 1fr 120px 140px 100px", alignItems: "center", gap: 20 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: c.color }}>{c.client}</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 24, color: health >= 70 ? C.lime : health >= 50 ? C.amber : C.red }}>{health}</div>
+              <div key={c.client} className={cx("card", "p24", c.churnRisk >= 50 && styles.healthRiskCard)}>
+                <div className={styles.healthRiskGrid}>
+                  <div className={cx("fw700", styles.healthName15, styles.healthToneText, toneClass(c.color))}>{c.client}</div>
+                  <div className={cx("fontMono", "fw800", styles.healthScore24, styles.healthToneText, toneClass(healthColor(health)))}>{health}</div>
                   <div>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>Weakest dimension: {worstDim[0]}</div>
-                    <div style={{ fontSize: 12, color: worstDim[1].score < 5 ? C.red : C.amber }}>{worstDim[1].note}</div>
+                    <div className={cx("text10", "colorMuted", "mb4")}>Weakest dimension: {worstDim[0]}</div>
+                    <div className={cx("text12", styles.healthToneText, worstDim[1].score < 5 ? "toneRed" : "toneAmber")}>{worstDim[1].note}</div>
                   </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Churn Risk</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 20, color: c.churnRisk >= 50 ? C.red : c.churnRisk >= 25 ? C.amber : C.lime }}>{c.churnRisk}%</div>
+                  <div className={cx("textCenter")}>
+                    <div className={cx("text10", "colorMuted", "mb3")}>Churn Risk</div>
+                    <div className={cx("fontMono", "fw800", styles.healthScore20, styles.healthToneText, toneClass(churnColor(c.churnRisk)))}>{c.churnRisk}%</div>
                   </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Renewal Probability</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 20, color: c.renewalProbability >= 75 ? C.lime : C.amber }}>{c.renewalProbability}%</div>
+                  <div className={cx("textCenter")}>
+                    <div className={cx("text10", "colorMuted", "mb3")}>Renewal Probability</div>
+                    <div className={cx("fontMono", "fw800", styles.healthScore20, styles.healthToneText, toneClass(renewalColor(c.renewalProbability)))}>{c.renewalProbability}%</div>
                   </div>
-                  {c.churnRisk >= 50 ? <button style={{ background: C.red, color: "#fff", border: "none", padding: "8px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Intervene</button> : <span style={{ fontSize: 11, color: C.lime, textAlign: "center" }}>Healthy</span>}
+                  {c.churnRisk >= 50 ? <button type="button" className={cx("btnSm", styles.healthDangerBtn)}>Intervene</button> : <span className={cx("text11", "colorGreen", "textCenter")}>Healthy</span>}
                 </div>
               </div>
             );

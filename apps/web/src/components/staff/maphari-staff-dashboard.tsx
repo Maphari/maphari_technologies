@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { useDashboardToasts, DashboardToastStack } from "../shared/dashboard-core";
-import { DM_Mono, Instrument_Serif, Syne } from "next/font/google";
 import {
   loadNotificationJobsWithRefresh,
   processNotificationQueueWithRefresh,
@@ -14,6 +13,12 @@ import { useStaffWorkspace } from "../../lib/auth/use-staff-workspace";
 import { useRealtimeRefresh } from "../../lib/auth/use-realtime-refresh";
 import { useCursorTrail } from "../shared/use-cursor-trail";
 import { useDelayedFlag } from "../shared/use-delayed-flag";
+import { useCommandSearch } from "../shared/use-command-search";
+import { useKeyboardShortcuts } from "../shared/use-keyboard-shortcuts";
+import { useSessionTimeout } from "../shared/use-session-timeout";
+import { useTheme } from "../shared/use-theme";
+import { useQuickCompose } from "../shared/use-quick-compose";
+import { createPortalConversationWithRefresh } from "../../lib/api/portal/messages";
 import { pageTitles } from "./staff-dashboard/constants";
 import { StaffSidebar } from "./staff-dashboard/sidebar";
 import { StaffTopbar } from "./staff-dashboard/topbar";
@@ -51,13 +56,50 @@ import { StaffHandoversPage } from "./staff-dashboard/pages/staff-handovers-page
 import { PersonalPerformancePage } from "./staff-dashboard/pages/personal-performance-page";
 import { ProjectContextPage } from "./staff-dashboard/pages/project-context-page";
 import { RetainerBurnPage } from "./staff-dashboard/pages/retainer-burn-page";
+import { InvoiceViewerPage } from "./staff-dashboard/pages/invoice-viewer-page";
+import { ProjectBudgetPage } from "./staff-dashboard/pages/project-budget-page";
+import { ClientBudgetPage } from "./staff-dashboard/pages/client-budget-page";
+import { ExpenseSubmitPage } from "./staff-dashboard/pages/expense-submit-page";
+import { PayStubPage } from "./staff-dashboard/pages/pay-stub-page";
+import { RateCardPage } from "./staff-dashboard/pages/rate-card-page";
+import { VendorDirectoryPage } from "./staff-dashboard/pages/vendor-directory-page";
+import { MyPortfolioPage } from "./staff-dashboard/pages/my-portfolio-page";
+import { MyCapacityPage } from "./staff-dashboard/pages/my-capacity-page";
+import { MyTimelinePage } from "./staff-dashboard/pages/my-timeline-page";
+import { QAChecklistPage } from "./staff-dashboard/pages/qa-checklist-page";
+import { ApprovalQueuePage } from "./staff-dashboard/pages/approval-queue-page";
+import { ClientHealthSummaryPage } from "./staff-dashboard/pages/client-health-summary-page";
+import { FeedbackInboxPage } from "./staff-dashboard/pages/feedback-inbox-page";
+import { MyOnboardingPage } from "./staff-dashboard/pages/my-onboarding-page";
+import { MyLeavePage } from "./staff-dashboard/pages/my-leave-page";
+import { MyLearningPage } from "./staff-dashboard/pages/my-learning-page";
+import { MyEnpsPage } from "./staff-dashboard/pages/my-enps-page";
+import { MyEmploymentPage } from "./staff-dashboard/pages/my-employment-page";
+import { BrandKitPage } from "./staff-dashboard/pages/brand-kit-page";
+import { ContractViewerPage } from "./staff-dashboard/pages/contract-viewer-page";
+import { ServiceCatalogPage } from "./staff-dashboard/pages/service-catalog-page";
+import { ProjectDocumentsPage } from "./staff-dashboard/pages/project-documents-page";
+import { RequestViewerPage } from "./staff-dashboard/pages/request-viewer-page";
+import { ClientJourneyPage } from "./staff-dashboard/pages/client-journey-page";
+import { OffboardingTasksPage } from "./staff-dashboard/pages/offboarding-tasks-page";
+import { InterventionActionsPage } from "./staff-dashboard/pages/intervention-actions-page";
+import { ClientTeamPage } from "./staff-dashboard/pages/client-team-page";
+import { DeliveryStatusPage } from "./staff-dashboard/pages/delivery-status-page";
+import { MyTeamPage } from "./staff-dashboard/pages/my-team-page";
+import { MyRisksPage } from "./staff-dashboard/pages/my-risks-page";
+import { SystemStatusPage } from "./staff-dashboard/pages/system-status-page";
+import { IncidentAlertsPage } from "./staff-dashboard/pages/incident-alerts-page";
+import { MyAnalyticsPage } from "./staff-dashboard/pages/my-analytics-page";
+import { MyReportsPage } from "./staff-dashboard/pages/my-reports-page";
+import { TeamPerformancePage } from "./staff-dashboard/pages/team-performance-page";
+import { MyIntegrationsPage } from "./staff-dashboard/pages/my-integrations-page";
 import { KanbanPage } from "./staff-dashboard/pages/kanban-page";
 import { AutomationsPage } from "./staff-dashboard/pages/automations-page";
 import { AutoDraftUpdatesPage } from "./staff-dashboard/pages/auto-draft-updates-page";
 import { SettingsPage } from "./staff-dashboard/pages/settings-page";
 import { TasksPage } from "./staff-dashboard/pages/tasks-page";
 import { TimeLogPage } from "./staff-dashboard/pages/time-log-page";
-import { styles } from "./staff-dashboard/style";
+import { styles, cx } from "./staff-dashboard/style";
 import type { NavItem, PageId } from "./staff-dashboard/types";
 import { formatDateLong, getInitials } from "./staff-dashboard/utils";
 import { useStaffData } from "./staff-dashboard/hooks/use-staff-data";
@@ -72,32 +114,13 @@ import { useStaffActivity } from "./staff-dashboard/hooks/use-staff-activity";
 import { useStaffWorkflow } from "./staff-dashboard/hooks/use-staff-workflow";
 import { useStaffSla } from "./staff-dashboard/hooks/use-staff-sla";
 
-const syne = Syne({
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
-  variable: "--font-syne"
-});
-
-const dmMono = DM_Mono({
-  subsets: ["latin"],
-  weight: ["300", "400", "500"],
-  variable: "--font-dm-mono"
-});
-
-const instrument = Instrument_Serif({
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-  variable: "--font-instrument"
-});
-
 export function MaphariStaffDashboard() {
   // ─── Navigation + UI state kept in orchestrator ───
   const [activePage, setActivePage] = useState<PageId>("dashboard");
   const [loggingOut, setLoggingOut] = useState(false);
   const [staffTourOpen, setStaffTourOpen] = useState(false);
   const [staffTourStep, setStaffTourStep] = useState(0);
-  const [topbarSearch, setTopbarSearch] = useState("");
+  const [topbarSearch] = useState("");
   const { toasts, setFeedback } = useDashboardToasts({ dismissMs: 4200 });
 
   // ─── Automations page state (not extracted into a hook yet) ───
@@ -152,6 +175,15 @@ export function MaphariStaffDashboard() {
       queueMicrotask(() => setStaffTourOpen(true));
     }
   }, [session?.user?.email]);
+
+  // ─── UX hooks: Theme ───
+  const themeHook = useTheme({ storageKey: "maphari_staff_theme" });
+
+  // ─── UX hooks: Session Timeout ───
+  const sessionTimeout = useSessionTimeout({
+    onTimeout: () => void signOut(),
+    idleDurationMs: 30 * 60 * 1000, // 30 minutes
+  });
 
   // ─── Hook 1: Notifications ───
   const {
@@ -741,6 +773,191 @@ export function MaphariStaffDashboard() {
         badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
       },
       {
+        id: "invoiceviewer",
+        label: "Invoice Viewer",
+        section: "Client Finance",
+      },
+      {
+        id: "projectbudget",
+        label: "Project Budget",
+        section: "Client Finance",
+      },
+      {
+        id: "clientbudget",
+        label: "Client Budget",
+        section: "Client Finance",
+      },
+      {
+        id: "expensesubmit",
+        label: "Expense Submission",
+        section: "Client Finance",
+      },
+      {
+        id: "paystub",
+        label: "Pay Stubs",
+        section: "Personal Finance",
+      },
+      {
+        id: "ratecard",
+        label: "Rate Card",
+        section: "Client Finance",
+      },
+      {
+        id: "vendordirectory",
+        label: "Vendor Directory",
+        section: "Client Finance",
+      },
+      {
+        id: "myportfolio",
+        label: "My Portfolio",
+        section: "Project Management",
+      },
+      {
+        id: "mycapacity",
+        label: "My Capacity",
+        section: "Project Management",
+      },
+      {
+        id: "mytimeline",
+        label: "My Timeline",
+        section: "Project Management",
+      },
+      {
+        id: "qachecklist",
+        label: "QA Checklist",
+        section: "Quality",
+      },
+      {
+        id: "approvalqueue",
+        label: "Approval Queue",
+        section: "Workflow",
+      },
+      {
+        id: "clienthealthsummary",
+        label: "Health Summary",
+        section: "Client Intelligence",
+      },
+      {
+        id: "feedbackinbox",
+        label: "Feedback Inbox",
+        section: "Client Intelligence",
+      },
+      {
+        id: "myonboarding",
+        label: "My Onboarding",
+        section: "HR",
+      },
+      {
+        id: "myleave",
+        label: "My Leave",
+        section: "HR",
+      },
+      {
+        id: "mylearning",
+        label: "My Learning",
+        section: "HR",
+      },
+      {
+        id: "myenps",
+        label: "My Feedback (eNPS)",
+        section: "HR",
+      },
+      {
+        id: "myemployment",
+        label: "My Employment",
+        section: "HR",
+      },
+      {
+        id: "brandkit",
+        label: "Brand Kit",
+        section: "Knowledge",
+      },
+      {
+        id: "contractviewer",
+        label: "Contract Viewer",
+        section: "Knowledge",
+      },
+      {
+        id: "servicecatalog",
+        label: "Service Catalog",
+        section: "Knowledge",
+      },
+      {
+        id: "projectdocuments",
+        label: "Project Documents",
+        section: "Knowledge",
+      },
+      {
+        id: "requestviewer",
+        label: "Request Viewer",
+        section: "Client Lifecycle",
+      },
+      {
+        id: "clientjourney",
+        label: "Client Journey",
+        section: "Client Lifecycle",
+      },
+      {
+        id: "offboardingtasks",
+        label: "Offboarding Tasks",
+        section: "Client Lifecycle",
+      },
+      {
+        id: "interventionactions",
+        label: "Intervention Actions",
+        section: "Client Lifecycle",
+      },
+      {
+        id: "clientteam",
+        label: "Client Team",
+        section: "Client Lifecycle",
+      },
+      {
+        id: "deliverystatus",
+        label: "Delivery Status",
+        section: "Client Lifecycle",
+      },
+      {
+        id: "myteam",
+        label: "My Team",
+        section: "Governance",
+      },
+      {
+        id: "myrisks",
+        label: "My Risks",
+        section: "Governance",
+      },
+      {
+        id: "systemstatus",
+        label: "System Status",
+        section: "Governance",
+      },
+      {
+        id: "incidentalerts",
+        label: "Incident Alerts",
+        section: "Governance",
+      },
+      {
+        id: "myanalytics",
+        label: "My Analytics",
+        section: "Analytics",
+      },
+      {
+        id: "myreports",
+        label: "My Reports",
+        section: "Analytics",
+      },
+      {
+        id: "teamperformance",
+        label: "Team Performance",
+        section: "Analytics",
+      },
+      {
+        id: "myintegrations",
+        label: "My Integrations",
+        section: "Settings",
+      },
+      {
         id: "performance",
         label: "My Performance",
         section: "Tracking",
@@ -879,48 +1096,90 @@ export function MaphariStaffDashboard() {
 
   // ─── Topbar / page titles ───
   const [topbarEyebrow, topbarTitle] = pageTitles[activePage];
-  const topbarSearchPlaceholder: Record<PageId, string> = {
-    dashboard: "Search tasks, messages, alerts…",
-    notifications: "Search alerts, mentions, invoices, and approvals…",
-    tasks: "Search tasks, clients…",
-    kanban: "Search kanban cards…",
-    clients: "Search conversations, projects…",
-    autodraft: "Search client update drafts…",
-    meetingprep: "Search meeting prep notes and agendas…",
-    comms: "Search communication history and timeline events…",
-    onboarding: "Search onboarding checklists and client setup…",
-    health: "Search client health records…",
-    response: "Search response time analytics and logs…",
-    sentiment: "Search sentiment flags and updates…",
-    lasttouched: "Search last touched timeline and actions…",
-    portal: "Search portal activity events and sessions…",
-    smartsuggestions: "Search smart suggestions and recommended actions…",
-    sprintplanning: "Search sprint plans, backlog, and day assignments…",
-    taskdependencies: "Search dependency chains and blockers…",
-    recurringtasks: "Search recurring tasks, cadence, and streaks…",
-    focusmode: "Search focus sessions, timers, and outcomes…",
-    peerrequests: "Search incoming/outgoing peer collaboration requests…",
-    triggerlog: "Search automation trigger runs, failures, and payloads…",
-    privatenotes: "Search private notes and personal context…",
-    keyboardshortcuts: "Search shortcuts, keys, and command mappings…",
-    estimatesactuals: "Search estimates, actuals, and variances…",
-    satisfactionscores: "Search satisfaction scores and client sentiment trends…",
-    knowledge: "Search SOPs, policies, and internal docs…",
-    decisionlog: "Search decisions, rationale, and impact tags…",
-    handoverchecklist: "Search handover items, section notes, and close-out status…",
-    closeoutreport: "Search project close-out summaries, finance, and retrospectives…",
-    staffhandovers: "Search incoming/outgoing staff handovers and ownership notes…",
-    context: "Search project context cards…",
-    signoff: "Search milestone sign-off records…",
-    standup: "Search standup logs…",
-    retainer: "Search retainer burn records…",
-    performance: "Search personal performance insights…",
-    eodwrap: "Search end-of-day wraps…",
-    deliverables: "Search milestones, attachments…",
-    timelog: "Search time entries, projects…",
-    automations: "Search workflows, retries, escalations…",
-    settings: "Search settings…"
-  };
+
+  // ─── UX hooks: Command Search ───
+  const commandSearchSources = useMemo(() => {
+    const sources: Array<{ id: string; type: string; label: string; meta: string; action: () => void }> = [];
+
+    // Nav items
+    const flatNav = allNavSections.flatMap(([, items]) => items);
+    for (const nav of flatNav) {
+      sources.push({
+        id: `nav-${nav.id}`,
+        type: "Page",
+        label: nav.label,
+        meta: nav.section,
+        action: () => setActivePage(nav.id),
+      });
+    }
+
+    // Projects
+    for (const project of projects) {
+      sources.push({
+        id: `project-${project.id}`,
+        type: "Project",
+        label: project.name,
+        meta: project.status ?? "",
+        action: () => setActivePage("context"),
+      });
+    }
+
+    // Client threads
+    for (const thread of threadItems) {
+      sources.push({
+        id: `thread-${thread.id}`,
+        type: "Thread",
+        label: thread.name,
+        meta: thread.project,
+        action: () => {
+          selectConversation(thread.id);
+          setActivePage("clients");
+        },
+      });
+    }
+
+    return sources;
+  }, [allNavSections, projects, threadItems, setActivePage, selectConversation]);
+
+  const commandSearch = useCommandSearch({ sources: commandSearchSources });
+
+  // ─── UX hooks: Keyboard Shortcuts ───
+  const staffChordMap: Record<string, PageId> = useMemo(() => ({
+    d: "dashboard",
+    n: "notifications",
+    t: "tasks",
+    k: "kanban",
+    c: "clients",
+    h: "health",
+    l: "deliverables",
+    g: "timelog",
+    s: "settings",
+    p: "sprintplanning",
+    a: "automations",
+    r: "retainer",
+    m: "comms",
+    e: "eodwrap",
+    u: "standup",
+  }), []);
+
+  const shortcuts = useKeyboardShortcuts({
+    chordMap: staffChordMap,
+    onNavigate: setActivePage,
+    onOpenSearch: commandSearch.open,
+    isSearchOpen: commandSearch.isOpen,
+  });
+
+  // ─── UX hooks: Quick Compose ───
+  const quickCompose = useQuickCompose({
+    session: session ?? null,
+    projects: projects.map((p) => ({ id: p.id, name: p.name })),
+    createConversation: async (sess, payload) => {
+      const result = await createPortalConversationWithRefresh(sess, payload);
+      return { nextSession: result.nextSession, error: result.error };
+    },
+    refreshSnapshot: refreshWorkspace,
+    setFeedback,
+  });
 
   // ─── Tour steps ───
   const staffTourSteps = [
@@ -932,7 +1191,7 @@ export function MaphariStaffDashboard() {
 
   // ─── Render ───
   return (
-    <div className={`${styles.staffRoot} dashboardScale dashboardThemeStaff ${syne.variable} ${dmMono.variable} ${instrument.variable}`}>
+    <div className={`${styles.staffRoot} ${styles.root} dashboardScale dashboardBlendAdmin dashboardThemeStaff`}>
       <div className={styles.cursor} ref={cursorRef} />
       <div className={styles.cursorRing} ref={ringRef} />
 
@@ -951,10 +1210,10 @@ export function MaphariStaffDashboard() {
           <StaffTopbar
             eyebrow={topbarEyebrow}
             title={topbarTitle}
-            searchValue={topbarSearch}
-            searchPlaceholder={topbarSearchPlaceholder[activePage]}
-            onSearchChange={setTopbarSearch}
-            onNewTask={() => setActivePage("tasks")}
+            onOpenApps={() => window.dispatchEvent(new CustomEvent("staff:open-app-grid"))}
+            onOpenNotifications={() => setActivePage("notifications")}
+            onOpenMessages={() => setActivePage("comms")}
+            unreadNotificationsCount={totalUnreadNotifications}
             onLogout={() => void handleLogout()}
             staffInitials={staffInitials}
             staffEmail={staffEmail}
@@ -965,15 +1224,15 @@ export function MaphariStaffDashboard() {
           <div className={styles.content}>
             <DashboardToastStack toasts={toasts} />
             {staffTourOpen ? (
-              <div className={styles.card} style={{ marginBottom: 12 }}>
+              <div className={`${styles.card} ${styles.tourCardWrap}`}>
                 <div className={styles.cardHeader}>
                   <span className={styles.cardHeaderTitle}>Staff Onboarding Tour</span>
-                  <span className={styles.pageSub} style={{ marginTop: 0 }}>Step {staffTourStep + 1} / {staffTourSteps.length}</span>
+                  <span className={`${styles.pageSub} ${styles.pageSubNoTop}`}>Step {staffTourStep + 1} / {staffTourSteps.length}</span>
                 </div>
                 <div className={styles.cardBody}>
                   <div className={styles.cardHeaderTitle}>{staffTourSteps[staffTourStep]?.title}</div>
-                  <div className={styles.pageSub} style={{ marginTop: 6 }}>{staffTourSteps[staffTourStep]?.detail}</div>
-                  <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                  <div className={`${styles.pageSub} ${styles.pageSubTightTop}`}>{staffTourSteps[staffTourStep]?.detail}</div>
+                  <div className={styles.tourActionsRow}>
                     <button
                       type="button"
                       className={`${styles.button} ${styles.buttonGhost}`}
@@ -1269,6 +1528,80 @@ export function MaphariStaffDashboard() {
 
             <RetainerBurnPage isActive={activePage === "retainer"} />
 
+            <InvoiceViewerPage isActive={activePage === "invoiceviewer"} />
+
+            <ProjectBudgetPage isActive={activePage === "projectbudget"} />
+
+            <ClientBudgetPage isActive={activePage === "clientbudget"} />
+
+            <ExpenseSubmitPage isActive={activePage === "expensesubmit"} />
+
+            <PayStubPage isActive={activePage === "paystub"} />
+
+            <RateCardPage isActive={activePage === "ratecard"} />
+
+            <VendorDirectoryPage isActive={activePage === "vendordirectory"} />
+
+            <MyPortfolioPage isActive={activePage === "myportfolio"} />
+
+            <MyCapacityPage isActive={activePage === "mycapacity"} />
+
+            <MyTimelinePage isActive={activePage === "mytimeline"} />
+
+            <QAChecklistPage isActive={activePage === "qachecklist"} />
+
+            <ApprovalQueuePage isActive={activePage === "approvalqueue"} />
+
+            <ClientHealthSummaryPage isActive={activePage === "clienthealthsummary"} />
+
+            <FeedbackInboxPage isActive={activePage === "feedbackinbox"} />
+
+            <MyOnboardingPage isActive={activePage === "myonboarding"} />
+
+            <MyLeavePage isActive={activePage === "myleave"} />
+
+            <MyLearningPage isActive={activePage === "mylearning"} />
+
+            <MyEnpsPage isActive={activePage === "myenps"} />
+
+            <MyEmploymentPage isActive={activePage === "myemployment"} />
+
+            <BrandKitPage isActive={activePage === "brandkit"} />
+
+            <ContractViewerPage isActive={activePage === "contractviewer"} />
+
+            <ServiceCatalogPage isActive={activePage === "servicecatalog"} />
+
+            <ProjectDocumentsPage isActive={activePage === "projectdocuments"} />
+
+            <RequestViewerPage isActive={activePage === "requestviewer"} />
+
+            <ClientJourneyPage isActive={activePage === "clientjourney"} />
+
+            <OffboardingTasksPage isActive={activePage === "offboardingtasks"} />
+
+            <InterventionActionsPage isActive={activePage === "interventionactions"} />
+
+            <ClientTeamPage isActive={activePage === "clientteam"} />
+
+            <DeliveryStatusPage isActive={activePage === "deliverystatus"} />
+
+            <MyTeamPage isActive={activePage === "myteam"} />
+
+            <MyRisksPage isActive={activePage === "myrisks"} />
+
+            <SystemStatusPage isActive={activePage === "systemstatus"} />
+
+            <IncidentAlertsPage isActive={activePage === "incidentalerts"} />
+
+            <MyAnalyticsPage isActive={activePage === "myanalytics"} />
+
+            <MyReportsPage isActive={activePage === "myreports"} />
+
+            <TeamPerformancePage isActive={activePage === "teamperformance"} />
+
+            <MyIntegrationsPage isActive={activePage === "myintegrations"} />
+
             <PersonalPerformancePage isActive={activePage === "performance"} />
 
             <EndOfDayWrapPage isActive={activePage === "eodwrap"} />
@@ -1400,6 +1733,176 @@ export function MaphariStaffDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Command search overlay ──────────────────────────────────────── */}
+      {commandSearch.isOpen && (
+        <div className={styles.cmdOverlay} onClick={commandSearch.close}>
+          <div
+            className={styles.cmdPanel}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Command search"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              className={styles.cmdInput}
+              type="text"
+              placeholder="Search pages, projects, threads..."
+              value={commandSearch.query}
+              onChange={(e) => commandSearch.setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") commandSearch.close();
+                if (e.key === "Enter") commandSearch.executeActive();
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  commandSearch.moveUp();
+                }
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  commandSearch.moveDown();
+                }
+              }}
+              autoFocus
+            />
+            <div className={styles.cmdResults}>
+              {commandSearch.results.map((result, i) => (
+                <button
+                  key={result.id}
+                  type="button"
+                  className={cx(
+                    "cmdItem",
+                    i === commandSearch.activeIndex && "cmdItemActive",
+                  )}
+                  onClick={() => result.action()}
+                >
+                  <span className={styles.cmdItemLabel}>{result.label}</span>
+                  <span className={styles.cmdItemMeta}>{result.meta}</span>
+                </button>
+              ))}
+              {commandSearch.query && commandSearch.results.length === 0 && (
+                <div className={styles.cmdEmpty}>No results found</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Keyboard shortcuts panel ────────────────────────────────────── */}
+      {shortcuts.shortcutsVisible && (
+        <div className={styles.shortcutsPanel}>
+          <div className={styles.shortcutsPanelTitle}>Keyboard Shortcuts</div>
+          {(
+            [
+              ["G → D", "Dashboard"],
+              ["G → N", "Notifications"],
+              ["G → T", "My Tasks"],
+              ["G → K", "Kanban Board"],
+              ["G → C", "Client Threads"],
+              ["G → H", "Client Health"],
+              ["G → L", "Deliverables"],
+              ["G → G", "Time Log"],
+              ["G → P", "Sprint Planning"],
+              ["G → M", "Messages"],
+              ["G → A", "Automations"],
+              ["G → R", "Retainer Burn"],
+              ["G → U", "Daily Standup"],
+              ["G → E", "EOD Wrap"],
+              ["G → S", "Settings"],
+              ["⌘K", "Search"],
+              ["?", "Toggle shortcuts"],
+            ] as const
+          ).map(([key, label]) => (
+            <div key={key} className={styles.shortcutRow}>
+              <span>{label}</span>
+              <span className={styles.shortcutKey}>{key}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Quick compose modal ─────────────────────────────────────────── */}
+      {quickCompose.isOpen && (
+        <div className={styles.cmdOverlay} onClick={quickCompose.close}>
+          <div
+            className={`${styles.cmdPanel} ${styles.composePanel}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="New message composer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.composeBody}>
+              <div className={styles.composeHeading}>New Message</div>
+              <div className={styles.inputGroup}>
+                <label className={styles.inputLabel} htmlFor="staff-compose-subject">Subject</label>
+                <input
+                  id="staff-compose-subject"
+                  className={styles.input}
+                  type="text"
+                  value={quickCompose.subject}
+                  onChange={(e) => quickCompose.setSubject(e.target.value)}
+                  placeholder="Message subject"
+                />
+              </div>
+              <div className={`${styles.inputGroup} ${styles.mt12}`}>
+                <label className={styles.inputLabel} htmlFor="staff-compose-project">Project</label>
+                <select
+                  id="staff-compose-project"
+                  className={styles.select}
+                  value={quickCompose.selectedProjectId}
+                  onChange={(e) => quickCompose.setSelectedProjectId(e.target.value)}
+                >
+                  <option value="">No project</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className={styles.composeFooter}>
+              <button
+                type="button"
+                className={cx("button", "buttonGhost")}
+                onClick={quickCompose.close}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={cx("button", "buttonAccent")}
+                onClick={quickCompose.send}
+                disabled={quickCompose.sending || !quickCompose.subject.trim()}
+              >
+                {quickCompose.sending ? "Sending..." : "Send"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Session timeout warning ─────────────────────────────────────── */}
+      {sessionTimeout.showWarning && (
+        <div className={styles.sessionWarning}>
+          <div className={styles.sessionCard} role="alertdialog" aria-modal="true" aria-labelledby="staff-session-warning">
+            <div id="staff-session-warning" className={styles.sessionTitle}>Session Expiring</div>
+            <div className={styles.sessionDesc}>
+              Your session will expire in {sessionTimeout.remainingSeconds}{" "}
+              seconds due to inactivity.
+            </div>
+            <button
+              type="button"
+              className={cx("button", "buttonAccent")}
+              onClick={sessionTimeout.extendSession}
+            >
+              Stay Logged In
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Toast stack ─────────────────────────────────────────────────── */}
+      <DashboardToastStack toasts={toasts} />
     </div>
   );
 }

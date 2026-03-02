@@ -1,31 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { LeadPipelineStatus } from "../../../../lib/api/admin";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { toneClass } from "./admin-page-utils";
 
 const STAGES: LeadPipelineStatus[] = ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL", "WON", "LOST"];
 
 type ViewMode = "list" | "kanban";
 
 function tone(status: LeadPipelineStatus): string {
-  if (status === "NEW") return C.blue;
-  if (status === "QUALIFIED") return C.amber;
-  if (status === "LOST") return C.red;
-  return C.primary;
+  if (status === "NEW") return "var(--blue)";
+  if (status === "QUALIFIED") return "var(--amber)";
+  if (status === "LOST") return "var(--red)";
+  return "var(--accent)";
 }
 
 function label(status: LeadPipelineStatus): string {
@@ -89,10 +79,6 @@ export function LeadsPage({
     });
   }, [leads, clock]);
 
-  useEffect(() => {
-    if (selectedId && !rows.some((row) => row.id === selectedId)) setSelectedId(rows[0]?.id ?? null);
-  }, [rows, selectedId]);
-
   const sources = useMemo(
     () => Array.from(new Set(rows.map((row) => row.source?.trim()).filter((v): v is string => Boolean(v)))),
     [rows]
@@ -131,116 +117,119 @@ export function LeadsPage({
   }
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: "Syne, sans-serif", padding: 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / OPERATIONS</div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>Leads Pipeline</h1>
-          <div style={{ marginTop: 4, fontSize: 13, color: C.muted }}>Stage tracking · Next actions · Conversion control</div>
+          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <h1 className={styles.pageTitle}>Leads Pipeline</h1>
+          <div className={styles.pageSub}>Stage tracking · Next actions · Conversion control</div>
         </div>
-        <button style={{ background: C.primary, color: C.bg, border: "none", padding: "8px 16px", fontFamily: "DM Mono, monospace", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ New Lead</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent")}>+ New Lead</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Pipeline Leads", value: rows.length.toString(), sub: `${active} active`, color: C.primary },
-          { label: "Hot Leads", value: hot.toString(), sub: rows.length > 0 ? `${Math.round((hot / rows.length) * 100)}% high intent` : "0% high intent", color: C.primary },
-          { label: "Follow-ups Due", value: followUps.toString(), sub: "Idle 3d+", color: followUps > 0 ? C.amber : C.primary },
-          { label: "Win Rate", value: `${winRate}%`, sub: `${won} won · ${lost} lost`, color: winRate >= 50 ? C.primary : C.amber }
+          { label: "Pipeline Leads", value: rows.length.toString(), sub: `${active} active`, color: "var(--accent)" },
+          { label: "Hot Leads", value: hot.toString(), sub: rows.length > 0 ? `${Math.round((hot / rows.length) * 100)}% high intent` : "0% high intent", color: "var(--accent)" },
+          { label: "Follow-ups Due", value: followUps.toString(), sub: "Idle 3d+", color: followUps > 0 ? "var(--amber)" : "var(--accent)" },
+          { label: "Win Rate", value: `${winRate}%`, sub: `${won} won · ${lost} lost`, color: winRate >= 50 ? "var(--accent)" : "var(--amber)" }
         ].map((kpi) => (
-          <div key={kpi.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{kpi.label}</div>
-            <div style={{ fontFamily: "DM Mono, monospace", fontSize: 26, fontWeight: 800, color: kpi.color, marginBottom: 4 }}>{kpi.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{kpi.sub}</div>
+          <div key={kpi.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{kpi.label}</div>
+            <div className={cx(styles.statValue, "mb4", styles.leadsToneText, toneClass(kpi.color))}>{kpi.value}</div>
+            <div className={cx("text11", "colorMuted")}>{kpi.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 16 }}>
-        {STAGES.map((stage) => {
-          const count = filtered.filter((row) => row.status === stage).length;
-          const pct = filtered.length > 0 ? Math.round((count / filtered.length) * 100) : 0;
-          return (
-            <div key={stage} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 12 }}>
-              <div style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: tone(stage), letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{label(stage)}</div>
-              <div style={{ fontFamily: "DM Mono, monospace", fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 2 }}>{count}</div>
-              <div style={{ fontSize: 10, color: C.muted }}>{pct}% of filtered</div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 14, marginBottom: 16 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search lead, source, notes" style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", minWidth: 260, fontFamily: "DM Mono, monospace", fontSize: 12 }} />
-          <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value as "ALL" | LeadPipelineStatus)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
-            <option value="ALL">All stages</option>
-            {STAGES.map((stage) => <option key={stage} value={stage}>{label(stage)}</option>)}
-          </select>
-          <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
-            <option value="ALL">All sources</option>
-            {sources.map((source) => <option key={source} value={source}>{source}</option>)}
-          </select>
-          <button onClick={() => { setQuery(""); setStageFilter("ALL"); setSourceFilter("ALL"); }} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.muted, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, cursor: "pointer" }}>Reset</button>
-          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-            <button onClick={() => setView("list")} style={{ background: view === "list" ? C.primary : C.bg, color: view === "list" ? C.bg : C.muted, border: `1px solid ${view === "list" ? C.primary : C.border}`, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, cursor: "pointer" }}>List</button>
-            <button onClick={() => setView("kanban")} style={{ background: view === "kanban" ? C.primary : C.bg, color: view === "kanban" ? C.bg : C.muted, border: `1px solid ${view === "kanban" ? C.primary : C.border}`, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, cursor: "pointer" }}>Kanban</button>
-          </div>
+      <div className={cx("mb16")}>
+        <div className={styles.leadsStageRail6}>
+          {STAGES.map((stage) => {
+            const count = filtered.filter((row) => row.status === stage).length;
+            const pct = filtered.length > 0 ? Math.round((count / filtered.length) * 100) : 0;
+            return (
+              <div key={stage} className={cx("card", "p12")}>
+                <div className={cx("fontMono", "text10", "uppercase", "mb8", styles.leadsToneText, toneClass(tone(stage)))}>{label(stage)}</div>
+                <div className={cx("fontMono", "fw800", "mb3", styles.leadsStageCount)}>{count}</div>
+                <div className={cx("text10", "colorMuted")}>{pct}% of filtered</div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 16 }}>
+      <div className={cx("card", "p14", "mb12")}>
+        <div className={cx("flexRow", "gap10", "flexWrap")}>
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search lead, source, notes" className={cx("formInput", styles.leadsSearchInput)} />
+          <select title="Filter by stage" value={stageFilter} onChange={(e) => setStageFilter(e.target.value as "ALL" | LeadPipelineStatus)} className={styles.formInput}>
+            <option value="ALL">All stages</option>
+            {STAGES.map((stage) => <option key={stage} value={stage}>{label(stage)}</option>)}
+          </select>
+          <select title="Filter by source" value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className={styles.formInput}>
+            <option value="ALL">All sources</option>
+            {sources.map((source) => <option key={source} value={source}>{source}</option>)}
+          </select>
+          <select title="Switch view mode" value={view} onChange={e => setView(e.target.value as ViewMode)} className={cx(styles.filterSelect, "mlAuto")}>
+            <option value="list">List</option>
+            <option value="kanban">Kanban</option>
+          </select>
+        </div>
+      </div>
+
+      <div className={styles.leadsSplit}>
         <div>
           {view === "list" ? (
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1.3fr 100px 100px 70px 80px 120px 90px", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <div className={cx("card", "overflowHidden")}>
+              <div className={cx("leadsTableHead", "fontMono", "text10", "colorMuted", "uppercase")}>
                 {[
                   "Lead", "Stage", "Source", "Score", "Idle", "Follow-up", "Open"
                 ].map((h) => <span key={h}>{h}</span>)}
               </div>
-              {filtered.length > 0 ? filtered.map((row, i) => (
-                <div key={row.id} style={{ display: "grid", gridTemplateColumns: "1.3fr 100px 100px 70px 80px 120px 90px", padding: "14px 20px", borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", background: row.id === selectedId ? `${C.primary}12` : "transparent" }}>
+              {filtered.length > 0 ? filtered.map((row) => (
+                <div key={row.id} className={cx(styles.leadsTableRow, row.id === selectedId && styles.leadsRowSelected)}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 700 }}>{row.title}</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>{row.company ?? "No company"}</div>
+                    <div className={cx("text13", "fw700")}>{row.title}</div>
+                    <div className={cx("text11", "colorMuted")}>{row.company ?? "No company"}</div>
                   </div>
-                  <span style={{ fontSize: 10, fontFamily: "DM Mono, monospace", color: tone(row.status), background: `${tone(row.status)}20`, padding: "3px 8px" }}>{label(row.status)}</span>
-                  <span style={{ fontSize: 12, color: C.muted }}>{row.source ?? "Unknown"}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.primary }}>{row.score}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: row.staleDays >= 5 ? C.red : C.muted }}>{row.staleDays}d</span>
-                  <span style={{ fontSize: 11, color: C.muted }}>{formatDate(row.nextFollowUpAt)}</span>
-                  <button onClick={() => setSelectedId(row.id)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "6px 10px", fontFamily: "DM Mono, monospace", fontSize: 11, cursor: "pointer" }}>Open</button>
+                  <span className={cx("text10", "fontMono", styles.leadsToneBadge, toneClass(tone(row.status)))}>{label(row.status)}</span>
+                  <span className={cx("text12", "colorMuted")}>{row.source ?? "Unknown"}</span>
+                  <span className={cx("fontMono", "colorAccent")}>{row.score}</span>
+                  <span className={cx("fontMono", styles.leadsToneText, toneClass(row.staleDays >= 5 ? "var(--red)" : "var(--muted)"))}>{row.staleDays}d</span>
+                  <span className={cx("text11", "colorMuted")}>{formatDate(row.nextFollowUpAt)}</span>
+                  <button type="button" onClick={() => setSelectedId(row.id)} className={cx("btnSm", "btnGhost")}>Open</button>
                 </div>
-              )) : <div style={{ padding: 20, color: C.muted, fontSize: 12 }}>No leads match current filters.</div>}
+              )) : <div className={cx("p20", "colorMuted", "text12")}>No leads match current filters.</div>}
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+            <div className={cx("grid3")}>
               {STAGES.map((stage) => {
                 const items = filtered.filter((row) => row.status === stage);
                 return (
-                  <div key={stage} style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-                    <div style={{ padding: "12px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, letterSpacing: "0.08em", color: tone(stage), textTransform: "uppercase" }}>{label(stage)}</span>
-                      <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{items.length}</span>
+                  <div key={stage} className={styles.card}>
+                    <div className={cx("flexBetween", "p12", "borderB")}>
+                      <span className={cx("fontMono", "text10", "uppercase", styles.leadsToneText, toneClass(tone(stage)))}>{label(stage)}</span>
+                      <span className={cx("fontMono", "text11", "colorMuted")}>{items.length}</span>
                     </div>
-                    <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div className={cx("flexCol", "gap8", "p10")}>
                       {items.length > 0 ? items.map((row) => (
-                        <div key={row.id} style={{ background: C.bg, border: `1px solid ${row.id === selectedId ? `${C.primary}66` : C.border}`, padding: 10 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
-                            <div style={{ fontSize: 12, fontWeight: 700 }}>{row.title}</div>
-                            <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: row.priority === "Hot" ? C.red : row.priority === "Warm" ? C.amber : C.primary }}>{row.priority}</span>
+                        <div key={row.id} className={cx("bgBg", "borderDefault", "p10", row.id === selectedId && styles.leadsKanbanSelected)}>
+                          <div className={cx("flexBetween", "gap8", "mb4")}>
+                            <div className={cx("text12", "fw700")}>{row.title}</div>
+                            <span className={cx("fontMono", "text10", styles.leadsToneText, toneClass(row.priority === "Hot" ? "var(--red)" : row.priority === "Warm" ? "var(--amber)" : "var(--accent)"))}>{row.priority}</span>
                           </div>
-                          <div style={{ fontSize: 10, color: C.muted, marginBottom: 8 }}>{row.source ?? "Unknown"} · Score {row.score}</div>
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            <button onClick={() => setSelectedId(row.id)} style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "5px 8px", fontFamily: "DM Mono, monospace", fontSize: 10, cursor: "pointer" }}>Details</button>
+                          <div className={cx("text10", "colorMuted", "mb8")}>{row.source ?? "Unknown"} · Score {row.score}</div>
+                          <div className={cx("flexRow", "gap6", "flexWrap")}>
+                            <button type="button" onClick={() => setSelectedId(row.id)} className={cx("btnSm", "btnGhost", styles.leadsMiniBtn)}>Details</button>
                             {!isClient ? STAGES.filter((next) => next !== row.status).slice(0, 2).map((next) => (
-                              <button key={next} onClick={() => void moveLead(row.id, next)} disabled={transitioningLeadId === row.id} style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.muted, padding: "5px 8px", fontFamily: "DM Mono, monospace", fontSize: 10, cursor: "pointer" }}>
+                              <button type="button" key={next} onClick={() => void moveLead(row.id, next)} disabled={transitioningLeadId === row.id} className={cx("btnSm", "btnGhost", styles.leadsMiniBtn)}>
                                 {transitioningLeadId === row.id ? "Saving..." : `Move ${label(next)}`}
                               </button>
                             )) : null}
                           </div>
                         </div>
-                      )) : <div style={{ padding: 10, color: C.muted, fontSize: 11 }}>No leads</div>}
+                      )) : <div className={cx("p10", "colorMuted", "text11")}>No leads</div>}
                     </div>
                   </div>
                 );
@@ -249,39 +238,41 @@ export function LeadsPage({
           )}
         </div>
 
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-            <div style={{ fontSize: 12, fontWeight: 700 }}>Lead Detail</div>
-            <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted }}>{selected?.id.slice(0, 8) ?? "No lead"}</span>
+        <div className={cx("card", "p16")}>
+          <div className={cx("flexBetween", "mb12")}>
+            <div className={cx("text12", "fw700")}>Lead Detail</div>
+            <span className={cx("fontMono", "text10", "colorMuted")}>{selected?.id.slice(0, 8) ?? "No lead"}</span>
           </div>
           {selected ? (
             <>
-              <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 4 }}>{selected.title}</div>
-              <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>{selected.company ?? "No company"} · {selected.source ?? "Unknown"}</div>
+              <div className={cx("fw800", "mb4", styles.leadsDetailTitle)}>{selected.title}</div>
+              <div className={cx("text12", "colorMuted", "mb12")}>{selected.company ?? "No company"} · {selected.source ?? "Unknown"}</div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-                {[
-                  { label: "Stage", value: label(selected.status), color: tone(selected.status) },
-                  { label: "Score", value: String(selected.score), color: C.primary },
-                  { label: "Idle", value: `${selected.staleDays}d`, color: selected.staleDays >= 5 ? C.red : C.muted },
-                  { label: "Priority", value: selected.priority, color: selected.priority === "Hot" ? C.red : selected.priority === "Warm" ? C.amber : C.primary }
-                ].map((m) => (
-                  <div key={m.label} style={{ background: C.bg, border: `1px solid ${C.border}`, padding: 10 }}>
-                    <div style={{ fontSize: 9, color: C.muted, textTransform: "uppercase", marginBottom: 4 }}>{m.label}</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: m.color }}>{m.value}</div>
-                  </div>
-                ))}
+              <div className={cx("mb12")}>
+                <div className={styles.leadsDetailGrid}>
+                  {[
+                    { label: "Stage", value: label(selected.status), color: tone(selected.status) },
+                    { label: "Score", value: String(selected.score), color: "var(--accent)" },
+                    { label: "Idle", value: `${selected.staleDays}d`, color: selected.staleDays >= 5 ? "var(--red)" : "var(--muted)" },
+                    { label: "Priority", value: selected.priority, color: selected.priority === "Hot" ? "var(--red)" : selected.priority === "Warm" ? "var(--amber)" : "var(--accent)" }
+                  ].map((m) => (
+                    <div key={m.label} className={cx("bgBg", "borderDefault", "p10")}>
+                      <div className={cx("textXs", "colorMuted", "uppercase", "mb4")}>{m.label}</div>
+                      <div className={cx("fontMono", "fw700", styles.leadsToneText, toneClass(m.color))}>{m.value}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>Next Follow-up: {formatDate(selected.nextFollowUpAt)}</div>
-              <div style={{ background: C.bg, border: `1px solid ${C.border}`, padding: 12, fontSize: 12, minHeight: 90 }}>
+              <div className={cx("text11", "colorMuted", "mb6")}>Next Follow-up: {formatDate(selected.nextFollowUpAt)}</div>
+              <div className={cx("bgBg", "borderDefault", "p12", "text12", styles.leadsNotes)}>
                 {selected.notes?.trim() || "No notes available."}
               </div>
 
               {!isClient ? (
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                <div className={cx("flexRow", "gap8", "flexWrap", "mt12")}>
                   {STAGES.filter((next) => next !== selected.status).map((next) => (
-                    <button key={next} onClick={() => void moveLead(selected.id, next)} disabled={transitioningLeadId === selected.id} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.muted, padding: "6px 10px", fontFamily: "DM Mono, monospace", fontSize: 10, cursor: "pointer" }}>
+                    <button type="button" key={next} onClick={() => void moveLead(selected.id, next)} disabled={transitioningLeadId === selected.id} className={cx("btnSm", "btnGhost", styles.leadsMoveBtn)}>
                       {transitioningLeadId === selected.id ? "Saving..." : `Move ${label(next)}`}
                     </button>
                   ))}
@@ -289,7 +280,7 @@ export function LeadsPage({
               ) : null}
             </>
           ) : (
-            <div style={{ color: C.muted, fontSize: 12 }}>Select a lead to view details.</div>
+            <div className={cx("colorMuted", "text12")}>Select a lead to view details.</div>
           )}
         </div>
       </div>

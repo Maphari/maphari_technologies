@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef } from "react";
-import { styles } from "./dashboard/style";
+import { useMemo, useRef } from "react";
+import { styles, cx } from "./dashboard/style";
 import { useAdminWorkspaceContext } from "./admin-workspace-context";
 import { pageTitles, type PageId } from "./dashboard/config";
 import { AdminSidebar, AdminTopbar, AdminTourCard } from "./dashboard/chrome";
@@ -63,11 +63,34 @@ import { AdminIntegrationsPageClient } from "./dashboard/pages/admin-integration
 import { AdminReportsPageClient } from "./dashboard/pages/admin-reports-page-client";
 import { AdminSettingsPageClient } from "./dashboard/pages/admin-settings-page-client";
 import { AdminStubPage } from "./dashboard/pages/admin-stub-page";
+import { KnowledgeBaseAdminPage } from "./dashboard/pages/knowledge-base-admin-page";
+import { DecisionRegistryPage } from "./dashboard/pages/decision-registry-page";
+import { HandoverManagementPage } from "./dashboard/pages/handover-management-page";
+import { CloseoutReviewPage } from "./dashboard/pages/closeout-review-page";
+import { StaffTransitionPlannerPage } from "./dashboard/pages/staff-transition-planner-page";
+import { ServiceCatalogManagerPage } from "./dashboard/pages/service-catalog-manager-page";
+import { RequestInboxPage } from "./dashboard/pages/request-inbox-page";
+import { ChangeRequestManagerPage } from "./dashboard/pages/change-request-manager-page";
+import { SupportQueuePage } from "./dashboard/pages/support-queue-page";
+import { LifecycleDashboardPage } from "./dashboard/pages/lifecycle-dashboard-page";
+import { StakeholderDirectoryPage } from "./dashboard/pages/stakeholder-directory-page";
+import { AIActionRecommendationsPage } from "./dashboard/pages/ai-action-recommendations-page";
+import { UpdateQueueManagerPage } from "./dashboard/pages/update-queue-manager-page";
+import { StandupFeedPage } from "./dashboard/pages/standup-feed-page";
+import { EODDigestPage } from "./dashboard/pages/eod-digest-page";
+import { PeerReviewQueuePage } from "./dashboard/pages/peer-review-queue-page";
+import { AutomationAuditTrailPage } from "./dashboard/pages/automation-audit-trail-page";
+import { ProjectBriefingPage } from "./dashboard/pages/project-briefing-page";
+import { ActiveHealthMonitorPage } from "./dashboard/pages/active-health-monitor-page";
 import { createMaintenanceCheckWithRefresh, setNotificationReadStateWithRefresh } from "../../lib/api/admin";
 import { DashboardLoadingFallback, DashboardToastStack, hasAnyDashboardData, useDashboardToasts } from "../shared/dashboard-core";
 import { ADMIN_PAGE_TO_NOTIFICATION_TAB } from "../shared/notification-routing";
 import { useMarkActiveTabNotificationsRead } from "../shared/use-mark-active-tab-notifications-read";
 import { useCursorTrail } from "../shared/use-cursor-trail";
+import { useCommandSearch } from "../shared/use-command-search";
+import { useKeyboardShortcuts } from "../shared/use-keyboard-shortcuts";
+import { useSessionTimeout } from "../shared/use-session-timeout";
+import { useTheme } from "../shared/use-theme";
 import { useAdminNavigation } from "./dashboard/hooks/use-admin-navigation";
 import { useAdminData } from "./dashboard/hooks/use-admin-data";
 import { useAdminTour } from "./dashboard/hooks/use-admin-tour";
@@ -109,8 +132,6 @@ export function MaphariDashboard() {
   const {
     page,
     setPage,
-    topbarSearch,
-    setTopbarSearch,
     recentPages,
     loggingOut,
     visibleNavItems,
@@ -118,7 +139,6 @@ export function MaphariDashboard() {
     grouped,
     navBadgeCounts,
     handlePageChange,
-    handleTopbarSearchSubmit,
     handleLogout
   } = useAdminNavigation({
     session,
@@ -174,6 +194,95 @@ export function MaphariDashboard() {
   // ── Cursor trail ───────────────────────────────────────────────────────────
   useCursorTrail(cursorRef, ringRef, { cursorOffset: 5, ringOffset: 18, easing: 0.12 });
 
+  // ── UX hooks: Theme ────────────────────────────────────────────────────────
+  const themeHook = useTheme({ storageKey: "maphari_admin_theme" });
+
+  // ── UX hooks: Session Timeout (shorter for admin security) ─────────────────
+  const sessionTimeout = useSessionTimeout({
+    onTimeout: () => void signOut(),
+    idleDurationMs: 20 * 60 * 1000, // 20 minutes for admin
+  });
+
+  // ── UX hooks: Command Search ───────────────────────────────────────────────
+  const commandSearchSources = useMemo(() => {
+    const sources: Array<{ id: string; type: string; label: string; meta: string; action: () => void }> = [];
+
+    for (const nav of visibleNavItems) {
+      sources.push({
+        id: `nav-${nav.id}`,
+        type: "Page",
+        label: nav.label,
+        meta: nav.section,
+        action: () => handlePageChange(nav.id),
+      });
+    }
+
+    // Clients
+    for (const client of (snapshot.clients ?? [])) {
+      sources.push({
+        id: `client-${client.id}`,
+        type: "Client",
+        label: client.name ?? client.id,
+        meta: client.status ?? "",
+        action: () => handlePageChange("clients"),
+      });
+    }
+
+    // Projects
+    for (const project of (snapshot.projects ?? [])) {
+      sources.push({
+        id: `project-${project.id}`,
+        type: "Project",
+        label: project.name,
+        meta: "",
+        action: () => handlePageChange("projects"),
+      });
+    }
+
+    // Leads
+    for (const lead of (snapshot.leads ?? [])) {
+      sources.push({
+        id: `lead-${lead.id}`,
+        type: "Lead",
+        label: lead.company ?? lead.title ?? lead.id,
+        meta: lead.status,
+        action: () => handlePageChange("leads"),
+      });
+    }
+
+    return sources;
+  }, [visibleNavItems, snapshot.clients, snapshot.projects, snapshot.leads, handlePageChange]);
+
+  const commandSearch = useCommandSearch({ sources: commandSearchSources });
+
+  // ── UX hooks: Keyboard Shortcuts ───────────────────────────────────────────
+  const adminChordMap: Record<string, PageId> = useMemo(() => ({
+    d: "dashboard",
+    e: "executive",
+    l: "leads",
+    c: "clients",
+    p: "projects",
+    i: "invoices",
+    n: "notifications",
+    m: "messages",
+    r: "reports",
+    a: "analytics",
+    t: "team",
+    s: "settings",
+    o: "owner",
+    f: "staff",
+    b: "brand",
+    q: "qa",
+    v: "revops",
+  }), []);
+
+  const shortcuts = useKeyboardShortcuts({
+    chordMap: adminChordMap,
+    onNavigate: handlePageChange,
+    onOpenSearch: commandSearch.open,
+    isSearchOpen: commandSearch.isOpen,
+  });
+
   // ── Local imperative: maintenance check ───────────────────────────────────
   async function handleRunMaintenanceCheck(): Promise<void> {
     if (!session) return;
@@ -215,7 +324,7 @@ export function MaphariDashboard() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className={`${styles.dashboardRoot} dashboardScale dashboardThemeAdmin`}>
+    <div className={`${styles.dashboardRoot} ${styles.root} dashboardScale dashboardThemeAdmin`}>
       <div className={styles.cursor} ref={cursorRef} />
       <div className={styles.cursorRing} ref={ringRef} />
 
@@ -234,12 +343,9 @@ export function MaphariDashboard() {
         <main className={styles.main}>
           <AdminTopbar
             title={title}
-            topbarSearch={topbarSearch}
             unreadNotificationsCount={unreadNotificationsCount}
             email={email}
             loggingOut={loggingOut}
-            onSearchChange={setTopbarSearch}
-            onSearchSubmit={handleTopbarSearchSubmit}
             onOpenNotifications={() => setPage("notifications")}
             onOpenMessages={() => setPage("messages")}
             onLogout={() => void handleLogout()}
@@ -424,11 +530,139 @@ export function MaphariDashboard() {
                 onCurrencySaved={setAdminDisplayCurrency}
               />
             ) : null}
+
+            {page === "knowledgeBaseAdmin" ? <KnowledgeBaseAdminPage /> : null}
+            {page === "decisionRegistry" ? <DecisionRegistryPage /> : null}
+            {page === "handoverManagement" ? <HandoverManagementPage /> : null}
+            {page === "closeoutReview" ? <CloseoutReviewPage /> : null}
+            {page === "staffTransitionPlanner" ? <StaffTransitionPlannerPage /> : null}
+            {page === "serviceCatalogManager" ? <ServiceCatalogManagerPage /> : null}
+            {page === "requestInbox" ? <RequestInboxPage /> : null}
+            {page === "changeRequestManager" ? <ChangeRequestManagerPage /> : null}
+            {page === "supportQueue" ? <SupportQueuePage /> : null}
+            {page === "lifecycleDashboard" ? <LifecycleDashboardPage /> : null}
+            {page === "stakeholderDirectory" ? <StakeholderDirectoryPage /> : null}
+            {page === "aiActionRecommendations" ? <AIActionRecommendationsPage /> : null}
+            {page === "updateQueueManager" ? <UpdateQueueManagerPage /> : null}
+            {page === "standupFeed" ? <StandupFeedPage /> : null}
+            {page === "eodDigest" ? <EODDigestPage /> : null}
+            {page === "peerReviewQueue" ? <PeerReviewQueuePage /> : null}
+            {page === "automationAuditTrail" ? <AutomationAuditTrailPage /> : null}
+            {page === "projectBriefing" ? <ProjectBriefingPage /> : null}
+            {page === "activeHealthMonitor" ? <ActiveHealthMonitorPage /> : null}
           </section>
         </main>
       </div>
 
       <DashboardToastStack toasts={toasts} />
+
+      {/* ── Command search overlay ──────────────────────────────────────── */}
+      {commandSearch.isOpen && (
+        <div className={styles.cmdOverlay} onClick={commandSearch.close}>
+          <div
+            className={styles.cmdPanel}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Admin command search"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              className={styles.cmdInput}
+              type="text"
+              placeholder="Search pages, clients, projects, leads..."
+              value={commandSearch.query}
+              onChange={(e) => commandSearch.setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") commandSearch.close();
+                if (e.key === "Enter") commandSearch.executeActive();
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  commandSearch.moveUp();
+                }
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  commandSearch.moveDown();
+                }
+              }}
+              autoFocus
+            />
+            <div className={styles.cmdResults}>
+              {commandSearch.results.map((result, i) => (
+                <button
+                  key={result.id}
+                  type="button"
+                  className={cx(
+                    "cmdItem",
+                    i === commandSearch.activeIndex && "cmdItemActive",
+                  )}
+                  onClick={() => result.action()}
+                >
+                  <span className={styles.cmdItemLabel}>{result.label}</span>
+                  <span className={styles.cmdItemMeta}>{result.meta}</span>
+                </button>
+              ))}
+              {commandSearch.query && commandSearch.results.length === 0 && (
+                <div className={styles.cmdEmpty}>No results found</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Keyboard shortcuts panel ────────────────────────────────────── */}
+      {shortcuts.shortcutsVisible && (
+        <div className={styles.shortcutsPanel}>
+          <div className={styles.shortcutsPanelTitle}>Keyboard Shortcuts</div>
+          {(
+            [
+              ["G → D", "Dashboard"],
+              ["G → E", "Executive"],
+              ["G → L", "Leads"],
+              ["G → C", "Clients"],
+              ["G → P", "Projects"],
+              ["G → I", "Invoices"],
+              ["G → N", "Notifications"],
+              ["G → M", "Messages"],
+              ["G → R", "Reports"],
+              ["G → A", "Analytics"],
+              ["G → T", "Team"],
+              ["G → O", "Owner"],
+              ["G → F", "Staff"],
+              ["G → V", "RevOps"],
+              ["G → Q", "QA"],
+              ["G → B", "Brand"],
+              ["G → S", "Settings"],
+              ["⌘K", "Search"],
+              ["?", "Toggle shortcuts"],
+            ] as const
+          ).map(([key, label]) => (
+            <div key={key} className={styles.shortcutRow}>
+              <span>{label}</span>
+              <span className={styles.shortcutKey}>{key}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Session timeout warning ─────────────────────────────────────── */}
+      {sessionTimeout.showWarning && (
+        <div className={styles.sessionWarning}>
+          <div className={styles.sessionCard} role="alertdialog" aria-modal="true" aria-labelledby="admin-session-warning">
+            <div id="admin-session-warning" className={styles.sessionTitle}>Session Expiring</div>
+            <div className={styles.sessionDesc}>
+              Your session will expire in {sessionTimeout.remainingSeconds}{" "}
+              seconds due to inactivity.
+            </div>
+            <button
+              type="button"
+              className={cx("button", "buttonAccent")}
+              onClick={sessionTimeout.extendSession}
+            >
+              Stay Logged In
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

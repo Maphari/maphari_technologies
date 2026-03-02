@@ -1,20 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { colorClass } from "./admin-page-utils";
 
 const mrrHistory = [
   { month: "Aug", mrr: 298000, churn: 0, expansion: 0, new: 28000 },
@@ -34,11 +22,11 @@ const pipeline = [
 ] as const;
 
 const revenueConcentration = [
-  { client: "Volta Studios", mrr: 28000, pct: 7.0, color: C.lime },
-  { client: "Kestrel Capital", mrr: 21000, pct: 5.3, color: C.purple },
-  { client: "Mira Health", mrr: 21600, pct: 5.4, color: C.blue },
-  { client: "Dune Collective", mrr: 16000, pct: 4.0, color: C.amber },
-  { client: "Okafor & Sons", mrr: 12000, pct: 3.0, color: C.orange }
+  { client: "Volta Studios", mrr: 28000, pct: 7.0, color: "var(--accent)" },
+  { client: "Kestrel Capital", mrr: 21000, pct: 5.3, color: "var(--purple)" },
+  { client: "Mira Health", mrr: 21600, pct: 5.4, color: "var(--blue)" },
+  { client: "Dune Collective", mrr: 16000, pct: 4.0, color: "var(--amber)" },
+  { client: "Okafor & Sons", mrr: 12000, pct: 3.0, color: "var(--amber)" }
 ] as const;
 
 const forecastData = [
@@ -49,6 +37,23 @@ const forecastData = [
 
 const tabs = ["mrr tracking", "pipeline", "concentration risk", "forecast", "sales velocity"] as const;
 type Tab = (typeof tabs)[number];
+
+function progressToneClass(color: string): string {
+  switch (color) {
+    case "var(--accent)":
+      return styles.revopsProgressAccent;
+    case "var(--red)":
+      return styles.revopsProgressRed;
+    case "var(--amber)":
+      return styles.revopsProgressAmber;
+    case "var(--blue)":
+      return styles.revopsProgressBlue;
+    case "var(--purple)":
+      return styles.revopsProgressPurple;
+    default:
+      return styles.revopsProgressAccent;
+  }
+}
 
 export function RevOpsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("mrr tracking");
@@ -62,103 +67,85 @@ export function RevOpsPage() {
   const maxMRR = Math.max(...mrrHistory.map((m) => m.mrr));
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.lime, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / REVENUE OPERATIONS</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>RevOps Dashboard</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>MRR · ARR · Pipeline velocity · Revenue concentration · Forecasting</div>
+          <div className={styles.pageEyebrow}>ADMIN / REVENUE OPERATIONS</div>
+          <h1 className={styles.pageTitle}>RevOps Dashboard</h1>
+          <div className={styles.pageSub}>MRR · ARR · Pipeline velocity · Revenue concentration · Forecasting</div>
         </div>
-        <button style={{ background: C.lime, color: C.bg, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>Export RevOps Report</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent")}>Export RevOps Report</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "gap16", "mb28")}>
         {[
-          { label: "MRR (Feb 2026)", value: `R${(currentMRR / 1000).toFixed(1)}k`, color: C.lime, sub: `${Number(mrrGrowth) > 0 ? "▲" : "▼"} ${Math.abs(Number(mrrGrowth))}% MoM`, subColor: Number(mrrGrowth) > 0 ? C.lime : C.red },
-          { label: "ARR (Annualised)", value: `R${(arr / 1000000).toFixed(2)}M`, color: C.blue, sub: "Based on Feb MRR", subColor: C.muted },
-          { label: "Pipeline Value", value: `R${(pipelineValue / 1000).toFixed(0)}k`, color: C.purple, sub: `${pipeline.reduce((s, p) => s + p.leads, 0)} active leads`, subColor: C.muted },
-          { label: "Net MRR Growth", value: `+R${((currentMRR - prevMRR) / 1000).toFixed(1)}k`, color: C.lime, sub: "Expansion + New - Churn", subColor: C.muted }
+          { label: "MRR (Feb 2026)", value: `R${(currentMRR / 1000).toFixed(1)}k`, color: "var(--accent)", sub: `${Number(mrrGrowth) > 0 ? "▲" : "▼"} ${Math.abs(Number(mrrGrowth))}% MoM`, subColor: Number(mrrGrowth) > 0 ? "var(--accent)" : "var(--red)" },
+          { label: "ARR (Annualised)", value: `R${(arr / 1000000).toFixed(2)}M`, color: "var(--blue)", sub: "Based on Feb MRR", subColor: "var(--muted)" },
+          { label: "Pipeline Value", value: `R${(pipelineValue / 1000).toFixed(0)}k`, color: "var(--purple)", sub: `${pipeline.reduce((s, p) => s + p.leads, 0)} active leads`, subColor: "var(--muted)" },
+          { label: "Net MRR Growth", value: `+R${((currentMRR - prevMRR) / 1000).toFixed(1)}k`, color: "var(--accent)", sub: "Expansion + New - Churn", subColor: "var(--muted)" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: s.subColor || C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", colorClass(s.subColor || "var(--muted)"))}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            style={{
-              background: "none",
-              border: "none",
-              color: activeTab === t ? C.lime : C.muted,
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontFamily: "Syne, sans-serif",
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              borderBottom: `2px solid ${activeTab === t ? C.lime : "transparent"}`,
-              marginBottom: -1,
-              transition: "all 0.2s"
-            }}
-          >
-            {t}
-          </button>
-        ))}
+      <div className={styles.filterRow}>
+        <select title="View" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
       {activeTab === "mrr tracking" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>MRR Movement — 7 Months</div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 140, marginBottom: 12 }}>
+        <div className={styles.revopsSplit}>
+          <div className={cx("card", "p24")}>
+            <div className={styles.revopsSecTitle}>MRR Movement - 7 Months</div>
+            <div className={styles.revopsChartBars}>
               {mrrHistory.map((m, i) => {
                 const h = (m.mrr / maxMRR) * 120;
                 const isLast = i === mrrHistory.length - 1;
                 return (
-                  <div key={m.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <div style={{ fontSize: 9, color: isLast ? C.lime : C.muted, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>
+                  <div key={m.month} className={styles.revopsBarCol}>
+                    <div className={cx("text10", "fontMono", isLast ? "colorAccent" : "colorMuted", "mb4")}>
                       R{(m.mrr / 1000).toFixed(0)}k
                     </div>
-                    <div style={{ width: "100%", height: h, background: isLast ? C.lime : `${C.lime}33`, borderRadius: "3px 3px 0 0", transition: "height 0.6s" }} />
-                    <div style={{ fontSize: 10, color: isLast ? C.lime : C.muted, marginTop: 6 }}>{m.month}</div>
+                    <svg className={styles.revopsBarFill} viewBox="0 0 10 120" preserveAspectRatio="none" aria-hidden="true">
+                      <rect x="0" y={120 - h} width="10" height={h} fill={isLast ? "var(--accent)" : "var(--accent-g)"} />
+                    </svg>
+                    <div className={cx("text10", isLast ? "colorAccent" : "colorMuted", "mt4")}>{m.month}</div>
                   </div>
                 );
               })}
             </div>
-            <div style={{ marginTop: 20, background: C.bg, borderRadius: 8, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "80px 1fr 1fr 1fr 1fr", padding: "10px 16px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <div className={styles.revopsTableWrap}>
+              <div className={styles.revopsMrrHead}>
                 {["Month", "MRR", "New", "Expansion", "Churn"].map((h) => <span key={h}>{h}</span>)}
               </div>
               {mrrHistory.map((m, i) => (
-                <div key={m.month} style={{ display: "grid", gridTemplateColumns: "80px 1fr 1fr 1fr 1fr", padding: "10px 16px", borderBottom: i < mrrHistory.length - 1 ? `1px solid ${C.border}` : "none", fontSize: 12 }}>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.muted }}>{m.month}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.lime, fontWeight: 700 }}>R{(m.mrr / 1000).toFixed(0)}k</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: m.new > 0 ? C.blue : C.muted }}>{m.new > 0 ? `+R${(m.new / 1000).toFixed(0)}k` : "—"}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: m.expansion > 0 ? C.purple : C.muted }}>{m.expansion > 0 ? `+R${(m.expansion / 1000).toFixed(0)}k` : "—"}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: m.churn > 0 ? C.red : C.muted }}>{m.churn > 0 ? `-R${(m.churn / 1000).toFixed(0)}k` : "—"}</span>
+                <div key={m.month} className={cx(styles.revopsMrrRow, i < mrrHistory.length - 1 && "borderB")}>
+                  <span className={cx("fontMono", "colorMuted")}>{m.month}</span>
+                  <span className={cx("fontMono", "fw700", "colorAccent")}>R{(m.mrr / 1000).toFixed(0)}k</span>
+                  <span className={cx("fontMono", m.new > 0 ? "colorBlue" : "colorMuted")}>{m.new > 0 ? `+R${(m.new / 1000).toFixed(0)}k` : "-"}</span>
+                  <span className={cx("fontMono", m.expansion > 0 ? "colorPurple" : "colorMuted")}>{m.expansion > 0 ? `+R${(m.expansion / 1000).toFixed(0)}k` : "-"}</span>
+                  <span className={cx("fontMono", m.churn > 0 ? "colorRed" : "colorMuted")}>{m.churn > 0 ? `-R${(m.churn / 1000).toFixed(0)}k` : "-"}</span>
                 </div>
               ))}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className={styles.revopsSideCol}>
             {[
-              { label: "New MRR (Feb)", value: `+R${(mrrHistory[6].new / 1000).toFixed(1)}k`, color: C.blue, desc: "New client revenue" },
-              { label: "Expansion MRR (Feb)", value: `+R${(mrrHistory[6].expansion / 1000).toFixed(0)}k`, color: C.purple, desc: "Upsell & tier upgrades" },
-              { label: "Churned MRR (Feb)", value: `R${mrrHistory[6].churn}`, color: C.lime, desc: "No churn this month" }
+              { label: "New MRR (Feb)", value: `+R${(mrrHistory[6].new / 1000).toFixed(1)}k`, color: "var(--blue)", desc: "New client revenue" },
+              { label: "Expansion MRR (Feb)", value: `+R${(mrrHistory[6].expansion / 1000).toFixed(0)}k`, color: "var(--purple)", desc: "Upsell & tier upgrades" },
+              { label: "Churned MRR (Feb)", value: `R${mrrHistory[6].churn}`, color: "var(--accent)", desc: "No churn this month" }
             ].map((s) => (
-              <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20 }}>
-                <div style={{ fontSize: 11, color: C.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-                <div style={{ fontSize: 12, color: C.muted }}>{s.desc}</div>
+              <div key={s.label} className={styles.statCard}>
+                <div className={styles.statLabel}>{s.label}</div>
+                <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+                <div className={cx("text12", "colorMuted")}>{s.desc}</div>
               </div>
             ))}
           </div>
@@ -166,29 +153,32 @@ export function RevOpsPage() {
       ) : null}
 
       {activeTab === "pipeline" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20 }}>
+        <div className={styles.revopsSplit}>
           <div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24, marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Sales Pipeline</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className={cx("card", "p24", "mb16")}>
+              <div className={styles.revopsSecTitle}>Sales Pipeline</div>
+              <div className={cx("flexCol", "gap12")}>
                 {pipeline.map((stage, i) => {
                   const maxLeads = pipeline[0].leads;
-                  const widthPct = (stage.leads / maxLeads) * 100;
-                  const colors = [C.lime, C.blue, C.purple, C.amber] as const;
+                  const colors = ["var(--accent)", "var(--blue)", "var(--purple)", "var(--amber)"] as const;
                   return (
                     <div key={stage.stage}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600 }}>{stage.stage}</span>
-                        <div style={{ display: "flex", gap: 16, fontSize: 12, fontFamily: "DM Mono, monospace" }}>
-                          <span style={{ color: C.muted }}>{stage.leads} leads</span>
-                          <span style={{ color: colors[i] }}>R{(stage.value / 1000).toFixed(0)}k</span>
-                          <span style={{ color: C.muted }}>{stage.avgDays}d avg</span>
+                      <div className={cx("flexBetween", "mb6")}>
+                        <span className={cx("text13", "fw600")}>{stage.stage}</span>
+                        <div className={styles.revopsMetaRow}>
+                          <span className={cx("colorMuted")}>{stage.leads} leads</span>
+                          <span className={colorClass(colors[i])}>R{(stage.value / 1000).toFixed(0)}k</span>
+                          <span className={cx("colorMuted")}>{stage.avgDays}d avg</span>
                         </div>
                       </div>
-                      <div style={{ height: 28, background: C.border, borderRadius: 4, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${widthPct}%`, background: colors[i], borderRadius: 4, display: "flex", alignItems: "center", paddingLeft: 10, transition: "width 0.8s" }}>
-                          <span style={{ fontSize: 11, color: C.bg, fontWeight: 700, fontFamily: "DM Mono, monospace" }}>{stage.leads}</span>
-                        </div>
+                      <div className={styles.revopsTrack28}>
+                        <progress
+                          className={cx(styles.revopsTrackFill, progressToneClass(colors[i]))}
+                          max={maxLeads}
+                          value={stage.leads}
+                          aria-label={`${stage.stage} leads ${stage.leads}`}
+                        />
+                        <span className={styles.revopsLeadNum}>{stage.leads}</span>
                       </div>
                     </div>
                   );
@@ -196,31 +186,31 @@ export function RevOpsPage() {
               </div>
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Pipeline Summary</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className={styles.revopsSideCol}>
+            <div className={cx("card", "p24")}>
+              <div className={styles.revopsSecTitle}>Pipeline Summary</div>
+              <div className={cx("flexCol", "gap12")}>
                 <div>
-                  <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Total Pipeline Value</div>
-                  <div style={{ fontSize: 32, fontWeight: 800, color: C.lime, fontFamily: "DM Mono, monospace" }}>R{(pipelineValue / 1000).toFixed(0)}k</div>
+                  <div className={cx("text11", "colorMuted", "mb4")}>Total Pipeline Value</div>
+                  <div className={styles.revopsValue32}>R{(pipelineValue / 1000).toFixed(0)}k</div>
                 </div>
-                <div style={{ height: 1, background: C.border }} />
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className={styles.revopsHr} />
+                <div className={cx("grid2", "gap12")}>
                   <div>
-                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Total Leads</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontSize: 22, fontWeight: 700 }}>{pipeline.reduce((s, p) => s + p.leads, 0)}</div>
+                    <div className={cx("text11", "colorMuted", "mb4")}>Total Leads</div>
+                    <div className={styles.revopsValue22}>{pipeline.reduce((s, p) => s + p.leads, 0)}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Win Rate (90d)</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontSize: 22, fontWeight: 700, color: C.lime }}>42%</div>
+                    <div className={cx("text11", "colorMuted", "mb4")}>Win Rate (90d)</div>
+                    <div className={cx(styles.revopsValue22, "colorAccent")}>42%</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Avg Deal Size</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontSize: 22, fontWeight: 700 }}>R{Math.round(pipelineValue / pipeline.reduce((s, p) => s + p.leads, 0) / 1000)}k</div>
+                    <div className={cx("text11", "colorMuted", "mb4")}>Avg Deal Size</div>
+                    <div className={styles.revopsValue22}>R{Math.round(pipelineValue / pipeline.reduce((s, p) => s + p.leads, 0) / 1000)}k</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Sales Cycle</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontSize: 22, fontWeight: 700 }}>38d</div>
+                    <div className={cx("text11", "colorMuted", "mb4")}>Sales Cycle</div>
+                    <div className={styles.revopsValue22}>38d</div>
                   </div>
                 </div>
               </div>
@@ -230,42 +220,47 @@ export function RevOpsPage() {
       ) : null}
 
       {activeTab === "concentration risk" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Revenue Concentration</div>
-            <div style={{ fontSize: 11, color: C.muted, marginBottom: 20 }}>Top 2 clients = {revenueConcentration.slice(0, 2).reduce((s, c) => s + c.pct, 0).toFixed(1)}% of MRR</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className={cx("grid2", "gap20")}>
+          <div className={cx("card", "p24")}>
+            <div className={styles.revopsSecTitle}>Revenue Concentration</div>
+            <div className={cx("text11", "colorMuted", "mb20")}>Top 2 clients = {revenueConcentration.slice(0, 2).reduce((s, c) => s + c.pct, 0).toFixed(1)}% of MRR</div>
+            <div className={cx("flexCol", "gap14")}>
               {revenueConcentration.map((c) => (
                 <div key={c.client}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{c.client}</span>
-                    <div style={{ display: "flex", gap: 12, fontFamily: "DM Mono, monospace", fontSize: 12 }}>
-                      <span style={{ color: c.color }}>R{(c.mrr / 1000).toFixed(0)}k</span>
-                      <span style={{ color: C.muted }}>{c.pct}%</span>
+                  <div className={cx("flexBetween", "mb6")}>
+                    <span className={cx("text13", "fw600")}>{c.client}</span>
+                    <div className={styles.revopsMetaRow}>
+                      <span className={colorClass(c.color)}>R{(c.mrr / 1000).toFixed(0)}k</span>
+                      <span className={cx("colorMuted")}>{c.pct}%</span>
                     </div>
                   </div>
-                  <div style={{ height: 8, background: C.border, borderRadius: 4 }}>
-                    <div style={{ height: "100%", width: `${c.pct * 10}%`, background: c.color, borderRadius: 4 }} />
+                  <div className={styles.revopsTrack8}>
+                    <progress
+                      className={cx(styles.revopsTrackBar, progressToneClass(c.color))}
+                      max={10}
+                      value={c.pct}
+                      aria-label={`${c.client} concentration ${c.pct}%`}
+                    />
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Concentration Risk Score</div>
-              <div style={{ fontSize: 48, fontWeight: 800, color: C.amber, fontFamily: "DM Mono, monospace", marginBottom: 8 }}>Medium</div>
-              <div style={{ height: 8, background: C.border, borderRadius: 4, marginBottom: 12 }}>
-                <div style={{ height: "100%", width: "52%", background: C.amber, borderRadius: 4 }} />
+          <div className={styles.revopsSideCol}>
+            <div className={cx("card", "p24")}>
+              <div className={styles.revopsSecTitle}>Concentration Risk Score</div>
+              <div className={styles.revopsRiskWord}>Medium</div>
+              <div className={cx(styles.revopsTrack8, "mb12")}>
+                <div className={styles.revopsRiskFill} />
               </div>
-              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7 }}>
-                No single client exceeds 10% of MRR — within acceptable range. Target: no client above 20%. Current highest: Volta Studios at 7.0%.
+              <div className={styles.revopsBodyText}>
+                No single client exceeds 10% of MRR - within acceptable range. Target: no client above 20%. Current highest: Volta Studios at 7.0%.
               </div>
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.amber}33`, borderRadius: 10, padding: 20 }}>
-              <div style={{ fontWeight: 700, color: C.amber, marginBottom: 8 }}>⚠ Concentration Guidance</div>
-              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7 }}>
-                To reduce risk, target 3–4 new clients at R10k–R20k MRR each. This would dilute top client concentration below 5%.
+            <div className={styles.revopsWarnCard}>
+              <div className={styles.revopsWarnTitle}>Concentration Guidance</div>
+              <div className={styles.revopsBodyText}>
+                To reduce risk, target 3-4 new clients at R10k-R20k MRR each. This would dilute top client concentration below 5%.
               </div>
             </div>
           </div>
@@ -273,21 +268,35 @@ export function RevOpsPage() {
       ) : null}
 
       {activeTab === "forecast" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>3-Month MRR Forecast</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className={cx("grid2", "gap20")}>
+          <div className={cx("card", "p24")}>
+            <div className={styles.revopsSecTitle}>3-Month MRR Forecast</div>
+            <div className={cx("flexCol", "gap20")}>
               {forecastData.map((f) => (
                 <div key={f.month}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700 }}>{f.month}</span>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontSize: 18, color: C.lime, fontWeight: 800 }}>R{(f.forecast / 1000).toFixed(0)}k</span>
+                  <div className={cx("flexBetween", "mb8")}>
+                    <span className={cx("text14", "fw700")}>{f.month}</span>
+                    <span className={styles.revopsForecastVal}>R{(f.forecast / 1000).toFixed(0)}k</span>
                   </div>
-                  <div style={{ position: "relative", height: 12, background: C.border, borderRadius: 6 }}>
-                    <div style={{ position: "absolute", left: `${(f.low / f.high) * 100}%`, right: 0, height: "100%", background: `${C.lime}33`, borderRadius: 6 }} />
-                    <div style={{ position: "absolute", left: `${(f.forecast / f.high) * 100 - 2}%`, top: 0, width: 4, height: "100%", background: C.lime, borderRadius: 2 }} />
+                  <div className={styles.revopsForecastTrack}>
+                    <svg className={styles.revopsForecastSvg} viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true">
+                      <rect
+                        className={styles.revopsForecastRangeRect}
+                        x={(f.low / f.high) * 100}
+                        y="0"
+                        width={100 - (f.low / f.high) * 100}
+                        height="12"
+                      />
+                      <rect
+                        className={styles.revopsForecastMarkerRect}
+                        x={(f.forecast / f.high) * 100 - 2}
+                        y="0"
+                        width="4"
+                        height="12"
+                      />
+                    </svg>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 11, color: C.muted, fontFamily: "DM Mono, monospace" }}>
+                  <div className={styles.revopsForecastMeta}>
                     <span>Low: R{(f.low / 1000).toFixed(0)}k</span>
                     <span>High: R{(f.high / 1000).toFixed(0)}k</span>
                   </div>
@@ -295,87 +304,92 @@ export function RevOpsPage() {
               ))}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Forecast Assumptions</div>
+          <div className={styles.revopsSideCol}>
+            <div className={cx("card", "p24")}>
+              <div className={styles.revopsSecTitle}>Forecast Assumptions</div>
               {[
-                { assumption: "Zero churn over 3 months", confidence: "High", color: C.lime },
-                { assumption: "2 upsells (Mira + Okafor)", confidence: "Medium", color: C.amber },
-                { assumption: "1 new client at R12k MRR", confidence: "Medium", color: C.amber },
-                { assumption: "No rate changes", confidence: "High", color: C.lime }
-              ].map((a) => (
-                <div key={a.assumption} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}`, alignItems: "center" }}>
-                  <span style={{ fontSize: 12 }}>{a.assumption}</span>
-                  <span style={{ fontSize: 10, color: a.color, fontFamily: "DM Mono, monospace" }}>{a.confidence}</span>
+                { assumption: "Zero churn over 3 months", confidence: "High", color: "var(--accent)" },
+                { assumption: "2 upsells (Mira + Okafor)", confidence: "Medium", color: "var(--amber)" },
+                { assumption: "1 new client at R12k MRR", confidence: "Medium", color: "var(--amber)" },
+                { assumption: "No rate changes", confidence: "High", color: "var(--accent)" }
+              ].map((a, i) => (
+                <div key={a.assumption} className={cx("flexBetween", "py10", i < 3 && "borderB")}> 
+                  <span className={cx("text12")}>{a.assumption}</span>
+                  <span className={cx("text10", "fontMono", colorClass(a.color))}>{a.confidence}</span>
                 </div>
               ))}
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Forecast Accuracy</div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: C.lime, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>87%</div>
-              <div style={{ fontSize: 12, color: C.muted }}>Avg accuracy over last 6 forecasts. Industry benchmark: 80%.</div>
+            <div className={cx("card", "p24")}>
+              <div className={styles.revopsSecTitle}>Forecast Accuracy</div>
+              <div className={styles.revopsValue36}>87%</div>
+              <div className={styles.revopsBodyText}>Avg accuracy over last 6 forecasts. Industry benchmark: 80%.</div>
             </div>
           </div>
         </div>
       ) : null}
 
       {activeTab === "sales velocity" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Sales Velocity Formula</div>
-            <div style={{ fontSize: 11, color: C.muted, marginBottom: 24 }}>Revenue generated per day from the pipeline</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+        <div className={cx("grid2", "gap20")}>
+          <div className={cx("card", "p24")}>
+            <div className={styles.revopsSecTitle}>Sales Velocity Formula</div>
+            <div className={cx("text11", "colorMuted", "mb24")}>Revenue generated per day from the pipeline</div>
+            <div className={cx("grid2", "gap16", "mb24")}>
               {[
-                { label: "# Opportunities", value: "8", color: C.blue },
-                { label: "Avg Deal Value", value: "R37.5k", color: C.purple },
-                { label: "Win Rate", value: "42%", color: C.lime },
-                { label: "Sales Cycle (days)", value: "38", color: C.amber }
+                { label: "# Opportunities", value: "8", color: "var(--blue)" },
+                { label: "Avg Deal Value", value: "R37.5k", color: "var(--purple)" },
+                { label: "Win Rate", value: "42%", color: "var(--accent)" },
+                { label: "Sales Cycle (days)", value: "38", color: "var(--amber)" }
               ].map((s) => (
-                <div key={s.label} style={{ padding: 16, background: C.bg, borderRadius: 8 }}>
-                  <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>{s.label}</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
+                <div key={s.label} className={styles.revopsMetricTile}>
+                  <div className={cx("text11", "colorMuted", "mb4")}>{s.label}</div>
+                  <div className={cx(styles.revopsMetricTileVal, colorClass(s.color))}>{s.value}</div>
                 </div>
               ))}
             </div>
-            <div style={{ padding: 20, background: C.surface, borderRadius: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 12, color: C.muted, marginBottom: 8 }}>Sales Velocity</div>
-              <div style={{ fontFamily: "DM Mono, monospace", fontSize: 40, fontWeight: 800, color: C.lime }}>R3,289</div>
-              <div style={{ fontSize: 12, color: C.muted }}>per day</div>
+            <div className={styles.revopsVelocityCard}>
+              <div className={cx("text12", "colorMuted", "mb8")}>Sales Velocity</div>
+              <div className={styles.revopsVelocityVal}>R3,289</div>
+              <div className={cx("text12", "colorMuted")}>per day</div>
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Velocity Trend</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className={styles.revopsSideCol}>
+            <div className={cx("card", "p24")}>
+              <div className={styles.revopsSecTitle}>Velocity Trend</div>
+              <div className={cx("flexCol", "gap12")}>
                 {[
                   { period: "Nov 2025", velocity: 2800, change: 0 },
                   { period: "Dec 2025", velocity: 2400, change: -14.3 },
                   { period: "Jan 2026", velocity: 3100, change: +29.2 },
                   { period: "Feb 2026", velocity: 3289, change: +6.1 }
                 ].map((v) => (
-                  <div key={v.period} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 12, color: C.muted, fontFamily: "DM Mono, monospace", width: 70 }}>{v.period}</span>
-                    <div style={{ flex: 1, height: 8, background: C.border, borderRadius: 4 }}>
-                      <div style={{ height: "100%", width: `${(v.velocity / 3500) * 100}%`, background: C.lime, borderRadius: 4 }} />
+                  <div key={v.period} className={styles.revopsVelRow}>
+                    <span className={styles.revopsVelPeriod}>{v.period}</span>
+                    <div className={styles.revopsTrack8Flex}>
+                      <progress
+                        className={cx(styles.revopsTrackBar, styles.revopsProgressAccent)}
+                        max={3500}
+                        value={v.velocity}
+                        aria-label={`${v.period} velocity ${v.velocity}`}
+                      />
                     </div>
-                    <div style={{ display: "flex", gap: 8, minWidth: 100 }}>
-                      <span style={{ fontFamily: "DM Mono, monospace", fontSize: 12 }}>R{v.velocity.toLocaleString()}</span>
-                      {v.change !== 0 ? <span style={{ fontSize: 11, color: v.change > 0 ? C.lime : C.red }}>{v.change > 0 ? "▲" : "▼"} {Math.abs(v.change)}%</span> : null}
+                    <div className={styles.revopsVelMeta}>
+                      <span className={cx("fontMono", "text12")}>R{v.velocity.toLocaleString()}</span>
+                      {v.change !== 0 ? <span className={cx("text11", v.change > 0 ? "colorAccent" : "colorRed")}>{v.change > 0 ? "▲" : "▼"} {Math.abs(v.change)}%</span> : null}
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>How to Improve</div>
+            <div className={cx("card", "p24")}>
+              <div className={styles.revopsSecTitle}>How to Improve</div>
               {[
                 { action: "Reduce sales cycle by 5 days", impact: "+R433/day" },
                 { action: "Increase win rate to 50%", impact: "+R782/day" },
                 { action: "Add 2 more opportunities", impact: "+R821/day" }
-              ].map((item) => (
-                <div key={item.action} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}`, alignItems: "center" }}>
-                  <span style={{ fontSize: 12 }}>{item.action}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.lime, fontWeight: 700 }}>{item.impact}</span>
+              ].map((item, i) => (
+                <div key={item.action} className={cx("flexBetween", "py10", i < 2 && "borderB")}> 
+                  <span className={cx("text12")}>{item.action}</span>
+                  <span className={styles.revopsImpact}>{item.impact}</span>
                 </div>
               ))}
             </div>

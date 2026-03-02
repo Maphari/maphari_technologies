@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { cx } from "../style";
 
-type ClientRow = { id: number; name: string; avatar: string; color: string };
+type ClientRow = { id: number; name: string; avatar: string; toneClass: string; surfaceClass: string; selectedClass: string };
 type Dimension = { axis: "Quality" | "Comms" | "Speed" | "Value" | "Proactivity"; value: number };
 type TrendPoint = { month: "Oct" | "Nov" | "Dec" | "Jan" | "Feb"; score: number };
 type Signal = { type: "positive" | "neutral" | "negative"; text: string };
@@ -18,11 +18,11 @@ type ScoreCard = {
 };
 
 const clients: ClientRow[] = [
-  { id: 1, name: "Volta Studios", avatar: "VS", color: "var(--accent)" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "#a78bfa" },
-  { id: 3, name: "Mira Health", avatar: "MH", color: "#60a5fa" },
-  { id: 4, name: "Dune Collective", avatar: "DC", color: "#f5c518" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "#ff8c00" }
+  { id: 1, name: "Volta Studios", avatar: "VS", toneClass: "ssToneAccent", surfaceClass: "ssSurfaceAccent", selectedClass: "ssClientCardActiveAccent" },
+  { id: 2, name: "Kestrel Capital", avatar: "KC", toneClass: "ssTonePurple", surfaceClass: "ssSurfacePurple", selectedClass: "ssClientCardActivePurple" },
+  { id: 3, name: "Mira Health", avatar: "MH", toneClass: "ssToneBlue", surfaceClass: "ssSurfaceBlue", selectedClass: "ssClientCardActiveBlue" },
+  { id: 4, name: "Dune Collective", avatar: "DC", toneClass: "ssToneAmber", surfaceClass: "ssSurfaceAmber", selectedClass: "ssClientCardActiveAmber" },
+  { id: 5, name: "Okafor & Sons", avatar: "OS", toneClass: "ssToneOrange", surfaceClass: "ssSurfaceOrange", selectedClass: "ssClientCardActiveOrange" }
 ];
 
 const scores: Record<number, ScoreCard> = {
@@ -153,32 +153,38 @@ const scores: Record<number, ScoreCard> = {
   }
 };
 
-const riskConfig: Record<RiskLevel, { label: string; color: string; bg: string; border: string }> = {
-  low: { label: "Low risk", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 8%, transparent)", border: "color-mix(in srgb, var(--accent) 20%, transparent)" },
-  medium: { label: "Medium risk", color: "#f5c518", bg: "rgba(245,197,24,0.08)", border: "rgba(245,197,24,0.2)" },
-  high: { label: "High risk", color: "#ff8c00", bg: "rgba(255,140,0,0.08)", border: "rgba(255,140,0,0.2)" },
-  critical: { label: "Critical", color: "#ff4444", bg: "rgba(255,68,68,0.08)", border: "rgba(255,68,68,0.2)" }
+const riskConfig: Record<RiskLevel, { label: string; badgeClass: string }> = {
+  low: { label: "Low risk", badgeClass: "ssRiskLow" },
+  medium: { label: "Medium risk", badgeClass: "ssRiskMedium" },
+  high: { label: "High risk", badgeClass: "ssRiskHigh" },
+  critical: { label: "Critical", badgeClass: "ssRiskCritical" }
 };
 
 const signalColors: Record<Signal["type"], string> = {
-  positive: "var(--accent)",
-  neutral: "#a0a0b0",
-  negative: "#ff4444"
+  positive: "ssSignalPositive",
+  neutral: "ssSignalNeutral",
+  negative: "ssSignalNegative"
 };
 
-function ScoreRing({ score, color, size = 80 }: { score: number; color: string; size?: number }) {
+function dimensionTone(value: number): string {
+  if (value >= 80) return "ssMeterGood";
+  if (value >= 60) return "ssMeterWarn";
+  return "ssMeterBad";
+}
+
+function ScoreRing({ score, clientId, size = 80 }: { score: number; clientId: number; size?: number }) {
   const r = size * 0.38;
   const circ = 2 * Math.PI * r;
   const dash = (score / 100) * circ;
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={size * 0.07} />
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className={cx("ssRing")} data-client-id={clientId}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" className={cx("ssRingTrack")} strokeWidth={size * 0.07} />
       <circle
         cx={size / 2}
         cy={size / 2}
         r={r}
         fill="none"
-        stroke={color}
+        className={cx("ssRingValue")}
         strokeWidth={size * 0.07}
         strokeDasharray={`${dash} ${circ}`}
         strokeLinecap="round"
@@ -189,7 +195,7 @@ function ScoreRing({ score, color, size = 80 }: { score: number; color: string; 
         y="50%"
         dominantBaseline="middle"
         textAnchor="middle"
-        style={{ fontSize: size * 0.22, fontFamily: "'Syne', sans-serif", fontWeight: 800, fill: color }}
+        className={cx("ssRingText")}
       >
         {score}
       </text>
@@ -197,7 +203,7 @@ function ScoreRing({ score, color, size = 80 }: { score: number; color: string; 
   );
 }
 
-function TrendLine({ points, color }: { points: TrendPoint[]; color: string }) {
+function TrendLine({ points, clientId }: { points: TrendPoint[]; clientId: number }) {
   const max = 100;
   const min = 30;
   const range = max - min;
@@ -210,12 +216,12 @@ function TrendLine({ points, color }: { points: TrendPoint[]; color: string }) {
     })
     .join(" ");
   return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
-      <polyline fill="none" stroke={color} strokeWidth="2.5" points={path} />
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className={cx("ssTrendSvg")} data-client-id={clientId}>
+      <polyline fill="none" className={cx("ssTrendLine")} strokeWidth="2.5" points={path} />
       {points.map((p, i) => {
         const x = i * xStep;
         const y = 100 - ((p.score - min) / range) * 100;
-        return <circle key={p.month} cx={x} cy={y} r="2.2" fill={color} />;
+        return <circle key={p.month} cx={x} cy={y} r="2.2" className={cx("ssTrendDot")} />;
       })}
     </svg>
   );
@@ -238,37 +244,32 @@ export function SatisfactionScoresPage({ isActive }: { isActive: boolean }) {
   );
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-satisfaction-scores">
-      <style>{`
-        .ss-client-card { transition: all 0.15s ease; cursor: pointer; }
-        .ss-client-card:hover { border-color: color-mix(in srgb, var(--accent) 20%, transparent) !important; transform: translateY(-1px); }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-satisfaction-scores">
+      <div className={cx("pageHeaderBar", "borderB", "ssHeaderWrap")}>
+        <div className={cx("flexBetween", "mb20", "itemsStart")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
+            <div className={cx("pageEyebrow", "mb8")}>
               Staff Dashboard / Client Intelligence
             </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+            <h1 className={cx("pageTitle")}>
               Satisfaction Scores
             </h1>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
+          <div className={cx("flexRow", "gap24")}>
             {[
-              { label: "Portfolio avg", value: avgScore, color: avgScore >= 75 ? "var(--accent)" : avgScore >= 60 ? "#f5c518" : "#ff4444" },
-              { label: "Critical", value: Object.values(scores).filter((s) => s.risk === "critical").length, color: "#ff4444" },
-              { label: "At risk", value: Object.values(scores).filter((s) => s.risk === "high").length, color: "#ff8c00" }
+              { label: "Portfolio avg", value: avgScore, toneClass: avgScore >= 75 ? "ssToneAccent" : avgScore >= 60 ? "ssToneAmber" : "ssToneRisk" },
+              { label: "Critical", value: Object.values(scores).filter((s) => s.risk === "critical").length, toneClass: "ssToneRisk" },
+              { label: "At risk", value: Object.values(scores).filter((s) => s.risk === "high").length, toneClass: "ssToneOrange" }
             ].map((s) => (
-              <div key={s.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{s.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
+              <div key={s.label} className={cx("textRight")}>
+                <div className={cx("pageEyebrow", "mb4", "trackingWide10")}>{s.label}</div>
+                <div className={cx("fontDisplay", "fw800", "ssStatValue", s.toneClass)}>{s.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10 }}>
+        <div className={cx("flexRow", "gap10")}>
           {clients.map((c) => {
             const sc = scores[c.id];
             const r = riskConfig[sc.risk];
@@ -276,27 +277,20 @@ export function SatisfactionScoresPage({ isActive }: { isActive: boolean }) {
             return (
               <div
                 key={c.id}
-                className="ss-client-card"
+                className={cx("ssClientCard", "flex1", isSelected ? c.selectedClass : "ssClientCardIdle")}
                 onClick={() => setSelected(c.id)}
-                style={{
-                  flex: 1,
-                  padding: "14px 14px",
-                  border: `1px solid ${isSelected ? `${c.color}40` : "rgba(255,255,255,0.06)"}`,
-                  borderRadius: 4,
-                  background: isSelected ? `${c.color}06` : "rgba(255,255,255,0.01)"
-                }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 22, height: 22, borderRadius: 2, background: `${c.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: c.color }}>
+                <div className={cx("flexRow", "gap8", "mb8")}>
+                  <div className={cx("flexCenter", "ssScoreClientAvatar", c.surfaceClass, c.toneClass)}>
                     {c.avatar}
                   </div>
-                  <span style={{ fontSize: 10, color: isSelected ? "#fff" : "#a0a0b0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span className={cx("text10", "truncate", isSelected ? "colorText" : "colorMuted")}>
                     {c.name.split(" ")[0]}
                   </span>
                 </div>
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color: c.color, lineHeight: 1 }}>{sc.overall}</div>
-                  <div style={{ fontSize: 9, padding: "2px 6px", borderRadius: 2, background: r.bg, color: r.color, letterSpacing: "0.06em", textTransform: "uppercase", border: `1px solid ${r.border}` }}>
+                <div className={cx("flexBetween", "itemsEnd")}>
+                  <div className={cx("fontDisplay", "fw800", "ssClientScore", c.toneClass)}>{sc.overall}</div>
+                  <div className={cx("textXs", "uppercase", "ssRiskBadge", r.badgeClass)}>
                     {r.label}
                   </div>
                 </div>
@@ -306,73 +300,71 @@ export function SatisfactionScoresPage({ isActive }: { isActive: boolean }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", minHeight: "calc(100vh - 260px)" }}>
-        <div style={{ padding: "28px 28px", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-            <ScoreRing score={current.overall} color={client.color} size={100} />
+      <div className={cx("ssMainGrid")}>
+        <div className={cx("ssPane", "ssPaneRightBorder")}>
+          <div className={cx("flexRow", "gap16", "mb24")}>
+            <ScoreRing score={current.overall} clientId={client.id} size={100} />
             <div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 4 }}>{client.name}</div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-                <div style={{ fontSize: 10, padding: "3px 8px", borderRadius: 2, background: risk.bg, color: risk.color, border: `1px solid ${risk.border}`, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <div className={cx("fontDisplay", "fw800", "colorText", "mb4", "ssClientName")}>{client.name}</div>
+              <div className={cx("flexRow", "gap8", "mb6")}>
+                <div className={cx("text10", "uppercase", "ssRiskChip", risk.badgeClass)}>
                   {risk.label}
                 </div>
               </div>
-              <div style={{ fontSize: 11, color: trendDelta > 0 ? "var(--accent)" : "#ff4444" }}>
+              <div className={cx("text11", trendDelta > 0 ? "ssToneAccent" : "ssToneRisk")}>
                 {trendDelta > 0 ? "↑" : "↓"} {Math.abs(trendDelta)} pts since Oct
               </div>
             </div>
           </div>
 
-          <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
+          <div className={cx("text10", "colorMuted2", "uppercase", "mb12", "trackingWide10")}>
             Score breakdown
           </div>
           {current.dimensions.map((d) => (
-            <div key={d.axis} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-              <span style={{ fontSize: 11, color: "#a0a0b0", width: 80, flexShrink: 0 }}>{d.axis}</span>
-              <div style={{ flex: 1, height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3 }}>
-                <div style={{ height: "100%", width: `${d.value}%`, background: d.value >= 80 ? "var(--accent)" : d.value >= 60 ? "#f5c518" : "#ff4444", borderRadius: 3, transition: "width 0.5s ease" }} />
-              </div>
-              <span style={{ fontSize: 11, color: d.value >= 80 ? "var(--accent)" : d.value >= 60 ? "#f5c518" : "#ff4444", width: 28, textAlign: "right", flexShrink: 0 }}>{d.value}</span>
+            <div key={d.axis} className={cx("flexRow", "gap12", "mb8")}>
+              <span className={cx("text11", "colorMuted", "noShrink", "ssAxisLabel")}>{d.axis}</span>
+              <progress max={100} value={d.value} className={cx("ssDimensionMeter", dimensionTone(d.value))} />
+              <span className={cx("text11", "textRight", "noShrink", "ssAxisValue", dimensionTone(d.value))}>{d.value}</span>
             </div>
           ))}
         </div>
 
-        <div style={{ padding: "28px 28px", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 14 }}>
+        <div className={cx("ssPane", "ssPaneRightBorder")}>
+          <div className={cx("text10", "colorMuted2", "uppercase", "mb14", "trackingWide10")}>
             Score trend · last 5 months
           </div>
-          <div style={{ height: 160, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)", padding: 12 }}>
-            <TrendLine points={current.trend} color={client.color} />
+          <div className={cx("ssTrendWrap")}>
+            <TrendLine points={current.trend} clientId={client.id} />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 6, marginTop: 8 }}>
+          <div className={cx("mt8", "ssMonthsGrid")}>
             {current.trend.map((p) => (
-              <div key={p.month} style={{ fontSize: 10, color: "var(--muted2)", textAlign: "center" }}>
+              <div key={p.month} className={cx("text10", "colorMuted2", "textCenter")}>
                 {p.month}
               </div>
             ))}
           </div>
 
-          <div style={{ marginTop: 20 }}>
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
+          <div className={cx("mt20")}>
+            <div className={cx("text10", "colorMuted2", "uppercase", "mb12", "trackingWide10")}>
               Signals driving score
             </div>
             {current.signals.map((sig, i) => (
-              <div key={String(i)} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: signalColors[sig.type], flexShrink: 0, marginTop: 4 }} />
-                <span style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.5 }}>{sig.text}</span>
+              <div key={String(i)} className={cx("flexRow", "gap10", "ssSignalRow")}>
+                <div className={cx("noShrink", "ssSignalDot", signalColors[sig.type])} />
+                <span className={cx("text12", "colorMuted", "lh15")}>{sig.text}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ padding: "28px 28px" }}>
-          <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 14 }}>
+        <div className={cx("ssPane")}>
+          <div className={cx("text10", "colorMuted2", "uppercase", "mb14", "trackingWide10")}>
             Recommended actions
           </div>
           {current.risk === "critical" ? (
-            <div style={{ padding: "12px 14px", border: "1px solid rgba(255,68,68,0.25)", borderRadius: 3, background: "rgba(255,68,68,0.06)", marginBottom: 16 }}>
-              <div style={{ fontSize: 11, color: "#ff4444", marginBottom: 4 }}>⚑ Immediate attention needed</div>
-              <div style={{ fontSize: 11, color: "#a0a0b0" }}>Score declining rapidly. Escalate to account manager before client initiates conversation.</div>
+            <div className={cx("mb16", "ssCriticalAlert")}>
+              <div className={cx("text11", "mb4", "ssToneRisk")}>⚑ Immediate attention needed</div>
+              <div className={cx("text11", "colorMuted")}>Score declining rapidly. Escalate to account manager before client initiates conversation.</div>
             </div>
           ) : null}
 
@@ -386,22 +378,25 @@ export function SatisfactionScoresPage({ isActive }: { isActive: boolean }) {
             .filter(Boolean)
             .map((a, i) => {
               const item = a as { action: string; priority: "urgent" | "high" | "medium" | "opportunity" };
-              const colors = { urgent: "#ff4444", high: "#f5c518", medium: "#60a5fa", opportunity: "#a78bfa" };
+              const colors = { urgent: "ssToneRisk", high: "ssToneAmber", medium: "ssToneBlue", opportunity: "ssTonePurple" };
+              const dots = { urgent: "ssSignalNegative", high: "ssSignalAmber", medium: "ssSignalBlue", opportunity: "ssSignalPurple" };
               return (
-                <div key={String(i)} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "9px 12px", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 3, marginBottom: 8, background: "rgba(255,255,255,0.01)" }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: colors[item.priority], flexShrink: 0, marginTop: 4 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.4 }}>{item.action}</div>
-                    <div style={{ fontSize: 9, color: colors[item.priority], letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 3 }}>{item.priority}</div>
+                <div key={String(i)} className={cx("flexRow", "gap10", "mb8", "ssActionRow")}>
+                  <div className={cx("noShrink", "ssSignalDot", dots[item.priority])} />
+                  <div className={cx("flex1")}>
+                    <div className={cx("text12", "colorMuted", "lh14")}>{item.action}</div>
+                    <div className={cx("textXs", "uppercase", "mt3", "trackingWide6", colors[item.priority])}>{item.priority}</div>
                   </div>
                 </div>
               );
             })}
 
-          <div style={{ marginTop: 20, fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
-            Last reviewed
+          <div className={cx("mt20", "mb8")}>
+            <div className={cx("text10", "colorMuted2", "uppercase", "trackingWide10")}>
+              Last reviewed
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: "#a0a0b0" }}>{current.lastReview} · Auto-calculated from portal signals</div>
+          <div className={cx("text12", "colorMuted")}>{current.lastReview} · Auto-calculated from portal signals</div>
         </div>
       </div>
     </section>

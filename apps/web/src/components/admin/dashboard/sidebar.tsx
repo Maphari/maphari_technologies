@@ -9,8 +9,8 @@ export function AdminSidebar({
   grouped,
   allItems,
   page,
-  pinnedPages,
-  recentPages,
+  pinnedPages: _pinnedPages,
+  recentPages: _recentPages,
   navBadgeCounts,
   email,
   onPageChange,
@@ -24,6 +24,14 @@ export function AdminSidebar({
   email: string;
   onPageChange: (page: PageId) => void;
 }) {
+  const navLinkTextStyle = {
+    fontSize: "var(--text-aside-link, 0.82rem)",
+    lineHeight: 1.2,
+    fontFamily: "var(--font-syne), sans-serif",
+    fontWeight: 600,
+  } as const;
+
+  const OTHER_ITEMS_LIMIT = 5;
   const primaryIds: PageId[] = [
     "dashboard",
     "leads",
@@ -50,21 +58,22 @@ export function AdminSidebar({
     [allItems],
   );
 
-  const pinnedItems = useMemo(
-    () =>
-      pinnedPages
-        .map((id) => allItems.find((item) => item.id === id))
-        .filter((item): item is NavItem => Boolean(item)),
-    [allItems, pinnedPages],
-  );
-
-  const recentItems = useMemo(
-    () =>
-      recentPages
-        .map((id) => allItems.find((item) => item.id === id))
-        .filter((item): item is NavItem => Boolean(item)),
-    [allItems, recentPages],
-  );
+  const otherItems = useMemo(() => {
+    const primarySet = new Set(primaryItems.map((item) => item.id));
+    const candidates = allItems.filter(
+      (item) => !primarySet.has(item.id),
+    );
+    const limited = candidates.slice(0, OTHER_ITEMS_LIMIT);
+    const active = candidates.find((item) => item.id === page);
+    if (
+      active &&
+      !limited.some((item) => item.id === active.id) &&
+      limited.length > 0
+    ) {
+      return [...limited.slice(0, OTHER_ITEMS_LIMIT - 1), active];
+    }
+    return limited;
+  }, [allItems, primaryItems, page]);
 
   const allPagesFiltered = useMemo(() => {
     const query = allPagesQuery.trim().toLowerCase();
@@ -186,10 +195,11 @@ export function AdminSidebar({
         key={item.id}
         type="button"
         className={`${styles.navItem} ${page === item.id ? styles.navItemActive : ""}`}
+        style={navLinkTextStyle}
         onClick={() => onPageChange(item.id)}
       >
         <NavIcon id={item.id} className={styles.navIcon} />
-        <span>{item.label}</span>
+        {item.label}
         {typeof navBadgeCounts[item.id] === "number" &&
         (navBadgeCounts[item.id] ?? 0) > 0 ? (
           <span
@@ -220,30 +230,13 @@ export function AdminSidebar({
           {primaryItems.map((item) => renderNavItem(item))}
         </div>
 
-        {pinnedItems.length > 0 ? (
+        {otherItems.length > 0 ? (
           <div>
-            <div className={styles.navSectionLabel}>Pinned</div>
-            {pinnedItems.map((item) => renderNavItem(item))}
+            <div className={styles.navSectionLabel}>Other</div>
+            {otherItems.map((item) => renderNavItem(item))}
           </div>
         ) : null}
 
-        {recentItems.length > 0 ? (
-          <div>
-            <div className={styles.navSectionLabel}>Recent</div>
-            {recentItems.map((item) => renderNavItem(item))}
-          </div>
-        ) : null}
-
-        <div className={styles.navSectionActions}>
-          <button
-            type="button"
-            className={styles.navActionBtn}
-            onClick={() => (showAllPages ? closeAllPages() : openAllPages())}
-          >
-            {showAllPages ? "Close app grid" : "Open app grid"}{" "}
-            <span className={styles.navActionHint}>⌘/Ctrl+K</span>
-          </button>
-        </div>
       </nav>
 
       {showAllPages ? (

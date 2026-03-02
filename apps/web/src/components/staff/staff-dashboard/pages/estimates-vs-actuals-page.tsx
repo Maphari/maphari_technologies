@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { cx } from "../style";
 
-type ClientRow = { id: number; name: string; avatar: string; color: string };
+type ClientRow = { id: number; name: string; avatar: string };
 type MilestoneStatus = "delivered" | "in_progress";
 type MilestoneCategory = "Design" | "Strategy" | "Comms" | "Admin";
 type Milestone = {
@@ -17,11 +17,11 @@ type Milestone = {
 };
 
 const clients: ClientRow[] = [
-  { id: 1, name: "Volta Studios", avatar: "VS", color: "var(--accent)" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "#a78bfa" },
-  { id: 3, name: "Mira Health", avatar: "MH", color: "#60a5fa" },
-  { id: 4, name: "Dune Collective", avatar: "DC", color: "#f5c518" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "#ff8c00" }
+  { id: 1, name: "Volta Studios", avatar: "VS" },
+  { id: 2, name: "Kestrel Capital", avatar: "KC" },
+  { id: 3, name: "Mira Health", avatar: "MH" },
+  { id: 4, name: "Dune Collective", avatar: "DC" },
+  { id: 5, name: "Okafor & Sons", avatar: "OS" }
 ];
 
 const milestones: Milestone[] = [
@@ -59,11 +59,21 @@ const categoryData = [
 function variance(estimated: number, actual: number) {
   return actual - estimated;
 }
+
 function variancePct(estimated: number, actual: number) {
   return Math.round(((actual - estimated) / estimated) * 100);
 }
-function varColor(v: number) {
-  return v > 2 ? "#ff4444" : v > 0 ? "#f5c518" : "var(--accent)";
+
+function varianceToneClass(value: number) {
+  if (value > 2) return "evaToneBad";
+  if (value > 0) return "evaToneWarn";
+  return "evaToneGood";
+}
+
+function accuracyToneClass(value: number) {
+  if (value >= 85) return "evaToneGood";
+  if (value >= 70) return "evaToneWarn";
+  return "evaToneBad";
 }
 
 export function EstimatesVsActualsPage({ isActive }: { isActive: boolean }) {
@@ -72,6 +82,7 @@ export function EstimatesVsActualsPage({ isActive }: { isActive: boolean }) {
   const [sort, setSort] = useState<"variance" | "client" | "estimated">("variance");
 
   const filtered = milestones.filter((milestone) => clientFilter === "all" || milestone.clientId === Number(clientFilter));
+
   const sorted = [...filtered].sort((a, b) => {
     if (sort === "variance") return Math.abs(variance(b.estimated, b.actual)) - Math.abs(variance(a.estimated, a.actual));
     if (sort === "client") return a.clientId - b.clientId;
@@ -90,122 +101,138 @@ export function EstimatesVsActualsPage({ isActive }: { isActive: boolean }) {
 
   const pointsEstimated = useMemo(() => {
     const xStep = 100 / (weeklyData.length - 1);
-    return weeklyData.map((row, i) => `${i * xStep},${100 - (row.estimated / weeklyMax) * 100}`).join(" ");
+    return weeklyData.map((row, index) => `${index * xStep},${100 - (row.estimated / weeklyMax) * 100}`).join(" ");
   }, [weeklyMax]);
+
   const pointsActual = useMemo(() => {
     const xStep = 100 / (weeklyData.length - 1);
-    return weeklyData.map((row, i) => `${i * xStep},${100 - (row.actual / weeklyMax) * 100}`).join(" ");
+    return weeklyData.map((row, index) => `${index * xStep},${100 - (row.actual / weeklyMax) * 100}`).join(" ");
   }, [weeklyMax]);
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-estimates-vs-actuals">
-      <style>{`
-        .eva-filter-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .eva-tab-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .eva-sort-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .eva-sort-btn:hover { color: #a0a0b0 !important; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-estimates-vs-actuals">
+      <div className={cx("pageHeaderBar")}> 
+        <div className={cx("flexBetween", "mb20", "evaHeaderTop")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-              Staff Dashboard / Performance
-            </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              Estimates vs Actuals
-            </h1>
+            <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Performance</div>
+            <h1 className={cx("pageTitleText")}>Estimates vs Actuals</h1>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
+
+          <div className={cx("evaTopStats")}>
             {[
-              { label: "Accuracy", value: `${accuracy}%`, color: accuracy >= 85 ? "var(--accent)" : accuracy >= 70 ? "#f5c518" : "#ff4444" },
-              { label: "Over budget", value: overCount, color: overCount > 0 ? "#ff4444" : "var(--muted2)" },
-              { label: "Under budget", value: underCount, color: underCount > 0 ? "var(--accent)" : "var(--muted2)" },
-              { label: "Total variance", value: `${totalVar > 0 ? "+" : ""}${Math.round(totalVar * 10) / 10}h`, color: varColor(totalVar) }
+              { label: "Accuracy", value: `${accuracy}%`, toneClass: accuracyToneClass(accuracy) },
+              { label: "Over budget", value: overCount, toneClass: overCount > 0 ? "evaToneBad" : "evaToneMuted" },
+              { label: "Under budget", value: underCount, toneClass: underCount > 0 ? "evaToneGood" : "evaToneMuted" },
+              {
+                label: "Total variance",
+                value: `${totalVar > 0 ? "+" : ""}${Math.round(totalVar * 10) / 10}h`,
+                toneClass: varianceToneClass(totalVar)
+              }
             ].map((stat) => (
-              <div key={stat.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+              <div key={stat.label} className={cx("snStatCard")}>
+                <div className={cx("statLabelNew")}>{stat.label}</div>
+                <div className={cx("statValueNew", stat.toneClass)}>{stat.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex" }}>
+        <div className={cx("flexBetween", "evaTabsRow")}> 
+          <div className={cx("flexRow", "evaTabStrip")}> 
             {[
-              { k: "milestones" as const, l: "By milestone" },
-              { k: "weekly" as const, l: "Weekly trend" },
-              { k: "category" as const, l: "By category" }
+              { key: "milestones" as const, label: "By milestone" },
+              { key: "weekly" as const, label: "Weekly trend" },
+              { key: "category" as const, label: "By category" }
             ].map((tabItem) => (
-              <button key={tabItem.k} className="eva-tab-btn" onClick={() => setTab(tabItem.k)} style={{ padding: "10px 20px", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", background: "transparent", color: tab === tabItem.k ? "var(--accent)" : "var(--muted2)", borderBottom: `2px solid ${tab === tabItem.k ? "var(--accent)" : "transparent"}`, marginBottom: -1 }}>
-                {tabItem.l}
+              <button
+                key={tabItem.key}
+                type="button"
+                className={cx("evaTabBtn", tab === tabItem.key && "evaTabBtnActive")}
+                onClick={() => setTab(tabItem.key)}
+              >
+                {tabItem.label}
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 6, paddingBottom: 10 }}>
-            <button className="eva-filter-btn" onClick={() => setClientFilter("all")} style={{ padding: "5px 12px", fontSize: 10, borderRadius: 2, background: clientFilter === "all" ? "var(--accent)" : "rgba(255,255,255,0.04)", color: clientFilter === "all" ? "#050508" : "var(--muted2)" }}>
-              All
-            </button>
-            {clients.map((client) => (
-              <button key={client.id} className="eva-filter-btn" onClick={() => setClientFilter(clientFilter === String(client.id) ? "all" : String(client.id))} style={{ padding: "5px 12px", fontSize: 10, borderRadius: 2, background: clientFilter === String(client.id) ? `${client.color}20` : "rgba(255,255,255,0.04)", color: clientFilter === String(client.id) ? client.color : "var(--muted2)", border: `1px solid ${clientFilter === String(client.id) ? `${client.color}40` : "transparent"}` }}>
-                {client.avatar}
-              </button>
-            ))}
+
+          <div className={cx("evaClientFilters", "filterRow")}> 
+            <select
+              className={cx("filterSelect")}
+              aria-label="Filter client"
+              value={clientFilter}
+              onChange={(event) => setClientFilter(event.target.value)}
+            >
+              <option value="all">All clients</option>
+              {clients.map((client) => (
+                <option key={client.id} value={String(client.id)}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
 
-      <div style={{ padding: "28px 0" }}>
+      <div className={cx("evaContent")}> 
         {tab === "milestones" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 32 }}>
+          <div className={cx("evaLayout")}> 
             <div>
-              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16 }}>
-                <span style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.08em" }}>SORT</span>
-                {[
-                  { k: "variance" as const, l: "Biggest variance" },
-                  { k: "estimated" as const, l: "Largest job" },
-                  { k: "client" as const, l: "By client" }
-                ].map((item) => (
-                  <button key={item.k} className="eva-sort-btn" onClick={() => setSort(item.k)} style={{ fontSize: 10, background: "transparent", color: sort === item.k ? "var(--text)" : "var(--muted2)", borderBottom: `1px solid ${sort === item.k ? "var(--accent)" : "transparent"}`, paddingBottom: 1 }}>
-                    {item.l}
-                  </button>
-                ))}
+              <div className={cx("evaSortRow")}> 
+                <span className={cx("evaSortLabel")}>Sort</span>
+                <select
+                  className={cx("filterSelect")}
+                  aria-label="Sort milestones"
+                  value={sort}
+                  onChange={(event) => setSort(event.target.value as "variance" | "estimated" | "client")}
+                >
+                  <option value="variance">Biggest variance</option>
+                  <option value="estimated">Largest job</option>
+                  <option value="client">By client</option>
+                </select>
               </div>
 
               {sorted.map((milestone) => {
-                const v = variance(milestone.estimated, milestone.actual);
-                const vPct = variancePct(milestone.estimated, milestone.actual);
-                const client = clients.find((entry) => entry.id === milestone.clientId);
+                const varianceHours = variance(milestone.estimated, milestone.actual);
+                const variancePercent = variancePct(milestone.estimated, milestone.actual);
+                const toneClass = varianceToneClass(varianceHours);
                 const maxHours = Math.max(milestone.estimated, milestone.actual);
+                const client = clients.find((entry) => entry.id === milestone.clientId);
+
                 return (
-                  <div key={milestone.id} style={{ marginBottom: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div key={milestone.id} className={cx("cardSurface", "mb14")}> 
+                    <div className={cx("flexBetween", "mb10", "evaMilestoneHead")}> 
                       <div>
-                        <div style={{ fontSize: 13, color: "var(--text)", marginBottom: 3 }}>{milestone.title}</div>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <span style={{ fontSize: 10, color: client?.color }}>{client?.name}</span>
-                          <span style={{ fontSize: 10, color: "var(--muted2)" }}>{milestone.category}</span>
-                          {milestone.status === "in_progress" ? <span style={{ fontSize: 9, color: "#60a5fa", padding: "1px 5px", background: "rgba(96,165,250,0.1)", borderRadius: 2 }}>In progress</span> : null}
+                        <div className={cx("text13", "colorText", "mb4")}>{milestone.title}</div>
+                        <div className={cx("evaMilestoneMeta")}> 
+                          <span className={cx("text10", "evaClientLabel")} data-client-id={String(milestone.clientId)}>
+                            {client?.name ?? "Unknown"}
+                          </span>
+                          <span className={cx("text10", "colorMuted2")}>{milestone.category}</span>
+                          {milestone.status === "in_progress" ? <span className={cx("evaStatusChip")}>In progress</span> : null}
                         </div>
                       </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: varColor(v) }}>{v > 0 ? "+" : ""}{Math.round(v * 10) / 10}h</div>
-                        <div style={{ fontSize: 10, color: varColor(v) }}>{vPct > 0 ? "+" : ""}{vPct}%</div>
+
+                      <div className={cx("textRight")}> 
+                        <div className={cx("text14", "fw600", toneClass)}>
+                          {varianceHours > 0 ? "+" : ""}
+                          {Math.round(varianceHours * 10) / 10}h
+                        </div>
+                        <div className={cx("text10", toneClass)}>
+                          {variancePercent > 0 ? "+" : ""}
+                          {variancePercent}%
+                        </div>
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <div className={cx("flexCol", "gap6")}> 
                       {[
-                        { label: "Est", value: milestone.estimated, color: "rgba(255,255,255,0.15)" },
-                        { label: "Act", value: milestone.actual, color: varColor(v) }
+                        { label: "Est", value: milestone.estimated, toneClass: "evaHoursProgressEstimated" },
+                        { label: "Act", value: milestone.actual, toneClass }
                       ].map((bar) => (
-                        <div key={bar.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ fontSize: 9, color: "var(--muted2)", width: 22, flexShrink: 0 }}>{bar.label}</span>
-                          <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.04)", borderRadius: 3 }}>
-                            <div style={{ height: "100%", width: `${(bar.value / (maxHours * 1.2)) * 100}%`, background: bar.color, borderRadius: 3, transition: "width 0.4s ease" }} />
-                          </div>
-                          <span style={{ fontSize: 10, color: "#a0a0b0", width: 32, textAlign: "right", flexShrink: 0 }}>{bar.value}h</span>
+                        <div key={bar.label} className={cx("evaHoursRow")}> 
+                          <span className={cx("text10", "colorMuted2", "noShrink", "evaHoursLabel")}>{bar.label}</span>
+                          <progress className={cx("evaHoursProgress", bar.toneClass)} max={maxHours * 1.2} value={bar.value} />
+                          <span className={cx("text10", "colorMuted", "noShrink", "textRight", "evaHoursValue")}>{bar.value}h</span>
                         </div>
                       ))}
                     </div>
@@ -214,62 +241,75 @@ export function EstimatesVsActualsPage({ isActive }: { isActive: boolean }) {
               })}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ padding: "16px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>Portfolio summary</div>
+            <div className={cx("flexCol", "gap16")}> 
+              <div className={cx("cardSurface")}> 
+                <div className={cx("sectionLabel", "mb12")}>Portfolio summary</div>
                 {[
-                  { label: "Total estimated", value: `${totalEst}h`, color: "#a0a0b0" },
-                  { label: "Total actual", value: `${Math.round(totalAct * 10) / 10}h`, color: "#a0a0b0" },
-                  { label: "Net variance", value: `${totalVar > 0 ? "+" : ""}${Math.round(totalVar * 10) / 10}h`, color: varColor(totalVar) },
-                  { label: "Estimate accuracy", value: `${accuracy}%`, color: accuracy >= 85 ? "var(--accent)" : "#f5c518" }
+                  { label: "Total estimated", value: `${totalEst}h`, toneClass: "evaToneMuted" },
+                  { label: "Total actual", value: `${Math.round(totalAct * 10) / 10}h`, toneClass: "evaToneMuted" },
+                  {
+                    label: "Net variance",
+                    value: `${totalVar > 0 ? "+" : ""}${Math.round(totalVar * 10) / 10}h`,
+                    toneClass: varianceToneClass(totalVar)
+                  },
+                  { label: "Estimate accuracy", value: `${accuracy}%`, toneClass: accuracyToneClass(accuracy) }
                 ].map((row) => (
-                  <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                    <span style={{ fontSize: 11, color: "var(--muted2)" }}>{row.label}</span>
-                    <span style={{ fontSize: 12, color: row.color, fontWeight: 500 }}>{row.value}</span>
+                  <div key={row.label} className={cx("dividerRow")}> 
+                    <span className={cx("text11", "colorMuted2")}>{row.label}</span>
+                    <span className={cx("text12", "fw600", row.toneClass)}>{row.value}</span>
                   </div>
                 ))}
               </div>
 
-              <div style={{ padding: "16px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>By client</div>
-                {clients.filter((client) => filtered.some((milestone) => milestone.clientId === client.id)).map((client) => {
-                  const clientMilestones = filtered.filter((milestone) => milestone.clientId === client.id);
-                  const clientEst = clientMilestones.reduce((sum, milestone) => sum + milestone.estimated, 0);
-                  const clientAct = clientMilestones.reduce((sum, milestone) => sum + milestone.actual, 0);
-                  const clientVar = clientAct - clientEst;
-                  return (
-                    <div key={client.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                      <span style={{ fontSize: 10, color: client.color, width: 80, flexShrink: 0 }}>{client.name.split(" ")[0]}</span>
-                      <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.04)", borderRadius: 2 }}>
-                        <div style={{ height: "100%", width: `${Math.min((clientAct / clientEst) * 100, 150)}%`, background: varColor(clientVar), borderRadius: 2 }} />
+              <div className={cx("cardSurface")}> 
+                <div className={cx("sectionLabel", "mb12")}>By client</div>
+                {clients
+                  .filter((client) => filtered.some((milestone) => milestone.clientId === client.id))
+                  .map((client) => {
+                    const clientMilestones = filtered.filter((milestone) => milestone.clientId === client.id);
+                    const clientEst = clientMilestones.reduce((sum, milestone) => sum + milestone.estimated, 0);
+                    const clientAct = clientMilestones.reduce((sum, milestone) => sum + milestone.actual, 0);
+                    const clientVar = clientAct - clientEst;
+                    const ratio = clientEst > 0 ? Math.min((clientAct / clientEst) * 100, 150) : 0;
+                    const toneClass = varianceToneClass(clientVar);
+
+                    return (
+                      <div key={client.id} className={cx("evaClientSummaryRow")}> 
+                        <span className={cx("text10", "noShrink", "evaClientLabel", "evaClientLabelShort")} data-client-id={String(client.id)}>
+                          {client.name.split(" ")[0]}
+                        </span>
+                        <progress className={cx("evaClientProgress", toneClass)} max={150} value={ratio} />
+                        <span className={cx("text10", "noShrink", "textRight", "evaClientDelta", toneClass)}>
+                          {clientVar > 0 ? "+" : ""}
+                          {Math.round(clientVar * 10) / 10}h
+                        </span>
                       </div>
-                      <span style={{ fontSize: 10, color: varColor(clientVar), width: 36, textAlign: "right", flexShrink: 0 }}>{clientVar > 0 ? "+" : ""}{Math.round(clientVar * 10) / 10}h</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           </div>
         ) : null}
 
         {tab === "weekly" ? (
-          <div style={{ maxWidth: 760 }}>
-            <div style={{ fontSize: 12, color: "var(--muted2)", marginBottom: 20 }}>Estimated vs actual hours logged per week - last 7 weeks</div>
-            <div style={{ height: 280, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)", padding: 16 }}>
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
-                <polyline fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.8" points={pointsEstimated} />
+          <div className={cx("evaWeeklyChart")}> 
+            <div className={cx("text12", "colorMuted2", "mb20")}>Estimated vs actual hours logged per week - last 7 weeks</div>
+            <div className={cx("cardSurface", "p16", "evaWeeklyCard")}> 
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className={cx("evaWeeklySvg")}> 
+                <polyline fill="none" stroke="color-mix(in srgb, var(--text) 20%, transparent)" strokeWidth="1.8" points={pointsEstimated} />
                 <polyline fill="none" stroke="var(--accent)" strokeWidth="1.8" points={pointsActual} />
-                {weeklyData.map((row, i) => {
+                {weeklyData.map((row, index) => {
                   const xStep = 100 / (weeklyData.length - 1);
-                  const x = i * xStep;
+                  const x = index * xStep;
                   const y = 100 - (row.actual / weeklyMax) * 100;
                   return <circle key={row.week} cx={x} cy={y} r="1.5" fill="var(--accent)" />;
                 })}
               </svg>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: `repeat(${String(weeklyData.length)}, 1fr)`, gap: 8, marginTop: 10 }}>
+
+            <div className={cx("evaWeekLabels")}> 
               {weeklyData.map((row) => (
-                <div key={row.week} style={{ fontSize: 10, color: "var(--muted2)", textAlign: "center" }}>
+                <div key={row.week} className={cx("text10", "colorMuted2", "textCenter", "evaWeekLabel")}> 
                   {row.week}
                 </div>
               ))}
@@ -278,35 +318,36 @@ export function EstimatesVsActualsPage({ isActive }: { isActive: boolean }) {
         ) : null}
 
         {tab === "category" ? (
-          <div style={{ maxWidth: 640 }}>
-            <div style={{ fontSize: 12, color: "var(--muted2)", marginBottom: 20 }}>Estimated vs actual hours by work category - all time</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className={cx("evaCategoryView")}> 
+            <div className={cx("text12", "colorMuted2", "mb20")}>Estimated vs actual hours by work category - all time</div>
+            <div className={cx("flexCol", "gap10")}> 
               {categoryData.map((category) => {
-                const v = category.actual - category.estimated;
+                const varianceHours = category.actual - category.estimated;
+                const variancePercent = variancePct(category.estimated, category.actual);
+                const toneClass = varianceToneClass(varianceHours);
+
                 return (
-                  <div key={category.name} style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
-                      <span style={{ fontSize: 12, color: "var(--text)", width: 80 }}>{category.name}</span>
-                      <span style={{ fontSize: 11, color: "var(--muted2)" }}>Est {category.estimated}h</span>
-                      <span style={{ fontSize: 11, color: "var(--muted2)" }}>Act {category.actual}h</span>
-                      <span style={{ fontSize: 12, color: varColor(v), marginLeft: "auto", fontWeight: 500 }}>
-                        {v > 0 ? "+" : ""}
-                        {Math.round(v * 10) / 10}h ({variancePct(category.estimated, category.actual) > 0 ? "+" : ""}
-                        {variancePct(category.estimated, category.actual)}%)
+                  <div key={category.name} className={cx("cardSurface")}> 
+                    <div className={cx("flexRow", "gap14", "mb8", "evaCategoryTop")}> 
+                      <span className={cx("text12", "colorText", "evaCategoryName")}>{category.name}</span>
+                      <span className={cx("text11", "colorMuted2")}>Est {category.estimated}h</span>
+                      <span className={cx("text11", "colorMuted2")}>Act {category.actual}h</span>
+                      <span className={cx("text12", "fw600", "evaMlAuto", toneClass)}>
+                        {varianceHours > 0 ? "+" : ""}
+                        {Math.round(varianceHours * 10) / 10}h ({variancePercent > 0 ? "+" : ""}
+                        {variancePercent}%)
                       </span>
                     </div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 9, color: "var(--muted2)", marginBottom: 4 }}>Estimated</div>
-                        <div style={{ height: 8, background: "rgba(255,255,255,0.04)", borderRadius: 3 }}>
-                          <div style={{ width: `${(category.estimated / categoryMax) * 100}%`, height: "100%", background: "rgba(255,255,255,0.18)", borderRadius: 3 }} />
-                        </div>
+
+                    <div className={cx("flexRow", "gap10")}> 
+                      <div className={cx("flex1")}> 
+                        <div className={cx("text10", "colorMuted2", "mb4", "evaMiniLabel")}>Estimated</div>
+                        <progress className={cx("evaCategoryProgress", "evaHoursProgressEstimated")} max={categoryMax} value={category.estimated} />
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 9, color: "var(--muted2)", marginBottom: 4 }}>Actual</div>
-                        <div style={{ height: 8, background: "rgba(255,255,255,0.04)", borderRadius: 3 }}>
-                          <div style={{ width: `${(category.actual / categoryMax) * 100}%`, height: "100%", background: varColor(v), borderRadius: 3 }} />
-                        </div>
+
+                      <div className={cx("flex1")}> 
+                        <div className={cx("text10", "colorMuted2", "mb4", "evaMiniLabel")}>Actual</div>
+                        <progress className={cx("evaCategoryProgress", toneClass)} max={categoryMax} value={category.actual} />
                       </div>
                     </div>
                   </div>

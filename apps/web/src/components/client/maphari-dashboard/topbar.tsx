@@ -1,120 +1,115 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import { styles } from "./style";
+import { DashboardUtilityIcon } from "@/components/shared/dashboard-utility-icon";
+import Link from "next/link";
 
-type TopbarDateRange = "7d" | "30d" | "90d" | "all";
-
-type TopbarProps = {
-  topbarEyebrow: string;
-  topbarTitle: string;
-  activeProjectId: string | null;
-  projectOptions: Array<{ id: string; name: string }>;
-  dateRange: TopbarDateRange;
-  notificationCount: number;
-  onProjectChange: (projectId: string | null) => void;
-  onDateRangeChange: (value: TopbarDateRange) => void;
-  onOpenCommandSearch: () => void;
+type ClientTopbarProps = {
+  eyebrow: string;
+  title: string;
+  onOpenApps: () => void;
   onOpenNotifications: () => void;
-  onOpenMessages: () => void;
+  onNewMessage: () => void;
+  unreadCount: number;
+  onLogout: () => void;
+  clientInitials: string;
+  clientEmail: string;
+  isLoggingOut?: boolean;
 };
 
 export function ClientTopbar({
-  topbarEyebrow,
-  topbarTitle,
-  activeProjectId,
-  projectOptions,
-  dateRange,
-  notificationCount,
-  onProjectChange,
-  onDateRangeChange,
-  onOpenCommandSearch,
+  eyebrow,
+  title,
+  onOpenApps,
   onOpenNotifications,
-  onOpenMessages,
-}: TopbarProps) {
+  onNewMessage,
+  unreadCount,
+  onLogout,
+  clientInitials,
+  clientEmail,
+  isLoggingOut = false,
+}: ClientTopbarProps) {
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function onDocumentClick(event: MouseEvent): void {
+      if (!profileMenuRef.current) return;
+      if (!profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") setProfileMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDocumentClick);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onDocumentClick);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  function openAppGrid(): void {
+    onOpenApps();
+  }
+
   return (
-    <div className={styles.topbar}>
-
-      {/* ── Breadcrumb title (editorial) ─────────────────────────── */}
+    <header className={styles.topbar}>
       <div className={styles.topbarTitle}>
-        <span className={styles.topbarEyebrow}>{topbarEyebrow} ›</span>{" "}
-        {topbarTitle}
+        {eyebrow} <span>/ {title}</span>
       </div>
 
-      {/* ── Search pill (center) ─────────────────────────────────── */}
-      <button
-        className={styles.shortcutButton}
-        type="button"
-        aria-label="Open command search"
-        onClick={onOpenCommandSearch}
-      >
-        Search
-        <span>⌘K</span>
-      </button>
-
-      {/* ── Filters ─────────────────────────────────────────────── */}
-      <div className={styles.topbarFilters}>
-        <select
-          className={styles.topbarSelect}
-          aria-label="Filter by project"
-          value={activeProjectId ?? "__all__"}
-          onChange={(event) =>
-            onProjectChange(event.target.value === "__all__" ? null : event.target.value)
-          }
-        >
-          <option value="__all__">All projects</option>
-          {projectOptions.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          className={styles.topbarSelect}
-          aria-label="Date range"
-          value={dateRange}
-          onChange={(event) => onDateRangeChange(event.target.value as TopbarDateRange)}
-        >
-          <option value="7d">Last 7 days</option>
-          <option value="30d">Last 30 days</option>
-          <option value="90d">Last 90 days</option>
-          <option value="all">All time</option>
-        </select>
-      </div>
-
-      {/* ── Actions ─────────────────────────────────────────────── */}
       <div className={styles.topbarActions}>
         <button
-          className={styles.iconButton}
-          title="Notifications"
           type="button"
-          aria-label={
-            notificationCount > 0
-              ? `Notifications (${notificationCount} unread)`
-              : "Notifications"
-          }
-          onClick={onOpenNotifications}
+          className={styles.iconBtn}
+          onClick={openAppGrid}
+          aria-label="Open app grid"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
-            <path
-              d="M12 3a6 6 0 0 0-6 6v2.6l-1.4 2.8A1 1 0 0 0 5.5 16h13a1 1 0 0 0 .9-1.6L18 11.6V9a6 6 0 0 0-6-6Zm0 18a3 3 0 0 0 2.8-2H9.2A3 3 0 0 0 12 21Z"
-              fill="currentColor"
-            />
-          </svg>
-          {notificationCount > 0 ? (
-            <span className={styles.notifCount}>
-              {notificationCount > 99 ? "99+" : String(notificationCount)}
-            </span>
-          ) : null}
+          <DashboardUtilityIcon kind="apps" className={styles.topbarIcon} />
+        </button>
+        <button type="button" className={styles.iconBtn} onClick={onOpenNotifications} aria-label="Open notifications">
+          <DashboardUtilityIcon kind="notifications" className={styles.topbarIcon} />
+          {unreadCount > 0 ? <span className={styles.dot} /> : null}
         </button>
 
-        <button
-          className={`${styles.button} ${styles.buttonAccent}`}
-          type="button"
-          onClick={onOpenMessages}
-          aria-label="Compose a new message"
-        >
-          + Message
+        <button type="button" className={styles.iconBtn} onClick={onNewMessage} aria-label="Open messages">
+          <DashboardUtilityIcon kind="messages" className={styles.topbarIcon} />
         </button>
+
+        <Link
+          href="https://designsystem.digital.gov/components/header/"
+          target="_blank"
+          rel="noreferrer"
+          className={styles.iconBtn}
+          aria-label="Open help docs"
+        >
+          <DashboardUtilityIcon kind="help" className={styles.topbarIcon} />
+        </Link>
+
+        <div className={styles.topbarUserMenu} ref={profileMenuRef}>
+          <button
+            type="button"
+            className={styles.topbarUserBtn}
+            onClick={() => setProfileMenuOpen((value) => !value)}
+            aria-expanded={profileMenuOpen}
+            aria-label="Open account menu"
+          >
+            <span className={styles.topbarUserAvatar}>{clientInitials}</span>
+            <span className={styles.topbarUserLabel}>Client</span>
+          </button>
+          {profileMenuOpen ? (
+            <div className={styles.topbarUserDropdown}>
+              <div className={styles.topbarUserEmail}>{clientEmail}</div>
+              <button type="button" className={styles.topbarUserItem} onClick={onLogout} disabled={isLoggingOut}>
+                {isLoggingOut ? "Logging out..." : "Logout"}
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </header>
   );
 }

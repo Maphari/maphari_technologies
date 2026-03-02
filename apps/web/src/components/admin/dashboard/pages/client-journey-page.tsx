@@ -3,28 +3,11 @@
 import { useMemo, useState } from "react";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { toneClass } from "./admin-page-utils";
 
 type JourneyTab = "journey map" | "handoff health" | "stage aging" | "moments";
 type JourneyStage = "Acquisition" | "Onboarding" | "Adoption" | "Value" | "Renewal" | "Advocacy";
-
-function fmtDate(value?: string | null): string {
-  if (!value) return "Not set";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "Not set";
-  return new Intl.DateTimeFormat("en-ZA", { month: "short", day: "2-digit" }).format(d);
-}
 
 function daysFromNow(value?: string | null): number | null {
   if (!value) return null;
@@ -41,18 +24,18 @@ function daysSince(value?: string | null): number {
 }
 
 function stageColor(stage: JourneyStage): string {
-  if (stage === "Acquisition") return C.blue;
-  if (stage === "Onboarding") return C.amber;
-  if (stage === "Adoption") return C.blue;
-  if (stage === "Value") return C.primary;
-  if (stage === "Renewal") return C.amber;
-  return C.primary;
+  if (stage === "Acquisition") return "var(--blue)";
+  if (stage === "Onboarding") return "var(--amber)";
+  if (stage === "Adoption") return "var(--blue)";
+  if (stage === "Value") return "var(--accent)";
+  if (stage === "Renewal") return "var(--amber)";
+  return "var(--accent)";
 }
 
 function riskColor(level: "Low" | "Medium" | "High"): string {
-  if (level === "High") return C.red;
-  if (level === "Medium") return C.amber;
-  return C.primary;
+  if (level === "High") return "var(--red)";
+  if (level === "Medium") return "var(--amber)";
+  return "var(--accent)";
 }
 
 function resolveCurrency(input?: string): string {
@@ -259,120 +242,102 @@ export function ClientJourneyPage({
   const canAct = session?.user.role === "ADMIN" || session?.user.role === "STAFF";
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: "Syne, sans-serif", padding: 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / CLIENT MANAGEMENT</div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>Client Journey</h1>
-          <div style={{ marginTop: 4, fontSize: 13, color: C.muted }}>Lifecycle orchestration · Stage flow · Handoff reliability</div>
+          <div className={styles.pageEyebrow}>ADMIN / CLIENT MANAGEMENT</div>
+          <h1 className={styles.pageTitle}>Client Journey</h1>
+          <div className={styles.pageSub}>Lifecycle orchestration · Stage flow · Handoff reliability</div>
         </div>
-        <button style={{ background: C.primary, color: C.bg, border: "none", padding: "8px 16px", fontFamily: "DM Mono, monospace", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Export Journey</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent")}>Export Journey</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Tracked Accounts", value: filtered.length.toString(), sub: `${riskHigh} high risk`, color: C.primary },
-          { label: "Handoff Gaps", value: handoffGaps.length.toString(), sub: "Won leads without project", color: handoffGaps.length > 0 ? C.red : C.primary },
-          { label: "Renewal Window (60d)", value: renewalWindow.toString(), sub: "Needs retention plan", color: renewalWindow > 0 ? C.amber : C.primary },
-          { label: "Advocacy Ready", value: advocacyReady.toString(), sub: "Low risk + post-value", color: C.blue }
+          { label: "Tracked Accounts", value: filtered.length.toString(), sub: `${riskHigh} high risk`, color: "var(--accent)" },
+          { label: "Handoff Gaps", value: handoffGaps.length.toString(), sub: "Won leads without project", color: handoffGaps.length > 0 ? "var(--red)" : "var(--accent)" },
+          { label: "Renewal Window (60d)", value: renewalWindow.toString(), sub: "Needs retention plan", color: renewalWindow > 0 ? "var(--amber)" : "var(--accent)" },
+          { label: "Advocacy Ready", value: advocacyReady.toString(), sub: "Low risk + post-value", color: "var(--blue)" }
         ].map((k) => (
-          <div key={k.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{k.label}</div>
-            <div style={{ fontFamily: "DM Mono, monospace", fontSize: 24, fontWeight: 800, color: k.color, marginBottom: 4 }}>{k.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{k.sub}</div>
+          <div key={k.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{k.label}</div>
+            <div className={cx(styles.statValue, "journeyToneText", toneClass(k.color))}>{k.value}</div>
+            <div className={cx("text11", "colorMuted")}>{k.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 14, marginBottom: 16 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value as typeof stageFilter)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+      <div className={cx("card", "p14", "mb12")}>
+        <div className={cx("flexRow", "gap10", "flexWrap")}>
+          <select title="Filter by stage" value={stageFilter} onChange={(e) => setStageFilter(e.target.value as typeof stageFilter)} className={styles.formInput}>
             <option value="ALL">All stages</option>
             {(["Acquisition", "Onboarding", "Adoption", "Value", "Renewal", "Advocacy"] as JourneyStage[]).map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
-          <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value as typeof riskFilter)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+          <select title="Filter by risk" value={riskFilter} onChange={(e) => setRiskFilter(e.target.value as typeof riskFilter)} className={styles.formInput}>
             <option value="ALL">All risk</option>
             <option value="Low">Low</option>
             <option value="Medium">Medium</option>
             <option value="High">High</option>
           </select>
-          <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+          <select title="Filter by owner" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} className={styles.formInput}>
             {owners.map((owner) => (
               <option key={owner} value={owner}>{owner === "ALL" ? "All owners" : owner}</option>
             ))}
           </select>
-          <button onClick={() => { setStageFilter("ALL"); setRiskFilter("ALL"); setOwnerFilter("ALL"); }} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.muted, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, cursor: "pointer" }}>
-            Reset
-          </button>
 
-          <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-            {(["journey map", "handoff health", "stage aging", "moments"] as JourneyTab[]).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  borderBottom: activeTab === tab ? `2px solid ${C.primary}` : "none",
-                  color: activeTab === tab ? C.primary : C.muted,
-                  padding: "8px 12px",
-                  fontFamily: "Syne, sans-serif",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: "capitalize",
-                  letterSpacing: "0.06em",
-                  cursor: "pointer"
-                }}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+          <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as JourneyTab)} className={cx(styles.filterSelect, "mlAuto")}>
+            <option value="journey map">journey map</option>
+            <option value="handoff health">handoff health</option>
+            <option value="stage aging">stage aging</option>
+            <option value="moments">moments</option>
+          </select>
         </div>
       </div>
 
       {activeTab === "journey map" ? (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.3fr 110px 90px 120px 120px 120px 1fr", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div className={cx("card", "overflowHidden")}>
+          <div className={cx("journeyMapHead", "fontMono", "text10", "colorMuted", "uppercase")}>
             {["Client", "Stage", "Risk", "Journey Age", "Renewal", "Outstanding", "Next Milestone"].map((h) => <span key={h}>{h}</span>)}
           </div>
-          {filtered.map((row, i) => (
-            <div key={row.id} style={{ display: "grid", gridTemplateColumns: "1.3fr 110px 90px 120px 120px 120px 1fr", padding: "12px 20px", borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center" }}>
+          {filtered.map((row) => (
+            <div key={row.id} className={styles.journeyMapRow}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>{row.name}</div>
-                <div style={{ fontSize: 11, color: C.muted }}>{row.owner}</div>
+                <div className={cx("text13", "fw700")}>{row.name}</div>
+                <div className={cx("text11", "colorMuted")}>{row.owner}</div>
               </div>
-              <span style={{ fontSize: 10, color: stageColor(row.stage), background: `${stageColor(row.stage)}15`, padding: "3px 8px", fontFamily: "DM Mono, monospace" }}>{row.stage}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: riskColor(row.risk) }}>{row.risk}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: row.journeyAgeDays >= 30 ? C.amber : C.muted }}>{row.journeyAgeDays}d</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: row.renewalDays !== null && row.renewalDays <= 30 ? C.amber : C.muted }}>{row.renewalDays === null ? "Not set" : `${row.renewalDays}d`}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: row.outstandingCents > 0 ? C.red : C.muted }}>{money(row.outstandingCents, currency)}</span>
-              <span style={{ fontSize: 11, color: C.muted }}>{row.nextMilestone}</span>
+              <span className={cx("text10", "fontMono", "journeyStageTag", toneClass(stageColor(row.stage)))}>{row.stage}</span>
+              <span className={cx("fontMono", "journeyToneText", toneClass(riskColor(row.risk)))}>{row.risk}</span>
+              <span className={cx("fontMono", "journeyToneText", row.journeyAgeDays >= 30 ? "toneAmber" : "toneMuted")}>{row.journeyAgeDays}d</span>
+              <span className={cx("fontMono", "journeyToneText", row.renewalDays !== null && row.renewalDays <= 30 ? "toneAmber" : "toneMuted")}>{row.renewalDays === null ? "Not set" : `${row.renewalDays}d`}</span>
+              <span className={cx("fontMono", "journeyToneText", row.outstandingCents > 0 ? "toneRed" : "toneMuted")}>{money(row.outstandingCents, currency)}</span>
+              <span className={cx("text11", "colorMuted")}>{row.nextMilestone}</span>
             </div>
           ))}
-          {filtered.length === 0 ? <div style={{ padding: 20, color: C.muted, fontSize: 12 }}>No accounts match your filters.</div> : null}
+          {filtered.length === 0 ? <div className={cx("p20", "colorMuted", "text12")}>No accounts match your filters.</div> : null}
         </div>
       ) : null}
 
       {activeTab === "handoff health" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14 }}>Lead to Delivery Handoffs</div>
+        <div className={cx("grid2")}>
+          <div className={cx("card", "p20")}>
+            <div className={cx("text12", "fw700", "mb14")}>Lead to Delivery Handoffs</div>
             {handoffGaps.length > 0 ? handoffGaps.map((row) => (
-              <div key={row.id} style={{ padding: 10, background: C.bg, border: `1px solid ${C.border}`, marginBottom: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600 }}>{row.name}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: row.handoffGapDays >= 10 ? C.red : C.amber }}>{row.handoffGapDays}d lag</span>
+              <div key={row.id} className={cx("bgBg", "borderDefault", "p10", "mb8")}>
+                <div className={cx("flexBetween", "mb4")}>
+                  <span className={cx("text12", "fw600")}>{row.name}</span>
+                  <span className={cx("fontMono", "journeyToneText", row.handoffGapDays >= 10 ? "toneRed" : "toneAmber")}>{row.handoffGapDays}d lag</span>
                 </div>
-                <div style={{ fontSize: 11, color: C.muted }}>Won lead but no project kickoff yet.</div>
+                <div className={cx("text11", "colorMuted")}>Won lead but no project kickoff yet.</div>
               </div>
-            )) : <div style={{ color: C.muted, fontSize: 12 }}>No active lead-to-project handoff gaps.</div>}
+            )) : <div className={cx("colorMuted", "text12")}>No active lead-to-project handoff gaps.</div>}
           </div>
 
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14 }}>Lifecycle Handoff Checks</div>
+          <div className={cx("card", "p20")}>
+            <div className={cx("text12", "fw700", "mb14")}>Lifecycle Handoff Checks</div>
             {[
               {
                 label: "Project to Billing",
@@ -390,12 +355,12 @@ export function ClientJourneyPage({
                 note: "Onboarding beyond 21 days"
               }
             ].map((item) => (
-              <div key={item.label} style={{ padding: 10, background: C.bg, border: `1px solid ${C.border}`, marginBottom: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                  <span style={{ fontSize: 12 }}>{item.label}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: item.value > 0 ? C.red : C.primary, fontWeight: 700 }}>{item.value}</span>
+              <div key={item.label} className={cx("bgBg", "borderDefault", "p10", "mb8")}>
+                <div className={cx("flexBetween", "mb3")}>
+                  <span className={cx("text12")}>{item.label}</span>
+                  <span className={cx("fontMono", "fw700", "journeyToneText", item.value > 0 ? "toneRed" : "toneAccent")}>{item.value}</span>
                 </div>
-                <div style={{ fontSize: 11, color: C.muted }}>{item.note}</div>
+                <div className={cx("text11", "colorMuted")}>{item.note}</div>
               </div>
             ))}
           </div>
@@ -403,17 +368,17 @@ export function ClientJourneyPage({
       ) : null}
 
       {activeTab === "stage aging" ? (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 110px 100px 100px 1fr", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div className={cx("card", "overflowHidden")}>
+          <div className={cx("journeyAgingHead", "fontMono", "text10", "colorMuted", "uppercase")}>
             {["Client", "Stage", "Age", "Risk", "Primary Friction"].map((h) => <span key={h}>{h}</span>)}
           </div>
-          {[...filtered].sort((a, b) => b.journeyAgeDays - a.journeyAgeDays).map((row, i, arr) => (
-            <div key={row.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 110px 100px 100px 1fr", padding: "12px 20px", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center" }}>
-              <span style={{ fontSize: 12, fontWeight: 600 }}>{row.name}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: stageColor(row.stage), fontSize: 11 }}>{row.stage}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: row.journeyAgeDays >= 45 ? C.red : row.journeyAgeDays >= 21 ? C.amber : C.muted }}>{row.journeyAgeDays}d</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: riskColor(row.risk), fontSize: 11 }}>{row.risk}</span>
-              <span style={{ fontSize: 11, color: C.muted }}>
+          {[...filtered].sort((a, b) => b.journeyAgeDays - a.journeyAgeDays).map((row) => (
+            <div key={row.id} className={styles.journeyAgingRow}>
+              <span className={cx("text12", "fw600")}>{row.name}</span>
+              <span className={cx("fontMono", "text11", "journeyToneText", toneClass(stageColor(row.stage)))}>{row.stage}</span>
+              <span className={cx("fontMono", "journeyToneText", row.journeyAgeDays >= 45 ? "toneRed" : row.journeyAgeDays >= 21 ? "toneAmber" : "toneMuted")}>{row.journeyAgeDays}d</span>
+              <span className={cx("fontMono", "text11", "journeyToneText", toneClass(riskColor(row.risk)))}>{row.risk}</span>
+              <span className={cx("text11", "colorMuted")}>
                 {row.handoffGapDays > 0
                   ? "Lead handoff lag"
                   : row.overdueInvoices > 0
@@ -426,41 +391,43 @@ export function ClientJourneyPage({
               </span>
             </div>
           ))}
-          {filtered.length === 0 ? <div style={{ padding: 20, color: C.muted, fontSize: 12 }}>No accounts available.</div> : null}
+          {filtered.length === 0 ? <div className={cx("p20", "colorMuted", "text12")}>No accounts available.</div> : null}
         </div>
       ) : null}
 
       {activeTab === "moments" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 16 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14 }}>Upcoming Journey Moments</div>
+        <div className={styles.journeyMomentsSplit}>
+          <div className={cx("card", "p20")}>
+            <div className={cx("text12", "fw700", "mb14")}>Upcoming Journey Moments</div>
             {moments.length > 0 ? moments.map((moment, i) => (
-              <div key={`${moment.client}-${i}`} style={{ padding: 10, background: C.bg, border: `1px solid ${moment.severity === "high" ? `${C.red}66` : C.border}`, marginBottom: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600 }}>{moment.client}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: moment.severity === "high" ? C.red : C.amber }}>{moment.when}d</span>
+              <div key={`${moment.client}-${i}`} className={cx("bgBg", "borderDefault", "p10", "mb8", moment.severity === "high" && "journeyMomentHigh")}>
+                <div className={cx("flexBetween", "mb4")}>
+                  <span className={cx("text12", "fw600")}>{moment.client}</span>
+                  <span className={cx("fontMono", "journeyToneText", moment.severity === "high" ? "toneRed" : "toneAmber")}>{moment.when}d</span>
                 </div>
-                <div style={{ fontSize: 11, color: C.muted }}>{moment.label} · Owner: {moment.owner}</div>
+                <div className={cx("text11", "colorMuted")}>{moment.label} · Owner: {moment.owner}</div>
               </div>
-            )) : <div style={{ color: C.muted, fontSize: 12 }}>No lifecycle moments in the current window.</div>}
+            )) : <div className={cx("colorMuted", "text12")}>No lifecycle moments in the current window.</div>}
           </div>
 
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14 }}>Lifecycle Actions</div>
-            <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>
+          <div className={cx("card", "p20")}>
+            <div className={cx("text12", "fw700", "mb14")}>Lifecycle Actions</div>
+            <div className={cx("text11", "colorMuted", "mb12", "journeyLine16")}>
               This page tracks transition quality across lifecycle stages. Onboarding task detail, offboarding processes, satisfaction surveys, and communication logs stay in their dedicated pages.
             </div>
             <button
+              type="button"
               onClick={() => onNotify("success", "Journey intervention digest queued.")}
               disabled={!canAct}
-              style={{ width: "100%", background: C.primary, color: C.bg, border: "none", padding: "10px 12px", fontFamily: "DM Mono, monospace", fontSize: 11, fontWeight: 700, cursor: "pointer", opacity: canAct ? 1 : 0.5, marginBottom: 8 }}
+              className={cx("btnSm", "btnAccent", "wFull", "mb8", "journeyActionBtn", !canAct && "opacity50")}
             >
               Queue Intervention Digest
             </button>
             <button
+              type="button"
               onClick={() => onNotify("success", "Lifecycle handoff summary generated.")}
               disabled={!canAct}
-              style={{ width: "100%", background: C.bg, color: C.text, border: `1px solid ${C.border}`, padding: "10px 12px", fontFamily: "DM Mono, monospace", fontSize: 11, cursor: "pointer", opacity: canAct ? 1 : 0.5 }}
+              className={cx("btnSm", "btnGhost", "wFull", "journeyActionBtn", !canAct && "opacity50")}
             >
               Generate Handoff Summary
             </button>

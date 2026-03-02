@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { cx, styles } from "../style";
 import {
   createConversationEscalationWithRefresh,
   createConversationNoteWithRefresh,
@@ -20,18 +21,7 @@ import {
   type ConversationNote
 } from "../../../../lib/api/admin";
 import type { AuthSession } from "../../../../lib/auth/session";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { toneClass } from "./admin-page-utils";
 
 type MessagesPageProps = {
   snapshot: { clients: AdminClient[] };
@@ -58,16 +48,16 @@ function clientName(clients: AdminClient[], clientId: string): string {
 }
 
 function toneForEscalationStatus(status: string): string {
-  if (status === "RESOLVED") return C.primary;
-  if (status === "ACKNOWLEDGED") return C.blue;
-  return C.red;
+  if (status === "RESOLVED") return "var(--accent)";
+  if (status === "ACKNOWLEDGED") return "var(--blue)";
+  return "var(--red)";
 }
 
 function toneForSeverity(severity: string): string {
-  if (severity === "CRITICAL") return C.red;
-  if (severity === "HIGH") return C.amber;
-  if (severity === "MEDIUM") return C.blue;
-  return C.muted;
+  if (severity === "CRITICAL") return "var(--red)";
+  if (severity === "HIGH") return "var(--amber)";
+  if (severity === "MEDIUM") return "var(--blue)";
+  return "var(--muted)";
 }
 
 export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps) {
@@ -164,6 +154,7 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
 
   useEffect(() => {
     if (!session) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadConversations(true);
   }, [loadConversations, session]);
 
@@ -176,6 +167,7 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
   }, [loadConversations, session]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadMessages(true);
   }, [loadMessages]);
 
@@ -206,6 +198,7 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
   }, [messages, selectedConversationId, session]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadContext(true);
   }, [loadContext]);
 
@@ -342,88 +335,72 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
   }
 
   return (
-    <div
-      style={{
-        background: C.bg,
-        height: "100%",
-        color: C.text,
-        fontFamily: "Syne, sans-serif",
-        padding: 0,
-        overflow: "hidden",
-        display: "grid",
-        gridTemplateRows: "auto auto auto 1fr",
-        minHeight: 0
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={cx(styles.pageBody, styles.msgRoot)}>
+      <div className={cx("flexBetween", "mb28")}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / CLIENT MANAGEMENT</div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>Messages</h1>
-          <div style={{ marginTop: 4, fontSize: 13, color: C.muted }}>Thread ownership · Reply execution · Escalation control</div>
+          <div className={cx("pageEyebrow")}>ADMIN / CLIENT MANAGEMENT</div>
+          <h1 className={cx("pageTitle")}>Messages</h1>
+          <div className={cx("pageSub")}>Thread ownership &middot; Reply execution &middot; Escalation control</div>
         </div>
-        <button onClick={() => void handleCreateConversation()} disabled={!canEdit} style={{ background: C.primary, color: C.bg, border: "none", padding: "8px 16px", fontFamily: "DM Mono, monospace", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: canEdit ? 1 : 0.6 }}>
+        <button type="button" onClick={() => void handleCreateConversation()} disabled={!canEdit} className={cx("btnSm", "btnAccent", "fontMono", !canEdit && "opacity60")}>
           + New Thread
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack", "gap16", "mb16")}>
         {[
-          { label: "Active Threads", value: filteredConversations.length.toString(), sub: "Sorted by latest activity", color: C.primary },
-          { label: "Unread Client Messages", value: unreadClientCount.toString(), sub: "Pending review in selected thread", color: unreadClientCount > 0 ? C.amber : C.primary },
-          { label: "Open Escalations", value: openEscalationsCount.toString(), sub: "Needs owner action", color: openEscalationsCount > 0 ? C.red : C.primary },
-          { label: "Assigned Threads", value: conversations.filter((c) => Boolean(c.assigneeUserId)).length.toString(), sub: "Ownership coverage", color: C.blue }
+          { label: "Active Threads", value: filteredConversations.length.toString(), sub: "Sorted by latest activity", color: "var(--accent)" },
+          { label: "Unread Client Messages", value: unreadClientCount.toString(), sub: "Pending review in selected thread", color: unreadClientCount > 0 ? "var(--amber)" : "var(--accent)" },
+          { label: "Open Escalations", value: openEscalationsCount.toString(), sub: "Needs owner action", color: openEscalationsCount > 0 ? "var(--red)" : "var(--accent)" },
+          { label: "Assigned Threads", value: conversations.filter((c) => Boolean(c.assigneeUserId)).length.toString(), sub: "Ownership coverage", color: "var(--blue)" }
         ].map((k) => (
-          <div key={k.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{k.label}</div>
-            <div style={{ fontFamily: "DM Mono, monospace", fontSize: 24, fontWeight: 800, color: k.color, marginBottom: 4 }}>{k.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{k.sub}</div>
+          <div key={k.label} className={cx("statCard")}>
+            <div className={cx("statLabel")}>{k.label}</div>
+            <div className={cx("statValue", styles.msgToneText, styles.msgValue24, toneClass(k.color))}>{k.value}</div>
+            <div className={cx("text11", "colorMuted")}>{k.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 14, marginBottom: 16 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search thread or client" style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", minWidth: 260, fontFamily: "DM Mono, monospace", fontSize: 12 }} />
-          <select value={newConversationClientId} onChange={(e) => setNewConversationClientId(e.target.value)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+      <div className={cx("card", "mb16", styles.msgPad14)}>
+        <div className={cx("flexRow", "gap10", "flexWrap", styles.msgAlignCenter)}>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search thread or client" className={cx("formInput", "fontMono", "text12", styles.msgInput260)} />
+          <select title="Select client" value={newConversationClientId} onChange={(e) => setNewConversationClientId(e.target.value)} className={cx("formInput", "fontMono", "text12")}>
             <option value="">Select client</option>
             {snapshot.clients.map((client) => (
               <option key={client.id} value={client.id}>{client.name}</option>
             ))}
           </select>
-          <input value={newSubject} onChange={(e) => setNewSubject(e.target.value)} placeholder="New thread subject" style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", minWidth: 260, fontFamily: "DM Mono, monospace", fontSize: 12 }} />
-          <button onClick={() => { setSearch(""); setNewSubject(""); }} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.muted, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, cursor: "pointer" }}>Reset</button>
+          <input value={newSubject} onChange={(e) => setNewSubject(e.target.value)} placeholder="New thread subject" className={cx("formInput", "fontMono", "text12", styles.msgInput260)} />
 
-          <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-            {(["inbox", "escalations"] as Tab[]).map((tab) => (
-              <button key={tab} onClick={() => setActiveTab(tab)} style={{ background: "none", border: "none", borderBottom: activeTab === tab ? `2px solid ${C.primary}` : "none", color: activeTab === tab ? C.primary : C.muted, padding: "8px 12px", fontFamily: "Syne, sans-serif", fontSize: 12, fontWeight: 600, textTransform: "capitalize", letterSpacing: "0.06em", cursor: "pointer" }}>
-                {tab}
-              </button>
-            ))}
-          </div>
+          <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={cx(styles.filterSelect, "mlAuto")}>
+            {(["inbox", "escalations"] as Tab[]).map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
         </div>
       </div>
 
       {activeTab === "inbox" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 16, minHeight: 0 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "auto", minHeight: 0 }}>
+        <div className={styles.msgInboxSplit}>
+          <div className={cx("card", "overflowAuto", "minH0")}>
             {loadingConversations ? (
-              <div style={{ padding: 20, color: C.muted, fontSize: 12 }}>Loading conversations...</div>
+              <div className={cx("p20", "colorMuted", "text12")}>Loading conversations...</div>
             ) : filteredConversations.length === 0 ? (
-              <div style={{ padding: 20, color: C.muted, fontSize: 12 }}>No conversations found.</div>
+              <div className={cx("p20", "colorMuted", "text12")}>No conversations found.</div>
             ) : (
               filteredConversations.map((conversation) => {
                 const selected = selectedConversationId === conversation.id;
                 const cName = clientName(snapshot.clients, conversation.clientId);
+                const assigneeTone = conversation.assigneeUserId ? "toneAccent" : "toneAmber";
                 return (
-                  <button key={conversation.id} onClick={() => setSelectedConversationId(conversation.id)} style={{ width: "100%", textAlign: "left", background: selected ? `${C.primary}10` : "transparent", border: "none", borderBottom: `1px solid ${C.border}`, padding: 12, cursor: "pointer" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{cName}</span>
-                      <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted }}>{formatDate(conversation.updatedAt)}</span>
+                  <button type="button" key={conversation.id} onClick={() => setSelectedConversationId(conversation.id)} className={cx("wFull", "borderB", "pointerCursor", styles.msgThreadBtn, selected && styles.msgThreadBtnSelected)}>
+                    <div className={cx("flexBetween", "mb4")}>
+                      <span className={cx("text12", "fw700")}>{cName}</span>
+                      <span className={cx("fontMono", "text10", "colorMuted")}>{formatDate(conversation.updatedAt)}</span>
                     </div>
-                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 3 }}>{conversation.subject}</div>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <span style={{ fontSize: 9, color: C.blue, background: `${C.blue}15`, padding: "2px 6px", fontFamily: "DM Mono, monospace" }}>{conversation.status}</span>
-                      <span style={{ fontSize: 9, color: conversation.assigneeUserId ? C.primary : C.amber, background: `${conversation.assigneeUserId ? C.primary : C.amber}15`, padding: "2px 6px", fontFamily: "DM Mono, monospace" }}>
+                    <div className={cx("text11", "colorMuted", "mb3")}>{conversation.subject}</div>
+                    <div className={cx("flexRow", "gap6")}>
+                      <span className={cx("fontMono", styles.msgToneTag, styles.msgTag9, "toneBlue")}>{conversation.status}</span>
+                      <span className={cx("fontMono", styles.msgToneTag, styles.msgTag9, assigneeTone)}>
                         {conversation.assigneeUserId ? "Assigned" : "Unassigned"}
                       </span>
                     </div>
@@ -433,43 +410,43 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
             )}
           </div>
 
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, display: "grid", gridTemplateRows: "auto 1fr auto auto", minHeight: 0, overflow: "hidden" }}>
+          <div className={cx("card")}>
             {selectedConversation ? (
-              <>
-                <div style={{ padding: 14, borderBottom: `1px solid ${C.border}`, display: "flex", gap: 12, alignItems: "center" }}>
+              <div className={styles.msgThreadPanel}>
+                <div className={cx("borderB", "flexRow", "gap12", styles.msgPad14, styles.msgAlignCenter)}>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>{clientName(snapshot.clients, selectedConversation.clientId)} · Maphari</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>{selectedConversation.subject}</div>
+                    <div className={cx("text14", "fw700")}>{clientName(snapshot.clients, selectedConversation.clientId)} &middot; Maphari</div>
+                    <div className={cx("text11", "colorMuted")}>{selectedConversation.subject}</div>
                   </div>
-                  <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-                    <span style={{ fontSize: 9, color: C.blue, background: `${C.blue}15`, padding: "3px 7px", fontFamily: "DM Mono, monospace" }}>{selectedConversation.status}</span>
-                    <span style={{ fontSize: 9, color: selectedConversation.assigneeUserId ? C.primary : C.amber, background: `${selectedConversation.assigneeUserId ? C.primary : C.amber}15`, padding: "3px 7px", fontFamily: "DM Mono, monospace" }}>
+                  <div className={cx("mlAuto", "flexRow", "gap6")}>
+                    <span className={cx("fontMono", styles.msgToneTag, styles.msgTag9Header, "toneBlue")}>{selectedConversation.status}</span>
+                    <span className={cx("fontMono", styles.msgToneTag, styles.msgTag9Header, selectedConversation.assigneeUserId ? "toneAccent" : "toneAmber")}>
                       {selectedConversation.assigneeUserId ? "Assigned" : "Unassigned"}
                     </span>
                     {canEdit ? (
                       <>
-                        <button onClick={() => void handleAssignConversation(viewerUserId)} disabled={!viewerUserId || selectedConversation.assigneeUserId === viewerUserId} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "6px 10px", fontFamily: "DM Mono, monospace", fontSize: 10, cursor: "pointer" }}>Assign to me</button>
-                        <button onClick={() => void handleAssignConversation(null)} disabled={!selectedConversation.assigneeUserId} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "6px 10px", fontFamily: "DM Mono, monospace", fontSize: 10, cursor: "pointer" }}>Unassign</button>
+                        <button type="button" onClick={() => void handleAssignConversation(viewerUserId)} disabled={!viewerUserId || selectedConversation.assigneeUserId === viewerUserId} className={cx("btnSm", "btnGhost", "fontMono", "text10")}>Assign to me</button>
+                        <button type="button" onClick={() => void handleAssignConversation(null)} disabled={!selectedConversation.assigneeUserId} className={cx("btnSm", "btnGhost", "fontMono", "text10")}>Unassign</button>
                       </>
                     ) : null}
                   </div>
                 </div>
 
-                <div style={{ padding: 14, overflow: "auto", minHeight: 0 }}>
+                <div className={cx("overflowAuto", "minH0", styles.msgPad14)}>
                   {loadingMessages ? (
-                    <div style={{ color: C.muted, fontSize: 12 }}>Loading messages...</div>
+                    <div className={cx("colorMuted", "text12")}>Loading messages...</div>
                   ) : messages.length === 0 ? (
-                    <div style={{ color: C.muted, fontSize: 12 }}>No messages yet.</div>
+                    <div className={cx("colorMuted", "text12")}>No messages yet.</div>
                   ) : (
                     messages.map((message) => {
                       const authorRole = (message.authorRole ?? "").toUpperCase();
                       const isOwn = authorRole === "ADMIN" || authorRole === "STAFF";
                       const deliveryLabel = message.deliveryStatus === "READ" ? "Read" : message.deliveryStatus === "DELIVERED" ? "Delivered" : "Sent";
                       return (
-                        <div key={message.id} style={{ display: "flex", justifyContent: isOwn ? "flex-end" : "flex-start", marginBottom: 10 }}>
-                          <div style={{ maxWidth: "72%", background: isOwn ? `${C.primary}22` : C.bg, border: `1px solid ${isOwn ? `${C.primary}66` : C.border}`, padding: 10 }}>
-                            <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>{isOwn ? "You" : "Client"} · {formatDate(message.createdAt)} · {deliveryLabel}</div>
-                            <div style={{ fontSize: 12, color: C.text, lineHeight: 1.5 }}>{message.content}</div>
+                        <div key={message.id} className={cx("mb10", styles.msgBubbleRow, isOwn ? styles.msgBubbleRowOwn : styles.msgBubbleRowClient)}>
+                          <div className={cx("borderDefault", styles.msgBubble, isOwn && styles.msgBubbleOwn)}>
+                            <div className={cx("text10", "colorMuted", "mb4")}>{isOwn ? "You" : "Client"} &middot; {formatDate(message.createdAt)} &middot; {deliveryLabel}</div>
+                            <div className={cx("text12", styles.msgLine15)}>{message.content}</div>
                           </div>
                         </div>
                       );
@@ -477,85 +454,87 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
                   )}
                 </div>
 
-                <div style={{ padding: 12, borderTop: `1px solid ${C.border}`, display: "flex", gap: 8 }}>
-                  <input value={composeText} onChange={(e) => setComposeText(e.target.value)} placeholder="Write a reply..." style={{ flex: 1, background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 10px", fontFamily: "DM Mono, monospace", fontSize: 12 }} />
-                  <button onClick={() => void handleSendMessage()} disabled={!composeText.trim()} style={{ background: C.primary, color: C.bg, border: "none", padding: "8px 14px", fontFamily: "DM Mono, monospace", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: composeText.trim() ? 1 : 0.6 }}>Send</button>
+                <div className={cx("borderB", "flexRow", "gap8", styles.msgComposeRow)}>
+                  <input value={composeText} onChange={(e) => setComposeText(e.target.value)} placeholder="Write a reply..." className={cx("formInput", "fontMono", "text12", styles.msgFlex1)} />
+                  <button type="button" onClick={() => void handleSendMessage()} disabled={!composeText.trim()} className={cx("btnSm", "btnAccent", "fontMono", !composeText.trim() && "opacity60")}>Send</button>
                 </div>
 
-                <div style={{ borderTop: `1px solid ${C.border}`, padding: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div style={{ background: C.bg, border: `1px solid ${C.border}`, padding: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 8 }}>Internal Notes</div>
-                    <div style={{ maxHeight: 120, overflow: "auto", marginBottom: 8 }}>
+                <div className={cx("grid2", "gap12", styles.msgMetaRow)}>
+                  <div className={cx("bgBg", "borderDefault", styles.msgPad10)}>
+                    <div className={cx("text11", "fw700", "mb8")}>Internal Notes</div>
+                    <div className={cx("overflowAuto", "mb8", styles.msgNotesList)}>
                       {loadingContext ? (
-                        <div style={{ color: C.muted, fontSize: 11 }}>Loading notes...</div>
+                        <div className={cx("colorMuted", "text11")}>Loading notes...</div>
                       ) : notes.length === 0 ? (
-                        <div style={{ color: C.muted, fontSize: 11 }}>No notes yet.</div>
+                        <div className={cx("colorMuted", "text11")}>No notes yet.</div>
                       ) : (
                         notes.slice(-4).map((note) => (
-                          <div key={note.id} style={{ marginBottom: 8 }}>
-                            <div style={{ fontSize: 11, color: C.text }}>{note.content}</div>
-                            <div style={{ fontSize: 10, color: C.muted }}>{note.authorRole ?? "STAFF"} · {formatDate(note.createdAt)}</div>
+                          <div key={note.id} className={cx("mb8")}>
+                            <div className={cx("text11")}>{note.content}</div>
+                            <div className={cx("text10", "colorMuted")}>{note.authorRole ?? "STAFF"} &middot; {formatDate(note.createdAt)}</div>
                           </div>
                         ))
                       )}
                     </div>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <input value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Add note" style={{ flex: 1, background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "6px 8px", fontFamily: "DM Mono, monospace", fontSize: 11 }} />
-                      <button onClick={() => void handleAddNote()} disabled={!noteText.trim()} style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "6px 10px", fontFamily: "DM Mono, monospace", fontSize: 11, cursor: "pointer", opacity: noteText.trim() ? 1 : 0.6 }}>Save</button>
+                    <div className={cx("flexRow", "gap6")}>
+                      <input value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Add note" className={cx("formInput", "fontMono", "text11", styles.msgFlex1)} />
+                      <button type="button" onClick={() => void handleAddNote()} disabled={!noteText.trim()} className={cx("btnSm", "btnGhost", "fontMono", "text11", !noteText.trim() && "opacity60")}>Save</button>
                     </div>
                   </div>
 
-                  <div style={{ background: C.bg, border: `1px solid ${C.border}`, padding: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 8 }}>Escalate Thread</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "110px 1fr auto", gap: 6 }}>
-                      <select value={escalationSeverity} onChange={(e) => setEscalationSeverity(e.target.value as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL")} style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "6px 8px", fontFamily: "DM Mono, monospace", fontSize: 11 }}>
+                  <div className={cx("bgBg", "borderDefault", styles.msgPad10)}>
+                    <div className={cx("text11", "fw700", "mb8")}>Escalate Thread</div>
+                    <div className={styles.msgEscalateForm}>
+                      <select title="Escalation severity" value={escalationSeverity} onChange={(e) => setEscalationSeverity(e.target.value as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL")} className={cx("formInput", "fontMono", "text11")}>
                         <option value="LOW">LOW</option>
                         <option value="MEDIUM">MEDIUM</option>
                         <option value="HIGH">HIGH</option>
                         <option value="CRITICAL">CRITICAL</option>
                       </select>
-                      <input value={escalationReason} onChange={(e) => setEscalationReason(e.target.value)} placeholder="Reason" style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "6px 8px", fontFamily: "DM Mono, monospace", fontSize: 11 }} />
-                      <button onClick={() => void handleEscalate()} disabled={!escalationReason.trim()} style={{ background: C.primary, color: C.bg, border: "none", padding: "6px 10px", fontFamily: "DM Mono, monospace", fontSize: 11, fontWeight: 700, cursor: "pointer", opacity: escalationReason.trim() ? 1 : 0.6 }}>Create</button>
+                      <input value={escalationReason} onChange={(e) => setEscalationReason(e.target.value)} placeholder="Reason" className={cx("formInput", "fontMono", "text11")} />
+                      <button type="button" onClick={() => void handleEscalate()} disabled={!escalationReason.trim()} className={cx("btnSm", "btnAccent", "fontMono", "text11", !escalationReason.trim() && "opacity60")}>Create</button>
                     </div>
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
-              <div style={{ padding: 20, color: C.muted, fontSize: 12 }}>Select a conversation to load thread details.</div>
+              <div className={cx("p20", "colorMuted", "text12")}>Select a conversation to load thread details.</div>
             )}
           </div>
         </div>
       ) : null}
 
       {activeTab === "escalations" ? (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden", minHeight: 0, display: "grid", gridTemplateRows: "auto 1fr" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.3fr 100px 110px 140px 1fr auto", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            {["Conversation", "Severity", "Status", "Created", "Reason", "Action"].map((h) => <span key={h}>{h}</span>)}
-          </div>
-          <div style={{ overflow: "auto", minHeight: 0 }}>
-            {loadingContext ? (
-              <div style={{ padding: 20, color: C.muted, fontSize: 12 }}>Loading escalations...</div>
-            ) : escalations.length === 0 ? (
-              <div style={{ padding: 20, color: C.muted, fontSize: 12 }}>No escalations recorded for the selected thread.</div>
-            ) : (
-              escalations.map((item, i) => (
-                <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1.3fr 100px 110px 140px 1fr auto", padding: "12px 20px", borderBottom: i < escalations.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center" }}>
-                  <div style={{ fontSize: 12, color: C.text }}>{selectedConversation?.subject ?? "Conversation"}</div>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: toneForSeverity(item.severity) }}>{item.severity}</span>
-                  <span style={{ fontSize: 10, color: toneForEscalationStatus(item.status), background: `${toneForEscalationStatus(item.status)}15`, padding: "3px 8px", fontFamily: "DM Mono, monospace", width: "fit-content" }}>{item.status}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.muted }}>{formatDate(item.createdAt)}</span>
-                  <span style={{ fontSize: 11, color: C.muted }}>{item.reason}</span>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    {item.status === "OPEN" ? (
-                      <button onClick={() => void handleEscalationStatus(item.id, "ACKNOWLEDGED")} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "6px 8px", fontFamily: "DM Mono, monospace", fontSize: 10, cursor: "pointer" }}>Acknowledge</button>
-                    ) : null}
-                    {item.status !== "RESOLVED" ? (
-                      <button onClick={() => void handleEscalationStatus(item.id, "RESOLVED")} style={{ background: C.primary, color: C.bg, border: "none", padding: "6px 8px", fontFamily: "DM Mono, monospace", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>Resolve</button>
-                    ) : null}
+        <div className={cx("card", "overflowHidden", "minH0")}>
+          <div className={styles.msgEscRoot}>
+            <div className={cx("msgEscHead", "fontMono", "text10", "colorMuted", "uppercase")}>
+              {["Conversation", "Severity", "Status", "Created", "Reason", "Action"].map((h) => <span key={h}>{h}</span>)}
+            </div>
+            <div className={cx("overflowAuto", "minH0")}>
+              {loadingContext ? (
+                <div className={cx("p20", "colorMuted", "text12")}>Loading escalations...</div>
+              ) : escalations.length === 0 ? (
+                <div className={cx("p20", "colorMuted", "text12")}>No escalations recorded for the selected thread.</div>
+              ) : (
+                escalations.map((item) => (
+                  <div key={item.id} className={styles.msgEscRow}>
+                    <div className={cx("text12")}>{selectedConversation?.subject ?? "Conversation"}</div>
+                    <span className={cx("fontMono", styles.msgToneText, toneClass(toneForSeverity(item.severity)))}>{item.severity}</span>
+                    <span className={cx("text10", "fontMono", "wFit", styles.msgToneTag, styles.msgTagStatus, toneClass(toneForEscalationStatus(item.status)))}>{item.status}</span>
+                    <span className={cx("fontMono", "colorMuted")}>{formatDate(item.createdAt)}</span>
+                    <span className={cx("text11", "colorMuted")}>{item.reason}</span>
+                    <div className={cx("flexRow", "gap6")}>
+                      {item.status === "OPEN" ? (
+                        <button type="button" onClick={() => void handleEscalationStatus(item.id, "ACKNOWLEDGED")} className={cx("btnSm", "btnGhost", "fontMono", "text10")}>Acknowledge</button>
+                      ) : null}
+                      {item.status !== "RESOLVED" ? (
+                        <button type="button" onClick={() => void handleEscalationStatus(item.id, "RESOLVED")} className={cx("btnSm", "btnAccent", "fontMono", "text10")}>Resolve</button>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
       ) : null}

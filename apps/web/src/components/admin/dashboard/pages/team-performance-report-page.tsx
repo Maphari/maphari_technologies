@@ -1,21 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#c8f135",
-  primary: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { colorClass } from "./admin-page-utils";
 
 const months = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb"];
 
@@ -41,17 +28,18 @@ type StaffMember = {
 };
 
 const staff: StaffMember[] = [
-  { id: "EMP-001", name: "Sipho Nkosi", role: "Founder & CEO", avatar: "SN", color: C.lime, utilisation: 72, billableHours: 86, targetHours: 120, performanceScore: null, tasksCompleted: 24, tasksOverdue: 1, clientSatisfaction: 9.2, revContribution: 380600, ldHours: 20, sickDays: 0, utilisationHistory: [68, 70, 72, 74, 71, 72], strengths: ["Strategic vision", "Client relationships", "Revenue growth"], devAreas: ["Delegation", "Process documentation"] },
-  { id: "EMP-002", name: "Leilani Fotu", role: "Head of Operations", avatar: "LF", color: C.blue, utilisation: 89, billableHours: 148, targetHours: 168, performanceScore: 4.2, tasksCompleted: 62, tasksOverdue: 3, clientSatisfaction: null, revContribution: null, ldHours: 46, sickDays: 2, utilisationHistory: [82, 85, 87, 90, 88, 89], strengths: ["Process management", "Asana discipline", "Communication"], devAreas: ["Financial reporting ownership", "Hiring experience"] },
-  { id: "EMP-003", name: "Renzo Fabbri", role: "Creative Director", avatar: "RF", color: C.orange, utilisation: 94, billableHours: 158, targetHours: 168, performanceScore: 4.6, tasksCompleted: 78, tasksOverdue: 2, clientSatisfaction: 8.4, revContribution: 65600, ldHours: 42, sickDays: 4, utilisationHistory: [88, 90, 92, 96, 93, 94], strengths: ["Creative quality", "Client trust", "Team mentoring"], devAreas: ["Scope management", "Freelancer briefing quality"] },
-  { id: "EMP-004", name: "Nomsa Dlamini", role: "Account Manager", avatar: "ND", color: C.purple, utilisation: 78, billableHours: 131, targetHours: 168, performanceScore: 3.9, tasksCompleted: 44, tasksOverdue: 6, clientSatisfaction: 7.1, revContribution: 286600, ldHours: 0, sickDays: 0, utilisationHistory: [74, 75, 77, 80, 76, 78], strengths: ["Client responsiveness", "Relationship warmth"], devAreas: ["Escalation handling", "Communication clarity", "L&D engagement"] },
-  { id: "EMP-005", name: "Kira Bosman", role: "UX Designer", avatar: "KB", color: C.amber, utilisation: 88, billableHours: 148, targetHours: 168, performanceScore: 4.4, tasksCompleted: 56, tasksOverdue: 1, clientSatisfaction: 8.1, revContribution: 43200, ldHours: 14, sickDays: 1, utilisationHistory: [80, 83, 86, 89, 87, 88], strengths: ["Figma craft", "Research quality", "Iteration speed"], devAreas: ["UX writing", "Stakeholder presentation skills"] },
-  { id: "EMP-006", name: "Tapiwa Moyo", role: "Copywriter", avatar: "TM", color: C.blue, utilisation: 64, billableHours: 107, targetHours: 168, performanceScore: 3.7, tasksCompleted: 38, tasksOverdue: 4, clientSatisfaction: 7.8, revContribution: 28000, ldHours: 0, sickDays: 0, utilisationHistory: [58, 60, 62, 66, 63, 64], strengths: ["Brand voice", "Speed of first drafts"], devAreas: ["Output volume", "Brief interpretation", "L&D investment"] }
+  { id: "EMP-001", name: "Sipho Nkosi", role: "Founder & CEO", avatar: "SN", color: "var(--accent)", utilisation: 72, billableHours: 86, targetHours: 120, performanceScore: null, tasksCompleted: 24, tasksOverdue: 1, clientSatisfaction: 9.2, revContribution: 380600, ldHours: 20, sickDays: 0, utilisationHistory: [68, 70, 72, 74, 71, 72], strengths: ["Strategic vision", "Client relationships", "Revenue growth"], devAreas: ["Delegation", "Process documentation"] },
+  { id: "EMP-002", name: "Leilani Fotu", role: "Head of Operations", avatar: "LF", color: "var(--blue)", utilisation: 89, billableHours: 148, targetHours: 168, performanceScore: 4.2, tasksCompleted: 62, tasksOverdue: 3, clientSatisfaction: null, revContribution: null, ldHours: 46, sickDays: 2, utilisationHistory: [82, 85, 87, 90, 88, 89], strengths: ["Process management", "Asana discipline", "Communication"], devAreas: ["Financial reporting ownership", "Hiring experience"] },
+  { id: "EMP-003", name: "Renzo Fabbri", role: "Creative Director", avatar: "RF", color: "var(--amber)", utilisation: 94, billableHours: 158, targetHours: 168, performanceScore: 4.6, tasksCompleted: 78, tasksOverdue: 2, clientSatisfaction: 8.4, revContribution: 65600, ldHours: 42, sickDays: 4, utilisationHistory: [88, 90, 92, 96, 93, 94], strengths: ["Creative quality", "Client trust", "Team mentoring"], devAreas: ["Scope management", "Freelancer briefing quality"] },
+  { id: "EMP-004", name: "Nomsa Dlamini", role: "Account Manager", avatar: "ND", color: "var(--purple)", utilisation: 78, billableHours: 131, targetHours: 168, performanceScore: 3.9, tasksCompleted: 44, tasksOverdue: 6, clientSatisfaction: 7.1, revContribution: 286600, ldHours: 0, sickDays: 0, utilisationHistory: [74, 75, 77, 80, 76, 78], strengths: ["Client responsiveness", "Relationship warmth"], devAreas: ["Escalation handling", "Communication clarity", "L&D engagement"] },
+  { id: "EMP-005", name: "Kira Bosman", role: "UX Designer", avatar: "KB", color: "var(--amber)", utilisation: 88, billableHours: 148, targetHours: 168, performanceScore: 4.4, tasksCompleted: 56, tasksOverdue: 1, clientSatisfaction: 8.1, revContribution: 43200, ldHours: 14, sickDays: 1, utilisationHistory: [80, 83, 86, 89, 87, 88], strengths: ["Figma craft", "Research quality", "Iteration speed"], devAreas: ["UX writing", "Stakeholder presentation skills"] },
+  { id: "EMP-006", name: "Tapiwa Moyo", role: "Copywriter", avatar: "TM", color: "var(--blue)", utilisation: 64, billableHours: 107, targetHours: 168, performanceScore: 3.7, tasksCompleted: 38, tasksOverdue: 4, clientSatisfaction: 7.8, revContribution: 28000, ldHours: 0, sickDays: 0, utilisationHistory: [58, 60, 62, 66, 63, 64], strengths: ["Brand voice", "Speed of first drafts"], devAreas: ["Output volume", "Brief interpretation", "L&D investment"] }
 ];
 
 function Avatar({ initials, color, size = 32 }: { initials: string; color: string; size?: number }) {
+  const sizeClass = size === 24 ? "tprAvatar24" : size === 26 ? "tprAvatar26" : size === 30 ? "tprAvatar30" : size === 52 ? "tprAvatar52" : "tprAvatar32";
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: `${color}22`, border: `2px solid ${color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.32, fontWeight: 700, color, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>
+    <div className={cx(styles.tprAvatar, toneVarClass(color), sizeClass)}>
       {initials}
     </div>
   );
@@ -59,6 +47,31 @@ function Avatar({ initials, color, size = 32 }: { initials: string; color: strin
 
 const tabs = ["team overview", "individual profiles", "utilisation", "tasks & output"] as const;
 type Tab = (typeof tabs)[number];
+
+function toneVarClass(value: string): string {
+  if (value === "var(--red)") return styles.tprToneRed;
+  if (value === "var(--blue)") return styles.tprToneBlue;
+  if (value === "var(--amber)") return styles.tprToneAmber;
+  if (value === "var(--purple)") return styles.tprTonePurple;
+  if (value === "var(--muted)") return styles.tprToneMuted;
+  if (value === "var(--border)") return styles.tprToneBorder;
+  return styles.tprToneAccent;
+}
+
+function fillClass(value: string): string {
+  if (value === "var(--red)") return styles.tprFillRed;
+  if (value === "var(--blue)") return styles.tprFillBlue;
+  if (value === "var(--amber)") return styles.tprFillAmber;
+  if (value === "var(--purple)") return styles.tprFillPurple;
+  if (value === "var(--muted)") return styles.tprFillMuted;
+  return styles.tprFillAccent;
+}
+
+function trendFillColor(value: string, isLast: boolean): string {
+  if (value === "var(--blue)") return isLast ? "var(--blue)" : "color-mix(in srgb, var(--blue) 45%, transparent)";
+  if (value === "var(--amber)") return isLast ? "var(--amber)" : "color-mix(in srgb, var(--amber) 45%, transparent)";
+  return isLast ? "var(--accent)" : "color-mix(in srgb, var(--accent) 45%, transparent)";
+}
 
 export function TeamPerformanceReportPage() {
   const [activeTab, setActiveTab] = useState<Tab>("team overview");
@@ -73,242 +86,258 @@ export function TeamPerformanceReportPage() {
   const lowUtil = staff.filter((m) => m.utilisation < 70).length;
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / REPORTING & INTELLIGENCE</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Team Performance Report</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Utilisation · Output · Scores · Development · Feb 2026</div>
+          <div className={styles.pageEyebrow}>ADMIN / REPORTING & INTELLIGENCE</div>
+          <h1 className={styles.pageTitle}>Team Performance Report</h1>
+          <div className={styles.pageSub}>Utilisation · Output · Scores · Development · Feb 2026</div>
         </div>
-        <button style={{ background: C.primary, color: C.bg, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>Export Report</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent")}>Export Report</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "gap16", "mb28")}>
         {[
-          { label: "Avg Utilisation", value: `${avgUtil}%`, color: avgUtil >= 80 ? C.lime : C.amber, sub: "Target: 80%" },
-          { label: "Avg Performance Score", value: `${avgPerf}/5`, color: Number.parseFloat(avgPerf) >= 4 ? C.lime : C.amber, sub: "Scored staff only" },
-          { label: "Overdue Tasks (Feb)", value: totalOverdue.toString(), color: totalOverdue > 5 ? C.red : C.amber, sub: "Across all staff" },
-          { label: "Low Utilisation Staff", value: lowUtil.toString(), color: lowUtil > 0 ? C.amber : C.lime, sub: "Below 70%" }
+          { label: "Avg Utilisation", value: `${avgUtil}%`, color: avgUtil >= 80 ? "var(--accent)" : "var(--amber)", sub: "Target: 80%" },
+          { label: "Avg Performance Score", value: `${avgPerf}/5`, color: Number.parseFloat(avgPerf) >= 4 ? "var(--accent)" : "var(--amber)", sub: "Scored staff only" },
+          { label: "Overdue Tasks (Feb)", value: totalOverdue.toString(), color: totalOverdue > 5 ? "var(--red)" : "var(--amber)", sub: "Across all staff" },
+          { label: "Low Utilisation Staff", value: lowUtil.toString(), color: lowUtil > 0 ? "var(--amber)" : "var(--accent)", sub: "Below 70%" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            style={{
-              background: "none",
-              border: "none",
-              color: activeTab === t ? C.primary : C.muted,
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontFamily: "Syne, sans-serif",
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              borderBottom: `2px solid ${activeTab === t ? C.primary : "transparent"}`,
-              marginBottom: -1
-            }}
-          >
-            {t}
-          </button>
-        ))}
+      <div className={styles.filterRow}>
+        <select title="View" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
-      {activeTab === "team overview" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {activeTab === "team overview" ? (
+        <div className={styles.tprList10}>
           {[...staff].sort((a, b) => b.utilisation - a.utilisation).map((member) => {
-            const utilColor = member.utilisation >= 85 ? C.lime : member.utilisation >= 70 ? C.blue : member.utilisation >= 60 ? C.amber : C.red;
-            const perfColor = member.performanceScore ? (member.performanceScore >= 4.5 ? C.lime : member.performanceScore >= 3.5 ? C.blue : C.amber) : C.muted;
+            const utilColor = member.utilisation >= 85 ? "var(--accent)" : member.utilisation >= 70 ? "var(--blue)" : member.utilisation >= 60 ? "var(--amber)" : "var(--red)";
+            const perfColor = member.performanceScore ? (member.performanceScore >= 4.5 ? "var(--accent)" : member.performanceScore >= 3.5 ? "var(--blue)" : "var(--amber)") : "var(--muted)";
             return (
-              <div key={member.id} onClick={() => { setSelected(member); setActiveTab("individual profiles"); }} style={{ background: C.surface, border: `1px solid ${member.utilisation < 70 ? C.amber + "44" : C.border}`, borderRadius: 10, padding: 20, display: "grid", gridTemplateColumns: "220px 1fr 80px 80px 80px 80px 80px auto", alignItems: "center", gap: 16, cursor: "pointer" }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <div
+                key={member.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  setSelected(member);
+                  setActiveTab("individual profiles");
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelected(member);
+                    setActiveTab("individual profiles");
+                  }
+                }}
+                className={cx(styles.tprOverviewRow, member.utilisation < 70 ? styles.tprToneAmber : styles.tprToneBorder)}
+              >
+                <div className={styles.tprNameCol}>
                   <Avatar initials={member.avatar} color={member.color} size={30} />
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{member.name.split(" ")[0]}</div>
-                    <div style={{ fontSize: 10, color: C.muted }}>{member.role}</div>
+                    <div className={styles.tprName}>{member.name.split(" ")[0]}</div>
+                    <div className={styles.tprRole}>{member.role}</div>
                   </div>
                 </div>
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 10, color: C.muted }}>{member.billableHours}h / {member.targetHours}h</span>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: utilColor, fontWeight: 700 }}>{member.utilisation}%</span>
+                  <div className={styles.tprBarHead}>
+                    <span className={styles.tprMini}>{member.billableHours}h / {member.targetHours}h</span>
+                    <span className={cx(styles.tprMono11, colorClass(utilColor))}>{member.utilisation}%</span>
                   </div>
-                  <div style={{ height: 6, background: C.border, borderRadius: 3 }}><div style={{ height: "100%", width: `${member.utilisation}%`, background: utilColor, borderRadius: 3 }} /></div>
+                  <progress className={cx(styles.tprTrack6, fillClass(utilColor))} max={100} value={member.utilisation} aria-label={`${member.name} utilisation ${member.utilisation}%`} />
                 </div>
-                <div style={{ textAlign: "center" }}><div style={{ fontSize: 9, color: C.muted }}>Score</div><div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: perfColor }}>{member.performanceScore ? `${member.performanceScore}` : "—"}</div></div>
-                <div style={{ textAlign: "center" }}><div style={{ fontSize: 9, color: C.muted }}>Done</div><div style={{ fontFamily: "DM Mono, monospace", color: C.lime }}>{member.tasksCompleted}</div></div>
-                <div style={{ textAlign: "center" }}><div style={{ fontSize: 9, color: C.muted }}>Overdue</div><div style={{ fontFamily: "DM Mono, monospace", color: member.tasksOverdue > 3 ? C.red : member.tasksOverdue > 0 ? C.amber : C.lime }}>{member.tasksOverdue}</div></div>
-                <div style={{ textAlign: "center" }}><div style={{ fontSize: 9, color: C.muted }}>L&D Hrs</div><div style={{ fontFamily: "DM Mono, monospace", color: member.ldHours === 0 ? C.red : C.blue }}>{member.ldHours}h</div></div>
-                <div style={{ textAlign: "center" }}><div style={{ fontSize: 9, color: C.muted }}>Sick Days</div><div style={{ fontFamily: "DM Mono, monospace", color: C.muted }}>{member.sickDays}</div></div>
-                <span style={{ color: C.muted, fontSize: 12 }}>▶</span>
+                <div className={styles.tprKpiCol}><div className={styles.tprMini}>Score</div><div className={cx(styles.tprMono700, colorClass(perfColor))}>{member.performanceScore ? `${member.performanceScore}` : "—"}</div></div>
+                <div className={styles.tprKpiCol}><div className={styles.tprMini}>Done</div><div className={cx("fontMono", "colorAccent")}>{member.tasksCompleted}</div></div>
+                <div className={styles.tprKpiCol}><div className={styles.tprMini}>Overdue</div><div className={cx("fontMono", member.tasksOverdue > 3 ? "colorRed" : member.tasksOverdue > 0 ? "colorAmber" : "colorAccent")}>{member.tasksOverdue}</div></div>
+                <div className={styles.tprKpiCol}><div className={styles.tprMini}>L&D Hrs</div><div className={cx("fontMono", member.ldHours === 0 ? "colorRed" : "colorBlue")}>{member.ldHours}h</div></div>
+                <div className={styles.tprKpiCol}><div className={styles.tprMini}>Sick Days</div><div className={cx("fontMono", "colorMuted")}>{member.sickDays}</div></div>
+                <span className={styles.tprChevron}>▶</span>
               </div>
             );
           })}
         </div>
-      )}
+      ) : null}
 
-      {activeTab === "individual profiles" && (
-        <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 20 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {activeTab === "individual profiles" ? (
+        <div className={styles.tprProfileSplit}>
+          <div className={styles.tprProfileNav}>
             {staff.map((m) => (
-              <div key={m.id} onClick={() => setSelected(m)} style={{ padding: "12px 16px", background: selected.id === m.id ? `${m.color}15` : C.surface, border: `1px solid ${selected.id === m.id ? m.color + "55" : C.border}`, borderRadius: 8, cursor: "pointer", display: "flex", gap: 8, alignItems: "center" }}>
+              <div
+                key={m.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelected(m)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelected(m);
+                  }
+                }}
+                className={cx(styles.tprProfileNavItem, toneVarClass(m.color), selected.id === m.id && styles.tprProfileNavItemActive)}
+              >
                 <Avatar initials={m.avatar} color={m.color} size={24} />
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 12, color: selected.id === m.id ? m.color : C.text }}>{m.name.split(" ")[0]}</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: m.utilisation >= 80 ? C.lime : C.amber }}>{m.utilisation}%</div>
+                  <div className={styles.tprProfileNavName}>{m.name.split(" ")[0]}</div>
+                  <div className={cx("fontMono", "text11", m.utilisation >= 80 ? "colorAccent" : "colorAmber")}>{m.utilisation}%</div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div style={{ background: C.surface, border: `1px solid ${selected.color}33`, borderRadius: 12, padding: 28 }}>
-            <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 28 }}>
+          <div className={cx(styles.tprProfileCard, toneVarClass(selected.color))}>
+            <div className={styles.tprProfileHead}>
               <Avatar initials={selected.avatar} color={selected.color} size={52} />
               <div>
-                <div style={{ fontWeight: 800, fontSize: 22 }}>{selected.name}</div>
-                <div style={{ color: selected.color, fontSize: 14 }}>{selected.role}</div>
+                <div className={styles.tprProfileName}>{selected.name}</div>
+                <div className={styles.tprProfileRole}>{selected.role}</div>
               </div>
-              {selected.performanceScore && (
-                <div style={{ marginLeft: "auto", textAlign: "right" }}>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 36, color: selected.performanceScore >= 4 ? C.lime : C.amber }}>{selected.performanceScore}</div>
-                  <div style={{ fontSize: 10, color: C.muted }}>Performance / 5</div>
+              {selected.performanceScore ? (
+                <div className={styles.tprPerfBox}>
+                  <div className={cx(styles.tprPerfValue, selected.performanceScore >= 4 ? "colorAccent" : "colorAmber")}>{selected.performanceScore}</div>
+                  <div className={styles.tprMini}>Performance / 5</div>
                 </div>
-              )}
+              ) : null}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
+            <div className={styles.tprMetricGrid}>
               {[
-                { label: "Utilisation", value: `${selected.utilisation}%`, color: selected.utilisation >= 80 ? C.lime : C.amber },
-                { label: "Billable Hours", value: `${selected.billableHours}h`, color: C.blue },
-                { label: "Tasks Completed", value: selected.tasksCompleted.toString(), color: C.lime },
-                { label: "Tasks Overdue", value: selected.tasksOverdue.toString(), color: selected.tasksOverdue > 0 ? C.red : C.lime },
-                { label: "L&D Hours", value: `${selected.ldHours}h`, color: selected.ldHours === 0 ? C.red : C.blue },
-                { label: "Client Satisfaction", value: selected.clientSatisfaction ? `${selected.clientSatisfaction}/10` : "N/A", color: selected.clientSatisfaction ? (selected.clientSatisfaction >= 8 ? C.lime : C.amber) : C.muted }
+                { label: "Utilisation", value: `${selected.utilisation}%`, color: selected.utilisation >= 80 ? "var(--accent)" : "var(--amber)" },
+                { label: "Billable Hours", value: `${selected.billableHours}h`, color: "var(--blue)" },
+                { label: "Tasks Completed", value: selected.tasksCompleted.toString(), color: "var(--accent)" },
+                { label: "Tasks Overdue", value: selected.tasksOverdue.toString(), color: selected.tasksOverdue > 0 ? "var(--red)" : "var(--accent)" },
+                { label: "L&D Hours", value: `${selected.ldHours}h`, color: selected.ldHours === 0 ? "var(--red)" : "var(--blue)" },
+                { label: "Client Satisfaction", value: selected.clientSatisfaction ? `${selected.clientSatisfaction}/10` : "N/A", color: selected.clientSatisfaction ? (selected.clientSatisfaction >= 8 ? "var(--accent)" : "var(--amber)") : "var(--muted)" }
               ].map((m) => (
-                <div key={m.label} style={{ padding: 14, background: C.bg, borderRadius: 8, textAlign: "center" }}>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 22, color: m.color }}>{m.value}</div>
-                  <div style={{ fontSize: 9, color: C.muted, marginTop: 3 }}>{m.label}</div>
+                <div key={m.label} className={styles.tprMetricTile}>
+                  <div className={cx(styles.tprMetricValue, colorClass(m.color))}>{m.value}</div>
+                  <div className={styles.tprMetricLabel}>{m.label}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 11, color: C.muted, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Utilisation Trend (6mo)</div>
-              <div style={{ display: "flex", gap: 6, alignItems: "flex-end", height: 60 }}>
+            <div className={styles.tprTrendBlock}>
+              <div className={styles.tprTrendTitle}>Utilisation Trend (6mo)</div>
+              <div className={styles.tprTrendBars}>
                 {selected.utilisationHistory.map((v, i) => {
                   const isLast = i === selected.utilisationHistory.length - 1;
-                  const color = v >= 85 ? C.lime : v >= 70 ? C.blue : C.amber;
+                  const color = v >= 85 ? "var(--accent)" : v >= 70 ? "var(--blue)" : "var(--amber)";
                   return (
-                    <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                      <div style={{ height: (v / 100) * 60, background: isLast ? color : `${color}55`, borderRadius: "3px 3px 0 0", width: "100%" }} />
-                      <span style={{ fontSize: 9, color: C.muted }}>{months[i]}</span>
+                    <div key={i} className={styles.tprTrendBarCol}>
+                      <svg className={styles.tprTrendBar} viewBox="0 0 10 60" preserveAspectRatio="none" aria-hidden="true">
+                        <rect x="0" y={60 - (v / 100) * 60} width="10" height={(v / 100) * 60} fill={trendFillColor(color, isLast)} />
+                      </svg>
+                      <span className={styles.tprMiniMonth}>{months[i]}</span>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-              <div style={{ padding: 16, background: `${C.lime}08`, border: `1px solid ${C.lime}22`, borderRadius: 8 }}>
-                <div style={{ fontSize: 11, color: C.lime, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>✦ Strengths</div>
-                {selected.strengths.map((s, i) => (<div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, fontSize: 12 }}><span style={{ color: C.lime }}>·</span><span>{s}</span></div>))}
+            <div className={styles.tprStrengthSplit}>
+              <div className={styles.tprStrengthCard}>
+                <div className={styles.tprStrengthHd}>✦ Strengths</div>
+                {selected.strengths.map((s, i) => (
+                  <div key={i} className={styles.tprBulletRow}><span className={styles.tprDotAccent}>·</span><span>{s}</span></div>
+                ))}
               </div>
-              <div style={{ padding: 16, background: `${C.amber}08`, border: `1px solid ${C.amber}22`, borderRadius: 8 }}>
-                <div style={{ fontSize: 11, color: C.amber, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>↑ Development Areas</div>
-                {selected.devAreas.map((d, i) => (<div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, fontSize: 12 }}><span style={{ color: C.amber }}>·</span><span>{d}</span></div>))}
+              <div className={styles.tprDevCard}>
+                <div className={styles.tprDevHd}>↑ Development Areas</div>
+                {selected.devAreas.map((d, i) => (
+                  <div key={i} className={styles.tprBulletRow}><span className={styles.tprDotAmber}>·</span><span>{d}</span></div>
+                ))}
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button style={{ background: C.primary, color: C.bg, border: "none", padding: "10px 20px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>View Full Record</button>
-              <button style={{ background: C.border, border: "none", color: C.text, padding: "10px 16px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Schedule Review</button>
+            <div className={styles.tprActionRow}>
+              <button type="button" className={cx("btnSm", "btnAccent")}>View Full Record</button>
+              <button type="button" className={cx("btnSm", "btnGhost")}>Schedule Review</button>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {activeTab === "utilisation" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Team Utilisation — Feb 2026</div>
+      {activeTab === "utilisation" ? (
+        <div className={styles.tprList14}>
+          <div className={styles.tprUtilCard}>
+            <div className={styles.tprSecTitle}>Team Utilisation — Feb 2026</div>
             {[...staff].sort((a, b) => b.utilisation - a.utilisation).map((m) => {
-              const color = m.utilisation >= 85 ? C.lime : m.utilisation >= 70 ? C.blue : m.utilisation >= 60 ? C.amber : C.red;
+              const color = m.utilisation >= 85 ? "var(--accent)" : m.utilisation >= 70 ? "var(--blue)" : m.utilisation >= 60 ? "var(--amber)" : "var(--red)";
               return (
-                <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
+                <div key={m.id} className={styles.tprUtilRow}>
                   <Avatar initials={m.avatar} color={m.color} size={26} />
-                  <span style={{ fontSize: 12, width: 100 }}>{m.name.split(" ")[0]}</span>
-                  <div style={{ flex: 1, height: 16, background: C.border, borderRadius: 4, overflow: "hidden", position: "relative" }}>
-                    <div style={{ height: "100%", width: `${m.utilisation}%`, background: color, borderRadius: 4, display: "flex", alignItems: "center", paddingLeft: 8 }}>
-                      <span style={{ fontSize: 10, color: C.bg, fontWeight: 700 }}>{m.billableHours}h billable</span>
-                    </div>
-                    <div style={{ position: "absolute", top: 0, bottom: 0, left: "80%", width: 1, background: C.text, opacity: 0.3 }} />
+                  <span className={styles.tprUtilName}>{m.name.split(" ")[0]}</span>
+                  <div className={styles.tprUtilTrackWrap}>
+                    <progress className={cx(styles.tprUtilFill, fillClass(color))} max={100} value={m.utilisation} aria-label={`${m.name} utilisation ${m.utilisation}%`} />
+                    <span className={styles.tprUtilFillLabel}>{m.billableHours}h billable</span>
+                    <div className={styles.tprTargetLine} />
                   </div>
-                  <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 16, color, width: 44, textAlign: "right" }}>{m.utilisation}%</span>
-                  {m.utilisation < 70 ? <span style={{ fontSize: 9, color: C.red, background: `${C.red}15`, padding: "2px 6px", borderRadius: 4 }}>Low</span> : null}
+                  <span className={cx(styles.tprUtilPct, colorClass(color))}>{m.utilisation}%</span>
+                  {m.utilisation < 70 ? <span className={styles.tprLowTag}>Low</span> : null}
                 </div>
               );
             })}
-            <div style={{ marginTop: 8, fontSize: 11, color: C.muted }}>Vertical line = 80% target. Total team: {Math.round(staff.reduce((s, m) => s + m.billableHours, 0))}h billable of {staff.reduce((s, m) => s + m.targetHours, 0)}h capacity.</div>
+            <div className={styles.tprUtilFoot}>Vertical line = 80% target. Total team: {Math.round(staff.reduce((s, m) => s + m.billableHours, 0))}h billable of {staff.reduce((s, m) => s + m.targetHours, 0)}h capacity.</div>
           </div>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Utilisation Trend — All Staff (6mo)</div>
-            <div style={{ display: "flex", gap: 6, alignItems: "flex-end", height: 80 }}>
+          <div className={styles.tprUtilCard}>
+            <div className={styles.tprSecTitle}>Utilisation Trend — All Staff (6mo)</div>
+            <div className={styles.tprBigTrendBars}>
               {months.map((month, mi) => {
                 const avgU = Math.round(staff.reduce((s, m) => s + m.utilisationHistory[mi], 0) / staff.length);
                 const h = (avgU / 100) * 80;
                 const isLast = mi === months.length - 1;
                 return (
-                  <div key={month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 9, color: isLast ? C.lime : C.muted }}>{avgU}%</span>
-                    <div style={{ height: h, background: isLast ? C.lime : `${C.lime}44`, borderRadius: "4px 4px 0 0", width: "100%" }} />
-                    <span style={{ fontSize: 9, color: C.muted }}>{month}</span>
+                  <div key={month} className={styles.tprBigTrendCol}>
+                    <span className={cx("text10", isLast ? "colorAccent" : "colorMuted")}>{avgU}%</span>
+                    <svg className={styles.tprBigTrendBar} viewBox="0 0 10 80" preserveAspectRatio="none" aria-hidden="true">
+                      <rect x="0" y={80 - h} width="10" height={h} fill={isLast ? "var(--accent)" : "var(--accent-d)"} />
+                    </svg>
+                    <span className={styles.tprMiniMonth}>{month}</span>
                   </div>
                 );
               })}
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {activeTab === "tasks & output" && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "200px 100px 100px 100px 80px 80px", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", gap: 16 }}>
+      {activeTab === "tasks & output" ? (
+        <div className={styles.tprTableCard}>
+          <div className={styles.tprOutputHead}>
             {["Employee", "Completed", "Overdue", "Completion %", "L&D Hrs", "Sick Days"].map((h) => <span key={h}>{h}</span>)}
           </div>
           {[...staff].sort((a, b) => b.tasksCompleted - a.tasksCompleted).map((m, i) => {
             const completionRate = Math.round((m.tasksCompleted / (m.tasksCompleted + m.tasksOverdue)) * 100);
             return (
-              <div key={m.id} style={{ display: "grid", gridTemplateColumns: "200px 100px 100px 100px 80px 80px", padding: "14px 24px", borderBottom: i < staff.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", gap: 16 }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div key={m.id} className={cx(styles.tprOutputRow, i < staff.length - 1 && "borderB")}>
+                <div className={styles.tprEmpCell}>
                   <Avatar initials={m.avatar} color={m.color} size={26} />
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 12 }}>{m.name.split(" ")[0]}</div>
-                    <div style={{ fontSize: 9, color: C.muted }}>{m.role}</div>
+                    <div className={styles.tprEmpName}>{m.name.split(" ")[0]}</div>
+                    <div className={styles.tprEmpRole}>{m.role}</div>
                   </div>
                 </div>
-                <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: C.lime, fontSize: 16 }}>{m.tasksCompleted}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: m.tasksOverdue > 3 ? C.red : m.tasksOverdue > 0 ? C.amber : C.lime }}>{m.tasksOverdue}</span>
+                <span className={styles.tprOutputDone}>{m.tasksCompleted}</span>
+                <span className={cx(styles.tprOutputOverdue, m.tasksOverdue > 3 ? "colorRed" : m.tasksOverdue > 0 ? "colorAmber" : "colorAccent")}>{m.tasksOverdue}</span>
                 <div>
-                  <div style={{ height: 6, background: C.border, borderRadius: 3, marginBottom: 3 }}>
-                    <div style={{ height: "100%", width: `${completionRate}%`, background: completionRate >= 90 ? C.lime : C.amber, borderRadius: 3 }} />
-                  </div>
-                  <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: completionRate >= 90 ? C.lime : C.amber }}>{completionRate}%</span>
+                  <progress className={cx(styles.tprTrack6Mb, completionRate >= 90 ? styles.tprFillAccent : styles.tprFillAmber)} max={100} value={completionRate} aria-label={`${m.name} completion ${completionRate}%`} />
+                  <span className={cx(styles.tprOutputPct, completionRate >= 90 ? "colorAccent" : "colorAmber")}>{completionRate}%</span>
                 </div>
-                <span style={{ fontFamily: "DM Mono, monospace", color: m.ldHours === 0 ? C.red : C.blue }}>{m.ldHours}h</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: C.muted }}>{m.sickDays}d</span>
+                <span className={cx(styles.tprOutputLd, m.ldHours === 0 ? "colorRed" : "colorBlue")}>{m.ldHours}h</span>
+                <span className={styles.tprOutputSick}>{m.sickDays}d</span>
               </div>
             );
           })}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

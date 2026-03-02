@@ -1,135 +1,118 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { AuthSession } from "../../../../lib/auth/session";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
-type ClientTourStep = {
-  title: string;
-  detail: string;
-  mustComplete?: boolean;
-  targetId?: string;
-};
+// ─── Tour steps ──────────────────────────────────────────────────────────────
 
-type TourLayout = {
-  spotlight: { top: number; left: number; width: number; height: number } | null;
-  tooltip: { top?: number; left?: number; right?: number; bottom?: number; transform?: string };
-};
+const TOUR_STEPS = [
+  {
+    title: "Welcome to your portal",
+    description:
+      "This is your command center for tracking projects, invoices, and communications.",
+  },
+  {
+    title: "Dashboard",
+    description:
+      "Get a high-level view of your engagement health, deadlines, and outstanding actions.",
+  },
+  {
+    title: "Projects & Approvals",
+    description:
+      "Track active projects, review milestones, and approve deliverables.",
+  },
+  {
+    title: "Messages & Files",
+    description:
+      "Communicate with your team and access all project files in one place.",
+  },
+  {
+    title: "Billing & Contracts",
+    description:
+      "View invoices, track payments, and manage contract documents.",
+  },
+  {
+    title: "You're all set!",
+    description:
+      "Explore your portal. Use \u2318K to search anything, and G+letter shortcuts for quick navigation.",
+  },
+] as const;
 
-type Params = {
-  session: AuthSession | null;
-};
+const STORAGE_KEY = "maphari_client_tour_completed";
 
-export function useClientTour({ session }: Params) {
-  const [clientTourOpen, setClientTourOpen] = useState(false);
-  const [clientTourStep, setClientTourStep] = useState(0);
-  const [clientTourLayout, setClientTourLayout] = useState<TourLayout>({
-    spotlight: null,
-    tooltip: { top: 0, left: 0 }
-  });
+// ─── Hook ────────────────────────────────────────────────────────────────────
+
+export function useClientTour() {
+  const [tourActive, setTourActive] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+
+  const totalSteps = TOUR_STEPS.length;
+
+  // ── Check localStorage on mount ──────────────────────────────────────────
 
   useEffect(() => {
-    if (!session?.user?.email) return;
-    const tourKey = `maphari:tour:client:${session.user.email}`;
-    if (!window.localStorage.getItem(tourKey)) {
-      queueMicrotask(() => setClientTourOpen(true));
-    }
-  }, [session?.user?.email]);
-
-  const clientTourSteps = useMemo<ClientTourStep[]>(
-    () => [
-      {
-        title: "Welcome to Maphari",
-        detail:
-          "This is your client portal — your central hub for managing every project with us. Let's take 60 seconds to show you around.",
-        mustComplete: true
-      },
-      {
-        targetId: "nav-dashboard",
-        title: "Your Dashboard",
-        detail:
-          "Start here every time. See all active projects, upcoming milestones, recent messages, and outstanding invoices at a glance."
-      },
-      {
-        targetId: "nav-projects",
-        title: "My Projects",
-        detail: "View detailed progress on every project, including milestones, team members, deadlines, and budgets."
-      },
-      {
-        targetId: "nav-request",
-        title: "New Project Request",
-        detail:
-          "Click here to start a new project. Our system will guide you through selecting a service, describing your needs, and getting an instant price estimate."
-      },
-      {
-        targetId: "nav-invoices",
-        title: "Invoices & Payments",
-        detail: "View all invoices, pay outstanding balances via Paystack, and download receipts. Your 3-part payment schedule lives here."
-      },
-      {
-        targetId: "nav-docs",
-        title: "Documents Library",
-        detail:
-          "All contracts, signed agreements, quotes, and handover documents are stored here. You can also download template documents like our NDA. That's the tour — let's get started!"
+    try {
+      const completed = localStorage.getItem(STORAGE_KEY);
+      if (completed !== "true") {
+        setTourActive(true);
       }
-    ],
-    []
+    } catch {
+      // localStorage unavailable — don't show tour
+    }
+  }, []);
+
+  // ── Current step data ────────────────────────────────────────────────────
+
+  const currentStepData = useMemo(
+    () => ({
+      title: TOUR_STEPS[tourStep]?.title ?? "",
+      description: TOUR_STEPS[tourStep]?.description ?? "",
+    }),
+    [tourStep],
   );
 
-  const activeTourStep = clientTourSteps[clientTourStep] ?? clientTourSteps[0];
+  // ── Navigation ───────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    if (!clientTourOpen) return;
-    const updateTourLayout = () => {
-      if (!activeTourStep?.targetId) {
-        setClientTourLayout({
-          spotlight: null,
-          tooltip: { top: window.innerHeight / 2, left: window.innerWidth / 2, transform: "translate(-50%, -50%)" }
-        });
-        return;
-      }
+  const nextStep = useCallback(() => {
+    setTourStep((prev) => {
+      if (prev < totalSteps - 1) return prev + 1;
+      return prev;
+    });
+  }, [totalSteps]);
 
-      const target = document.getElementById(activeTourStep.targetId);
-      if (!target) {
-        setClientTourLayout({
-          spotlight: null,
-          tooltip: { top: 120, left: 260, transform: "none" }
-        });
-        return;
-      }
+  const prevStep = useCallback(() => {
+    setTourStep((prev) => (prev > 0 ? prev - 1 : 0));
+  }, []);
 
-      const rect = target.getBoundingClientRect();
-      const pad = 6;
-      setClientTourLayout({
-        spotlight: {
-          top: rect.top - pad,
-          left: rect.left - pad,
-          width: rect.width + pad * 2,
-          height: rect.height + pad * 2
-        },
-        tooltip: {
-          top: Math.max(14, rect.top - pad),
-          left: Math.min(window.innerWidth - 328, rect.right + pad + 20),
-          transform: "none"
-        }
-      });
-    };
+  // ── Complete / Skip ──────────────────────────────────────────────────────
 
-    updateTourLayout();
-    window.addEventListener("resize", updateTourLayout);
-    window.addEventListener("scroll", updateTourLayout, true);
-    return () => {
-      window.removeEventListener("resize", updateTourLayout);
-      window.removeEventListener("scroll", updateTourLayout, true);
-    };
-  }, [activeTourStep, clientTourOpen]);
+  const completeTour = useCallback(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, "true");
+    } catch {
+      // Ignore storage errors
+    }
+    setTourActive(false);
+    setTourStep(0);
+  }, []);
+
+  const skipTour = useCallback(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, "true");
+    } catch {
+      // Ignore storage errors
+    }
+    setTourActive(false);
+    setTourStep(0);
+  }, []);
 
   return {
-    clientTourOpen,
-    clientTourStep,
-    clientTourLayout,
-    clientTourSteps,
-    activeTourStep,
-    setClientTourOpen,
-    setClientTourStep
+    tourActive,
+    tourStep,
+    totalSteps,
+    currentStepData,
+    nextStep,
+    prevStep,
+    skipTour,
+    completeTour,
   };
 }

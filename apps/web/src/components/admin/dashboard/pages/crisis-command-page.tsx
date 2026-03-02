@@ -1,20 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { colorClass } from "./admin-page-utils";
 
 type Severity = "critical" | "high" | "medium" | "low";
 type CrisisTab = "active crises" | "escalation chain" | "recovery playbooks" | "resolved";
@@ -40,7 +28,7 @@ const activeCrises: Crisis[] = [
   {
     id: "CRS-003",
     client: "Kestrel Capital",
-    color: C.purple,
+    color: "var(--purple)",
     severity: "critical",
     title: "Invoice dispute + communication breakdown",
     opened: "2026-02-17",
@@ -62,7 +50,7 @@ const activeCrises: Crisis[] = [
   {
     id: "CRS-004",
     client: "Dune Collective",
-    color: C.amber,
+    color: "var(--amber)",
     severity: "high",
     title: "Project delay + scope creep complaint",
     opened: "2026-02-19",
@@ -87,9 +75,9 @@ const resolved = [
 ] as const;
 
 const escalationChain = [
-  { level: 1, role: "Account Manager", person: "Nomsa Dlamini", trigger: "Client unresponsive 3+ days", color: C.lime },
-  { level: 2, role: "Operations Admin", person: "Leilani Fotu", trigger: "AM escalation or invoice 7+ days overdue", color: C.blue },
-  { level: 3, role: "Super Admin / Owner", person: "Sipho Nkosi", trigger: "Churn risk confirmed or legal threat", color: C.red }
+  { level: 1, role: "Account Manager", person: "Nomsa Dlamini", trigger: "Client unresponsive 3+ days", color: "var(--accent)" },
+  { level: 2, role: "Operations Admin", person: "Leilani Fotu", trigger: "AM escalation or invoice 7+ days overdue", color: "var(--blue)" },
+  { level: 3, role: "Super Admin / Owner", person: "Sipho Nkosi", trigger: "Churn risk confirmed or legal threat", color: "var(--red)" }
 ] as const;
 
 const recoveryPlaybooks = [
@@ -99,144 +87,155 @@ const recoveryPlaybooks = [
   { name: "Quality Complaint", steps: ["Apologise without admitting full fault", "Schedule quality review", "Offer revision at no cost", "Send satisfaction check 72h later"] }
 ] as const;
 
-const severityColors: Record<Severity, string> = { critical: C.red, high: C.orange, medium: C.amber, low: C.muted };
-
 const tabs = ["active crises", "escalation chain", "recovery playbooks", "resolved"] as const;
+
+function severityCardClass(severity: Severity): string {
+  if (severity === "critical") return styles.crisCardCritical;
+  if (severity === "high") return styles.crisCardHigh;
+  if (severity === "medium") return styles.crisCardMedium;
+  return styles.crisCardLow;
+}
+
+function severityBarClass(severity: Severity): string {
+  if (severity === "critical") return styles.crisSeverityBarCritical;
+  if (severity === "high") return styles.crisSeverityBarHigh;
+  if (severity === "medium") return styles.crisSeverityBarMedium;
+  return styles.crisSeverityBarLow;
+}
+
+function severityTagClass(severity: Severity): string {
+  if (severity === "critical") return styles.crisSeverityTagCritical;
+  if (severity === "high") return styles.crisSeverityTagHigh;
+  if (severity === "medium") return styles.crisSeverityTagMedium;
+  return styles.crisSeverityTagLow;
+}
+
+function severityTimelineDotClass(severity: Severity): string {
+  if (severity === "critical") return styles.crisTimelineDotCritical;
+  if (severity === "high") return styles.crisTimelineDotHigh;
+  if (severity === "medium") return styles.crisTimelineDotMedium;
+  return styles.crisTimelineDotLow;
+}
+
+function levelToneClass(level: number): string {
+  if (level === 1) return styles.crisLevelTone1;
+  if (level === 2) return styles.crisLevelTone2;
+  return styles.crisLevelTone3;
+}
 
 export function CrisisCommandPage() {
   const [activeTab, setActiveTab] = useState<CrisisTab>("active crises");
   const [expanded, setExpanded] = useState<string | null>("CRS-003");
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={cx(styles.pageBody, styles.crisRoot)}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.red, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / CRISIS & ESCALATION</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Crisis Command</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Active crises · Escalation chains · Recovery playbooks</div>
+          <div className={styles.crisEyebrow}>ADMIN / CRISIS &amp; ESCALATION</div>
+          <h1 className={styles.pageTitle}>Crisis Command</h1>
+          <div className={styles.pageSub}>Active crises - Escalation chains - Recovery playbooks</div>
         </div>
-        <button style={{ background: C.red, color: "#fff", padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>
-          + Log New Crisis
-        </button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent", styles.crisPrimaryBtn)}>+ Log New Crisis</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Active Crises", value: activeCrises.length.toString(), color: C.red, sub: `${activeCrises.filter((c) => c.severity === "critical").length} critical` },
-          { label: "Revenue at Risk", value: `R${(activeCrises.reduce((s, c) => s + c.revenue, 0) / 1000).toFixed(0)}k`, color: C.orange, sub: "Monthly retainer value" },
-          { label: "Avg Days Open", value: `${Math.round(activeCrises.reduce((s, c) => s + c.daysOpen, 0) / activeCrises.length)}d`, color: C.amber, sub: "Active cases only" },
-          { label: "Resolved (90d)", value: resolved.length.toString(), color: C.lime, sub: `Avg ${Math.round(resolved.reduce((s, c) => s + c.daysToResolve, 0) / resolved.length)}d to resolve` }
+          { label: "Active Crises", value: activeCrises.length.toString(), color: "var(--red)", sub: `${activeCrises.filter((c) => c.severity === "critical").length} critical` },
+          { label: "Revenue at Risk", value: `R${(activeCrises.reduce((s, c) => s + c.revenue, 0) / 1000).toFixed(0)}k`, color: "var(--amber)", sub: "Monthly retainer value" },
+          { label: "Avg Days Open", value: `${Math.round(activeCrises.reduce((s, c) => s + c.daysOpen, 0) / activeCrises.length)}d`, color: "var(--amber)", sub: "Active cases only" },
+          { label: "Resolved (90d)", value: resolved.length.toString(), color: "var(--accent)", sub: `Avg ${Math.round(resolved.reduce((s, c) => s + c.daysToResolve, 0) / resolved.length)}d to resolve` }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${s.label === "Active Crises" ? `${C.red}55` : C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={cx("statCard", s.label === "Active Crises" && styles.crisRiskStat)}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            style={{
-              background: "none",
-              border: "none",
-              color: activeTab === t ? C.red : C.muted,
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontFamily: "Syne, sans-serif",
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              borderBottom: `2px solid ${activeTab === t ? C.red : "transparent"}`,
-              marginBottom: -1,
-              transition: "all 0.2s"
-            }}
-          >
-            {t}
-          </button>
-        ))}
+      <div className={styles.filterRow}>
+        <select title="Filter by tab" value={activeTab} onChange={e => setActiveTab(e.target.value as CrisisTab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
       {activeTab === "active crises" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className={styles.crisList16}>
           {activeCrises.map((crisis) => (
-            <div key={crisis.id} style={{ background: C.surface, border: `2px solid ${severityColors[crisis.severity]}55`, borderRadius: 12 }}>
-              <div style={{ padding: 24, cursor: "pointer" }} onClick={() => setExpanded(expanded === crisis.id ? null : crisis.id)}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-                    <div style={{ width: 4, height: 48, borderRadius: 2, background: severityColors[crisis.severity], flexShrink: 0, marginTop: 2 }} />
+            <div key={crisis.id} className={cx(styles.crisCard, severityCardClass(crisis.severity))}>
+              <div
+                role="button"
+                tabIndex={0}
+                className={styles.crisHead}
+                onClick={() => setExpanded(expanded === crisis.id ? null : crisis.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setExpanded(expanded === crisis.id ? null : crisis.id);
+                  }
+                }}
+              >
+                <div className={styles.crisHeadTop}>
+                  <div className={styles.crisHeadLeft}>
+                    <div className={cx(styles.crisSeverityBar, severityBarClass(crisis.severity))} />
                     <div>
-                      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 6 }}>
-                        <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{crisis.id}</span>
-                        <span style={{ fontSize: 10, color: severityColors[crisis.severity], background: `${severityColors[crisis.severity]}18`, padding: "2px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace", textTransform: "uppercase" }}>
-                          {crisis.severity}
-                        </span>
-                        <span style={{ fontSize: 12, color: crisis.color, fontWeight: 700 }}>{crisis.client}</span>
+                      <div className={styles.crisMetaLine}>
+                        <span className={styles.crisId}>{crisis.id}</span>
+                        <span className={cx(styles.crisSeverityTag, severityTagClass(crisis.severity))}>{crisis.severity}</span>
+                        <span className={cx(styles.crisClient, colorClass(crisis.color))}>{crisis.client}</span>
                       </div>
-                      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{crisis.title}</div>
-                      <div style={{ display: "flex", gap: 20, fontSize: 12, color: C.muted }}>
-                        <span>
-                          Owner: <span style={{ color: C.text }}>{crisis.owner}</span>
-                        </span>
-                        <span>
-                          Stage: <span style={{ color: C.amber }}>{crisis.stage}</span>
-                        </span>
-                        <span>
-                          Open: <span style={{ color: crisis.daysOpen >= 7 ? C.red : C.amber }}>{crisis.daysOpen}d</span>
-                        </span>
+                      <div className={styles.crisTitle}>{crisis.title}</div>
+                      <div className={styles.crisInfoRow}>
+                        <span>Owner: <span className={styles.colorText}>{crisis.owner}</span></span>
+                        <span>Stage: <span className={styles.colorAmber}>{crisis.stage}</span></span>
+                        <span>Open: <span className={crisis.daysOpen >= 7 ? "colorRed" : "colorAmber"}>{crisis.daysOpen}d</span></span>
                       </div>
                     </div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Revenue at risk</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontSize: 20, fontWeight: 800, color: C.red }}>R{crisis.revenue.toLocaleString()}</div>
-                    <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>
-                      Health: <span style={{ color: crisis.health < 50 ? C.red : C.amber }}>{crisis.health}/100</span>
-                    </div>
+                  <div className={styles.crisHeadRight}>
+                    <div className={styles.crisTiny}>Revenue at risk</div>
+                    <div className={styles.crisRevenue}>R{crisis.revenue.toLocaleString()}</div>
+                    <div className={styles.crisHealth}>Health: <span className={crisis.health < 50 ? "colorRed" : "colorAmber"}>{crisis.health}/100</span></div>
                   </div>
                 </div>
 
-                <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div style={{ padding: 12, background: C.bg, borderRadius: 8 }}>
-                    <div style={{ fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Last Action</div>
-                    <div style={{ fontSize: 12 }}>{crisis.lastAction}</div>
+                <div className={styles.crisActionGrid}>
+                  <div className={styles.crisActionBox}>
+                    <div className={styles.crisTinyUpper}>Last Action</div>
+                    <div className={styles.text12}>{crisis.lastAction}</div>
                   </div>
-                  <div style={{ padding: 12, background: C.surface, borderRadius: 8, border: `1px solid ${C.lime}22` }}>
-                    <div style={{ fontSize: 10, color: C.lime, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Next Action</div>
-                    <div style={{ fontSize: 12 }}>{crisis.nextAction}</div>
+                  <div className={styles.crisNextBox}>
+                    <div className={styles.crisNextUpper}>Next Action</div>
+                    <div className={styles.text12}>{crisis.nextAction}</div>
                   </div>
                 </div>
               </div>
 
               {expanded === crisis.id ? (
-                <div style={{ padding: "0 24px 24px" }}>
-                  <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 20 }}>
-                    <div style={{ fontSize: 12, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16 }}>Crisis Timeline</div>
-                    <div style={{ position: "relative" }}>
-                      <div style={{ position: "absolute", left: 55, top: 0, bottom: 0, width: 1, background: C.border }} />
-                      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className={styles.crisExpanded}>
+                  <div className={styles.crisExpandedInner}>
+                    <div className={styles.crisSectionTitle}>Crisis Timeline</div>
+                    <div className={styles.crisTimelineWrap}>
+                      <div className={styles.crisTimelineLine} />
+                      <div className={styles.crisTimelineList}>
                         {crisis.timeline.map((event, i) => (
-                          <div key={i} style={{ display: "grid", gridTemplateColumns: "55px 20px 1fr", gap: 12, alignItems: "flex-start" }}>
-                            <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted, textAlign: "right" }}>{event.date}</span>
-                            <div style={{ width: 12, height: 12, borderRadius: "50%", background: C.border, border: `2px solid ${severityColors[crisis.severity]}`, marginTop: 3, zIndex: 1, flexShrink: 0 }} />
+                          <div key={i} className={styles.crisTimelineRow}>
+                            <span className={styles.crisTimelineDate}>{event.date}</span>
+                            <div className={cx(styles.crisTimelineDot, severityTimelineDotClass(crisis.severity))} />
                             <div>
-                              <div style={{ fontSize: 13 }}>{event.event}</div>
-                              <div style={{ fontSize: 11, color: C.muted }}>{event.who}</div>
+                              <div className={styles.text13}>{event.event}</div>
+                              <div className={styles.text11 + " " + styles.colorMuted}>{event.who}</div>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                      <button style={{ background: C.lime, color: C.bg, border: "none", padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Log Action</button>
-                      <button style={{ background: C.border, border: "none", color: C.text, padding: "8px 16px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Escalate</button>
-                      <button style={{ background: C.surface, border: `1px solid ${C.lime}44`, color: C.lime, padding: "8px 16px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Mark Resolved</button>
+                    <div className={styles.crisBtnRow}>
+                      <button type="button" className={cx("btnSm", "btnAccent")}>Log Action</button>
+                      <button type="button" className={cx("btnSm", "btnGhost")}>Escalate</button>
+                      <button type="button" className={cx("btnSm", "btnGhost", styles.crisResolveBtn)}>Mark Resolved</button>
                     </div>
                   </div>
                 </div>
@@ -247,35 +246,29 @@ export function CrisisCommandPage() {
       ) : null}
 
       {activeTab === "escalation chain" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20 }}>
+        <div className={styles.crisEscSplit}>
           <div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <div className={styles.crisChainList}>
               {escalationChain.map((level, i) => (
                 <div key={level.level}>
-                  <div style={{ background: C.surface, border: `1px solid ${level.color}44`, borderRadius: 10, padding: 24 }}>
-                    <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
-                      <div style={{ width: 48, height: 48, borderRadius: "50%", background: `${level.color}15`, border: `2px solid ${level.color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: level.color, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>
-                        {level.level}
+                  <div className={cx(styles.crisChainCard, levelToneClass(level.level))}>
+                    <div className={styles.crisChainRow}>
+                      <div className={cx(styles.crisLevelBubble, levelToneClass(level.level))}>{level.level}</div>
+                      <div className={styles.onboardGrow}>
+                        <div className={styles.crisRole}>{level.role}</div>
+                        <div className={cx(styles.crisPerson, levelToneClass(level.level))}>{level.person}</div>
+                        <div className={styles.text12 + " " + styles.colorMuted}>Trigger: {level.trigger}</div>
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{level.role}</div>
-                        <div style={{ fontSize: 13, color: level.color, marginBottom: 6 }}>{level.person}</div>
-                        <div style={{ fontSize: 12, color: C.muted }}>Trigger: {level.trigger}</div>
-                      </div>
-                      <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Contact Now</button>
+                      <button type="button" className={cx("btnSm", "btnGhost")}>Contact Now</button>
                     </div>
                   </div>
-                  {i < escalationChain.length - 1 ? (
-                    <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}>
-                      <div style={{ fontSize: 18, color: C.border }}>↓</div>
-                    </div>
-                  ) : null}
+                  {i < escalationChain.length - 1 ? <div className={styles.crisArrow}>↓</div> : null}
                 </div>
               ))}
             </div>
           </div>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Escalation Policy</div>
+          <div className={styles.crisPolicyCard}>
+            <div className={styles.crisSectionTitle}>Escalation Policy</div>
             {[
               { threshold: "3 days silent", action: "AM sends personal message", level: 1 },
               { threshold: "5 days silent", action: "AM logs alert + checks in", level: 1 },
@@ -284,13 +277,11 @@ export function CrisisCommandPage() {
               { threshold: "Churn risk > 60%", action: "Super Admin intervention", level: 3 },
               { threshold: "Legal threat received", action: "Immediate Super Admin + legal review", level: 3 }
             ].map((policy) => (
-              <div key={policy.threshold} style={{ display: "flex", gap: 12, padding: "12px 0", borderBottom: `1px solid ${C.border}` }}>
-                <div style={{ width: 20, height: 20, borderRadius: "50%", background: escalationChain[policy.level - 1].color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: C.bg, fontWeight: 800, flexShrink: 0 }}>
-                  {policy.level}
-                </div>
+              <div key={policy.threshold} className={styles.crisPolicyRow}>
+                <div className={cx(styles.crisPolicyLevel, levelToneClass(policy.level))}>{policy.level}</div>
                 <div>
-                  <div style={{ fontSize: 12, color: C.amber, marginBottom: 2, fontFamily: "DM Mono, monospace" }}>{policy.threshold}</div>
-                  <div style={{ fontSize: 12, color: C.text }}>{policy.action}</div>
+                  <div className={styles.crisThreshold}>{policy.threshold}</div>
+                  <div className={styles.text12 + " " + styles.colorText}>{policy.action}</div>
                 </div>
               </div>
             ))}
@@ -299,49 +290,45 @@ export function CrisisCommandPage() {
       ) : null}
 
       {activeTab === "recovery playbooks" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div className={styles.crisPlaybookGrid}>
           {recoveryPlaybooks.map((pb) => (
-            <div key={pb.name} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, color: C.amber }}>{pb.name}</div>
-              <div style={{ fontSize: 11, color: C.muted, marginBottom: 20 }}>Recovery Protocol</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div key={pb.name} className={styles.crisPlayCard}>
+              <div className={styles.crisPlayTitle}>{pb.name}</div>
+              <div className={styles.crisPlaySub}>Recovery Protocol</div>
+              <div className={styles.crisPlaySteps}>
                 {pb.steps.map((step, i) => (
-                  <div key={i} style={{ display: "flex", gap: 12 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: C.border, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: C.lime, fontFamily: "DM Mono, monospace", fontWeight: 700, flexShrink: 0 }}>
-                      {i + 1}
-                    </div>
-                    <div style={{ fontSize: 13, paddingTop: 3, lineHeight: 1.4 }}>{step}</div>
+                  <div key={i} className={styles.crisPlayStepRow}>
+                    <div className={styles.crisPlayStepNum}>{i + 1}</div>
+                    <div className={styles.crisPlayStepText}>{step}</div>
                   </div>
                 ))}
               </div>
-              <button style={{ marginTop: 20, width: "100%", background: `${C.amber}15`, border: `1px solid ${C.amber}44`, color: C.amber, padding: "10px", borderRadius: 8, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
-                Apply to Active Crisis →
-              </button>
+              <button type="button" className={cx("btnSm", "btnGhost", styles.crisApplyBtn)}>Apply to Active Crisis</button>
             </div>
           ))}
         </div>
       ) : null}
 
       {activeTab === "resolved" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className={styles.crisResolvedList}>
           {resolved.map((r) => (
-            <div key={r.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24, display: "grid", gridTemplateColumns: "80px 80px 1fr 80px 120px 160px auto", alignItems: "center", gap: 20 }}>
-              <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{r.id}</span>
-              <span style={{ fontSize: 10, color: severityColors[r.severity], background: `${severityColors[r.severity]}18`, padding: "3px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace", textTransform: "uppercase" }}>{r.severity}</span>
+            <div key={r.id} className={styles.crisResolvedRow}>
+              <span className={styles.crisId}>{r.id}</span>
+              <span className={cx(styles.crisSeverityTag, severityTagClass(r.severity))}>{r.severity}</span>
               <div>
-                <div style={{ fontWeight: 600, marginBottom: 2 }}>{r.client}</div>
-                <div style={{ fontSize: 12, color: C.muted }}>{r.title}</div>
+                <div className={styles.fw600}>{r.client}</div>
+                <div className={styles.text12 + " " + styles.colorMuted}>{r.title}</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Days</div>
-                <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700 }}>{r.daysToResolve}d</div>
+                <div className={styles.crisTiny}>Days</div>
+                <div className={styles.crisDays}>{r.daysToResolve}d</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Resolved</div>
-                <div style={{ fontSize: 12 }}>{r.resolved}</div>
+                <div className={styles.crisTiny}>Resolved</div>
+                <div className={styles.text12}>{r.resolved}</div>
               </div>
-              <div style={{ fontSize: 12, color: r.outcome.includes("churned") ? C.red : C.amber }}>{r.outcome}</div>
-              <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>View Post-Mortem</button>
+              <div className={cx(styles.text12, r.outcome.includes("churned") ? "colorRed" : "colorAmber")}>{r.outcome}</div>
+              <button type="button" className={cx("btnSm", "btnGhost")}>View Post-Mortem</button>
             </div>
           ))}
         </div>

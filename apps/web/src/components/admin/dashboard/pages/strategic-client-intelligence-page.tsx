@@ -1,20 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { colorClass } from "./admin-page-utils";
 
 type Segment = "Champion" | "Growth" | "At Risk" | "New";
 
@@ -44,7 +32,7 @@ const clients: Client[] = [
     id: 1,
     name: "Volta Studios",
     avatar: "VS",
-    color: C.lime,
+    color: "var(--accent)",
     segment: "Champion",
     ltv: 412000,
     cac: 8200,
@@ -64,7 +52,7 @@ const clients: Client[] = [
     id: 2,
     name: "Kestrel Capital",
     avatar: "KC",
-    color: C.purple,
+    color: "var(--purple)",
     segment: "At Risk",
     ltv: 168000,
     cac: 12000,
@@ -84,7 +72,7 @@ const clients: Client[] = [
     id: 3,
     name: "Mira Health",
     avatar: "MH",
-    color: C.blue,
+    color: "var(--blue)",
     segment: "Growth",
     ltv: 258000,
     cac: 9400,
@@ -104,7 +92,7 @@ const clients: Client[] = [
     id: 4,
     name: "Dune Collective",
     avatar: "DC",
-    color: C.amber,
+    color: "var(--amber)",
     segment: "At Risk",
     ltv: 192000,
     cac: 6800,
@@ -124,7 +112,7 @@ const clients: Client[] = [
     id: 5,
     name: "Okafor & Sons",
     avatar: "OS",
-    color: C.orange,
+    color: "var(--amber)",
     segment: "Champion",
     ltv: 288000,
     cac: 5200,
@@ -143,10 +131,10 @@ const clients: Client[] = [
 ];
 
 const segmentConfig: Record<Segment, { color: string; icon: string; desc: string }> = {
-  Champion: { color: C.lime, icon: "★", desc: "High LTV, high health, low churn risk" },
-  Growth: { color: C.blue, icon: "↑", desc: "Expanding engagement, strong potential" },
-  "At Risk": { color: C.red, icon: "⚠", desc: "Declining health, high churn probability" },
-  New: { color: C.purple, icon: "◈", desc: "Recent clients, establishing relationship" }
+  Champion: { color: "var(--accent)", icon: "★", desc: "High LTV, high health, low churn risk" },
+  Growth: { color: "var(--blue)", icon: "↑", desc: "Expanding engagement, strong potential" },
+  "At Risk": { color: "var(--red)", icon: "⚠", desc: "Declining health, high churn probability" },
+  New: { color: "var(--purple)", icon: "◈", desc: "Recent clients, establishing relationship" }
 };
 
 const cohorts = [
@@ -161,18 +149,44 @@ const tabs = ["segmentation", "ltv & cac", "churn prediction", "cohort analysis"
 
 type Tab = (typeof tabs)[number];
 
+function riskClass(value: number): string {
+  if (value > 50) return "colorRed";
+  if (value > 25) return "colorAmber";
+  return "colorAccent";
+}
+
+function toneVarClass(value: string): string {
+  if (value === "var(--red)") return styles.sciToneRed;
+  if (value === "var(--blue)") return styles.sciToneBlue;
+  if (value === "var(--amber)") return styles.sciToneAmber;
+  if (value === "var(--purple)") return styles.sciTonePurple;
+  if (value === "var(--muted)") return styles.sciToneMuted;
+  if (value === "var(--border)") return styles.sciToneBorder;
+  return styles.sciToneAccent;
+}
+
+function fillClass(value: string): string {
+  if (value === "var(--red)") return styles.sciFillRed;
+  if (value === "var(--blue)") return styles.sciFillBlue;
+  if (value === "var(--amber)") return styles.sciFillAmber;
+  if (value === "var(--purple)") return styles.sciFillPurple;
+  if (value === "var(--muted)") return styles.sciFillMuted;
+  return styles.sciFillAccent;
+}
+
 function SegmentBadge({ segment }: { segment: Segment }) {
   const cfg = segmentConfig[segment];
   return (
-    <span style={{ fontSize: 10, color: cfg.color, background: `${cfg.color}18`, padding: "3px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+    <span className={cx(styles.sciSegmentBadge, toneVarClass(cfg.color))}>
       {cfg.icon} {segment}
     </span>
   );
 }
 
 function Avatar({ initials, color, size = 36 }: { initials: string; color: string; size?: number }) {
+  const sizeClass = size === 28 ? "sciAvatar28" : size === 30 ? "sciAvatar30" : size === 32 ? "sciAvatar32" : "sciAvatar36";
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: `${color}22`, border: `2px solid ${color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.33, fontWeight: 700, color, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>
+    <div className={cx(styles.sciAvatar, toneVarClass(color), sizeClass)}>
       {initials}
     </div>
   );
@@ -189,104 +203,69 @@ export function StrategicClientIntelligencePage() {
   const upsellReady = clients.filter((c) => c.upsellScore > 60).length;
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.lime, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / CLIENT SEGMENTATION</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Strategic Client Intelligence</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>LTV · CAC · Churn risk · Cohort analysis · Upsell scoring</div>
+          <div className={styles.pageEyebrow}>ADMIN / CLIENT SEGMENTATION</div>
+          <h1 className={styles.pageTitle}>Strategic Client Intelligence</h1>
+          <div className={styles.pageSub}>LTV · CAC · Churn risk · Cohort analysis · Upsell scoring</div>
         </div>
-        <button style={{ background: C.lime, color: C.bg, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>Export Segment Report</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent")}>Export Segment Report</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "gap16", "mb28")}>
         {[
-          { label: "Total Portfolio LTV", value: `R${(totalLTV / 1000).toFixed(0)}k`, color: C.lime, sub: "Across 5 clients" },
-          { label: "Avg CAC", value: `R${(avgCAC / 1000).toFixed(1)}k`, color: C.blue, sub: "Cost per acquisition" },
-          { label: "At-Risk Clients", value: atRisk.toString(), color: C.red, sub: "Churn risk > 50%" },
-          { label: "Upsell Ready", value: upsellReady.toString(), color: C.purple, sub: "Score > 60" }
+          { label: "Total Portfolio LTV", value: `R${(totalLTV / 1000).toFixed(0)}k`, color: "var(--accent)", sub: "Across 5 clients" },
+          { label: "Avg CAC", value: `R${(avgCAC / 1000).toFixed(1)}k`, color: "var(--blue)", sub: "Cost per acquisition" },
+          { label: "At-Risk Clients", value: atRisk.toString(), color: "var(--red)", sub: "Churn risk > 50%" },
+          { label: "Upsell Ready", value: upsellReady.toString(), color: "var(--purple)", sub: "Score > 60" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            style={{
-              background: "none",
-              border: "none",
-              color: activeTab === t ? C.lime : C.muted,
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontFamily: "Syne, sans-serif",
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              borderBottom: `2px solid ${activeTab === t ? C.lime : "transparent"}`,
-              marginBottom: -1,
-              transition: "all 0.2s"
-            }}
-          >
-            {t}
-          </button>
-        ))}
+      <div className={styles.filterRow}>
+        <select title="View" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        {activeTab === "segmentation" ? (
+          <select title="Segment" value={selectedSegment} onChange={e => setSelectedSegment(e.target.value as "All" | Segment)} className={styles.filterSelect}>
+            {(["All", ...Object.keys(segmentConfig)] as Array<"All" | Segment>).map(seg => <option key={seg} value={seg}>{seg}</option>)}
+          </select>
+        ) : null}
       </div>
 
       {activeTab === "segmentation" ? (
         <div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-            {(["All", ...Object.keys(segmentConfig)] as Array<"All" | Segment>).map((seg) => (
-              <button
-                key={seg}
-                onClick={() => setSelectedSegment(seg)}
-                style={{
-                  background: selectedSegment === seg ? segmentConfig[seg as Segment]?.color || C.lime : C.surface,
-                  color: selectedSegment === seg ? C.bg : C.muted,
-                  border: `1px solid ${selectedSegment === seg ? segmentConfig[seg as Segment]?.color || C.lime : C.border}`,
-                  padding: "6px 14px",
-                  borderRadius: 20,
-                  fontSize: 12,
-                  cursor: "pointer",
-                  fontFamily: "DM Mono, monospace"
-                }}
-              >
-                {seg}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+          <div className={cx("grid2", "gap16")}>
             {filtered.map((c) => (
-              <div key={c.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+              <div key={c.id} className={cx("card", "p24")}>
+                <div className={styles.sciClientHead}>
                   <Avatar initials={c.avatar} color={c.color} />
                   <div>
-                    <div style={{ fontWeight: 700 }}>{c.name}</div>
-                    <div style={{ fontSize: 12, color: C.muted }}>{c.industry} · {c.tenure} months</div>
+                    <div className={cx("fw700")}>{c.name}</div>
+                    <div className={cx("text12", "colorMuted")}>{c.industry} · {c.tenure} months</div>
                   </div>
-                  <div style={{ marginLeft: "auto" }}><SegmentBadge segment={c.segment} /></div>
+                  <div className={styles.sciMlAuto}><SegmentBadge segment={c.segment} /></div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                <div className={styles.sciStatsGrid}>
                   {[
-                    { label: "LTV", value: `R${(c.ltv / 1000).toFixed(0)}k`, color: C.lime },
-                    { label: "MRR", value: `R${(c.mrr / 1000).toFixed(0)}k`, color: C.blue },
-                    { label: "Health", value: `${c.health}`, color: c.health >= 80 ? C.lime : c.health >= 60 ? C.amber : C.red },
-                    { label: "Churn Risk", value: `${c.churnRisk}%`, color: c.churnRisk > 50 ? C.red : c.churnRisk > 25 ? C.amber : C.lime },
-                    { label: "Net Margin", value: `${c.netMargin}%`, color: C.purple },
-                    { label: "Upsell Score", value: `${c.upsellScore}`, color: c.upsellScore > 60 ? C.lime : C.muted }
+                    { label: "LTV", value: `R${(c.ltv / 1000).toFixed(0)}k`, color: "var(--accent)" },
+                    { label: "MRR", value: `R${(c.mrr / 1000).toFixed(0)}k`, color: "var(--blue)" },
+                    { label: "Health", value: `${c.health}`, color: c.health >= 80 ? "var(--accent)" : c.health >= 60 ? "var(--amber)" : "var(--red)" },
+                    { label: "Churn Risk", value: `${c.churnRisk}%`, color: c.churnRisk > 50 ? "var(--red)" : c.churnRisk > 25 ? "var(--amber)" : "var(--accent)" },
+                    { label: "Net Margin", value: `${c.netMargin}%`, color: "var(--purple)" },
+                    { label: "Upsell Score", value: `${c.upsellScore}`, color: c.upsellScore > 60 ? "var(--accent)" : "var(--muted)" }
                   ].map((stat) => (
-                    <div key={stat.label} style={{ padding: 12, background: C.bg, borderRadius: 8 }}>
-                      <div style={{ fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{stat.label}</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, fontSize: 16, color: stat.color }}>{stat.value}</div>
+                    <div key={stat.label} className={styles.sciStatBox}>
+                      <div className={styles.sciStatLabel}>{stat.label}</div>
+                      <div className={cx(styles.sciStatValue, colorClass(stat.color))}>{stat.value}</div>
                     </div>
                   ))}
                 </div>
@@ -297,44 +276,44 @@ export function StrategicClientIntelligencePage() {
       ) : null}
 
       {activeTab === "ltv & cac" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>LTV Ranking</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className={cx("grid2", "gap20")}>
+          <div className={cx("card", "p24")}>
+            <div className={styles.sciSecTitle}>LTV Ranking</div>
+            <div className={cx("flexCol", "gap16")}>
               {[...clients].sort((a, b) => b.ltv - a.ltv).map((c, i) => (
-                <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ fontSize: 11, color: C.muted, width: 16, fontFamily: "DM Mono, monospace" }}>#{i + 1}</div>
+                <div key={c.id} className={styles.sciLtvRow}>
+                  <div className={styles.sciRank}>#{i + 1}</div>
                   <Avatar initials={c.avatar} color={c.color} size={30} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>{c.name}</span>
-                      <span style={{ fontFamily: "DM Mono, monospace", color: C.lime, fontWeight: 700 }}>R{(c.ltv / 1000).toFixed(0)}k</span>
+                  <div className={styles.sciFlex1}>
+                    <div className={styles.sciLtvHead}>
+                      <span className={cx("text13", "fw600")}>{c.name}</span>
+                      <span className={styles.sciLtvMoney}>R{(c.ltv / 1000).toFixed(0)}k</span>
                     </div>
-                    <div style={{ height: 6, background: C.border, borderRadius: 3 }}>
-                      <div style={{ height: "100%", width: `${(c.ltv / clients[0].ltv) * 100}%`, background: c.color, borderRadius: 3 }} />
+                    <div className={styles.sciTrack6}>
+                      <progress className={cx(styles.sciTrackFill, "uiProgress", fillClass(c.color))} max={100} value={(c.ltv / clients[0].ltv) * 100} />
                     </div>
-                    <div style={{ fontSize: 10, color: C.muted, marginTop: 3 }}>CAC: R{c.cac.toLocaleString()} · LTV:CAC = {(c.ltv / c.cac).toFixed(1)}x</div>
+                    <div className={styles.sciLtvMeta}>CAC: R{c.cac.toLocaleString()} · LTV:CAC = {(c.ltv / c.cac).toFixed(1)}x</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className={styles.sciSideCol}>
             {clients.map((c) => {
               const ratio = Number((c.ltv / c.cac).toFixed(1));
-              const ratioColor = ratio >= 5 ? C.lime : ratio >= 3 ? C.amber : C.red;
+              const ratioColor = ratio >= 5 ? "var(--accent)" : ratio >= 3 ? "var(--amber)" : "var(--red)";
               return (
-                <div key={c.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16, display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 20 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div key={c.id} className={styles.sciRatioCard}>
+                  <div className={styles.sciRatioClient}>
                     <Avatar initials={c.avatar} color={c.color} size={28} />
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{c.name}</div>
-                      <div style={{ fontSize: 11, color: C.muted }}>CAC: R{c.cac.toLocaleString()}</div>
+                      <div className={cx("fw600", "text13")}>{c.name}</div>
+                      <div className={cx("text11", "colorMuted")}>CAC: R{c.cac.toLocaleString()}</div>
                     </div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 10, color: C.muted }}>LTV:CAC</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontSize: 20, fontWeight: 800, color: ratioColor }}>{ratio.toFixed(1)}x</div>
+                  <div className={styles.sciRatioBox}>
+                    <div className={styles.sciRatioLabel}>LTV:CAC</div>
+                    <div className={cx(styles.sciRatioValue, colorClass(ratioColor))}>{ratio.toFixed(1)}x</div>
                   </div>
                 </div>
               );
@@ -344,59 +323,59 @@ export function StrategicClientIntelligencePage() {
       ) : null}
 
       {activeTab === "churn prediction" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className={styles.sciChurnSplit}>
+          <div className={cx("flexCol", "gap12")}>
             {[...clients].sort((a, b) => b.churnRisk - a.churnRisk).map((c) => (
-              <div key={c.id} style={{ background: C.surface, border: `1px solid ${c.churnRisk > 50 ? `${C.red}55` : C.border}`, borderRadius: 10, padding: 20 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 80px 80px 80px auto", alignItems: "center", gap: 20 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div key={c.id} className={cx(styles.sciChurnCard, toneVarClass(c.churnRisk > 50 ? "var(--red)" : "var(--border"))}>
+                <div className={styles.sciChurnGrid}>
+                  <div className={styles.sciClientInline}>
                     <Avatar initials={c.avatar} color={c.color} size={32} />
                     <div>
-                      <div style={{ fontWeight: 600 }}>{c.name}</div>
-                      <div style={{ fontSize: 11, color: C.muted }}>{c.segment}</div>
+                      <div className={cx("fw600")}>{c.name}</div>
+                      <div className={cx("text11", "colorMuted")}>{c.segment}</div>
                     </div>
                   </div>
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, color: C.muted }}>Churn Risk</span>
-                      <span style={{ fontFamily: "DM Mono, monospace", fontSize: 14, fontWeight: 800, color: c.churnRisk > 50 ? C.red : c.churnRisk > 25 ? C.amber : C.lime }}>{c.churnRisk}%</span>
+                    <div className={styles.sciRiskHead}>
+                      <span className={styles.sciRiskLabel}>Churn Risk</span>
+                      <span className={cx(styles.sciRiskValue, riskClass(c.churnRisk))}>{c.churnRisk}%</span>
                     </div>
-                    <div style={{ height: 8, background: C.border, borderRadius: 4 }}>
-                      <div style={{ height: "100%", width: `${c.churnRisk}%`, background: c.churnRisk > 50 ? C.red : c.churnRisk > 25 ? C.amber : C.lime, borderRadius: 4, transition: "width 0.8s" }} />
+                    <div className={styles.sciTrack8}>
+                      <progress className={cx(styles.sciTrackFill, "uiProgress", c.churnRisk > 50 ? styles.sciFillRed : c.churnRisk > 25 ? styles.sciFillAmber : styles.sciFillAccent)} max={100} value={c.churnRisk} />
                     </div>
                   </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>Health</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: c.health >= 80 ? C.lime : c.health >= 60 ? C.amber : C.red }}>{c.health}</div>
+                  <div className={styles.sciKpiCol}>
+                    <div className={styles.sciKpiLabel}>Health</div>
+                    <div className={cx(styles.sciKpiValue, c.health >= 80 ? "colorAccent" : c.health >= 60 ? "colorAmber" : "colorRed")}>{c.health}</div>
                   </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>Growth</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: c.revenueGrowth > 0 ? C.lime : C.red }}>{c.revenueGrowth > 0 ? "+" : ""}{c.revenueGrowth}%</div>
+                  <div className={styles.sciKpiCol}>
+                    <div className={styles.sciKpiLabel}>Growth</div>
+                    <div className={cx(styles.sciKpiValue, c.revenueGrowth > 0 ? "colorAccent" : "colorRed")}>{c.revenueGrowth > 0 ? "+" : ""}{c.revenueGrowth}%</div>
                   </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>Touches</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700 }}>{c.touchpoints}</div>
+                  <div className={styles.sciKpiCol}>
+                    <div className={styles.sciKpiLabel}>Touches</div>
+                    <div className={styles.sciKpiValue}>{c.touchpoints}</div>
                   </div>
                   {c.churnRisk > 50 ? (
-                    <button style={{ background: C.red, color: "#fff", border: "none", padding: "8px 14px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Recovery Plan</button>
+                    <button type="button" className={styles.sciRecoveryBtn}>Recovery Plan</button>
                   ) : (
-                    <button style={{ background: C.border, border: "none", color: C.text, padding: "8px 14px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>Monitor</button>
+                    <button type="button" className={styles.sciMonitorBtn}>Monitor</button>
                   )}
                 </div>
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.red}33`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.red, marginBottom: 12, textTransform: "uppercase" }}>⚠ Churn Risk Summary</div>
-              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.8 }}>
-                <div><span style={{ color: C.red }}>2 clients</span> above 50% churn risk</div>
-                <div>Estimated revenue at risk: <span style={{ color: C.red }}>R37,000/mo</span></div>
-                <div>Recovery window: <span style={{ color: C.amber }}>30–45 days</span></div>
+          <div className={styles.sciSideCol}>
+            <div className={styles.sciRiskSummary}>
+              <div className={styles.sciRiskTitle}>⚠ Churn Risk Summary</div>
+              <div className={styles.sciRiskBody}>
+                <div><span className={styles.sciRed}>2 clients</span> above 50% churn risk</div>
+                <div>Estimated revenue at risk: <span className={styles.sciRed}>R37,000/mo</span></div>
+                <div>Recovery window: <span className={styles.sciAmber}>30-45 days</span></div>
               </div>
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Churn Signals</div>
+            <div className={cx("card", "p24")}>
+              <div className={styles.sciSecTitle}>Churn Signals</div>
               {[
                 "Silent 6+ days",
                 "Overdue invoice",
@@ -404,9 +383,9 @@ export function StrategicClientIntelligencePage() {
                 "Health drop > 10pts",
                 "Missed milestone",
                 "Reduced touchpoints"
-              ].map((signal) => (
-                <div key={signal} style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.red, flexShrink: 0 }} />
+              ].map((signal, i, arr) => (
+                <div key={signal} className={cx(styles.sciSignalRow, i < arr.length - 1 && "borderB")}>
+                  <div className={styles.sciSignalDot} />
                   {signal}
                 </div>
               ))}
@@ -416,39 +395,37 @@ export function StrategicClientIntelligencePage() {
       ) : null}
 
       {activeTab === "cohort analysis" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>Acquisition Cohorts</div>
-            <div style={{ display: "grid", gridTemplateColumns: "100px 80px 100px 100px 80px", padding: "10px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              {["Quarter", "Clients", "Avg LTV", "Retention", "Churned"].map((h) => <span key={h}>{h}</span>)}
-            </div>
+        <div className={cx("grid2", "gap20")}>
+          <div className={cx("card", "overflowHidden", "p0")}>
+            <div className={styles.sciCohortTitle}>Acquisition Cohorts</div>
+            <div className={styles.sciCohortHead}>{["Quarter", "Clients", "Avg LTV", "Retention", "Churned"].map((h) => <span key={h}>{h}</span>)}</div>
             {cohorts.map((c, i) => (
-              <div key={c.quarter} style={{ display: "grid", gridTemplateColumns: "100px 80px 100px 100px 80px", padding: "14px 24px", borderBottom: i < cohorts.length - 1 ? `1px solid ${C.border}` : "none", fontSize: 13, alignItems: "center" }}>
-                <span style={{ fontFamily: "DM Mono, monospace", color: C.muted }}>{c.quarter}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: C.blue }}>{c.clients}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: C.lime }}>{c.avgLTV > 0 ? `R${(c.avgLTV / 1000).toFixed(0)}k` : "—"}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: c.retentionRate === 100 ? C.lime : c.retentionRate >= 75 ? C.amber : C.red }}>{c.retentionRate > 0 ? `${c.retentionRate}%` : "—"}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: c.churned > 0 ? C.red : C.muted }}>{c.churned}</span>
+              <div key={c.quarter} className={cx(styles.sciCohortRow, i < cohorts.length - 1 && "borderB")}>
+                <span className={cx("fontMono", "colorMuted")}>{c.quarter}</span>
+                <span className={cx("fontMono", "colorBlue")}>{c.clients}</span>
+                <span className={cx("fontMono", "colorAccent")}>{c.avgLTV > 0 ? `R${(c.avgLTV / 1000).toFixed(0)}k` : "-"}</span>
+                <span className={cx("fontMono", c.retentionRate === 100 ? "colorAccent" : c.retentionRate >= 75 ? "colorAmber" : "colorRed")}>{c.retentionRate > 0 ? `${c.retentionRate}%` : "-"}</span>
+                <span className={cx("fontMono", c.churned > 0 ? "colorRed" : "colorMuted")}>{c.churned}</span>
               </div>
             ))}
           </div>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Overall Retention</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <div style={{ textAlign: "center", padding: 32, background: C.bg, borderRadius: 12 }}>
-                <div style={{ fontSize: 56, fontWeight: 800, color: C.lime, fontFamily: "DM Mono, monospace" }}>80%</div>
-                <div style={{ color: C.muted, fontSize: 13, marginTop: 8 }}>12-month client retention</div>
+          <div className={cx("card", "p24")}>
+            <div className={styles.sciSecTitle}>Overall Retention</div>
+            <div className={styles.sciRetentionWrap}>
+              <div className={styles.sciRetentionHero}>
+                <div className={styles.sciRetentionValue}>80%</div>
+                <div className={styles.sciRetentionSub}>12-month client retention</div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className={cx("grid2", "gap12")}>
                 {[
-                  { label: "Total Acquired", value: "6", color: C.blue },
-                  { label: "Currently Active", value: "5", color: C.lime },
-                  { label: "Churned", value: "1", color: C.red },
-                  { label: "Avg Tenure", value: "14mo", color: C.amber }
+                  { label: "Total Acquired", value: "6", color: "var(--blue)" },
+                  { label: "Currently Active", value: "5", color: "var(--accent)" },
+                  { label: "Churned", value: "1", color: "var(--red)" },
+                  { label: "Avg Tenure", value: "14mo", color: "var(--amber)" }
                 ].map((s) => (
-                  <div key={s.label} style={{ padding: 16, background: C.bg, borderRadius: 8 }}>
-                    <div style={{ fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{s.label}</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
+                  <div key={s.label} className={styles.sciRetentionTile}>
+                    <div className={styles.sciStatLabel}>{s.label}</div>
+                    <div className={cx(styles.sciRetentionTileValue, colorClass(s.color))}>{s.value}</div>
                   </div>
                 ))}
               </div>
@@ -458,36 +435,36 @@ export function StrategicClientIntelligencePage() {
       ) : null}
 
       {activeTab === "upsell targets" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.lime}22`, borderRadius: 10, padding: 16, fontSize: 13, color: C.muted }}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={styles.sciUpsellInfo}>
             Upsell score is calculated from: retainer headroom, health score, tenure, recent NPS, and engagement frequency.
           </div>
           {[...clients].sort((a, b) => b.upsellScore - a.upsellScore).map((c) => (
-            <div key={c.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 140px 160px auto", alignItems: "center", gap: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div key={c.id} className={cx("card", "p24")}>
+              <div className={styles.sciUpsellGrid}>
+                <div className={styles.sciClientInline}>
                   <Avatar initials={c.avatar} color={c.color} size={32} />
                   <div>
-                    <div style={{ fontWeight: 600 }}>{c.name}</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>{c.retainerTier} tier</div>
+                    <div className={cx("fw600")}>{c.name}</div>
+                    <div className={cx("text11", "colorMuted")}>{c.retainerTier} tier</div>
                   </div>
                 </div>
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 10, color: C.muted }}>Upsell Score</span>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: c.upsellScore > 60 ? C.lime : c.upsellScore > 35 ? C.amber : C.muted }}>{c.upsellScore}/100</span>
+                  <div className={styles.sciRiskHead}>
+                    <span className={styles.sciRiskLabel}>Upsell Score</span>
+                    <span className={cx("fontMono", "fw700", c.upsellScore > 60 ? "colorAccent" : c.upsellScore > 35 ? "colorAmber" : "colorMuted")}>{c.upsellScore}/100</span>
                   </div>
-                  <div style={{ height: 8, background: C.border, borderRadius: 4 }}>
-                    <div style={{ height: "100%", width: `${c.upsellScore}%`, background: c.upsellScore > 60 ? C.lime : c.upsellScore > 35 ? C.amber : C.muted, borderRadius: 4, transition: "width 0.8s" }} />
+                  <div className={styles.sciTrack8}>
+                    <progress className={cx(styles.sciTrackFill, "uiProgress", c.upsellScore > 60 ? styles.sciFillAccent : c.upsellScore > 35 ? styles.sciFillAmber : styles.sciFillMuted)} max={100} value={c.upsellScore} />
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>Last Upsell</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: c.lastUpsell === "Never" ? C.red : C.muted }}>{c.lastUpsell}</div>
+                  <div className={styles.sciKpiLabel}>Last Upsell</div>
+                  <div className={cx("fontMono", "text12", c.lastUpsell === "Never" ? "colorRed" : "colorMuted")}>{c.lastUpsell}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>Suggested Move</div>
-                  <div style={{ fontSize: 12, color: C.lime, fontWeight: 600 }}>
+                  <div className={styles.sciKpiLabel}>Suggested Move</div>
+                  <div className={styles.sciSuggestValue}>
                     {c.retainerTier === "Core" && c.upsellScore > 60
                       ? "→ Growth Tier"
                       : c.retainerTier === "Growth" && c.upsellScore > 60
@@ -498,16 +475,8 @@ export function StrategicClientIntelligencePage() {
                   </div>
                 </div>
                 <button
-                  style={{
-                    background: c.upsellScore > 60 ? C.lime : C.border,
-                    color: c.upsellScore > 60 ? C.bg : C.muted,
-                    border: "none",
-                    padding: "8px 16px",
-                    borderRadius: 6,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    cursor: "pointer"
-                  }}
+                  type="button"
+                  className={cx(styles.sciUpsellBtn, toneVarClass(c.upsellScore > 60 ? "var(--accent)" : "var(--border)"), c.upsellScore > 60 ? styles.sciTextBg : styles.sciTextMuted)}
                 >
                   {c.upsellScore > 60 ? "Create Proposal" : "Not Ready"}
                 </button>

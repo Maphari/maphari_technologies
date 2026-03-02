@@ -147,18 +147,18 @@ const meetings: Meeting[] = [
   }
 ];
 
-const milestoneStatusConfig: Record<MilestoneStatus, { label: string; color: string }> = {
-  awaiting_approval: { label: "Awaiting Approval", color: "#f5c518" },
-  in_progress: { label: "In Progress", color: "#60a5fa" },
-  not_started: { label: "Not Started", color: "var(--muted2)" },
-  overdue: { label: "Overdue", color: "#ff4444" },
-  approved: { label: "Approved", color: "var(--accent)" }
+const milestoneStatusConfig: Record<MilestoneStatus, { label: string; toneClass: string }> = {
+  awaiting_approval: { label: "Awaiting Approval", toneClass: "mpToneAmber" },
+  in_progress: { label: "In Progress", toneClass: "mpToneBlue" },
+  not_started: { label: "Not Started", toneClass: "mpToneMuted2" },
+  overdue: { label: "Overdue", toneClass: "mpToneRed" },
+  approved: { label: "Approved", toneClass: "mpToneAccent" }
 };
 
-const priorityColors: Record<Priority, string> = {
-  high: "#ff4444",
-  medium: "#f5c518",
-  low: "var(--muted2)"
+const priorityConfig: Record<Priority, { toneClass: string; boxClass: string }> = {
+  high: { toneClass: "mpToneRed", boxClass: "mpCheckBoxHigh" },
+  medium: { toneClass: "mpToneAmber", boxClass: "mpCheckBoxMedium" },
+  low: { toneClass: "mpToneMuted2", boxClass: "mpCheckBoxLow" }
 };
 
 export function MeetingPrepPage({ isActive }: { isActive: boolean }) {
@@ -175,75 +175,42 @@ export function MeetingPrepPage({ isActive }: { isActive: boolean }) {
   };
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-meeting-prep">
-      <style>{`
-        .meeting-item { transition: all 0.12s ease; cursor: pointer; }
-        .meeting-item:hover { border-color: color-mix(in srgb, var(--accent) 20%, transparent) !important; background: color-mix(in srgb, var(--accent) 3%, transparent) !important; }
-        .meeting-tab-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .meeting-check-item { transition: all 0.12s ease; cursor: pointer; }
-        .meeting-check-item:hover { background: rgba(255,255,255,0.02) !important; }
-        .meeting-check-box { transition: all 0.12s ease; cursor: pointer; }
-        .meeting-check-box:hover { border-color: var(--accent) !important; }
-        .meeting-join-btn { transition: all 0.15s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .meeting-join-btn:hover { background: #a8d420 !important; }
-        .meeting-bubble-client { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px 4px 0 4px; }
-        .meeting-bubble-staff { background: color-mix(in srgb, var(--accent) 6%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 4px 4px 4px 0; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 16 }}>
-        <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-meeting-prep">
+      <div className={cx("pageHeaderBar", "borderB", "pb16")}>
+        <div className={cx("pageEyebrow")}>
           Staff Dashboard / Communication
         </div>
-        <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+        <h1 className={cx("pageTitle")}>
           Meeting Prep
         </h1>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", minHeight: "calc(100vh - 160px)" }}>
-        <div style={{ borderRight: "1px solid rgba(255,255,255,0.06)", padding: "20px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ fontSize: 9, color: "#333344", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4, paddingLeft: 4 }}>Upcoming</div>
+      <div className={cx("mpLayout")}>
+        <div className={cx("mpSidebar")}>
+          <div className={cx("mpSidebarLabel")}>Upcoming</div>
           {meetings.map((item) => {
             const isSelected = selected === item.id;
             return (
               <div
                 key={item.id}
-                className="meeting-item"
+                className={cx("mpMeetingItem", isSelected && "mpMeetingItemActive")}
                 onClick={() => {
                   setSelected(item.id);
                   setActiveTab("brief");
                   setChecked({});
                 }}
-                style={{
-                  padding: "12px 14px",
-                  borderRadius: 3,
-                  border: `1px solid ${isSelected ? "color-mix(in srgb, var(--accent) 25%, transparent)" : "rgba(255,255,255,0.06)"}`,
-                  background: isSelected ? "color-mix(in srgb, var(--accent) 4%, transparent)" : "rgba(255,255,255,0.01)"
-                }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <div
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 2,
-                      flexShrink: 0,
-                      background: "rgba(255,255,255,0.06)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 8,
-                      color: "#a0a0b0"
-                    }}
-                  >
+                <div className={cx("flexRow", "gap8", "mb6")}>
+                  <div className={cx("mpAvatar24")}>
                     {item.avatar}
                   </div>
-                  <span style={{ fontSize: 12, color: isSelected ? "#fff" : "#a0a0b0", fontWeight: isSelected ? 500 : 400, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span className={cx("mpMeetingClient", isSelected && "mpMeetingClientActive")}>
                     {item.client}
                   </span>
-                  {item.urgent ? <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ff4444", flexShrink: 0 }} /> : null}
+                  {item.urgent ? <div className={cx("mpUrgentDot")} /> : null}
                 </div>
-                <div style={{ fontSize: 10, color: "var(--muted2)", marginBottom: 3 }}>{item.type}</div>
-                <div style={{ fontSize: 10, color: isSelected ? "var(--accent)" : "#333344" }}>
+                <div className={cx("text10", "colorMuted2", "mb4")}>{item.type}</div>
+                <div className={cx("text10", isSelected ? "mpToneAccent" : "mpToneMuted2")}>
                   {item.time} - {item.duration}
                 </div>
               </div>
@@ -251,36 +218,24 @@ export function MeetingPrepPage({ isActive }: { isActive: boolean }) {
           })}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: "20px 28px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20 }}>
+        <div className={cx("flexCol")}>
+          <div className={cx("mpDetailHeader")}>
+            <div className={cx("mpDetailHeaderTop")}>
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 3,
-                      background: "rgba(255,255,255,0.06)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 10,
-                      color: "#a0a0b0"
-                    }}
-                  >
+                <div className={cx("flexRow", "gap10", "mb6")}>
+                  <div className={cx("mpAvatar32")}>
                     {meeting.avatar}
                   </div>
                   <div>
-                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff" }}>{meeting.client}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted2)" }}>
+                    <div className={cx("fontDisplay", "fw800", "colorText", "mpClientName")}>{meeting.client}</div>
+                    <div className={cx("text11", "colorMuted2")}>
                       {meeting.contact} - {meeting.contactRole}
                     </div>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
+                <div className={cx("flexRow", "gap16", "mt8")}>
                   {[meeting.type, meeting.time, meeting.duration, meeting.platform].map((label) => (
-                    <span key={label} style={{ fontSize: 11, color: "var(--muted2)", padding: "3px 8px", background: "rgba(255,255,255,0.04)", borderRadius: 2 }}>
+                    <span key={label} className={cx("mpMetaBadge")}>
                       {label}
                     </span>
                   ))}
@@ -288,25 +243,13 @@ export function MeetingPrepPage({ isActive }: { isActive: boolean }) {
               </div>
               <button
                 type="button"
-                className="meeting-join-btn"
-                style={{
-                  padding: "10px 20px",
-                  background: "var(--accent)",
-                  color: "#050508",
-                  border: "none",
-                  borderRadius: 3,
-                  fontSize: 11,
-                  fontWeight: 500,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  flexShrink: 0
-                }}
+                className={cx("mpJoinBtn")}
               >
                 Join call -
               </button>
             </div>
 
-            <div style={{ display: "flex", gap: 0, marginTop: 16, marginBottom: -20, borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 14 }}>
+            <div className={cx("mpTabBar")}>
               {[
                 { key: "brief", label: "One-page brief" },
                 { key: "agenda", label: "Agenda" },
@@ -315,18 +258,9 @@ export function MeetingPrepPage({ isActive }: { isActive: boolean }) {
               ].map((tab) => (
                 <button
                   key={tab.key}
-                  className="meeting-tab-btn"
+                  type="button"
+                  className={cx("mpTabBtn", activeTab === tab.key && "mpTabBtnActive")}
                   onClick={() => setActiveTab(tab.key as MainTab)}
-                  style={{
-                    padding: "8px 16px",
-                    fontSize: 11,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    background: "transparent",
-                    color: activeTab === tab.key ? "var(--accent)" : "var(--muted2)",
-                    borderBottom: `2px solid ${activeTab === tab.key ? "var(--accent)" : "transparent"}`,
-                    marginBottom: -1
-                  }}
                 >
                   {tab.label}
                 </button>
@@ -334,91 +268,73 @@ export function MeetingPrepPage({ isActive }: { isActive: boolean }) {
             </div>
           </div>
 
-          <div style={{ padding: 28, flex: 1, overflowY: "auto" }}>
+          <div className={cx("mpTabContent")}>
             {activeTab === "brief" ? (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 24, maxWidth: 920 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  <div style={{ padding: "14px 16px", background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)", borderRadius: 3 }}>
-                    <div style={{ fontSize: 9, color: "#a78bfa", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>Know before you join</div>
-                    <div style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.7 }}>{prep.context}</div>
+              <div className={cx("mpBriefGrid")}>
+                <div className={cx("flexCol", "gap20")}>
+                  <div className={cx("mpContextBox")}>
+                    <div className={cx("mpContextLabel")}>Know before you join</div>
+                    <div className={cx("text12", "colorMuted", "mpContextText")}>{prep.context}</div>
                   </div>
 
                   <div>
-                    <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>Open Items to Address</div>
+                    <div className={cx("mpSectionLabel", "mb12")}>Open Items to Address</div>
                     {prep.openItems.map((item, index) => (
-                      <div
-                        key={`${item.text}-${index}`}
-                        className="meeting-check-item"
-                        onClick={() => toggleCheck(`open-${index}`)}
-                        style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 12px", borderRadius: 3, marginBottom: 6, background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", opacity: checked[`open-${index}`] ? 0.4 : 1 }}
-                      >
+                      <div key={`${item.text}-${index}`} className={cx("mpCheckItem", checked[`open-${index}`] ? "mpRowDone" : "mpRowActive")} onClick={() => toggleCheck(`open-${index}`)}>
                         <div
-                          className="meeting-check-box"
-                          style={{
-                            width: 18,
-                            height: 18,
-                            borderRadius: 2,
-                            flexShrink: 0,
-                            marginTop: 1,
-                            border: `1px solid ${checked[`open-${index}`] ? "var(--accent)" : priorityColors[item.priority]}`,
-                            background: checked[`open-${index}`] ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "transparent",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 11,
-                            color: "var(--accent)"
-                          }}
+                          className={cx("mpCheckBox", checked[`open-${index}`] ? "mpCheckBoxChecked" : priorityConfig[item.priority].boxClass)}
                         >
-                          {checked[`open-${index}`] ? "✓" : ""}
+                          {checked[`open-${index}`] ? "\u2713" : ""}
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 12, color: "var(--text)", textDecoration: checked[`open-${index}`] ? "line-through" : "none", lineHeight: 1.4 }}>{item.text}</div>
+                        <div className={cx("flex1")}>
+                          <div className={cx("text12", "colorText", "mpItemText", checked[`open-${index}`] && "mpItemTextDone")}>{item.text}</div>
                         </div>
-                        <span style={{ fontSize: 9, color: priorityColors[item.priority], letterSpacing: "0.1em", textTransform: "uppercase", flexShrink: 0, marginTop: 3 }}>{item.priority}</span>
+                        <span className={cx("mpPriorityLabel", priorityConfig[item.priority].toneClass)}>{item.priority}</span>
                       </div>
                     ))}
                   </div>
 
                   {prep.blockers.length > 0 ? (
                     <div>
-                      <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>Blockers</div>
+                      <div className={cx("mpSectionLabel", "mb10")}>Blockers</div>
                       {prep.blockers.map((blocker) => (
-                        <div key={blocker} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", border: "1px solid rgba(255,68,68,0.2)", borderRadius: 3, background: "rgba(255,68,68,0.04)", marginBottom: 6 }}>
-                          <span style={{ color: "#ff4444", fontSize: 12, flexShrink: 0 }}>⚑</span>
-                          <span style={{ fontSize: 12, color: "#ff4444", lineHeight: 1.5 }}>{blocker}</span>
+                        <div key={blocker} className={cx("mpBlocker")}>
+                          <span className={cx("colorRed", "text12", "noShrink")}>&#9873;</span>
+                          <span className={cx("text12", "colorRed", "mpBlockerText")}>{blocker}</span>
                         </div>
                       ))}
                     </div>
                   ) : null}
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div style={{ padding: 16, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                    <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>Milestone Status</div>
+                <div className={cx("flexCol", "gap16")}>
+                  <div className={cx("mpSideCard")}>
+                    <div className={cx("mpSectionLabel", "mb12")}>Milestone Status</div>
                     {prep.upcomingMilestones.map((milestone, index) => {
                       const status = milestoneStatusConfig[milestone.status];
+                      const isLast = index === prep.upcomingMilestones.length - 1;
                       return (
-                        <div key={`${milestone.name}-${index}`} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: index < prep.upcomingMilestones.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
-                          <div style={{ fontSize: 11, color: "var(--text)", marginBottom: 3, lineHeight: 1.3 }}>{milestone.name}</div>
-                          <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <span style={{ fontSize: 10, color: status.color }}>{status.label}</span>
-                            <span style={{ fontSize: 10, color: "var(--muted2)" }}>{milestone.due}</span>
+                        <div key={`${milestone.name}-${index}`} className={cx("mpMilestoneRow", !isLast && "mpMilestoneRowBorder")}>
+                          <div className={cx("text11", "colorText", "mb4", "mpMilestoneName")}>{milestone.name}</div>
+                          <div className={cx("flexBetween")}>
+                            <span className={cx("text10", status.toneClass)}>{status.label}</span>
+                            <span className={cx("text10", "colorMuted2")}>{milestone.due}</span>
                           </div>
                         </div>
                       );
                     })}
                   </div>
 
-                  <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                    <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>Account snapshot</div>
+                  <div className={cx("mpSideCard")}>
+                    <div className={cx("mpSectionLabel", "mb12")}>Account snapshot</div>
                     {[
                       { label: "Hours this month", value: `${prep.hoursThisMonth}h` },
-                      { label: "Retainer burn", value: `${prep.retainerPct}%`, color: prep.retainerPct > 90 ? "#ff4444" : prep.retainerPct > 70 ? "#f5c518" : "var(--accent)" },
+                      { label: "Retainer burn", value: `${prep.retainerPct}%`, toneClass: prep.retainerPct > 90 ? "mpToneRed" : prep.retainerPct > 70 ? "mpToneAmber" : "mpToneAccent" },
                       { label: "Open items", value: prep.openItems.length.toString() }
                     ].map((item) => (
-                      <div key={item.label} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                        <span style={{ fontSize: 11, color: "var(--muted2)" }}>{item.label}</span>
-                        <span style={{ fontSize: 11, color: item.color ?? "#a0a0b0" }}>{item.value}</span>
+                      <div key={item.label} className={cx("mpSnapshotRow")}>
+                        <span className={cx("text11", "colorMuted2")}>{item.label}</span>
+                        <span className={cx("text11", item.toneClass ?? "colorMuted")}>{item.value}</span>
                       </div>
                     ))}
                   </div>
@@ -427,64 +343,45 @@ export function MeetingPrepPage({ isActive }: { isActive: boolean }) {
             ) : null}
 
             {activeTab === "agenda" ? (
-              <div style={{ maxWidth: 560 }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>
+              <div className={cx("mpAgendaWrap")}>
+                <div className={cx("mpSectionLabel", "mb16")}>
                   Suggested Agenda - {meeting.duration}
                 </div>
                 {prep.openItems.map((item, index) => {
                   const timeSlot = Math.floor(parseInt(meeting.duration, 10) / prep.openItems.length);
                   return (
-                    <div
-                      key={`${item.text}-${index}`}
-                      className="meeting-check-item"
-                      onClick={() => toggleCheck(`agenda-${index}`)}
-                      style={{ display: "flex", gap: 14, alignItems: "flex-start", padding: "14px 16px", marginBottom: 8, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)", opacity: checked[`agenda-${index}`] ? 0.4 : 1 }}
-                    >
+                    <div key={`${item.text}-${index}`} className={cx("mpAgendaItem", checked[`agenda-${index}`] ? "mpRowDone" : "mpRowActive")} onClick={() => toggleCheck(`agenda-${index}`)}>
                       <div
-                        className="meeting-check-box"
-                        style={{
-                          width: 18,
-                          height: 18,
-                          borderRadius: 2,
-                          flexShrink: 0,
-                          marginTop: 1,
-                          border: `1px solid ${checked[`agenda-${index}`] ? "var(--accent)" : "rgba(255,255,255,0.15)"}`,
-                          background: checked[`agenda-${index}`] ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "transparent",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 11,
-                          color: "var(--accent)"
-                        }}
+                        className={cx("mpCheckBox", checked[`agenda-${index}`] ? "mpCheckBoxChecked" : "mpCheckBoxNeutral")}
                       >
-                        {checked[`agenda-${index}`] ? "✓" : ""}
+                        {checked[`agenda-${index}`] ? "\u2713" : ""}
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                          <span style={{ fontSize: 12, color: "var(--text)", textDecoration: checked[`agenda-${index}`] ? "line-through" : "none" }}>{item.text}</span>
-                          <span style={{ fontSize: 10, color: "var(--muted2)", flexShrink: 0, marginLeft: 12 }}>{timeSlot} min</span>
+                      <div className={cx("flex1")}>
+                        <div className={cx("flexBetween", "mb4")}>
+                          <span className={cx("text12", "colorText", checked[`agenda-${index}`] && "mpItemTextDone")}>{item.text}</span>
+                          <span className={cx("text10", "colorMuted2", "noShrink", "mpTimeSlot")}>{timeSlot} min</span>
                         </div>
-                        <span style={{ fontSize: 9, color: priorityColors[item.priority], letterSpacing: "0.1em", textTransform: "uppercase" }}>{item.priority} priority</span>
+                        <span className={cx("mpPriorityLabel", priorityConfig[item.priority].toneClass)}>{item.priority} priority</span>
                       </div>
                     </div>
                   );
                 })}
-                <div style={{ marginTop: 16, padding: "12px 16px", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: 3, fontSize: 11, color: "#333344", textAlign: "center", cursor: "pointer" }}>
+                <div className={cx("mpAddAgendaBtn")}>
                   + Add agenda item
                 </div>
               </div>
             ) : null}
 
             {activeTab === "thread" ? (
-              <div style={{ maxWidth: 540 }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Last 3 Messages</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div className={cx("mpThreadWrap")}>
+                <div className={cx("mpSectionLabel", "mb16")}>Last 3 Messages</div>
+                <div className={cx("flexCol", "gap10")}>
                   {prep.lastMessages.map((message, index) => (
-                    <div key={`${message.time}-${index}`} style={{ display: "flex", flexDirection: "column", alignItems: message.from === "staff" ? "flex-start" : "flex-end" }}>
-                      <div className={message.from === "staff" ? "meeting-bubble-staff" : "meeting-bubble-client"} style={{ maxWidth: "85%", padding: "10px 14px" }}>
-                        <div style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.6 }}>{message.text}</div>
+                    <div key={`${message.time}-${index}`} className={cx("flexCol", message.from === "staff" ? "mpMsgLeft" : "mpMsgRight")}>
+                      <div className={cx("mpBubble", message.from === "staff" ? "mpBubbleStaff" : "mpBubbleClient")}>
+                        <div className={cx("text12", "colorText", "mpBubbleText")}>{message.text}</div>
                       </div>
-                      <div style={{ fontSize: 9, color: "var(--muted2)", marginTop: 4, paddingLeft: 4, paddingRight: 4 }}>
+                      <div className={cx("mpBubbleMeta")}>
                         {message.from === "staff" ? "You" : meeting.contact} - {message.time}
                       </div>
                     </div>
@@ -494,31 +391,21 @@ export function MeetingPrepPage({ isActive }: { isActive: boolean }) {
             ) : null}
 
             {activeTab === "notes" ? (
-              <div style={{ maxWidth: 640 }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 14 }}>
+              <div className={cx("mpNotesWrap")}>
+                <div className={cx("mpSectionLabel", "mb14")}>
                   Call Notes - {meeting.client} - {meeting.time}
                 </div>
                 <textarea
                   value={noteText}
                   onChange={(event) => setNoteText(event.target.value)}
                   placeholder={`Notes from the ${meeting.type} call...\n\n- Decisions made\n- Actions agreed\n- Follow-ups`}
-                  style={{
-                    width: "100%",
-                    minHeight: 320,
-                    padding: 16,
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 3,
-                    color: "var(--text)",
-                    fontSize: 13,
-                    lineHeight: 1.8
-                  }}
+                  className={cx("mpNoteInput")}
                 />
-                <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                  <button type="button" style={{ padding: "10px 20px", background: "var(--accent)", color: "#050508", border: "none", borderRadius: 3, fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>
+                <div className={cx("flexRow", "gap10", "mt12")}>
+                  <button type="button" className={cx("mpSaveBtn")}>
                     Save to decision log
                   </button>
-                  <button type="button" style={{ padding: "10px 16px", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 3, color: "var(--muted2)", fontSize: 11, cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>
+                  <button type="button" className={cx("mpCopyBtn")}>
                     Copy notes
                   </button>
                 </div>

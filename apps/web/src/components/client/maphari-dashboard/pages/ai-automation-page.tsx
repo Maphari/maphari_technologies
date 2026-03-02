@@ -1,514 +1,534 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cx, styles } from "../style";
-import { formatMoney } from "../utils";
-import type { PortalProject } from "../../../../lib/api/portal";
 
-type AutomationRow = {
-  id: string;
-  name: string;
-  trigger: string;
-  status: "active" | "draft" | "risk" | "watch";
-  impact: string;
-  lastEvent: string;
-};
+type AITab =
+  | "AI Summary"
+  | "Alerts"
+  | "AI Chatbot"
+  | "Smart FAQ"
+  | "Meeting Notes"
+  | "Invoice Anomalies"
+  | "Burn Rate Forecast";
 
-type ClientAiAutomationPageProps = {
-  active: boolean;
-  automationRows?: AutomationRow[];
-  projects?: PortalProject[];
-  convertMoney?: (cents: number, currency: string) => number;
-  displayCurrency?: string;
-};
+interface AlertItem {
+  icon: string;
+  tone: "critical" | "warning" | "info";
+  title: string;
+  body: string;
+  dismissed: boolean;
+}
 
-type ChatMessage = {
-  role: "ai" | "user";
+interface NoteItem {
+  title: string;
+  date: string;
+  body: string;
+  actions: Array<{ text: string; done: boolean }>;
+}
+
+interface AnomalyItem {
+  title: string;
+  body: string;
+  flagged: boolean;
+}
+
+interface ChatMessage {
+  role: "bot" | "user";
   text: string;
+}
+
+interface ToastState {
+  title: string;
+  subtitle: string;
+}
+
+const BOT_REPLIES: Record<string, string> = {
+  "What's the project status?":
+    "Your project is 54% complete and on track for launch on March 28, 2026. UI/UX design is 72% done and the next key milestone is mobile responsive screens by February 28, 2026.",
+  "When is the next invoice?":
+    "The next invoice is expected around February 28, 2026 when the UI/UX design milestone is signed off. It is projected at approximately R 15,600 for completed design hours.",
+  "Is the project on budget?":
+    "Yes. Spend is R 32,800 out of R 80,000 (41%). Based on current burn rate, projected completion is around R 78,400.",
+  "What do I need to approve?":
+    "You currently have 3 pending actions: sign off Dashboard UI Design, decide on two scope change requests, and submit homepage copy.",
 };
 
-/* ── Static fallback data ─────────────────────────────────────── */
+const DEFAULT_REPLY =
+  "Current data shows progress is on schedule. Ask a specific question about status, budget, approvals, or timeline for a focused answer.";
 
-const STATIC_AUTOMATIONS = [
-  { icon: "🧾", name: "Invoice Reminder Engine", desc: "Auto-sends payment reminders at 7 days before due, on due date, and 3 days after.", runs: "Ran 3× this week", on: true, glow: "var(--amber)", statusText: "Active" },
-  { icon: "✅", name: "Milestone Status Sync", desc: "Pushes status updates when team marks a milestone complete or in review.", runs: "Ran 6× this month", on: true, glow: "var(--accent)", statusText: "Active" },
-  { icon: "📊", name: "Weekly Digest Generator", desc: "Every Monday at 08:00, generates a project summary and emails it.", runs: "Ran 4× this month", on: true, glow: "var(--purple)", statusText: "Active" },
-  { icon: "⚠", name: "SLA Breach Alerter", desc: "Monitors milestone due dates and warns when within 48 hours of breach.", runs: "Triggered Feb 18", on: true, glow: "var(--red)", statusText: "Monitoring" },
-  { icon: "📝", name: "Meeting Notes Archiver", desc: "After every call, AI transcribes and attaches a summary to project thread.", runs: "Last run: Feb 19", on: false, glow: "var(--green)", statusText: "Paused" },
-  { icon: "🔮", name: "Scope Creep Detector", desc: "Compares milestone descriptions against completed work and flags risk.", runs: "No triggers yet", on: false, glow: "var(--purple)", statusText: "Paused" }
-] as const;
+const ALERTS: AlertItem[] = [
+  {
+    icon: "🚨",
+    tone: "critical",
+    title: "Scope creep detected",
+    body:
+      "Two scope change requests have been open for over 5 days. This may delay frontend kickoff by up to one week.",
+    dismissed: false,
+  },
+  {
+    icon: "⚠️",
+    tone: "warning",
+    title: "Predictive delay: Content delivery",
+    body:
+      "Model predicts a 68% chance homepage copy misses the March 1, 2026 deadline. This can impact frontend timeline.",
+    dismissed: false,
+  },
+  {
+    icon: "💡",
+    tone: "info",
+    title: "Design milestone approaching",
+    body:
+      "UI/UX design is 72% complete and tracking to close by February 28, 2026. Frontend starts after sign-off.",
+    dismissed: false,
+  },
+];
 
-const STATIC_FORECASTS = [
-  { label: "Client Portal v2 Retainer", used: 78, color: "var(--amber)", meta: "R 70,200 of R 90,000" },
-  { label: "Lead Pipeline Retainer", used: 40, color: "var(--accent)", meta: "R 22,000 of R 55,000" },
-  { label: "Automation Suite Budget", used: 24, color: "var(--purple)", meta: "R 8,400 of R 35,000" }
-] as const;
+const FAQS = [
+  {
+    question: "When will my project be complete?",
+    answer:
+      "Based on current progress and the committed plan, completion is tracking to March 28, 2026.",
+  },
+  {
+    question: "Why haven’t I received an invoice yet?",
+    answer:
+      "Invoices are issued at milestone gates. The next invoice is expected when UI/UX design is approved.",
+  },
+  {
+    question: "What happens if the project goes over budget?",
+    answer:
+      "Any overrun requires an explicit scope/budget approval before billing is adjusted.",
+  },
+  {
+    question: "How do I give feedback on a design?",
+    answer:
+      "Open Deliverables and submit feedback on the item in review status. Team response SLA is within 24 hours.",
+  },
+  {
+    question: "Who should I contact for an urgent issue?",
+    answer:
+      "Use Status Nudge from Notifications for urgent escalation to the project lead.",
+  },
+];
 
-const ALERTS = [
-  { toneClass: "notifRowRed"    as const, icon: "⚠", title: "Late Payment Prediction — INV-011", desc: "There is an 87% probability this invoice will remain unpaid past Feb 25.", time: "Just now", actions: [{ label: "Call Client", primary: true }, { label: "Send Reminder", primary: false }] },
-  { toneClass: "notifRowAmber"  as const, icon: "⏱", title: "Delivery Delay Risk — UAT Phase", desc: "Current UAT velocity suggests a 6-day delay vs the Mar 14 go-live.", time: "2h ago", actions: [{ label: "View Blocker", primary: true }, { label: "Adjust Timeline", primary: false }] },
-  { toneClass: "notifRowGreen"  as const, icon: "🎉", title: "Milestone Completed — Backend API", desc: "All 14 endpoints confirmed live on staging. Ready for client sign-off.", time: "Feb 18", actions: [{ label: "Sign Off", primary: true }] },
-  { toneClass: "notifRowPurple" as const, icon: "📊", title: "Retainer Burn Rate Alert", desc: "At current velocity, Lead Pipeline retainer will be exhausted by Mar 08.", time: "Feb 17", actions: [{ label: "Review Scope", primary: false }, { label: "Extend Retainer", primary: false }] }
-] as const;
+const NOTES: NoteItem[] = [
+  {
+    title: "Sprint Review Call",
+    date: "Feb 19, 2026",
+    body:
+      "Discussed design progress and switched to mobile-first priority. Dark mode moved to phase two. Next review call set for Feb 26.",
+    actions: [
+      { text: "Client to submit homepage copy by Mar 1", done: false },
+      { text: "Sipho to finalize dashboard design by Feb 25", done: true },
+      { text: "Naledi to sign off homepage design", done: true },
+    ],
+  },
+  {
+    title: "Kickoff Meeting",
+    date: "Jan 10, 2026",
+    body:
+      "Scope, timeline and budget were confirmed. Brand guidelines prioritized first in execution sequence.",
+    actions: [
+      { text: "Lerato to start brand discovery", done: true },
+      { text: "Naledi to share inspiration references", done: true },
+      { text: "Sipho to setup project portal", done: true },
+    ],
+  },
+];
 
-const MEETING_NOTES = [
-  { title: "Sprint Review & Demo — Feb 21", date: "Today · 14:00", summary: "Stripe integration demoed successfully. Client approved staging build. UAT sign-off item raised.", tags: ["approved", "uat", "action items"] },
-  { title: "Q1 Kickoff — All Projects", date: "Feb 12 · 10:00", summary: "Priorities confirmed: Client Portal first, then Lead Pipeline UAT.", tags: ["strategy", "q2 planning"] },
-  { title: "Design Review — Screen v3", date: "Feb 09 · 11:00", summary: "Navigation spacing approved. 3 minor revisions requested.", tags: ["design", "approved"] },
-  { title: "Invoice Dispute Resolution", date: "Feb 06 · 09:30", summary: "INV-009 dispute resolved with a credit applied to next invoice.", tags: ["finance", "resolved"] }
-] as const;
+const ANOMALIES: AnomalyItem[] = [
+  {
+    title: "Duplicate line item on INV-2026-009",
+    body: "Line item 'Strategy Session' appears twice. Estimated discrepancy: R 1,800.",
+    flagged: true,
+  },
+  {
+    title: "Invoices paid within terms",
+    body: "INV-2026-006 through INV-2026-010 were paid on time.",
+    flagged: false,
+  },
+  {
+    title: "Invoice amount 12% above project average",
+    body: "INV-2026-010 is above average due to brand finalization effort peak.",
+    flagged: false,
+  },
+];
 
-const QUICK_QUESTIONS = [
-  "Where is my invoice?",
-  "What stage is Client Portal v2?",
-  "When is the next milestone due?",
-  "How many hours were logged this week?",
-  "Is the project on track for go-live?",
-  "What is my outstanding balance?",
-  "When was the last payment made?",
-  "Who is working on my project?"
-] as const;
+const TABS: AITab[] = [
+  "AI Summary",
+  "Alerts",
+  "AI Chatbot",
+  "Smart FAQ",
+  "Meeting Notes",
+  "Invoice Anomalies",
+  "Burn Rate Forecast",
+];
 
-const AI_RESPONSES: Record<string, string> = {
-  "Where is my invoice?": "INV-2026-011 is currently <strong>overdue</strong> by 18 days. You can pay directly from the Invoices screen.",
-  "What stage is Client Portal v2?": "Client Portal v2 is <strong>72% complete</strong>. The Design System is in review and UAT is pending API sign-off.",
-  "When is the next milestone due?": "The next milestone deadline is <strong>UAT Sign-off on Feb 28</strong>. This is currently blocked.",
-  "How many hours were logged this week?": "<strong>54 hours</strong> were logged this week across all projects.",
-  "Is the project on track for go-live?": "<strong>At risk.</strong> Current UAT delay may move go-live from Mar 14 to Mar 20.",
-  "What is my outstanding balance?": "Outstanding balance is <strong>R 38,000 total</strong>.",
-  "When was the last payment made?": "Last payment: <strong>R 22,000</strong> received Feb 15.",
-  "Who is working on my project?": "Your team: <strong>Sipho N.</strong>, <strong>Lerato M.</strong>, <strong>Thabo K.</strong>, <strong>Nomsa D.</strong>, <strong>James M.</strong>"
-};
+function alertToneClass(tone: AlertItem["tone"]): string {
+  if (tone === "critical") return styles.aiAutoAlertCritical;
+  if (tone === "warning") return styles.aiAutoAlertWarning;
+  return styles.aiAutoAlertInfo;
+}
 
-/* ── Icon + color maps for real automation rows ─────────────── */
-
-const ROW_ICONS: Record<string, string> = {
-  "client-status-sync": "✅",
-  "client-invoice-reminders": "🧾",
-  "client-approvals": "📝",
-  "client-thread-alerts": "⚠"
-};
-
-const STATUS_GLOW: Record<AutomationRow["status"], string> = {
-  active: "var(--accent)",
-  watch:  "var(--amber)",
-  risk:   "var(--red)",
-  draft:  "var(--muted3)"
-};
-
-const STATUS_TEXT: Record<AutomationRow["status"], string> = {
-  active: "Active",
-  watch:  "Monitoring",
-  risk:   "At Risk",
-  draft:  "Inactive"
-};
-
-export function ClientAiAutomationPage({
-  active,
-  automationRows,
-  projects,
-  convertMoney,
-  displayCurrency = "ZAR"
-}: ClientAiAutomationPageProps) {
-  const [activeTab, setActiveTab] = useState("AI Assistant");
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { role: "ai", text: "Hi! I'm your Maphari AI assistant. Ask me anything about your projects, invoices, milestones, or team." }
+export function AIAutomationPage() {
+  const [tab, setTab] = useState<AITab>("AI Summary");
+  const [alerts, setAlerts] = useState<AlertItem[]>(ALERTS);
+  const [faqOpen, setFaqOpen] = useState<number | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: "bot",
+      text: "Hi Naledi. I can answer questions about project status, budget, approvals, and timeline.",
+    },
   ]);
   const [chatInput, setChatInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [autoToggles, setAutoToggles] = useState<boolean[]>(() =>
-    automationRows
-      ? automationRows.map((r) => r.status !== "draft")
-      : STATIC_AUTOMATIONS.map((a) => a.on)
-  );
-  const chatRef = useRef<HTMLDivElement | null>(null);
-
-  /* Keep toggle state in sync if automationRows length changes */
-  const prevRowCount = useRef(automationRows?.length ?? STATIC_AUTOMATIONS.length);
-  if ((automationRows?.length ?? STATIC_AUTOMATIONS.length) !== prevRowCount.current) {
-    prevRowCount.current = automationRows?.length ?? STATIC_AUTOMATIONS.length;
-    setAutoToggles(
-      automationRows
-        ? automationRows.map((r) => r.status !== "draft")
-        : STATIC_AUTOMATIONS.map((a) => a.on)
-    );
-  }
+  const [typing, setTyping] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const messageEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
-    }
-  }, [chatMessages, isTyping]);
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(null), 3200);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
 
-  const sendChat = (message?: string) => {
-    const text = message ?? chatInput.trim();
+  useEffect(() => {
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, typing]);
+
+  const unresolvedAlertCount = useMemo(() => alerts.filter((alert) => !alert.dismissed).length, [alerts]);
+
+  function notify(title: string, subtitle: string): void {
+    setToast({ title, subtitle });
+  }
+
+  function sendMessage(value?: string): void {
+    const text = (value ?? chatInput).trim();
     if (!text) return;
-    setChatMessages((prev) => [...prev, { role: "user", text }]);
+
+    setMessages((prev) => [...prev, { role: "user", text }]);
     setChatInput("");
-    setIsTyping(true);
+    setTyping(true);
+
     window.setTimeout(() => {
-      const reply = AI_RESPONSES[text] ?? "Great question! Based on your current project status, everything is moving forward — though API sign-off remains the key blocker this week.";
-      setIsTyping(false);
-      setChatMessages((prev) => [...prev, { role: "ai", text: reply }]);
-    }, 1200);
-  };
-
-  const toggleAuto = (index: number) => {
-    setAutoToggles((prev) => {
-      const next = [...prev];
-      next[index] = !next[index];
-      return next;
-    });
-  };
-
-  /* ── Derive display data ──────────────────────────────────── */
-
-  const displayAutomations = automationRows?.length
-    ? automationRows.map((row, i) => ({
-        icon: ROW_ICONS[row.id] ?? "⚙",
-        name: row.name,
-        desc: row.trigger,
-        runs: row.impact,
-        glow: STATUS_GLOW[row.status],
-        statusText: STATUS_TEXT[row.status],
-        lastEvent: row.lastEvent,
-        on: autoToggles[i] ?? row.status !== "draft"
-      }))
-    : STATIC_AUTOMATIONS.map((a, i) => ({ ...a, on: autoToggles[i] ?? a.on, lastEvent: "" }));
-
-  const activeCount = autoToggles.filter(Boolean).length;
-
-  const forecastData = (() => {
-    if (!projects?.length) return STATIC_FORECASTS.map((f) => ({ ...f }));
-    const COLORS = ["var(--amber)", "var(--accent)", "var(--purple)", "var(--green)"] as const;
-    return projects.slice(0, 4).map((p, i) => {
-      const budget = convertMoney ? convertMoney(p.budgetCents, "ZAR") : p.budgetCents / 100;
-      const used = p.progressPercent ?? 0;
-      const usedAmt = Math.round(budget * used / 100);
-      return {
-        label: p.name,
-        used,
-        color: COLORS[i % COLORS.length] as string,
-        meta: `${formatMoney(usedAmt, displayCurrency)} of ${formatMoney(budget, displayCurrency)}`
-      };
-    });
-  })();
-
-  const tabs = ["AI Assistant", "Smart Alerts", "Automations", "Meeting Notes", "Retainer Forecast"] as const;
+      setTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        { role: "bot", text: BOT_REPLIES[text] ?? DEFAULT_REPLY },
+      ]);
+    }, 1000);
+  }
 
   return (
-    <section className={cx(styles.page, active && styles.pageActive)} id="page-ai">
-      {/* Page header */}
-      <div className={styles.pageHeader}>
+    <div className={styles.pageBody}>
+      <div className={cx("pageHeader", "mb0")}>
         <div>
-          <div className={styles.eyebrow}>Intelligence</div>
-          <div className={styles.pageTitle}>AI & Automation</div>
-          <p className={styles.pageSub}>
-            Ask anything, get smart alerts, auto-transcribed meeting notes, and retainer forecasts.
-          </p>
+          <div className={cx("pageEyebrow")}>Veldt Finance · Intelligence</div>
+          <h1 className={cx("pageTitle")}>AI &amp; Automation</h1>
+          <p className={cx("pageSub")}>AI insights, risk alerts, assistant chat, and predictive budget analysis.</p>
         </div>
-        <div className={styles.headerRight}>
-          <span className={cx(styles.badge, styles.badgeGreen)}>
-            ● {activeCount} automation{activeCount === 1 ? "" : "s"} running
-          </span>
+        <div className={cx("pageActions")}>
+          <div className={styles.aiAutoBadge}>
+            <span className={styles.aiAutoBadgeDot} />
+            <span>AI Active</span>
+          </div>
+          <button className={cx("btnSm", "btnGhost")} type="button" onClick={() => notify("Digest sent", "AI weekly summary emailed")}>Send Digest</button>
         </div>
       </div>
 
-      {/* Filter bar */}
-      <div className={styles.filterBar}>
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            className={cx(styles.filterTab, activeTab === tab && styles.filterTabActive)}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+      <div className={styles.aiAutoLayout}>
+        <aside className={styles.aiAutoSidebar}>
+          <div className={styles.aiAutoSidebarSection}>AI Features</div>
+          {[
+            { label: "AI Summary", tone: styles.aiAutoTonePurple },
+            { label: "Alerts", tone: styles.aiAutoToneRed, badge: unresolvedAlertCount },
+            { label: "AI Chatbot", tone: styles.aiAutoToneBlue },
+            { label: "Smart FAQ", tone: styles.aiAutoToneAccent },
+            { label: "Meeting Notes", tone: styles.aiAutoToneMuted },
+            { label: "Invoice Anomalies", tone: styles.aiAutoToneAmber, badge: ANOMALIES.filter((a) => a.flagged).length },
+            { label: "Burn Rate Forecast", tone: styles.aiAutoToneGreen },
+          ].map((item) => {
+            const isActive = tab === item.label;
+            return (
+              <button
+                key={item.label}
+                type="button"
+                className={cx(styles.aiAutoSidebarItem, isActive && styles.aiAutoSidebarItemActive)}
+                onClick={() => setTab(item.label as AITab)}
+              >
+                <span className={cx(styles.aiAutoDot, item.tone)} />
+                <span>{item.label}</span>
+                {item.badge ? <span className={styles.aiAutoSideBadge}>{item.badge}</span> : null}
+              </button>
+            );
+          })}
 
-      {/* Page body */}
-      <div className={styles.pageBody}>
+          <div className={styles.aiAutoSidebarDivider} />
+          <div className={styles.aiAutoModelCard}>
+            <div className={styles.aiAutoModelLabel}>AI Model</div>
+            <div className={styles.aiAutoModelName}>Claude Sonnet</div>
+            <div className={styles.aiAutoModelDesc}>Analyzing project signals in real time for risk and progress insights.</div>
+          </div>
+        </aside>
 
-        {/* ── AI Assistant ── */}
-        {activeTab === "AI Assistant" ? (
-          <div className={styles.chatLayout}>
-            <div className={styles.chatPanel}>
-              <div className={styles.chatHead}>
-                <div className={styles.aiAvatar}>AI</div>
-                <div className={styles.chatHeadTitle}>Maphari AI</div>
-                <div className={styles.chatHeadOnline}>Online · Knows your projects</div>
+        <section className={styles.aiAutoMain}>
+          <div className={styles.aiAutoTabs}>
+            {TABS.map((item) => (
+              <button key={item} type="button" className={cx(styles.aiAutoTab, tab === item && styles.aiAutoTabActive)} onClick={() => setTab(item)}>
+                {item}
+              </button>
+            ))}
+          </div>
+
+          {tab === "AI Summary" ? (
+            <div className={styles.aiAutoBody}>
+              <div className={styles.aiAutoSectionTitle}>AI-Generated Project Summary</div>
+              <div className={styles.aiAutoSummaryCard}>
+                <div className={styles.aiAutoSummaryEyebrow}>AI Summary · Updated Feb 21, 2026 at 14:32</div>
+                <p className={styles.aiAutoSummaryText}>
+                  Project health is stable and currently on track. Overall completion is at 54%, with design at 72%.
+                  Immediate focus is required on pending design sign-off and scope-change decisions to prevent frontend start delay.
+                </p>
+                <p className={styles.aiAutoSummaryText}>
+                  Budget remains healthy at R 32,800 of R 80,000 (41%), with forecasted completion below budget if current scope remains unchanged.
+                </p>
+                <div className={styles.aiAutoSummaryFooter}>
+                  <span>Model: <strong>Claude Sonnet</strong></span>
+                  <span>Confidence: <strong className={styles.aiAutoTextGreen}>High</strong></span>
+                  <span>Next update: <strong>Mon 07:00</strong></span>
+                </div>
               </div>
-              <div className={styles.chatBody} ref={chatRef}>
-                {chatMessages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={cx(styles.chatMsg, msg.role === "user" && styles.chatMsgUser)}
-                  >
-                    {msg.role === "ai" ? (
-                      <div className={styles.aiAvatar} style={{ width: 22, height: 22, fontSize: "0.52rem", flexShrink: 0 }}>AI</div>
-                    ) : null}
-                    <div
-                      className={cx(
-                        styles.chatBubble,
-                        msg.role === "ai" ? styles.chatBubbleAi : styles.chatBubbleUser
-                      )}
-                      dangerouslySetInnerHTML={{ __html: msg.text }}
-                    />
-                  </div>
-                ))}
-                {isTyping ? (
-                  <div className={styles.chatMsg}>
-                    <div className={styles.aiAvatar} style={{ width: 22, height: 22, fontSize: "0.52rem", flexShrink: 0 }}>AI</div>
-                    <div className={cx(styles.chatBubble, styles.chatBubbleAi)}>
-                      <div className={styles.chatTyping}>
-                        <div className={styles.typingDot} />
-                        <div className={styles.typingDot} />
-                        <div className={styles.typingDot} />
+
+              <div className={styles.aiAutoGrid2}>
+                <div>
+                  <div className={styles.aiAutoSectionTitle}>Active Alerts</div>
+                  {alerts.filter((a) => !a.dismissed).slice(0, 2).map((alert) => (
+                    <div key={alert.title} className={cx(styles.aiAutoAlert, alertToneClass(alert.tone))}>
+                      <span className={styles.aiAutoAlertIcon}>{alert.icon}</span>
+                      <div>
+                        <div className={styles.aiAutoAlertTitle}>{alert.title}</div>
+                        <div className={styles.aiAutoAlertBody}>{alert.body}</div>
                       </div>
                     </div>
+                  ))}
+                </div>
+
+                <div>
+                  <div className={styles.aiAutoSectionTitle}>Ask AI</div>
+                  <div className={styles.aiAutoQuickCard}>
+                    {Object.keys(BOT_REPLIES).map((question) => (
+                      <button key={question} type="button" className={styles.aiAutoQuickBtn} onClick={() => { setTab("AI Chatbot"); sendMessage(question); }}>
+                        {question}
+                      </button>
+                    ))}
                   </div>
-                ) : null}
-              </div>
-              <div className={styles.chatInputRow}>
-                <input
-                  className={styles.chatInput}
-                  placeholder="Ask anything about your projects…"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") sendChat(); }}
-                />
-                <button className={styles.chatSend} type="button" onClick={() => sendChat()}>→</button>
+                </div>
               </div>
             </div>
+          ) : null}
 
-            <div className={styles.quickQuestions}>
-              <div className={styles.qqTitle}>Quick Questions</div>
-              {QUICK_QUESTIONS.map((q) => (
-                <button key={q} type="button" className={styles.qqBtn} onClick={() => sendChat(q)}>
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        {/* ── Smart Alerts ── */}
-        {activeTab === "Smart Alerts" ? (
-          <div>
-            <div className={styles.sectionTitle}>AI-Generated Alerts</div>
-            <div style={{ display: "flex", flexDirection: "column", marginTop: 12 }}>
-              {ALERTS.map((alert) => (
-                <div
-                  key={alert.title}
-                  className={cx(styles.notifRow, styles[alert.toneClass])}
-                >
-                  <div className={styles.notifIcon}>{alert.icon}</div>
-                  <div className={styles.notifBody}>
-                    <div className={styles.notifTitle}>{alert.title}</div>
-                    <div className={styles.notifDetail}>{alert.desc}</div>
-                    <div className={styles.notifActions}>
-                      {alert.actions.map((action) => (
+          {tab === "Alerts" ? (
+            <div className={styles.aiAutoBody}>
+              <div className={styles.aiAutoSectionTitle}>AI-Powered Alerts</div>
+              {alerts.map((alert, index) => (
+                <div key={alert.title} className={cx(styles.aiAutoAlert, alertToneClass(alert.tone), alert.dismissed && styles.aiAutoAlertDim)}>
+                  <span className={styles.aiAutoAlertIcon}>{alert.icon}</span>
+                  <div className={styles.aiAutoGrow}>
+                    <div className={styles.aiAutoAlertTitle}>{alert.title}</div>
+                    <div className={styles.aiAutoAlertBody}>{alert.body}</div>
+                    {!alert.dismissed ? (
+                      <div className={styles.aiAutoAlertActions}>
+                        <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => notify("Noted", "The team has been notified")}>Notify Team</button>
                         <button
-                          key={action.label}
                           type="button"
-                          className={cx(
-                            styles.button,
-                            styles.buttonSm,
-                            action.primary ? styles.buttonAccent : styles.buttonGhost
-                          )}
+                          className={cx("btnSm", "btnGhost")}
+                          onClick={() => setAlerts((prev) => prev.map((item, i) => i === index ? { ...item, dismissed: true } : item))}
                         >
-                          {action.label}
+                          Dismiss
                         </button>
-                      ))}
-                    </div>
+                      </div>
+                    ) : (
+                      <span className={cx("badge", "badgeMuted")}>Dismissed</span>
+                    )}
                   </div>
-                  <div className={styles.notifTime}>{alert.time}</div>
                 </div>
               ))}
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        {/* ── Automations ── */}
-        {activeTab === "Automations" ? (
-          <div>
-            <div className={styles.sectionTitle}>
-              {automationRows?.length ? "Live Automation Status" : "Active & Paused Automations"}
-            </div>
-            <div className={styles.autoGrid} style={{ marginTop: 12 }}>
-              {displayAutomations.map((automation, idx) => (
-                <div key={automation.name} className={styles.autoCard}>
-                  <div className={styles.autoGlow} style={{ background: automation.glow }} />
-                  <div className={styles.autoIcon}>{automation.icon}</div>
-                  <div className={styles.autoName}>{automation.name}</div>
-                  <div className={styles.autoDesc}>{automation.desc}</div>
-                  <div className={styles.autoFooter}>
-                    <div>
-                      <div className={styles.autoRuns}>{automation.runs}</div>
-                      {automation.lastEvent ? (
-                        <div className={styles.autoRuns} style={{ marginTop: 2, opacity: 0.7 }}>
-                          {automation.lastEvent}
-                        </div>
-                      ) : null}
-                      <div
-                        className={cx(
-                          styles.autoStatus,
-                          autoToggles[idx] ? styles.autoStatusActive : styles.autoStatusIdle
-                        )}
-                      >
-                        {autoToggles[idx] ? automation.statusText : "Paused"}
-                      </div>
-                    </div>
-                    {/* Toggle switch */}
-                    <button
-                      type="button"
-                      aria-label={`Toggle ${automation.name}`}
-                      onClick={() => toggleAuto(idx)}
-                      style={{
-                        width: 38,
-                        height: 22,
-                        borderRadius: 99,
-                        background: autoToggles[idx] ? "var(--accent)" : "var(--muted3)",
-                        border: autoToggles[idx] ? "1px solid var(--accent)" : "1px solid var(--border)",
-                        position: "relative",
-                        transition: "all 0.2s",
-                        flexShrink: 0
-                      }}
-                    >
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: 3,
-                          left: 3,
-                          width: 14,
-                          height: 14,
-                          borderRadius: "50%",
-                          background: "var(--on-accent)",
-                          transition: "transform 0.2s",
-                          transform: autoToggles[idx] ? "translateX(16px)" : "none",
-                          display: "block"
-                        }}
-                      />
+          {tab === "AI Chatbot" ? (
+            <div className={styles.aiAutoBody}>
+              <div className={styles.aiAutoSectionTitle}>AI Project Assistant</div>
+              <div className={styles.aiAutoChatShell}>
+                <div className={styles.aiAutoSuggestionRow}>
+                  {Object.keys(BOT_REPLIES).map((question) => (
+                    <button key={question} type="button" className={styles.aiAutoSuggestionBtn} onClick={() => sendMessage(question)}>
+                      {question}
                     </button>
+                  ))}
+                </div>
+                <div className={styles.aiAutoChatMessages}>
+                  {messages.map((message, idx) => (
+                    <div key={`${message.role}-${idx}`} className={cx(styles.aiAutoMsg, message.role === "bot" ? styles.aiAutoMsgBot : styles.aiAutoMsgUser)}>
+                      {message.text}
+                    </div>
+                  ))}
+                  {typing ? (
+                    <div className={styles.aiAutoTyping}>
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  ) : null}
+                  <div ref={messageEndRef} />
+                </div>
+                <div className={styles.aiAutoChatInputRow}>
+                  <input
+                    className={styles.aiAutoChatInput}
+                    placeholder="Ask anything about your project..."
+                    value={chatInput}
+                    onChange={(event) => setChatInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") sendMessage();
+                    }}
+                  />
+                  <button className={cx("btnSm", "btnAccent")} type="button" onClick={() => sendMessage()}>
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {tab === "Smart FAQ" ? (
+            <div className={styles.aiAutoBody}>
+              <div className={styles.aiAutoSectionTitle}>Smart FAQ</div>
+              {FAQS.map((faq, i) => (
+                <div key={faq.question} className={styles.aiAutoFaqItem}>
+                  <button type="button" className={styles.aiAutoFaqQ} onClick={() => setFaqOpen(faqOpen === i ? null : i)}>
+                    <span>{faq.question}</span>
+                    <span className={cx(styles.aiAutoFaqArrow, faqOpen === i && styles.aiAutoFaqArrowOpen)}>›</span>
+                  </button>
+                  {faqOpen === i ? <div className={styles.aiAutoFaqA}>{faq.answer}</div> : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {tab === "Meeting Notes" ? (
+            <div className={styles.aiAutoBody}>
+              <div className={styles.aiAutoSectionTitle}>AI Meeting Summaries</div>
+              {NOTES.map((note) => (
+                <div key={note.title} className={styles.aiAutoNoteCard}>
+                  <div className={styles.aiAutoNoteHead}>
+                    <div className={styles.aiAutoNoteTitle}>{note.title}</div>
+                    <div className={styles.aiAutoNoteDate}>{note.date}</div>
+                  </div>
+                  <div className={styles.aiAutoNoteBody}>{note.body}</div>
+                  <div className={styles.aiAutoNoteActionLabel}>Action Items</div>
+                  <div className={styles.aiAutoNoteActions}>
+                    {note.actions.map((action) => (
+                      <div key={action.text} className={styles.aiAutoNoteActionRow}>
+                        <span className={cx(styles.aiAutoNoteCheck, action.done && styles.aiAutoNoteCheckDone)} />
+                        <span className={cx(styles.aiAutoNoteActionText, action.done && styles.aiAutoNoteActionTextDone)}>{action.text}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        {/* ── Meeting Notes ── */}
-        {activeTab === "Meeting Notes" ? (
-          <div>
-            <div className={styles.sectionTitle}>AI-Transcribed Meeting Summaries</div>
-            <div className={styles.cols2} style={{ marginTop: 12 }}>
-              {MEETING_NOTES.map((note) => (
-                <div key={note.title} className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <div>
-                      <div className={styles.cardTitle}>{note.title}</div>
-                      <div className={styles.cardSub}>{note.date}</div>
-                    </div>
+          {tab === "Invoice Anomalies" ? (
+            <div className={styles.aiAutoBody}>
+              <div className={styles.aiAutoSectionTitle}>Invoice Anomaly Detection</div>
+              {ANOMALIES.map((anomaly) => (
+                <div key={anomaly.title} className={cx(styles.aiAutoAnomaly, anomaly.flagged && styles.aiAutoAnomalyFlag)}>
+                  <div className={styles.aiAutoAnomalyHead}>
+                    <div className={styles.aiAutoAnomalyTitle}>{anomaly.title}</div>
+                    <span className={cx("badge", anomaly.flagged ? "badgeRed" : "badgeGreen")}>{anomaly.flagged ? "Flagged" : "Clean"}</span>
                   </div>
-                  <div className={styles.cardBody}>
-                    <p className={styles.pageSub} style={{ marginTop: 0 }}>{note.summary}</p>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-                      {note.tags.map((tag) => (
-                        <span key={tag} className={cx(styles.badge, styles.badgeMuted)}>{tag}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className={styles.cardFooter}>
-                    <button type="button" className={cx(styles.button, styles.buttonGhost, styles.buttonSm)}>Full Notes</button>
-                    <button type="button" className={cx(styles.button, styles.buttonGhost, styles.buttonSm)}>↓ PDF</button>
-                    <button type="button" className={cx(styles.button, styles.buttonGhost, styles.buttonSm)}>Attach</button>
-                  </div>
+                  <div className={styles.aiAutoAnomalyBody}>{anomaly.body}</div>
                 </div>
               ))}
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        {/* ── Retainer Forecast ── */}
-        {activeTab === "Retainer Forecast" ? (
-          <div>
-            <div className={styles.sectionTitle}>
-              {projects?.length ? "Project Budget Burn Rate" : "AI Retainer Burn Rate Forecast"}
-            </div>
-            <div className={styles.card} style={{ marginTop: 12 }}>
-              <div className={styles.cardBody}>
-                {projects?.length ? (
-                  <div
-                    className={styles.pageSub}
-                    style={{
-                      marginTop: 0,
-                      padding: "12px 14px",
-                      background: "var(--accent-g)",
-                      border: "1px solid rgba(200,241,53,0.15)",
-                      marginBottom: 20
-                    }}
-                  >
-                    <strong style={{ color: "var(--accent)" }}>Live data:</strong>{" "}
-                    Showing current budget allocation across {projects.length} active project{projects.length === 1 ? "" : "s"}.
-                  </div>
-                ) : (
-                  <div
-                    className={styles.pageSub}
-                    style={{
-                      marginTop: 0,
-                      padding: "12px 14px",
-                      background: "var(--accent-g)",
-                      border: "1px solid rgba(200,241,53,0.15)",
-                      marginBottom: 20
-                    }}
-                  >
-                    <strong style={{ color: "var(--accent)" }}>AI Forecast:</strong> At current velocity,{" "}
-                    <strong>Client Portal v2</strong> retainer will be exhausted by{" "}
-                    <strong style={{ color: "var(--amber)" }}>Mar 02</strong>.
-                  </div>
-                )}
-
-                {forecastData.map((fc, idx) => (
-                  <div
-                    key={fc.label}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 20,
-                      marginBottom: idx < forecastData.length - 1 ? 24 : 0
-                    }}
-                  >
-                    <div style={{ width: 200, flexShrink: 0 }}>
-                      <div className={styles.cardTitle} style={{ fontSize: "0.78rem" }}>{fc.label}</div>
-                      <div className={styles.cardSub}>{fc.meta}</div>
+          {tab === "Burn Rate Forecast" ? (
+            <div className={styles.aiAutoBody}>
+              <div className={styles.aiAutoSectionTitle}>Retainer &amp; Budget Burn Forecast</div>
+              <div className={styles.aiAutoBurnCard}>
+                {[
+                  { label: "Discovery", used: 100, forecast: 100, value: "R 8,000", tone: styles.aiAutoToneGreen },
+                  { label: "Brand Identity", used: 100, forecast: 100, value: "R 18,000", tone: styles.aiAutoToneGreen },
+                  { label: "UI/UX Design", used: 31, forecast: 85, value: "R 6,800 / R 22,000", tone: styles.aiAutoToneAccent },
+                  { label: "Frontend Dev", used: 0, forecast: 95, value: "R 0 / R 24,000", tone: styles.aiAutoTonePurple },
+                  { label: "QA & Testing", used: 0, forecast: 90, value: "R 0 / R 5,000", tone: styles.aiAutoToneBlue },
+                ].map((row) => (
+                  <div key={row.label} className={styles.aiAutoBurnRow}>
+                    <div className={styles.aiAutoBurnLabel}>{row.label}</div>
+                    <div className={styles.aiAutoBurnTrack}>
+                      <span className={styles.aiAutoBurnForecast} style={{ width: `${row.forecast}%` }} />
+                      <span className={cx(styles.aiAutoBurnUsed, row.tone)} style={{ width: `${row.used}%` }} />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div className={styles.progressTrack}>
-                        <div
-                          className={styles.progressFill}
-                          style={{ width: `${fc.used}%`, background: fc.color }}
-                        />
-                      </div>
-                      <div className={styles.tableMonospace} style={{ marginTop: 4 }}>
-                        {fc.used}% used · {100 - fc.used}% remaining
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className={cx(styles.button, styles.buttonGhost, styles.buttonSm)}
-                    >
-                      Top Up
-                    </button>
+                    <div className={styles.aiAutoBurnPct}>{row.used}%</div>
+                    <div className={styles.aiAutoBurnVal}>{row.value}</div>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        ) : null}
 
+              <div className={styles.aiAutoGrid2}>
+                <div className={cx("card")}> 
+                  <div className={cx("cardHeader")}>
+                    <div>
+                      <div className={cx("cardTitle")}>AI Forecast</div>
+                      <div className={cx("cardSubtitle")}>Confidence: High</div>
+                    </div>
+                    <span className={cx("badge", "badgeGreen")}>On Budget</span>
+                  </div>
+                  <div className={cx("cardBody", styles.aiAutoMonoText)}>
+                    Projected completion remains around R 78,400 with current scope.
+                    Approving both open scope changes increases projected total to R 101,900.
+                  </div>
+                </div>
+
+                <div className={cx("card")}> 
+                  <div className={cx("cardHeader")}>
+                    <div>
+                      <div className={cx("cardTitle")}>Budget Alerts</div>
+                      <div className={cx("cardSubtitle")}>Automated thresholds</div>
+                    </div>
+                  </div>
+                  <div className={cx("cardBody", styles.aiAutoStack10)}>
+                    {[
+                      ["50% budget reached", "Feb 28 (estimated)"],
+                      ["75% budget reached", "Mar 14 (estimated)"],
+                      ["90% budget reached", "Mar 21 (estimated)"],
+                    ].map(([label, eta]) => (
+                      <div key={label} className={styles.aiAutoBudgetAlertRow}>
+                        <div>
+                          <div className={styles.aiAutoBudgetAlertTitle}>{label}</div>
+                          <div className={styles.aiAutoBudgetAlertEta}>{eta}</div>
+                        </div>
+                        <span className={cx("badge", "badgeMuted")}>Upcoming</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </section>
       </div>
-    </section>
+
+      {toast ? (
+        <div className={cx("toastStack")}>
+          <div className={cx("toast", "toastSuccess")}>
+            <strong>{toast.title}</strong>
+            <div>{toast.subtitle}</div>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }

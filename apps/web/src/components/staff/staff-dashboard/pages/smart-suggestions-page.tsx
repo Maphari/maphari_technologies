@@ -7,7 +7,6 @@ type ClientRow = {
   id: number;
   name: string;
   avatar: string;
-  color: string;
 };
 
 type LaneKey = "urgent" | "followup" | "proactive" | "opportunity" | "admin";
@@ -35,20 +34,20 @@ type SuggestionItem = {
 };
 
 const clients: ClientRow[] = [
-  { id: 0, name: "Internal", avatar: "IN", color: "#a0a0b0" },
-  { id: 1, name: "Volta Studios", avatar: "VS", color: "var(--accent)" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "#a78bfa" },
-  { id: 3, name: "Mira Health", avatar: "MH", color: "#60a5fa" },
-  { id: 4, name: "Dune Collective", avatar: "DC", color: "#f5c518" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "#ff8c00" }
+  { id: 0, name: "Internal", avatar: "IN" },
+  { id: 1, name: "Volta Studios", avatar: "VS" },
+  { id: 2, name: "Kestrel Capital", avatar: "KC" },
+  { id: 3, name: "Mira Health", avatar: "MH" },
+  { id: 4, name: "Dune Collective", avatar: "DC" },
+  { id: 5, name: "Okafor & Sons", avatar: "OS" }
 ];
 
-const laneConfig: Record<LaneKey, { label: string; color: string; bg: string; icon: string; desc: string }> = {
-  urgent: { label: "Urgent", color: "#ff4444", bg: "rgba(255,68,68,0.07)", icon: "⚑", desc: "Needs action today" },
-  followup: { label: "Follow-up", color: "#f5c518", bg: "rgba(245,197,24,0.07)", icon: "↻", desc: "Awaiting a response" },
-  proactive: { label: "Proactive", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 7%, transparent)", icon: "◉", desc: "Get ahead of problems" },
-  opportunity: { label: "Opportunity", color: "#a78bfa", bg: "rgba(167,139,250,0.07)", icon: "◈", desc: "Strategic upside" },
-  admin: { label: "Admin", color: "#a0a0b0", bg: "rgba(160,160,176,0.05)", icon: "◌", desc: "Housekeeping" }
+const laneConfig: Record<LaneKey, { label: string; icon: string; desc: string }> = {
+  urgent: { label: "Urgent", icon: "⚑", desc: "Needs action today" },
+  followup: { label: "Follow-up", icon: "↻", desc: "Awaiting a response" },
+  proactive: { label: "Proactive", icon: "◉", desc: "Get ahead of problems" },
+  opportunity: { label: "Opportunity", icon: "◈", desc: "Strategic upside" },
+  admin: { label: "Admin", icon: "◌", desc: "Housekeeping" }
 };
 
 const signalIcons: Record<SignalType, string> = {
@@ -238,10 +237,18 @@ export function SmartSuggestionsPage({ isActive }: { isActive: boolean }) {
   const dismissed = suggestions.filter((item) => item.dismissed && !item.done);
   const completed = suggestions.filter((item) => item.done);
 
-  const markDone = (id: number) => setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, done: true } : item)));
-  const dismiss = (id: number) => setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, dismissed: true } : item)));
-  const snooze = (id: number) => setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, snoozed: true } : item)));
-  const restore = (id: number) => setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, dismissed: false, snoozed: false } : item)));
+  const markDone = (id: number) =>
+    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, done: true } : item)));
+
+  const dismiss = (id: number) =>
+    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, dismissed: true } : item)));
+
+  const snooze = (id: number) =>
+    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, snoozed: true } : item)));
+
+  const restore = (id: number) =>
+    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, dismissed: false, snoozed: false } : item)));
+
   const sendFeedback = (id: number, feedback: Exclude<FeedbackValue, null>) =>
     setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, feedback } : item)));
 
@@ -253,107 +260,104 @@ export function SmartSuggestionsPage({ isActive }: { isActive: boolean }) {
     });
 
   const lanes: LaneKey[] = ["urgent", "followup", "proactive", "opportunity", "admin"];
+  const urgentCount = active.filter((item) => item.lane === "urgent").length;
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-smart-suggestions">
-      <style>{`
-        .card{transition:all 0.15s ease;}
-        .card:hover{transform:translateY(-1px);}
-        .lane-btn{transition:all 0.12s ease;cursor:pointer;border:none;font-family:'DM Mono',monospace;}
-        .action-btn{transition:all 0.15s ease;cursor:pointer;font-family:'DM Mono',monospace;border:none;}
-        .action-btn:hover{opacity:0.8;transform:scale(1.02);}
-        .icon-btn{transition:all 0.12s ease;cursor:pointer;background:none;border:none;font-family:'DM Mono',monospace;}
-        .icon-btn:hover{opacity:0.65;}
-        .why-toggle{transition:all 0.12s ease;cursor:pointer;background:none;border:none;font-family:'DM Mono',monospace;}
-        .why-toggle:hover{color:#a0a0b0!important;}
-        @keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
-        .slide-down{animation:slideDown 0.18s ease forwards;}
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-smart-suggestions">
+      <div className={cx("pageHeaderBar", "pb0")}>
+        <div className={cx("flexBetween", "mb20", "ssHeaderTop")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>Staff Dashboard / Intelligence</div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>Smart Suggestions</h1>
-            <div style={{ fontSize: 12, color: "var(--muted2)", marginTop: 6 }}>Auto-generated from client signals, patterns, and system activity</div>
+            <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Intelligence</div>
+            <h1 className={cx("pageTitleText")}>Smart Suggestions</h1>
+            <div className={cx("text12", "colorMuted2", "mt6")}>Auto-generated from client signals, patterns, and system activity</div>
           </div>
-          <div style={{ display: "flex", gap: 20 }}>
+
+          <div className={cx("ssTopStats")}>
             {[
-              { label: "Active", value: active.length, color: "var(--text)" },
-              { label: "Urgent", value: active.filter((item) => item.lane === "urgent").length, color: active.filter((item) => item.lane === "urgent").length > 0 ? "#ff4444" : "var(--muted2)" },
-              { label: "Completed", value: completed.length, color: "var(--accent)" }
+              { label: "Active", value: active.length, toneClass: "colorText" },
+              { label: "Urgent", value: urgentCount, toneClass: urgentCount > 0 ? "colorRed" : "colorMuted2" },
+              { label: "Completed", value: completed.length, toneClass: "colorAccent" }
             ].map((stat) => (
-              <div key={stat.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+              <div key={stat.label} className={cx("ssStatCard")}>
+                <div className={cx("statLabelNew")}>{stat.label}</div>
+                <div className={cx("statValueNew", stat.toneClass)}>{stat.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 0 }}>
-          <button
-            className="lane-btn"
-            onClick={() => setLaneFilter("all")}
-            style={{ padding: "10px 18px", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", background: "transparent", color: laneFilter === "all" ? "var(--text)" : "var(--muted2)", borderBottom: `2px solid ${laneFilter === "all" ? "var(--text)" : "transparent"}`, marginBottom: -1 }}
+        <div className={cx("ssLaneTabs", "filterRow")}>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter suggestion lane"
+            value={laneFilter}
+            onChange={(event) => setLaneFilter(event.target.value as "all" | LaneKey)}
           >
-            All ({active.length})
-          </button>
-          {lanes.map((lane) => {
-            const laneCfg = laneConfig[lane];
-            const count = active.filter((item) => item.lane === lane).length;
-            if (!count) return null;
-            return (
-              <button
-                key={lane}
-                className="lane-btn"
-                onClick={() => setLaneFilter(laneFilter === lane ? "all" : lane)}
-                style={{ padding: "10px 18px", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", background: "transparent", color: laneFilter === lane ? laneCfg.color : "var(--muted2)", borderBottom: `2px solid ${laneFilter === lane ? laneCfg.color : "transparent"}`, marginBottom: -1 }}
-              >
-                {laneCfg.icon} {laneCfg.label} ({count})
-              </button>
-            );
-          })}
+            <option value="all">All ({active.length})</option>
+            {lanes.map((lane) => {
+              const laneCfg = laneConfig[lane];
+              const count = active.filter((item) => item.lane === lane).length;
+              if (!count) return null;
+              return (
+                <option key={lane} value={lane}>
+                  {laneCfg.label} ({count})
+                </option>
+              );
+            })}
+          </select>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", minHeight: "calc(100vh - 185px)" }}>
-        <div style={{ padding: "24px 0", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
+      <div className={cx("ssLayout")}>
+        <div className={cx("ssMainPane")}>
           {(laneFilter === "all" ? lanes : [laneFilter]).map((lane) => {
             const cards = visibleActive.filter((item) => item.lane === lane);
             if (!cards.length) return null;
             const laneCfg = laneConfig[lane];
+
             return (
-              <div key={lane} style={{ marginBottom: 28 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                  <span style={{ fontSize: 13, color: laneCfg.color }}>{laneCfg.icon}</span>
-                  <span style={{ fontSize: 11, color: laneCfg.color, letterSpacing: "0.1em", textTransform: "uppercase" }}>{laneCfg.label}</span>
-                  <span style={{ fontSize: 10, color: "var(--muted2)" }}>— {laneCfg.desc}</span>
-                  <div style={{ flex: 1, height: 1, background: `${laneCfg.color}20` }} />
+              <div key={lane} className={cx("mb28")}>
+                <div className={cx("ssLaneHead")}>
+                  <span className={cx("text13", "ssLaneTone")} data-lane={lane}>{laneCfg.icon}</span>
+                  <span className={cx("text11", "uppercase", "ssLaneTone")} data-lane={lane}>{laneCfg.label}</span>
+                  <span className={cx("text10", "colorMuted2")}>- {laneCfg.desc}</span>
+                  <div className={cx("flex1", "ssLaneLine")} data-lane={lane} />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+
+                <div className={cx("flexCol", "gap8")}>
                   {cards.map((item) => {
                     const client = clients.find((row) => row.id === item.clientId);
-                    const laneCfgInner = laneConfig[item.lane];
                     const isOpen = expanded === item.id;
+                    const isHighImpact = item.impact === "High" || item.impact === "Critical";
+
                     return (
-                      <div key={item.id} className="card" style={{ border: `1px solid ${laneCfgInner.color}25`, borderLeft: `3px solid ${laneCfgInner.color}`, borderRadius: "0 4px 4px 0", background: laneCfgInner.bg, overflow: "hidden" }}>
-                        <div style={{ padding: "14px 16px" }}>
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
+                      <div key={item.id} className={cx("ssSuggCard", "ssSuggCardShell")} data-lane={item.lane}>
+                        <div className={cx("ssCardInner")}>
+                          <div className={cx("flexRow", "gap12", "ssCardTop")}>
+                            <div className={cx("flex1", "minW0")}>
                               {client ? (
-                                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
-                                  <div style={{ width: 16, height: 16, borderRadius: 2, background: `${client.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, color: client.color, flexShrink: 0 }}>{client.avatar}</div>
-                                  <span style={{ fontSize: 10, color: client.color }}>{client.name}</span>
-                                  <span style={{ fontSize: 9, padding: "1px 5px", background: "rgba(255,255,255,0.06)", color: item.impact === "High" || item.impact === "Critical" ? laneCfgInner.color : "#a0a0b0", borderRadius: 2, letterSpacing: "0.06em" }}>{item.impact} impact</span>
+                                <div className={cx("ssClientRow")}>
+                                  <div className={cx("avatarXs", "ssClientAvatar")} data-client-id={String(client.id)}>{client.avatar}</div>
+                                  <span className={cx("text10", "ssClientName")} data-client-id={String(client.id)}>{client.name}</span>
+                                  <span
+                                    className={cx(
+                                      "text10",
+                                      "ssImpactBadge",
+                                      isHighImpact ? "ssImpactBadgeStrong" : "ssImpactBadgeSoft"
+                                    )}
+                                    data-lane={item.lane}
+                                  >
+                                    {item.impact} impact
+                                  </span>
                                 </div>
                               ) : null}
-                              <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.4, marginBottom: 10 }}>{item.task}</div>
 
-                              <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 10 }}>
+                              <div className={cx("text13", "colorText", "mb10", "ssTaskText")}>{item.task}</div>
+
+                              <div className={cx("ssSignalWrap")}>
                                 {item.signals.map((signal, index) => (
-                                  <div key={index} style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 8px", background: "rgba(0,0,0,0.25)", borderRadius: 2, fontSize: 10, color: "#a0a0b0" }}>
-                                    <span style={{ color: laneCfgInner.color, fontSize: 9 }}>{signalIcons[signal.type]}</span>
+                                  <div key={index} className={cx("ssSignalChip")}>
+                                    <span className={cx("ssSignalIcon")} data-lane={item.lane}>{signalIcons[signal.type]}</span>
                                     {signal.text}
                                   </div>
                                 ))}
@@ -361,18 +365,20 @@ export function SmartSuggestionsPage({ isActive }: { isActive: boolean }) {
                             </div>
                           </div>
 
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                            <button className="action-btn" onClick={() => markDone(item.id)} style={{ padding: "7px 16px", background: laneCfgInner.color, color: "#050508", borderRadius: 3, fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                          <div className={cx("ssActionRow")}>
+                            <button type="button" className={cx("ssActionBtn", "ssActionPrimary")} data-lane={item.lane} onClick={() => markDone(item.id)}>
                               {item.cta}
                             </button>
-                            <button className="why-toggle" onClick={() => setExpanded(isOpen ? null : item.id)} style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.06em" }}>
-                              {isOpen ? "↑ Hide why" : "↓ Why this?"}
+
+                            <button type="button" className={cx("ssWhyToggle", "ssWhyBtn")} onClick={() => setExpanded(isOpen ? null : item.id)}>
+                              {isOpen ? "Hide why" : "Why this?"}
                             </button>
-                            <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-                              <button className="icon-btn" onClick={() => snooze(item.id)} style={{ fontSize: 10, color: "var(--muted2)", padding: "4px 8px", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2, letterSpacing: "0.06em" }}>
+
+                            <div className={cx("ssActionTail")}>
+                              <button type="button" className={cx("ssIconBtn", "ssSnoozeBtn")} onClick={() => snooze(item.id)}>
                                 Snooze
                               </button>
-                              <button className="icon-btn" onClick={() => dismiss(item.id)} style={{ fontSize: 13, color: "var(--muted2)", padding: "0 6px" }}>
+                              <button type="button" className={cx("ssIconBtn", "ssDismissBtn")} onClick={() => dismiss(item.id)}>
                                 ×
                               </button>
                             </div>
@@ -380,22 +386,27 @@ export function SmartSuggestionsPage({ isActive }: { isActive: boolean }) {
                         </div>
 
                         {isOpen ? (
-                          <div className="slide-down" style={{ padding: "12px 16px 14px", borderTop: `1px solid ${laneCfgInner.color}20`, background: "rgba(0,0,0,0.2)" }}>
-                            <div style={{ fontSize: 9, color: laneCfgInner.color, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Why this suggestion?</div>
-                            <div style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.8, marginBottom: 12 }}>{item.why}</div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <span style={{ fontSize: 10, color: "var(--muted2)" }}>Was this useful?</span>
-                              {[{ value: "yes", label: "✓ Yes" }, { value: "no", label: "✗ No" }].map((fb) => (
+                          <div className={cx("ssSlideDown", "ssWhyPanel")} data-lane={item.lane}>
+                            <div className={cx("uppercase", "mb8", "ssWhyTitle")} data-lane={item.lane}>Why this suggestion?</div>
+                            <div className={cx("text12", "colorMuted", "mb12", "ssWhyBody")}>{item.why}</div>
+
+                            <div className={cx("flexRow", "gap10", "flexWrap")}>
+                              <span className={cx("text10", "colorMuted2")}>Was this useful?</span>
+                              {[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }].map((fb) => (
                                 <button
                                   key={fb.value}
-                                  className="icon-btn"
+                                  type="button"
+                                  className={cx(
+                                    "ssIconBtn",
+                                    "ssFeedbackBtn",
+                                    item.feedback === fb.value && (fb.value === "yes" ? "ssFeedbackYes" : "ssFeedbackNo")
+                                  )}
                                   onClick={() => sendFeedback(item.id, fb.value as "yes" | "no")}
-                                  style={{ fontSize: 10, padding: "3px 10px", borderRadius: 2, border: `1px solid ${item.feedback === fb.value ? (fb.value === "yes" ? "color-mix(in srgb, var(--accent) 40%, transparent)" : "rgba(255,68,68,0.4)") : "rgba(255,255,255,0.08)"}`, color: item.feedback === fb.value ? (fb.value === "yes" ? "var(--accent)" : "#ff4444") : "var(--muted2)", background: item.feedback === fb.value ? (fb.value === "yes" ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "rgba(255,68,68,0.08)") : "transparent" }}
                                 >
                                   {fb.label}
                                 </button>
                               ))}
-                              {item.feedback ? <span style={{ fontSize: 10, color: "var(--muted2)" }}>Thanks - this improves future suggestions.</span> : null}
+                              {item.feedback ? <span className={cx("text10", "colorMuted2")}>Thanks - this improves future suggestions.</span> : null}
                             </div>
                           </div>
                         ) : null}
@@ -408,28 +419,30 @@ export function SmartSuggestionsPage({ isActive }: { isActive: boolean }) {
           })}
 
           {visibleActive.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "60px 0", color: "var(--muted2)" }}>
-              <div style={{ fontSize: 28, marginBottom: 10 }}>◎</div>
-              <div style={{ fontSize: 13 }}>No active suggestions. You're fully on top of things.</div>
+            <div className={cx("textCenter", "colorMuted2", "ssEmptyState")}>
+              <div className={cx("mb10", "ssEmptyIcon")}>◎</div>
+              <div className={cx("text13")}>No active suggestions. You&apos;re fully on top of things.</div>
             </div>
           ) : null}
 
           {snoozed.length > 0 ? (
-            <div style={{ marginTop: 8, padding: "12px 16px", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Snoozed ({snoozed.length})</div>
+            <div className={cx("cardSurface", "mt8")}>
+              <div className={cx("sectionLabel", "mb8")}>Snoozed ({snoozed.length})</div>
               {snoozed.map((item) => (
-                <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <span style={{ fontSize: 11, color: "var(--muted2)", flex: 1 }}>{item.task}</span>
-                  <button className="icon-btn" onClick={() => restore(item.id)} style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.06em" }}>Restore</button>
+                <div key={item.id} className={cx("ssMiniRow")}>
+                  <span className={cx("text11", "colorMuted2", "flex1")}>{item.task}</span>
+                  <button type="button" className={cx("ssIconBtn", "ssMiniAction")} onClick={() => restore(item.id)}>
+                    Restore
+                  </button>
                 </div>
               ))}
             </div>
           ) : null}
         </div>
 
-        <div style={{ padding: "24px 20px", display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ padding: "14px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3 }}>
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>How this works</div>
+        <div className={cx("flexCol", "gap20", "ssSidePane")}>
+          <div className={cx("cardSurface")}>
+            <div className={cx("sectionLabel", "mb12")}>How this works</div>
             {[
               { icon: "◎", label: "Silence detection", desc: "Flags clients who haven't responded in 3+ days" },
               { icon: "⚑", label: "Overdue tracking", desc: "Surfaces milestones and invoices past their due date" },
@@ -438,46 +451,54 @@ export function SmartSuggestionsPage({ isActive }: { isActive: boolean }) {
               { icon: "♡", label: "Sentiment scoring", desc: "Tracks satisfaction trends and relationship health" },
               { icon: "⊡", label: "System reminders", desc: "Pulls from standup logs, time entries, retainer burn" }
             ].map((row) => (
-              <div key={row.label} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                <span style={{ fontSize: 11, color: "var(--accent)", flexShrink: 0, marginTop: 1 }}>{row.icon}</span>
+              <div key={row.label} className={cx("ssHowRow")}>
+                <span className={cx("text11", "colorAccent", "noShrink", "ssHowIcon")}>{row.icon}</span>
                 <div>
-                  <div style={{ fontSize: 11, color: "var(--text)" }}>{row.label}</div>
-                  <div style={{ fontSize: 10, color: "var(--muted2)", lineHeight: 1.5 }}>{row.desc}</div>
+                  <div className={cx("text11", "colorText")}>{row.label}</div>
+                  <div className={cx("text10", "colorMuted2", "ssHowDesc")}>{row.desc}</div>
                 </div>
               </div>
             ))}
           </div>
 
           <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Completed</div>
-              <button className="icon-btn" onClick={() => setShowCompleted((previous) => !previous)} style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.06em" }}>
+            <div className={cx("flexBetween", "mb10")}>
+              <div className={cx("sectionLabel")}>Completed</div>
+              <button type="button" className={cx("ssIconBtn", "ssToggleBtn")} onClick={() => setShowCompleted((previous) => !previous)}>
                 {showCompleted ? "Hide" : "Show"}
               </button>
             </div>
-            {showCompleted ? completed.map((item) => (
-              <div key={item.id} style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                <span style={{ fontSize: 11, color: "var(--accent)", flexShrink: 0 }}>✓</span>
-                <span style={{ fontSize: 11, color: "var(--muted2)", lineHeight: 1.4 }}>{item.task}</span>
-              </div>
-            )) : null}
-            {completed.length === 0 ? <div style={{ fontSize: 11, color: "var(--muted2)" }}>None completed yet.</div> : null}
+
+            {showCompleted
+              ? completed.map((item) => (
+                  <div key={item.id} className={cx("ssMiniRow", "ssMiniRowTop")}>
+                    <span className={cx("text11", "colorAccent", "noShrink")}>✓</span>
+                    <span className={cx("text11", "colorMuted2", "ssMiniText")}>{item.task}</span>
+                  </div>
+                ))
+              : null}
+            {completed.length === 0 ? <div className={cx("text11", "colorMuted2")}>None completed yet.</div> : null}
           </div>
 
           {dismissed.length > 0 ? (
             <div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Dismissed ({dismissed.length})</div>
-                <button className="icon-btn" onClick={() => setShowDismissed((previous) => !previous)} style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.06em" }}>
+              <div className={cx("flexBetween", "mb10")}>
+                <div className={cx("sectionLabel")}>Dismissed ({dismissed.length})</div>
+                <button type="button" className={cx("ssIconBtn", "ssToggleBtn")} onClick={() => setShowDismissed((previous) => !previous)}>
                   {showDismissed ? "Hide" : "Show"}
                 </button>
               </div>
-              {showDismissed ? dismissed.map((item) => (
-                <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <span style={{ fontSize: 11, color: "var(--muted2)", flex: 1, lineHeight: 1.4 }}>{item.task}</span>
-                  <button className="icon-btn" onClick={() => restore(item.id)} style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.06em", flexShrink: 0 }}>Restore</button>
-                </div>
-              )) : null}
+
+              {showDismissed
+                ? dismissed.map((item) => (
+                    <div key={item.id} className={cx("ssMiniRow")}> 
+                      <span className={cx("text11", "colorMuted2", "flex1", "ssMiniText")}>{item.task}</span>
+                      <button type="button" className={cx("ssIconBtn", "ssMiniAction") } onClick={() => restore(item.id)}>
+                        Restore
+                      </button>
+                    </div>
+                  ))
+                : null}
             </div>
           ) : null}
         </div>

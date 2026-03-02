@@ -1,20 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { cx, styles } from "../style";
+import { colorClass, toneClass } from "./admin-page-utils";
 import { AdminTabs } from "./shared";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
 
 type Employee = {
   id: string;
@@ -43,7 +32,7 @@ type Employee = {
 const employees: Employee[] = [
   {
     id: "EMP-001", name: "Sipho Nkosi", role: "Founder & CEO", department: "Leadership",
-    avatar: "SN", color: C.primary, contractType: "Director", startDate: "Jan 2020",
+    avatar: "SN", color: "var(--accent)", contractType: "Director", startDate: "Jan 2020",
     salary: 60000, lastReview: "Aug 2025", nextReview: "Aug 2026",
     bankAccount: "FNB ****7823", taxNumber: "TRF-****-8821",
     address: "14 Jacaranda Ave, Pretoria, 0001", idNumber: "82****4083",
@@ -54,7 +43,7 @@ const employees: Employee[] = [
   },
   {
     id: "EMP-002", name: "Leilani Fotu", role: "Head of Operations", department: "Operations",
-    avatar: "LF", color: C.blue, contractType: "Permanent", startDate: "Mar 2022",
+    avatar: "LF", color: "var(--blue)", contractType: "Permanent", startDate: "Mar 2022",
     salary: 44000, lastReview: "Sep 2025", nextReview: "Sep 2026",
     bankAccount: "Standard Bank ****4412", taxNumber: "TRF-****-3314",
     address: "8 Baobab St, Centurion, 0157", idNumber: "91****7021",
@@ -65,7 +54,7 @@ const employees: Employee[] = [
   },
   {
     id: "EMP-003", name: "Renzo Fabbri", role: "Creative Director", department: "Creative",
-    avatar: "RF", color: C.orange, contractType: "Permanent", startDate: "Jun 2021",
+    avatar: "RF", color: "var(--amber)", contractType: "Permanent", startDate: "Jun 2021",
     salary: 52000, lastReview: "Oct 2025", nextReview: "Oct 2026",
     bankAccount: "Nedbank ****9934", taxNumber: "TRF-****-7741",
     address: "22 Via Roma, Hatfield, 0083", idNumber: "88****5519",
@@ -76,7 +65,7 @@ const employees: Employee[] = [
   },
   {
     id: "EMP-004", name: "Nomsa Dlamini", role: "Account Manager", department: "Client Services",
-    avatar: "ND", color: C.primary, contractType: "Permanent", startDate: "Feb 2023",
+    avatar: "ND", color: "var(--accent)", contractType: "Permanent", startDate: "Feb 2023",
     salary: 38000, lastReview: "Feb 2026", nextReview: "Feb 2027",
     bankAccount: "Capitec ****2281", taxNumber: "TRF-****-9912",
     address: "5 Msasa Rd, Sunnyside, 0132", idNumber: "94****0887",
@@ -87,7 +76,7 @@ const employees: Employee[] = [
   },
   {
     id: "EMP-005", name: "Kira Bosman", role: "UX Designer", department: "Creative",
-    avatar: "KB", color: C.amber, contractType: "Permanent", startDate: "Aug 2023",
+    avatar: "KB", color: "var(--amber)", contractType: "Permanent", startDate: "Aug 2023",
     salary: 33500, lastReview: "Aug 2025", nextReview: "Aug 2026",
     bankAccount: "FNB ****6670", taxNumber: "TRF-****-4423",
     address: "31 Korhaan St, Brooklyn, 0181", idNumber: "97****2214",
@@ -98,7 +87,7 @@ const employees: Employee[] = [
   },
   {
     id: "EMP-006", name: "Tapiwa Moyo", role: "Copywriter", department: "Creative",
-    avatar: "TM", color: C.blue, contractType: "Permanent", startDate: "Jan 2024",
+    avatar: "TM", color: "var(--blue)", contractType: "Permanent", startDate: "Jan 2024",
     salary: 28000, lastReview: null, nextReview: "Jan 2026",
     bankAccount: "Absa ****3345", taxNumber: "TRF-****-8812",
     address: "12 Flame Lily Close, Lynnwood, 0081", idNumber: "99****1132",
@@ -120,8 +109,10 @@ function parseMonthYear(value: string | null): Date | null {
 }
 
 function Avatar({ initials, color, size = 40 }: { initials: string; color: string; size?: number }) {
+  const sizeClass = size === 24 ? "emprAvatar24" : size === 28 ? "emprAvatar28" : size === 30 ? "emprAvatar30" : size === 56 ? "emprAvatar56" : "emprAvatar40";
+  const toneClass = colorClass(color).replace("color", "tone");
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: `${color}22`, border: `2px solid ${color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.32, fontWeight: 700, color, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>
+    <div className={cx(styles.emprAvatar, sizeClass, toneClass)}>
       {initials}
     </div>
   );
@@ -152,39 +143,29 @@ export function EmploymentRecordsPage() {
   );
 
   return (
-    <div
-      style={{
-        background: C.bg,
-        height: "100%",
-        fontFamily: "Syne, sans-serif",
-        color: C.text,
-        padding: 0,
-        overflow: "hidden",
-        display: "grid",
-        gridTemplateRows: "auto auto auto 1fr",
-        minHeight: 0
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={cx(styles.pageBody, styles.emprRoot)}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / STAFF</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Employment Records</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Contracts, personal details, performance, and documents</div>
+          <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+          <h1 className={styles.pageTitle}>Employment Records</h1>
+          <div className={styles.pageSub}>Contracts, personal details, performance, and documents</div>
         </div>
-        <button style={{ background: C.primary, color: C.bg, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>+ Add Employee</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent")}>+ Add Employee</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Total Employees", value: employees.length.toString(), color: C.primary, sub: "All permanent staff" },
-          { label: "Reviews Overdue", value: overdueReviews.length.toString(), color: overdueReviews.length > 0 ? C.red : C.primary, sub: "Annual reviews past due" },
-          { label: "Missing Documents", value: missingDocs.length.toString(), color: missingDocs.length > 0 ? C.amber : C.primary, sub: "Incomplete compliance files" },
-          { label: "Work Permits", value: workPermits.length.toString(), color: C.blue, sub: "Foreign nationals on staff" }
+          { label: "Total Employees", value: employees.length.toString(), color: "var(--accent)", sub: "All permanent staff" },
+          { label: "Reviews Overdue", value: overdueReviews.length.toString(), color: overdueReviews.length > 0 ? "var(--red)" : "var(--accent)", sub: "Annual reviews past due" },
+          { label: "Missing Documents", value: missingDocs.length.toString(), color: missingDocs.length > 0 ? "var(--amber)" : "var(--accent)", sub: "Incomplete compliance files" },
+          { label: "Work Permits", value: workPermits.length.toString(), color: "var(--blue)", sub: "Foreign nationals on staff" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
@@ -193,37 +174,37 @@ export function EmploymentRecordsPage() {
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        primaryColor={C.primary}
-        mutedColor={C.muted}
-        panelColor={C.surface}
-        borderColor={C.border}
+        primaryColor="var(--accent)"
+        mutedColor="var(--muted)"
+        panelColor="var(--surface)"
+        borderColor="var(--border)"
       />
 
-      <div style={{ overflow: "auto", minHeight: 0 }}>
+      <div className={cx("overflowAuto", "minH0")}>
         {activeTab === "all records" ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "220px 140px 110px 100px 100px 120px 80px auto", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", gap: 16 }}>
-              {["Employee", "Role", "Contract", "Start Date", "Salary", "Next Review", "Docs", ""].map((h) => <span key={h}>{h}</span>)}
+          <div className={styles.emprTableCard}>
+            <div className={cx(styles.emprTableHead, "fontMono", "text10", "colorMuted", "uppercase")}>
+              {"Employee|Role|Contract|Start Date|Salary|Next Review|Docs|".split("|").map((h, idx) => <span key={`${h}-${idx}`}>{h}</span>)}
             </div>
             {employees.map((emp, i) => {
               const missingAny = !reqDocs.every((d) => emp.documents.includes(d));
               const reviewAlert = !emp.lastReview;
               return (
-                <div key={emp.id} style={{ display: "grid", gridTemplateColumns: "220px 140px 110px 100px 100px 120px 80px auto", padding: "14px 24px", borderBottom: i < employees.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", gap: 16, background: reviewAlert ? "#1a0a0a" : "transparent" }}>
-                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <div key={emp.id} className={cx(styles.emprTableRow, i < employees.length - 1 && "borderB", reviewAlert && styles.emprReviewWarn)}>
+                  <div className={styles.emprEmpCell}>
                     <Avatar initials={emp.avatar} color={emp.color} size={30} />
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{emp.name}</div>
-                      <div style={{ fontSize: 10, color: C.muted }}>{emp.id}</div>
+                      <div className={styles.emprEmpName}>{emp.name}</div>
+                      <div className={styles.emprEmpId}>{emp.id}</div>
                     </div>
                   </div>
-                  <span style={{ fontSize: 12, color: C.muted }}>{emp.role}</span>
-                  <span style={{ fontSize: 11, color: C.blue }}>{emp.contractType}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{emp.startDate}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.primary, fontWeight: 700 }}>R{(emp.salary / 1000).toFixed(0)}k</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: reviewAlert ? C.red : C.muted }}>{emp.nextReview || "Overdue"}</span>
-                  <span style={{ fontSize: 12, color: missingAny ? C.red : C.primary, textAlign: "center" }}>{missingAny ? "!" : "OK"}</span>
-                  <button onClick={() => { setSelected(emp); setActiveTab("record detail"); }} style={{ background: C.primary, color: C.bg, border: "none", padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>View</button>
+                  <span className={cx("text12", "colorMuted")}>{emp.role}</span>
+                  <span className={styles.emprContract}>{emp.contractType}</span>
+                  <span className={styles.emprMonoMuted}>{emp.startDate}</span>
+                  <span className={styles.emprSalary}>R{(emp.salary / 1000).toFixed(0)}k</span>
+                  <span className={cx(styles.emprMono12, reviewAlert ? "colorRed" : "colorMuted")}>{emp.nextReview || "Overdue"}</span>
+                  <span className={cx(styles.emprDocStatus, missingAny ? "colorRed" : "colorAccent")}>{missingAny ? "!" : "OK"}</span>
+                  <button type="button" onClick={() => { setSelected(emp); setActiveTab("record detail"); }} className={cx("btnSm", "btnAccent")}>View</button>
                 </div>
               );
             })}
@@ -231,120 +212,132 @@ export function EmploymentRecordsPage() {
         ) : null}
 
         {activeTab === "record detail" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 20 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className={styles.emprDetailSplit}>
+            <div className={styles.emprSideList}>
               {employees.map((emp) => (
-                <div key={emp.id} onClick={() => setSelected(emp)} style={{ padding: "12px 16px", background: selected.id === emp.id ? `${emp.color}15` : C.surface, border: `1px solid ${selected.id === emp.id ? emp.color + "55" : C.border}`, cursor: "pointer", display: "flex", gap: 10, alignItems: "center" }}>
+                <div
+                  key={emp.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelected(emp)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelected(emp);
+                    }
+                  }}
+                  className={cx(styles.emprSideItem, selected.id === emp.id && styles.emprSideItemActive, selected.id === emp.id && toneClass(emp.color))}
+                >
                   <Avatar initials={emp.avatar} color={emp.color} size={28} />
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 12, color: selected.id === emp.id ? emp.color : C.text }}>{emp.name.split(" ")[0]}</div>
-                    <div style={{ fontSize: 10, color: C.muted }}>{emp.role.split(" ").slice(0, 2).join(" ")}</div>
+                    <div className={cx(styles.emprSideName, selected.id === emp.id && styles.emprSideNameActive)}>{emp.name.split(" ")[0]}</div>
+                    <div className={styles.emprSideRole}>{emp.role.split(" ").slice(0, 2).join(" ")}</div>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div style={{ background: C.surface, border: `1px solid ${selected.color}33`, padding: 28 }}>
-              <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 28 }}>
+            <div className={cx(styles.emprDetailCard, styles.emprDetailCardTone, toneClass(selected.color))}>
+              <div className={styles.emprProfileHead}>
                 <Avatar initials={selected.avatar} color={selected.color} size={56} />
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: 22 }}>{selected.name}</div>
-                  <div style={{ color: selected.color, fontSize: 14 }}>{selected.role} - {selected.department}</div>
-                  <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{selected.id} - {selected.contractType} - Since {selected.startDate}</div>
+                  <div className={styles.emprProfileName}>{selected.name}</div>
+                  <div className={cx(styles.emprProfileRole, colorClass(selected.color))}>{selected.role} - {selected.department}</div>
+                  <div className={styles.emprProfileMeta}>{selected.id} - {selected.contractType} - Since {selected.startDate}</div>
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+              <div className={styles.emprFieldsGrid}>
                 <div>
-                  <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Employment Details</div>
+                  <div className={styles.emprSectionTitle}>Employment Details</div>
                   {[
-                    { label: "Salary", value: `R${selected.salary.toLocaleString()}/month`, color: C.primary },
+                    { label: "Salary", value: `R${selected.salary.toLocaleString()}/month`, color: "var(--accent)" },
                     { label: "Bank Account", value: selected.bankAccount },
                     { label: "Tax Number", value: selected.taxNumber },
-                    { label: "Last Review", value: selected.lastReview || "Never", color: !selected.lastReview ? C.red : C.text },
-                    { label: "Next Review", value: selected.nextReview || "Overdue", color: !selected.lastReview ? C.red : C.text },
-                    { label: "Performance Score", value: selected.performanceScore ? `${selected.performanceScore}/5` : "Not yet rated", color: selected.performanceScore ? (selected.performanceScore >= 4 ? C.primary : selected.performanceScore >= 3 ? C.amber : C.red) : C.muted }
+                    { label: "Last Review", value: selected.lastReview || "Never", color: !selected.lastReview ? "var(--red)" : "var(--text)" },
+                    { label: "Next Review", value: selected.nextReview || "Overdue", color: !selected.lastReview ? "var(--red)" : "var(--text)" },
+                    { label: "Performance Score", value: selected.performanceScore ? `${selected.performanceScore}/5` : "Not yet rated", color: selected.performanceScore ? (selected.performanceScore >= 4 ? "var(--accent)" : selected.performanceScore >= 3 ? "var(--amber)" : "var(--red)") : "var(--muted)" }
                   ].map((f) => (
-                    <div key={f.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
-                      <span style={{ color: C.muted }}>{f.label}</span>
-                      <span style={{ fontWeight: 600, color: f.color || C.text }}>{f.value}</span>
+                    <div key={f.label} className={styles.emprFieldRow}>
+                      <span className={styles.colorMuted}>{f.label}</span>
+                      <span className={cx(styles.emprFieldValue, colorClass(f.color || "var(--text)"))}>{f.value}</span>
                     </div>
                   ))}
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Personal Details</div>
+                  <div className={styles.emprSectionTitle}>Personal Details</div>
                   {[
                     { label: "ID Number", value: selected.idNumber },
                     { label: "Address", value: selected.address },
                     { label: "Emergency Contact", value: selected.emergencyContact },
-                    { label: "Leave Balance", value: `${selected.leaveBalance} days AL remaining`, color: selected.leaveBalance <= 3 ? C.red : C.text }
+                    { label: "Leave Balance", value: `${selected.leaveBalance} days AL remaining`, color: selected.leaveBalance <= 3 ? "var(--red)" : "var(--text)" }
                   ].map((f) => (
-                    <div key={f.label} style={{ padding: "8px 0", borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
-                      <div style={{ color: C.muted, marginBottom: 2 }}>{f.label}</div>
-                      <div style={{ fontWeight: 600, color: f.color || C.text, wordBreak: "break-word" }}>{f.value}</div>
+                    <div key={f.label} className={styles.emprFieldBlock}>
+                      <div className={styles.emprBlockLabel}>{f.label}</div>
+                      <div className={cx(styles.emprBlockValue, colorClass(f.color || "var(--text)"))}>{f.value}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Documents on File</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div className={styles.emprDocsSec}>
+                <div className={styles.emprSectionTitle}>Documents on File</div>
+                <div className={styles.emprDocChips}>
                   {selected.documents.map((doc) => (
-                    <span key={doc} style={{ fontSize: 11, color: C.primary, background: `${C.primary}15`, border: `1px solid ${C.primary}33`, padding: "4px 12px" }}>OK {doc}</span>
+                    <span key={doc} className={styles.emprDocOk}>OK {doc}</span>
                   ))}
                   {reqDocs.filter((d) => !selected.documents.includes(d)).map((doc) => (
-                    <span key={doc} style={{ fontSize: 11, color: C.red, background: `${C.red}15`, border: `1px solid ${C.red}33`, padding: "4px 12px" }}>Missing {doc}</span>
+                    <span key={doc} className={styles.emprDocMissing}>Missing {doc}</span>
                   ))}
                 </div>
               </div>
 
               {selected.notes ? (
-                <div style={{ padding: 14, background: "#0a0f1a", border: `1px solid ${C.blue}22`, marginBottom: 20 }}>
-                  <div style={{ fontSize: 10, color: C.blue, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Admin Notes</div>
-                  <div style={{ fontSize: 12, color: C.muted }}>{selected.notes}</div>
+                <div className={styles.emprNotesBox}>
+                  <div className={styles.emprNotesTitle}>Admin Notes</div>
+                  <div className={styles.emprNotesText}>{selected.notes}</div>
                 </div>
               ) : null}
 
-              <div style={{ display: "flex", gap: 8 }}>
-                <button style={{ background: C.primary, color: C.bg, border: "none", padding: "10px 20px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Edit Record</button>
-                <button style={{ background: C.border, border: "none", color: C.text, padding: "10px 16px", fontSize: 12, cursor: "pointer" }}>Upload Document</button>
-                <button style={{ background: C.border, border: "none", color: C.text, padding: "10px 16px", fontSize: 12, cursor: "pointer" }}>Schedule Review</button>
+              <div className={styles.emprBtnRow}>
+                <button type="button" className={cx("btnSm", "btnAccent")}>Edit Record</button>
+                <button type="button" className={cx("btnSm", "btnGhost")}>Upload Document</button>
+                <button type="button" className={cx("btnSm", "btnGhost")}>Schedule Review</button>
               </div>
             </div>
           </div>
         ) : null}
 
         {activeTab === "compliance" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Document Compliance</div>
+          <div className={styles.emprComplianceGrid}>
+            <div className={styles.emprPanelCard}>
+              <div className={styles.emprSectionTitle}>Document Compliance</div>
               {employees.map((emp) => {
                 const hasAll = reqDocs.every((d) => emp.documents.includes(d));
                 const missing = reqDocs.filter((d) => !emp.documents.includes(d));
                 return (
-                  <div key={emp.id} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${C.border}`, alignItems: "center" }}>
-                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <div key={emp.id} className={styles.emprComplianceRow}>
+                    <div className={styles.emprComplianceLeft}>
                       <Avatar initials={emp.avatar} color={emp.color} size={24} />
-                      <span style={{ fontSize: 13 }}>{emp.name.split(" ")[0]}</span>
+                      <span className={styles.text13}>{emp.name.split(" ")[0]}</span>
                     </div>
-                    {hasAll ? <span style={{ fontSize: 11, color: C.primary }}>Complete</span> : <span style={{ fontSize: 11, color: C.red }}>Missing: {missing.join(", ")}</span>}
+                    {hasAll ? <span className={styles.emprCompliant}>Complete</span> : <span className={styles.emprNonCompliant}>Missing: {missing.join(", ")}</span>}
                   </div>
                 );
               })}
             </div>
 
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Review Schedule</div>
+            <div className={styles.emprPanelCard}>
+              <div className={styles.emprSectionTitle}>Review Schedule</div>
               {employees.map((emp) => (
-                <div key={emp.id} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${C.border}`, alignItems: "center" }}>
-                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <div key={emp.id} className={styles.emprComplianceRow}>
+                  <div className={styles.emprComplianceLeft}>
                     <Avatar initials={emp.avatar} color={emp.color} size={24} />
-                    <span style={{ fontSize: 13 }}>{emp.name.split(" ")[0]}</span>
+                    <span className={styles.text13}>{emp.name.split(" ")[0]}</span>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: !emp.lastReview ? C.red : C.muted }}>Next: {emp.nextReview || "OVERDUE"}</div>
-                    {!emp.lastReview ? <div style={{ fontSize: 10, color: C.red }}>Never reviewed</div> : null}
+                  <div className={styles.emprReviewRight}>
+                    <div className={cx(styles.emprMono12, !emp.lastReview ? "colorRed" : "colorMuted")}>Next: {emp.nextReview || "OVERDUE"}</div>
+                    {!emp.lastReview ? <div className={styles.emprNeverReviewed}>Never reviewed</div> : null}
                   </div>
                 </div>
               ))}
@@ -353,26 +346,26 @@ export function EmploymentRecordsPage() {
         ) : null}
 
         {activeTab === "org chart" ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 32 }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-              <div style={{ padding: "16px 24px", background: `${C.primary}15`, border: `2px solid ${C.primary}`, textAlign: "center", minWidth: 180 }}>
-                <div style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.primary, marginBottom: 6 }}>EMP-001</div>
-                <div style={{ fontWeight: 800, fontSize: 15 }}>Sipho Nkosi</div>
-                <div style={{ fontSize: 12, color: C.primary }}>Founder & CEO</div>
+          <div className={styles.emprOrgCard}>
+            <div className={styles.emprOrgWrap}>
+              <div className={styles.emprCeoCard}>
+                <div className={styles.emprMono10Accent}>EMP-001</div>
+                <div className={styles.emprCeoName}>Sipho Nkosi</div>
+                <div className={styles.emprCeoRole}>Founder &amp; CEO</div>
               </div>
-              <div style={{ width: 2, height: 32, background: C.border }} />
+              <div className={styles.emprOrgLine} />
 
-              <div style={{ display: "flex", gap: 24 }}>
+              <div className={styles.emprLeadsRow}>
                 {[employees[1], employees[2]].map((emp) => (
-                  <div key={emp.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 2, height: 24, background: C.border }} />
-                    <div style={{ padding: "12px 20px", background: `${emp.color}15`, border: `2px solid ${emp.color}`, textAlign: "center", minWidth: 160 }}>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: emp.color, marginBottom: 4 }}>{emp.id}</div>
-                      <div style={{ fontWeight: 700, fontSize: 13 }}>{emp.name.split(" ")[0]}</div>
-                      <div style={{ fontSize: 11, color: emp.color }}>{emp.role}</div>
+                  <div key={emp.id} className={styles.emprLeadCol}>
+                    <div className={styles.emprMiniLine} />
+                    <div className={cx(styles.emprLeadCard, styles.emprLeadCardTone, toneClass(emp.color))}>
+                      <div className={cx(styles.emprLeadId, colorClass(emp.color))}>{emp.id}</div>
+                      <div className={styles.emprLeadName}>{emp.name.split(" ")[0]}</div>
+                      <div className={cx(styles.emprLeadRole, colorClass(emp.color))}>{emp.role}</div>
                     </div>
-                    <div style={{ width: 2, height: 24, background: C.border }} />
-                    <div style={{ display: "flex", gap: 12 }}>
+                    <div className={styles.emprMiniLine} />
+                    <div className={styles.emprReportsRow}>
                       {employees
                         .filter((e) => {
                           if (emp.name === "Leilani Fotu") return e.id === "EMP-006";
@@ -380,9 +373,9 @@ export function EmploymentRecordsPage() {
                           return false;
                         })
                         .map((report) => (
-                          <div key={report.id} style={{ padding: "10px 14px", background: `${report.color}10`, border: `1px solid ${report.color}44`, textAlign: "center", minWidth: 130 }}>
-                            <div style={{ fontWeight: 600, fontSize: 12 }}>{report.name.split(" ")[0]}</div>
-                            <div style={{ fontSize: 10, color: report.color }}>{report.role.split(" ").slice(0, 2).join(" ")}</div>
+                          <div key={report.id} className={cx(styles.emprReportCard, styles.emprReportCardTone, toneClass(report.color))}>
+                            <div className={styles.emprReportName}>{report.name.split(" ")[0]}</div>
+                            <div className={cx(styles.emprReportRole, colorClass(report.color))}>{report.role.split(" ").slice(0, 2).join(" ")}</div>
                           </div>
                         ))}
                     </div>

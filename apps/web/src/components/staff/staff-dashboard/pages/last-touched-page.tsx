@@ -151,24 +151,59 @@ const clients: LastTouchedClient[] = [
   }
 ];
 
-const typeConfig: Record<TouchType, { icon: string; color: string }> = {
-  message: { icon: "✉", color: "#a0a0b0" },
-  milestone: { icon: "◎", color: "#a78bfa" },
-  invoice: { icon: "₹", color: "var(--accent)" },
-  call: { icon: "◌", color: "#60a5fa" },
-  file: { icon: "⊡", color: "#f5c518" }
+const typeConfig: Record<TouchType, { icon: string; colorClass: string; timelineClass: string }> = {
+  message: { icon: "✉", colorClass: "ltTypeMessage", timelineClass: "ltTimelineTypeMessage" },
+  milestone: { icon: "◎", colorClass: "ltTypeMilestone", timelineClass: "ltTimelineTypeMilestone" },
+  invoice: { icon: "₹", colorClass: "ltTypeInvoice", timelineClass: "ltTimelineTypeInvoice" },
+  call: { icon: "◌", colorClass: "ltTypeCall", timelineClass: "ltTimelineTypeCall" },
+  file: { icon: "⊡", colorClass: "ltTypeFile", timelineClass: "ltTimelineTypeFile" }
 };
 
-const stalenessConfig: Record<Staleness, { label: string; color: string; bg: string; description: string }> = {
-  fresh: { label: "Fresh", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 8%, transparent)", description: "Contacted within 48 hours" },
-  aging: { label: "Aging", color: "#f5c518", bg: "rgba(245,197,24,0.08)", description: "2-5 days since last touch" },
-  stale: { label: "Stale", color: "#ff4444", bg: "rgba(255,68,68,0.08)", description: "6+ days - needs attention" }
+const stalenessConfig: Record<
+  Staleness,
+  {
+    label: string;
+    description: string;
+    rowClass: string;
+    badgeClass: string;
+    toneClass: string;
+    cardClass: string;
+    filterActiveClass: string;
+  }
+> = {
+  fresh: {
+    label: "Fresh",
+    description: "Contacted within 48 hours",
+    rowClass: "ltClientRowFresh",
+    badgeClass: "ltStalenessBadgeFresh",
+    toneClass: "ltToneFresh",
+    cardClass: "ltStalenessCardFresh",
+    filterActiveClass: "ltFilterBtnActiveFresh"
+  },
+  aging: {
+    label: "Aging",
+    description: "2-5 days since last touch",
+    rowClass: "ltClientRowAging",
+    badgeClass: "ltStalenessBadgeAging",
+    toneClass: "ltToneAging",
+    cardClass: "ltStalenessCardAging",
+    filterActiveClass: "ltFilterBtnActiveAging"
+  },
+  stale: {
+    label: "Stale",
+    description: "6+ days - needs attention",
+    rowClass: "ltClientRowStale",
+    badgeClass: "ltStalenessBadgeStale",
+    toneClass: "ltToneStale",
+    cardClass: "ltStalenessCardStale",
+    filterActiveClass: "ltFilterBtnActiveStale"
+  }
 };
 
-const sentimentColors: Record<Sentiment, string> = {
-  positive: "var(--accent)",
-  neutral: "#a0a0b0",
-  at_risk: "#ff4444"
+const sentimentClasses: Record<Sentiment, string> = {
+  positive: "ltSentimentPositive",
+  neutral: "ltSentimentNeutral",
+  at_risk: "ltSentimentAtRisk"
 };
 
 function timeSince(date: Date) {
@@ -214,103 +249,56 @@ export function LastTouchedPage({ isActive }: { isActive: boolean }) {
   const freshCount = clients.filter((client) => client.staleness === "fresh").length;
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-last-touched">
-      <style>{`
-        .lt-client-row { transition: all 0.15s ease; cursor: pointer; }
-        .lt-client-row:hover { border-color: color-mix(in srgb, var(--accent) 20%, transparent) !important; background: color-mix(in srgb, var(--accent) 2%, transparent) !important; }
-        .lt-filter-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .lt-sort-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .lt-sort-btn:hover { color: #a0a0b0 !important; }
-        .lt-action-btn { transition: all 0.12s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .lt-action-btn:hover { opacity: 0.75; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-last-touched">
+      <div className={cx("pageHeaderBar", "borderB", "ltHeader")}> 
+        <div className={cx("flexBetween", "mb20", "ltHeaderTop")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-              Staff Dashboard / Client Intelligence
-            </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              Last Touched
-            </h1>
-            <div style={{ fontSize: 12, color: "var(--muted2)", marginTop: 6 }}>Monday, Feb 23 - 9:00 AM</div>
+            <div className={cx("pageEyebrow", "mb8")}>Staff Dashboard / Client Intelligence</div>
+            <h1 className={cx("pageTitle")}>Last Touched</h1>
+            <div className={cx("text12", "colorMuted2", "mt6")}>Monday, Feb 23 - 9:00 AM</div>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
+          <div className={cx("flexRow", "gap24", "ltTopStats")}>
             {[
-              { label: "Stale", value: staleCount, color: staleCount > 0 ? "#ff4444" : "var(--muted2)" },
-              { label: "Aging", value: agingCount, color: agingCount > 0 ? "#f5c518" : "var(--muted2)" },
-              { label: "Fresh", value: freshCount, color: "var(--accent)" }
+              { label: "Stale", value: staleCount, colorClass: staleCount > 0 ? "ltToneStale" : "ltToneMuted" },
+              { label: "Aging", value: agingCount, colorClass: agingCount > 0 ? "ltToneAging" : "ltToneMuted" },
+              { label: "Fresh", value: freshCount, colorClass: "ltToneFresh" }
             ].map((stat) => (
-              <div key={stat.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+              <div key={stat.label} className={cx("textRight", "ltTopStatCard")}>
+                <div className={cx("pageEyebrow", "mb4", "ltStatLabel")}>{stat.label}</div>
+                <div className={cx("fontDisplay", "fw800", "ltStatValue", stat.colorClass)}>{stat.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <div style={{ display: "flex", gap: 6 }}>
-            {[
-              { key: "all", label: "All" },
-              { key: "stale", label: "Stale" },
-              { key: "aging", label: "Aging" },
-              { key: "fresh", label: "Fresh" }
-            ].map((entry) => {
-              const cfg = entry.key === "all" ? null : stalenessConfig[entry.key as Staleness];
-              const active = filter === entry.key;
-              return (
-                <button
-                  key={entry.key}
-                  type="button"
-                  className="lt-filter-btn"
-                  onClick={() => setFilter(entry.key as "all" | Staleness)}
-                  style={{
-                    padding: "6px 12px",
-                    fontSize: 10,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    borderRadius: 2,
-                    background: active ? (entry.key !== "all" ? cfg?.bg : "rgba(255,255,255,0.08)") : "rgba(255,255,255,0.03)",
-                    color: active ? (entry.key !== "all" ? cfg?.color : "var(--text)") : "var(--muted2)"
-                  }}
-                >
-                  {entry.label}
-                </button>
-              );
-            })}
-          </div>
-          <div style={{ width: 1, height: 18, background: "rgba(255,255,255,0.08)" }} />
-          <span style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.08em" }}>SORT</span>
-          {[
-            { key: "staleness", label: "Stalest first" },
-            { key: "items", label: "Open items" },
-            { key: "name", label: "Name" }
-          ].map((entry) => (
-            <button
-              key={entry.key}
-              type="button"
-              className="lt-sort-btn"
-              onClick={() => setSort(entry.key as "staleness" | "items" | "name")}
-              style={{
-                padding: "5px 10px",
-                fontSize: 10,
-                letterSpacing: "0.06em",
-                background: "transparent",
-                color: sort === entry.key ? "var(--text)" : "var(--muted2)",
-                borderBottom: `1px solid ${sort === entry.key ? "var(--accent)" : "transparent"}`
-              }}
-            >
-              {entry.label}
-            </button>
-          ))}
+        <div className={cx("filterRow", "ltToolbar")}>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter staleness"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value as "all" | Staleness)}
+          >
+            <option value="all">All</option>
+            <option value="stale">Stale</option>
+            <option value="aging">Aging</option>
+            <option value="fresh">Fresh</option>
+          </select>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Sort clients"
+            value={sort}
+            onChange={(event) => setSort(event.target.value as "staleness" | "items" | "name")}
+          >
+            <option value="staleness">Sort: stalest first</option>
+            <option value="items">Sort: open items</option>
+            <option value="name">Sort: name</option>
+          </select>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: current ? "1fr 380px" : "1fr", minHeight: "calc(100vh - 220px)" }}>
-        <div style={{ padding: "20px 12px 8px 0", borderRight: current ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className={cx(current ? "ltLayoutWithPanel" : "ltLayout")}> 
+        <div className={cx("ltListPane", current && "ltListPaneWithPanel")}>
+          <div className={cx("flexCol", "gap10")}>
             {sorted.map((client) => {
               const sCfg = stalenessConfig[client.staleness];
               const tCfg = typeConfig[client.lastTouchedType];
@@ -321,41 +309,34 @@ export function LastTouchedPage({ isActive }: { isActive: boolean }) {
               return (
                 <div
                   key={client.id}
-                  className="lt-client-row"
+                  className={cx("ltClientRow", sCfg.rowClass, isSelected && "ltClientRowSelected")}
                   onClick={() => setSelected(isSelected ? null : client.id)}
-                  style={{
-                    padding: "16px 18px",
-                    border: `1px solid ${isSelected ? "color-mix(in srgb, var(--accent) 25%, transparent)" : client.staleness === "stale" ? "rgba(255,68,68,0.15)" : "rgba(255,255,255,0.06)"}`,
-                    borderLeft: `3px solid ${sCfg.color}`,
-                    borderRadius: "0 4px 4px 0",
-                    background: isSelected ? "color-mix(in srgb, var(--accent) 2%, transparent)" : "rgba(255,255,255,0.01)"
-                  }}
                 >
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 3, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#a0a0b0", flexShrink: 0, marginTop: 2 }}>
-                      {client.avatar}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: "#fff" }}>{client.name}</span>
-                        <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 2, background: sCfg.bg, color: sCfg.color, letterSpacing: "0.08em", textTransform: "uppercase" }}>{sCfg.label}</span>
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: sentimentColors[client.sentiment] }} />
+                  <div className={cx("flexRow", "gap14", "ltClientRowInner")}>
+                    <div className={cx("flexCenter", "noShrink", "ltClientAvatar")}>{client.avatar}</div>
+                    <div className={cx("flex1", "minW0")}>
+                      <div className={cx("flexRow", "gap10", "mb4", "ltClientHead")}>
+                        <span className={cx("fontDisplay", "fw700", "colorText", "ltClientName")}>{client.name}</span>
+                        <span className={cx("textXs", "uppercase", "ltStalenessBadge", sCfg.badgeClass)}>{sCfg.label}</span>
+                        <div className={cx("ltSentimentDot", sentimentClasses[client.sentiment])} />
                       </div>
-                      <div style={{ fontSize: 11, color: "var(--muted2)", marginBottom: 8 }}>{client.project}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                        <span style={{ fontSize: 12, color: tCfg.color }}>{tCfg.icon}</span>
-                        <span style={{ fontSize: 11, color: "#a0a0b0" }}>{client.lastTouchedNote}</span>
+                      <div className={cx("text11", "colorMuted2", "mb8")}>{client.project}</div>
+                      <div className={cx("flexRow", "gap8", "mb6", "ltTouchSummary")}>
+                        <span className={cx("text12", tCfg.colorClass)}>{tCfg.icon}</span>
+                        <span className={cx("text11", "colorMuted")}>{client.lastTouchedNote}</span>
                       </div>
-                      <div style={{ fontSize: 11, color: nextOverdue ? "#ff4444" : "var(--muted2)" }}>
-                        → {client.nextAction} <span style={{ color: nextOverdue ? "#ff4444" : "#333344" }}>({nextDueStr})</span>
+                      <div className={cx("text11", nextOverdue ? "ltTextDanger" : "colorMuted2")}>
+                        → {client.nextAction} <span className={cx(nextOverdue ? "ltTextDanger" : "colorMuted2")}>({nextDueStr})</span>
                       </div>
                     </div>
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: sCfg.color, marginBottom: 4 }}>{sinceStr}</div>
-                      <div style={{ fontSize: 10, color: "var(--muted2)" }}>
+                    <div className={cx("textRight", "noShrink")}>
+                      <div className={cx("fontDisplay", "fw800", "mb4", "ltSinceValue", sCfg.toneClass)}>{sinceStr}</div>
+                      <div className={cx("text10", "colorMuted2")}>
                         {client.openItems > 0 ? `${client.openItems} open item${client.openItems > 1 ? "s" : ""}` : "No open items"}
                       </div>
-                      <div style={{ fontSize: 10, color: client.retainerBurn > 90 ? "#ff4444" : "var(--muted2)", marginTop: 2 }}>{client.retainerBurn}% retainer</div>
+                      <div className={cx("text10", client.retainerBurn > 90 ? "ltTextDanger" : "colorMuted2", "ltRetainerStat")}>
+                        {client.retainerBurn}% retainer
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -365,54 +346,56 @@ export function LastTouchedPage({ isActive }: { isActive: boolean }) {
         </div>
 
         {current ? (
-          <div style={{ padding: "24px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+          <div className={cx("flexCol", "ltDetailPane")}>
             <div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 4 }}>{current.name}</div>
-              <div style={{ fontSize: 11, color: "var(--muted2)" }}>
+              <div className={cx("fontDisplay", "fw800", "colorText", "mb4", "ltDetailName")}>{current.name}</div>
+              <div className={cx("text11", "colorMuted2")}>
                 {current.contact} · {current.project}
               </div>
             </div>
 
-            <div style={{ padding: 16, border: `1px solid ${stalenessConfig[current.staleness].bg}`, borderRadius: 4, background: stalenessConfig[current.staleness].bg }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div className={cx("p16", "ltStalenessCard", stalenessConfig[current.staleness].cardClass)}>
+              <div className={cx("flexBetween", "ltAlignStart")}>
                 <div>
-                  <div style={{ fontSize: 9, color: stalenessConfig[current.staleness].color, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Last contact</div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: stalenessConfig[current.staleness].color }}>{timeSince(current.lastTouched)}</div>
+                  <div className={cx("textXs", "uppercase", "mb4", "ltTrackingWide", stalenessConfig[current.staleness].toneClass)}>
+                    Last contact
+                  </div>
+                  <div className={cx("fontDisplay", "fw800", "ltDetailSince", stalenessConfig[current.staleness].toneClass)}>
+                    {timeSince(current.lastTouched)}
+                  </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Via</div>
-                  <div style={{ fontSize: 14, color: typeConfig[current.lastTouchedType].color }}>
+                <div className={cx("textRight")}>
+                  <div className={cx("textXs", "colorMuted2", "uppercase", "mb4", "ltStatLabel")}>Via</div>
+                  <div className={cx("text14", typeConfig[current.lastTouchedType].colorClass)}>
                     {typeConfig[current.lastTouchedType].icon} {current.lastTouchedType}
                   </div>
                 </div>
               </div>
-              <div style={{ fontSize: 12, color: "#a0a0b0", marginTop: 12, lineHeight: 1.5 }}>{current.lastTouchedNote}</div>
+              <div className={cx("text12", "colorMuted", "mt12", "ltCopyBlock")}>{current.lastTouchedNote}</div>
             </div>
 
-            <div style={{ padding: 14, border: `1px solid ${current.nextActionDue.getTime() < now.getTime() ? "rgba(255,68,68,0.25)" : "rgba(255,255,255,0.08)"}`, borderRadius: 3, background: current.nextActionDue.getTime() < now.getTime() ? "rgba(255,68,68,0.05)" : "rgba(255,255,255,0.02)" }}>
-              <div style={{ fontSize: 9, color: current.nextActionDue.getTime() < now.getTime() ? "#ff4444" : "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
+            <div className={cx("p16", "ltNextActionCard", current.nextActionDue.getTime() < now.getTime() ? "ltNextActionOverdue" : "ltNextActionOnTrack")}>
+              <div className={cx("textXs", "uppercase", "mb6", "ltTrackingWide", current.nextActionDue.getTime() < now.getTime() ? "ltTextDanger" : "colorMuted2")}>
                 Next action · {timeUntil(current.nextActionDue)}
               </div>
-              <div style={{ fontSize: 12, color: current.nextActionDue.getTime() < now.getTime() ? "#ff4444" : "#a0a0b0", lineHeight: 1.5 }}>{current.nextAction}</div>
+              <div className={cx("text12", current.nextActionDue.getTime() < now.getTime() ? "ltTextDanger" : "colorMuted", "ltCopyBlock")}>{current.nextAction}</div>
             </div>
 
             <div>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 14 }}>Touch History</div>
-              <div style={{ display: "flex", flexDirection: "column" }}>
+              <div className={cx("text10", "colorMuted2", "uppercase", "mb14", "ltTrackingWide")}>Touch History</div>
+              <div className={cx("flexCol")}>
                 {current.touchHistory.map((touch, index) => {
                   const tCfg = typeConfig[touch.type];
                   const isLast = index === current.touchHistory.length - 1;
                   return (
-                    <div key={`${touch.label}-${index}`} style={{ display: "flex", gap: 12 }}>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 24, flexShrink: 0 }}>
-                        <div style={{ width: 20, height: 20, borderRadius: "50%", border: `1.5px solid ${tCfg.color}`, background: `${tCfg.color}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: tCfg.color, flexShrink: 0 }}>
-                          {tCfg.icon}
-                        </div>
-                        {!isLast ? <div style={{ width: 1, flex: 1, background: "rgba(255,255,255,0.05)", margin: "2px 0", minHeight: 14 }} /> : null}
+                    <div key={`${touch.label}-${index}`} className={cx("flexRow", "gap12")}>
+                      <div className={cx("flexCol", "noShrink", "ltTimelineCol")}>
+                        <div className={cx("flexCenter", "noShrink", "ltTimelineIcon", tCfg.timelineClass)}>{tCfg.icon}</div>
+                        {!isLast ? <div className={cx("ltTimelineRail")} /> : null}
                       </div>
-                      <div style={{ flex: 1, paddingBottom: isLast ? 0 : 12 }}>
-                        <div style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.4 }}>{touch.label}</div>
-                        <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 2 }}>{timeSince(touch.date)}</div>
+                      <div className={cx("flex1", isLast ? "ltTimelineItemLast" : "ltTimelineItem")}> 
+                        <div className={cx("text12", "colorMuted", "ltTimelineLabel")}>{touch.label}</div>
+                        <div className={cx("text10", "colorMuted2", "ltTimelineTime")}>{timeSince(touch.date)}</div>
                       </div>
                     </div>
                   );
@@ -420,14 +403,17 @@ export function LastTouchedPage({ isActive }: { isActive: boolean }) {
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 2 }}>Quick Actions</div>
+            <div className={cx("flexCol", "gap8")}>
+              <div className={cx("text10", "colorMuted2", "uppercase", "ltTrackingWide", "ltQuickActionLabel")}>Quick Actions</div>
               {[
-                { label: "Log a touchpoint", color: "var(--accent)", border: "color-mix(in srgb, var(--accent) 20%, transparent)", bg: "color-mix(in srgb, var(--accent) 6%, transparent)" },
-                { label: "Send client update", color: "#a0a0b0", border: "rgba(255,255,255,0.08)", bg: "transparent" },
-                { label: current.staleness === "stale" ? "Escalate to admin" : "Schedule check-in", color: current.staleness === "stale" ? "#ff4444" : "#a0a0b0", border: current.staleness === "stale" ? "rgba(255,68,68,0.2)" : "rgba(255,255,255,0.08)", bg: current.staleness === "stale" ? "rgba(255,68,68,0.05)" : "transparent" }
+                { label: "Log a touchpoint", className: "ltActionPrimary" },
+                { label: "Send client update", className: "ltActionNeutral" },
+                {
+                  label: current.staleness === "stale" ? "Escalate to admin" : "Schedule check-in",
+                  className: current.staleness === "stale" ? "ltActionDanger" : "ltActionNeutral"
+                }
               ].map((action) => (
-                <button key={action.label} type="button" className="lt-action-btn" style={{ padding: "10px 14px", border: `1px solid ${action.border}`, borderRadius: 3, background: action.bg, color: action.color, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", textAlign: "left" }}>
+                <button key={action.label} type="button" className={cx("ltActionBtn", "uppercase", action.className)}>
                   {action.label}
                 </button>
               ))}

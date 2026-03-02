@@ -121,7 +121,7 @@ export function DeliverablesPage({
   }, [deliverableFilter, deliverableGroups, deliverableSort, nowTs]);
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-deliverables">
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-deliverables">
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>Output Tracking</div>
@@ -133,51 +133,46 @@ export function DeliverablesPage({
         </button>
       </div>
 
-      <div className={styles.kanbanControls} style={{ marginBottom: 12 }}>
-        <div className={styles.filterTabs}>
-          {[
-            { id: "all", label: "All" },
-            { id: "overdue", label: "Overdue" },
-            { id: "due_week", label: "Due This Week" },
-            { id: "completed", label: "Completed" },
-            { id: "needs_attachment", label: "Needs Attachment" }
-          ].map((filter) => (
-            <button
-              key={filter.id}
-              type="button"
-              className={cx("filterTab", deliverableFilter === filter.id && "filterTabActive")}
-              onClick={() => setDeliverableFilter(filter.id as "all" | "overdue" | "due_week" | "completed" | "needs_attachment")}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <label className={styles.fieldLabel} htmlFor="deliverable-sort" style={{ marginBottom: 0 }}>Sort</label>
+      <div className={cx("kanbanControls", "mb12")}>
+        <div className={cx("filterRow")}>
           <select
-            id="deliverable-sort"
-            className={cx("fieldInput", "fieldSelect")}
-            style={{ width: 170, paddingTop: 7, paddingBottom: 7 }}
+            className={cx("filterSelect")}
+            aria-label="Filter deliverables"
+            value={deliverableFilter}
+            onChange={(event) =>
+              setDeliverableFilter(event.target.value as "all" | "overdue" | "due_week" | "completed" | "needs_attachment")
+            }
+          >
+            <option value="all">All</option>
+            <option value="overdue">Overdue</option>
+            <option value="due_week">Due this week</option>
+            <option value="completed">Completed</option>
+            <option value="needs_attachment">Needs attachment</option>
+          </select>
+          <select
+            className={cx("filterSelect", "dlSortSelect")}
+            aria-label="Sort deliverables"
             value={deliverableSort}
             onChange={(event) => setDeliverableSort(event.target.value as "due_asc" | "due_desc" | "status" | "title")}
           >
-            <option value="due_asc">Due date (soonest)</option>
-            <option value="due_desc">Due date (latest)</option>
-            <option value="status">Status</option>
-            <option value="title">Title</option>
+            <option value="due_asc">Sort: due soonest</option>
+            <option value="due_desc">Sort: due latest</option>
+            <option value="status">Sort: status</option>
+            <option value="title">Sort: title</option>
           </select>
         </div>
       </div>
 
       {showComposer ? (
-        <div className={styles.card} style={{ marginBottom: 12 }}>
+        <div className={cx("card", "mb12")}>
           <div className={styles.cardHeader}>
             <span className={styles.cardHeaderTitle}>Create Deliverable</span>
           </div>
           <div className={styles.cardBody}>
-            <div className={styles.formGrid} style={{ gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div className={styles.formGrid2}>
               <select
                 className={styles.fieldInput}
+                aria-label="Project for new deliverable"
                 value={newDeliverable.projectId}
                 onChange={(event) => onNewDeliverableChange({ projectId: event.target.value })}
               >
@@ -201,7 +196,7 @@ export function DeliverablesPage({
                 onChange={(event) => onNewDeliverableChange({ dueAt: event.target.value })}
               />
             </div>
-            <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
+            <div className={styles.dlComposerSubmit}>
               <button
                 className={cx("button", "buttonBlue")}
                 type="button"
@@ -215,21 +210,21 @@ export function DeliverablesPage({
         </div>
       ) : null}
 
-      <div className={cx("stats", "stats3")} style={{ marginBottom: 20 }}>
+      <div className={cx("stats", "stats3", "mb20")}>
         <div className={styles.stat}>
-          <div className={styles.statAccent} style={{ background: "var(--red)" }} />
+          <div className={cx("statAccent", "statAccentRed")} />
           <div className={styles.statLabel}>Overdue</div>
           <div className={styles.statValue}>{milestoneStats.overdue}</div>
           <div className={styles.statSub}><span className={styles.dn}>{milestoneStats.overdue ? "Immediate attention" : "No overdue deliverables"}</span></div>
         </div>
         <div className={styles.stat}>
-          <div className={styles.statAccent} style={{ background: "var(--amber)" }} />
+          <div className={cx("statAccent", "statAccentAmber")} />
           <div className={styles.statLabel}>Due This Week</div>
           <div className={styles.statValue}>{milestoneStats.dueThisWeek}</div>
           <div className={styles.statSub}><span className={styles.warn}>{milestoneStats.dueThisWeek ? "In progress" : "No deliverables due"}</span></div>
         </div>
         <div className={styles.stat}>
-          <div className={styles.statAccent} style={{ background: "var(--green)" }} />
+          <div className={cx("statAccent", "statAccentGreen")} />
           <div className={styles.statLabel}>Delivered (Month)</div>
           <div className={styles.statValue}>{milestoneStats.deliveredThisMonth}</div>
           <div className={styles.statSub}><span className={styles.up}>On track</span></div>
@@ -247,7 +242,7 @@ export function DeliverablesPage({
                 <span className={styles.cardHeaderTitle}>{group.title}</span>
                 <span className={cx("badge", `badge${capitalize(group.badge.tone)}`)}>{group.badge.label}</span>
               </div>
-              <div className={styles.cardBody} style={{ paddingTop: 8, paddingBottom: 8 }}>
+              <div className={cx("cardBody", "pt8", "pb8")}>
                 <div className={styles.deliverableList}>
                   {group.items.length === 0 ? (
                     <div className={styles.emptyState}>No deliverables listed.</div>
@@ -257,19 +252,19 @@ export function DeliverablesPage({
                         <div className={cx("deliverableCheck", item.status && `deliverable${capitalize(item.status)}`)}>
                           {item.status === "done" ? "✓" : item.status === "doing" ? "→" : ""}
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <div className={styles.deliverableTitle} style={item.titleTone ? { color: item.titleTone } : item.status === "done" ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}>
+                        <div className={styles.flex1}>
+                          <div className={cx("deliverableTitle", item.titleTone === "var(--muted)" && "dlTitleMuted", item.status === "done" && "dlTitleDone")}>
                             {item.title}
                           </div>
-                          <div className={styles.deliverableMeta} style={item.metaTone ? { color: item.metaTone } : undefined}>
+                          <div className={cx("deliverableMeta", item.metaTone === "var(--accent)" && "dlMetaAccent", item.metaTone === "var(--muted)" && "dlMetaMuted")}>
                             {item.meta}
                           </div>
-                          <div className={styles.deliverableMeta} style={{ marginTop: 6 }}>
+                          <div className={cx("deliverableMeta", "mt6")}>
                             Attachment: {item.fileName ?? "None"}
                           </div>
                           <select
-                            className={styles.fieldInput}
-                            style={{ marginTop: 6, width: "100%", background: "var(--bg)", fontSize: "0.68rem" }}
+                            className={cx("fieldInput", "dlAttachSelect")}
+                            aria-label="Attach file to deliverable"
                             value={item.fileId ?? ""}
                             onChange={(event) =>
                               onMilestoneAttachment(item.projectId ?? "", item.milestoneId ?? "", event.target.value || null)
@@ -282,12 +277,11 @@ export function DeliverablesPage({
                             ))}
                           </select>
                           {item.projectId && item.milestoneId ? (
-                            <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end", gap: 6 }}>
+                            <div className={styles.dlActionRow}>
                               {item.milestoneStatus !== "PENDING" ? (
                                 <button
                                   type="button"
-                                  className={cx("button", "buttonGhost")}
-                                  style={{ padding: "4px 10px", fontSize: "0.58rem" }}
+                                  className={cx("btnXxs", "buttonGhost")}
                                   onClick={() => onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "PENDING")}
                                 >
                                   Reopen
@@ -296,8 +290,7 @@ export function DeliverablesPage({
                               {item.milestoneStatus === "PENDING" ? (
                                 <button
                                   type="button"
-                                  className={cx("button", "buttonGhost")}
-                                  style={{ padding: "4px 10px", fontSize: "0.58rem" }}
+                                  className={cx("btnXxs", "buttonGhost")}
                                   onClick={() => onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "IN_PROGRESS")}
                                 >
                                   Start
@@ -306,8 +299,7 @@ export function DeliverablesPage({
                               {item.milestoneStatus !== "COMPLETED" ? (
                                 <button
                                   type="button"
-                                  className={cx("button", "buttonBlue")}
-                                  style={{ padding: "4px 10px", fontSize: "0.58rem" }}
+                                  className={cx("btnXxs", "buttonBlue")}
                                   onClick={() => onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "COMPLETED")}
                                 >
                                   Complete
@@ -326,7 +318,7 @@ export function DeliverablesPage({
         })}
       </div>
 
-      <div className={styles.card} style={{ marginTop: 20 }}>
+      <div className={cx("card", "mt20")}>
         <div className={styles.cardHeader}>
           <span className={styles.cardHeaderTitle}>Change Request Queue</span>
           <span className={cx("badge", "badgeBlue")}>{pendingRequests.length} pending</span>
@@ -339,16 +331,16 @@ export function DeliverablesPage({
               {pendingRequests.map((request) => {
                 const draft = estimateDrafts[request.id] ?? { hours: "", costCents: "", assessment: "" };
                 return (
-                  <div key={request.id} className={styles.deliverableItem} style={{ alignItems: "flex-start" }}>
-                    <div style={{ flex: 1 }}>
+                  <div key={request.id} className={cx("deliverableItem", "dlItemStart")}>
+                    <div className={styles.flex1}>
                       <div className={styles.deliverableTitle}>{request.title}</div>
                       <div className={styles.deliverableMeta}>
                         {request.reason ?? request.description ?? "No request details supplied."}
                       </div>
-                      <div className={styles.deliverableMeta} style={{ marginTop: 6 }}>
+                      <div className={cx("deliverableMeta", "mt6")}>
                         Requested {new Date(request.createdAt).toLocaleDateString()}
                       </div>
-                      <div style={{ display: "grid", gap: 6, gridTemplateColumns: "repeat(2, minmax(0, 1fr))", marginTop: 8 }}>
+                      <div className={styles.dlEstimateGrid}>
                         <input
                           className={styles.fieldInput}
                           placeholder="Estimated hours"
@@ -363,13 +355,12 @@ export function DeliverablesPage({
                         />
                       </div>
                       <textarea
-                        className={styles.fieldInput}
-                        style={{ marginTop: 6, minHeight: 72, resize: "vertical" }}
+                        className={cx("fieldInput", "dlTextarea")}
                         placeholder="Staff assessment for admin review"
                         value={draft.assessment}
                         onChange={(event) => onEstimateDraftChange(request.id, "assessment", event.target.value)}
                       />
-                      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                      <div className={styles.dlSubmitRow}>
                         <button
                           type="button"
                           className={cx("button", "buttonBlue")}
@@ -387,10 +378,10 @@ export function DeliverablesPage({
         </div>
       </div>
 
-      <div className={styles.card} style={{ marginTop: 20 }}>
+      <div className={cx("card", "mt20")}>
         <div className={styles.cardHeader}>
           <span className={styles.cardHeaderTitle}>Client Handoff Exports</span>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className={styles.dlExportActions}>
             <button
               type="button"
               className={cx("button", "buttonGhost")}
@@ -413,36 +404,42 @@ export function DeliverablesPage({
           {handoffExports.length === 0 ? (
             <div className={styles.emptyState}>No handoff exports yet.</div>
           ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>File</th>
-                  <th>Format</th>
-                  <th>Generated</th>
-                  <th>Summary</th>
-                </tr>
-              </thead>
-              <tbody>
-                {handoffExports.slice(0, 8).map((entry) => (
-                <tr key={entry.id}>
-                  <td>{entry.fileName}</td>
-                  <td>{entry.format.toUpperCase()}</td>
-                  <td>{formatDateLong(entry.generatedAt)}</td>
-                  <td style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span>{entry.docs} docs · {entry.decisions} decisions · {entry.blockers} blockers</span>
-                    <button
-                      type="button"
-                      className={cx("button", "buttonGhost")}
-                      style={{ padding: "4px 10px", fontSize: "0.58rem" }}
-                      onClick={() => onDownloadHandoffExport(entry.id)}
-                    >
-                      Download
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              </tbody>
-            </table>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th scope="col">File</th>
+                    <th scope="col">Format</th>
+                    <th scope="col">Generated</th>
+                    <th scope="col">Summary</th>
+                    <th className={cx("textCenter")} scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {handoffExports.slice(0, 8).map((entry) => (
+                    <tr key={entry.id}>
+                      <td>{entry.fileName}</td>
+                      <td>{entry.format.toUpperCase()}</td>
+                      <td>{formatDateLong(entry.generatedAt)}</td>
+                      <td>
+                        <div className={styles.dlHandoffSummary}>
+                          <span>{entry.docs} docs · {entry.decisions} decisions · {entry.blockers} blockers</span>
+                        </div>
+                      </td>
+                      <td className={cx("textCenter")}>
+                        <button
+                          type="button"
+                          className={cx("btnXxs", "buttonGhost")}
+                          onClick={() => onDownloadHandoffExport(entry.id)}
+                        >
+                          Download
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

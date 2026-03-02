@@ -5,7 +5,6 @@ import { cx } from "../style";
 
 type OnboardingStatus = "complete" | "in_progress" | "stuck";
 type StepCategory = "Staff" | "Client" | "Both";
-type MilestoneStatus = "awaiting_approval" | "in_progress" | "not_started" | "overdue" | "approved";
 
 type OnboardingStep = {
   id: string;
@@ -130,46 +129,62 @@ const onboardingClients: OnboardingClient[] = [
   }
 ];
 
-const statusConfig: Record<OnboardingStatus, { label: string; color: string; bg: string }> = {
-  complete: { label: "Complete", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 8%, transparent)" },
-  in_progress: { label: "In Progress", color: "#60a5fa", bg: "rgba(96,165,250,0.08)" },
-  stuck: { label: "Stuck", color: "#ff4444", bg: "rgba(255,68,68,0.08)" }
-};
+function statusToneClass(status: OnboardingStatus) {
+  if (status === "complete") return "coStatusComplete";
+  if (status === "in_progress") return "coStatusProgress";
+  return "coStatusStuck";
+}
 
-const categoryConfig: Record<StepCategory, { color: string; label: string }> = {
-  Staff: { color: "#60a5fa", label: "Staff action" },
-  Client: { color: "var(--accent)", label: "Client action" },
-  Both: { color: "#a78bfa", label: "Joint" }
-};
+function statusMeterClass(status: OnboardingStatus) {
+  if (status === "complete") return "coMeterComplete";
+  if (status === "in_progress") return "coMeterProgress";
+  return "coMeterStuck";
+}
 
-const milestoneStatusConfig: Record<MilestoneStatus, { label: string; color: string }> = {
-  awaiting_approval: { label: "Awaiting Approval", color: "#f5c518" },
-  in_progress: { label: "In Progress", color: "#60a5fa" },
-  not_started: { label: "Not Started", color: "var(--muted2)" },
-  overdue: { label: "Overdue", color: "#ff4444" },
-  approved: { label: "Approved", color: "var(--accent)" }
-};
+function statusLabel(status: OnboardingStatus) {
+  if (status === "complete") return "Complete";
+  if (status === "in_progress") return "In Progress";
+  return "Stuck";
+}
+
+function statusColor(status: OnboardingStatus) {
+  if (status === "complete") return "var(--accent)";
+  if (status === "in_progress") return "var(--blue)";
+  return "var(--red)";
+}
+
+function categoryToneClass(category: StepCategory) {
+  if (category === "Staff") return "coCatStaff";
+  if (category === "Client") return "coCatClient";
+  return "coCatBoth";
+}
+
+function categoryLabel(category: StepCategory) {
+  if (category === "Staff") return "Staff action";
+  if (category === "Client") return "Client action";
+  return "Joint";
+}
 
 function ProgressRing({ pct, color, size = 56 }: { pct: number; color: string; size?: number }) {
   const r = size / 2 - 5;
   const circ = 2 * Math.PI * r;
   const dash = (pct / 100) * circ;
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="4" />
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className={cx("coRing")}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" className={cx("coRingTrack")} strokeWidth="4" />
       <circle
         cx={size / 2}
         cy={size / 2}
         r={r}
         fill="none"
         stroke={color}
+        className={cx("coRingArc")}
         strokeWidth="4"
         strokeDasharray={`${dash} ${circ}`}
         strokeLinecap="round"
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ transition: "stroke-dasharray 0.7s cubic-bezier(0.4,0,0.2,1)" }}
       />
-      <text x={size / 2} y={size / 2} textAnchor="middle" dominantBaseline="central" fill={color} fontFamily="'DM Mono', monospace" fontSize="11" fontWeight="500">
+      <text x={size / 2} y={size / 2} textAnchor="middle" dominantBaseline="central" fill={color} className={cx("coRingPct")}>
         {pct}%
       </text>
     </svg>
@@ -189,7 +204,6 @@ export function ClientOnboardingPage({ isActive }: { isActive: boolean }) {
   const doneSteps = current.steps.filter((step) => step.done).length;
   const totalSteps = current.steps.length;
   const pct = Math.round((doneSteps / totalSteps) * 100);
-  const sCfg = statusConfig[current.status];
 
   const staffSteps = current.steps.filter((step) => step.category === "Staff" || step.category === "Both");
   const clientSteps = current.steps.filter((step) => step.category === "Client" || step.category === "Both");
@@ -197,112 +211,67 @@ export function ClientOnboardingPage({ isActive }: { isActive: boolean }) {
   const clientDone = clientSteps.filter((step) => step.done).length;
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-client-onboarding">
-      <style>{`
-        .onb-client-item { transition: all 0.12s ease; cursor: pointer; }
-        .onb-client-item:hover { border-color: color-mix(in srgb, var(--accent) 20%, transparent) !important; background: color-mix(in srgb, var(--accent) 3%, transparent) !important; }
-        .onb-filter-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .onb-step-row { transition: background 0.1s ease; }
-        .onb-step-row:hover { background: rgba(255,255,255,0.02) !important; }
-        .onb-action-btn { transition: all 0.12s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .onb-action-btn:hover { opacity: 0.75; }
-        .onb-step-connector { width: 1px; height: 20px; margin-left: 8px; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-client-onboarding">
+      <div className={cx("pageHeaderBar", "coHeaderBar")}>
+        <div className={cx("flexBetween", "mb20", "coHeaderTop")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-              Staff Dashboard / Client Management
-            </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              Client Onboarding
-            </h1>
+            <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Management</div>
+            <h1 className={cx("pageTitleText")}>Client Onboarding</h1>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
+          <div className={cx("coTopStats")}>
             {[
-              { label: "Active", value: onboardingClients.filter((client) => client.status === "in_progress").length, color: "#60a5fa" },
-              { label: "Stuck", value: onboardingClients.filter((client) => client.status === "stuck").length, color: "#ff4444" },
-              { label: "Complete", value: onboardingClients.filter((client) => client.status === "complete").length, color: "var(--accent)" }
+              { label: "Active", value: onboardingClients.filter((client) => client.status === "in_progress").length, className: "colorBlue" },
+              { label: "Stuck", value: onboardingClients.filter((client) => client.status === "stuck").length, className: "colorRed" },
+              { label: "Complete", value: onboardingClients.filter((client) => client.status === "complete").length, className: "colorAccent" }
             ].map((stat) => (
-              <div key={stat.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+              <div key={stat.label} className={cx("textRight")}>
+                <div className={cx("statLabelNew")}>{stat.label}</div>
+                <div className={cx("statValueNew", stat.className)}>{stat.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-          {[
-            { key: "all", label: "All" },
-            { key: "in_progress", label: "In Progress" },
-            { key: "stuck", label: "Stuck" },
-            { key: "complete", label: "Complete" }
-          ].map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              className="onb-filter-btn"
-              onClick={() => setFilter(option.key as "all" | OnboardingStatus)}
-              style={{
-                padding: "8px 14px",
-                fontSize: 11,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                borderRadius: 2,
-                background: filter === option.key ? "var(--accent)" : "rgba(255,255,255,0.04)",
-                color: filter === option.key ? "#050508" : "#a0a0b0"
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div className={cx("coFilterRow", "filterRow")}>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter onboarding clients"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value as "all" | OnboardingStatus)}
+          >
+            <option value="all">All</option>
+            <option value="in_progress">In progress</option>
+            <option value="stuck">Stuck</option>
+            <option value="complete">Complete</option>
+          </select>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", minHeight: "calc(100vh - 190px)" }}>
-        <div style={{ borderRight: "1px solid rgba(255,255,255,0.06)", padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className={cx("coLayout")}>
+        <div className={cx("coClientRail")}>
           {filtered.map((client) => {
             const isSelected = selected === client.id;
             const done = client.steps.filter((step) => step.done).length;
             const progress = Math.round((done / client.steps.length) * 100);
-            const cfg = statusConfig[client.status];
             return (
               <div
                 key={client.id}
-                className="onb-client-item"
+                className={cx("coClientItem", "coClientCard", isSelected && "coClientCardSelected", statusToneClass(client.status))}
                 onClick={() => setSelected(client.id)}
-                style={{
-                  padding: "14px",
-                  borderRadius: 3,
-                  border: `1px solid ${isSelected ? "color-mix(in srgb, var(--accent) 25%, transparent)" : "rgba(255,255,255,0.06)"}`,
-                  background: isSelected ? "color-mix(in srgb, var(--accent) 4%, transparent)" : "rgba(255,255,255,0.01)"
-                }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 2, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#a0a0b0", flexShrink: 0 }}>
-                    {client.avatar}
+                <div className={cx("coClientTop")}> 
+                  <div className={cx("coAvatar")}>{client.avatar}</div>
+                  <div className={cx("flex1", "minW0")}>
+                    <div className={cx("coClientName", isSelected ? "colorText" : "colorMuted")}>{client.client}</div>
+                    <div className={cx("coClientProject")}>{client.project}</div>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, color: isSelected ? "#fff" : "#a0a0b0", fontWeight: isSelected ? 500 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {client.client}
-                    </div>
-                    <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {client.project}
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 2, background: cfg.bg, color: cfg.color, letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-                    {cfg.label}
-                  </span>
+                  <span className={cx("coStatusBadge", statusToneClass(client.status))}>{statusLabel(client.status)}</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ flex: 1, height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${progress}%`, background: cfg.color, borderRadius: 2 }} />
-                  </div>
-                  <span style={{ fontSize: 10, color: cfg.color, minWidth: 28 }}>{progress}%</span>
+                <div className={cx("coProgressRow")}>
+                  <progress className={cx("progressMeter", "coProgressBar", statusMeterClass(client.status))} max={100} value={progress} />
+                  <span className={cx("text10", statusToneClass(client.status), "coPctMin")}>{progress}%</span>
                 </div>
-                <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 6 }}>
+                <div className={cx("text10", "colorMuted2", "mt6")}>
                   {done}/{client.steps.length} steps - started {client.startDate.split(",")[0]}
                 </div>
               </div>
@@ -310,118 +279,112 @@ export function ClientOnboardingPage({ isActive }: { isActive: boolean }) {
           })}
         </div>
 
-        <div style={{ padding: "24px 28px", overflowY: "auto" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
-            <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-              <ProgressRing pct={pct} color={sCfg.color} size={64} />
+        <div className={cx("coDetailPane")}>
+          <div className={cx("coDetailHead")}>
+            <div className={cx("coDetailIdentity")}>
+              <ProgressRing pct={pct} color={statusColor(current.status)} size={64} />
               <div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: "#fff", marginBottom: 4 }}>{current.client}</div>
-                <div style={{ fontSize: 11, color: "var(--muted2)", marginBottom: 6 }}>
-                  {current.contact} - {current.project}
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 2, background: sCfg.bg, color: sCfg.color, letterSpacing: "0.08em", textTransform: "uppercase" }}>{sCfg.label}</span>
-                  <span style={{ fontSize: 10, color: "var(--muted2)" }}>Started {current.startDate}</span>
-                  {current.completedAt ? <span style={{ fontSize: 10, color: "var(--accent)" }}>Completed {current.completedAt} ({current.daysToComplete} days)</span> : null}
+                <div className={cx("coClientTitle")}>{current.client}</div>
+                <div className={cx("text11", "colorMuted2", "mb6")}>{current.contact} - {current.project}</div>
+                <div className={cx("coMetaRow")}>
+                  <span className={cx("coStatusBadge", statusToneClass(current.status), "coBadgePad")}>{statusLabel(current.status)}</span>
+                  <span className={cx("text10", "colorMuted2")}>Started {current.startDate}</span>
+                  {current.completedAt ? <span className={cx("text10", "colorAccent")}>Completed {current.completedAt} ({current.daysToComplete} days)</span> : null}
                 </div>
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 14 }}>
+            <div className={cx("coSplitStats")}>
               {[
-                { label: "Staff", done: staffDone, total: staffSteps.length, color: "#60a5fa" },
-                { label: "Client", done: clientDone, total: clientSteps.length, color: "var(--accent)" }
+                { label: "Staff", done: staffDone, total: staffSteps.length, className: "colorBlue" },
+                { label: "Client", done: clientDone, total: clientSteps.length, className: "colorAccent" }
               ].map((group) => (
-                <div key={group.label} style={{ padding: "12px 16px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)", textAlign: "center", minWidth: 80 }}>
-                  <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>{group.label}</div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: group.color }}>
-                    {group.done}/{group.total}
-                  </div>
-                  <div style={{ fontSize: 9, color: "var(--muted2)", marginTop: 4 }}>steps done</div>
+                <div key={group.label} className={cx("coStatCard")}>
+                  <div className={cx("text10", "colorMuted2", "uppercase", "tracking", "mb6")}>{group.label}</div>
+                  <div className={cx("fontDisplay", "fw800", "text20", group.className)}>{group.done}/{group.total}</div>
+                  <div className={cx("text10", "colorMuted2", "mt4")}>steps done</div>
                 </div>
               ))}
             </div>
           </div>
 
           {current.status === "stuck" ? (
-            <div style={{ padding: "12px 16px", border: "1px solid rgba(255,68,68,0.25)", borderRadius: 3, background: "rgba(255,68,68,0.06)", marginBottom: 20, display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <span style={{ fontSize: 14, color: "#ff4444", flexShrink: 0 }}>⚠</span>
+            <div className={cx("coBlockedBanner", "mb20")}>
+              <span className={cx("text14", "colorRed", "noShrink")}>⚠</span>
               <div>
-                <div style={{ fontSize: 12, color: "#ff4444", marginBottom: 4 }}>Onboarding blocked</div>
-                <div style={{ fontSize: 11, color: "#a0a0b0" }}>{current.notes}</div>
+                <div className={cx("text12", "colorRed", "mb4")}>Onboarding blocked</div>
+                <div className={cx("text11", "colorMuted")}>{current.notes}</div>
               </div>
             </div>
           ) : null}
 
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Onboarding Checklist</div>
-            <div style={{ display: "flex", flexDirection: "column" }}>
+          <div className={cx("mb24")}>
+            <div className={cx("sectionLabel", "mb16")}>Onboarding Checklist</div>
+            <div className={cx("flexCol")}>
               {current.steps.map((step, index) => {
-                const catCfg = categoryConfig[step.category];
                 const isLast = index === current.steps.length - 1;
                 const isBlocked = Boolean(step.blocked);
                 const isOverdue = Boolean(step.overdue);
                 return (
                   <div key={step.id}>
-                    <div className="onb-step-row" style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "12px", borderRadius: 3, background: isOverdue ? "rgba(255,68,68,0.04)" : "transparent", border: isOverdue ? "1px solid rgba(255,68,68,0.15)" : "1px solid transparent", marginBottom: 2 }}>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
-                        <div style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${step.done ? "var(--accent)" : isBlocked ? "rgba(255,255,255,0.08)" : isOverdue ? "#ff4444" : "rgba(255,255,255,0.15)"}`, background: step.done ? "color-mix(in srgb, var(--accent) 15%, transparent)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "var(--accent)", flexShrink: 0 }}>
+                    <div className={cx("coStepRow", "coStepRowCard", isOverdue && "coStepRowOverdue")}>
+                      <div className={cx("coStepTrail")}> 
+                        <div className={cx("coStepCheckbox", step.done ? "coStepDone" : isOverdue ? "coStepOverdue" : isBlocked ? "coStepBlocked" : "coStepPending")}>
                           {step.done ? "✓" : isOverdue ? "!" : ""}
                         </div>
-                        {!isLast ? (
-                          <div className="onb-step-connector" style={{ background: step.done ? "color-mix(in srgb, var(--accent) 30%, transparent)" : "rgba(255,255,255,0.06)" }} />
-                        ) : null}
+                        {!isLast ? <div className={cx("coStepConnector", step.done ? "coStepConnectorDone" : "coStepConnectorIdle")} /> : null}
                       </div>
 
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 13, color: step.done ? "var(--muted2)" : isBlocked ? "#333344" : "var(--text)", textDecoration: step.done ? "line-through" : "none" }}>{step.label}</span>
-                          <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 2, background: `${catCfg.color}15`, color: catCfg.color, letterSpacing: "0.08em", textTransform: "uppercase", flexShrink: 0 }}>
-                            {catCfg.label}
-                          </span>
-                          {isBlocked && !isOverdue ? <span style={{ fontSize: 9, color: "#333344" }}>Blocked</span> : null}
-                          {isOverdue ? <span style={{ fontSize: 9, color: "#ff4444" }}>Overdue {step.overdueDays} days</span> : null}
+                      <div className={cx("flex1", "minW0")}>
+                        <div className={cx("coStepTitleRow")}>
+                          <span className={cx("coStepTitle", step.done ? "coStepTitleDone" : isBlocked ? "coStepTitleBlocked" : "coStepTitleOpen")}>{step.label}</span>
+                          <span className={cx("coCatBadge", categoryToneClass(step.category))}>{categoryLabel(step.category)}</span>
+                          {isBlocked && !isOverdue ? <span className={cx("coFlagBlocked")}>Blocked</span> : null}
+                          {isOverdue ? <span className={cx("coFlagOverdue")}>Overdue {step.overdueDays} days</span> : null}
                         </div>
-                        <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 3 }}>
-                          {step.done ? `Completed ${step.doneAt}` : step.scheduledFor ? `Scheduled ${step.scheduledFor}` : step.blocked ? "Waiting on previous step" : "Pending"}
+                        <div className={cx("text10", "colorMuted2", "mt4")}>
+                          {step.done
+                            ? `Completed ${step.doneAt}`
+                            : step.scheduledFor
+                              ? `Scheduled ${step.scheduledFor}`
+                              : step.blocked
+                                ? "Waiting on previous step"
+                                : "Pending"}
                         </div>
                       </div>
                     </div>
-                    {!isLast ? <div style={{ height: 2 }} /> : null}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div style={{ padding: "14px 16px", background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.12)", borderRadius: 3, marginBottom: 20 }}>
-            <div style={{ fontSize: 9, color: "#a78bfa", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>Staff Notes</div>
-            <div style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.7 }}>{current.notes}</div>
+          <div className={cx("coNotesBox", "mb20")}>
+            <div className={cx("coNotesLabel")}>Staff Notes</div>
+            <div className={cx("coNotesText")}>{current.notes}</div>
           </div>
 
           {current.status !== "complete" ? (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", width: "100%", marginBottom: 4 }}>Actions</div>
+            <div className={cx("coActionsWrap")}>
+              <div className={cx("sectionLabel", "mb4", "wFull")}>Actions</div>
               {current.status === "stuck" ? (
-                <button type="button" className="onb-action-btn" style={{ padding: "10px 16px", border: "1px solid rgba(255,68,68,0.25)", borderRadius: 3, background: "rgba(255,68,68,0.06)", color: "#ff4444", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                <button type="button" className={cx("coActionBtn", "coActionBtnBase", "coActionDanger")}>
                   Escalate to admin
                 </button>
               ) : null}
-              <button type="button" className="onb-action-btn" style={{ padding: "10px 16px", border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)", borderRadius: 3, background: "color-mix(in srgb, var(--accent) 6%, transparent)", color: "var(--accent)", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              <button type="button" className={cx("coActionBtn", "coActionBtnBase", "coActionAccent")}>
                 Send reminder to client
               </button>
-              <button type="button" className="onb-action-btn" style={{ padding: "10px 16px", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, background: "transparent", color: "#a0a0b0", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              <button type="button" className={cx("coActionBtn", "coActionBtnBase", "coActionGhost")}>
                 View client portal
               </button>
             </div>
           ) : (
-            <div style={{ padding: 16, border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)", borderRadius: 3, background: "color-mix(in srgb, var(--accent) 4%, transparent)", display: "flex", alignItems: "center", gap: 14 }}>
-              <span style={{ fontSize: 20 }}>✓</span>
+            <div className={cx("coCompleteBanner")}>
+              <span className={cx("text20")}>✓</span>
               <div>
-                <div style={{ fontSize: 13, color: "var(--accent)" }}>Onboarding complete</div>
-                <div style={{ fontSize: 11, color: "var(--muted2)", marginTop: 2 }}>
-                  Completed in {current.daysToComplete} days - project fully active.
-                </div>
+                <div className={cx("text13", "colorAccent")}>Onboarding complete</div>
+                <div className={cx("text11", "colorMuted2", "mt2")}>Completed in {current.daysToComplete} days - project fully active.</div>
               </div>
             </div>
           )}

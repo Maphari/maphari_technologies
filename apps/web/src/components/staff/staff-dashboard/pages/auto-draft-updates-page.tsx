@@ -177,59 +177,36 @@ export function AutoDraftUpdatesPage({ isActive }: { isActive: boolean }) {
   };
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-autodraft">
-      <style>{`
-        .autodraft-option-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .autodraft-option-btn:hover { opacity: 0.8; }
-        .autodraft-client-card { transition: all 0.12s ease; cursor: pointer; }
-        .autodraft-client-card:hover { border-color: color-mix(in srgb, var(--accent) 20%, transparent) !important; background: color-mix(in srgb, var(--accent) 3%, transparent) !important; }
-        .autodraft-gen-btn { transition: all 0.15s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .autodraft-gen-btn:hover { background: #a8d420 !important; }
-        .autodraft-tab-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .autodraft-copy-btn { transition: all 0.12s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .autodraft-copy-btn:hover { opacity: 0.75; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0, marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-autodraft">
+      <div className={cx("pageHeaderBar", "borderB", "mb16", "aduHeaderWrap")}>
+        <div className={cx("flexBetween", "mb20", "itemsStart")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
+            <div className={cx("pageEyebrow", "mb8")}>
               Staff Dashboard / Communication
             </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+            <h1 className={cx("pageTitle")}>
               Auto-draft Client Updates
             </h1>
-            <div style={{ fontSize: 12, color: "var(--muted2)", marginTop: 6 }}>
+            <div className={cx("text12", "colorMuted2", "mt6")}>
               Generate personalised client messages from recent project activity
             </div>
           </div>
           {sentHistory.length > 0 ? (
-            <div style={{ padding: "8px 16px", background: "color-mix(in srgb, var(--accent) 6%, transparent)", border: "1px solid color-mix(in srgb, var(--accent) 15%, transparent)", borderRadius: 3 }}>
-              <span style={{ fontSize: 11, color: "var(--accent)" }}>{sentHistory.length} sent this session</span>
+            <div className={cx("aduSentCounter")}>
+              <span className={cx("text11", "colorAccent")}>{sentHistory.length} sent this session</span>
             </div>
           ) : null}
         </div>
 
-        <div style={{ display: "flex", gap: 0 }}>
+        <div className={cx("flexRow")}>
           {[
             { key: "compose", label: "Compose" },
             { key: "history", label: `Sent (${sentHistory.length})` }
           ].map((tab) => (
-            <button
+            <button type="button"
               key={tab.key}
-              className="autodraft-tab-btn"
+              className={cx("adTabBtn", "uppercase", "aduTabBtn", view === tab.key ? "aduTabBtnActive" : "aduTabBtnIdle")}
               onClick={() => setView(tab.key as "compose" | "history")}
-              type="button"
-              style={{
-                padding: "10px 20px",
-                fontSize: 11,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                background: "transparent",
-                color: view === tab.key ? "var(--accent)" : "var(--muted2)",
-                borderBottom: `2px solid ${view === tab.key ? "var(--accent)" : "transparent"}`,
-                marginBottom: -1
-              }}
             >
               {tab.label}
             </button>
@@ -238,80 +215,60 @@ export function AutoDraftUpdatesPage({ isActive }: { isActive: boolean }) {
       </div>
 
       {view === "history" ? (
-        <div style={{ paddingTop: 8 }}>
+        <div className={cx("pt8")}>
           {sentHistory.length === 0 ? (
-            <div style={{ textAlign: "center", paddingTop: 60, color: "#333344", fontSize: 12 }}>No updates sent yet this session.</div>
+            <div className={cx("textCenter", "text12", "aduHistoryEmpty")}>No updates sent yet this session.</div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 640 }}>
+            <div className={cx("flexCol", "gap10", "aduHistoryList")}>
               {sentHistory.map((item, index) => (
-                <div key={index} style={{ padding: "16px 18px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                <div key={index} className={cx("p16", "aduHistoryCard")}>
+                  <div className={cx("flexBetween", "mb8")}>
                     <div>
-                      <span style={{ fontSize: 13, color: "#fff", fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>{item.client}</span>
-                      <span style={{ fontSize: 11, color: "var(--muted2)", marginLeft: 10 }}>{item.project}</span>
+                      <span className={cx("text13", "colorText", "fontDisplay", "fw700")}>{item.client}</span>
+                      <span className={cx("text11", "colorMuted2", "ml10")}>{item.project}</span>
                     </div>
-                    <span style={{ fontSize: 10, color: "var(--muted2)" }}>{item.sentAt}</span>
+                    <span className={cx("text10", "colorMuted2")}>{item.sentAt}</span>
                   </div>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 2, background: "color-mix(in srgb, var(--accent) 8%, transparent)", color: "var(--accent)" }}>{item.tone}</span>
-                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 2, background: "rgba(255,255,255,0.05)", color: "#a0a0b0" }}>{item.focus}</span>
+                  <div className={cx("flexRow", "gap8", "mb10")}>
+                    <span className={cx("text10", "colorAccent", "aduTagTone")}>{item.tone}</span>
+                    <span className={cx("text10", "colorMuted", "aduTagFocus")}>{item.focus}</span>
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--muted2)", lineHeight: 1.5 }}>{item.preview}</div>
+                  <div className={cx("text11", "colorMuted2", "lh15")}>{item.preview}</div>
                 </div>
               ))}
             </div>
           )}
         </div>
       ) : (
-        <div style={{ paddingTop: 8, display: "grid", gridTemplateColumns: "340px 1fr", gap: 32, minHeight: "calc(100vh - 260px)" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+        <div className={cx("pt8", "aduMainGrid")}>
+          <div className={cx("flexCol", "aduComposerCol")}>
             <div>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>
+              <div className={cx("text10", "colorMuted2", "uppercase", "mb12", "trackingWide12")}>
                 Select Client
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className={cx("flexCol", "gap8")}>
                 {clients.map((item) => {
                   const isSelected = selectedClient === item.id;
                   return (
                     <div
                       key={item.id}
-                      className="autodraft-client-card"
+                      className={cx("adClientCard", "flexRow", "gap12", "aduClientCard", isSelected && "aduClientCardActive")}
                       onClick={() => {
                         setSelectedClient(item.id);
                         setGenerated(false);
                         setDraft("");
                       }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: "10px 14px",
-                        border: `1px solid ${isSelected ? "color-mix(in srgb, var(--accent) 30%, transparent)" : "rgba(255,255,255,0.06)"}`,
-                        borderRadius: 3,
-                        background: isSelected ? "color-mix(in srgb, var(--accent) 5%, transparent)" : "rgba(255,255,255,0.01)"
-                      }}
                     >
                       <div
-                        style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 2,
-                          background: isSelected ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "rgba(255,255,255,0.06)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 9,
-                          color: isSelected ? "var(--accent)" : "#a0a0b0",
-                          fontWeight: 500
-                        }}
+                        className={cx("flexCenter", "noShrink", "aduClientAvatar", isSelected ? "aduClientAvatarActive" : "aduClientAvatarIdle")}
                       >
                         {item.avatar}
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, color: isSelected ? "#fff" : "#a0a0b0" }}>{item.name}</div>
-                        <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 2 }}>{item.project}</div>
+                      <div className={cx("flex1")}>
+                        <div className={cx("text12", isSelected ? "colorText" : "colorMuted")}>{item.name}</div>
+                        <div className={cx("text10", "colorMuted2", "mt2")}>{item.project}</div>
                       </div>
-                      {isSelected ? <span style={{ color: "var(--accent)", fontSize: 12 }}>◈</span> : null}
+                      {isSelected ? <span className={cx("text12", "colorAccent")}>◈</span> : null}
                     </div>
                   );
                 })}
@@ -319,52 +276,34 @@ export function AutoDraftUpdatesPage({ isActive }: { isActive: boolean }) {
             </div>
 
             <div>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>Tone</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div className={cx("text10", "colorMuted2", "uppercase", "mb12", "trackingWide12")}>Tone</div>
+              <div className={cx("flexCol", "gap6")}>
                 {toneOptions.map((option) => (
-                  <button
+                  <button type="button"
                     key={option.key}
-                    className="autodraft-option-btn"
+                    className={cx("adOptionBtn", "aduOptionBtn", tone === option.key ? "aduOptionBtnActive" : "aduOptionBtnIdle")}
                     onClick={() => {
                       setTone(option.key);
                       setGenerated(false);
                     }}
-                    type="button"
-                    style={{
-                      padding: "10px 14px",
-                      textAlign: "left",
-                      border: `1px solid ${tone === option.key ? "color-mix(in srgb, var(--accent) 30%, transparent)" : "rgba(255,255,255,0.06)"}`,
-                      borderRadius: 3,
-                      background: tone === option.key ? "color-mix(in srgb, var(--accent) 5%, transparent)" : "transparent"
-                    }}
                   >
-                    <div style={{ fontSize: 12, color: tone === option.key ? "var(--accent)" : "#a0a0b0", marginBottom: 2 }}>{option.label}</div>
-                    <div style={{ fontSize: 10, color: "var(--muted2)" }}>{option.desc}</div>
+                    <div className={cx("text12", "mb2", tone === option.key ? "colorAccent" : "colorMuted")}>{option.label}</div>
+                    <div className={cx("text10", "colorMuted2")}>{option.desc}</div>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>Focus</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <div className={cx("text10", "colorMuted2", "uppercase", "mb12", "trackingWide12")}>Focus</div>
+              <div className={cx("flexWrap", "aduFocusWrap")}>
                 {focusOptions.map((option) => (
-                  <button
+                  <button type="button"
                     key={option.key}
-                    className="autodraft-option-btn"
+                    className={cx("adOptionBtn", "aduFocusBtn", focus === option.key ? "aduFocusBtnActive" : "aduFocusBtnIdle")}
                     onClick={() => {
                       setFocus(option.key);
                       setGenerated(false);
-                    }}
-                    type="button"
-                    style={{
-                      padding: "7px 12px",
-                      fontSize: 11,
-                      letterSpacing: "0.06em",
-                      border: `1px solid ${focus === option.key ? "color-mix(in srgb, var(--accent) 30%, transparent)" : "rgba(255,255,255,0.08)"}`,
-                      borderRadius: 2,
-                      background: focus === option.key ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
-                      color: focus === option.key ? "var(--accent)" : "var(--muted2)"
                     }}
                   >
                     {option.label}
@@ -374,8 +313,8 @@ export function AutoDraftUpdatesPage({ isActive }: { isActive: boolean }) {
             </div>
 
             <div>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>
-                Add a note <span style={{ color: "#333344", fontWeight: 400 }}>Optional</span>
+              <div className={cx("text10", "colorMuted2", "uppercase", "mb10", "trackingWide12")}>
+                Add a note <span className={cx("colorMuted2", "fw400")}>Optional</span>
               </div>
               <textarea
                 value={customNote}
@@ -384,76 +323,36 @@ export function AutoDraftUpdatesPage({ isActive }: { isActive: boolean }) {
                   setGenerated(false);
                 }}
                 placeholder="e.g. Mention the revised timeline, or add a personal touch..."
-                style={{
-                  width: "100%",
-                  minHeight: 72,
-                  padding: "10px 12px",
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 3,
-                  color: "var(--text)",
-                  fontSize: 11,
-                  lineHeight: 1.6
-                }}
+                className={cx("aduNoteInput")}
               />
             </div>
 
             <button
-              className="autodraft-gen-btn"
+              className={cx("adGenBtn", "uppercase", "aduGenBtn")}
               onClick={handleGenerate}
               type="button"
-              style={{
-                padding: "13px 20px",
-                background: "var(--accent)",
-                color: "#050508",
-                border: "none",
-                borderRadius: 3,
-                fontSize: 12,
-                fontWeight: 500,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase"
-              }}
             >
               {generated ? "↺ Regenerate draft" : "Generate draft →"}
             </button>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          <div className={cx("flexCol")}>
+            <div className={cx("flexBetween", "mb14")}>
+              <div className={cx("text10", "colorMuted2", "uppercase", "trackingWide12")}>
                 {generated ? `Draft - ${client?.name} / ${toneOptions.find((entry) => entry.key === tone)?.label}` : "Draft will appear here"}
               </div>
               {generated ? (
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    className="autodraft-copy-btn"
+                <div className={cx("flexRow", "gap8")}>
+                  <button type="button"
+                    className={cx("adCopyBtn", "aduCopyBtn", copied && "aduCopyBtnCopied")}
                     onClick={() => void handleCopy()}
-                    type="button"
-                    style={{
-                      padding: "7px 14px",
-                      fontSize: 11,
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: 3,
-                      background: "transparent",
-                      color: copied ? "var(--accent)" : "#a0a0b0",
-                      letterSpacing: "0.06em"
-                    }}
                   >
                     {copied ? "✓ Copied" : "Copy"}
                   </button>
                   <button
-                    className="autodraft-copy-btn"
+                    className={cx("adCopyBtn", "aduSendBtn")}
                     onClick={handleSend}
                     type="button"
-                    style={{
-                      padding: "7px 16px",
-                      fontSize: 11,
-                      border: "1px solid color-mix(in srgb, var(--accent) 30%, transparent)",
-                      borderRadius: 3,
-                      background: "color-mix(in srgb, var(--accent) 8%, transparent)",
-                      color: "var(--accent)",
-                      letterSpacing: "0.06em"
-                    }}
                   >
                     Mark as sent
                   </button>
@@ -463,35 +362,24 @@ export function AutoDraftUpdatesPage({ isActive }: { isActive: boolean }) {
 
             {!generated ? (
               <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: "1px dashed rgba(255,255,255,0.08)",
-                  borderRadius: 4,
-                  flexDirection: "column",
-                  gap: 12,
-                  minHeight: 400,
-                  color: "#333344"
-                }}
+                className={cx("flexCenter", "flexCol", "gap12", "aduDraftEmpty")}
               >
-                <div style={{ fontSize: 32 }}>✦</div>
-                <div style={{ fontSize: 12 }}>Select a client, tone, and focus - then generate</div>
+                <div className={cx("aduDraftEmptyIcon")}>✦</div>
+                <div className={cx("text12")}>Select a client, tone, and focus - then generate</div>
               </div>
             ) : (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 0 }}>
-                <div style={{ padding: "12px 16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "3px 3px 0 0", display: "flex", gap: 20 }}>
+              <div className={cx("flex1", "flexCol")}>
+                <div className={cx("flexRow", "gap20", "aduDraftMeta")}>
                   {[
                     { label: "Source data", value: `${selectedActivity?.tasks.length ?? 0} tasks, ${selectedActivity?.milestones.length ?? 0} milestones` },
                     { label: "Hours this week", value: `${selectedActivity?.hoursLogged ?? 0}h` },
                     { label: "Open blockers", value: selectedActivity?.blockers.length ?? 0 }
                   ].map((summary) => (
                     <div key={summary.label}>
-                      <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>
+                      <div className={cx("textXs", "colorMuted2", "uppercase", "trackingWide10", "mb2")}>
                         {summary.label}
                       </div>
-                      <div style={{ fontSize: 11, color: "#a0a0b0" }}>{summary.value}</div>
+                      <div className={cx("text11", "colorMuted")}>{summary.value}</div>
                     </div>
                   ))}
                 </div>
@@ -499,23 +387,12 @@ export function AutoDraftUpdatesPage({ isActive }: { isActive: boolean }) {
                 <textarea
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: 20,
-                    background: "rgba(255,255,255,0.015)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    borderTop: "none",
-                    borderRadius: "0 0 3px 3px",
-                    color: "var(--text)",
-                    fontSize: 13,
-                    lineHeight: 1.8,
-                    minHeight: 420
-                  }}
+                  className={cx("aduDraftTextarea")}
                 />
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
-                  <div style={{ fontSize: 10, color: "var(--muted2)" }}>{draft.split(/\s+/).filter(Boolean).length} words · Edit freely before sending</div>
-                  <div style={{ fontSize: 10, color: "#333344" }}>Sending via: Slack / Email / Portal message</div>
+                <div className={cx("flexBetween", "mt10")}>
+                  <div className={cx("text10", "colorMuted2")}>{draft.split(/\s+/).filter(Boolean).length} words · Edit freely before sending</div>
+                  <div className={cx("text10", "colorMuted2")}>Sending via: Slack / Email / Portal message</div>
                 </div>
               </div>
             )}

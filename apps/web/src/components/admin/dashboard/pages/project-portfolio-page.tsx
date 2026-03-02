@@ -1,21 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { AdminFilterBar, AdminTabs } from "./shared";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0",
-};
+import { cx, styles } from "../style";
+import { AdminFilterBar } from "./shared";
+import { colorClass } from "./admin-page-utils";
 
 type ProjectStatus = "on-track" | "at-risk" | "off-track" | "complete";
 type Tab = "board" | "list" | "health map";
@@ -49,7 +37,7 @@ const projects: Array<{
   {
     id: "PRJ-001",
     client: "Volta Studios",
-    clientColor: C.lime,
+    clientColor: "var(--accent)",
     clientAvatar: "VS",
     name: "Brand Identity System",
     type: "Retainer",
@@ -69,12 +57,12 @@ const projects: Array<{
     tasksDone: 28,
     tasksOverdue: 0,
     health: 91,
-    lastUpdate: "Feb 22",
+    lastUpdate: "Feb 22"
   },
   {
     id: "PRJ-002",
     client: "Kestrel Capital",
-    clientColor: C.purple,
+    clientColor: "var(--purple)",
     clientAvatar: "KC",
     name: "Q1 Campaign Strategy",
     type: "Project",
@@ -94,12 +82,12 @@ const projects: Array<{
     tasksDone: 17,
     tasksOverdue: 4,
     health: 44,
-    lastUpdate: "Feb 20",
+    lastUpdate: "Feb 20"
   },
   {
     id: "PRJ-003",
     client: "Mira Health",
-    clientColor: C.blue,
+    clientColor: "var(--blue)",
     clientAvatar: "MH",
     name: "Website Redesign",
     type: "Project",
@@ -119,12 +107,12 @@ const projects: Array<{
     tasksDone: 23,
     tasksOverdue: 1,
     health: 74,
-    lastUpdate: "Feb 21",
+    lastUpdate: "Feb 21"
   },
   {
     id: "PRJ-004",
     client: "Dune Collective",
-    clientColor: C.amber,
+    clientColor: "var(--amber)",
     clientAvatar: "DC",
     name: "Editorial Design System",
     type: "Retainer",
@@ -144,12 +132,12 @@ const projects: Array<{
     tasksDone: 13,
     tasksOverdue: 7,
     health: 31,
-    lastUpdate: "Feb 19",
+    lastUpdate: "Feb 19"
   },
   {
     id: "PRJ-005",
     client: "Okafor & Sons",
-    clientColor: C.orange,
+    clientColor: "var(--amber)",
     clientAvatar: "OS",
     name: "Annual Report 2025",
     type: "Project",
@@ -169,38 +157,90 @@ const projects: Array<{
     tasksDone: 21,
     tasksOverdue: 0,
     health: 96,
-    lastUpdate: "Feb 23",
-  },
+    lastUpdate: "Feb 23"
+  }
 ];
 
-const statusConfig: Record<ProjectStatus, { color: string; label: string; bg: string }> = {
-  "on-track": { color: C.lime, label: "On Track", bg: `${C.lime}15` },
-  "at-risk": { color: C.amber, label: "At Risk", bg: `${C.amber}15` },
-  "off-track": { color: C.red, label: "Off Track", bg: `${C.red}15` },
-  complete: { color: C.blue, label: "Complete", bg: `${C.blue}15` },
+const statusConfig: Record<ProjectStatus, { color: string; label: string }> = {
+  "on-track": { color: "var(--accent)", label: "On Track" },
+  "at-risk": { color: "var(--amber)", label: "At Risk" },
+  "off-track": { color: "var(--red)", label: "Off Track" },
+  complete: { color: "var(--blue)", label: "Complete" }
 };
 
 const phases = ["Discovery", "Strategy", "Design", "Execution", "Review", "Final Review", "Complete"];
 
+function completionClass(value: number): string {
+  if (value >= 75) return "colorAccent";
+  if (value >= 40) return "colorBlue";
+  return "colorMuted";
+}
+
+function spentClass(value: number): string {
+  if (value > 100) return "colorRed";
+  if (value > 85) return "colorAmber";
+  return "colorAccent";
+}
+
+function dueClass(daysLeft: number): string {
+  if (daysLeft <= 7) return "colorRed";
+  if (daysLeft <= 21) return "colorAmber";
+  return "colorMuted";
+}
+
+function healthClass(value: number): string {
+  if (value >= 80) return "colorAccent";
+  if (value >= 60) return "colorAmber";
+  return "colorRed";
+}
+
+function toneVarClass(value: string): string {
+  if (value === "var(--red)") return styles.pportToneRed;
+  if (value === "var(--blue)") return styles.pportToneBlue;
+  if (value === "var(--amber)") return styles.pportToneAmber;
+  if (value === "var(--purple)") return styles.pportTonePurple;
+  if (value === "var(--muted)") return styles.pportToneMuted;
+  if (value === "var(--border)") return styles.pportToneBorder;
+  return styles.pportToneAccent;
+}
+
+function fillClass(value: string): string {
+  if (value === "var(--red)") return styles.pportFillRed;
+  if (value === "var(--blue)") return styles.pportFillBlue;
+  if (value === "var(--amber)") return styles.pportFillAmber;
+  if (value === "var(--purple)") return styles.pportFillPurple;
+  if (value === "var(--muted)") return styles.pportFillMuted;
+  if (value === "var(--border)") return styles.pportFillBorder;
+  return styles.pportFillAccent;
+}
+
+function statusClass(value: string): string {
+  if (value === "var(--red)") return styles.pportStatusRed;
+  if (value === "var(--blue)") return styles.pportStatusBlue;
+  if (value === "var(--amber)") return styles.pportStatusAmber;
+  if (value === "var(--purple)") return styles.pportStatusPurple;
+  if (value === "var(--muted)") return styles.pportStatusMuted;
+  return styles.pportStatusAccent;
+}
+
+function cardClass(value: string): string {
+  if (value === "var(--red)") return styles.pportCardRed;
+  if (value === "var(--amber)") return styles.pportCardAmber;
+  if (value === "var(--blue)") return styles.pportCardBlue;
+  return "";
+}
+
+function healthCardClass(value: string): string {
+  if (value === "var(--red)") return styles.pportHealthCardRed;
+  if (value === "var(--amber)") return styles.pportHealthCardAmber;
+  if (value === "var(--blue)") return styles.pportHealthCardBlue;
+  return styles.pportHealthCardAccent;
+}
+
 function Avatar({ initials, color, size = 30 }: { initials: string; color: string; size?: number }) {
+  const sizeClass = size === 22 ? "pportAvatar22" : size === 28 ? "pportAvatar28" : size === 36 ? "pportAvatar36" : "pportAvatar30";
   return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: `${color}22`,
-        border: `2px solid ${color}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: size * 0.32,
-        fontWeight: 700,
-        color,
-        fontFamily: "DM Mono, monospace",
-        flexShrink: 0,
-      }}
-    >
+    <div className={cx(styles.pportAvatar, toneVarClass(color), sizeClass)}>
       {initials}
     </div>
   );
@@ -220,48 +260,46 @@ export function ProjectPortfolioPage() {
   const avgCompletion = Math.round(projects.reduce((s, p) => s + p.completion, 0) / projects.length);
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={cx(styles.pageBody, styles.pportRoot)}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.lime, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / OPERATIONS</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Project Portfolio</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>All active projects - Status - Budget - Blockers</div>
+          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <h1 className={styles.pageTitle}>Project Portfolio</h1>
+          <div className={styles.pageSub}>All active projects - Status - Budget - Blockers</div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "8px 16px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>Export</button>
-          <button style={{ background: C.lime, color: C.bg, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>+ New Project</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnGhost")}>Export</button>
+          <button type="button" className={cx("btnSm", "btnAccent")}>+ New Project</button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Active Projects", value: projects.length.toString(), color: C.lime, sub: "Across 5 clients" },
-          { label: "Projects At Risk", value: atRisk.toString(), color: atRisk > 0 ? C.red : C.lime, sub: "Need attention" },
-          { label: "Avg Completion", value: `${avgCompletion}%`, color: C.blue, sub: "Portfolio progress" },
-          { label: "Budget Utilisation", value: `${Math.round((totalSpent / totalBudget) * 100)}%`, color: C.amber, sub: `R${(totalSpent / 1000).toFixed(0)}k of R${(totalBudget / 1000).toFixed(0)}k` },
+          { label: "Active Projects", value: projects.length.toString(), color: "var(--accent)", sub: "Across 5 clients" },
+          { label: "Projects At Risk", value: atRisk.toString(), color: atRisk > 0 ? "var(--red)" : "var(--accent)", sub: "Need attention" },
+          { label: "Avg Completion", value: `${avgCompletion}%`, color: "var(--blue)", sub: "Portfolio progress" },
+          { label: "Budget Utilisation", value: `${Math.round((totalSpent / totalBudget) * 100)}%`, color: "var(--amber)", sub: `R${(totalSpent / 1000).toFixed(0)}k of R${(totalBudget / 1000).toFixed(0)}k` }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${s.label === "Projects At Risk" && atRisk > 0 ? `${C.red}55` : C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={cx("statCard", s.label === "Projects At Risk" && atRisk > 0 && styles.pportRiskStat)}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
       {projects.some((p) => p.blockers.length > 0) && (
-        <div style={{ background: C.surface, border: `1px solid ${C.red}44`, borderRadius: 10, padding: 16, marginBottom: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
-          <span style={{ fontSize: 18, flexShrink: 0 }}>🚧</span>
+        <div className={styles.pportBlockersWrap}>
+          <span className={styles.pportWarnIcon}>!</span>
           <div>
-            <div style={{ fontWeight: 700, color: C.red, marginBottom: 6 }}>Active Blockers</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div className={styles.pportWarnTitle}>Active Blockers</div>
+            <div className={styles.pportWarnList}>
               {projects
                 .filter((p) => p.blockers.length > 0)
                 .map((p) =>
                   p.blockers.map((b, i) => (
-                    <div key={`${p.id}-${i}`} style={{ fontSize: 12, color: C.muted }}>
-                      <span style={{ color: p.clientColor, fontWeight: 600 }}>{p.client}</span> - {b}
+                    <div key={`${p.id}-${i}`} className={cx("text12", "colorMuted")}>
+                      <span className={cx(styles.pportClientTone, colorClass(p.clientColor))}>{p.client}</span> - {b}
                     </div>
                   ))
                 )}
@@ -270,106 +308,112 @@ export function ProjectPortfolioPage() {
         </div>
       )}
 
-      <AdminTabs
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        primaryColor={C.lime}
-        mutedColor={C.muted}
-        panelColor={C.surface}
-        borderColor={C.border}
-      />
-      <AdminFilterBar panelColor={C.surface} borderColor={C.border}>
-        <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "DM Mono, monospace" }}>Filters</div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as StatusFilter)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+      <AdminFilterBar panelColor="var(--surface)" borderColor="var(--border)">
+        <div className={styles.pportFilterLabel}>Filters</div>
+        <div className={cx("flexRow", "gap8")}>
+          <select title="Select view" value={activeTab} onChange={(e) => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+            {tabs.map((tab) => (
+              <option key={tab} value={tab}>
+                View: {tab === "health map" ? "Health Map" : `${tab.charAt(0).toUpperCase()}${tab.slice(1)}`}
+              </option>
+            ))}
+          </select>
+          <select title="Filter by project status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as StatusFilter)} className={styles.filterSelect}>
             <option value="All">Status: All</option>
             <option value="on-track">Status: On Track</option>
             <option value="at-risk">Status: At Risk</option>
             <option value="off-track">Status: Off Track</option>
           </select>
-          {filterStatus !== "All" ? (
-            <button onClick={() => setFilterStatus("All")} style={{ background: C.border, border: "none", color: C.text, padding: "8px 10px", fontSize: 11, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>Clear</button>
-          ) : null}
         </div>
       </AdminFilterBar>
 
       {activeTab === "board" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className={styles.pportBoardList}>
           {filtered.map((p) => {
             const sc = statusConfig[p.status];
             const isExpanded = expanded === p.id;
             return (
-              <div key={p.id} style={{ background: C.surface, border: `1px solid ${p.status !== "on-track" ? `${sc.color}55` : C.border}`, borderRadius: 12 }}>
-                <div style={{ padding: 24, cursor: "pointer" }} onClick={() => setExpanded(isExpanded ? null : p.id)}>
-                  <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 140px 120px 80px 80px auto", alignItems: "center", gap: 20 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div key={p.id} className={cx(styles.pportCard, p.status !== "on-track" && cardClass(sc.color))}>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className={styles.pportCardToggle}
+                  onClick={() => setExpanded(isExpanded ? null : p.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setExpanded(isExpanded ? null : p.id);
+                    }
+                  }}
+                >
+                  <div className={styles.pportMainGrid}>
+                    <div className={styles.pportEntityCell}>
                       <Avatar initials={p.clientAvatar} color={p.clientColor} size={36} />
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: 14 }}>{p.name}</div>
-                        <div style={{ fontSize: 11, color: p.clientColor }}>
-                          {p.client} - {p.type}
-                        </div>
+                        <div className={styles.pportProjName}>{p.name}</div>
+                        <div className={cx(styles.pportClientMeta, colorClass(p.clientColor))}>{p.client} - {p.type}</div>
                       </div>
                     </div>
 
                     <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                        <span style={{ fontSize: 11, color: C.muted }}>{p.phase}</span>
-                        <span style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: p.completion >= 75 ? C.lime : p.completion >= 40 ? C.blue : C.muted }}>{p.completion}%</span>
+                      <div className={styles.pportProgressHead}>
+                        <span className={cx("text11", "colorMuted")}>{p.phase}</span>
+                        <span className={cx("fontMono", "text12", completionClass(p.completion))}>{p.completion}%</span>
                       </div>
-                      <div style={{ height: 6, background: C.border, borderRadius: 3 }}>
-                        <div style={{ height: "100%", width: `${p.completion}%`, background: p.status === "off-track" ? C.red : p.status === "at-risk" ? C.amber : C.lime, borderRadius: 3, transition: "width 0.8s" }} />
+                      <div className={styles.pportTrack6}>
+                        <progress
+                          className={cx("barFill", "uiProgress", p.status === "off-track" ? styles.pportFillRed : p.status === "at-risk" ? styles.pportFillAmber : styles.pportFillAccent)}
+                          max={100}
+                          value={p.completion}
+                        />
                       </div>
-                      <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>
-                        {p.tasksDone}/{p.tasksTotal} tasks{p.tasksOverdue > 0 ? <span style={{ color: C.red }}> - {p.tasksOverdue} overdue</span> : null}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>Budget</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontSize: 13, color: p.spentPct > 100 ? C.red : p.spentPct > 85 ? C.amber : C.lime, fontWeight: 700 }}>{p.spentPct}%</div>
-                      <div style={{ fontSize: 10, color: C.muted }}>
-                        R{(p.spent / 1000).toFixed(0)}k / R{(p.budget / 1000).toFixed(0)}k
+                      <div className={cx("text10", "colorMuted", "mt4")}>
+                        {p.tasksDone}/{p.tasksTotal} tasks{p.tasksOverdue > 0 ? <span className={styles.pportOverdueText}> - {p.tasksOverdue} overdue</span> : null}
                       </div>
                     </div>
 
                     <div>
-                      <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>Due</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: p.daysLeft <= 7 ? C.red : p.daysLeft <= 21 ? C.amber : C.muted }}>{p.dueDate}</div>
-                      <div style={{ fontSize: 10, color: p.daysLeft <= 7 ? C.red : C.muted }}>{p.daysLeft}d left</div>
+                      <div className={styles.pportMiniLabel}>Budget</div>
+                      <div className={cx("fontMono", "text13", "fw700", spentClass(p.spentPct))}>{p.spentPct}%</div>
+                      <div className={cx("text10", "colorMuted")}>R{(p.spent / 1000).toFixed(0)}k / R{(p.budget / 1000).toFixed(0)}k</div>
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                      <Avatar initials={p.ownerAvatar} color={C.muted} size={28} />
-                      <div style={{ fontSize: 9, color: C.muted, textAlign: "center" }}>{p.owner.split(" ")[0]}</div>
+                    <div>
+                      <div className={styles.pportMiniLabel}>Due</div>
+                      <div className={cx("fontMono", "text12", dueClass(p.daysLeft))}>{p.dueDate}</div>
+                      <div className={cx("text10", p.daysLeft <= 7 ? "colorRed" : "colorMuted")}>{p.daysLeft}d left</div>
                     </div>
 
-                    <span style={{ fontSize: 10, color: sc.color, background: sc.bg, padding: "4px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace", textAlign: "center" }}>{sc.label}</span>
+                    <div className={styles.pportOwnerCell}>
+                      <Avatar initials={p.ownerAvatar} color="var(--muted)" size={28} />
+                      <div className={styles.pportOwnerName}>{p.owner.split(" ")[0]}</div>
+                    </div>
+
+                    <span className={cx(styles.pportStatusTag, statusClass(sc.color))}>{sc.label}</span>
 
                     {p.blockers.length > 0 ? (
-                      <div style={{ background: `${C.red}15`, border: `1px solid ${C.red}44`, borderRadius: 6, padding: "4px 10px", fontSize: 11, color: C.red, textAlign: "center" }}>🚧 {p.blockers.length}</div>
+                      <div className={styles.pportBlockerChip}>! {p.blockers.length}</div>
                     ) : (
-                      <div style={{ fontSize: 11, color: C.lime, textAlign: "center" }}>✓ Clear</div>
+                      <div className={styles.pportClearChip}>Clear</div>
                     )}
                   </div>
                 </div>
 
                 {isExpanded && (
-                  <div style={{ padding: "0 24px 24px", borderTop: `1px solid ${C.border}` }}>
-                    <div style={{ paddingTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+                  <div className={styles.pportExpanded}>
+                    <div className={styles.pportExpandGrid}>
                       <div>
-                        <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Phase Progress</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        <div className={styles.pportSectionTitle}>Phase Progress</div>
+                        <div className={styles.pportPhaseList}>
                           {phases.map((phase, i) => {
                             const phaseIndex = phases.indexOf(p.phase);
                             const isDone = i < phaseIndex;
                             const isCurrent = i === phaseIndex;
                             return (
-                              <div key={phase} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                                <div style={{ width: 10, height: 10, borderRadius: "50%", background: isDone ? C.lime : isCurrent ? sc.color : C.border, flexShrink: 0 }} />
-                                <span style={{ fontSize: 12, color: isDone ? C.lime : isCurrent ? sc.color : C.muted, fontWeight: isCurrent ? 700 : 400 }}>{phase}</span>
-                                {isCurrent ? <span style={{ fontSize: 10, color: sc.color }}>(current)</span> : null}
+                              <div key={phase} className={styles.pportPhaseRow}>
+                                <div className={cx(styles.pportPhaseDot, isDone ? styles.pportFillAccent : isCurrent ? fillClass(sc.color) : styles.pportFillBorder)} />
+                                <span className={cx(styles.pportPhaseText, isDone ? "colorAccent" : isCurrent ? colorClass(sc.color) : "colorMuted", isCurrent && "fw700")}>{phase}</span>
+                                {isCurrent ? <span className={cx(styles.pportCurrentTag, colorClass(sc.color))}>(current)</span> : null}
                               </div>
                             );
                           })}
@@ -377,23 +421,21 @@ export function ProjectPortfolioPage() {
                       </div>
 
                       <div>
-                        <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Blockers</div>
+                        <div className={styles.pportSectionTitle}>Blockers</div>
                         {p.blockers.length === 0
-                          ? <div style={{ fontSize: 12, color: C.lime }}>✓ No active blockers</div>
+                          ? <div className={styles.pportNoBlockers}>No active blockers</div>
                           : p.blockers.map((b, i) => (
-                              <div key={i} style={{ padding: 10, background: C.surface, borderRadius: 6, fontSize: 12, color: C.text, borderLeft: `3px solid ${C.red}`, marginBottom: 8 }}>
-                                {b}
-                              </div>
+                              <div key={i} className={styles.pportBlockerRow}>{b}</div>
                             ))}
                       </div>
 
                       <div>
-                        <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Quick Actions</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          <button style={{ background: C.border, border: "none", color: C.text, padding: "8px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer", textAlign: "left" }}>📋 View Full Project →</button>
-                          <button style={{ background: C.border, border: "none", color: C.text, padding: "8px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer", textAlign: "left" }}>💬 Message Client →</button>
-                          <button style={{ background: C.border, border: "none", color: C.text, padding: "8px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer", textAlign: "left" }}>📊 Open Reports →</button>
-                          {p.blockers.length > 0 ? <button style={{ background: `${C.red}15`, border: `1px solid ${C.red}44`, color: C.red, padding: "8px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer", textAlign: "left" }}>🚨 Log Escalation →</button> : null}
+                        <div className={styles.pportSectionTitle}>Quick Actions</div>
+                        <div className={styles.pportActionsCol}>
+                          <button type="button" className={cx("btnSm", "btnGhost", styles.pportActionBtn)}>View Full Project</button>
+                          <button type="button" className={cx("btnSm", "btnGhost", styles.pportActionBtn)}>Message Client</button>
+                          <button type="button" className={cx("btnSm", "btnGhost", styles.pportActionBtn)}>Open Reports</button>
+                          {p.blockers.length > 0 ? <button type="button" className={cx("btnSm", "btnGhost", styles.pportEscalateBtn)}>Log Escalation</button> : null}
                         </div>
                       </div>
                     </div>
@@ -406,63 +448,63 @@ export function ProjectPortfolioPage() {
       )}
 
       {activeTab === "list" && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 1fr 80px 100px 80px 80px 80px 80px", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            {["ID", "Project", "Client", "Phase", "Progress", "Budget", "Due", "Status", "Health"].map((h) => <span key={h}>{h}</span>)}
+        <div className={styles.pportListCard}>
+          <div className={cx(styles.pportListHead, "fontMono", "text10", "colorMuted", "uppercase")}>
+            {"ID|Project|Client|Phase|Progress|Budget|Due|Status|Health".split("|").map((h) => <span key={h}>{h}</span>)}
           </div>
           {filtered.map((p, i) => (
-            <div key={p.id} style={{ display: "grid", gridTemplateColumns: "60px 1fr 1fr 80px 100px 80px 80px 80px 80px", padding: "14px 24px", borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center" }}>
-              <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted }}>{p.id}</span>
-              <span style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div key={p.id} className={cx(styles.pportListRow, i < filtered.length - 1 && "borderB")}>
+              <span className={cx("fontMono", "text10", "colorMuted")}>{p.id}</span>
+              <span className={styles.pportListProject}>{p.name}</span>
+              <div className={styles.pportListClientCell}>
                 <Avatar initials={p.clientAvatar} color={p.clientColor} size={22} />
-                <span style={{ fontSize: 12, color: p.clientColor }}>{p.client}</span>
+                <span className={cx(styles.pportListClient, colorClass(p.clientColor))}>{p.client}</span>
               </div>
-              <span style={{ fontSize: 11, color: C.muted }}>{p.phase}</span>
+              <span className={cx("text11", "colorMuted")}>{p.phase}</span>
               <div>
-                <div style={{ height: 5, background: C.border, borderRadius: 3, marginBottom: 3 }}>
-                  <div style={{ height: "100%", width: `${p.completion}%`, background: p.status === "off-track" ? C.red : C.lime, borderRadius: 3 }} />
+                <div className={styles.pportListTrack}>
+                  <progress className={cx("barFill", "uiProgress", p.status === "off-track" ? styles.pportFillRed : styles.pportFillAccent)} max={100} value={p.completion} />
                 </div>
-                <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted }}>{p.completion}%</span>
+                <span className={cx("fontMono", "text10", "colorMuted")}>{p.completion}%</span>
               </div>
-              <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: p.spentPct > 100 ? C.red : p.spentPct > 85 ? C.amber : C.lime }}>{p.spentPct}%</span>
-              <span style={{ fontSize: 11, fontFamily: "DM Mono, monospace", color: p.daysLeft <= 7 ? C.red : C.muted }}>{p.daysLeft}d</span>
-              <span style={{ fontSize: 10, color: statusConfig[p.status].color, background: statusConfig[p.status].bg, padding: "2px 6px", borderRadius: 4 }}>{statusConfig[p.status].label}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: p.health >= 80 ? C.lime : p.health >= 60 ? C.amber : C.red }}>{p.health}</span>
+              <span className={cx("fontMono", "text11", spentClass(p.spentPct))}>{p.spentPct}%</span>
+              <span className={cx("fontMono", "text11", p.daysLeft <= 7 ? "colorRed" : "colorMuted")}>{p.daysLeft}d</span>
+              <span className={cx(styles.pportListStatus, statusClass(statusConfig[p.status].color))}>{statusConfig[p.status].label}</span>
+              <span className={cx("fontMono", "fw700", healthClass(p.health))}>{p.health}</span>
             </div>
           ))}
         </div>
       )}
 
       {activeTab === "health map" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className={styles.pportHealthGrid}>
           {filtered.map((p) => {
             const sc = statusConfig[p.status];
             return (
-              <div key={p.id} style={{ background: C.surface, border: `2px solid ${sc.color}44`, borderRadius: 12, padding: 24 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <div key={p.id} className={cx(styles.pportHealthCard, healthCardClass(sc.color))}>
+                <div className={styles.pportHealthTop}>
+                  <div className={styles.pportEntityCell}>
                     <Avatar initials={p.clientAvatar} color={p.clientColor} />
                     <div>
-                      <div style={{ fontWeight: 700 }}>{p.name}</div>
-                      <div style={{ fontSize: 12, color: p.clientColor }}>{p.client}</div>
+                      <div className={styles.pportHealthName}>{p.name}</div>
+                      <div className={cx(styles.pportHealthClient, colorClass(p.clientColor))}>{p.client}</div>
                     </div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 36, fontWeight: 800, color: p.health >= 80 ? C.lime : p.health >= 60 ? C.amber : C.red, fontFamily: "DM Mono, monospace" }}>{p.health}</div>
-                    <div style={{ fontSize: 10, color: C.muted }}>Health Score</div>
+                  <div className={styles.pportHealthScoreWrap}>
+                    <div className={cx(styles.pportHealthScore, healthClass(p.health))}>{p.health}</div>
+                    <div className={styles.pportHealthLabel}>Health Score</div>
                   </div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                <div className={styles.pportMetricGrid}>
                   {[
-                    { label: "Progress", value: `${p.completion}%`, color: p.completion >= 70 ? C.lime : C.amber },
-                    { label: "Budget", value: `${p.spentPct}%`, color: p.spentPct > 100 ? C.red : p.spentPct > 85 ? C.amber : C.lime },
-                    { label: "Tasks Done", value: `${p.tasksDone}/${p.tasksTotal}`, color: C.blue },
-                    { label: "Blockers", value: p.blockers.length.toString(), color: p.blockers.length > 0 ? C.red : C.lime },
+                    { label: "Progress", value: `${p.completion}%`, color: p.completion >= 70 ? "var(--accent)" : "var(--amber)" },
+                    { label: "Budget", value: `${p.spentPct}%`, color: p.spentPct > 100 ? "var(--red)" : p.spentPct > 85 ? "var(--amber)" : "var(--accent)" },
+                    { label: "Tasks Done", value: `${p.tasksDone}/${p.tasksTotal}`, color: "var(--blue)" },
+                    { label: "Blockers", value: p.blockers.length.toString(), color: p.blockers.length > 0 ? "var(--red)" : "var(--accent)" }
                   ].map((m) => (
-                    <div key={m.label} style={{ padding: 10, background: C.bg, borderRadius: 8, textAlign: "center" }}>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 16, color: m.color }}>{m.value}</div>
-                      <div style={{ fontSize: 9, color: C.muted, marginTop: 2 }}>{m.label}</div>
+                    <div key={m.label} className={styles.pportMetricCard}>
+                      <div className={cx(styles.pportMetricValue, colorClass(m.color))}>{m.value}</div>
+                      <div className={styles.pportMetricLabel}>{m.label}</div>
                     </div>
                   ))}
                 </div>

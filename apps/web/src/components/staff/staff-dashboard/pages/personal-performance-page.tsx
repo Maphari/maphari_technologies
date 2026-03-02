@@ -11,18 +11,20 @@ type WeeklyPoint = {
   score: number;
 };
 
+type Tone = "accent" | "purple" | "blue" | "amber" | "orange" | "muted";
+
 type TaskTypePoint = {
   type: string;
   hours: number;
   tasks: number;
-  color: string;
+  tone: Tone;
 };
 
 type ClientPoint = {
   client: string;
   hours: number;
   tasks: number;
-  color: string;
+  tone: Tone;
 };
 
 type MilestonePoint = {
@@ -46,19 +48,19 @@ const weeklyData: WeeklyPoint[] = [
 ];
 
 const tasksByType: TaskTypePoint[] = [
-  { type: "Design", hours: 62, tasks: 28, color: "var(--accent)" },
-  { type: "Strategy", hours: 24, tasks: 9, color: "#a78bfa" },
-  { type: "Research", hours: 18, tasks: 7, color: "#60a5fa" },
-  { type: "Admin", hours: 21, tasks: 14, color: "#a0a0b0" },
-  { type: "Production", hours: 11, tasks: 6, color: "#f5c518" }
+  { type: "Design", hours: 62, tasks: 28, tone: "accent" },
+  { type: "Strategy", hours: 24, tasks: 9, tone: "purple" },
+  { type: "Research", hours: 18, tasks: 7, tone: "blue" },
+  { type: "Admin", hours: 21, tasks: 14, tone: "muted" },
+  { type: "Production", hours: 11, tasks: 6, tone: "amber" }
 ];
 
 const clientBreakdown: ClientPoint[] = [
-  { client: "Volta Studios", hours: 49.5, tasks: 18, color: "var(--accent)" },
-  { client: "Kestrel Capital", hours: 38, tasks: 14, color: "#a78bfa" },
-  { client: "Mira Health", hours: 31, tasks: 12, color: "#60a5fa" },
-  { client: "Dune Collective", hours: 27, tasks: 10, color: "#f5c518" },
-  { client: "Okafor & Sons", hours: 13.5, tasks: 6, color: "#a0a0b0" }
+  { client: "Volta Studios", hours: 49.5, tasks: 18, tone: "accent" },
+  { client: "Kestrel Capital", hours: 38, tasks: 14, tone: "purple" },
+  { client: "Mira Health", hours: 31, tasks: 12, tone: "blue" },
+  { client: "Dune Collective", hours: 27, tasks: 10, tone: "amber" },
+  { client: "Okafor & Sons", hours: 13.5, tasks: 6, tone: "muted" }
 ];
 
 const milestoneHistory: MilestonePoint[] = [
@@ -71,18 +73,51 @@ const milestoneHistory: MilestonePoint[] = [
 
 const targets = { hours: 40, tasks: 16, responseTime: 2.0 };
 
+function toneClass(tone: Tone) {
+  if (tone === "accent") return "ppToneAccent";
+  if (tone === "purple") return "ppTonePurple";
+  if (tone === "blue") return "ppToneBlue";
+  if (tone === "amber") return "ppToneAmber";
+  if (tone === "orange") return "ppToneOrange";
+  return "ppToneMuted";
+}
+
+function meterToneClass(tone: Tone) {
+  if (tone === "accent") return "ppMeterAccent";
+  if (tone === "purple") return "ppMeterPurple";
+  if (tone === "blue") return "ppMeterBlue";
+  if (tone === "amber") return "ppMeterAmber";
+  if (tone === "orange") return "ppMeterOrange";
+  return "ppMeterMuted";
+}
+
+function toneStroke(tone: Tone) {
+  if (tone === "accent") return "var(--accent)";
+  if (tone === "purple") return "var(--purple)";
+  if (tone === "blue") return "var(--blue)";
+  if (tone === "amber") return "var(--amber)";
+  if (tone === "orange") return "var(--amber)";
+  return "var(--muted)";
+}
+
+function milestoneStatusClass(status: MilestonePoint["status"]) {
+  if (status === "approved") return "ppStatusApproved";
+  if (status === "revision") return "ppStatusRevision";
+  return "ppStatusPending";
+}
+
 function MiniLineChart({
   data,
   valueKey,
   min,
   max,
-  stroke
+  tone
 }: {
   data: WeeklyPoint[];
   valueKey: keyof WeeklyPoint;
   min: number;
   max: number;
-  stroke: string;
+  tone: Tone;
 }) {
   const width = 720;
   const height = 160;
@@ -96,24 +131,24 @@ function MiniLineChart({
       const value = Number(row[valueKey]);
       const x = padX + (index / Math.max(1, data.length - 1)) * drawW;
       const y = padY + (1 - (value - min) / Math.max(1, max - min)) * drawH;
-      return { x, y, label: row.week, value };
-    });
+      return { x, y, label: row.week };
+    })
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
 
   const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const stroke = toneStroke(tone);
 
   return (
     <div>
-      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="160" style={{ display: "block" }}>
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="160" className={cx("ppChartSvg")}>
         <polyline points={polyline} fill="none" stroke={stroke} strokeWidth="2" />
         {points.map((point) => (
           <circle key={point.label} cx={point.x} cy={point.y} r="3" fill={stroke} />
         ))}
       </svg>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))`, gap: 6, marginTop: 8 }}>
+      <div className={cx("ppChartLabels")}>
         {data.map((point) => (
-          <div key={point.week} style={{ textAlign: "center", fontSize: 10, color: "var(--muted2)" }}>
-            {point.week}
-          </div>
+          <div key={point.week} className={cx("ppChartLabel")}>{point.week}</div>
         ))}
       </div>
     </div>
@@ -126,7 +161,7 @@ function StatCard({
   unit,
   target,
   targetLabel,
-  color,
+  tone,
   trend
 }: {
   label: string;
@@ -134,27 +169,27 @@ function StatCard({
   unit: string;
   target?: number;
   targetLabel?: string;
-  color?: string;
+  tone: Tone;
   trend?: number;
 }) {
   const hitTarget = target ? (label.toLowerCase().includes("response") ? value <= target : value >= target) : true;
   return (
-    <div style={{ padding: "16px 18px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-      <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>{label}</div>
-      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: color ?? "#fff", marginBottom: 4 }}>
+    <div className={cx("ppStatCard")}>
+      <div className={cx("ppStatLabel")}>{label}</div>
+      <div className={cx("ppStatValue", toneClass(tone))}>
         {value}
-        <span style={{ fontSize: 13, color: "var(--muted2)", fontFamily: "'DM Mono', monospace", fontWeight: 400 }}>{unit}</span>
+        <span className={cx("ppStatUnit")}>{unit}</span>
       </div>
       {target ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: hitTarget ? "var(--accent)" : "#f5c518" }} />
-          <span style={{ fontSize: 10, color: hitTarget ? "var(--accent)" : "#f5c518" }}>
+        <div className={cx("ppTargetRow")}>
+          <div className={cx("ppTargetDot", hitTarget ? "ppTargetHit" : "ppTargetMiss")} />
+          <span className={cx("ppTargetText", hitTarget ? "ppTargetHit" : "ppTargetMiss")}>
             {hitTarget ? "On target" : "Below target"} ({targetLabel ?? `target: ${target}${unit}`})
           </span>
         </div>
       ) : null}
       {typeof trend === "number" ? (
-        <div style={{ fontSize: 10, color: trend > 0 ? "var(--accent)" : "#ff4444", marginTop: 4 }}>
+        <div className={cx("ppTrend", trend > 0 ? "ppTrendUp" : "ppTrendDown")}>
           {trend > 0 ? "↑" : "↓"} {Math.abs(trend)} vs last month
         </div>
       ) : null}
@@ -178,76 +213,46 @@ export function PersonalPerformancePage({ isActive }: { isActive: boolean }) {
   const totalTypeHours = tasksByType.reduce((sum, type) => sum + type.hours, 0);
   const maxHours = Math.max(...chartData.map((item) => item.hours), 1);
   const maxTasks = Math.max(...chartData.map((item) => item.tasks), 1);
+  const lateCount = milestoneHistory.filter((item) => !item.onTime).length;
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-personal-performance">
-      <style>{`
-        .perf-tab-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .perf-period-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .perf-period-btn:hover { background: rgba(255,255,255,0.06) !important; }
-        .perf-milestone-row { transition: background 0.1s ease; }
-        .perf-milestone-row:hover { background: rgba(255,255,255,0.02) !important; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0, marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-personal-performance">
+      <div className={cx("pageHeaderBar", "ppHeaderBar")}> 
+        <div className={cx("flexBetween", "mb20", "ppHeaderTop")}> 
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-              Staff Dashboard / Personal Growth
-            </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              My Performance
-            </h1>
+            <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Personal Growth</div>
+            <h1 className={cx("pageTitleText")}>My Performance</h1>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase" }}>4-week score</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 36, fontWeight: 800, color: "var(--accent)", lineHeight: 1 }}>
-              {avgScore}
-              <span style={{ fontSize: 16, color: "var(--muted2)", fontFamily: "'DM Mono', monospace", fontWeight: 400 }}>/100</span>
-            </div>
+          <div className={cx("ppScoreWrap")}>
+            <div className={cx("statLabelNew")}>4-week score</div>
+            <div className={cx("ppScoreValue")}>{avgScore}<span className={cx("ppScoreUnit")}>/100</span></div>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 0 }}>
-          {[
-            { key: "overview", label: "Overview" },
-            { key: "time", label: "Time & Tasks" },
-            { key: "clients", label: "By Client" },
-            { key: "milestones", label: "Milestones" }
-          ].map((item) => (
-            <button
-              key={item.key}
-              className="perf-tab-btn"
-              onClick={() => setTab(item.key as "overview" | "time" | "clients" | "milestones")}
-              style={{
-                padding: "10px 20px",
-                fontSize: 11,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                background: "transparent",
-                color: tab === item.key ? "var(--accent)" : "var(--muted2)",
-                borderBottom: `2px solid ${tab === item.key ? "var(--accent)" : "transparent"}`,
-                marginBottom: -1
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
+        <div className={cx("flexBetween", "gap10")}> 
+          <div className={cx("flexRow")}>
+            {[
+              { key: "overview", label: "Overview" },
+              { key: "time", label: "Time & Tasks" },
+              { key: "clients", label: "By Client" },
+              { key: "milestones", label: "Milestones" }
+            ].map((item) => (
+              <button type="button"
+                key={item.key}
+                className={cx("ppTabBtn", "ppTabPill", tab === item.key ? "ppTabPillActive" : "ppTabPillIdle")}
+                onClick={() => setTab(item.key as "overview" | "time" | "clients" | "milestones")}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
 
-          <div style={{ marginLeft: "auto", display: "flex", gap: 4, alignItems: "center", paddingBottom: 10 }}>
+          <div className={cx("ppPeriodWrap")}>
             {(["4w", "8w"] as const).map((item) => (
-              <button
+              <button type="button"
                 key={item}
-                className="perf-period-btn"
+                className={cx("ppPeriodBtn", "ppPeriodPill", period === item ? "ppPeriodPillActive" : "ppPeriodPillIdle")}
                 onClick={() => setPeriod(item)}
-                style={{
-                  padding: "5px 12px",
-                  fontSize: 10,
-                  letterSpacing: "0.08em",
-                  borderRadius: 2,
-                  background: period === item ? "rgba(255,255,255,0.08)" : "transparent",
-                  color: period === item ? "var(--text)" : "var(--muted2)"
-                }}
               >
                 {item}
               </button>
@@ -256,59 +261,49 @@ export function PersonalPerformancePage({ isActive }: { isActive: boolean }) {
         </div>
       </div>
 
-      <div style={{ paddingBottom: 8 }}>
+      <div className={cx("ppBody")}> 
         {tab === "overview" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}>
-              <StatCard label="Avg hours / week" value={avgHours} unit="h" target={targets.hours} color="var(--accent)" trend={1.5} />
-              <StatCard label="Avg tasks / week" value={avgTasks} unit="" target={targets.tasks} color="#a78bfa" trend={2} />
-              <StatCard
-                label="Avg response time"
-                value={avgResponse}
-                unit="h"
-                target={targets.responseTime}
-                targetLabel={`target: <${targets.responseTime}h`}
-                color="#60a5fa"
-                trend={-0.3}
-              />
-              <StatCard label="On-time delivery" value={onTimeRate} unit="%" color={onTimeRate >= 90 ? "var(--accent)" : "#f5c518"} trend={5} />
+          <div className={cx("ppStack")}>
+            <div className={cx("ppStatGrid")}>
+              <StatCard label="Avg hours / week" value={avgHours} unit="h" target={targets.hours} tone="accent" trend={1.5} />
+              <StatCard label="Avg tasks / week" value={avgTasks} unit="" target={targets.tasks} tone="purple" trend={2} />
+              <StatCard label="Avg response time" value={avgResponse} unit="h" target={targets.responseTime} targetLabel={`target: <${targets.responseTime}h`} tone="blue" trend={-0.3} />
+              <StatCard label="On-time delivery" value={onTimeRate} unit="%" tone={onTimeRate >= 90 ? "accent" : "amber"} trend={5} />
             </div>
 
-            <div style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Weekly Performance Score</div>
-              <MiniLineChart data={chartData} valueKey="score" min={60} max={100} stroke="var(--accent)" />
+            <div className={cx("ppPanel")}> 
+              <div className={cx("sectionLabel", "mb16")}>Weekly Performance Score</div>
+              <MiniLineChart data={chartData} valueKey="score" min={60} max={100} tone="accent" />
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-              <div style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Hours by Task Type (4w)</div>
+            <div className={cx("ppGrid2")}> 
+              <div className={cx("ppPanel")}>
+                <div className={cx("sectionLabel", "mb16")}>Hours by Task Type (4w)</div>
                 {tasksByType.map((type) => (
-                  <div key={type.type} style={{ marginBottom: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: type.color }} />
-                        <span style={{ fontSize: 11, color: "#a0a0b0" }}>{type.type}</span>
+                  <div key={type.type} className={cx("ppTypeRow")}> 
+                    <div className={cx("ppTypeTop")}>
+                      <div className={cx("flexRow", "gap8")}>
+                        <div className={cx("ppMiniDot", toneClass(type.tone))} />
+                        <span className={cx("text11", "colorMuted")}>{type.type}</span>
                       </div>
-                      <span style={{ fontSize: 11, color: type.color }}>{type.hours}h</span>
+                      <span className={cx("text11", toneClass(type.tone))}>{type.hours}h</span>
                     </div>
-                    <div style={{ height: 3, background: "rgba(255,255,255,0.05)", borderRadius: 2 }}>
-                      <div style={{ height: "100%", width: `${(type.hours / totalTypeHours) * 100}%`, background: type.color, borderRadius: 2, opacity: 0.7 }} />
-                    </div>
+                    <progress className={cx("progressMeter", meterToneClass(type.tone), "ppSlimProgress")} max={totalTypeHours} value={type.hours} />
                   </div>
                 ))}
               </div>
 
-              <div style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Highlights & Flags</div>
+              <div className={cx("ppPanel")}>
+                <div className={cx("sectionLabel", "mb16")}>Highlights & Flags</div>
                 {[
-                  { icon: "↑", text: "Best response time in 8 weeks (1.6h last week)", color: "var(--accent)" },
-                  { icon: "✓", text: "4 of 5 milestones delivered on time this period", color: "var(--accent)" },
-                  { icon: "↓", text: "Week 3 hours below target (36h vs 40h target)", color: "#f5c518" },
-                  { icon: "⚑", text: "Admin time up 18% - check for inefficiencies", color: "#ff8c00" }
-                ].map((item) => (
-                  <div key={item.text} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                    <span style={{ color: item.color, fontSize: 12, flexShrink: 0, marginTop: 1 }}>{item.icon}</span>
-                    <span style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.5 }}>{item.text}</span>
+                  { icon: "↑", text: "Best response time in 8 weeks (1.6h last week)", tone: "accent" as Tone },
+                  { icon: "✓", text: "4 of 5 milestones delivered on time this period", tone: "accent" as Tone },
+                  { icon: "↓", text: "Week 3 hours below target (36h vs 40h target)", tone: "amber" as Tone },
+                  { icon: "⚑", text: "Admin time up 18% - check for inefficiencies", tone: "orange" as Tone }
+                ].map((item, index, arr) => (
+                  <div key={item.text} className={cx("ppHighlightRow", index === arr.length - 1 && "ppHighlightRowLast")}>
+                    <span className={cx("ppHighlightIcon", toneClass(item.tone))}>{item.icon}</span>
+                    <span className={cx("text12", "colorMuted", "lh15")}>{item.text}</span>
                   </div>
                 ))}
               </div>
@@ -317,80 +312,68 @@ export function PersonalPerformancePage({ isActive }: { isActive: boolean }) {
         ) : null}
 
         {tab === "time" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-              <div style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Hours per Week</div>
-                <div style={{ display: "grid", gridTemplateColumns: `repeat(${chartData.length}, minmax(0, 1fr))`, gap: 8, alignItems: "end", minHeight: 180 }}>
+          <div className={cx("ppStack")}> 
+            <div className={cx("ppGrid2")}>
+              <div className={cx("ppPanel")}>
+                <div className={cx("sectionLabel", "mb16")}>Hours per Week</div>
+                <div className={cx("ppWeekList")}>
                   {chartData.map((item) => (
-                    <div key={item.week} style={{ textAlign: "center" }}>
-                      <div
-                        style={{
-                          height: `${(item.hours / maxHours) * 130}px`,
-                          background: item.hours >= targets.hours ? "var(--accent)" : "#f5c518",
-                          opacity: 0.8,
-                          borderRadius: "2px 2px 0 0"
-                        }}
-                      />
-                      <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 6 }}>{item.week}</div>
-                      <div style={{ fontSize: 10, color: "#a0a0b0" }}>{item.hours}h</div>
+                    <div key={item.week} className={cx("ppWeekRow")}>
+                      <div className={cx("ppWeekHead")}>
+                        <span className={cx("text10", "colorMuted2")}>{item.week}</span>
+                        <span className={cx("text10", item.hours >= targets.hours ? "colorAccent" : "colorAmber")}>{item.hours}h</span>
+                      </div>
+                      <progress className={cx("progressMeter", item.hours >= targets.hours ? "ppMeterAccent" : "ppMeterAmber", "ppWeekProgress")} max={maxHours} value={item.hours} />
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Tasks Completed per Week</div>
-                <div style={{ display: "grid", gridTemplateColumns: `repeat(${chartData.length}, minmax(0, 1fr))`, gap: 8, alignItems: "end", minHeight: 180 }}>
+              <div className={cx("ppPanel")}>
+                <div className={cx("sectionLabel", "mb16")}>Tasks Completed per Week</div>
+                <div className={cx("ppWeekList")}>
                   {chartData.map((item) => (
-                    <div key={item.week} style={{ textAlign: "center" }}>
-                      <div
-                        style={{
-                          height: `${(item.tasks / maxTasks) * 130}px`,
-                          background: item.tasks >= targets.tasks ? "#a78bfa" : "#f5c518",
-                          opacity: 0.8,
-                          borderRadius: "2px 2px 0 0"
-                        }}
-                      />
-                      <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 6 }}>{item.week}</div>
-                      <div style={{ fontSize: 10, color: "#a0a0b0" }}>{item.tasks}</div>
+                    <div key={item.week} className={cx("ppWeekRow")}>
+                      <div className={cx("ppWeekHead")}>
+                        <span className={cx("text10", "colorMuted2")}>{item.week}</span>
+                        <span className={cx("text10", item.tasks >= targets.tasks ? "ppTonePurple" : "colorAmber")}>{item.tasks}</span>
+                      </div>
+                      <progress className={cx("progressMeter", item.tasks >= targets.tasks ? "ppMeterPurple" : "ppMeterAmber", "ppWeekProgress")} max={maxTasks} value={item.tasks} />
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Average Response Time (hours)</div>
-                <span style={{ fontSize: 11, color: "var(--muted2)" }}>Target: &lt;{targets.responseTime}h</span>
+            <div className={cx("ppPanel")}>
+              <div className={cx("ppPanelHead")}> 
+                <div className={cx("sectionLabel")}>Average Response Time (hours)</div>
+                <span className={cx("text11", "colorMuted2")}>Target: &lt;{targets.responseTime}h</span>
               </div>
-              <MiniLineChart data={chartData} valueKey="responseTime" min={0} max={4} stroke="#60a5fa" />
+              <MiniLineChart data={chartData} valueKey="responseTime" min={0} max={4} tone="blue" />
             </div>
           </div>
         ) : null}
 
         {tab === "clients" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+          <div className={cx("ppGrid2")}>
             <div>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Hours by Client (4 weeks)</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div className={cx("sectionLabel", "mb16")}>Hours by Client (4 weeks)</div>
+              <div className={cx("flexCol", "gap10")}>
                 {clientBreakdown.map((client) => (
-                  <div key={client.client} style={{ padding: "14px 16px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: client.color }} />
-                        <span style={{ fontSize: 12, color: "var(--text)" }}>{client.client}</span>
+                  <div key={client.client} className={cx("ppClientCard")}>
+                    <div className={cx("ppClientHead")}>
+                      <div className={cx("flexRow", "gap8")}>
+                        <div className={cx("ppMiniDot", toneClass(client.tone))} />
+                        <span className={cx("text12", "colorText")}>{client.client}</span>
                       </div>
-                      <div style={{ display: "flex", gap: 14 }}>
-                        <span style={{ fontSize: 11, color: client.color }}>{client.hours}h</span>
-                        <span style={{ fontSize: 11, color: "var(--muted2)" }}>{client.tasks} tasks</span>
+                      <div className={cx("flexRow", "gap14")}>
+                        <span className={cx("text11", toneClass(client.tone))}>{client.hours}h</span>
+                        <span className={cx("text11", "colorMuted2")}>{client.tasks} tasks</span>
                       </div>
                     </div>
-                    <div style={{ height: 4, background: "rgba(255,255,255,0.05)", borderRadius: 2 }}>
-                      <div style={{ height: "100%", width: `${(client.hours / totalHours) * 100}%`, background: client.color, borderRadius: 2, opacity: 0.7 }} />
-                    </div>
-                    <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 5 }}>
+                    <progress className={cx("progressMeter", meterToneClass(client.tone), "ppClientProgress")} max={totalHours} value={client.hours} />
+                    <div className={cx("text10", "colorMuted2", "mt6")}>
                       {Math.round((client.hours / totalHours) * 100)}% of total · avg {Math.round((client.hours / client.tasks) * 10) / 10}h/task
                     </div>
                   </div>
@@ -399,66 +382,52 @@ export function PersonalPerformancePage({ isActive }: { isActive: boolean }) {
             </div>
 
             <div>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Distribution</div>
-              <div style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
+              <div className={cx("sectionLabel", "mb16")}>Distribution</div>
+              <div className={cx("ppPanel")}>
                 {clientBreakdown.map((client) => (
-                  <div key={client.client} style={{ marginBottom: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, color: "#a0a0b0" }}>{client.client}</span>
-                      <span style={{ fontSize: 10, color: client.color }}>{client.hours}h</span>
+                  <div key={client.client} className={cx("ppDistRow")}>
+                    <div className={cx("ppWeekHead")}>
+                      <span className={cx("text10", "colorMuted")}>{client.client}</span>
+                      <span className={cx("text10", toneClass(client.tone))}>{client.hours}h</span>
                     </div>
-                    <div style={{ height: 6, background: "rgba(255,255,255,0.05)", borderRadius: 2 }}>
-                      <div style={{ height: "100%", width: `${(client.hours / totalHours) * 100}%`, background: client.color, borderRadius: 2, opacity: 0.75 }} />
-                    </div>
+                    <progress className={cx("progressMeter", meterToneClass(client.tone), "ppDistProgress")} max={totalHours} value={client.hours} />
                   </div>
                 ))}
-                <div style={{ fontSize: 11, color: "var(--muted2)", textAlign: "center", marginTop: 8 }}>
-                  {totalHours}h total across {clientBreakdown.length} clients
-                </div>
+                <div className={cx("text11", "colorMuted2", "textCenter", "mt10")}>{totalHours}h total across {clientBreakdown.length} clients</div>
               </div>
             </div>
           </div>
         ) : null}
 
         {tab === "milestones" ? (
-          <div style={{ maxWidth: 740 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 24 }}>
-              <div style={{ padding: "14px 16px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>On-time rate</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: "var(--accent)" }}>{onTimeRate}%</div>
+          <div className={cx("ppMilestoneWrap")}>
+            <div className={cx("ppMilestoneStatGrid")}>
+              <div className={cx("ppMilestoneStatCard")}>
+                <div className={cx("ppMilestoneStatLabel")}>On-time rate</div>
+                <div className={cx("ppMilestoneStatValue", "ppToneAccent")}>{onTimeRate}%</div>
               </div>
-              <div style={{ padding: "14px 16px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Delivered</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: "#a78bfa" }}>{milestoneHistory.length}</div>
+              <div className={cx("ppMilestoneStatCard")}>
+                <div className={cx("ppMilestoneStatLabel")}>Delivered</div>
+                <div className={cx("ppMilestoneStatValue", "ppTonePurple")}>{milestoneHistory.length}</div>
               </div>
-              <div style={{ padding: "14px 16px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Late</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: milestoneHistory.some((item) => !item.onTime) ? "#ff4444" : "var(--accent)" }}>
-                  {milestoneHistory.filter((item) => !item.onTime).length}
-                </div>
+              <div className={cx("ppMilestoneStatCard")}>
+                <div className={cx("ppMilestoneStatLabel")}>Late</div>
+                <div className={cx("ppMilestoneStatValue", lateCount > 0 ? "colorRed" : "ppToneAccent")}>{lateCount}</div>
               </div>
             </div>
 
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 14 }}>Milestone History</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-              {milestoneHistory.map((milestone) => (
-                <div key={milestone.name} className="perf-milestone-row" style={{ display: "flex", alignItems: "center", gap: 16, padding: "13px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <div
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      flexShrink: 0,
-                      background: milestone.status === "approved" ? "var(--accent)" : milestone.status === "revision" ? "#a78bfa" : "#f5c518"
-                    }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, color: "var(--text)" }}>{milestone.name}</div>
-                    <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 2 }}>{milestone.client}</div>
+            <div className={cx("sectionLabel", "mb14")}>Milestone History</div>
+            <div className={cx("flexCol")}>
+              {milestoneHistory.map((milestone, index) => (
+                <div key={milestone.name} className={cx("perfMilestoneRow", "ppMilestoneRow", index === milestoneHistory.length - 1 && "ppMilestoneRowLast")}>
+                  <div className={cx("ppMilestoneDot", milestoneStatusClass(milestone.status))} />
+                  <div className={cx("flex1", "minW0")}>
+                    <div className={cx("text12", "colorText")}>{milestone.name}</div>
+                    <div className={cx("text10", "colorMuted2", "mt2")}>{milestone.client}</div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: milestone.onTime ? "var(--accent)" : "#ff4444" }}>{milestone.onTime ? "✓ On time" : "✗ Late"}</div>
-                    <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 2 }}>Delivered {milestone.deliveredOn}</div>
+                  <div className={cx("textRight", "noShrink")}>
+                    <div className={cx("text11", milestone.onTime ? "colorAccent" : "colorRed")}>{milestone.onTime ? "✓ On time" : "✗ Late"}</div>
+                    <div className={cx("text10", "colorMuted2", "mt2")}>Delivered {milestone.deliveredOn}</div>
                   </div>
                 </div>
               ))}

@@ -12,9 +12,10 @@
   --size-user-avatar: 20px;
   --size-logo-mark: 30px;
   --font-display: var(--font-syne), sans-serif;
-  --font-mono: var(--font-dm-mono), monospace;
-  --font-serif: var(--font-instrument), serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+  --font-serif: var(--font-instrument-serif), serif;
   --text-topbar: 0.95rem;
+  --text-aside-link: 0.82rem;
   --text-mono-xs: 0.62rem;
   --text-input: 0.72rem;
   --text-button: 0.72rem;
@@ -23,34 +24,51 @@
   --surface-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
 }
 
-.dashboardThemeAdmin {
+/* Shared admin-style blend ratios (drop-in). Pair with a dashboardTheme* hue class. */
+.dashboardBlendAdmin {
   --palette-bg: #050508;
   --palette-surface: #0d0d14;
   --palette-surface-2: #13131e;
   --palette-surface-3: #171726;
   --palette-border: rgba(255, 255, 255, 0.07);
   --palette-border-strong: rgba(255, 255, 255, 0.12);
+  --palette-text: #f0ede8;
+  --palette-muted: rgba(240, 237, 232, 0.45);
+  --palette-muted-2: rgba(240, 237, 232, 0.25);
+  --palette-accent-dim: color-mix(in oklab, var(--palette-accent) 16%, transparent);
+  --palette-accent-glow: color-mix(in oklab, var(--palette-accent) 8%, transparent);
+}
+
+/* Client-specific blend preset: same dark foundation, lime-tuned overlays. */
+.dashboardBlendClient {
+  --palette-bg: #050508;
+  --palette-surface: #0d0d14;
+  --palette-surface-2: #13131e;
+  --palette-surface-3: #171726;
+  --palette-border: rgba(255, 255, 255, 0.07);
+  --palette-border-strong: rgba(255, 255, 255, 0.12);
+  --palette-text: #f0ede8;
+  --palette-muted: rgba(240, 237, 232, 0.55);
+  --palette-muted-2: rgba(240, 237, 232, 0.35);
+  --palette-accent: #c8f135;
+  --palette-accent-2: #d6f55a;
+  --palette-accent-dim: rgba(200, 241, 53, 0.12);
+  --palette-accent-glow: rgba(200, 241, 53, 0.06);
+}
+
+.dashboardThemeAdmin {
   --palette-accent: #a78bfa;
   --palette-accent-2: #c1aefd;
   --palette-accent-dim: rgba(167, 139, 250, 0.16);
   --palette-accent-glow: rgba(167, 139, 250, 0.08);
-  --palette-text: #f0ede8;
-  --palette-muted: rgba(240, 237, 232, 0.45);
-  --palette-muted-2: rgba(240, 237, 232, 0.25);
+}
+
+.dashboardThemeClient {
+  --palette-accent: #c8f135;
+  --palette-accent-2: #d6f55a;
 }
 
 .dashboardThemeStaff {
-  --palette-bg: #050508;
-  --palette-surface: #0d0d14;
-  --palette-surface-2: #13131e;
-  --palette-surface-3: #171726;
-  --palette-border: rgba(255, 255, 255, 0.07);
-  --palette-border-strong: rgba(255, 255, 255, 0.12);
   --palette-accent: #24b8a8;
   --palette-accent-2: #64d9cc;
-  --palette-accent-dim: color-mix(in oklab, var(--palette-accent) 16%, transparent);
-  --palette-accent-glow: color-mix(in oklab, var(--palette-accent) 8%, transparent);
-  --palette-text: #f0ede8;
-  --palette-muted: rgba(240, 237, 232, 0.45);
-  --palette-muted-2: rgba(240, 237, 232, 0.25);
 }

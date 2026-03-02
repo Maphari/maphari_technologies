@@ -4,6 +4,27 @@ import { cx, styles } from "../style";
 import type { KanbanColumn } from "../types";
 import { capitalize } from "../utils";
 
+function columnBorderClass(border?: string) {
+  if (border === "var(--accent)") return "kbColBorderAccent";
+  if (border === "var(--amber)") return "kbColBorderAmber";
+  if (border === "var(--green)") return "kbColBorderGreen";
+  return "";
+}
+
+function columnToneClass(tone?: string) {
+  if (tone === "var(--accent)") return "colorAccent";
+  if (tone === "var(--amber)") return "colorAmber";
+  if (tone === "var(--green)") return "colorGreen";
+  return "";
+}
+
+function countToneClass(tone?: string) {
+  if (tone === "var(--accent)") return "kbCountAccent";
+  if (tone === "var(--amber)") return "kbCountAmber";
+  if (tone === "var(--green)") return "kbCountGreen";
+  return "kbCountDefault";
+}
+
 type KanbanPageProps = {
   isActive: boolean;
   taskCount: number;
@@ -96,34 +117,35 @@ export function KanbanPage({
 }: KanbanPageProps) {
   const throughputDelta = flowMetrics.throughput7d - flowMetrics.throughputPrev7d;
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-kanban">
+    <section className={cx("page", "pageBody", "kanbanPage", isActive && "pageActive")} id="page-kanban">
       <div className={styles.srOnly} aria-live="polite">{announcement}</div>
-      <div className={styles.pageHeader}>
+      <div className={cx(styles.pageHeader, "kbHeader")}>
         <div>
-          <div className={styles.pageEyebrow}>Active tasks · {taskCount}</div>
+          <div className={styles.pageEyebrow}>STAFF DASHBOARD / DELIVERY</div>
           <div className={styles.pageTitle}>Kanban Board</div>
-          <div className={styles.pageSub}>Move tasks between statuses to keep delivery flow accurate.</div>
+          <div className={styles.pageSub}>
+            Move tasks between statuses to keep delivery flow accurate. {taskCount} active tasks · {openTasksCount} assigned.
+          </div>
         </div>
-        <div className={styles.pageActions}>
-          <span className={cx("badge", "badgeBlue")} style={{ fontSize: "0.62rem", padding: "4px 10px" }}>{openTasksCount} tasks assigned</span>
+        <div className={cx(styles.pageActions, "kbHeaderActions")}>
+          <span className={cx("badge", "badgeSm", "badgeBlue")}>{openTasksCount} tasks assigned</span>
           <span
-            className={cx("badge", inProgressCount >= inProgressLimit ? "badgeRed" : "badgeAmber")}
-            style={{ fontSize: "0.62rem", padding: "4px 10px" }}
+            className={cx("badge", "badgeSm", inProgressCount >= inProgressLimit ? "badgeRed" : "badgeAmber")}
           >
             WIP {inProgressCount}/{inProgressLimit}
           </span>
           {blockedTasksCount > 0 ? (
-            <button className={cx("button", "buttonGhost")} type="button" onClick={onOpenBlockedQueue}>
+            <button className={cx("btnSm", "btnGhost")} type="button" onClick={onOpenBlockedQueue}>
               {blockedTasksCount} Blocked
             </button>
           ) : null}
           {overdueTasksCount > 0 ? (
-            <button className={cx("button", "buttonGhost")} type="button" onClick={onOpenOverdueQueue}>
+            <button className={cx("btnSm", "btnGhost")} type="button" onClick={onOpenOverdueQueue}>
               {overdueTasksCount} Overdue
             </button>
           ) : null}
-          <button className={cx("button", "buttonGhost")} type="button" onClick={onOpenTaskFilters}>Task Filters</button>
-          <button className={cx("button", "buttonBlue")} type="button" onClick={onOpenTaskComposer}>+ Task</button>
+          <button className={cx("btnSm", "btnGhost")} type="button" onClick={onOpenTaskFilters}>Task Filters</button>
+          <button className={cx("btnSm", "btnAccent")} type="button" onClick={onOpenTaskComposer}>+ Task</button>
         </div>
       </div>
 
@@ -146,22 +168,19 @@ export function KanbanPage({
                       1,
                       ...flowMetrics.points.map((entry) => Math.max(entry.created, entry.completed, entry.blocked))
                     );
-                    const completedPct = (point.completed / max) * 100;
-                    const blockedPct = (point.blocked / max) * 100;
-                    const createdPct = (point.created / max) * 100;
                     return (
                       <div key={point.label} className={styles.weekColumn}>
                         <div className={styles.flowStack}>
-                          <div className={styles.flowSegCreated} style={{ height: `${createdPct}%` }} />
-                          <div className={styles.flowSegCompleted} style={{ height: `${completedPct}%` }} />
-                          <div className={styles.flowSegBlocked} style={{ height: `${blockedPct}%` }} />
+                          <progress className={cx("kbFlowMeter", "kbFlowCreated")} max={max} value={point.created} />
+                          <progress className={cx("kbFlowMeter", "kbFlowCompleted")} max={max} value={point.completed} />
+                          <progress className={cx("kbFlowMeter", "kbFlowBlocked")} max={max} value={point.blocked} />
                         </div>
                         <div className={styles.weekLabel}>{point.label}</div>
                       </div>
                     );
                   })}
                 </div>
-                <div className={styles.timeRow} style={{ marginTop: 10 }}>
+                <div className={cx("timeRow", "mt10")}>
                   <span>Throughput 7d</span>
                   <span className={styles.timeRowValue}>{flowMetrics.throughput7d}</span>
                 </div>
@@ -205,39 +224,29 @@ export function KanbanPage({
         </div>
       </div>
 
-      <div className={styles.kanbanControls}>
-        <div className={styles.filterTabs}>
-          {[
-            { id: "all", label: "All" },
-            { id: "my_work", label: "My Work" },
-            { id: "urgent", label: "Urgent" },
-            { id: "client_waiting", label: "Client Waiting" },
-            { id: "blocked", label: "Blocked" }
-          ].map((option) => (
-            <button
-              key={option.id}
-              className={cx("filterTab", option.id === kanbanViewMode && "filterTabActive")}
-              type="button"
-              onClick={() => onKanbanViewModeChange(option.id as "all" | "my_work" | "urgent" | "client_waiting" | "blocked")}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <label className={styles.fieldLabel} htmlFor="kanban-swimlane" style={{ marginBottom: 0 }}>Swimlane</label>
-          <select
-            id="kanban-swimlane"
-            className={cx("fieldInput", "fieldSelect")}
-            style={{ width: 170, paddingTop: 7, paddingBottom: 7 }}
-            value={kanbanSwimlane}
-            onChange={(event) => onKanbanSwimlaneChange(event.target.value as "status" | "project" | "client")}
-          >
-            <option value="status">Status</option>
-            <option value="project">Project</option>
-            <option value="client">Client</option>
-          </select>
-        </div>
+      <div className={cx("filterRow", "kbControlsCard")}>
+        <select
+          title="Select Kanban filter"
+          value={kanbanViewMode}
+          onChange={(event) => onKanbanViewModeChange(event.target.value as "all" | "my_work" | "urgent" | "client_waiting" | "blocked")}
+          className={cx("filterSelect")}
+        >
+          <option value="all">All</option>
+          <option value="my_work">My Work</option>
+          <option value="urgent">Urgent</option>
+          <option value="client_waiting">Client Waiting</option>
+          <option value="blocked">Blocked</option>
+        </select>
+        <select
+          title="Select swimlane"
+          className={cx("filterSelect", "kbSwimlaneSelect")}
+          value={kanbanSwimlane}
+          onChange={(event) => onKanbanSwimlaneChange(event.target.value as "status" | "project" | "client")}
+        >
+          <option value="status">Status</option>
+          <option value="project">Project</option>
+          <option value="client">Client</option>
+        </select>
       </div>
 
       {blockDraft ? (
@@ -245,7 +254,7 @@ export function KanbanPage({
           <div className={styles.kanbanInlinePanelRow}>
             <strong>Block task:</strong> <span>{blockDraft.title}</span>
           </div>
-          <div className={styles.formGrid} style={{ gridTemplateColumns: "2fr 1fr 1fr", gap: 8 }}>
+          <div className={styles.formGrid2x1}>
             <input
               className={styles.fieldInput}
               placeholder="Block reason"
@@ -254,6 +263,7 @@ export function KanbanPage({
             />
             <select
               className={cx("fieldInput", "fieldSelect")}
+              aria-label="Blocker severity"
               value={blockSeverity}
               onChange={(event) => onBlockSeverityChange(event.target.value as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL")}
             >
@@ -285,10 +295,10 @@ export function KanbanPage({
 
       <div className={styles.kanban}>
         {kanbanColumns.map((column) => (
-          <div key={column.title} className={styles.kanbanColumn} style={column.border ? { borderTop: `2px solid ${column.border}` } : undefined}>
+          <div key={column.title} className={cx("kanbanColumn", columnBorderClass(column.border))}>
             <div className={styles.kanbanHeader}>
               <div>
-                <span className={styles.kanbanTitle} style={column.tone ? { color: column.tone } : undefined}>{column.title}</span>
+                <span className={cx("kanbanTitle", columnToneClass(column.tone))}>{column.title}</span>
                 {column.title === "In Progress" ? (
                   <div className={cx("kanbanLimitText", inProgressCount >= inProgressLimit && "kanbanLimitOver")}>
                     Limit {inProgressCount}/{inProgressLimit}
@@ -296,14 +306,7 @@ export function KanbanPage({
                 ) : null}
                 {column.policyHint ? <div className={styles.kanbanPolicyHint}>{column.policyHint}</div> : null}
               </div>
-              <span
-                className={styles.kanbanCount}
-                style={
-                  column.countTone
-                    ? { background: column.countBg ?? "rgba(255,255,255,0.06)", color: column.countTone }
-                    : { background: "rgba(255,255,255,0.06)", color: "var(--muted)" }
-                }
-              >
+              <span className={cx("kanbanCount", countToneClass(column.countTone))}>
                 {column.count}
               </span>
             </div>
@@ -313,19 +316,17 @@ export function KanbanPage({
               column.tasks.map((task) => (
                 <div
                   key={task.id}
-                  className={cx("taskCard", task.priority, task.faded && "taskCardFaded")}
-                  style={task.faded ? { opacity: 0.6 } : task.blocked ? { borderTop: "1px solid var(--border)" } : undefined}
+                  className={cx("taskCard", task.priority, task.faded && "taskCardFaded", task.blocked && "kbTaskBlockedTop")}
                 >
-                  <div className={styles.taskTag} style={task.blocked ? { color: "var(--red)" } : undefined}>{task.tag}</div>
-                  <div className={styles.taskTitle} style={task.faded ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}>{task.title}</div>
+                  <div className={cx("taskTag", task.blocked && "colorRed")}>{task.tag}</div>
+                  <div className={cx("taskTitle", task.faded && "kbTaskTitleDone")}>{task.title}</div>
                   {task.progress ? (
-                    <div style={{ margin: "6px 0" }}>
-                      <div className={styles.progressBar} style={{ height: 3 }}>
-                        <div
-                          className={cx("progressFill", `pf${capitalize(task.progress.tone)}`)}
-                          style={{ width: animateProgress ? `${task.progress.value}%` : "0%" }}
-                        />
-                      </div>
+                    <div className={styles.kbProgressWrap}>
+                      <progress
+                        className={cx("kbTaskProgress", `kbTaskProgress${capitalize(task.progress.tone)}`)}
+                        max={100}
+                        value={animateProgress ? task.progress.value : 0}
+                      />
                     </div>
                   ) : null}
                   <div className={styles.taskMeta}>
@@ -346,9 +347,8 @@ export function KanbanPage({
                   ) : null}
                   <div className={styles.taskActionRow}>
                     <button
-                      className={cx("button", hasProjectThread(task.projectId) ? "buttonGhost" : "buttonDisabled")}
+                      className={cx("btnXs", hasProjectThread(task.projectId) ? "buttonGhost" : "buttonDisabled")}
                       type="button"
-                      style={{ padding: "4px 10px", fontSize: "0.6rem" }}
                       onClick={() => onOpenTaskThread(task.projectId)}
                       disabled={!hasProjectThread(task.projectId)}
                     >
@@ -356,26 +356,23 @@ export function KanbanPage({
                     </button>
                     {task.status !== "DONE" && task.status !== "BLOCKED" ? (
                       <button
-                        className={cx("button", "buttonGhost")}
+                        className={cx("btnXs", "buttonGhost")}
                         type="button"
-                        style={{ padding: "4px 10px", fontSize: "0.6rem" }}
                         onClick={() => onOpenBlockDraft(task.id, task.projectId, task.title)}
                       >
                         Block
                       </button>
                     ) : null}
                     <button
-                      className={cx("button", task.status === "DONE" ? "buttonGreen" : "buttonGhost")}
+                      className={cx("btnXs", task.status === "DONE" ? "buttonGreen" : "buttonGhost")}
                       type="button"
-                      style={{ padding: "4px 10px", fontSize: "0.6rem" }}
                       onClick={() => onTaskAction(task.id, task.projectId, task.status)}
                     >
                       {task.status === "DONE" ? "Done" : task.status === "IN_PROGRESS" ? "Mark Done" : task.status === "BLOCKED" ? "Unblock" : "Start"}
                     </button>
                     <select
                       aria-label={`Move ${task.title} to status`}
-                      className={cx("fieldInput", "fieldSelect")}
-                      style={{ width: 126, paddingTop: 5, paddingBottom: 5, fontSize: "0.6rem" }}
+                      className={cx("fieldInput", "fieldSelect", "kbMoveSelect")}
                       value=""
                       onChange={(event) => {
                         const target = event.target.value as "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";

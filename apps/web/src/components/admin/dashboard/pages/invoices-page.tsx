@@ -3,20 +3,8 @@
 import { useState } from "react";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { colorClass, toneClass } from "./admin-page-utils";
 
 const accounts = [
   { name: "Maphari Operations", bank: "FNB", number: "••••7823", balance: 892400, currency: "ZAR", type: "Current", status: "active" },
@@ -43,16 +31,16 @@ const invoices = [
 ] as const;
 
 const statusColors: Record<string, string> = {
-  scheduled: C.blue,
-  "pending-approval": C.amber,
-  pending: C.amber,
-  overdue: C.red,
-  sent: C.muted,
-  paid: C.lime,
-  active: C.lime,
-  approved: C.lime,
-  "due-soon": C.amber,
-  upcoming: C.blue
+  scheduled: "var(--blue)",
+  "pending-approval": "var(--amber)",
+  pending: "var(--amber)",
+  overdue: "var(--red)",
+  sent: "var(--muted)",
+  paid: "var(--accent)",
+  active: "var(--accent)",
+  approved: "var(--accent)",
+  "due-soon": "var(--amber)",
+  upcoming: "var(--blue)"
 };
 
 const taxItems = [
@@ -74,20 +62,7 @@ const tabs = ["bank accounts", "payouts", "invoices", "tax config", "write-offs"
 function StatusBadge({ status }: { status: string }) {
   const label = status.replace(/-/g, " ");
   return (
-    <span
-      style={{
-        fontSize: 10,
-        fontFamily: "DM Mono, monospace",
-        textTransform: "uppercase",
-        letterSpacing: "0.06em",
-        color: statusColors[status] || C.muted,
-        background: `${statusColors[status] || C.muted}18`,
-        padding: "3px 8px",
-        borderRadius: 4
-      }}
-    >
-      {label}
-    </span>
+    <span className={cx(styles.invcStatusBadge, toneClass(statusColors[status] || "var(--muted)"))}>{label}</span>
   );
 }
 
@@ -120,119 +95,88 @@ export function InvoicesPage({
   void clock;
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32, gap: 12, flexWrap: "wrap" }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.lime, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>
-            ADMIN / FINANCIAL GOVERNANCE
-          </div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Financial Control</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Bank accounts · Payouts · Tax · Invoice approval</div>
+          <div className={styles.pageEyebrow}>ADMIN / FINANCIAL GOVERNANCE</div>
+          <h1 className={styles.pageTitle}>Financial Control</h1>
+          <div className={styles.pageSub}>Bank accounts · Payouts · Tax · Invoice approval</div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "8px 16px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>
-            Export CSV
-          </button>
-          <button style={{ background: C.lime, color: C.bg, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>
-            + New Payout
-          </button>
+        <div className={cx("flexRow", "gap8")}>
+          <button type="button" className={cx("btnSm", "btnGhost")}>Export CSV</button>
+          <button type="button" className={cx("btnSm", "btnAccent")}>+ New Payout</button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "gap16", "mb28")}>
         {[
-          { label: "Total ZAR Balance", value: `R${(totalBalance / 1000).toFixed(1)}k`, color: C.lime, sub: "Across 3 accounts" },
-          { label: "Scheduled Payouts", value: "R191.7k", color: C.amber, sub: "Next 7 days" },
-          { label: "Overdue Invoices", value: "R21,000", color: C.red, sub: "1 invoice · 9 days" },
-          { label: "Pending Approvals", value: "1", color: C.orange, sub: "Studio Outpost payout" }
+          { label: "Total ZAR Balance", value: `R${(totalBalance / 1000).toFixed(1)}k`, color: "var(--accent)", sub: "Across 3 accounts" },
+          { label: "Scheduled Payouts", value: "R191.7k", color: "var(--amber)", sub: "Next 7 days" },
+          { label: "Overdue Invoices", value: "R21,000", color: "var(--red)", sub: "1 invoice · 9 days" },
+          { label: "Pending Approvals", value: "1", color: "var(--amber)", sub: "Studio Outpost payout" }
         ].map((summary) => (
-          <div key={summary.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{summary.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: summary.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{summary.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{summary.sub}</div>
+          <div key={summary.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{summary.label}</div>
+            <div className={cx(styles.statValue, colorClass(summary.color))}>{summary.value}</div>
+            <div className={cx("text11", "colorMuted")}>{summary.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}`, overflowX: "auto" }}>
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={{
-              background: "none",
-              border: "none",
-              color: activeTab === tab ? C.lime : C.muted,
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontFamily: "Syne, sans-serif",
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              borderBottom: `2px solid ${activeTab === tab ? C.lime : "transparent"}`,
-              marginBottom: -1,
-              transition: "all 0.2s",
-              whiteSpace: "nowrap"
-            }}
-          >
-            {tab}
-          </button>
-        ))}
+      <div className={styles.filterRow}>
+        <select title="Filter by tab" value={activeTab} onChange={e => setActiveTab(e.target.value as (typeof tabs)[number])} className={styles.filterSelect}>
+          {tabs.map(tab => <option key={tab} value={tab}>{tab}</option>)}
+        </select>
       </div>
 
       {activeTab === "bank accounts" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className={cx("flexCol", "gap12")}>
           {accounts.map((a) => (
-            <div key={a.name} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24, display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", alignItems: "center", gap: 24 }}>
+            <div key={a.name} className={styles.invcAcctRow}>
               <div>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>{a.name}</div>
-                <div style={{ fontSize: 12, color: C.muted }}>{a.bank} · {a.type}</div>
+                <div className={cx("fw700", "mb4")}>{a.name}</div>
+                <div className={cx("text12", "colorMuted")}>{a.bank} · {a.type}</div>
               </div>
-              <div style={{ fontFamily: "DM Mono, monospace", fontSize: 13, color: C.muted }}>{a.number}</div>
+              <div className={cx("fontMono", "text13", "colorMuted")}>{a.number}</div>
               <div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: C.lime, fontFamily: "DM Mono, monospace" }}>
+                <div className={styles.invcAmount22}>
                   {a.currency === "USD" ? "$" : "R"}
                   {a.balance.toLocaleString()}
                 </div>
-                <div style={{ fontSize: 11, color: C.muted }}>{a.currency}</div>
+                <div className={cx("text11", "colorMuted")}>{a.currency}</div>
               </div>
               <StatusBadge status={a.status} />
-              <div style={{ display: "flex", gap: 8 }}>
-                <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>View</button>
-                <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>Transfer</button>
+              <div className={cx("flexRow", "gap8")}>
+                <button type="button" className={cx("btnSm", "btnGhost")}>View</button>
+                <button type="button" className={cx("btnSm", "btnGhost")}>Transfer</button>
               </div>
             </div>
           ))}
-          <button style={{ background: C.surface, border: `1px dashed ${C.border}`, borderRadius: 10, padding: 20, color: C.muted, fontSize: 13, cursor: "pointer", textAlign: "center" }}>
-            + Link New Account
-          </button>
+          <button type="button" className={styles.invcDashedBtn}>+ Link New Account</button>
         </div>
       )}
 
       {activeTab === "payouts" && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflowX: "auto" }}>
-          <div style={{ minWidth: 900 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 120px 120px 120px 110px 120px", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div className={cx("card", "overflowAuto", "p0")}>
+          <div className={styles.invcMinW900}>
+            <div className={cx("invcPayGrid", "px20", "borderB", "text10", "colorMuted", "uppercase", "tracking")}>
               {["ID", "Recipient", "Type", "Amount", "Date", "Status", "Action"].map((h) => <span key={h}>{h}</span>)}
             </div>
             {payouts.map((p, i) => (
-              <div key={p.id} style={{ display: "grid", gridTemplateColumns: "100px 1fr 120px 120px 120px 110px 120px", padding: "16px 24px", borderBottom: i < payouts.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", background: p.status === "pending-approval" ? `${C.amber}12` : "transparent" }}>
-                <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{p.id}</span>
-                <span style={{ fontWeight: 600 }}>{p.recipient}</span>
-                <span style={{ fontSize: 12, color: C.muted }}>{p.type}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: C.lime, fontWeight: 700 }}>R{p.amount.toLocaleString()}</span>
-                <span style={{ fontSize: 12, color: C.muted, fontFamily: "DM Mono, monospace" }}>{p.date}</span>
+              <div key={p.id} className={cx("invcPayGrid", "px20", "invcRowPad16", "invcRowAlign", i < payouts.length - 1 && "borderB", p.status === "pending-approval" && styles.invcPendingBg)}>
+                <span className={cx("fontMono", "text11", "colorMuted")}>{p.id}</span>
+                <span className={cx("fw600")}>{p.recipient}</span>
+                <span className={cx("text12", "colorMuted")}>{p.type}</span>
+                <span className={cx("fontMono", "fw700", "colorAccent")}>R{p.amount.toLocaleString()}</span>
+                <span className={cx("text12", "fontMono", "colorMuted")}>{p.date}</span>
                 <StatusBadge status={approving === p.id ? "approved" : p.status} />
                 {p.status === "pending-approval" && approving !== p.id ? (
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => approvePayout(p.id)} style={{ background: C.lime, color: C.bg, border: "none", padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Approve</button>
-                    <button style={{ background: `${C.red}15`, color: C.red, border: "none", padding: "4px 10px", borderRadius: 4, fontSize: 11, cursor: "pointer" }}>Reject</button>
+                  <div className={cx("flexRow", "gap6")}>
+                    <button type="button" onClick={() => approvePayout(p.id)} className={cx("btnSm", "btnAccent")}>Approve</button>
+                    <button type="button" className={styles.invcRejectBtn}>Reject</button>
                   </div>
                 ) : (
-                  <button style={{ background: C.border, border: "none", color: C.muted, padding: "4px 10px", borderRadius: 4, fontSize: 11, cursor: "pointer" }}>View</button>
+                  <button type="button" className={cx("btnSm", "btnGhost")}>View</button>
                 )}
               </div>
             ))}
@@ -241,25 +185,25 @@ export function InvoicesPage({
       )}
 
       {activeTab === "invoices" && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflowX: "auto" }}>
-          <div style={{ minWidth: 900 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 100px 120px 120px 110px 120px", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div className={cx("card", "overflowAuto", "p0")}>
+          <div className={styles.invcMinW900}>
+            <div className={cx("invcInvGrid", "px20", "borderB", "text10", "colorMuted", "uppercase", "tracking")}>
               {["Inv #", "Client", "Amount", "Issued", "Due", "Status", "Action"].map((h) => <span key={h}>{h}</span>)}
             </div>
             {invoices.map((inv, i) => (
-              <div key={inv.id} style={{ display: "grid", gridTemplateColumns: "100px 1fr 100px 120px 120px 110px 120px", padding: "16px 24px", borderBottom: i < invoices.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", background: inv.status === "overdue" ? C.surface : "transparent" }}>
-                <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{inv.id}</span>
-                <span style={{ fontWeight: 600 }}>{inv.client}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: C.lime, fontWeight: 700 }}>R{(inv.amount / 1000).toFixed(1)}k</span>
-                <span style={{ fontSize: 11, color: C.muted, fontFamily: "DM Mono, monospace" }}>{inv.issued}</span>
-                <span style={{ fontSize: 11, fontFamily: "DM Mono, monospace", color: inv.status === "overdue" ? C.red : C.muted }}>
+              <div key={inv.id} className={cx("invcInvGrid", "px20", "invcRowPad16", "invcRowAlign", i < invoices.length - 1 && "borderB", inv.status === "overdue" && styles.invcOverdueRow)}>
+                <span className={cx("fontMono", "text11", "colorMuted")}>{inv.id}</span>
+                <span className={cx("fw600")}>{inv.client}</span>
+                <span className={cx("fontMono", "fw700", "colorAccent")}>R{(inv.amount / 1000).toFixed(1)}k</span>
+                <span className={cx("text11", "fontMono", "colorMuted")}>{inv.issued}</span>
+                <span className={cx("text11", "fontMono", inv.status === "overdue" ? "colorRed" : "colorMuted")}>
                   {inv.due}
-                  {inv.status === "overdue" && <div style={{ fontSize: 10, color: C.red }}>{Math.abs(inv.daysLeft)}d overdue</div>}
+                  {inv.status === "overdue" && <div className={cx("text10", "colorRed")}>{Math.abs(inv.daysLeft)}d overdue</div>}
                 </span>
                 <StatusBadge status={inv.status} />
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button style={{ background: C.border, border: "none", color: C.text, padding: "4px 8px", borderRadius: 4, fontSize: 11, cursor: "pointer" }}>View</button>
-                  {inv.status === "overdue" && <button style={{ background: C.surface, color: C.red, border: "none", padding: "4px 8px", borderRadius: 4, fontSize: 11, cursor: "pointer" }}>Chase</button>}
+                <div className={cx("flexRow", "gap6")}>
+                  <button type="button" className={cx("btnSm", "btnGhost")}>View</button>
+                  {inv.status === "overdue" && <button type="button" className={styles.invcChaseBtn}>Chase</button>}
                 </div>
               </div>
             ))}
@@ -268,25 +212,26 @@ export function InvoicesPage({
       )}
 
       {activeTab === "tax config" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Tax Identifiers</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className={styles.invcTaxSplit}>
+          <div className={cx("card", "p24")}>
+            <div className={styles.invcCardTitle}>Tax Identifiers</div>
+            <div className={cx("flexCol", "gap16")}>
               {taxItems.map((t) => (
-                <div key={t.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.border}` }}>
+                <div key={t.label} className={styles.invcTaxRow}>
                   <div>
-                    <div style={{ fontSize: 12, color: C.muted, marginBottom: 2 }}>{t.label}</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700 }}>{t.value}</div>
+                    <div className={cx("text12", "colorMuted", "mb2")}>{t.label}</div>
+                    <div className={cx("fontMono", "fw700")}>{t.value}</div>
                   </div>
                   <StatusBadge status={t.status} />
                 </div>
               ))}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>VAT Configuration</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+
+          <div className={cx("flexCol", "gap16")}>
+            <div className={cx("card", "p24")}>
+              <div className={styles.invcCardTitle}>VAT Configuration</div>
+              <div className={cx("grid2", "gap16")}>
                 {[
                   { label: "VAT Rate", value: "15%" },
                   { label: "VAT Period", value: "Monthly" },
@@ -294,48 +239,47 @@ export function InvoicesPage({
                   { label: "Next Due Date", value: "28 Feb 2026" }
                 ].map((v) => (
                   <div key={v.label}>
-                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>{v.label}</div>
-                    <div style={{ fontWeight: 700, fontFamily: "DM Mono, monospace" }}>{v.value}</div>
+                    <div className={cx("text11", "colorMuted", "mb4")}>{v.label}</div>
+                    <div className={cx("fontMono", "fw700")}>{v.value}</div>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.lime}22`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: C.lime }}>Feb 2026 VAT Due</div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: C.lime, fontFamily: "DM Mono, monospace", marginBottom: 8 }}>R52,400</div>
-              <div style={{ fontSize: 12, color: C.muted, marginBottom: 16 }}>Output VAT: R61,920 · Input VAT: R9,520</div>
-              <button style={{ background: C.lime, color: C.bg, border: "none", padding: "10px 20px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                Submit via e-Filing →
-              </button>
+
+            <div className={styles.invcVatDueCard}>
+              <div className={cx("text13", "fw700", "mb12", "colorAccent")}>Feb 2026 VAT Due</div>
+              <div className={styles.invcVatDueValue}>R52,400</div>
+              <div className={cx("text12", "colorMuted", "mb16")}>Output VAT: R61,920 · Input VAT: R9,520</div>
+              <button type="button" className={cx("btnSm", "btnAccent")}>Submit via e-Filing →</button>
             </div>
           </div>
         </div>
       )}
 
       {activeTab === "write-offs" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.red}33`, borderRadius: 10, padding: 20, display: "flex", gap: 16, alignItems: "center" }}>
-            <div style={{ fontSize: 24 }}>⚠️</div>
+        <div className={cx("flexCol", "gap16")}>
+          <div className={styles.invcWarnCard}>
+            <div className={styles.invcWarnIcon}>⚠️</div>
             <div>
-              <div style={{ fontWeight: 700, color: C.amber, marginBottom: 4 }}>Write-Off Policy</div>
-              <div style={{ fontSize: 12, color: C.muted }}>Write-offs must be approved by admin. All write-offs are logged for audit and tax purposes. Ensure SARS documentation is retained for 5 years.</div>
+              <div className={cx("fw700", "colorAmber", "mb4")}>Write-Off Policy</div>
+              <div className={cx("text12", "colorMuted")}>
+                Write-offs must be approved by admin. All write-offs are logged for audit and tax purposes. Ensure SARS documentation is retained for 5 years.
+              </div>
             </div>
           </div>
           {writeOffs.map((w) => (
-            <div key={w.client} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24, display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", alignItems: "center", gap: 20 }}>
+            <div key={w.client} className={styles.invcWriteoffRow}>
               <div>
-                <div style={{ fontWeight: 700 }}>{w.client}</div>
-                <div style={{ fontSize: 12, color: C.muted }}>{w.date}</div>
+                <div className={cx("fw700")}>{w.client}</div>
+                <div className={cx("text12", "colorMuted")}>{w.date}</div>
               </div>
-              <div style={{ fontFamily: "DM Mono, monospace", color: C.red, fontWeight: 700, fontSize: 18 }}>–R{w.amount.toLocaleString()}</div>
-              <div style={{ fontSize: 12, color: C.muted }}>{w.reason}</div>
+              <div className={styles.invcWriteoffAmount}>–R{w.amount.toLocaleString()}</div>
+              <div className={cx("text12", "colorMuted")}>{w.reason}</div>
               <StatusBadge status={w.status} />
-              <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>View Docs</button>
+              <button type="button" className={cx("btnSm", "btnGhost")}>View Docs</button>
             </div>
           ))}
-          <button style={{ background: C.surface, border: `1px dashed ${C.red}55`, borderRadius: 10, padding: 20, color: C.red, fontSize: 13, cursor: "pointer", textAlign: "center" }}>
-            + Request New Write-Off
-          </button>
+          <button type="button" className={styles.invcWriteoffBtn}>+ Request New Write-Off</button>
         </div>
       )}
     </div>

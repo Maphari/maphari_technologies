@@ -46,6 +46,26 @@ export function EmptyState({
   );
 }
 
+export function toneClass(color: string): string {
+  if (color === "var(--accent)") return "toneAccent";
+  if (color === "var(--red)") return "toneRed";
+  if (color === "var(--amber)") return "toneAmber";
+  if (color === "var(--blue)") return "toneBlue";
+  if (color === "var(--purple)") return "tonePurple";
+  if (color === "var(--muted)") return "toneMuted";
+  if (color === "var(--green)") return "toneAccent";
+  return "toneText";
+}
+
+export function colorClass(color: string): string {
+  if (color === "var(--red)") return "colorRed";
+  if (color === "var(--blue)") return "colorBlue";
+  if (color === "var(--amber)") return "colorAmber";
+  if (color === "var(--purple)") return "colorPurple";
+  if (color === "var(--muted)") return "colorMuted";
+  return "colorAccent";
+}
+
 export function formatDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "N/A";

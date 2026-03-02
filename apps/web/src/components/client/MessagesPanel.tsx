@@ -61,7 +61,7 @@ export function MessagesPanel({ threads, selectedId, onSelect }: Props) {
                 flexDirection: message.from === "you" ? "row-reverse" : "row"
               }}
             >
-              <div className="msg-av" style={{ background: message.from === "you" ? "var(--purple)" : "var(--accent)", color: message.from === "you" ? "#fff" : "#050508", width: 32, height: 32, fontSize: "0.65rem", flexShrink: 0 }}>
+              <div className="msg-av" style={{ background: message.from === "you" ? "var(--blue)" : "var(--accent)", color: message.from === "you" ? "#fff" : "#050508", width: 32, height: 32, fontSize: "0.65rem", flexShrink: 0 }}>
                 {message.from === "you" ? "SC" : "JM"}
               </div>
               <div style={{ textAlign: message.from === "you" ? "right" : "left" }}>

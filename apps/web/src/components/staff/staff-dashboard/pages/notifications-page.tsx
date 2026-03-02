@@ -7,7 +7,6 @@ type ClientRow = {
   id: number;
   name: string;
   avatar: string;
-  color: string;
 };
 
 type NotificationType =
@@ -36,24 +35,24 @@ type NotificationItem = {
 };
 
 const clients: ClientRow[] = [
-  { id: 0, name: "Internal", avatar: "IN", color: "#a0a0b0" },
-  { id: 1, name: "Volta Studios", avatar: "VS", color: "var(--accent)" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "#a78bfa" },
-  { id: 3, name: "Mira Health", avatar: "MH", color: "#60a5fa" },
-  { id: 4, name: "Dune Collective", avatar: "DC", color: "#f5c518" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "#ff8c00" }
+  { id: 0, name: "Internal", avatar: "IN" },
+  { id: 1, name: "Volta Studios", avatar: "VS" },
+  { id: 2, name: "Kestrel Capital", avatar: "KC" },
+  { id: 3, name: "Mira Health", avatar: "MH" },
+  { id: 4, name: "Dune Collective", avatar: "DC" },
+  { id: 5, name: "Okafor & Sons", avatar: "OS" }
 ];
 
-const typeConfig: Record<NotificationType, { icon: string; color: string; label: string; bg: string }> = {
-  message: { icon: "✉", color: "#60a5fa", label: "Message", bg: "rgba(96,165,250,0.1)" },
-  milestone: { icon: "◎", color: "#a78bfa", label: "Milestone", bg: "rgba(167,139,250,0.1)" },
-  invoice: { icon: "₹", color: "var(--accent)", label: "Invoice", bg: "color-mix(in srgb, var(--accent) 10%, transparent)" },
-  approval: { icon: "✓", color: "var(--accent)", label: "Approval", bg: "color-mix(in srgb, var(--accent) 10%, transparent)" },
-  overdue: { icon: "⚑", color: "#ff4444", label: "Overdue", bg: "rgba(255,68,68,0.1)" },
-  mention: { icon: "@", color: "#f5c518", label: "Mention", bg: "rgba(245,197,24,0.1)" },
-  system: { icon: "◈", color: "#a0a0b0", label: "System", bg: "rgba(160,160,176,0.08)" },
-  suggestion: { icon: "◉", color: "#ff8c00", label: "Suggestion", bg: "rgba(255,140,0,0.1)" },
-  login: { icon: "◌", color: "#ff8c00", label: "Portal login", bg: "rgba(255,140,0,0.1)" }
+const typeConfig: Record<NotificationType, { icon: string; label: string }> = {
+  message: { icon: "✉", label: "Message" },
+  milestone: { icon: "◎", label: "Milestone" },
+  invoice: { icon: "₹", label: "Invoice" },
+  approval: { icon: "✓", label: "Approval" },
+  overdue: { icon: "⚑", label: "Overdue" },
+  mention: { icon: "@", label: "Mention" },
+  system: { icon: "◈", label: "System" },
+  suggestion: { icon: "◉", label: "Suggestion" },
+  login: { icon: "◌", label: "Portal login" }
 };
 
 const initialNotifications: NotificationItem[] = [
@@ -211,23 +210,9 @@ function timeGroup(value: string): "Today" | "Yesterday" | "Earlier" {
   return "Earlier";
 }
 
-function ActionBtn({ label, color }: { label: string; color: string }) {
+function ActionBtn({ label, tone }: { label: string; tone: NotificationType }) {
   return (
-    <button
-      style={{
-        padding: "10px 14px",
-        background: `${color}10`,
-        border: `1px solid ${color}30`,
-        borderRadius: 3,
-        color,
-        fontSize: 11,
-        cursor: "pointer",
-        fontFamily: "'DM Mono',monospace",
-        letterSpacing: "0.06em",
-        textTransform: "uppercase",
-        textAlign: "left"
-      }}
-    >
+    <button type="button" className={cx("snActionBtn")} data-tone={tone}>
       -&gt; {label}
     </button>
   );
@@ -251,10 +236,19 @@ export function NotificationsPage({ isActive }: { isActive: boolean }) {
 
   const markRead = (id: number) =>
     setNotifs((previous) => previous.map((row) => (row.id === id ? { ...row, read: true } : row)));
+
   const markAllRead = () => setNotifs((previous) => previous.map((row) => ({ ...row, read: true })));
-  const dismiss = (id: number) => setNotifs((previous) => previous.filter((row) => row.id !== id));
-  const togglePin = (id: number) =>
+
+  const dismiss = (id: number) => {
+    setNotifs((previous) => previous.filter((row) => row.id !== id));
+    setSelected((previous) => (previous?.id === id ? null : previous));
+  };
+
+  const togglePin = (id: number) => {
     setNotifs((previous) => previous.map((row) => (row.id === id ? { ...row, pinned: !row.pinned } : row)));
+    setSelected((previous) => (previous?.id === id ? { ...previous, pinned: !previous.pinned } : previous));
+  };
+
   const toggleType = (key: NotificationType) =>
     setEnabled((previous) => ({ ...previous, [key]: !previous[key] }));
 
@@ -286,218 +280,182 @@ export function NotificationsPage({ isActive }: { isActive: boolean }) {
   );
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-notifications">
-      <style>{`
-        .notif-row { transition: all 0.12s ease; cursor: pointer; }
-        .notif-row:hover { background: color-mix(in srgb, var(--accent) 2%, transparent)!important; border-color: color-mix(in srgb, var(--accent) 15%, transparent)!important; }
-        .notif-row:hover .row-actions { opacity: 1!important; }
-        .filter-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono',monospace; }
-        .icon-btn { transition: all 0.12s ease; cursor: pointer; background: none; border: none; font-family: 'DM Mono',monospace; }
-        .icon-btn:hover { opacity: 0.7; }
-        .toggle { transition: all 0.15s ease; cursor: pointer; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
-          <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>Staff Dashboard</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>Notifications</h1>
-              {unread > 0 ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", background: "rgba(255,68,68,0.1)", border: "1px solid rgba(255,68,68,0.25)", borderRadius: 2 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ff4444", opacity: pulse ? 1 : 0.3, transition: "opacity 0.7s ease" }} />
-                  <span style={{ fontSize: 10, color: "#ff4444", letterSpacing: "0.1em" }}>{unread} UNREAD</span>
-                </div>
-              ) : null}
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-            {[
-              { label: "Critical", value: critical, color: critical > 0 ? "#ff4444" : "var(--muted2)" },
-              { label: "Pinned", value: pinned, color: pinned > 0 ? "#f5c518" : "var(--muted2)" },
-              { label: "Unread", value: unread, color: unread > 0 ? "#a0a0b0" : "var(--muted2)" }
-            ].map((stat) => (
-              <div key={stat.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: stat.color }}>{stat.value}</div>
-              </div>
-            ))}
-            <button
-              className="icon-btn"
-              onClick={() => setShowPrefs((previous) => !previous)}
-              style={{ padding: "8px 14px", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: showPrefs ? "var(--accent)" : "var(--muted2)", fontSize: 11, marginLeft: 8, letterSpacing: "0.06em" }}
-            >
-              {showPrefs ? "<- Back" : "Preferences"}
-            </button>
-          </div>
+    <section className={cx("page", "pageBody", "notificationsPage", isActive && "pageActive")} id="page-notifications">
+      <div className={cx("pageHeader", "snHeader")}>
+        <div>
+          <div className={cx("pageEyebrow")}>Staff Dashboard / Communication</div>
+          <div className={cx("pageTitle")}>Notifications</div>
+          <div className={cx("pageSub")}>Queue triage · Delivery status · Channel health</div>
         </div>
 
-        {!showPrefs ? (
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            {[{ key: "all", label: "All" }, { key: "unread", label: "Unread" }, { key: "pinned", label: "Pinned" }].map((f) => (
-              <button
-                key={f.key}
-                className="filter-btn"
-                onClick={() => setFilter(f.key as "all" | "unread" | "pinned")}
-                style={{
-                  padding: "5px 12px",
-                  fontSize: 10,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  borderRadius: 2,
-                  background: filter === f.key ? "rgba(255,255,255,0.08)" : "transparent",
-                  color: filter === f.key ? "var(--text)" : "var(--muted2)"
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
-            <div style={{ width: 1, height: 18, background: "rgba(255,255,255,0.08)" }} />
-            {(Object.keys(typeConfig) as NotificationType[]).slice(0, 6).map((type) => (
-              <button
-                key={type}
-                className="filter-btn"
-                onClick={() => setTypeFilter(typeFilter === type ? "all" : type)}
-                style={{
-                  padding: "5px 10px",
-                  fontSize: 10,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  borderRadius: 2,
-                  background: typeFilter === type ? typeConfig[type].bg : "transparent",
-                  color: typeFilter === type ? typeConfig[type].color : "var(--muted2)",
-                  border: "none"
-                }}
-              >
-                {typeConfig[type].icon} {typeConfig[type].label}
-              </button>
-            ))}
-            <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-              {unread > 0 ? (
-                <button
-                  className="icon-btn"
-                  onClick={markAllRead}
-                  style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.06em", textTransform: "uppercase" }}
-                >
-                  Mark all read
-                </button>
-              ) : null}
+        <div className={cx("pageActions", "snHeaderActions")}>
+          {unread > 0 ? (
+            <div className={cx("snUnreadPulse")}>
+              <span className={cx("snUnreadDot", pulse ? "snUnreadDotOn" : "snUnreadDotOff")} />
+              <span className={cx("text10", "tracking", "uppercase", "colorRed")}>{unread} unread</span>
             </div>
+          ) : null}
+
+          <div className={cx("snTopStats")}>
+            {[
+              { label: "Critical", value: critical, toneClass: critical > 0 ? "colorRed" : "colorMuted2" },
+              { label: "Pinned", value: pinned, toneClass: pinned > 0 ? "colorAmber" : "colorMuted2" },
+              { label: "Unread", value: unread, toneClass: unread > 0 ? "colorAccent" : "colorMuted2" }
+            ].map((stat) => (
+              <div key={stat.label} className={cx("snStatCard")}>
+                <div className={cx("statLabelNew")}>{stat.label}</div>
+                <div className={cx("statValueNew", stat.toneClass)}>{stat.value}</div>
+              </div>
+            ))}
           </div>
-        ) : null}
+
+          <button
+            type="button"
+            className={cx("snIconBtn", "snPrefsBtn", showPrefs && "snPrefsBtnActive")}
+            onClick={() => setShowPrefs((previous) => !previous)}
+          >
+            {showPrefs ? "&lt;- Back" : "Preferences"}
+          </button>
+        </div>
       </div>
 
+      {!showPrefs ? (
+        <div className={cx("snFilterRow")}>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter notifications"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value as "all" | "unread" | "pinned")}
+          >
+            <option value="all">All</option>
+            <option value="unread">Unread</option>
+            <option value="pinned">Pinned</option>
+          </select>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter notification type"
+            value={typeFilter}
+            onChange={(event) => setTypeFilter(event.target.value as "all" | NotificationType)}
+          >
+            <option value="all">All types</option>
+            {(Object.keys(typeConfig) as NotificationType[]).slice(0, 6).map((type) => (
+              <option key={type} value={type}>
+                {typeConfig[type].label}
+              </option>
+            ))}
+          </select>
+
+          <div className={cx("snMarkAllWrap")}>
+            {unread > 0 ? (
+              <button type="button" className={cx("snIconBtn", "snMarkAllBtn")} onClick={markAllRead}>
+                Mark all read
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {showPrefs ? (
-        <div style={{ padding: "28px 0", maxWidth: 480 }}>
-          <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 6 }}>Notification Preferences</div>
-          <div style={{ fontSize: 12, color: "var(--muted2)", marginBottom: 24 }}>Choose which notifications appear in your centre.</div>
+        <div className={cx("snPrefsPanel")}>
+          <div className={cx("snPrefsTitle")}>Notification Preferences</div>
+          <div className={cx("snPrefsSub")}>Choose which notifications appear in your centre.</div>
+
           {prefs.map((pref) => (
-            <div key={pref.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 14, color: typeConfig[pref.key].color, width: 20 }}>{typeConfig[pref.key].icon}</span>
-                <span style={{ fontSize: 13, color: "#a0a0b0" }}>{pref.label}</span>
+            <div key={pref.key} className={cx("snPrefRow")}>
+              <div className={cx("snPrefLeft")}>
+                <span className={cx("snPrefIcon")} data-type={pref.key}>{typeConfig[pref.key].icon}</span>
+                <span className={cx("snPrefLabel")}>{pref.label}</span>
               </div>
-              <div
-                className="toggle"
+
+              <button
+                type="button"
+                className={cx("snToggle", "snToggleTrack", enabled[pref.key] ? "snToggleTrackOn" : "snToggleTrackOff")}
                 onClick={() => toggleType(pref.key)}
-                style={{ width: 36, height: 20, borderRadius: 10, background: enabled[pref.key] ? "var(--accent)" : "rgba(255,255,255,0.08)", position: "relative" }}
+                aria-label={`Toggle ${pref.label}`}
+                aria-pressed={enabled[pref.key]}
               >
-                <div style={{ position: "absolute", top: 3, left: enabled[pref.key] ? 19 : 3, width: 14, height: 14, borderRadius: "50%", background: enabled[pref.key] ? "#050508" : "var(--muted2)", transition: "left 0.15s ease" }} />
-              </div>
+                <span className={cx("snToggleKnob", enabled[pref.key] ? "snToggleKnobOn" : "snToggleKnobOff")} />
+              </button>
             </div>
           ))}
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: selected ? "1fr 380px" : "1fr", minHeight: "calc(100vh - 185px)" }}>
-          <div style={{ padding: "20px 0", borderRight: selected ? "1px solid rgba(255,255,255,0.06)" : "none", overflowY: "auto" }}>
+        <div className={cx("snLayout", selected && "snLayoutWithDetail")}>
+          <div className={cx("snListPane", selected && "snListPaneWithDetail")}>
             {visible.length === 0 ? (
-              <div style={{ textAlign: "center", paddingTop: 60, color: "var(--muted2)" }}>
-                <div style={{ fontSize: 28, marginBottom: 10 }}>◎</div>
-                <div style={{ fontSize: 13 }}>All caught up</div>
+              <div className={cx("snEmptyState")}>
+                <div className={cx("snEmptyIcon")}>◎</div>
+                <div className={cx("snEmptyText")}>All caught up</div>
               </div>
             ) : null}
+
             {(["Today", "Yesterday", "Earlier"] as Array<"Today" | "Yesterday" | "Earlier">).map((group) => {
               const items = grouped[group];
               if (!items?.length) return null;
+
               return (
-                <div key={group} style={{ marginBottom: 24 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                    <span style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase" }}>{group}</span>
-                    <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.04)" }} />
+                <div key={group} className={cx("snGroup")}>
+                  <div className={cx("snGroupHeader")}>
+                    <span className={cx("snGroupLabel")}>{group}</span>
+                    <div className={cx("snGroupLine")} />
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+
+                  <div className={cx("snGroupList")}>
                     {items.map((row) => {
                       const tc = typeConfig[row.type];
                       const cl = clients.find((client) => client.id === row.clientId);
                       const isNew = !row.read;
                       const isSelected = selected?.id === row.id;
-                      const priorityColor: Record<NotificationPriority, string> = {
-                        critical: "#ff4444",
-                        high: "#ff8c00",
-                        normal: "transparent",
-                        low: "transparent"
-                      };
+
                       return (
                         <div
                           key={row.id}
-                          className="notif-row"
+                          className={cx("snNotifRow", "snRowCard", isSelected && "snRowSelected", isNew ? "snRowUnread" : "snRowRead")}
+                          data-priority={row.priority}
+                          data-pinned={row.pinned ? "true" : "false"}
                           onClick={() => open(row)}
-                          style={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            gap: 12,
-                            padding: "12px 14px",
-                            border: `1px solid ${isSelected ? "color-mix(in srgb, var(--accent) 25%, transparent)" : isNew ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)"}`,
-                            borderLeft: `3px solid ${
-                              row.pinned
-                                ? "#f5c518"
-                                : priorityColor[row.priority] !== "transparent"
-                                  ? priorityColor[row.priority]
-                                  : isNew
-                                    ? "rgba(255,255,255,0.15)"
-                                    : "transparent"
-                            }`,
-                            borderRadius: "0 4px 4px 0",
-                            background: isSelected ? "color-mix(in srgb, var(--accent) 2%, transparent)" : isNew ? "rgba(255,255,255,0.015)" : "transparent",
-                            opacity: row.read && !isSelected ? 0.65 : 1
-                          }}
                         >
-                          <div style={{ width: 6, height: 6, borderRadius: "50%", background: isNew ? (row.priority === "critical" ? "#ff4444" : row.priority === "high" ? "#ff8c00" : "#60a5fa") : "transparent", flexShrink: 0, marginTop: 5 }} />
-                          <div style={{ width: 28, height: 28, borderRadius: "50%", background: tc.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: tc.color, flexShrink: 0 }}>{tc.icon}</div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                              {cl ? <span style={{ fontSize: 10, color: cl.color }}>{cl.name}</span> : null}
-                              {row.pinned ? <span style={{ fontSize: 10, color: "#f5c518" }}>◈</span> : null}
-                              {row.priority === "critical" ? (
-                                <span style={{ fontSize: 8, padding: "1px 5px", background: "rgba(255,68,68,0.12)", color: "#ff4444", borderRadius: 2, letterSpacing: "0.1em" }}>CRITICAL</span>
-                              ) : null}
-                              {row.priority === "high" ? (
-                                <span style={{ fontSize: 8, padding: "1px 5px", background: "rgba(255,140,0,0.12)", color: "#ff8c00", borderRadius: 2, letterSpacing: "0.1em" }}>HIGH</span>
-                              ) : null}
+                          <span
+                            className={cx("snPriorityDot")}
+                            data-new={isNew ? "true" : "false"}
+                            data-priority={row.priority}
+                          />
+
+                          <div className={cx("snTypeIcon")} data-type={row.type}>{tc.icon}</div>
+
+                          <div className={cx("snRowMain")}>
+                            <div className={cx("snRowMeta")}>
+                              {cl ? <span className={cx("snClientName")} data-client-id={String(cl.id)}>{cl.name}</span> : null}
+                              {row.pinned ? <span className={cx("snPinnedGlyph")}>◈</span> : null}
+                              {row.priority === "critical" ? <span className={cx("snCriticalBadge")}>CRITICAL</span> : null}
+                              {row.priority === "high" ? <span className={cx("snHighBadge")}>HIGH</span> : null}
                             </div>
-                            <div style={{ fontSize: 12, color: isNew ? "var(--text)" : "#a0a0b0", marginBottom: 3, fontWeight: isNew ? 500 : 400 }}>{row.title}</div>
-                            <div style={{ fontSize: 11, color: "var(--muted2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.body}</div>
+
+                            <div className={cx("snRowTitle", isNew ? "snRowTitleUnread" : "snRowTitleRead")}>{row.title}</div>
+                            <div className={cx("snRowBody", "truncate")}>{row.body}</div>
                           </div>
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-                            <span style={{ fontSize: 9, color: "var(--muted2)" }}>{row.time}</span>
-                            <div className="row-actions" style={{ display: "flex", gap: 4, opacity: 0, transition: "opacity 0.12s" }}>
+
+                          <div className={cx("snRowSide")}>
+                            <span className={cx("snRowTime")}>{row.time}</span>
+                            <div className={cx("snRowActions")}>
                               <button
-                                className="icon-btn"
+                                type="button"
+                                className={cx("snIconBtn", "snRowPinBtn", row.pinned && "snRowPinBtnActive")}
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   togglePin(row.id);
                                 }}
-                                style={{ fontSize: 11, color: row.pinned ? "#f5c518" : "var(--muted2)", padding: "1px 4px" }}
                               >
                                 {row.pinned ? "◈" : "◇"}
                               </button>
+
                               <button
-                                className="icon-btn"
+                                type="button"
+                                className={cx("snIconBtn", "snRowDismissBtn")}
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   dismiss(row.id);
                                 }}
-                                style={{ fontSize: 13, color: "var(--muted2)", padding: "0 4px" }}
                               >
                                 ×
                               </button>
@@ -516,53 +474,48 @@ export function NotificationsPage({ isActive }: { isActive: boolean }) {
             (() => {
               const tc = typeConfig[selected.type];
               const cl = clients.find((client) => client.id === selected.clientId);
+
               return (
-                <div style={{ padding: "24px 24px", display: "flex", flexDirection: "column", gap: 18 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: tc.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: tc.color }}>{tc.icon}</div>
+                <div className={cx("snDetailPane")}>
+                  <div className={cx("snDetailHeader")}>
+                    <div className={cx("snTypeIcon", "snDetailTypeIcon")} data-type={selected.type}>{tc.icon}</div>
                     <div>
-                      <div style={{ fontSize: 11, color: tc.color, letterSpacing: "0.08em", textTransform: "uppercase" }}>{tc.label}</div>
-                      <div style={{ fontSize: 10, color: "var(--muted2)" }}>{selected.time}</div>
+                      <div className={cx("snTypeLabel")} data-type={selected.type}>{tc.label}</div>
+                      <div className={cx("text10", "colorMuted2")}>{selected.time}</div>
                     </div>
-                    <button className="icon-btn" onClick={() => setSelected(null)} style={{ marginLeft: "auto", fontSize: 18, color: "var(--muted2)" }}>×</button>
+                    <button type="button" className={cx("snIconBtn", "snDetailClose")} onClick={() => setSelected(null)}>×</button>
                   </div>
 
                   {cl ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: `${cl.color}08`, border: `1px solid ${cl.color}30`, borderRadius: 3 }}>
-                      <div style={{ width: 22, height: 22, borderRadius: 2, background: `${cl.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: cl.color }}>{cl.avatar}</div>
-                      <span style={{ fontSize: 12, color: cl.color }}>{cl.name}</span>
+                    <div className={cx("snClientChip")} data-client-id={String(cl.id)}>
+                      <div className={cx("snClientAvatarMini")} data-client-id={String(cl.id)}>{cl.avatar}</div>
+                      <span className={cx("snClientName", "snClientNameSm")} data-client-id={String(cl.id)}>{cl.name}</span>
                     </div>
                   ) : null}
 
                   <div>
-                    <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 700, color: "#fff", lineHeight: 1.3, marginBottom: 10 }}>{selected.title}</div>
-                    <div style={{ fontSize: 13, color: "#a0a0b0", lineHeight: 1.8 }}>{selected.body}</div>
+                    <div className={cx("snDetailTitle")}>{selected.title}</div>
+                    <div className={cx("snDetailBody")}>{selected.body}</div>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
-                    {selected.type === "message" ? <ActionBtn label="Reply to message" color="#60a5fa" /> : null}
-                    {selected.type === "milestone" ? <ActionBtn label="Open milestone" color="#a78bfa" /> : null}
-                    {selected.type === "invoice" ? <ActionBtn label="View invoice" color="var(--accent)" /> : null}
-                    {selected.type === "overdue" ? <ActionBtn label="Escalate now" color="#ff4444" /> : null}
-                    {selected.type === "approval" ? <ActionBtn label="View milestone" color="var(--accent)" /> : null}
-                    {selected.type === "suggestion" ? <ActionBtn label="View suggestion" color="#ff8c00" /> : null}
-                    {selected.type === "mention" ? <ActionBtn label="View note" color="#f5c518" /> : null}
+                  <div className={cx("snDetailActions")}>
+                    {selected.type === "message" ? <ActionBtn label="Reply to message" tone="message" /> : null}
+                    {selected.type === "milestone" ? <ActionBtn label="Open milestone" tone="milestone" /> : null}
+                    {selected.type === "invoice" ? <ActionBtn label="View invoice" tone="invoice" /> : null}
+                    {selected.type === "overdue" ? <ActionBtn label="Escalate now" tone="overdue" /> : null}
+                    {selected.type === "approval" ? <ActionBtn label="View milestone" tone="approval" /> : null}
+                    {selected.type === "suggestion" ? <ActionBtn label="View suggestion" tone="suggestion" /> : null}
+                    {selected.type === "mention" ? <ActionBtn label="View note" tone="mention" /> : null}
+
                     <button
-                      onClick={() => {
-                        togglePin(selected.id);
-                        setSelected((previous) => (previous ? { ...previous, pinned: !previous.pinned } : previous));
-                      }}
-                      style={{ padding: "9px 14px", background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: selected.pinned ? "#f5c518" : "var(--muted2)", fontSize: 11, cursor: "pointer", fontFamily: "'DM Mono',monospace", letterSpacing: "0.06em", textAlign: "left" }}
+                      type="button"
+                      className={cx("snDetailActionBtn", selected.pinned ? "snDetailActionBtnPinned" : "colorMuted2")}
+                      onClick={() => togglePin(selected.id)}
                     >
                       {selected.pinned ? "◈ Unpin notification" : "◇ Pin notification"}
                     </button>
-                    <button
-                      onClick={() => {
-                        dismiss(selected.id);
-                        setSelected(null);
-                      }}
-                      style={{ padding: "9px 14px", background: "transparent", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, color: "var(--muted2)", fontSize: 11, cursor: "pointer", fontFamily: "'DM Mono',monospace", letterSpacing: "0.06em", textAlign: "left" }}
-                    >
+
+                    <button type="button" className={cx("snDetailActionBtn", "snDismissBtn", "colorMuted2")} onClick={() => dismiss(selected.id)}>
                       Dismiss notification
                     </button>
                   </div>

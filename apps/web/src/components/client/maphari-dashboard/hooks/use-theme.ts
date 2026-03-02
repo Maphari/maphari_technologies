@@ -1,78 +1,127 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useState, useEffect, useCallback } from "react";
 
-export type ThemePreference = "light" | "dark" | "system";
-export type ResolvedTheme = "light" | "dark";
+// ─── Constants ───────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "maphari-client-theme";
+type Theme = "light" | "dark";
+const STORAGE_KEY = "maphari_client_theme";
 
-function getSystemPreference(): ResolvedTheme {
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function getStoredTheme(): Theme | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "light" || stored === "dark") return stored;
+  } catch {
+    // Ignore storage errors
+  }
+  return null;
+}
+
+function getSystemTheme(): Theme {
   if (typeof window === "undefined") return "dark";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  try {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  } catch {
+    return "dark";
+  }
 }
 
-function getStoredPreference(): ThemePreference {
-  if (typeof window === "undefined") return "system";
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === "light" || stored === "dark" || stored === "system") return stored;
-  return "system";
+function applyTheme(theme: Theme): void {
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-theme", theme);
+  }
 }
 
-function subscribeToSystemTheme(callback: () => void) {
-  if (typeof window === "undefined") return () => {};
-  const mq = window.matchMedia("(prefers-color-scheme: dark)");
-  mq.addEventListener("change", callback);
-  return () => mq.removeEventListener("change", callback);
+function persistTheme(theme: Theme): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    // Ignore storage errors
+  }
 }
 
-/**
- * Theme management hook for the client dashboard.
- *
- * Returns the user's theme preference, the resolved (actual) theme,
- * and controls to change/toggle the theme.
- *
- * Persists to localStorage. When preference is "system", follows
- * the OS preference and reacts to changes in real time.
- */
+// ─── Hook ────────────────────────────────────────────────────────────────────
+
 export function useTheme() {
-  const [theme, setThemeState] = useState<ThemePreference>(getStoredPreference);
+  const [theme, setThemeState] = useState<Theme>(() => {
+    // SSR-safe: default to dark, will be corrected on mount
+    if (typeof window === "undefined") return "dark";
+    return getStoredTheme() ?? getSystemTheme();
+  });
 
-  /* Subscribe to OS-level dark mode changes */
-  const systemTheme = useSyncExternalStore(
-    subscribeToSystemTheme,
-    getSystemPreference,
-    () => "dark" as ResolvedTheme // SSR default
-  );
+  // ── Apply on mount and sync with actual preference ───────────────────────
 
-  const resolvedTheme: ResolvedTheme = theme === "system" ? systemTheme : theme;
-
-  const setTheme = useCallback((next: ThemePreference) => {
-    setThemeState(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      /* quota exceeded — non-critical */
-    }
+  useEffect(() => {
+    const resolved = getStoredTheme() ?? getSystemTheme();
+    setThemeState(resolved);
+    applyTheme(resolved);
   }, []);
 
-  const toggleTheme = useCallback(() => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
-  }, [resolvedTheme, setTheme]);
+  // ── Apply whenever theme changes ─────────────────────────────────────────
 
-  /* Sync if localStorage changes in another tab */
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
+  // ── Listen for storage events (cross-tab sync) ──────────────────────────
+
   useEffect(() => {
     function handleStorage(e: StorageEvent) {
-      if (e.key === STORAGE_KEY && e.newValue) {
-        const v = e.newValue as ThemePreference;
-        if (v === "light" || v === "dark" || v === "system") {
-          setThemeState(v);
-        }
+      if (e.key !== STORAGE_KEY) return;
+      const newValue = e.newValue;
+      if (newValue === "light" || newValue === "dark") {
+        setThemeState(newValue);
+        applyTheme(newValue);
       }
     }
+
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
-  return { theme, resolvedTheme, setTheme, toggleTheme } as const;
+  // ── Listen for system preference changes ─────────────────────────────────
+
+  useEffect(() => {
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+
+    function handleChange() {
+      // Only follow system preference if no explicit user choice
+      if (getStoredTheme() !== null) return;
+      const sys = mql.matches ? "dark" : "light";
+      setThemeState(sys);
+      applyTheme(sys);
+    }
+
+    mql.addEventListener("change", handleChange);
+    return () => mql.removeEventListener("change", handleChange);
+  }, []);
+
+  // ── Toggle ───────────────────────────────────────────────────────────────
+
+  const toggleTheme = useCallback(() => {
+    setThemeState((prev) => {
+      const next: Theme = prev === "dark" ? "light" : "dark";
+      persistTheme(next);
+      applyTheme(next);
+      return next;
+    });
+  }, []);
+
+  // ── Set ──────────────────────────────────────────────────────────────────
+
+  const setTheme = useCallback((next: Theme) => {
+    setThemeState(next);
+    persistTheme(next);
+    applyTheme(next);
+  }, []);
+
+  return {
+    theme,
+    toggleTheme,
+    setTheme,
+  };
 }

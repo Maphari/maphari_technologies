@@ -1,20 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0",
-};
+import { cx, styles } from "../style";
+import { toneClass } from "./admin-page-utils";
 
 type Trend = "stable" | "improving" | "declining";
 type Tab = "client sla scores" | "sla matrix" | "breach log" | "sla definitions";
@@ -51,7 +39,7 @@ const clients: Array<{
 }> = [
   {
     name: "Volta Studios",
-    color: C.lime,
+    color: "var(--accent)",
     tier: "Growth",
     am: "Nomsa Dlamini",
     slaData: {
@@ -67,7 +55,7 @@ const clients: Array<{
   },
   {
     name: "Kestrel Capital",
-    color: C.purple,
+    color: "var(--accent)",
     tier: "Core",
     am: "Nomsa Dlamini",
     slaData: {
@@ -83,7 +71,7 @@ const clients: Array<{
   },
   {
     name: "Mira Health",
-    color: C.blue,
+    color: "var(--blue)",
     tier: "Core",
     am: "Nomsa Dlamini",
     slaData: {
@@ -99,7 +87,7 @@ const clients: Array<{
   },
   {
     name: "Dune Collective",
-    color: C.amber,
+    color: "var(--amber)",
     tier: "Core",
     am: "Renzo Fabbri",
     slaData: {
@@ -115,7 +103,7 @@ const clients: Array<{
   },
   {
     name: "Okafor & Sons",
-    color: C.orange,
+    color: "var(--amber)",
     tier: "Core",
     am: "Tapiwa Moyo",
     slaData: {
@@ -155,105 +143,87 @@ export function SlaTrackerPage() {
   const atRisk = clients.filter((c) => c.overallScore < 70).length;
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.lime, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / OPERATIONS</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>SLA Tracker</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Response times - Breach alerts - Client service level compliance</div>
+          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <h1 className={styles.pageTitle}>SLA Tracker</h1>
+          <div className={styles.pageSub}>Response times - Breach alerts - Client service level compliance</div>
         </div>
-        <button style={{ background: C.lime, color: C.bg, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>Export SLA Report</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent")}>Export SLA Report</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Avg SLA Score", value: `${Math.round(clients.reduce((s, c) => s + c.overallScore, 0) / clients.length)}%`, color: C.lime, sub: "Across all clients" },
-          { label: "Clients At Risk", value: atRisk.toString(), color: atRisk > 0 ? C.red : C.lime, sub: "Score < 70%" },
-          { label: "Breaches (30d)", value: totalBreaches.toString(), color: totalBreaches > 5 ? C.red : C.amber, sub: "Across all SLAs" },
-          { label: "SLA Compliance", value: `${Math.round((1 - totalBreaches / 150) * 100)}%`, color: C.blue, sub: "~150 SLA events / month" },
+          { label: "Avg SLA Score", value: `${Math.round(clients.reduce((s, c) => s + c.overallScore, 0) / clients.length)}%`, color: "var(--accent)", sub: "Across all clients" },
+          { label: "Clients At Risk", value: atRisk.toString(), color: atRisk > 0 ? "var(--red)" : "var(--accent)", sub: "Score < 70%" },
+          { label: "Breaches (30d)", value: totalBreaches.toString(), color: totalBreaches > 5 ? "var(--red)" : "var(--amber)", sub: "Across all SLAs" },
+          { label: "SLA Compliance", value: `${Math.round((1 - totalBreaches / 150) * 100)}%`, color: "var(--blue)", sub: "~150 SLA events / month" },
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, "slaToneText", toneClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            style={{
-              background: "none",
-              border: "none",
-              color: activeTab === t ? C.lime : C.muted,
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontFamily: "Syne, sans-serif",
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              borderBottom: `2px solid ${activeTab === t ? C.lime : "transparent"}`,
-              marginBottom: -1,
-              transition: "all 0.2s",
-            }}
-          >
-            {t}
-          </button>
-        ))}
+      <div className={styles.filterRow}>
+        <select title="View" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
       {activeTab === "client sla scores" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className={cx("flexCol", "gap12")}>
           {[...clients].sort((a, b) => a.overallScore - b.overallScore).map((c) => {
-            const scoreColor = c.overallScore >= 85 ? C.lime : c.overallScore >= 65 ? C.amber : C.red;
+            const scoreColor = c.overallScore >= 85 ? "var(--accent)" : c.overallScore >= 65 ? "var(--amber)" : "var(--red)";
             const totalBreachesClient = Object.values(c.slaData)
               .filter((m): m is SlaPoint => Boolean(m))
               .reduce((s, m) => s + m.breaches30d, 0);
             return (
-              <div key={c.name} style={{ background: C.surface, border: `1px solid ${c.overallScore < 70 ? `${C.red}55` : C.border}`, borderRadius: 10, padding: 24 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 80px 80px 100px auto", alignItems: "center", gap: 20 }}>
+              <div key={c.name} className={cx("card", "p24", c.overallScore < 70 && "slaRiskCard")}>
+                <div className={cx("slaScoreGrid", "slaScoreAligned", "gap20")}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: c.color }}>{c.name}</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>
+                    <div className={cx("fw700", "slaClientName", "slaToneText", toneClass(c.color))}>{c.name}</div>
+                    <div className={cx("text11", "colorMuted")}>
                       {c.tier} tier - {c.am}
                     </div>
                   </div>
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                      <span style={{ fontSize: 11, color: C.muted }}>SLA Compliance Score</span>
-                      <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, color: scoreColor }}>{c.overallScore}%</span>
+                    <div className={cx("flexBetween", "mb6")}>
+                      <span className={cx("text11", "colorMuted")}>SLA Compliance Score</span>
+                      <span className={cx("fontMono", "fw800", "slaToneText", toneClass(scoreColor))}>{c.overallScore}%</span>
                     </div>
-                    <div style={{ height: 10, background: C.border, borderRadius: 5 }}>
-                      <div style={{ height: "100%", width: `${c.overallScore}%`, background: scoreColor, borderRadius: 5, transition: "width 0.8s" }} />
-                    </div>
+                    <progress className={cx(styles.slaProgressLg, styles.slaBarFill, toneClass(scoreColor))} max={100} value={c.overallScore} aria-label={`${c.name} SLA compliance ${c.overallScore}%`} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>Breaches</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: totalBreachesClient > 0 ? C.red : C.lime, fontSize: 18 }}>{totalBreachesClient}</div>
+                    <div className={cx("text10", "colorMuted", "mb3")}>Breaches</div>
+                    <div className={cx("fontMono", "fw700", "slaBreachCount", "slaToneText", toneClass(totalBreachesClient > 0 ? "var(--red)" : "var(--accent)"))}>{totalBreachesClient}</div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 14 }}>{c.trend === "improving" ? "▲" : c.trend === "declining" ? "▼" : "→"}</span>
-                    <span style={{ fontSize: 11, color: c.trend === "improving" ? C.lime : c.trend === "declining" ? C.red : C.muted }}>{c.trend}</span>
+                  <div className={cx("flexRow", "gap6")}>
+                    <span className={cx("text14")}>{c.trend === "improving" ? "\u25B2" : c.trend === "declining" ? "\u25BC" : "\u2192"}</span>
+                    <span className={cx("text11", "slaToneText", toneClass(c.trend === "improving" ? "var(--accent)" : c.trend === "declining" ? "var(--red)" : "var(--muted)"))}>{c.trend}</span>
                   </div>
-                  {c.overallScore < 70 ? <button style={{ background: C.red, color: "#fff", border: "none", padding: "8px 14px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Action Required</button> : <button style={{ background: C.border, border: "none", color: C.text, padding: "8px 14px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>View Detail</button>}
+                  {c.overallScore < 70 ? (
+                    <button type="button" className={cx("btnSm", "slaActionBtn")}>Action Required</button>
+                  ) : (
+                    <button type="button" className={cx("btnSm", "btnGhost")}>View Detail</button>
+                  )}
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginTop: 16 }}>
+                <div className={cx("slaMetricGrid", "gap10", "mt16")}>
                   {slaMetrics.map((m) => {
                     const data = c.slaData[m.key];
                     const val = m.divisor ? (data.avg / m.divisor).toFixed(1) : data.avg.toFixed(1);
                     const overTarget = data.avg > m.targetHrs;
                     return (
-                      <div key={m.key} style={{ padding: 10, background: C.bg, borderRadius: 6, textAlign: "center" }}>
-                        <div style={{ fontFamily: "DM Mono, monospace", fontSize: 16, fontWeight: 700, color: overTarget ? C.red : C.lime }}>{val}{m.unit}</div>
-                        <div style={{ fontSize: 9, color: C.muted, marginTop: 2 }}>{m.name}</div>
-                        {data.breaches30d > 0 ? <div style={{ fontSize: 8, color: C.red, marginTop: 2 }}>{data.breaches30d} breach{data.breaches30d !== 1 ? "es" : ""}</div> : null}
+                      <div key={m.key} className={cx("bgBg", "textCenter", "p12", "slaCellRadius")}>
+                        <div className={cx("fontMono", "fw700", "slaMetricValue", "slaToneText", toneClass(overTarget ? "var(--red)" : "var(--accent)"))}>{val}{m.unit}</div>
+                        <div className={cx("colorMuted", "mt4", "slaMetricName")}>{m.name}</div>
+                        {data.breaches30d > 0 ? <div className={cx("colorRed", "mt4", "slaMetricBreach")}>{data.breaches30d} breach{data.breaches30d !== 1 ? "es" : ""}</div> : null}
                       </div>
                     );
                   })}
@@ -265,20 +235,20 @@ export function SlaTrackerPage() {
       )}
 
       {activeTab === "sla matrix" && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: `160px ${clients.map(() => "1fr").join(" ")}`, padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", gap: 8 }}>
+        <div className={cx("card", "overflowHidden", "p0")}>
+          <div className={cx("slaMatrixGrid", "px20", "borderB", "text10", "colorMuted", "uppercase", "tracking", "gap8", "slaMatrixHead")}>
             <span>SLA Metric</span>
             {clients.map((c) => (
-              <span key={c.name} style={{ color: c.color, textAlign: "center" }}>
+              <span key={c.name} className={cx("textCenter", "slaToneText", toneClass(c.color))}>
                 {c.name.split(" ")[0]}
               </span>
             ))}
           </div>
           {slaMetrics.map((m, ri) => (
-            <div key={m.key} style={{ display: "grid", gridTemplateColumns: `160px ${clients.map(() => "1fr").join(" ")}`, padding: "14px 24px", borderBottom: ri < slaMetrics.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", gap: 8 }}>
+            <div key={m.key} className={cx("slaMatrixGrid", "gap8", "slaMatrixRow", ri < slaMetrics.length - 1 && "borderB")}>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 600 }}>{m.name}</div>
-                <div style={{ fontSize: 10, color: C.muted }}>
+                <div className={cx("text12", "fw600")}>{m.name}</div>
+                <div className={cx("text10", "colorMuted")}>
                   Target: {m.targetHrs}
                   {m.unit}
                 </div>
@@ -288,12 +258,12 @@ export function SlaTrackerPage() {
                 const val = m.divisor ? (data.avg / m.divisor).toFixed(1) : data.avg.toFixed(1);
                 const ok = data.avg <= m.targetHrs;
                 return (
-                  <div key={c.name} style={{ textAlign: "center", padding: 8, background: ok ? `${C.lime}08` : `${C.red}10`, borderRadius: 6 }}>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: ok ? C.lime : C.red, fontSize: 14 }}>
+                  <div key={c.name} className={cx("textCenter", "p12", "slaCellRadius", ok ? "slaMatrixCellOk" : "slaMatrixCellFail")}>
+                    <div className={cx("fontMono", "fw700", "text14", "slaToneText", toneClass(ok ? "var(--accent)" : "var(--red)"))}>
                       {val}
                       {m.unit}
                     </div>
-                    {data.breaches30d > 0 ? <div style={{ fontSize: 9, color: C.red }}>×{data.breaches30d}</div> : null}
+                    {data.breaches30d > 0 ? <div className={cx("colorRed", "slaTiny9")}>{"\u00D7"}{data.breaches30d}</div> : null}
                   </div>
                 );
               })}
@@ -303,7 +273,7 @@ export function SlaTrackerPage() {
       )}
 
       {activeTab === "breach log" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className={cx("flexCol", "gap10")}>
           {clients
             .flatMap((c) =>
               slaMetrics
@@ -326,33 +296,33 @@ export function SlaTrackerPage() {
             )
             .sort((a, b) => b.breaches - a.breaches)
             .map((breach, i) => (
-              <div key={i} style={{ background: C.surface, border: `1px solid ${C.red}33`, borderRadius: 10, padding: 20, display: "grid", gridTemplateColumns: "160px 1fr 100px 100px 120px 80px", alignItems: "center", gap: 16 }}>
-                <div style={{ fontWeight: 700, color: breach.clientColor }}>{breach.client}</div>
+              <div key={i} className={cx("slaBreachGrid", "card", "p20", "gap16", "slaBreachCard")}>
+                <div className={cx("fw700", "slaToneText", toneClass(breach.clientColor))}>{breach.client}</div>
                 <div>
-                  <div style={{ fontWeight: 600 }}>{breach.metric}</div>
-                  <div style={{ fontSize: 11, color: C.muted }}>AM: {breach.am}</div>
+                  <div className={cx("fw600")}>{breach.metric}</div>
+                  <div className={cx("text11", "colorMuted")}>AM: {breach.am}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Avg Time</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", color: C.red, fontWeight: 700 }}>
+                  <div className={cx("text10", "colorMuted", "mb3")}>Avg Time</div>
+                  <div className={cx("fontMono", "colorRed", "fw700")}>
                     {breach.avg.toFixed(1)}
                     {breach.unit}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Target</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", color: C.lime }}>
+                  <div className={cx("text10", "colorMuted", "mb3")}>Target</div>
+                  <div className={cx("fontMono", "colorAccent")}>
                     {breach.target}
                     {breach.unit}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Last Breach</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12 }}>{breach.lastBreached}</div>
+                  <div className={cx("text10", "colorMuted", "mb3")}>Last Breach</div>
+                  <div className={cx("fontMono", "text12")}>{breach.lastBreached}</div>
                 </div>
-                <div style={{ background: `${C.red}15`, border: `1px solid ${C.red}44`, borderRadius: 6, padding: "6px 10px", textAlign: "center" }}>
-                  <div style={{ fontFamily: "DM Mono, monospace", color: C.red, fontWeight: 800 }}>{breach.breaches}</div>
-                  <div style={{ fontSize: 9, color: C.red }}>breaches</div>
+                <div className={cx("textCenter", "p12", "slaCellRadius", "slaBreachBadge")}>
+                  <div className={cx("fontMono", "colorRed", "fw800")}>{breach.breaches}</div>
+                  <div className={cx("colorRed", "slaTiny9")}>breaches</div>
                 </div>
               </div>
             ))}
@@ -360,20 +330,20 @@ export function SlaTrackerPage() {
       )}
 
       {activeTab === "sla definitions" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className={cx("flexCol", "gap12")}>
           {slaDefinitions.map((sla) => (
-            <div key={sla.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20, display: "grid", gridTemplateColumns: "80px 1fr 100px 160px auto", alignItems: "center", gap: 20 }}>
-              <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{sla.id}</span>
+            <div key={sla.id} className={cx("slaDefGrid", "card", "p20", "gap20", "slaDefRow")}>
+              <span className={cx("fontMono", "text11", "colorMuted")}>{sla.id}</span>
               <div>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>{sla.name}</div>
-                <div style={{ fontSize: 12, color: C.muted }}>{sla.description}</div>
+                <div className={cx("fw600", "mb4")}>{sla.name}</div>
+                <div className={cx("text12", "colorMuted")}>{sla.description}</div>
               </div>
-              <span style={{ fontSize: 10, color: C.blue, background: `${C.blue}15`, padding: "3px 8px", borderRadius: 4 }}>{sla.tier}</span>
-              <div style={{ fontFamily: "DM Mono, monospace", fontSize: 14, fontWeight: 700, color: C.lime }}>Target: {sla.target}</div>
-              <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>Edit</button>
+              <span className={cx("badge", "badgeBlue")}>{sla.tier}</span>
+              <div className={cx("fontMono", "text14", "fw700", "colorAccent")}>Target: {sla.target}</div>
+              <button type="button" className={cx("btnSm", "btnGhost")}>Edit</button>
             </div>
           ))}
-          <button style={{ background: C.surface, border: `1px dashed ${C.border}`, borderRadius: 10, padding: 20, color: C.muted, fontSize: 13, cursor: "pointer", textAlign: "center" }}>+ Add SLA Definition</button>
+          <button type="button" className={cx("card", "textCenter", "colorMuted", "text13", "pointerCursor", "p20", "slaAddDefBtn")}>+ Add SLA Definition</button>
         </div>
       )}
     </div>

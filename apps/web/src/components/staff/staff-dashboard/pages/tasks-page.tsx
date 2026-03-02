@@ -4,6 +4,23 @@ import { cx, styles } from "../style";
 import type { TaskContext } from "../types";
 import { capitalize, formatDuration } from "../utils";
 
+function dueToneClass(tone: string) {
+  if (tone === "var(--red)") return "colorRed";
+  if (tone === "var(--amber)") return "colorAmber";
+  if (tone === "var(--blue)" || tone === "var(--accent)" || tone === "var(--green)") return "colorAccent";
+  if (tone === "var(--purple)") return "colorPurple";
+  return "colorMuted";
+}
+
+function badgeToneClass(tone: TaskContext["statusTone"] | TaskContext["badgeTone"]): string {
+  if (tone === "red") return "badgeRed";
+  if (tone === "amber") return "badgeAmber";
+  if (tone === "green") return "badgeGreen";
+  if (tone === "blue") return "badgeBlue";
+  if (tone === "purple") return "badgePurple";
+  return "badgeMuted";
+}
+
 type TasksPageProps = {
   isActive: boolean;
   openTasksCount: number;
@@ -53,14 +70,14 @@ export function TasksPage({
   hasProjectThread
 }: TasksPageProps) {
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-tasks">
-      <div className={styles.pageHeader}>
+    <section className={cx("page", "pageBody", "tasksPage", isActive && "pageActive")} id="page-tasks">
+      <div className={cx(styles.pageHeader, "tasksHeader")}>
         <div>
           <div className={styles.pageEyebrow}>Your Assignments</div>
           <div className={styles.pageTitle}>My Tasks</div>
           <div className={styles.pageSub}>{openTasksCount} open tasks across {projectsCount} active projects.</div>
         </div>
-        <div className={styles.pageActions}>
+        <div className={cx(styles.pageActions, "tasksHeaderActions")}>
           <button className={cx("button", "buttonGhost")} type="button" onClick={onToggleHighPriority}>
             {highPriorityOnly ? "High Priority Only" : "All Priorities"}
           </button>
@@ -71,14 +88,15 @@ export function TasksPage({
       </div>
 
       {showComposer ? (
-        <div className={styles.card} style={{ marginBottom: 12 }}>
+        <div className={cx("card", "mb12", "tasksComposerCard")}>
           <div className={styles.cardHeader}>
             <span className={styles.cardHeaderTitle}>Create Task</span>
           </div>
           <div className={styles.cardBody}>
-            <div className={styles.formGrid} style={{ gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div className={cx(styles.formGrid2, "tasksComposerGrid")}>
               <select
-                className={styles.fieldInput}
+                className={cx(styles.fieldInput, "tasksComposerField")}
+                aria-label="Project for new task"
                 value={newTask.projectId}
                 onChange={(event) => onNewTaskChange({ projectId: event.target.value })}
               >
@@ -90,25 +108,25 @@ export function TasksPage({
                 ))}
               </select>
               <input
-                className={styles.fieldInput}
+                className={cx(styles.fieldInput, "tasksComposerField")}
                 placeholder="Assignee name"
                 value={newTask.assigneeName}
                 onChange={(event) => onNewTaskChange({ assigneeName: event.target.value })}
               />
               <input
-                className={styles.fieldInput}
+                className={cx(styles.fieldInput, "tasksComposerField")}
                 placeholder="Task title"
                 value={newTask.title}
                 onChange={(event) => onNewTaskChange({ title: event.target.value })}
               />
               <input
-                className={styles.fieldInput}
+                className={cx(styles.fieldInput, "tasksComposerField")}
                 type="datetime-local"
                 value={newTask.dueAt}
                 onChange={(event) => onNewTaskChange({ dueAt: event.target.value })}
               />
             </div>
-            <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
+            <div className={cx("flexEnd", "mt10")}>
               <button
                 className={cx("button", "buttonBlue")}
                 type="button"
@@ -122,78 +140,80 @@ export function TasksPage({
         </div>
       ) : null}
 
-      <div className={styles.filterTabs}>
-        {taskTabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={cx("filterTab", tab.id === activeTaskTab && "filterTabActive")}
-            type="button"
-            onClick={() => onTaskTabChange(tab.id as typeof activeTaskTab)}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className={cx("filterRow", "tasksFilterTabs")}>
+        <select
+          className={cx("filterSelect")}
+          aria-label="Task view filter"
+          value={activeTaskTab}
+          onChange={(event) => onTaskTabChange(event.target.value as typeof activeTaskTab)}
+        >
+          {taskTabs.map((tab) => (
+            <option key={tab.id} value={tab.id}>
+              {tab.label}
+            </option>
+          ))}
+        </select>
       </div>
 
-      <div className={cx("card", "fullWidth")}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Priority</th>
-              <th>Task</th>
-              <th>Project</th>
-              <th>Client</th>
-              <th>Status</th>
-              <th>Est.</th>
-              <th>Due</th>
-              <th>Client Thread</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTasks.length === 0 ? (
+      <div className={cx("card", "fullWidth", "tasksTableCard")}>
+        <div className={styles.tableWrap}>
+          <table className={cx(styles.table, "tasksTable")}>
+            <thead>
               <tr>
-                <td colSpan={9} className={styles.emptyState}>No tasks in this view yet.</td>
+                <th className={cx("textCenter")} scope="col">Priority</th>
+                <th scope="col">Task</th>
+                <th scope="col">Project</th>
+                <th scope="col">Client</th>
+                <th scope="col">Status</th>
+                <th className={cx("textRight")} scope="col">Est.</th>
+                <th className={cx("textRight")} scope="col">Due</th>
+                <th className={cx("textCenter")} scope="col">Client Thread</th>
+                <th className={cx("textCenter")} scope="col">Action</th>
               </tr>
-            ) : (
-              filteredTasks.map((task) => (
-                <tr key={task.id}>
-                  <td><div className={cx("priority", `priority${capitalize(task.priority)}`)} title={capitalize(task.priority)} /></td>
-                  <td>
-                    <div className={styles.tableName}>{task.title}</div>
-                    <div className={styles.tableSub}>{task.subtitle}</div>
-                  </td>
-                  <td><span className={cx("badge", `badge${capitalize(task.badgeTone)}`)}>{task.projectName}</span></td>
-                  <td style={{ fontSize: "0.72rem", color: "var(--muted)" }}>{task.clientName}</td>
-                  <td><span className={cx("badge", `badge${capitalize(task.badgeTone)}`)}>{task.statusLabel}</span></td>
-                  <td><span className={styles.mono} style={{ fontSize: "0.68rem", color: "var(--muted)" }}>{formatDuration(task.estimateMinutes)}</span></td>
-                  <td><span className={styles.mono} style={{ fontSize: "0.68rem", color: task.dueTone }}>{task.dueLabel}</span></td>
-                  <td>
-                    <button
-                      className={cx("button", hasProjectThread(task.projectId) ? "buttonGhost" : "buttonDisabled")}
-                      type="button"
-                      style={{ padding: "4px 10px", fontSize: "0.6rem" }}
-                      onClick={() => onOpenTaskThread(task.projectId)}
-                      disabled={!hasProjectThread(task.projectId)}
-                    >
-                      {hasProjectThread(task.projectId) ? "Open Thread" : "No Thread"}
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      className={cx("button", task.status === "DONE" ? "buttonGreen" : "buttonGhost")}
-                      type="button"
-                      style={{ padding: "4px 10px", fontSize: "0.6rem" }}
-                      onClick={() => onTaskAction(task.id, task.projectId, task.status)}
-                    >
-                      {task.status === "DONE" ? "Done" : task.status === "IN_PROGRESS" ? "Mark Done" : task.status === "BLOCKED" ? "Unblock" : "Start"}
-                    </button>
-                  </td>
+            </thead>
+            <tbody>
+              {filteredTasks.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className={cx(styles.emptyState, "tasksEmptyState")}>No tasks in this view yet.</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredTasks.map((task) => (
+                  <tr key={task.id} className={cx("tasksTableRow")}>
+                    <td className={cx("textCenter")}><div className={cx("priority", "tasksPriorityDot", `priority${capitalize(task.priority)}`)} title={capitalize(task.priority)} /></td>
+                    <td>
+                      <div className={styles.tableName}>{task.title}</div>
+                      <div className={styles.tableSub}>{task.subtitle}</div>
+                    </td>
+                    <td><span className={cx("badge", "tasksProjectBadge", badgeToneClass(task.badgeTone))}>{task.projectName}</span></td>
+                    <td><span className={cx("textSm", "colorMuted")}>{task.clientName}</span></td>
+                    <td><span className={cx("badge", "tasksStatusBadge", badgeToneClass(task.statusTone))}>{task.statusLabel}</span></td>
+                    <td className={cx("textRight")}><span className={cx("mono", "text11", "colorMuted")}>{formatDuration(task.estimateMinutes)}</span></td>
+                    <td className={cx("textRight")}><span className={cx("mono", "text11", "tasksDueLabel", dueToneClass(task.dueTone))}>{task.dueLabel}</span></td>
+                    <td className={cx("textCenter")}>
+                      <button
+                        className={cx("btnXs", "tasksActionBtn", hasProjectThread(task.projectId) ? "buttonGhost" : "buttonDisabled")}
+                        type="button"
+                        onClick={() => onOpenTaskThread(task.projectId)}
+                        disabled={!hasProjectThread(task.projectId)}
+                      >
+                        {hasProjectThread(task.projectId) ? "Open Thread" : "No Thread"}
+                      </button>
+                    </td>
+                    <td className={cx("textCenter")}>
+                      <button
+                        className={cx("btnXs", "tasksActionBtn", task.status === "DONE" ? "buttonGreen" : "buttonGhost")}
+                        type="button"
+                        onClick={() => onTaskAction(task.id, task.projectId, task.status)}
+                      >
+                        {task.status === "DONE" ? "Done" : task.status === "IN_PROGRESS" ? "Mark Done" : task.status === "BLOCKED" ? "Unblock" : "Start"}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );

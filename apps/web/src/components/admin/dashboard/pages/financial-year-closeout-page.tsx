@@ -1,20 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { cx, styles } from "../style";
+import { toneClass } from "./admin-page-utils";
 import { AdminTabs } from "./shared";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
 
 type CloseoutTask = {
   task: string;
@@ -32,7 +21,7 @@ type CloseoutSection = {
 const fyChecklist: CloseoutSection[] = [
   {
     category: "Revenue & Invoicing",
-    color: C.primary,
+    color: "var(--accent)",
     tasks: [
       { task: "All invoices issued for FY2025", done: true, doneDate: "Jan 15", note: null },
       { task: "Outstanding invoices chased and resolved", done: false, note: "INV-0039 (Kestrel) still outstanding" },
@@ -43,7 +32,7 @@ const fyChecklist: CloseoutSection[] = [
   },
   {
     category: "Expenses & Payroll",
-    color: C.amber,
+    color: "var(--amber)",
     tasks: [
       { task: "All staff payroll processed for Feb", done: false, note: "Scheduled Feb 25", doneDate: null },
       { task: "All supplier invoices captured", done: true, doneDate: "Feb 10", note: null },
@@ -54,7 +43,7 @@ const fyChecklist: CloseoutSection[] = [
   },
   {
     category: "Tax & SARS",
-    color: C.red,
+    color: "var(--red)",
     tasks: [
       { task: "PAYE submissions up to date (EMP201)", done: true, doneDate: "Feb 7", note: null },
       { task: "UIF contributions up to date", done: true, doneDate: "Feb 7", note: null },
@@ -65,7 +54,7 @@ const fyChecklist: CloseoutSection[] = [
   },
   {
     category: "Financial Statements",
-    color: C.blue,
+    color: "var(--blue)",
     tasks: [
       { task: "Trial balance reviewed", done: false, note: "Scheduled with accountant Mar 10", doneDate: null },
       { task: "P&L statement prepared", done: false, note: null, doneDate: null },
@@ -76,7 +65,7 @@ const fyChecklist: CloseoutSection[] = [
   },
   {
     category: "Year-End Admin",
-    color: C.primary,
+    color: "var(--accent)",
     tasks: [
       { task: "All contracts filed and archived", done: true, doneDate: "Feb 1", note: null },
       { task: "Staff IRP5 certificates issued", done: false, note: "Due May 2026", doneDate: null },
@@ -126,53 +115,41 @@ export function FinancialYearCloseoutPage() {
   }, []);
 
   return (
-    <div
-      style={{
-        background: C.bg,
-        height: "100%",
-        fontFamily: "Syne, sans-serif",
-        color: C.text,
-        padding: 0,
-        overflow: "hidden",
-        display: "grid",
-        gridTemplateRows: "auto auto auto auto 1fr",
-        minHeight: 0
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={cx(styles.pageBody, styles.fyRoot)}>
+      <div className={cx("flexBetween", "mb28")}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / FINANCIAL</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Financial Year Closeout</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>FY2025 closeout checklist, year-end summary, and SARS compliance</div>
+          <div className={cx("pageEyebrow")}>ADMIN / FINANCIAL</div>
+          <h1 className={cx("pageTitle")}>Financial Year Closeout</h1>
+          <div className={cx("pageSub")}>FY2025 closeout checklist, year-end summary, and SARS compliance</div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "8px 16px", fontSize: 12, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>Share with Accountant</button>
-          <button style={{ background: C.primary, color: C.bg, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>Export FY Pack</button>
+        <div className={cx("flexRow", "gap8")}>
+          <button type="button" className={cx("btnSm", "btnGhost", "fontMono")}>Share with Accountant</button>
+          <button type="button" className={cx("btnSm", "btnAccent", "fontMono")}>Export FY Pack</button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack", "gap16", "mb16")}>
         {[
-          { label: "Closeout Progress", value: `${pct}%`, color: pct >= 80 ? C.primary : C.amber, sub: `${doneTasks}/${totalTasks} tasks done` },
-          { label: "Blocking Items", value: blocking.toString(), color: blocking > 0 ? C.red : C.primary, sub: "Notes or issues flagged" },
-          { label: "FY End Date", value: "28 Feb 2026", color: C.blue, sub: "South African FY" },
-          { label: "Accountant Review", value: "10 Mar 2026", color: C.primary, sub: "Scheduled" }
+          { label: "Closeout Progress", value: `${pct}%`, color: pct >= 80 ? "var(--accent)" : "var(--amber)", sub: `${doneTasks}/${totalTasks} tasks done` },
+          { label: "Blocking Items", value: blocking.toString(), color: blocking > 0 ? "var(--red)" : "var(--accent)", sub: "Notes or issues flagged" },
+          { label: "FY End Date", value: "28 Feb 2026", color: "var(--blue)", sub: "South African FY" },
+          { label: "Accountant Review", value: "10 Mar 2026", color: "var(--accent)", sub: "Scheduled" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={cx("statCard")}>
+            <div className={cx("statLabel")}>{s.label}</div>
+            <div className={cx("statValue", styles.fyToneText, toneClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20, marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-          <span style={{ fontWeight: 700 }}>FY2025 Closeout - Overall Progress</span>
-          <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, color: pct >= 80 ? C.primary : C.amber }}>{pct}%</span>
+      <div className={cx("card", "p20", "mb16")}>
+        <div className={cx("flexBetween", "mb8")}>
+          <span className={cx("fw700")}>FY2025 Closeout - Overall Progress</span>
+          <span className={cx("fontMono", "fw800", styles.fyToneText, pct >= 80 ? "toneAccent" : "toneAmber")}>{pct}%</span>
         </div>
-        <div style={{ height: 16, background: C.border, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: pct >= 80 ? C.primary : C.amber, transition: "width 0.8s" }} />
+        <div className={cx("progressBar", styles.fyProgressLg)}>
+          <progress className={cx("barFill", "uiProgress", styles.fyBarFillSmooth, pct >= 80 ? "toneAccent" : "toneAmber")} max={100} value={pct} />
         </div>
       </div>
 
@@ -180,40 +157,44 @@ export function FinancialYearCloseoutPage() {
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        primaryColor={C.primary}
-        mutedColor={C.muted}
-        panelColor={C.surface}
-        borderColor={C.border}
+        primaryColor="var(--accent)"
+        mutedColor="var(--muted)"
+        panelColor="var(--surface)"
+        borderColor="var(--border)"
       />
 
-      <div style={{ overflow: "auto", minHeight: 0 }}>
+      <div className={cx("overflowAuto", "minH0")}>
         {activeTab === "fy checklist" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className={cx("grid2", "gap16")}>
             {fyChecklist.map((section) => {
               const done = section.tasks.filter((t) => t.done).length;
               const total = section.tasks.length;
               const sectionPct = Math.round((done / total) * 100);
               return (
-                <div key={section.category} style={{ background: C.surface, border: `1px solid ${section.color}33`, padding: 24 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                    <div style={{ fontWeight: 700, color: section.color, textTransform: "uppercase", fontSize: 12, letterSpacing: "0.06em" }}>{section.category}</div>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: sectionPct === 100 ? C.primary : C.amber }}>{done}/{total}</span>
+                <div key={section.category} className={cx("card", "p24", styles.fySectionCard, toneClass(section.color))}>
+                  <div className={cx("flexBetween", "mb16")}>
+                    <div className={cx("fw700", "uppercase", "text12", styles.fyToneText, toneClass(section.color))}>{section.category}</div>
+                    <span className={cx("fontMono", "text12", styles.fyToneText, sectionPct === 100 ? "toneAccent" : "toneAmber")}>{done}/{total}</span>
                   </div>
-                  <div style={{ height: 4, background: C.border, marginBottom: 16 }}>
-                    <div style={{ height: "100%", width: `${sectionPct}%`, background: sectionPct === 100 ? C.primary : section.color }} />
+                  <div className={cx("progressBar", "mb16")}>
+                    <progress className={cx("barFill", "uiProgress", sectionPct === 100 ? "toneAccent" : toneClass(section.color))} max={100} value={sectionPct} />
                   </div>
-                  {section.tasks.map((task, i) => (
-                    <div key={i} style={{ display: "flex", gap: 10, marginBottom: 10, alignItems: "flex-start" }}>
-                      <div style={{ width: 16, height: 16, border: `2px solid ${task.done ? C.primary : C.border}`, background: task.done ? C.primary : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-                        {task.done ? <span style={{ fontSize: 9, color: C.bg, fontWeight: 800 }}>✓</span> : null}
+                  {section.tasks.map((task, i) => {
+                    const taskTone = task.done ? "var(--muted)" : "var(--text)";
+                    return (
+                    <div key={i} className={cx("flexRow", "gap10", "mb10", styles.fyAlignStart)}>
+                      <div
+                        className={cx("flexCenter", "noShrink", styles.fyTaskBox, task.done && styles.fyTaskBoxDone)}
+                      >
+                        {task.done ? <span className={styles.fyTaskCheck}>&#10003;</span> : null}
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, color: task.done ? C.muted : C.text, textDecoration: task.done ? "line-through" : "none" }}>{task.task}</div>
-                        {task.doneDate ? <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>Done {task.doneDate}</div> : null}
-                        {task.note ? <div style={{ fontSize: 10, color: task.done ? C.muted : C.amber, marginTop: 2 }}>{task.note}</div> : null}
+                      <div className={styles.fyFlex1}>
+                        <div className={cx("text12", styles.fyToneText, toneClass(taskTone), task.done && styles.fyLineThrough)}>{task.task}</div>
+                        {task.doneDate ? <div className={cx("text10", "colorMuted", "mt4")}>Done {task.doneDate}</div> : null}
+                        {task.note ? <div className={cx("text10", "mt4", styles.fyToneText, task.done ? "toneMuted" : "toneAmber")}>{task.note}</div> : null}
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               );
             })}
@@ -221,106 +202,106 @@ export function FinancialYearCloseoutPage() {
         ) : null}
 
         {activeTab === "fy2025 summary" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>FY2025 Key Financials</div>
+          <div className={cx("grid2", "gap20")}>
+            <div className={cx("card", "p24")}>
+              <div className={cx("text13", "fw700", "mb20", "uppercase")}>FY2025 Key Financials</div>
               {[
-                { label: "Total Revenue", value: `R${(fy2025Summary.totalRevenue / 1000000).toFixed(2)}m`, color: C.primary, big: true },
-                { label: "Total Costs", value: `R${(fy2025Summary.totalCosts / 1000000).toFixed(2)}m`, color: C.red, big: false },
-                { label: "Gross Profit", value: `R${(fy2025Summary.grossProfit / 1000000).toFixed(2)}m`, color: C.primary, big: false },
-                { label: "Gross Margin", value: `${fy2025Summary.grossMargin}%`, color: C.primary, big: false },
-                { label: "Net Profit", value: `R${(fy2025Summary.netProfit / 1000000).toFixed(2)}m`, color: C.primary, big: true },
-                { label: "Net Margin", value: `${fy2025Summary.netMargin}%`, color: C.primary, big: false }
+                { label: "Total Revenue", value: `R${(fy2025Summary.totalRevenue / 1000000).toFixed(2)}m`, color: "var(--accent)", big: true },
+                { label: "Total Costs", value: `R${(fy2025Summary.totalCosts / 1000000).toFixed(2)}m`, color: "var(--red)", big: false },
+                { label: "Gross Profit", value: `R${(fy2025Summary.grossProfit / 1000000).toFixed(2)}m`, color: "var(--accent)", big: false },
+                { label: "Gross Margin", value: `${fy2025Summary.grossMargin}%`, color: "var(--accent)", big: false },
+                { label: "Net Profit", value: `R${(fy2025Summary.netProfit / 1000000).toFixed(2)}m`, color: "var(--accent)", big: true },
+                { label: "Net Margin", value: `${fy2025Summary.netMargin}%`, color: "var(--accent)", big: false }
               ].map((r) => (
-                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}`, alignItems: "center" }}>
-                  <span style={{ fontSize: 12, color: C.muted }}>{r.label}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", fontWeight: r.big ? 800 : 600, color: r.color, fontSize: r.big ? 18 : 14 }}>{r.value}</span>
+                <div key={r.label} className={cx("flexBetween", "borderB", "py10")}>
+                  <span className={cx("text12", "colorMuted")}>{r.label}</span>
+                  <span className={cx("fontMono", styles.fyNumStat, r.big ? styles.fyNumBig : styles.fyNumMd, styles.fyToneText, toneClass(r.color))}>{r.value}</span>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 24 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Business Growth</div>
+            <div className={cx("flexCol", "gap16")}>
+              <div className={cx("card", "p24")}>
+                <div className={cx("text13", "fw700", "mb16", "uppercase")}>Business Growth</div>
                 {[
-                  { label: "MRR at year-start", value: `R${(fy2025Summary.mrrAtYearStart / 1000).toFixed(0)}k`, color: C.muted },
-                  { label: "MRR at year-end", value: `R${(fy2025Summary.mrrAtYearEnd / 1000).toFixed(0)}k`, color: C.primary },
-                  { label: "MRR growth", value: `+${fy2025Summary.mrrGrowth}%`, color: C.primary },
-                  { label: "New clients won", value: fy2025Summary.newClientsWon.toString(), color: C.blue },
-                  { label: "Clients lost (churn)", value: fy2025Summary.clientsLost.toString(), color: C.red }
+                  { label: "MRR at year-start", value: `R${(fy2025Summary.mrrAtYearStart / 1000).toFixed(0)}k`, color: "var(--muted)" },
+                  { label: "MRR at year-end", value: `R${(fy2025Summary.mrrAtYearEnd / 1000).toFixed(0)}k`, color: "var(--accent)" },
+                  { label: "MRR growth", value: `+${fy2025Summary.mrrGrowth}%`, color: "var(--accent)" },
+                  { label: "New clients won", value: fy2025Summary.newClientsWon.toString(), color: "var(--blue)" },
+                  { label: "Clients lost (churn)", value: fy2025Summary.clientsLost.toString(), color: "var(--red)" }
                 ].map((r) => (
-                  <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
-                    <span style={{ color: C.muted }}>{r.label}</span>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: r.color }}>{r.value}</span>
+                  <div key={r.label} className={cx("flexBetween", "borderB", "text12", styles.fyRowPy8)}>
+                    <span className={cx("colorMuted")}>{r.label}</span>
+                    <span className={cx("fontMono", "fw700", styles.fyToneText, toneClass(r.color))}>{r.value}</span>
                   </div>
                 ))}
               </div>
-              <div style={{ background: "#0a101d", border: `1px solid ${C.primary}22`, padding: 24 }}>
-                <div style={{ fontFamily: "DM Mono, monospace", fontSize: 36, fontWeight: 800, color: C.primary }}>R{(fy2025Summary.netProfit / 1000000).toFixed(2)}m</div>
-                <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>Net profit · FY2025 · {fy2025Summary.netMargin}% margin</div>
+              <div className={cx("card", "p24", styles.fyProfitCard)}>
+                <div className={cx("fontMono", "fw800", styles.fyProfitValue, "colorAccent")}>R{(fy2025Summary.netProfit / 1000000).toFixed(2)}m</div>
+                <div className={cx("text12", "colorMuted", "mt4")}>Net profit &middot; FY2025 &middot; {fy2025Summary.netMargin}% margin</div>
               </div>
             </div>
           </div>
         ) : null}
 
         {activeTab === "p&l snapshot" ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 32, maxWidth: 680 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, color: C.primary }}>MAPHARI CREATIVE STUDIO</div>
-            <div style={{ fontSize: 12, color: C.muted, marginBottom: 24 }}>Profit & Loss - Financial Year March 2025 to February 2026</div>
+          <div className={cx("card", "p24", styles.fyPLCard)}>
+            <div className={cx("text14", "fw700", "mb4", "colorAccent")}>MAPHARI CREATIVE STUDIO</div>
+            <div className={cx("text12", "colorMuted", "mb24")}>Profit &amp; Loss - Financial Year March 2025 to February 2026</div>
 
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Revenue</div>
+            <div className={cx("mb20")}>
+              <div className={cx("text11", "fw700", "colorMuted", "uppercase", "mb8")}>Revenue</div>
               {[
                 { label: "Retainer revenue", value: 3142000 },
                 { label: "Project revenue", value: 1118000 }
               ].map((r) => (
-                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}22`, fontSize: 13 }}>
-                  <span style={{ color: C.muted, paddingLeft: 16 }}>{r.label}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace" }}>R{r.value.toLocaleString()}</span>
+                <div key={r.label} className={cx("flexBetween", "text13", styles.fySubRow)}>
+                  <span className={cx("colorMuted", styles.fyPl16)}>{r.label}</span>
+                  <span className={cx("fontMono")}>R{r.value.toLocaleString()}</span>
                 </div>
               ))}
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 14, fontWeight: 700 }}>
+              <div className={cx("flexBetween", "text14", "fw700", styles.fyRowPy10)}>
                 <span>Total Revenue</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: C.primary }}>R{fy2025Summary.totalRevenue.toLocaleString()}</span>
+                <span className={cx("fontMono", "colorAccent")}>R{fy2025Summary.totalRevenue.toLocaleString()}</span>
               </div>
             </div>
 
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Cost of Sales</div>
+            <div className={cx("mb20")}>
+              <div className={cx("text11", "fw700", "colorMuted", "uppercase", "mb8")}>Cost of Sales</div>
               {[
                 { label: "Staff salaries & PAYE", value: fy2025Summary.staffCosts },
                 { label: "Freelancer costs", value: fy2025Summary.freelancerCosts },
                 { label: "Tools & software", value: fy2025Summary.toolsCosts }
               ].map((r) => (
-                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}22`, fontSize: 13 }}>
-                  <span style={{ color: C.muted, paddingLeft: 16 }}>{r.label}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace" }}>({r.value.toLocaleString()})</span>
+                <div key={r.label} className={cx("flexBetween", "text13", styles.fySubRow)}>
+                  <span className={cx("colorMuted", styles.fyPl16)}>{r.label}</span>
+                  <span className={cx("fontMono")}>({r.value.toLocaleString()})</span>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderTop: `2px solid ${C.border}`, borderBottom: `2px solid ${C.border}`, fontSize: 14, fontWeight: 700, marginBottom: 20 }}>
+            <div className={cx("flexBetween", "text14", "fw700", "mb20", styles.fyGrossRow)}>
               <span>Gross Profit</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: C.primary }}>
+              <span className={cx("fontMono", "colorAccent")}>
                 R{fy2025Summary.grossProfit.toLocaleString()} ({fy2025Summary.grossMargin}%)
               </span>
             </div>
 
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Operating Expenses</div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}22`, fontSize: 13 }}>
-                <span style={{ color: C.muted, paddingLeft: 16 }}>Rent & facilities</span>
-                <span style={{ fontFamily: "DM Mono, monospace" }}>(264000)</span>
+            <div className={cx("mb20")}>
+              <div className={cx("text11", "fw700", "colorMuted", "uppercase", "mb8")}>Operating Expenses</div>
+              <div className={cx("flexBetween", "text13", styles.fySubRow)}>
+                <span className={cx("colorMuted", styles.fyPl16)}>Rent &amp; facilities</span>
+                <span className={cx("fontMono")}>(264000)</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}22`, fontSize: 13 }}>
-                <span style={{ color: C.muted, paddingLeft: 16 }}>Marketing & BD</span>
-                <span style={{ fontFamily: "DM Mono, monospace" }}>(156000)</span>
+              <div className={cx("flexBetween", "text13", styles.fySubRow)}>
+                <span className={cx("colorMuted", styles.fyPl16)}>Marketing &amp; BD</span>
+                <span className={cx("fontMono")}>(156000)</span>
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 0", borderTop: `3px solid ${C.primary}`, fontSize: 16, fontWeight: 800 }}>
+            <div className={cx("flexBetween", "fw800", styles.fyNetRow)}>
               <span>Net Profit Before Tax</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: C.primary }}>
+              <span className={cx("fontMono", "colorAccent")}>
                 R{fy2025Summary.netProfit.toLocaleString()} ({fy2025Summary.netMargin}%)
               </span>
             </div>
@@ -328,22 +309,22 @@ export function FinancialYearCloseoutPage() {
         ) : null}
 
         {activeTab === "key learnings" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className={cx("flexCol", "gap16")}>
             {[
-              { title: "Freelancer costs need tighter controls", detail: "Dune Collective ran 25% over budget due to uncontrolled freelancer scope. Add approval gates for any spend over R5k.", type: "cost", color: C.red },
-              { title: "Invoice payment terms need enforcement", detail: "Three clients exceeded 30-day terms. Auto-escalate at 14 days. Late payments left R73k outstanding at year-end.", type: "cashflow", color: C.amber },
-              { title: "MRR growth is healthy", detail: "MRR grew 56% from R244k to R381k. Retainer model drove predictability. Prioritise retainer conversion in BD.", type: "growth", color: C.primary },
-              { title: "Staff cost ratio is trending up", detail: "Staff costs as % of revenue rose from 31% to 36%. Tie hiring to new client MRR instead of workload only.", type: "cost", color: C.amber },
-              { title: "Tool sprawl increased spend", detail: "Eight tools were added in FY2025. Run a consolidation review before locking FY2026 budgets.", type: "efficiency", color: C.blue }
+              { title: "Freelancer costs need tighter controls", detail: "Dune Collective ran 25% over budget due to uncontrolled freelancer scope. Add approval gates for any spend over R5k.", type: "cost", color: "var(--red)" },
+              { title: "Invoice payment terms need enforcement", detail: "Three clients exceeded 30-day terms. Auto-escalate at 14 days. Late payments left R73k outstanding at year-end.", type: "cashflow", color: "var(--amber)" },
+              { title: "MRR growth is healthy", detail: "MRR grew 56% from R244k to R381k. Retainer model drove predictability. Prioritise retainer conversion in BD.", type: "growth", color: "var(--accent)" },
+              { title: "Staff cost ratio is trending up", detail: "Staff costs as % of revenue rose from 31% to 36%. Tie hiring to new client MRR instead of workload only.", type: "cost", color: "var(--amber)" },
+              { title: "Tool sprawl increased spend", detail: "Eight tools were added in FY2025. Run a consolidation review before locking FY2026 budgets.", type: "efficiency", color: "var(--blue)" }
             ].map((l, i) => (
-              <div key={i} style={{ background: C.surface, border: `1px solid ${l.color}33`, padding: 24, display: "grid", gridTemplateColumns: "4px 1fr", gap: 20 }}>
-                <div style={{ background: l.color, width: 4, alignSelf: "stretch" }} />
+              <div key={i} className={cx("card", "fyLearningCard", styles.fyLearningItem, toneClass(l.color))}>
+                <div className={styles.fyLearningBar} />
                 <div>
-                  <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
-                    <span style={{ fontSize: 10, color: l.color, background: `${l.color}15`, padding: "2px 8px", fontFamily: "DM Mono, monospace", textTransform: "uppercase" }}>{l.type}</span>
+                  <div className={cx("flexRow", "gap10", "mb8", styles.fyAlignCenter)}>
+                    <span className={cx("text10", "fontMono", "uppercase", styles.fyLearningType)}>{l.type}</span>
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{l.title}</div>
-                  <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>{l.detail}</div>
+                  <div className={cx("fw700", "mb8", styles.fyTitle15)}>{l.title}</div>
+                  <div className={cx("text13", "colorMuted", styles.fyLine17)}>{l.detail}</div>
                 </div>
               </div>
             ))}

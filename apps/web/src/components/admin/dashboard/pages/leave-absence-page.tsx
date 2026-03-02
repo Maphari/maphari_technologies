@@ -1,20 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AdminFilterBar, AdminTabs } from "./shared";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { colorClass } from "./admin-page-utils";
+import { AdminFilterBar } from "./shared";
 
 type StaffMember = {
   id: string;
@@ -43,33 +32,33 @@ type LeaveRequest = {
 };
 
 const staff: StaffMember[] = [
-  { id: "EMP-001", name: "Sipho Nkosi", role: "Founder & CEO", avatar: "SN", color: C.primary, annualLeave: { total: 21, used: 8, pending: 0 }, sickLeave: { total: 30, used: 2 }, familyLeave: { total: 3, used: 0 } },
-  { id: "EMP-002", name: "Leilani Fotu", role: "Head of Operations", avatar: "LF", color: C.blue, annualLeave: { total: 21, used: 14, pending: 5 }, sickLeave: { total: 30, used: 6 }, familyLeave: { total: 3, used: 0 } },
-  { id: "EMP-003", name: "Renzo Fabbri", role: "Creative Director", avatar: "RF", color: C.orange, annualLeave: { total: 21, used: 18, pending: 0 }, sickLeave: { total: 30, used: 12 }, familyLeave: { total: 3, used: 1 } },
-  { id: "EMP-004", name: "Nomsa Dlamini", role: "Account Manager", avatar: "ND", color: C.primary, annualLeave: { total: 21, used: 6, pending: 3 }, sickLeave: { total: 30, used: 0 }, familyLeave: { total: 3, used: 0 } },
-  { id: "EMP-005", name: "Kira Bosman", role: "UX Designer", avatar: "KB", color: C.amber, annualLeave: { total: 21, used: 10, pending: 0 }, sickLeave: { total: 30, used: 4 }, familyLeave: { total: 3, used: 0 } },
-  { id: "EMP-006", name: "Tapiwa Moyo", role: "Copywriter", avatar: "TM", color: C.blue, annualLeave: { total: 21, used: 5, pending: 2 }, sickLeave: { total: 30, used: 1 }, familyLeave: { total: 3, used: 0 } }
+  { id: "EMP-001", name: "Sipho Nkosi", role: "Founder & CEO", avatar: "SN", color: "var(--accent)", annualLeave: { total: 21, used: 8, pending: 0 }, sickLeave: { total: 30, used: 2 }, familyLeave: { total: 3, used: 0 } },
+  { id: "EMP-002", name: "Leilani Fotu", role: "Head of Operations", avatar: "LF", color: "var(--blue)", annualLeave: { total: 21, used: 14, pending: 5 }, sickLeave: { total: 30, used: 6 }, familyLeave: { total: 3, used: 0 } },
+  { id: "EMP-003", name: "Renzo Fabbri", role: "Creative Director", avatar: "RF", color: "var(--amber)", annualLeave: { total: 21, used: 18, pending: 0 }, sickLeave: { total: 30, used: 12 }, familyLeave: { total: 3, used: 1 } },
+  { id: "EMP-004", name: "Nomsa Dlamini", role: "Account Manager", avatar: "ND", color: "var(--accent)", annualLeave: { total: 21, used: 6, pending: 3 }, sickLeave: { total: 30, used: 0 }, familyLeave: { total: 3, used: 0 } },
+  { id: "EMP-005", name: "Kira Bosman", role: "UX Designer", avatar: "KB", color: "var(--amber)", annualLeave: { total: 21, used: 10, pending: 0 }, sickLeave: { total: 30, used: 4 }, familyLeave: { total: 3, used: 0 } },
+  { id: "EMP-006", name: "Tapiwa Moyo", role: "Copywriter", avatar: "TM", color: "var(--blue)", annualLeave: { total: 21, used: 5, pending: 2 }, sickLeave: { total: 30, used: 1 }, familyLeave: { total: 3, used: 0 } }
 ];
 
 const leaveRequests: LeaveRequest[] = [
-  { id: "LEA-022", employee: "Leilani Fotu", avatar: "LF", color: C.blue, type: "Annual Leave", from: "Mar 10", to: "Mar 14", days: 5, status: "pending", submittedDate: "Feb 20", reason: "Family holiday", cover: "Sipho Nkosi" },
-  { id: "LEA-021", employee: "Nomsa Dlamini", avatar: "ND", color: C.primary, type: "Annual Leave", from: "Mar 3", to: "Mar 5", days: 3, status: "pending", submittedDate: "Feb 18", reason: "Personal", cover: "Leilani Fotu" },
-  { id: "LEA-020", employee: "Tapiwa Moyo", avatar: "TM", color: C.blue, type: "Annual Leave", from: "Feb 26", to: "Feb 27", days: 2, status: "approved", submittedDate: "Feb 14", reason: "Rest days", cover: null },
-  { id: "LEA-019", employee: "Renzo Fabbri", avatar: "RF", color: C.orange, type: "Sick Leave", from: "Feb 10", to: "Feb 12", days: 3, status: "approved", submittedDate: "Feb 10", reason: "Flu - medical note attached", cover: "Sipho Nkosi" },
-  { id: "LEA-018", employee: "Kira Bosman", avatar: "KB", color: C.amber, type: "Annual Leave", from: "Jan 26", to: "Feb 4", days: 8, status: "approved", submittedDate: "Jan 8", reason: "Summer leave", cover: "Renzo Fabbri" }
+  { id: "LEA-022", employee: "Leilani Fotu", avatar: "LF", color: "var(--blue)", type: "Annual Leave", from: "Mar 10", to: "Mar 14", days: 5, status: "pending", submittedDate: "Feb 20", reason: "Family holiday", cover: "Sipho Nkosi" },
+  { id: "LEA-021", employee: "Nomsa Dlamini", avatar: "ND", color: "var(--accent)", type: "Annual Leave", from: "Mar 3", to: "Mar 5", days: 3, status: "pending", submittedDate: "Feb 18", reason: "Personal", cover: "Leilani Fotu" },
+  { id: "LEA-020", employee: "Tapiwa Moyo", avatar: "TM", color: "var(--blue)", type: "Annual Leave", from: "Feb 26", to: "Feb 27", days: 2, status: "approved", submittedDate: "Feb 14", reason: "Rest days", cover: null },
+  { id: "LEA-019", employee: "Renzo Fabbri", avatar: "RF", color: "var(--amber)", type: "Sick Leave", from: "Feb 10", to: "Feb 12", days: 3, status: "approved", submittedDate: "Feb 10", reason: "Flu - medical note attached", cover: "Sipho Nkosi" },
+  { id: "LEA-018", employee: "Kira Bosman", avatar: "KB", color: "var(--amber)", type: "Annual Leave", from: "Jan 26", to: "Feb 4", days: 8, status: "approved", submittedDate: "Jan 8", reason: "Summer leave", cover: "Renzo Fabbri" }
 ];
 
 const statusConfig: Record<LeaveRequest["status"], { color: string; label: string }> = {
-  pending: { color: C.amber, label: "Pending" },
-  approved: { color: C.primary, label: "Approved" },
-  declined: { color: C.red, label: "Declined" }
+  pending: { color: "var(--amber)", label: "Pending" },
+  approved: { color: "var(--accent)", label: "Approved" },
+  declined: { color: "var(--red)", label: "Declined" }
 };
 
 const typeColors: Record<LeaveRequest["type"], string> = {
-  "Annual Leave": C.primary,
-  "Sick Leave": C.red,
-  "Family Leave": C.blue,
-  "Unpaid Leave": C.muted
+  "Annual Leave": "var(--accent)",
+  "Sick Leave": "var(--red)",
+  "Family Leave": "var(--blue)",
+  "Unpaid Leave": "var(--muted)"
 };
 
 const tabs = ["leave requests", "leave balances", "calendar", "leave analytics"] as const;
@@ -77,11 +66,59 @@ type Tab = (typeof tabs)[number];
 type FilterStatus = "All" | LeaveRequest["status"];
 
 function Avatar({ initials, color, size = 32 }: { initials: string; color: string; size?: number }) {
+  const sizeClass = size === 20 ? "lvaAvatar20" : size === 24 ? "lvaAvatar24" : size === 28 ? "lvaAvatar28" : "lvaAvatar32";
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: `${color}22`, border: `2px solid ${color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.32, fontWeight: 700, color, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>
+    <div className={cx(styles.lvaAvatar, toneVarClass(color), sizeClass)}>
       {initials}
     </div>
   );
+}
+
+function toneVarClass(color: string): string {
+  switch (color) {
+    case "var(--accent)":
+      return styles.lvaToneAccent;
+    case "var(--red)":
+      return styles.lvaToneRed;
+    case "var(--amber)":
+      return styles.lvaToneAmber;
+    case "var(--blue)":
+      return styles.lvaToneBlue;
+    case "var(--purple)":
+      return styles.lvaTonePurple;
+    default:
+      return styles.lvaToneMuted;
+  }
+}
+
+function statusPillClass(color: string): string {
+  switch (color) {
+    case "var(--accent)":
+      return styles.lvaStatusAccent;
+    case "var(--red)":
+      return styles.lvaStatusRed;
+    case "var(--amber)":
+      return styles.lvaStatusAmber;
+    case "var(--blue)":
+      return styles.lvaStatusBlue;
+    default:
+      return styles.lvaStatusMuted;
+  }
+}
+
+function fillClass(color: string): string {
+  switch (color) {
+    case "var(--accent)":
+      return styles.lvaFillAccent;
+    case "var(--red)":
+      return styles.lvaFillRed;
+    case "var(--amber)":
+      return styles.lvaFillAmber;
+    case "var(--blue)":
+      return styles.lvaFillBlue;
+    default:
+      return styles.lvaFillMuted;
+  }
 }
 
 export function LeaveAbsencePage() {
@@ -94,98 +131,85 @@ export function LeaveAbsencePage() {
   const filtered = useMemo(() => (filterStatus === "All" ? leaveRequests : leaveRequests.filter((r) => r.status === filterStatus)), [filterStatus]);
 
   return (
-    <div
-      style={{
-        background: C.bg,
-        height: "100%",
-        fontFamily: "Syne, sans-serif",
-        color: C.text,
-        padding: 0,
-        overflow: "hidden",
-        display: "grid",
-        gridTemplateRows: "auto auto auto 1fr",
-        minHeight: 0
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={cx(styles.pageBody, styles.lvaRoot)}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / STAFF</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Leave & Absence</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Leave requests, balances, calendar, and BCEA compliance</div>
+          <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+          <h1 className={styles.pageTitle}>Leave &amp; Absence</h1>
+          <div className={styles.pageSub}>Leave requests, balances, calendar, and BCEA compliance</div>
         </div>
-        <button style={{ background: C.primary, color: C.bg, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>+ Log Leave</button>
+        <button type="button" className={cx("btnSm", "btnAccent")}>+ Log Leave</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack", "mb16") }>
         {[
-          { label: "Pending Requests", value: pending.length.toString(), color: pending.length > 0 ? C.amber : C.primary, sub: "Awaiting approval" },
-          { label: "Staff on Leave (Feb)", value: "1", color: C.blue, sub: "Tapiwa - Feb 26-27" },
-          { label: "Low Leave Balances", value: lowBalance.length.toString(), color: lowBalance.length > 0 ? C.red : C.primary, sub: "≤ 3 days remaining" },
-          { label: "Leave Days Used (YTD)", value: totalDaysOut.toString(), color: C.muted, sub: "Approved this FY" }
+          { label: "Pending Requests", value: pending.length.toString(), color: pending.length > 0 ? "var(--amber)" : "var(--accent)", sub: "Awaiting approval" },
+          { label: "Staff on Leave (Feb)", value: "1", color: "var(--blue)", sub: "Tapiwa - Feb 26-27" },
+          { label: "Low Leave Balances", value: lowBalance.length.toString(), color: lowBalance.length > 0 ? "var(--red)" : "var(--accent)", sub: "≤ 3 days remaining" },
+          { label: "Leave Days Used (YTD)", value: totalDaysOut.toString(), color: "var(--muted)", sub: "Approved this FY" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <AdminTabs
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        primaryColor={C.primary}
-        mutedColor={C.muted}
-        panelColor={C.surface}
-        borderColor={C.border}
-      />
-
-      <div style={{ overflow: "auto", minHeight: 0 }}>
-        {activeTab === "leave requests" ? (
-          <AdminFilterBar panelColor={C.surface} borderColor={C.border}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "DM Mono, monospace" }}>Filters</div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as FilterStatus)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
-                <option value="All">Status: All</option>
-                <option value="pending">Status: Pending</option>
-                <option value="approved">Status: Approved</option>
-                <option value="declined">Status: Declined</option>
-              </select>
-              {filterStatus !== "All" ? (
-                <button onClick={() => setFilterStatus("All")} style={{ background: C.border, border: "none", color: C.text, padding: "8px 10px", fontSize: 11, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>Clear</button>
-              ) : null}
-            </div>
-          </AdminFilterBar>
-        ) : null}
+      <div className={cx("overflowAuto", "minH0") }>
+        <AdminFilterBar panelColor={"var(--surface)"} borderColor={"var(--border)"}>
+          <select title="Select tab" value={activeTab} onChange={(e) => setActiveTab(e.target.value as Tab)} className={styles.formInput}>
+            {tabs.map((tab) => (
+              <option key={tab} value={tab}>{tab}</option>
+            ))}
+          </select>
+          {activeTab === "leave requests" ? (
+            <select
+              title="Filter by request status"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+              className={styles.formInput}
+            >
+              <option value="All">Status: All</option>
+              <option value="pending">Status: Pending</option>
+              <option value="approved">Status: Approved</option>
+              <option value="declined">Status: Declined</option>
+            </select>
+          ) : null}
+        </AdminFilterBar>
 
         {activeTab === "leave requests" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className={styles.lvaReqList}>
             {filtered.map((req) => {
               const sc = statusConfig[req.status];
-              const tc = typeColors[req.type] || C.muted;
+              const tc = typeColors[req.type] || "var(--muted)";
               return (
-                <div key={req.id} style={{ background: C.surface, border: `1px solid ${req.status === "pending" ? C.amber + "44" : C.border}`, padding: 20, display: "grid", gridTemplateColumns: "60px 160px 180px 130px 70px 130px 90px auto", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted }}>{req.id}</span>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div
+                  key={req.id}
+                  className={cx(styles.lvaReqRow, req.status === "pending" && styles.lvaReqRowPending)}
+                >
+                  <span className={styles.lvaReqId}>{req.id}</span>
+                  <div className={styles.lvaEmpCell}>
                     <Avatar initials={req.avatar} color={req.color} size={28} />
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 12 }}>{req.employee.split(" ")[0]}</div>
-                      <div style={{ fontSize: 9, color: C.muted }}>Submitted {req.submittedDate}</div>
+                      <div className={styles.lvaEmpName}>{req.employee.split(" ")[0]}</div>
+                      <div className={styles.lvaReqDate}>Submitted {req.submittedDate}</div>
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: tc, fontWeight: 600 }}>{req.type}</div>
-                    <div style={{ fontSize: 10, color: C.muted }}>{req.reason}</div>
+                    <div className={cx(styles.lvaReqType, colorClass(tc))}>{req.type}</div>
+                    <div className={styles.lvaReqReason}>{req.reason}</div>
                   </div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontSize: 11 }}>{req.from} → {req.to}</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: C.blue, textAlign: "center" }}>{req.days}d</div>
-                  <div>{req.cover ? <div style={{ fontSize: 11 }}>Cover: {req.cover.split(" ")[0]}</div> : <div style={{ fontSize: 11, color: C.muted }}>No cover set</div>}</div>
-                  <span style={{ fontSize: 10, color: sc.color, background: `${sc.color}15`, padding: "4px 8px", fontFamily: "DM Mono, monospace", textAlign: "center" }}>{sc.label}</span>
+                  <div className={styles.lvaReqPeriod}>{req.from} - {req.to}</div>
+                  <div className={styles.lvaReqDays}>{req.days}d</div>
+                  <div>
+                    {req.cover ? <div className={styles.lvaReqCover}>Cover: {req.cover.split(" ")[0]}</div> : <div className={styles.lvaReqNoCover}>No cover set</div>}
+                  </div>
+                  <span className={cx(styles.lvaStatusPill, statusPillClass(sc.color))}>{sc.label}</span>
                   {req.status === "pending" ? (
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button style={{ background: C.primary, color: C.bg, border: "none", padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>✓</button>
-                      <button style={{ background: C.red, color: "#fff", border: "none", padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>✗</button>
+                    <div className={styles.lvaReqActions}>
+                      <button type="button" className={styles.lvaApproveBtn}>✓</button>
+                      <button type="button" className={styles.lvaDeclineBtn}>✗</button>
                     </div>
                   ) : <span />}
                 </div>
@@ -195,8 +219,8 @@ export function LeaveAbsencePage() {
         ) : null}
 
         {activeTab === "leave balances" ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "220px 1fr 1fr 1fr 80px", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", gap: 16 }}>
+          <div className={styles.lvaTableCard}>
+            <div className={cx(styles.lvaBalHead, "fontMono", "text10", "colorMuted", "uppercase")}>
               {["Employee", "Annual Leave", "Sick Leave", "Family Leave", ""].map((h) => <span key={h}>{h}</span>)}
             </div>
             {staff.map((member, i) => {
@@ -204,37 +228,37 @@ export function LeaveAbsencePage() {
               const slRemaining = member.sickLeave.total - member.sickLeave.used;
               const isLow = alRemaining <= 3;
               return (
-                <div key={member.id} style={{ display: "grid", gridTemplateColumns: "220px 1fr 1fr 1fr 80px", padding: "16px 24px", borderBottom: i < staff.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", gap: 16, background: isLow ? "#1a0a0a" : "transparent" }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div key={member.id} className={cx(styles.lvaBalRow, i < staff.length - 1 && "borderB", isLow && styles.lvaBalLow)}>
+                  <div className={styles.lvaEmpCell}>
                     <Avatar initials={member.avatar} color={member.color} size={28} />
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{member.name.split(" ")[0]}</div>
-                      <div style={{ fontSize: 10, color: C.muted }}>{member.role}</div>
+                      <div className={styles.lvaEmpName}>{member.name.split(" ")[0]}</div>
+                      <div className={styles.lvaRole}>{member.role}</div>
                     </div>
                   </div>
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, color: C.muted }}>{member.annualLeave.used}u {member.annualLeave.pending > 0 ? `+ ${member.annualLeave.pending}p` : ""}</span>
-                      <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: isLow ? C.red : C.primary, fontWeight: 700 }}>{alRemaining}d left</span>
+                    <div className={styles.lvaRowHead}>
+                      <span className={styles.lvaLabel}>{member.annualLeave.used}u {member.annualLeave.pending > 0 ? `+ ${member.annualLeave.pending}p` : ""}</span>
+                      <span className={cx(styles.lvaRemain, isLow ? "colorRed" : "colorAccent")}>{alRemaining}d left</span>
                     </div>
-                    <div style={{ height: 6, background: C.border, overflow: "hidden", display: "flex" }}>
-                      <div style={{ width: `${(member.annualLeave.used / member.annualLeave.total) * 100}%`, background: C.primary, opacity: 0.6 }} />
-                      <div style={{ width: `${(member.annualLeave.pending / member.annualLeave.total) * 100}%`, background: C.amber }} />
-                    </div>
+                    <progress
+                      className={cx(styles.lvaMiniBar, member.annualLeave.pending > 0 ? styles.lvaAnnualPendingFill : styles.lvaAnnualUsedFill)}
+                      max={member.annualLeave.total}
+                      value={member.annualLeave.used + member.annualLeave.pending}
+                      aria-label={`${member.name} annual leave usage`}
+                    />
                   </div>
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, color: C.muted }}>{member.sickLeave.used} used</span>
-                      <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{slRemaining}d left</span>
+                    <div className={styles.lvaRowHead}>
+                      <span className={styles.lvaLabel}>{member.sickLeave.used} used</span>
+                      <span className={styles.lvaSickRemain}>{slRemaining}d left</span>
                     </div>
-                    <div style={{ height: 6, background: C.border }}>
-                      <div style={{ height: "100%", width: `${(member.sickLeave.used / member.sickLeave.total) * 100}%`, background: C.red, opacity: 0.7 }} />
-                    </div>
+                    <progress className={cx(styles.lvaMiniBar, styles.lvaSickFill)} max={member.sickLeave.total} value={member.sickLeave.used} aria-label={`${member.name} sick leave usage`} />
                   </div>
                   <div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: C.blue }}>{member.familyLeave.total - member.familyLeave.used}d / {member.familyLeave.total}d</div>
+                    <div className={styles.lvaFamilyRemain}>{member.familyLeave.total - member.familyLeave.used}d / {member.familyLeave.total}d</div>
                   </div>
-                  {isLow ? <span style={{ fontSize: 9, color: C.red, background: `${C.red}15`, padding: "2px 6px" }}>Low</span> : <span />}
+                  {isLow ? <span className={styles.lvaLowPill}>Low</span> : <span />}
                 </div>
               );
             })}
@@ -243,19 +267,19 @@ export function LeaveAbsencePage() {
 
         {activeTab === "calendar" ? (
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>March 2026 - Leave Overview</div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "140px repeat(23, 1fr)", borderBottom: `1px solid ${C.border}` }}>
-                <div style={{ padding: "10px 16px", fontSize: 10, color: C.muted }}>Staff</div>
+            <div className={styles.lvaSectionTitle}>March 2026 - Leave Overview</div>
+            <div className={styles.lvaTableCard}>
+              <div className={styles.lvaCalHead}>
+                <div className={styles.lvaCalStaff}>Staff</div>
                 {Array.from({ length: 23 }, (_, i) => i + 3).map((d) => (
-                  <div key={d} style={{ padding: "10px 4px", textAlign: "center", fontSize: 9, color: C.muted, borderLeft: `1px solid ${C.border}` }}>{d}</div>
+                  <div key={d} className={styles.lvaCalDayHead}>{d}</div>
                 ))}
               </div>
               {staff.map((member, mi) => (
-                <div key={member.id} style={{ display: "grid", gridTemplateColumns: "140px repeat(23, 1fr)", borderBottom: mi < staff.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                  <div style={{ padding: "10px 16px", display: "flex", gap: 8, alignItems: "center" }}>
+                <div key={member.id} className={cx(styles.lvaCalRow, mi < staff.length - 1 && "borderB")}>
+                  <div className={styles.lvaCalStaffCell}>
                     <Avatar initials={member.avatar} color={member.color} size={20} />
-                    <span style={{ fontSize: 11, color: member.color, fontWeight: 600 }}>{member.name.split(" ")[0]}</span>
+                    <span className={cx(styles.lvaCalName, colorClass(member.color))}>{member.name.split(" ")[0]}</span>
                   </div>
                   {Array.from({ length: 23 }, (_, i) => {
                     const day = i + 3;
@@ -264,67 +288,70 @@ export function LeaveAbsencePage() {
                       (member.name === "Nomsa Dlamini" && day >= 3 && day <= 5);
                     const isPending = isLeave && leaveRequests.some((r) => r.employee === member.name && r.status === "pending");
                     return (
-                      <div key={day} style={{ height: 36, borderLeft: `1px solid ${C.border}`, background: isLeave ? (isPending ? `${C.amber}33` : `${member.color}33`) : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {isLeave ? <div style={{ width: 6, height: 6, borderRadius: "50%", background: isPending ? C.amber : member.color }} /> : null}
+                      <div
+                        key={day}
+                        className={cx(
+                          styles.lvaCalDayCell,
+                          isLeave && (isPending ? styles.lvaCalDayPending : styles.lvaCalDayLeave),
+                          isLeave && !isPending && toneVarClass(member.color)
+                        )}
+                      >
+                        {isLeave ? <div className={cx(styles.lvaCalDot, isPending ? styles.lvaFillAmber : fillClass(member.color))} /> : null}
                       </div>
                     );
                   })}
                 </div>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <div style={{ width: 12, height: 12, background: `${C.primary}33` }} />
-                <span style={{ fontSize: 11, color: C.muted }}>Approved leave</span>
+            <div className={styles.lvaLegendRow}>
+              <div className={styles.lvaLegendItem}>
+                <div className={styles.lvaLegendApproved} />
+                <span className={cx("text11", "colorMuted")}>Approved leave</span>
               </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <div style={{ width: 12, height: 12, background: `${C.amber}33` }} />
-                <span style={{ fontSize: 11, color: C.muted }}>Pending leave</span>
+              <div className={styles.lvaLegendItem}>
+                <div className={styles.lvaLegendPending} />
+                <span className={cx("text11", "colorMuted")}>Pending leave</span>
               </div>
             </div>
           </div>
         ) : null}
 
         {activeTab === "leave analytics" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Annual Leave Utilisation</div>
+          <div className={styles.lvaAnalyticsSplit}>
+            <div className={cx("card", "p24") }>
+              <div className={styles.lvaSectionTitle}>Annual Leave Utilisation</div>
               {staff.map((m) => {
                 const used = m.annualLeave.used;
                 const total = m.annualLeave.total;
                 const pct = Math.round((used / total) * 100);
                 return (
-                  <div key={m.name} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                  <div key={m.name} className={styles.lvaUtilRow}>
                     <Avatar initials={m.avatar} color={m.color} size={24} />
-                    <span style={{ fontSize: 12, width: 80 }}>{m.name.split(" ")[0]}</span>
-                    <div style={{ flex: 1, height: 8, background: C.border, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${pct}%`, background: pct >= 80 ? C.red : pct >= 60 ? C.amber : m.color }} />
-                    </div>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: pct >= 80 ? C.red : C.muted, width: 32, textAlign: "right" }}>{pct}%</span>
+                    <span className={styles.lvaUtilName}>{m.name.split(" ")[0]}</span>
+                    <progress className={cx(styles.lvaUtilTrack, pct >= 80 ? styles.lvaFillRed : pct >= 60 ? styles.lvaFillAmber : fillClass(m.color))} max={100} value={pct} aria-label={`${m.name} annual leave utilisation ${pct}%`} />
+                    <span className={cx(styles.lvaUtilPct, pct >= 80 ? "colorRed" : "colorMuted")}>{pct}%</span>
                   </div>
                 );
               })}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 24 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Leave by Type (FY2026)</div>
+            <div className={cx("flexCol", "gap16") }>
+              <div className={cx("card", "p24") }>
+                <div className={styles.lvaSectionTitle}>Leave by Type (FY2026)</div>
                 {[
-                  { type: "Annual Leave", days: leaveRequests.filter((r) => r.type === "Annual Leave" && r.status === "approved").reduce((s, r) => s + r.days, 0), color: C.primary },
-                  { type: "Sick Leave", days: leaveRequests.filter((r) => r.type === "Sick Leave" && r.status === "approved").reduce((s, r) => s + r.days, 0), color: C.red },
-                  { type: "Family Leave", days: 0, color: C.blue }
+                  { type: "Annual Leave", days: leaveRequests.filter((r) => r.type === "Annual Leave" && r.status === "approved").reduce((s, r) => s + r.days, 0), color: "var(--accent)" },
+                  { type: "Sick Leave", days: leaveRequests.filter((r) => r.type === "Sick Leave" && r.status === "approved").reduce((s, r) => s + r.days, 0), color: "var(--red)" },
+                  { type: "Family Leave", days: 0, color: "var(--blue)" }
                 ].map((t) => (
-                  <div key={t.type} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                    <span style={{ fontSize: 12, flex: 1, color: t.color }}>{t.type}</span>
-                    <div style={{ width: 80, height: 8, background: C.border }}>
-                      <div style={{ height: "100%", width: `${Math.min((t.days / 20) * 100, 100)}%`, background: t.color }} />
-                    </div>
-                    <span style={{ fontFamily: "DM Mono, monospace", color: t.color, fontWeight: 700, width: 24 }}>{t.days}d</span>
+                  <div key={t.type} className={styles.lvaTypeRow}>
+                    <span className={cx(styles.lvaTypeName, colorClass(t.color))}>{t.type}</span>
+                    <progress className={cx(styles.lvaTypeTrack, fillClass(t.color))} max={20} value={Math.min(t.days, 20)} aria-label={`${t.type} days ${t.days}`} />
+                    <span className={cx(styles.lvaTypeDays, colorClass(t.color))}>{t.days}d</span>
                   </div>
                 ))}
               </div>
-              <div style={{ background: "#0a0f1a", border: `1px solid ${C.blue}22`, padding: 20 }}>
-                <div style={{ fontSize: 11, color: C.blue, fontWeight: 700, marginBottom: 8 }}>BCEA Compliance Note</div>
-                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7 }}>
+              <div className={styles.lvaComplianceCard}>
+                <div className={styles.lvaComplianceTitle}>BCEA Compliance Note</div>
+                <div className={styles.lvaComplianceText}>
                   Staff are entitled to 21 consecutive days annual leave, 30 days sick leave per 3-year cycle, and 3 days family responsibility leave per year under BCEA guidelines.
                 </div>
               </div>

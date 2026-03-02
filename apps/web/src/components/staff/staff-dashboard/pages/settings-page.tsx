@@ -103,7 +103,7 @@ export function SettingsPage({
     .join("") || staffInitials;
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-settings">
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-settings">
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>Account</div>
@@ -114,7 +114,7 @@ export function SettingsPage({
 
       <div className={styles.grid2}>
         <div>
-          <div className={styles.card} style={{ marginBottom: 14 }}>
+          <div className={cx("card", "mb14")}>
             <div className={styles.cardHeader}>
               <span className={styles.cardHeaderTitle}>Staff Profile</span>
               {hasProfileChanges ? <span className={cx("badge", "badgeAmber")}>Unsaved</span> : null}
@@ -144,7 +144,7 @@ export function SettingsPage({
                     ref={photoInputRef}
                     type="file"
                     accept="image/*"
-                    style={{ display: "none" }}
+                    className={styles.hidden}
                     onChange={(event) => {
                       const file = event.target.files?.[0];
                       if (!file) return;
@@ -162,22 +162,22 @@ export function SettingsPage({
                 </div>
               </div>
               <div className={styles.field}>
-                <label className={styles.fieldLabel}>Full Name</label>
-                <input className={styles.fieldInput} value={profileName} onChange={(event) => onProfileNameChange(event.target.value)} />
+                <label className={styles.fieldLabel} htmlFor="staff-settings-full-name">Full Name</label>
+                <input id="staff-settings-full-name" className={styles.fieldInput} value={profileName} onChange={(event) => onProfileNameChange(event.target.value)} />
               </div>
               <div className={styles.field}>
-                <label className={styles.fieldLabel}>Email</label>
-                <input className={styles.fieldInput} value={profileEmail} onChange={(event) => onProfileEmailChange(event.target.value)} />
+                <label className={styles.fieldLabel} htmlFor="staff-settings-email">Email</label>
+                <input id="staff-settings-email" className={styles.fieldInput} value={profileEmail} onChange={(event) => onProfileEmailChange(event.target.value)} />
               </div>
               <div className={styles.field}>
-                <label className={styles.fieldLabel}>Role</label>
-                <input className={styles.fieldInput} value={staffRole} readOnly style={{ color: "var(--muted)" }} />
+                <label className={styles.fieldLabel} htmlFor="staff-settings-role">Role</label>
+                <input id="staff-settings-role" className={cx("fieldInput", "colorMuted")} value={staffRole} readOnly />
               </div>
               <div className={styles.field}>
-                <label className={styles.fieldLabel}>Weekly Hour Target</label>
-                <input className={styles.fieldInput} value={String(weeklyTargetHours)} onChange={(event) => onWeeklyTargetHoursChange(Math.max(1, Number(event.target.value) || 0))} type="number" min={1} />
+                <label className={styles.fieldLabel} htmlFor="staff-settings-weekly-hours">Weekly Hour Target</label>
+                <input id="staff-settings-weekly-hours" className={styles.fieldInput} value={String(weeklyTargetHours)} onChange={(event) => onWeeklyTargetHoursChange(Math.max(1, Number(event.target.value) || 0))} type="number" min={1} />
               </div>
-              <div style={{ marginTop: 6, display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <div className={cx("flexEnd", "mt6", "gap8")}>
                 <button className={cx("button", "buttonGhost")} type="button" onClick={onResetProfile} disabled={!hasProfileChanges}>Reset</button>
                 <button className={cx("button", "buttonBlue")} type="button" onClick={onSaveProfile} disabled={!hasProfileChanges}>Save Changes</button>
               </div>
@@ -188,7 +188,7 @@ export function SettingsPage({
             <div className={styles.cardHeader}><span className={styles.cardHeaderTitle}>Focus Areas</span></div>
             <div className={styles.cardBody}>
               <div className={styles.skillLabel}>Active projects</div>
-              <div className={styles.skillTags} style={{ marginBottom: 14 }}>
+              <div className={cx("skillTags", "mb14")}>
                 {projects.length === 0 ? (
                   <span className={styles.emptyState}>No active projects yet.</span>
                 ) : (
@@ -212,18 +212,18 @@ export function SettingsPage({
         </div>
 
         <div>
-          <div className={styles.card} style={{ marginBottom: 14 }}>
+          <div className={cx("card", "mb14")}>
             <div className={styles.cardHeader}>
               <span className={styles.cardHeaderTitle}>Notifications</span>
               {hasNotificationsChanges ? <span className={cx("badge", "badgeAmber")}>Unsaved</span> : null}
             </div>
-            <div className={styles.cardBody} style={{ paddingTop: 6, paddingBottom: 6 }}>
+            <div className={cx("cardBody", "pt6", "pb6")}>
               <ToggleRow label="Task assignments" desc="When a new task is assigned to you" enabled={notifications.taskAssignments} onToggle={(next) => onNotificationChange("taskAssignments", next)} />
               <ToggleRow label="Client messages" desc="New messages from clients on your projects" enabled={notifications.clientMessages} onToggle={(next) => onNotificationChange("clientMessages", next)} />
               <ToggleRow label="Deliverable reminders" desc="24h before a deliverable is due" enabled={notifications.deliverableReminders} onToggle={(next) => onNotificationChange("deliverableReminders", next)} />
               <ToggleRow label="Standup reminders" desc="Daily 9am check-in prompt" enabled={notifications.standupReminders} onToggle={(next) => onNotificationChange("standupReminders", next)} />
               <ToggleRow label="Weekly time summary" desc="Friday PM digest of logged hours" enabled={notifications.weeklyTimeSummary} onToggle={(next) => onNotificationChange("weeklyTimeSummary", next)} />
-              <div style={{ marginTop: 6, display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <div className={cx("flexEnd", "mt6", "gap8")}>
                 <button className={cx("button", "buttonGhost")} type="button" onClick={onResetNotifications} disabled={!hasNotificationsChanges}>Reset</button>
                 <button className={cx("button", "buttonGhost")} type="button" onClick={onSaveNotifications} disabled={!hasNotificationsChanges}>Save Notifications</button>
               </div>
@@ -237,13 +237,13 @@ export function SettingsPage({
             </div>
             <div className={styles.cardBody}>
               <div className={styles.field}>
-                <label className={styles.fieldLabel}>Timezone</label>
-                <select className={cx("fieldInput", "fieldSelect")} value={workspace.timezone} onChange={(event) => onWorkspaceChange("timezone", event.target.value)}>
+                <label className={styles.fieldLabel} htmlFor="staff-settings-timezone">Timezone</label>
+                <select id="staff-settings-timezone" className={cx("fieldInput", "fieldSelect")} value={workspace.timezone} onChange={(event) => onWorkspaceChange("timezone", event.target.value)}>
                   {timezoneOptions.slice(0, 200).map((tz) => (
                     <option key={tz} value={tz}>{tz}</option>
                   ))}
                 </select>
-                <div style={{ marginTop: 6 }}>
+                <div className={styles.mt6}>
                   <button className={cx("button", "buttonGhost")} type="button" onClick={onUseLocalTimezone}>
                     Use Local Timezone
                   </button>
@@ -252,19 +252,19 @@ export function SettingsPage({
               <div className={styles.field}>
                 <label className={styles.fieldLabel}>Working Hours</label>
                 <div className={styles.fieldRow}>
-                  <input className={styles.fieldInput} value={workspace.workStart} type="time" onChange={(event) => onWorkspaceChange("workStart", event.target.value)} />
-                  <input className={styles.fieldInput} value={workspace.workEnd} type="time" onChange={(event) => onWorkspaceChange("workEnd", event.target.value)} />
+                  <input id="staff-settings-work-start" aria-label="Work start time" className={styles.fieldInput} value={workspace.workStart} type="time" onChange={(event) => onWorkspaceChange("workStart", event.target.value)} />
+                  <input id="staff-settings-work-end" aria-label="Work end time" className={styles.fieldInput} value={workspace.workEnd} type="time" onChange={(event) => onWorkspaceChange("workEnd", event.target.value)} />
                 </div>
               </div>
               <div className={styles.field}>
-                <label className={styles.fieldLabel}>Default Status on Login</label>
-                <select className={cx("fieldInput", "fieldSelect")} value={workspace.defaultStatus} onChange={(event) => onWorkspaceChange("defaultStatus", event.target.value)}>
+                <label className={styles.fieldLabel} htmlFor="staff-settings-default-status">Default Status on Login</label>
+                <select id="staff-settings-default-status" className={cx("fieldInput", "fieldSelect")} value={workspace.defaultStatus} onChange={(event) => onWorkspaceChange("defaultStatus", event.target.value)}>
                   <option value="Available">Available</option>
                   <option value="Focused">Focused</option>
                   <option value="In a meeting">In a meeting</option>
                 </select>
               </div>
-              <div style={{ marginTop: 4, display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <div className={cx("flexEnd", "mt4", "gap8")}>
                 <button className={cx("button", "buttonGhost")} type="button" onClick={onResetWorkspace} disabled={!hasWorkspaceChanges}>Reset</button>
                 <button className={cx("button", "buttonGhost")} type="button" onClick={onSaveWorkspace} disabled={!hasWorkspaceChanges}>Save Preferences</button>
               </div>

@@ -2,20 +2,8 @@
 
 import { useState } from "react";
 import { AdminTabs } from "./shared";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0",
-};
+import { cx, styles } from "../style";
+import { colorClass, toneClass } from "./admin-page-utils";
 
 type TriggerType = "health-drop" | "invoice-overdue" | "nps-drop" | "quality-complaint" | "silent-client";
 type InterventionStatus = "open" | "resolved" | "churned";
@@ -51,7 +39,7 @@ const interventions: Intervention[] = [
   {
     id: "INT-018",
     client: "Kestrel Capital",
-    clientColor: C.purple,
+    clientColor: "var(--purple)",
     trigger: "Health score dropped from 72 -> 44 in 14 days",
     triggerType: "health-drop",
     adminWhoActed: "Sipho Nkosi",
@@ -72,7 +60,7 @@ const interventions: Intervention[] = [
   {
     id: "INT-017",
     client: "Dune Collective",
-    clientColor: C.amber,
+    clientColor: "var(--amber)",
     trigger: "Invoice overdue 14+ days + communication breakdown",
     triggerType: "invoice-overdue",
     adminWhoActed: "Sipho Nkosi",
@@ -94,7 +82,7 @@ const interventions: Intervention[] = [
   {
     id: "INT-016",
     client: "Mira Health",
-    clientColor: C.blue,
+    clientColor: "var(--blue)",
     trigger: "NPS dropped from 8 -> 6 in two consecutive surveys",
     triggerType: "nps-drop",
     adminWhoActed: "Leilani Fotu",
@@ -117,7 +105,7 @@ const interventions: Intervention[] = [
   {
     id: "INT-015",
     client: "Helios Digital",
-    clientColor: C.orange,
+    clientColor: "var(--orange)",
     trigger: "Client requested project pause - quality concerns",
     triggerType: "quality-complaint",
     adminWhoActed: "Sipho Nkosi",
@@ -139,17 +127,17 @@ const interventions: Intervention[] = [
 ];
 
 const triggerTypeConfig: Record<TriggerType, { color: string; label: string; icon: string }> = {
-  "health-drop": { color: C.red, label: "Health Drop", icon: "📉" },
-  "invoice-overdue": { color: C.amber, label: "Invoice Overdue", icon: "💸" },
-  "nps-drop": { color: C.orange, label: "NPS Drop", icon: "📊" },
-  "quality-complaint": { color: C.purple, label: "Quality Complaint", icon: "⚠" },
-  "silent-client": { color: C.red, label: "Silent Client", icon: "🔇" },
+  "health-drop": { color: "var(--red)", label: "Health Drop", icon: "\uD83D\uDCC9" },
+  "invoice-overdue": { color: "var(--amber)", label: "Invoice Overdue", icon: "\uD83D\uDCB8" },
+  "nps-drop": { color: "var(--orange)", label: "NPS Drop", icon: "\uD83D\uDCCA" },
+  "quality-complaint": { color: "var(--purple)", label: "Quality Complaint", icon: "\u26A0" },
+  "silent-client": { color: "var(--red)", label: "Silent Client", icon: "\uD83D\uDD07" },
 };
 
 const statusConfig: Record<InterventionStatus, { color: string; label: string }> = {
-  open: { color: C.red, label: "Open" },
-  resolved: { color: C.lime, label: "Resolved" },
-  churned: { color: C.muted, label: "Churned" },
+  open: { color: "var(--red)", label: "Open" },
+  resolved: { color: "var(--accent)", label: "Resolved" },
+  churned: { color: "var(--muted)", label: "Churned" },
 };
 
 const tabs: Tab[] = ["all interventions", "open", "resolved", "patterns"];
@@ -166,29 +154,29 @@ export function HealthInterventionsPage() {
   const displayList = activeTab === "open" ? open : activeTab === "resolved" ? resolved : interventions;
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.red, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / CLIENT MANAGEMENT</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Health Interventions</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Every time admin stepped in - Why - What happened - Outcome</div>
+          <div className={cx(styles.pageEyebrow, "colorRed")}>ADMIN / CLIENT MANAGEMENT</div>
+          <h1 className={styles.pageTitle}>Health Interventions</h1>
+          <div className={styles.pageSub}>Every time admin stepped in - Why - What happened - Outcome</div>
         </div>
-        <button style={{ background: C.red, color: "#fff", padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>+ Log Intervention</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", styles.healthIntvDangerBtn)}>+ Log Intervention</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Open Interventions", value: open.length.toString(), color: C.red, sub: "Active cases" },
-          { label: "MRR at Risk", value: `R${(mrrAtRisk / 1000).toFixed(0)}k`, color: C.red, sub: "Across open cases" },
-          { label: "Resolved (90d)", value: resolved.length.toString(), color: C.lime, sub: "Health recovered" },
-          { label: "Churned Despite Intervention", value: churned.length.toString(), color: C.muted, sub: "Couldn't save" },
+          { label: "Open Interventions", value: open.length.toString(), color: "var(--red)", sub: "Active cases", highlight: true },
+          { label: "MRR at Risk", value: `R${(mrrAtRisk / 1000).toFixed(0)}k`, color: "var(--red)", sub: "Across open cases", highlight: false },
+          { label: "Resolved (90d)", value: resolved.length.toString(), color: "var(--accent)", sub: "Health recovered", highlight: false },
+          { label: "Churned Despite Intervention", value: churned.length.toString(), color: "var(--muted)", sub: "Couldn't save", highlight: false },
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${s.label === "Open Interventions" ? `${C.red}55` : C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={cx(styles.statCard, s.highlight && styles.healthIntvStatHighlight)}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
@@ -197,70 +185,81 @@ export function HealthInterventionsPage() {
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        primaryColor={C.lime}
-        mutedColor={C.muted}
-        panelColor={C.surface}
-        borderColor={C.border}
+        primaryColor="var(--accent)"
+        mutedColor="var(--muted)"
+        panelColor="var(--surface)"
+        borderColor="var(--border)"
       />
 
       {(activeTab === "all interventions" || activeTab === "open" || activeTab === "resolved") && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className={cx("flexCol", "gap16")}>
           {displayList.map((intv) => {
             const sc = statusConfig[intv.status];
             const tc = triggerTypeConfig[intv.triggerType];
             const isExp = expanded === intv.id;
             return (
-              <div key={intv.id} style={{ background: C.surface, border: `2px solid ${intv.status === "open" ? `${tc.color}55` : intv.status === "resolved" ? `${C.lime}33` : C.border}`, borderRadius: 12 }}>
-                <div style={{ padding: 24, cursor: "pointer" }} onClick={() => setExpanded(isExp ? null : intv.id)}>
-                  <div style={{ display: "grid", gridTemplateColumns: "60px 180px 1fr 120px 100px 100px 80px", alignItems: "center", gap: 16 }}>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted }}>{intv.id}</span>
+              <div key={intv.id} className={cx("bgSurface", styles.healthIntvCard, toneClass(intv.status === "open" ? tc.color : intv.status === "resolved" ? "var(--accent)" : "var(--border)"))}>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className={cx("p24", "pointerCursor")}
+                  onClick={() => setExpanded(isExp ? null : intv.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setExpanded(isExp ? null : intv.id);
+                    }
+                  }}
+                >
+                  <div className={styles.healthIntvHeadGrid}>
+                    <span className={cx("fontMono", "text10", "colorMuted")}>{intv.id}</span>
                     <div>
-                      <div style={{ fontWeight: 700, color: intv.clientColor, fontSize: 15 }}>{intv.client}</div>
-                      <div style={{ fontSize: 10, color: C.muted }}>by {intv.adminWhoActed} - {intv.date}</div>
+                      <div className={cx("fw700", "text14", colorClass(intv.clientColor))}>{intv.client}</div>
+                      <div className={cx("text10", "colorMuted")}>by {intv.adminWhoActed} - {intv.date}</div>
                     </div>
                     <div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ fontSize: 14 }}>{tc.icon}</span>
-                        <span style={{ fontSize: 10, color: tc.color, fontFamily: "DM Mono, monospace", textTransform: "uppercase" }}>{tc.label}</span>
+                      <div className={cx("flexRow", "gap8", "mb4")}>
+                        <span className={styles.healthIntvIcon14}>{tc.icon}</span>
+                        <span className={cx("text10", "fontMono", "uppercase", colorClass(tc.color))}>{tc.label}</span>
                       </div>
-                      <div style={{ fontSize: 13, fontWeight: 600 }}>{intv.trigger}</div>
+                      <div className={cx("text13", "fw600")}>{intv.trigger}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>Health: before -&gt; after</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontSize: 13 }}>
-                        <span style={{ color: intv.healthBefore < 60 ? C.red : C.amber }}>{intv.healthBefore}</span>
-                        <span style={{ color: C.muted }}> -&gt; </span>
-                        <span style={{ color: intv.healthAfter ? (intv.healthAfter >= 70 ? C.lime : C.amber) : C.muted }}>{intv.healthAfter ?? "-"}</span>
+                      <div className={cx("text10", "colorMuted", "mb4")}>Health: before -&gt; after</div>
+                      <div className={cx("fontMono", "text13")}>
+                        <span className={intv.healthBefore < 60 ? "colorRed" : "colorAmber"}>{intv.healthBefore}</span>
+                        <span className={cx("colorMuted")}> -&gt; </span>
+                        <span className={intv.healthAfter ? (intv.healthAfter >= 70 ? "colorAccent" : "colorAmber") : "colorMuted"}>{intv.healthAfter ?? "-"}</span>
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>MRR at Risk</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", color: C.red, fontWeight: 700 }}>R{(intv.mrrAtRisk / 1000).toFixed(0)}k</div>
+                      <div className={cx("text10", "colorMuted", "mb2")}>MRR at Risk</div>
+                      <div className={cx("fontMono", "fw700", "colorRed")}>R{(intv.mrrAtRisk / 1000).toFixed(0)}k</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Actions</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", color: C.blue, fontWeight: 700 }}>{intv.actions.length}</div>
+                      <div className={cx("text10", "colorMuted", "mb2")}>Actions</div>
+                      <div className={cx("fontMono", "fw700", "colorBlue")}>{intv.actions.length}</div>
                     </div>
-                    <span style={{ fontSize: 10, color: sc.color, background: `${sc.color}15`, padding: "4px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace", textAlign: "center" }}>{sc.label}</span>
+                    <span className={cx("text10", "fontMono", "textCenter", styles.healthIntvStatusChip, toneClass(sc.color))}>{sc.label}</span>
                   </div>
                 </div>
 
                 {isExp && (
-                  <div style={{ padding: "0 24px 24px", borderTop: `1px solid ${C.border}` }}>
-                    <div style={{ paddingTop: 20, display: "grid", gridTemplateColumns: "1fr 320px", gap: 20 }}>
+                  <div className={styles.healthIntvExpanded}>
+                    <div className={styles.healthIntvExpandedGrid}>
                       <div>
-                        <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 16 }}>Action Timeline</div>
-                        <div style={{ position: "relative" }}>
-                          <div style={{ position: "absolute", left: 55, top: 0, bottom: 0, width: 1, background: C.border }} />
-                          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div className={cx("text11", "colorMuted", "uppercase", "tracking", "mb16")}>Action Timeline</div>
+                        <div className={styles.healthIntvTimelineWrap}>
+                          <div className={styles.healthIntvTimelineLine} />
+                          <div className={cx("flexCol", "gap16")}>
                             {intv.actions.map((a, i) => (
-                              <div key={i} style={{ display: "grid", gridTemplateColumns: "55px 20px 1fr", gap: 12, alignItems: "flex-start" }}>
-                                <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted, textAlign: "right", paddingTop: 2 }}>{a.date}</span>
-                                <div style={{ width: 12, height: 12, borderRadius: "50%", background: tc.color, border: `2px solid ${C.bg}`, marginTop: 2, zIndex: 1, flexShrink: 0 }} />
-                                <div style={{ padding: 12, background: C.bg, borderRadius: 8, borderLeft: `3px solid ${tc.color}44` }}>
-                                  <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{a.action}</div>
-                                  <div style={{ fontSize: 11, color: C.lime, marginBottom: 4 }}>-&gt; {a.outcome}</div>
-                                  <div style={{ fontSize: 10, color: C.muted }}>{a.by}</div>
+                              <div key={i} className={styles.healthIntvTimelineRow}>
+                                <span className={cx("fontMono", "text10", "colorMuted", "textRight", styles.healthIntvDateTop2)}>{a.date}</span>
+                                <div className={cx(styles.healthIntvTimelineDot, toneClass(tc.color))} />
+                                <div className={cx("bgBg", "p12", styles.healthIntvTimelineCard, toneClass(tc.color))}>
+                                  <div className={cx("fw600", "text13", "mb4")}>{a.action}</div>
+                                  <div className={cx("text11", "colorAccent", "mb4")}>-&gt; {a.outcome}</div>
+                                  <div className={cx("text10", "colorMuted")}>{a.by}</div>
                                 </div>
                               </div>
                             ))}
@@ -268,40 +267,40 @@ export function HealthInterventionsPage() {
                         </div>
 
                         {intv.nextStep && (
-                          <div style={{ marginTop: 16, padding: 14, background: C.surface, border: `1px solid ${C.lime}22`, borderRadius: 8 }}>
-                            <div style={{ fontSize: 10, color: C.lime, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Next Step</div>
-                            <div style={{ fontSize: 13 }}>{intv.nextStep}</div>
+                          <div className={cx("bgSurface", "mt16", "p14", styles.healthIntvNextStep)}>
+                            <div className={cx("text10", "colorAccent", "uppercase", "tracking", "mb4")}>Next Step</div>
+                            <div className={cx("text13")}>{intv.nextStep}</div>
                           </div>
                         )}
                       </div>
 
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div className={cx("flexCol", "gap12")}>
                         {intv.notes && (
-                          <div style={{ padding: 16, background: C.surface, borderRadius: 8, border: `1px solid ${C.blue}22` }}>
-                            <div style={{ fontSize: 10, color: C.blue, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Private Admin Note</div>
-                            <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6 }}>{intv.notes}</div>
+                          <div className={cx("bgSurface", "p16", styles.healthIntvPrivateNote)}>
+                            <div className={cx("text10", "colorBlue", "uppercase", "tracking", "mb6")}>Private Admin Note</div>
+                            <div className={cx("text12", styles.healthIntvLine16)}>{intv.notes}</div>
                           </div>
                         )}
-                        <div style={{ padding: 16, background: C.bg, borderRadius: 8 }}>
-                          <div style={{ fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Health Impact</div>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        <div className={cx("bgBg", "p16", styles.healthIntvRounded8)}>
+                          <div className={cx("text10", "colorMuted", "uppercase", "tracking", "mb12")}>Health Impact</div>
+                          <div className={cx("grid2", "gap8")}>
                             {[
-                              { label: "Health Before", value: intv.healthBefore, color: intv.healthBefore < 60 ? C.red : C.amber },
-                              { label: "Health After", value: intv.healthAfter ?? "-", color: intv.healthAfter ? (intv.healthAfter >= 70 ? C.lime : C.amber) : C.muted },
-                              { label: "Churn Risk Before", value: `${intv.churnRiskBefore}%`, color: intv.churnRiskBefore > 50 ? C.red : C.amber },
-                              { label: "Churn Risk After", value: intv.churnRiskAfter !== null ? `${intv.churnRiskAfter}%` : "-", color: intv.churnRiskAfter !== null ? (intv.churnRiskAfter < 30 ? C.lime : C.amber) : C.muted },
+                              { label: "Health Before", value: intv.healthBefore, color: intv.healthBefore < 60 ? "var(--red)" : "var(--amber)" },
+                              { label: "Health After", value: intv.healthAfter ?? "-", color: intv.healthAfter ? (intv.healthAfter >= 70 ? "var(--accent)" : "var(--amber)") : "var(--muted)" },
+                              { label: "Churn Risk Before", value: `${intv.churnRiskBefore}%`, color: intv.churnRiskBefore > 50 ? "var(--red)" : "var(--amber)" },
+                              { label: "Churn Risk After", value: intv.churnRiskAfter !== null ? `${intv.churnRiskAfter}%` : "-", color: intv.churnRiskAfter !== null ? (intv.churnRiskAfter < 30 ? "var(--accent)" : "var(--amber)") : "var(--muted)" },
                             ].map((m) => (
-                              <div key={m.label} style={{ padding: 10, background: C.surface, borderRadius: 6, textAlign: "center" }}>
-                                <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 18, color: m.color }}>{m.value}</div>
-                                <div style={{ fontSize: 9, color: C.muted, marginTop: 2 }}>{m.label}</div>
+                              <div key={m.label} className={cx("bgSurface", "textCenter", "p10", styles.healthIntvRounded6)}>
+                                <div className={cx("fontMono", "fw800", styles.healthIntvMetricVal, colorClass(m.color))}>{m.value}</div>
+                                <div className={cx("textXs", "colorMuted", "mt2")}>{m.label}</div>
                               </div>
                             ))}
                           </div>
                         </div>
                         {intv.status === "open" && (
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <button style={{ flex: 1, background: C.lime, color: C.bg, border: "none", padding: "10px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Mark Resolved</button>
-                            <button style={{ flex: 1, background: C.border, border: "none", color: C.text, padding: "10px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Log Action</button>
+                          <div className={cx("flexRow", "gap8")}>
+                            <button type="button" className={cx("btnSm", "btnAccent", styles.healthIntvFlex1)}>Mark Resolved</button>
+                            <button type="button" className={cx("btnSm", "btnGhost", styles.healthIntvFlex1)}>Log Action</button>
                           </div>
                         )}
                       </div>
@@ -315,42 +314,42 @@ export function HealthInterventionsPage() {
       )}
 
       {activeTab === "patterns" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Most Common Triggers</div>
+        <div className={cx("grid2", "gap20")}>
+          <div className={cx("card", "p24")}>
+            <div className={cx("text13", "fw700", "mb20", "uppercase", "tracking")}>Most Common Triggers</div>
             {(Object.entries(triggerTypeConfig) as Array<[TriggerType, { color: string; label: string; icon: string }]>).map(([key, cfg]) => {
               const count = interventions.filter((i) => i.triggerType === key).length;
               if (count === 0) return null;
               return (
-                <div key={key} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                  <span style={{ fontSize: 16, width: 24 }}>{cfg.icon}</span>
-                  <span style={{ fontSize: 12, flex: 1, color: cfg.color }}>{cfg.label}</span>
-                  <div style={{ width: 80, height: 8, background: C.border, borderRadius: 4 }}>
-                    <div style={{ height: "100%", width: `${(count / interventions.length) * 100}%`, background: cfg.color, borderRadius: 4 }} />
+                <div key={key} className={cx("flexRow", "gap12", "mb14")}>
+                  <span className={styles.healthIntvIcon16}>{cfg.icon}</span>
+                  <span className={cx("text12", styles.healthIntvFlex1, colorClass(cfg.color))}>{cfg.label}</span>
+                  <div className={styles.healthIntvMiniTrack}>
+                    <progress className={cx(styles.healthIntvMiniFill, "uiProgress", toneClass(cfg.color))} max={100} value={(count / interventions.length) * 100} />
                   </div>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: cfg.color, fontWeight: 700, width: 16 }}>{count}</span>
+                  <span className={cx("fontMono", "fw700", styles.healthIntvCountW16, colorClass(cfg.color))}>{count}</span>
                 </div>
               );
             })}
           </div>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Intervention Outcomes</div>
+          <div className={cx("card", "p24")}>
+            <div className={cx("text13", "fw700", "mb20", "uppercase", "tracking")}>Intervention Outcomes</div>
             {[
-              { label: "Resolved - health recovered", count: resolved.length, color: C.lime },
-              { label: "Open - still in progress", count: open.length, color: C.amber },
-              { label: "Churned despite intervention", count: churned.length, color: C.red },
+              { label: "Resolved - health recovered", count: resolved.length, color: "var(--accent)" },
+              { label: "Open - still in progress", count: open.length, color: "var(--amber)" },
+              { label: "Churned despite intervention", count: churned.length, color: "var(--red)" },
             ].map((o) => (
-              <div key={o.label} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                <span style={{ fontSize: 12, flex: 1, color: o.color }}>{o.label}</span>
-                <div style={{ width: 80, height: 8, background: C.border, borderRadius: 4 }}>
-                  <div style={{ height: "100%", width: `${(o.count / interventions.length) * 100}%`, background: o.color, borderRadius: 4 }} />
+              <div key={o.label} className={cx("flexRow", "gap12", "mb14")}>
+                <span className={cx("text12", styles.healthIntvFlex1, colorClass(o.color))}>{o.label}</span>
+                <div className={styles.healthIntvMiniTrack}>
+                  <progress className={cx(styles.healthIntvMiniFill, "uiProgress", toneClass(o.color))} max={100} value={(o.count / interventions.length) * 100} />
                 </div>
-                <span style={{ fontFamily: "DM Mono, monospace", color: o.color, fontWeight: 700, width: 16 }}>{o.count}</span>
+                <span className={cx("fontMono", "fw700", styles.healthIntvCountW16, colorClass(o.color))}>{o.count}</span>
               </div>
             ))}
-            <div style={{ marginTop: 20, padding: 16, background: C.surface, borderRadius: 8, border: `1px solid ${C.lime}22` }}>
-              <div style={{ fontSize: 11, color: C.lime, marginBottom: 4 }}>Key Learning</div>
-              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7 }}>
+            <div className={cx("bgSurface", "p16", "mt20", styles.healthIntvLearnCard)}>
+              <div className={cx("text11", "colorAccent", "mb4")}>Key Learning</div>
+              <div className={cx("text12", "colorMuted", styles.healthIntvLine17)}>
                 Interventions triggered by NPS drops have the highest recovery rate. Invoice and quality issues are harder to recover - earlier detection is critical.
               </div>
             </div>

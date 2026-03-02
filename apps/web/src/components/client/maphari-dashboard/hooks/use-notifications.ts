@@ -1,136 +1,159 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { AuthSession } from "../../../../lib/auth/session";
+import type { PageId } from "../config";
+import type { PortalNotificationJob } from "../../../../lib/api/portal/types";
 import {
   loadPortalNotificationsWithRefresh,
-  setPortalNotificationReadStateWithRefresh
-} from "../../../../lib/api/portal";
-import type { PageId } from "../config";
-import { useMarkActiveTabNotificationsRead } from "../../../shared/use-mark-active-tab-notifications-read";
+  setPortalNotificationReadStateWithRefresh,
+} from "../../../../lib/api/portal/notifications";
 
-type NotificationJob = {
-  id: string;
-  status: string;
-  tab: "dashboard" | "projects" | "invoices" | "messages" | "settings" | "operations";
-  readAt: string | null;
-};
+const POLL_INTERVAL_MS = 30_000;
 
-type Params = {
+// ─── Hook ────────────────────────────────────────────────────────────────────
+
+export function useNotifications({
+  session,
+  activePage,
+}: {
   session: AuthSession | null;
   activePage: PageId;
-};
+}) {
+  const [notifications, setNotifications] = useState<PortalNotificationJob[]>([]);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-const markRead = (session: AuthSession, id: string, read: boolean) =>
-  setPortalNotificationReadStateWithRefresh(session, id, read);
+  // ── Fetch notifications ──────────────────────────────────────────────────
 
-export function useNotifications({ session, activePage }: Params) {
-  const [notificationJobs, setNotificationJobs] = useState<NotificationJob[]>([]);
-  const [notificationsTrayOpen, setNotificationsTrayOpen] = useState(false);
-
-  /* ── initial load ── */
-  useEffect(() => {
+  const fetchNotifications = useCallback(async () => {
     if (!session) return;
-    let cancelled = false;
-    void (async () => {
-      const result = await loadPortalNotificationsWithRefresh(session, { unreadOnly: false });
-      if (cancelled || !result.nextSession) return;
-      setNotificationJobs(result.data ?? []);
-    })();
-    return () => {
-      cancelled = true;
-    };
+
+    try {
+      const result = await loadPortalNotificationsWithRefresh(session);
+      if (!result.nextSession || result.error) return;
+      if (result.data) {
+        setNotifications(result.data);
+      }
+    } catch {
+      // Swallow polling errors silently
+    }
   }, [session]);
 
-  /* ── auto mark active tab read (shared hook replaces inline effect) ── */
-  const activeTab = activePage === "automations" ? "operations" : activePage;
-  useMarkActiveTabNotificationsRead({
-    session,
-    activeTab,
-    notificationJobs,
-    setNotificationJobs,
-    markNotificationRead: markRead
-  });
+  // ── Poll on mount and interval ───────────────────────────────────────────
 
-  /* ── derived counts ── */
-  const unreadByTab = useMemo(() => {
-    const map = {
-      dashboard: 0,
-      projects: 0,
-      invoices: 0,
-      messages: 0,
-      operations: 0,
-      settings: 0
+  useEffect(() => {
+    fetchNotifications();
+
+    intervalRef.current = setInterval(fetchNotifications, POLL_INTERVAL_MS);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
-    notificationJobs.forEach((job) => {
-      if (job.readAt) return;
-      if (job.tab in map) {
-        map[job.tab as keyof typeof map] += 1;
+  }, [fetchNotifications]);
+
+  // ── Computed: unread count ───────────────────────────────────────────────
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => n.readAt === null).length,
+    [notifications],
+  );
+
+  // ── Computed: unread by tab ──────────────────────────────────────────────
+
+  const unreadByTab = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const n of notifications) {
+      if (n.readAt === null) {
+        counts[n.tab] = (counts[n.tab] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [notifications]);
+
+  // ── Mark as read ─────────────────────────────────────────────────────────
+
+  const markAsRead = useCallback(
+    async (id: string) => {
+      if (!session) return;
+
+      // Optimistic update
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === id ? { ...n, readAt: new Date().toISOString() } : n,
+        ),
+      );
+
+      try {
+        const result = await setPortalNotificationReadStateWithRefresh(session, id, true);
+        if (!result.nextSession || result.error) {
+          // Rollback optimistic update
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === id ? { ...n, readAt: null } : n)),
+          );
+        }
+      } catch {
+        // Rollback on failure
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, readAt: null } : n)),
+        );
+      }
+    },
+    [session],
+  );
+
+  // ── Mark all as read ─────────────────────────────────────────────────────
+
+  const markAllAsRead = useCallback(async () => {
+    if (!session) return;
+
+    const unreadIds = notifications
+      .filter((n) => n.readAt === null)
+      .map((n) => n.id);
+
+    if (unreadIds.length === 0) return;
+
+    // Optimistic update
+    const nowIso = new Date().toISOString();
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.readAt === null ? { ...n, readAt: nowIso } : n,
+      ),
+    );
+
+    // Fire all requests in parallel
+    const results = await Promise.allSettled(
+      unreadIds.map((id) =>
+        setPortalNotificationReadStateWithRefresh(session, id, true),
+      ),
+    );
+
+    // Rollback any that failed
+    const failedIds = new Set<string>();
+    results.forEach((r, i) => {
+      if (r.status === "rejected") {
+        failedIds.add(unreadIds[i]);
+      } else if (!r.value.nextSession || r.value.error) {
+        failedIds.add(unreadIds[i]);
       }
     });
-    return map;
-  }, [notificationJobs]);
 
-  const totalUnreadNotifications = useMemo(
-    () =>
-      unreadByTab.dashboard +
-      unreadByTab.projects +
-      unreadByTab.invoices +
-      unreadByTab.messages +
-      unreadByTab.operations +
-      unreadByTab.settings,
-    [unreadByTab]
-  );
-
-  const toPageFromNotificationTab = useCallback(
-    (tab: "dashboard" | "projects" | "invoices" | "messages" | "settings" | "operations"): PageId => {
-      return tab === "operations" ? "automations" : tab;
-    },
-    []
-  );
-
-  const handleMarkNotificationRead = useCallback(
-    async (notificationId: string, nextRead: boolean) => {
-      if (!session) return;
-      const result = await setPortalNotificationReadStateWithRefresh(session, notificationId, nextRead);
-      if (!result.data) return;
-      setNotificationJobs((previous) =>
-        previous.map((job) => (job.id === notificationId ? result.data! : job))
+    if (failedIds.size > 0) {
+      setNotifications((prev) =>
+        prev.map((n) =>
+          failedIds.has(n.id) ? { ...n, readAt: null } : n,
+        ),
       );
-    },
-    [session]
-  );
-
-  const handleMarkAllNotificationsRead = useCallback(async () => {
-    if (!session) return;
-    const unread = notificationJobs.filter((job) => !job.readAt);
-    if (unread.length === 0) return;
-    const updates = await Promise.all(
-      unread.map((job) => setPortalNotificationReadStateWithRefresh(session, job.id, true))
-    );
-    setNotificationJobs((previous) =>
-      previous.map((job) => {
-        const updated = updates.find((candidate) => candidate.data?.id === job.id)?.data;
-        return updated ?? job;
-      })
-    );
-  }, [notificationJobs, session]);
-
-  const refreshNotifications = useCallback(async (currentSession: AuthSession) => {
-    const result = await loadPortalNotificationsWithRefresh(currentSession, { unreadOnly: false });
-    if (result.data) setNotificationJobs(result.data);
-  }, []);
+    }
+  }, [session, notifications]);
 
   return {
-    notificationJobs,
-    setNotificationJobs,
-    notificationsTrayOpen,
-    setNotificationsTrayOpen,
+    notifications,
+    unreadCount,
     unreadByTab,
-    totalUnreadNotifications,
-    toPageFromNotificationTab,
-    handleMarkNotificationRead,
-    handleMarkAllNotificationsRead,
-    refreshNotifications
+    markAsRead,
+    markAllAsRead,
   };
 }

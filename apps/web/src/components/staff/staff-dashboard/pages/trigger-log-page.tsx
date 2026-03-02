@@ -1,21 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { cx } from "../style";
 
 type Integration = {
   id: "zapier" | "make" | "webhook" | "n8n" | "internal";
   name: string;
   icon: string;
-  color: string;
-  bg: string;
 };
 
 type Trigger = {
   id: string;
   label: string;
   integration: Integration["id"];
-  color: string;
 };
 
 type LogStatus = "success" | "failed" | "pending";
@@ -34,32 +31,32 @@ type LogItem = {
 };
 
 const integrations: Integration[] = [
-  { id: "zapier", name: "Zapier", icon: "⚡", color: "#ff8c00", bg: "rgba(255,140,0,0.1)" },
-  { id: "make", name: "Make", icon: "◎", color: "#a78bfa", bg: "rgba(167,139,250,0.1)" },
-  { id: "webhook", name: "Webhook", icon: "◈", color: "#60a5fa", bg: "rgba(96,165,250,0.1)" },
-  { id: "n8n", name: "n8n", icon: "◉", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 10%, transparent)" },
-  { id: "internal", name: "Internal", icon: "⊡", color: "#a0a0b0", bg: "rgba(160,160,176,0.08)" }
+  { id: "zapier", name: "Zapier", icon: "⚡" },
+  { id: "make", name: "Make", icon: "◎" },
+  { id: "webhook", name: "Webhook", icon: "◈" },
+  { id: "n8n", name: "n8n", icon: "◉" },
+  { id: "internal", name: "Internal", icon: "⊡" }
 ];
 
 const triggers: Trigger[] = [
-  { id: "milestone_approved", label: "Milestone approved", integration: "zapier", color: "var(--accent)" },
-  { id: "invoice_sent", label: "Invoice sent", integration: "zapier", color: "var(--accent)" },
-  { id: "invoice_paid", label: "Invoice paid", integration: "make", color: "#a78bfa" },
-  { id: "client_message", label: "Client message received", integration: "webhook", color: "#60a5fa" },
-  { id: "portal_login", label: "Client portal login", integration: "internal", color: "#a0a0b0" },
-  { id: "standup_submitted", label: "Standup submitted", integration: "zapier", color: "var(--accent)" },
-  { id: "retainer_exceeded", label: "Retainer exceeded", integration: "make", color: "#a78bfa" },
-  { id: "new_file_uploaded", label: "File uploaded to Drive", integration: "webhook", color: "#60a5fa" },
-  { id: "task_completed", label: "Task marked complete", integration: "n8n", color: "var(--accent)" },
-  { id: "score_dropped", label: "Satisfaction score drop", integration: "internal", color: "#a0a0b0" }
+  { id: "milestone_approved", label: "Milestone approved", integration: "zapier" },
+  { id: "invoice_sent", label: "Invoice sent", integration: "zapier" },
+  { id: "invoice_paid", label: "Invoice paid", integration: "make" },
+  { id: "client_message", label: "Client message received", integration: "webhook" },
+  { id: "portal_login", label: "Client portal login", integration: "internal" },
+  { id: "standup_submitted", label: "Standup submitted", integration: "zapier" },
+  { id: "retainer_exceeded", label: "Retainer exceeded", integration: "make" },
+  { id: "new_file_uploaded", label: "File uploaded to Drive", integration: "webhook" },
+  { id: "task_completed", label: "Task marked complete", integration: "n8n" },
+  { id: "score_dropped", label: "Satisfaction score drop", integration: "internal" }
 ];
 
 const clients = [
-  { id: 1, name: "Volta Studios", avatar: "VS", color: "var(--accent)" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "#a78bfa" },
-  { id: 3, name: "Mira Health", avatar: "MH", color: "#60a5fa" },
-  { id: 4, name: "Dune Collective", avatar: "DC", color: "#f5c518" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "#ff8c00" }
+  { id: 1, name: "Volta Studios", avatar: "VS" },
+  { id: 2, name: "Kestrel Capital", avatar: "KC" },
+  { id: 3, name: "Mira Health", avatar: "MH" },
+  { id: 4, name: "Dune Collective", avatar: "DC" },
+  { id: 5, name: "Okafor & Sons", avatar: "OS" }
 ];
 
 const initialLogs: LogItem[] = [
@@ -77,11 +74,30 @@ const initialLogs: LogItem[] = [
   { id: 12, triggerId: "client_message", clientId: 2, integration: "webhook", action: "Post to Google Chat", status: "success", duration: 188, time: "Feb 18 9:05 AM", payload: { from: "Marcus Rehn", preview: "Can we reschedule Thursday's call?", channel: "porta-messages" } }
 ];
 
-const statusConfig: Record<LogStatus, { label: string; color: string; bg: string; dot: string }> = {
-  success: { label: "Success", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 8%, transparent)", dot: "var(--accent)" },
-  failed: { label: "Failed", color: "#ff4444", bg: "rgba(255,68,68,0.08)", dot: "#ff4444" },
-  pending: { label: "Pending", color: "#f5c518", bg: "rgba(245,197,24,0.08)", dot: "#f5c518" }
+const statusLabel: Record<LogStatus, string> = {
+  success: "Success",
+  failed: "Failed",
+  pending: "Pending"
 };
+
+function integrationTone(id: Integration["id"]) {
+  return `tlTone${id[0].toUpperCase()}${id.slice(1)}`;
+}
+
+function statusTone(status: LogStatus) {
+  if (status === "failed") return "tlStatusFailed";
+  if (status === "pending") return "tlStatusPending";
+  return "tlStatusSuccess";
+}
+
+function clientTone(clientId: number) {
+  if (clientId === 1) return "tlClientOne";
+  if (clientId === 2) return "tlClientTwo";
+  if (clientId === 3) return "tlClientThree";
+  if (clientId === 4) return "tlClientFour";
+  if (clientId === 5) return "tlClientFive";
+  return "colorMuted2";
+}
 
 export function TriggerLogPage({ isActive }: { isActive: boolean }) {
   const [logs, setLogs] = useState<LogItem[]>(initialLogs);
@@ -92,221 +108,214 @@ export function TriggerLogPage({ isActive }: { isActive: boolean }) {
 
   const retry = (id: number) => {
     setLogs((previous) => previous.map((row) => (row.id === id ? { ...row, status: "success", duration: 340, error: undefined } : row)));
-    if (selected?.id === id) setSelected((previous) => (previous ? { ...previous, status: "success", duration: 340, error: undefined } : previous));
+    if (selected?.id === id) {
+      setSelected((previous) => (previous ? { ...previous, status: "success", duration: 340, error: undefined } : previous));
+    }
   };
 
-  const filtered = logs
-    .filter((row) => (filter === "all" ? true : row.status === filter))
-    .filter((row) => (intFilter === "all" ? true : row.integration === intFilter));
+  const filtered = useMemo(
+    () => logs.filter((row) => (filter === "all" ? true : row.status === filter)).filter((row) => (intFilter === "all" ? true : row.integration === intFilter)),
+    [filter, intFilter, logs]
+  );
 
   const successCount = logs.filter((row) => row.status === "success").length;
   const failCount = logs.filter((row) => row.status === "failed").length;
   const withDuration = logs.filter((row) => row.duration !== null);
   const avgDuration = withDuration.length > 0 ? Math.round(withDuration.reduce((sum, row) => sum + (row.duration ?? 0), 0) / withDuration.length) : 0;
 
-  const triggerStats = triggers
-    .map((trigger) => ({
-      ...trigger,
-      count: logs.filter((row) => row.triggerId === trigger.id).length,
-      fails: logs.filter((row) => row.triggerId === trigger.id && row.status === "failed").length
-    }))
-    .filter((row) => row.count > 0)
-    .sort((a, b) => b.count - a.count);
+  const triggerStats = useMemo(
+    () =>
+      triggers
+        .map((trigger) => ({
+          ...trigger,
+          count: logs.filter((row) => row.triggerId === trigger.id).length,
+          fails: logs.filter((row) => row.triggerId === trigger.id && row.status === "failed").length
+        }))
+        .filter((row) => row.count > 0)
+        .sort((a, b) => b.count - a.count),
+    [logs]
+  );
+
+  const maxTriggerCount = triggerStats[0]?.count ?? 1;
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-trigger-log">
-      <style>{`
-        .log-row{transition:all 0.12s ease;cursor:pointer;}
-        .log-row:hover{background:color-mix(in srgb, var(--accent) 2%, transparent)!important;border-color:color-mix(in srgb, var(--accent) 15%, transparent)!important;}
-        .filter-btn{transition:all 0.12s ease;cursor:pointer;border:none;font-family:'DM Mono',monospace;}
-        .tab-btn{transition:all 0.12s ease;cursor:pointer;border:none;font-family:'DM Mono',monospace;}
-        .retry-btn{transition:all 0.15s ease;cursor:pointer;font-family:'DM Mono',monospace;}
-        .retry-btn:hover{background:color-mix(in srgb, var(--accent) 15%, transparent)!important;color:var(--accent)!important;}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-trigger-log">
+      <div className={cx("pageHeaderBar")}>
+        <div className={cx("flexBetween", "mb20")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-              Staff Dashboard / Automations
-            </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              Trigger Log
-            </h1>
+            <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Automations</div>
+            <h1 className={cx("pageTitleText")}>Trigger Log</h1>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
+          <div className={cx("flexRow", "gap24")}>
             {[
-              { label: "Total runs", value: logs.length, color: "#a0a0b0" },
-              { label: "Success rate", value: `${Math.round((successCount / logs.length) * 100)}%`, color: "var(--accent)" },
-              { label: "Failures", value: failCount, color: failCount > 0 ? "#ff4444" : "var(--muted2)" },
-              { label: "Avg latency", value: `${avgDuration}ms`, color: "#a0a0b0" }
+              { label: "Total runs", value: String(logs.length), className: "colorMuted" },
+              { label: "Success rate", value: `${Math.round((successCount / logs.length) * 100)}%`, className: "colorAccent" },
+              { label: "Failures", value: String(failCount), className: failCount > 0 ? "colorRed" : "colorMuted2" },
+              { label: "Avg latency", value: `${avgDuration}ms`, className: "colorMuted" }
             ].map((stat) => (
-              <div key={stat.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+              <div key={stat.label} className={cx("textRight")}>
+                <div className={cx("statLabelNew")}>{stat.label}</div>
+                <div className={cx("statValueNew", stat.className)}>{stat.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex" }}>
+        <div className={cx("flexBetween", "gap12")}> 
+          <div className={cx("flexRow")}> 
             {[{ key: "log", label: "Event log" }, { key: "triggers", label: "Trigger stats" }, { key: "integrations", label: "Integrations" }].map((row) => (
-              <button
+              <button type="button"
                 key={row.key}
-                className="tab-btn"
+                className={cx("tlTabBtn", "tlTabPill", tab === row.key ? "tlTabPillActive" : "tlTabPillIdle")}
                 onClick={() => setTab(row.key as "log" | "triggers" | "integrations")}
-                style={{ padding: "10px 20px", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", background: "transparent", color: tab === row.key ? "var(--accent)" : "var(--muted2)", borderBottom: `2px solid ${tab === row.key ? "var(--accent)" : "transparent"}`, marginBottom: -1 }}
               >
                 {row.label}
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 6, paddingBottom: 10 }}>
-            {(["all", "success", "failed"] as Array<"all" | "success" | "failed">).map((row) => (
-              <button
-                key={row}
-                className="filter-btn"
-                onClick={() => setFilter(row)}
-                style={{ padding: "5px 12px", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: 2, background: filter === row ? (row === "failed" ? "rgba(255,68,68,0.1)" : row === "success" ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "rgba(255,255,255,0.08)") : "transparent", color: filter === row ? (row === "failed" ? "#ff4444" : row === "success" ? "var(--accent)" : "var(--text)") : "var(--muted2)" }}
-              >
-                {row}
-              </button>
-            ))}
-            <div style={{ width: 1, height: 18, background: "rgba(255,255,255,0.08)", alignSelf: "center" }} />
-            {(["all", ...integrations.map((row) => row.id)] as Array<"all" | Integration["id"]>).map((row) => {
-              const integration = integrations.find((item) => item.id === row);
-              return (
-                <button
-                  key={row}
-                  className="filter-btn"
-                  onClick={() => setIntFilter(row)}
-                  style={{ padding: "5px 10px", fontSize: 10, borderRadius: 2, background: intFilter === row ? (integration ? integration.bg : "rgba(255,255,255,0.08)") : "transparent", color: intFilter === row ? (integration ? integration.color : "var(--text)") : "var(--muted2)" }}
-                >
-                  {integration ? `${integration.icon} ${integration.name}` : "All"}
-                </button>
-              );
-            })}
+
+          <div className={cx("filterRow", "pb10")}>
+            <select
+              className={cx("filterSelect")}
+              aria-label="Filter trigger status"
+              value={filter}
+              onChange={(event) => setFilter(event.target.value as "all" | "success" | "failed")}
+            >
+              <option value="all">All status</option>
+              <option value="success">Success</option>
+              <option value="failed">Failed</option>
+            </select>
+            <select
+              className={cx("filterSelect")}
+              aria-label="Filter integration"
+              value={intFilter}
+              onChange={(event) => setIntFilter(event.target.value as "all" | Integration["id"])}
+            >
+              <option value="all">All integrations</option>
+              {integrations.map((integration) => (
+                <option key={integration.id} value={integration.id}>
+                  {integration.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
 
       {tab === "log" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", minHeight: "calc(100vh - 190px)" }}>
-          <div style={{ padding: "20px 0", borderRight: "1px solid rgba(255,255,255,0.06)", overflowY: "auto" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "20px 1fr 110px 90px 80px 60px", gap: 12, padding: "0 12px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)", marginBottom: 8 }}>
-              {["", "Trigger / Action", "Integration", "Client", "Status", "ms"].map((row) => (
-                <div key={row} style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase" }}>{row}</div>
-              ))}
+        <div className={cx("tlLayout")}>
+          <div className={cx("tlListPane")}> 
+            <div className={cx("tlLogGrid", "tlHeadRow")}>
+              {""}
+              <div>Trigger / Action</div>
+              <div>Integration</div>
+              <div>Client</div>
+              <div>Status</div>
+              <div>ms</div>
             </div>
 
             {filtered.map((log) => {
               const integration = integrations.find((row) => row.id === log.integration);
               const trigger = triggers.find((row) => row.id === log.triggerId);
               const client = clients.find((row) => row.id === log.clientId);
-              const status = statusConfig[log.status];
               const isSelected = selected?.id === log.id;
               return (
-                <div
+                <button
                   key={log.id}
-                  className="log-row"
+                  type="button"
+                  className={cx("tlLogGrid", "tlLogRow", "tlRowCard", isSelected && "tlRowCardSelected", log.status === "failed" && "tlRowCardFailed")}
                   onClick={() => setSelected(log)}
-                  style={{ display: "grid", gridTemplateColumns: "20px 1fr 110px 90px 80px 60px", gap: 12, padding: "10px 12px", borderRadius: 3, marginBottom: 3, border: `1px solid ${isSelected ? "color-mix(in srgb, var(--accent) 20%, transparent)" : log.status === "failed" ? "rgba(255,68,68,0.08)" : "rgba(255,255,255,0.04)"}`, background: isSelected ? "color-mix(in srgb, var(--accent) 2%, transparent)" : log.status === "failed" ? "rgba(255,68,68,0.02)" : "transparent", alignItems: "center" }}
                 >
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: status.dot, animation: log.status === "failed" ? "pulse 2s infinite" : "none" }} />
-                  <div>
-                    <div style={{ fontSize: 11, color: "var(--text)" }}>{trigger?.label}</div>
-                    <div style={{ fontSize: 10, color: "var(--muted2)" }}>{log.action}</div>
+                  <span className={cx("tlDot", statusTone(log.status), log.status === "failed" && "tlPulse")} />
+                  <div className={cx("minW0")}> 
+                    <div className={cx("text11", "colorText", "truncate")}>{trigger?.label}</div>
+                    <div className={cx("text10", "colorMuted2", "truncate")}>{log.action}</div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <span style={{ fontSize: 10, color: integration?.color }}>{integration?.icon}</span>
-                    <span style={{ fontSize: 10, color: "var(--muted2)" }}>{integration?.name}</span>
+                  <div className={cx("flexRow", "gap6")}> 
+                    <span className={cx("text10", integration && integrationTone(integration.id))}>{integration?.icon}</span>
+                    <span className={cx("text10", "colorMuted2")}>{integration?.name}</span>
                   </div>
-                  <div style={{ fontSize: 10, color: client?.color ?? "var(--muted2)" }}>{client?.name?.split(" ")[0] ?? "—"}</div>
-                  <span style={{ fontSize: 9, padding: "2px 6px", background: status.bg, color: status.color, borderRadius: 2, letterSpacing: "0.06em", textTransform: "uppercase", display: "inline-block" }}>{status.label}</span>
-                  <div style={{ fontSize: 10, color: log.duration ? "#a0a0b0" : "#ff4444" }}>{log.duration ? `${log.duration}` : "—"}</div>
-                </div>
+                  <div className={cx("text10", clientTone(log.clientId))}>{client?.name?.split(" ")[0] ?? "-"}</div>
+                  <span className={cx("tlStatusPill", statusTone(log.status))}>{statusLabel[log.status]}</span>
+                  <div className={cx("text10", log.duration ? "colorMuted" : "colorRed")}>{log.duration ? String(log.duration) : "-"}</div>
+                </button>
               );
             })}
           </div>
 
           {selected ? (
-            (() => {
-              const integration = integrations.find((row) => row.id === selected.integration);
-              const trigger = triggers.find((row) => row.id === selected.triggerId);
-              const client = clients.find((row) => row.id === selected.clientId);
-              const status = statusConfig[selected.status];
-              return (
-                <div style={{ padding: "24px", overflowY: "auto" }}>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 10, padding: "3px 9px", background: integration?.bg, color: integration?.color, borderRadius: 2, letterSpacing: "0.08em" }}>{integration?.icon} {integration?.name}</span>
-                    <span style={{ fontSize: 10, padding: "3px 9px", background: status.bg, color: status.color, borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{status.label}</span>
-                    {selected.duration ? <span style={{ fontSize: 10, padding: "3px 9px", background: "rgba(255,255,255,0.04)", color: "#a0a0b0", borderRadius: 2 }}>{selected.duration}ms</span> : null}
-                  </div>
+            <div className={cx("tlDetailPane")}>
+              {(() => {
+                const integration = integrations.find((row) => row.id === selected.integration);
+                const trigger = triggers.find((row) => row.id === selected.triggerId);
+                const client = clients.find((row) => row.id === selected.clientId);
 
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 4 }}>{trigger?.label}</div>
-                  <div style={{ fontSize: 12, color: "var(--muted2)", marginBottom: 16 }}>→ {selected.action}</div>
-
-                  {client ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: `${client.color}08`, border: `1px solid ${client.color}25`, borderRadius: 3, marginBottom: 16 }}>
-                      <div style={{ width: 18, height: 18, borderRadius: 2, background: `${client.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, color: client.color }}>{client.avatar}</div>
-                      <span style={{ fontSize: 11, color: client.color }}>{client.name}</span>
+                return (
+                  <>
+                    <div className={cx("flexRow", "gap8", "mb12", "flexWrap")}>
+                      <span className={cx("tlBadge", integration ? integrationTone(integration.id) : "tlFilterAll")}>{integration ? `${integration.icon} ${integration.name}` : "Integration"}</span>
+                      <span className={cx("tlBadge", statusTone(selected.status))}>{statusLabel[selected.status]}</span>
+                      {selected.duration ? <span className={cx("tlBadge", "tlBadgeMuted")}>{selected.duration}ms</span> : null}
                     </div>
-                  ) : null}
 
-                  <div style={{ fontSize: 10, color: "var(--muted2)", marginBottom: 6 }}>{selected.time}</div>
+                    <div className={cx("dlPanelTitle", "mb4")}>{trigger?.label}</div>
+                    <div className={cx("text12", "colorMuted2", "mb16")}>→ {selected.action}</div>
 
-                  <div style={{ marginTop: 16 }}>
-                    <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Payload</div>
-                    <div style={{ padding: "14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, fontFamily: "'DM Mono', monospace" }}>
-                      {Object.entries(selected.payload).map(([key, value]) => (
-                        <div key={key} style={{ display: "flex", gap: 12, marginBottom: 5 }}>
-                          <span style={{ fontSize: 11, color: "#a78bfa", minWidth: 120, flexShrink: 0 }}>{key}</span>
-                          <span style={{ fontSize: 11, color: "var(--accent)" }}>"{String(value)}"</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {selected.error ? (
-                    <div style={{ marginTop: 16 }}>
-                      <div style={{ fontSize: 9, color: "#ff4444", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Error</div>
-                      <div style={{ padding: "12px", background: "rgba(255,68,68,0.06)", border: "1px solid rgba(255,68,68,0.2)", borderRadius: 3, fontSize: 12, color: "#ff8888", lineHeight: 1.6 }}>
-                        {selected.error}
+                    {client ? (
+                      <div className={cx("tlClientCard", clientTone(client.id), "mb16")}>
+                        <div className={cx("tlClientAvatar")}>{client.avatar}</div>
+                        <span className={cx("text11")}>{client.name}</span>
                       </div>
-                      <button className="retry-btn" onClick={() => retry(selected.id)} style={{ marginTop: 10, padding: "9px 18px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 3, color: "var(--muted2)", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                        ↺ Retry trigger
-                      </button>
+                    ) : null}
+
+                    <div className={cx("text10", "colorMuted2", "mb6")}>{selected.time}</div>
+
+                    <div className={cx("mt16")}>
+                      <div className={cx("sectionLabel", "mb8")}>Payload</div>
+                      <div className={cx("tlPayloadBox")}>
+                        {Object.entries(selected.payload).map(([key, value]) => (
+                          <div key={key} className={cx("tlPayloadRow")}>
+                            <span className={cx("tlPayloadKey")}>{key}</span>
+                            <span className={cx("tlPayloadVal")}>&quot;{String(value)}&quot;</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ) : null}
-                </div>
-              );
-            })()
+
+                    {selected.error ? (
+                      <div className={cx("mt16")}>
+                        <div className={cx("tlErrorLabel", "mb8")}>Error</div>
+                        <div className={cx("tlErrorBox")}>{selected.error}</div>
+                        <button type="button" className={cx("button", "buttonGhost", "tlRetryBtn", "mt10")} onClick={() => retry(selected.id)}>
+                          ↺ Retry trigger
+                        </button>
+                      </div>
+                    ) : null}
+                  </>
+                );
+              })()}
+            </div>
           ) : null}
         </div>
       ) : null}
 
       {tab === "triggers" ? (
-        <div style={{ padding: "28px 0", maxWidth: 680 }}>
-          <div style={{ fontSize: 12, color: "var(--muted2)", marginBottom: 20 }}>Event frequency and reliability by trigger type</div>
+        <div className={cx("tlStatsPane")}> 
+          <div className={cx("text12", "colorMuted2", "mb20")}>Event frequency and reliability by trigger type</div>
           {triggerStats.map((row) => {
             const integration = integrations.find((item) => item.id === row.integration);
-            const maxCount = triggerStats[0]?.count ?? 1;
             return (
-              <div key={row.id} style={{ marginBottom: 14, padding: "14px 16px", border: `1px solid ${row.fails > 0 ? "rgba(255,68,68,0.12)" : "rgba(255,255,255,0.05)"}`, borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 10, color: integration?.color }}>{integration?.icon}</span>
-                    <span style={{ fontSize: 12, color: "var(--text)" }}>{row.label}</span>
-                    {row.fails > 0 ? <span style={{ fontSize: 9, padding: "1px 5px", background: "rgba(255,68,68,0.1)", color: "#ff4444", borderRadius: 2 }}>{row.fails} failed</span> : null}
+              <div key={row.id} className={cx("tlTriggerCard", row.fails > 0 && "tlTriggerCardWarn")}>
+                <div className={cx("flexBetween", "mb8")}>
+                  <div className={cx("flexRow", "gap10")}>
+                    <span className={cx("text10", integration && integrationTone(integration.id))}>{integration?.icon}</span>
+                    <span className={cx("text12", "colorText")}>{row.label}</span>
+                    {row.fails > 0 ? <span className={cx("tlFailMini")}>{row.fails} failed</span> : null}
                   </div>
-                  <span style={{ fontSize: 12, color: "#a0a0b0" }}>{row.count} runs</span>
+                  <span className={cx("text12", "colorMuted")}>{row.count} runs</span>
                 </div>
-                <div style={{ height: 5, background: "rgba(255,255,255,0.04)", borderRadius: 3 }}>
-                  <div style={{ height: "100%", width: `${(row.count / maxCount) * 100}%`, background: row.fails > 0 ? "#ff8c00" : "var(--accent)", borderRadius: 3 }} />
-                </div>
-                {row.fails > 0 ? <div style={{ fontSize: 10, color: "#ff4444", marginTop: 5 }}>{Math.round((row.fails / row.count) * 100)}% failure rate - investigate connection</div> : null}
+                <progress className={cx("progressMeter", row.fails > 0 ? "progressMeterAmber" : "progressMeterAccent")} max={maxTriggerCount} value={row.count} />
+                {row.fails > 0 ? <div className={cx("text10", "colorRed", "mt6")}>{Math.round((row.fails / row.count) * 100)}% failure rate - investigate connection</div> : null}
               </div>
             );
           })}
@@ -314,37 +323,39 @@ export function TriggerLogPage({ isActive }: { isActive: boolean }) {
       ) : null}
 
       {tab === "integrations" ? (
-        <div style={{ padding: "28px 0" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, maxWidth: 800 }}>
+        <div className={cx("mt24")}>
+          <div className={cx("tlIntGrid")}>
             {integrations.map((integration) => {
               const runs = logs.filter((row) => row.integration === integration.id).length;
               const fails = logs.filter((row) => row.integration === integration.id && row.status === "failed").length;
               const rate = runs > 0 ? Math.round(((runs - fails) / runs) * 100) : 100;
               return (
-                <div key={integration.id} style={{ padding: "18px", border: `1px solid ${integration.color}25`, borderRadius: 4, background: integration.bg }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 3, background: `${integration.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: integration.color }}>{integration.icon}</div>
+                <div key={integration.id} className={cx("tlIntCard", integrationTone(integration.id))}>
+                  <div className={cx("flexRow", "gap10", "mb14")}>
+                    <div className={cx("tlIntIcon", integrationTone(integration.id))}>{integration.icon}</div>
                     <div>
-                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: "#fff" }}>{integration.name}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: runs > 0 ? "var(--accent)" : "var(--muted2)" }} />
-                        <span style={{ fontSize: 9, color: runs > 0 ? "var(--accent)" : "var(--muted2)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{runs > 0 ? "Connected" : "No activity"}</span>
+                      <div className={cx("fontDisplay", "fw700", "text14", "colorText")}>{integration.name}</div>
+                      <div className={cx("flexRow", "gap6", "mt4")}>
+                        <div className={cx("tlDot", runs > 0 ? "tlStatusSuccess" : "tlDotMuted")} />
+                        <span className={cx("text10", runs > 0 ? "colorAccent" : "colorMuted2", "uppercase")}>{runs > 0 ? "Connected" : "No activity"}</span>
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+
+                  <div className={cx("tlIntStatsGrid")}>
                     {[
-                      { label: "Runs", value: runs, color: "#a0a0b0" },
-                      { label: "Fails", value: fails, color: fails > 0 ? "#ff4444" : "var(--muted2)" },
-                      { label: "Uptime", value: `${rate}%`, color: rate >= 90 ? "var(--accent)" : "#f5c518" }
+                      { label: "Runs", value: String(runs), className: "colorMuted" },
+                      { label: "Fails", value: String(fails), className: fails > 0 ? "colorRed" : "colorMuted2" },
+                      { label: "Uptime", value: `${rate}%`, className: rate >= 90 ? "colorAccent" : "colorAmber" }
                     ].map((stat) => (
-                      <div key={stat.label} style={{ padding: "8px", background: "rgba(0,0,0,0.2)", borderRadius: 2 }}>
-                        <div style={{ fontSize: 8, color: "var(--muted2)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>{stat.label}</div>
-                        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, color: stat.color }}>{stat.value}</div>
+                      <div key={stat.label} className={cx("tlIntStatCard")}>
+                        <div className={cx("text10", "colorMuted2", "uppercase", "mb4")}>{stat.label}</div>
+                        <div className={cx("fontDisplay", "fw700", "text14", stat.className)}>{stat.value}</div>
                       </div>
                     ))}
                   </div>
-                  {fails > 0 ? <div style={{ marginTop: 10, fontSize: 10, color: "#ff4444", padding: "6px 8px", background: "rgba(255,68,68,0.08)", borderRadius: 2 }}>⚑ {fails} failed event{fails > 1 ? "s" : ""} - check connection</div> : null}
+
+                  {fails > 0 ? <div className={cx("tlFailBanner")}>⚑ {fails} failed event{fails > 1 ? "s" : ""} - check connection</div> : null}
                 </div>
               );
             })}

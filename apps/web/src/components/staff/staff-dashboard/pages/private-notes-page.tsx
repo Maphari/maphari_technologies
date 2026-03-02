@@ -7,7 +7,6 @@ type ClientRow = {
   id: number;
   name: string;
   avatar: string;
-  color: string;
 };
 
 type NoteTag =
@@ -33,12 +32,12 @@ type NoteRow = {
 };
 
 const clients: ClientRow[] = [
-  { id: 1, name: "Volta Studios", avatar: "VS", color: "var(--accent)" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "#a78bfa" },
-  { id: 3, name: "Mira Health", avatar: "MH", color: "#60a5fa" },
-  { id: 4, name: "Dune Collective", avatar: "DC", color: "#f5c518" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "#ff8c00" },
-  { id: 0, name: "Internal", avatar: "IN", color: "#a0a0b0" }
+  { id: 1, name: "Volta Studios", avatar: "VS" },
+  { id: 2, name: "Kestrel Capital", avatar: "KC" },
+  { id: 3, name: "Mira Health", avatar: "MH" },
+  { id: 4, name: "Dune Collective", avatar: "DC" },
+  { id: 5, name: "Okafor & Sons", avatar: "OS" },
+  { id: 0, name: "Internal", avatar: "IN" }
 ];
 
 const initialNotes: NoteRow[] = [
@@ -125,14 +124,14 @@ const initialNotes: NoteRow[] = [
 ];
 
 const tagColors: Record<NoteTag, string> = {
-  preferences: "#60a5fa",
-  contact: "#a78bfa",
-  strategy: "#f5c518",
-  sensitive: "#ff4444",
+  preferences: "var(--blue)",
+  contact: "var(--purple)",
+  strategy: "var(--amber)",
+  sensitive: "var(--red)",
   finance: "var(--accent)",
-  process: "#ff8c00",
-  timeline: "#a0a0b0",
-  personal: "#60a5fa",
+  process: "var(--amber)",
+  timeline: "var(--muted)",
+  personal: "var(--blue)",
   growth: "var(--accent)"
 };
 
@@ -152,10 +151,7 @@ export function PrivateNotesPage({ isActive }: { isActive: boolean }) {
     tags: ""
   });
 
-  const allTags = useMemo(
-    () => [...new Set(notes.flatMap((note) => note.tags))] as NoteTag[],
-    [notes]
-  );
+  const allTags = useMemo(() => [...new Set(notes.flatMap((note) => note.tags))] as NoteTag[], [notes]);
 
   const filtered = useMemo(() => {
     return notes
@@ -163,8 +159,8 @@ export function PrivateNotesPage({ isActive }: { isActive: boolean }) {
       .filter((note) => tagFilter === "all" || note.tags.includes(tagFilter))
       .filter((note) => {
         if (!search.trim()) return true;
-        const q = search.toLowerCase();
-        return note.title.toLowerCase().includes(q) || note.body.toLowerCase().includes(q);
+        const query = search.toLowerCase();
+        return note.title.toLowerCase().includes(query) || note.body.toLowerCase().includes(query);
       })
       .sort((a, b) => {
         if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
@@ -193,12 +189,8 @@ export function PrivateNotesPage({ isActive }: { isActive: boolean }) {
   };
 
   const togglePin = (id: number) => {
-    setNotes((previous) =>
-      previous.map((note) => (note.id === id ? { ...note, pinned: !note.pinned } : note))
-    );
-    setSelected((previous) =>
-      previous && previous.id === id ? { ...previous, pinned: !previous.pinned } : previous
-    );
+    setNotes((previous) => previous.map((note) => (note.id === id ? { ...note, pinned: !note.pinned } : note)));
+    setSelected((previous) => (previous && previous.id === id ? { ...previous, pinned: !previous.pinned } : previous));
   };
 
   const deleteNote = (id: number) => {
@@ -225,40 +217,26 @@ export function PrivateNotesPage({ isActive }: { isActive: boolean }) {
       createdAt: "Today",
       updatedAt: "Today"
     };
+
     setNotes((previous) => [created, ...previous]);
     setSelected(created);
     setAdding(false);
     setNewNote({ clientId: "0", title: "", body: "", tags: "" });
   };
 
-  return (
-    <section className={cx("page", isActive && "pageActive")} id="page-private-notes">
-      <style>{`
-        input, textarea, select { outline: none; font-family: 'DM Mono', monospace; }
-        input:focus, textarea:focus { border-color: color-mix(in srgb, var(--accent) 25%, transparent) !important; }
-        textarea { resize: none; }
-        .pn-note-row { transition: all 0.12s ease; cursor: pointer; }
-        .pn-note-row:hover { background: color-mix(in srgb, var(--accent) 2%, transparent) !important; border-color: color-mix(in srgb, var(--accent) 15%, transparent) !important; }
-        .pn-note-row:hover .pn-pin-btn { opacity: 1 !important; }
-        .pn-pin-btn { transition: all 0.12s ease; cursor: pointer; background: none; border: none; }
-        .pn-filter-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .pn-filter-btn:hover { opacity: 0.8; }
-        .pn-action-btn { transition: all 0.12s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .pn-action-btn:hover { opacity: 0.75; }
-        .pn-save-btn { transition: all 0.15s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .pn-save-btn:hover:not(:disabled) { background: #a8d420 !important; }
-        .pn-save-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-      `}</style>
+  const selectedClient = selected ? clients.find((client) => client.id === selected.clientId) : null;
 
-      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", minHeight: "100%" }}>
-        <div style={{ borderRight: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <div style={{ padding: "24px 16px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 6 }}>Staff Dashboard</div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff" }}>Private Notes</h1>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", background: "rgba(255,68,68,0.08)", border: "1px solid rgba(255,68,68,0.2)", borderRadius: 2 }}>
-                <span style={{ fontSize: 8, color: "#ff4444" }}>◉</span>
-                <span style={{ fontSize: 9, color: "#ff4444", letterSpacing: "0.08em" }}>PRIVATE</span>
+  return (
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-private-notes">
+      <div className={cx("pnLayout")}>
+        <div className={cx("flexCol", "overflowHidden", "pnSidebar")}>
+          <div className={cx("pageHeaderBar", "noShrink", "pnSidebarHead")}>
+            <div className={cx("pageEyebrowText", "mb6")}>Staff Dashboard</div>
+            <div className={cx("flexBetween", "mb14")}>
+              <h1 className={cx("pnSidebarTitle")}>Private Notes</h1>
+              <div className={cx("privateBadge")}>
+                <span className={cx("colorRed", "pnPrivateDot")}>◉</span>
+                <span className={cx("colorRed", "pnPrivateText")}>PRIVATE</span>
               </div>
             </div>
 
@@ -266,100 +244,129 @@ export function PrivateNotesPage({ isActive }: { isActive: boolean }) {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search notes..."
-              style={{ width: "100%", padding: "8px 10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2, color: "var(--text)", fontSize: 11, marginBottom: 10 }}
+              className={cx("inputBase", "wFull", "text11", "mb10", "pnSearchInput")}
             />
 
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-              <button className="pn-filter-btn" onClick={() => setClientFilter("all")} style={{ padding: "3px 8px", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", borderRadius: 2, background: clientFilter === "all" ? "var(--accent)" : "rgba(255,255,255,0.04)", color: clientFilter === "all" ? "#050508" : "var(--muted2)", border: "none" }}>
-                All
-              </button>
-              {clients
-                .filter((client) => notes.some((note) => note.clientId === client.id))
-                .map((client) => (
-                  <button key={client.id} className="pn-filter-btn" onClick={() => setClientFilter(clientFilter === String(client.id) ? "all" : String(client.id))} style={{ padding: "3px 8px", fontSize: 9, borderRadius: 2, background: clientFilter === String(client.id) ? `${client.color}20` : "rgba(255,255,255,0.03)", color: clientFilter === String(client.id) ? client.color : "var(--muted2)", border: "none" }}>
-                    {client.avatar}
-                  </button>
-                ))}
+            <div className={cx("filterRow")}>
+              <select
+                className={cx("filterSelect")}
+                aria-label="Filter notes by client"
+                value={clientFilter}
+                onChange={(event) => setClientFilter(event.target.value)}
+              >
+                <option value="all">All clients</option>
+                {clients
+                  .filter((client) => notes.some((note) => note.clientId === client.id))
+                  .map((client) => (
+                    <option key={client.id} value={String(client.id)}>
+                      {client.name}
+                    </option>
+                  ))}
+              </select>
             </div>
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px" }}>
+          <div className={cx("flex1", "overflowAuto", "pnListPane")}>
             <button
+              type="button"
               onClick={() => {
                 setAdding(true);
                 setEditing(false);
                 setSelected(null);
               }}
-              style={{ width: "100%", padding: "8px 10px", marginBottom: 8, background: "transparent", border: "1px dashed color-mix(in srgb, var(--accent) 20%, transparent)", borderRadius: 3, color: "var(--accent)", fontSize: 11, cursor: "pointer", fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em", textAlign: "center" }}
+              className={cx("pnNewNoteBtn", "pnNewNoteBtnSm")}
             >
               + New note
             </button>
 
-            {filtered.length === 0 ? <div style={{ padding: "20px 8px", fontSize: 11, color: "var(--muted2)", textAlign: "center" }}>No notes found.</div> : null}
+            {filtered.length === 0 ? <div className={cx("text11", "colorMuted2", "textCenter", "pnEmptyList")}>No notes found.</div> : null}
 
             {filtered.map((note) => {
               const client = clients.find((entry) => entry.id === note.clientId);
               const isSelected = selected?.id === note.id;
+
               return (
                 <div
                   key={note.id}
-                  className="pn-note-row"
+                  className={cx("pnNoteCard", "pnNoteCardShell", isSelected && "pnNoteCardSelected")}
                   onClick={() => {
                     setSelected(note);
                     setEditing(false);
                     setAdding(false);
                   }}
-                  style={{ padding: "11px 10px", borderRadius: 3, marginBottom: 4, border: `1px solid ${isSelected ? "color-mix(in srgb, var(--accent) 20%, transparent)" : "rgba(255,255,255,0.04)"}`, background: isSelected ? "color-mix(in srgb, var(--accent) 4%, transparent)" : "transparent", position: "relative" }}
                 >
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 5 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        {note.pinned ? <span style={{ fontSize: 9, color: "#f5c518" }}>◈</span> : null}
-                        <span style={{ fontSize: 12, color: isSelected ? "#fff" : "#a0a0b0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{note.title}</span>
+                  <div className={cx("flexRow", "gap6", "mb4", "pnRowStart")}>
+                    <div className={cx("flex1", "minW0")}>
+                      <div className={cx("flexRow", "gap6")}>
+                        {note.pinned ? <span className={cx("pnPinnedGlyph")}>◈</span> : null}
+                        <span className={cx("text12", "truncate", "pnCardTitle", isSelected && "pnCardTitleSelected")}>{note.title}</span>
                       </div>
-                      <span style={{ fontSize: 10, color: client?.color, display: "block", marginTop: 2 }}>{client?.name}</span>
+                      <span className={cx("text10", "pnClientText")} data-client-id={String(note.clientId)}>
+                        {client?.name}
+                      </span>
                     </div>
-                    <button className="pn-pin-btn" style={{ fontSize: 12, color: note.pinned ? "#f5c518" : "#333344", opacity: note.pinned ? 1 : 0, flexShrink: 0 }} onClick={(event) => { event.stopPropagation(); togglePin(note.id); }}>
+
+                    <button
+                      type="button"
+                      className={cx("pnPinBtn", "pnPinBtnCard", note.pinned && "pnPinBtnCardActive")}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        togglePin(note.id);
+                      }}
+                    >
                       {note.pinned ? "◈" : "◇"}
                     </button>
                   </div>
-                  <div style={{ fontSize: 10, color: "var(--muted2)", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: 1.5, marginBottom: 5 }}>
-                    {note.body}
-                  </div>
-                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+
+                  <div className={cx("text10", "colorMuted2", "mb4", "pnBodyClamp")}>{note.body}</div>
+
+                  <div className={cx("flexRow", "gap4", "flexWrap")}>
                     {note.tags.slice(0, 2).map((tag) => (
-                      <span key={tag} style={{ fontSize: 8, padding: "1px 5px", borderRadius: 2, background: `${tagColors[tag]}15`, color: tagColors[tag], letterSpacing: "0.06em" }}>{tag}</span>
+                      <span key={tag} className={cx("pnTagChip", "pnTagChipSm")} data-tag={tag}>
+                        {tag}
+                      </span>
                     ))}
-                    <span style={{ fontSize: 9, color: "#333344", marginLeft: "auto" }}>{note.updatedAt}</span>
+                    <span className={cx("pnUpdatedAt")}>{note.updatedAt}</span>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
-            <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Filter by tag</div>
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-              <button className="pn-filter-btn" onClick={() => setTagFilter("all")} style={{ padding: "2px 7px", fontSize: 9, borderRadius: 2, background: tagFilter === "all" ? "rgba(255,255,255,0.08)" : "transparent", color: tagFilter === "all" ? "var(--text)" : "var(--muted2)", border: "none" }}>
-                all
-              </button>
-              {allTags.map((tag) => (
-                <button key={tag} className="pn-filter-btn" onClick={() => setTagFilter(tagFilter === tag ? "all" : tag)} style={{ padding: "2px 7px", fontSize: 9, borderRadius: 2, background: tagFilter === tag ? `${tagColors[tag]}18` : "transparent", color: tagFilter === tag ? tagColors[tag] : "var(--muted2)", border: "none" }}>
-                  {tag}
-                </button>
-              ))}
+          <div className={cx("noShrink", "pnSidebarFoot")}>
+            <div className={cx("sectionLabel", "mb8", "pnTagFilterLabel")}>Filter by tag</div>
+            <div className={cx("filterRow")}>
+              <select
+                className={cx("filterSelect")}
+                aria-label="Filter notes by tag"
+                value={tagFilter}
+                onChange={(event) => setTagFilter(event.target.value as "all" | NoteTag)}
+              >
+                <option value="all">All tags</option>
+                {allTags.map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div className={cx("flexCol", "overflowHidden", "pnMainPane")}>
           {adding ? (
-            <div style={{ flex: 1, padding: "32px 40px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 20 }}>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: "#fff" }}>New Private Note</div>
+            <div className={cx("flex1", "flexCol", "gap20", "overflowAuto", "pnPane")}> 
+              <div className={cx("pnPaneTitleLg")}>New Private Note</div>
 
               <div>
-                <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Client</label>
-                <select value={newNote.clientId} onChange={(event) => setNewNote((previous) => ({ ...previous, clientId: event.target.value }))} style={{ padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12, width: 240 }}>
+                <label className={cx("labelUpper")}>Client</label>
+                <select
+                  aria-label="Client for private note"
+                  value={newNote.clientId}
+                  onChange={(event) => setNewNote((previous) => ({ ...previous, clientId: event.target.value }))}
+                  className={cx("selectBase", "text12", "pnClientSelect")}
+                  title="Client"
+                >
                   {clients.map((client) => (
                     <option key={client.id} value={String(client.id)}>
                       {client.name}
@@ -369,25 +376,45 @@ export function PrivateNotesPage({ isActive }: { isActive: boolean }) {
               </div>
 
               <div>
-                <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Title</label>
-                <input value={newNote.title} onChange={(event) => setNewNote((previous) => ({ ...previous, title: event.target.value }))} placeholder="Note title..." style={{ width: "100%", maxWidth: 520, padding: "9px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 13 }} />
+                <label className={cx("labelUpper")}>Title</label>
+                <input
+                  value={newNote.title}
+                  onChange={(event) => setNewNote((previous) => ({ ...previous, title: event.target.value }))}
+                  placeholder="Note title..."
+                  className={cx("inputBase", "wFull", "text13", "pnTitleInput")}
+                />
               </div>
 
               <div>
-                <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Note</label>
-                <textarea value={newNote.body} onChange={(event) => setNewNote((previous) => ({ ...previous, body: event.target.value }))} placeholder="Write your private note here..." style={{ width: "100%", maxWidth: 620, minHeight: 180, padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 13, lineHeight: 1.8 }} />
+                <label className={cx("labelUpper")}>Note</label>
+                <textarea
+                  value={newNote.body}
+                  onChange={(event) => setNewNote((previous) => ({ ...previous, body: event.target.value }))}
+                  placeholder="Write your private note here..."
+                  className={cx("inputBase", "wFull", "text13", "pnComposeBody")}
+                />
               </div>
 
               <div>
-                <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Tags (comma separated)</label>
-                <input value={newNote.tags} onChange={(event) => setNewNote((previous) => ({ ...previous, tags: event.target.value }))} placeholder="e.g. preferences, contact, sensitive" style={{ width: "100%", maxWidth: 380, padding: "9px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }} />
+                <label className={cx("labelUpper")}>Tags (comma separated)</label>
+                <input
+                  value={newNote.tags}
+                  onChange={(event) => setNewNote((previous) => ({ ...previous, tags: event.target.value }))}
+                  placeholder="e.g. preferences, contact, sensitive"
+                  className={cx("inputBase", "wFull", "text12", "pnTagsInput")}
+                />
               </div>
 
-              <div style={{ display: "flex", gap: 10 }}>
-                <button className="pn-save-btn" disabled={!newNote.title.trim() || !newNote.body.trim()} onClick={addNote} style={{ padding: "11px 24px", background: "var(--accent)", color: "#050508", border: "none", borderRadius: 3, fontSize: 12, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <div className={cx("flexRow", "gap10")}>
+                <button
+                  type="button"
+                  className={cx("pnSaveBtn", "pnSaveBtnPrimary")}
+                  disabled={!newNote.title.trim() || !newNote.body.trim()}
+                  onClick={addNote}
+                >
                   Save note
                 </button>
-                <button onClick={() => setAdding(false)} style={{ padding: "11px 16px", background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--muted2)", fontSize: 11, cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>
+                <button type="button" onClick={() => setAdding(false)} className={cx("cancelBtnBase")}>
                   Cancel
                 </button>
               </div>
@@ -395,63 +422,70 @@ export function PrivateNotesPage({ isActive }: { isActive: boolean }) {
           ) : null}
 
           {!adding && selected ? (
-            <div style={{ flex: 1, padding: "32px 40px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+            <div className={cx("flex1", "flexCol", "overflowAuto", "pnPane")}>
               {!editing ? (
                 <>
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, color: clients.find((client) => client.id === selected.clientId)?.color }}>{clients.find((client) => client.id === selected.clientId)?.name}</span>
-                        <span style={{ fontSize: 10, color: "var(--muted2)" }}>Updated {selected.updatedAt}</span>
-                        {selected.pinned ? <span style={{ fontSize: 11, color: "#f5c518" }}>◈ Pinned</span> : null}
+                  <div className={cx("flexBetween", "mb16", "pnDetailHead")}>
+                    <div className={cx("flex1")}>
+                      <div className={cx("flexRow", "gap10", "mb8")}>
+                        <span className={cx("text11", "pnClientText")} data-client-id={String(selected.clientId)}>
+                          {selectedClient?.name}
+                        </span>
+                        <span className={cx("text10", "colorMuted2")}>Updated {selected.updatedAt}</span>
+                        {selected.pinned ? <span className={cx("text11", "pnPinnedLabel")}>◈ Pinned</span> : null}
                       </div>
-                      <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.2, maxWidth: 560 }}>{selected.title}</h2>
+                      <h2 className={cx("pnDetailTitle")}>{selected.title}</h2>
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                      <button className="pn-action-btn" onClick={() => togglePin(selected.id)} style={{ padding: "7px 12px", fontSize: 11, background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: selected.pinned ? "#f5c518" : "var(--muted2)", cursor: "pointer" }}>
+
+                    <div className={cx("flexRow", "gap8", "noShrink")}>
+                      <button
+                        type="button"
+                        className={cx("pnActionBtn", "ghostBtnBase", selected.pinned && "pnPinActionActive")}
+                        onClick={() => togglePin(selected.id)}
+                      >
                         {selected.pinned ? "◈ Unpin" : "◇ Pin"}
                       </button>
-                      <button className="pn-action-btn" onClick={startEdit} style={{ padding: "7px 14px", fontSize: 11, background: "color-mix(in srgb, var(--accent) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)", borderRadius: 3, color: "var(--accent)", cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                      <button type="button" className={cx("pnActionBtn", "accentBtnBase")} onClick={startEdit}>
                         Edit
                       </button>
-                      <button className="pn-action-btn" onClick={() => deleteNote(selected.id)} style={{ padding: "7px 10px", fontSize: 13, background: "transparent", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, color: "var(--muted2)", cursor: "pointer" }}>
+                      <button type="button" className={cx("pnActionBtn", "pnDeleteBtn")} onClick={() => deleteNote(selected.id)}>
                         ×
                       </button>
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
+                  <div className={cx("flexRow", "gap6", "mb24")}>
                     {selected.tags.map((tag) => (
-                      <span key={tag} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 2, background: `${tagColors[tag]}15`, color: tagColors[tag], letterSpacing: "0.06em" }}>{tag}</span>
+                      <span key={tag} className={cx("pnTagChip", "pnTagChipMd")} data-tag={tag}>
+                        {tag}
+                      </span>
                     ))}
                   </div>
 
-                  <div style={{ fontSize: 14, color: "#a0a0b0", lineHeight: 1.9, whiteSpace: "pre-wrap", maxWidth: 640 }}>{selected.body}</div>
+                  <div className={cx("text14", "colorMuted", "pnDetailBody")}>{selected.body}</div>
                 </>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 18, maxWidth: 640 }}>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff" }}>Editing note</div>
+                <div className={cx("flexCol", "gap20", "pnEditPane")}>
+                  <div className={cx("pnSidebarTitle")}>Editing note</div>
+
                   <input
                     value={draft?.title ?? ""}
-                    onChange={(event) =>
-                      setDraft((previous) =>
-                        previous ? { ...previous, title: event.target.value } : previous
-                      )
-                    }
-                    style={{ width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 3, color: "#fff", fontSize: 15, fontFamily: "'Syne', sans-serif", fontWeight: 700 }}
+                    onChange={(event) => setDraft((previous) => (previous ? { ...previous, title: event.target.value } : previous))}
+                    placeholder="Note title"
+                    className={cx("inputBase", "wFull", "fontDisplay", "fw700", "colorText", "pnEditTitleInput")}
                   />
+
                   <textarea
                     value={draft?.body ?? ""}
-                    onChange={(event) =>
-                      setDraft((previous) =>
-                        previous ? { ...previous, body: event.target.value } : previous
-                      )
-                    }
-                    style={{ width: "100%", minHeight: 280, padding: "14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "#a0a0b0", fontSize: 14, lineHeight: 1.9 }}
+                    onChange={(event) => setDraft((previous) => (previous ? { ...previous, body: event.target.value } : previous))}
+                    placeholder="Note body"
+                    className={cx("inputBase", "wFull", "text14", "colorMuted", "pnEditBodyInput")}
                   />
+
                   <div>
-                    <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Tags</label>
+                    <label className={cx("labelUpper")}>Tags</label>
                     <input
+                      placeholder="e.g. preferences, contact"
                       value={draft?.tags.join(", ") ?? ""}
                       onChange={(event) =>
                         setDraft((previous) => {
@@ -463,14 +497,15 @@ export function PrivateNotesPage({ isActive }: { isActive: boolean }) {
                           return { ...previous, tags: nextTags };
                         })
                       }
-                      style={{ width: "100%", maxWidth: 340, padding: "9px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }}
+                      className={cx("inputBase", "wFull", "text12", "pnEditTagsInput")}
                     />
                   </div>
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <button className="pn-save-btn" onClick={saveEdit} style={{ padding: "11px 24px", background: "var(--accent)", color: "#050508", border: "none", borderRadius: 3, fontSize: 12, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+
+                  <div className={cx("flexRow", "gap10")}>
+                    <button type="button" className={cx("pnSaveBtn", "pnSaveBtnPrimary")} onClick={saveEdit}>
                       Save changes
                     </button>
-                    <button onClick={cancelEdit} style={{ padding: "11px 16px", background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--muted2)", fontSize: 11, cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>
+                    <button type="button" onClick={cancelEdit} className={cx("cancelBtnBase")}>
                       Cancel
                     </button>
                   </div>
@@ -480,9 +515,9 @@ export function PrivateNotesPage({ isActive }: { isActive: boolean }) {
           ) : null}
 
           {!adding && !selected ? (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, color: "var(--muted2)" }}>
-              <div style={{ fontSize: 28 }}>◌</div>
-              <div style={{ fontSize: 13 }}>Select a note or create one</div>
+            <div className={cx("flex1", "flexCenter", "flexCol", "gap12", "colorMuted2")}>
+              <div className={cx("pnEmptyIcon")}>◌</div>
+              <div className={cx("text13")}>Select a note or create one</div>
             </div>
           ) : null}
         </div>

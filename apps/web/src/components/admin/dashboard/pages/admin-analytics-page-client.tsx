@@ -42,11 +42,20 @@ function buildMonthlyRevenueSeries(
 function RevenueBars({ id, labels, values }: { id: string; labels: string[]; values: number[] }) {
   const max = Math.max(...values, 1);
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 120 }}>
+    <div className={styles.analyticsBarsWrap}>
       {labels.map((label, idx) => (
-        <div key={`${id}-${label}`} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <div style={{ width: "100%", background: "var(--accent)", opacity: 0.7 + 0.3 * (values[idx] / max), height: `${Math.max(4, (values[idx] / max) * 100)}%`, borderRadius: "2px 2px 0 0", minHeight: 4 }} />
-          <span style={{ fontSize: 9, color: "var(--muted)", fontFamily: "DM Mono, monospace" }}>{label}</span>
+        <div key={`${id}-${label}`} className={styles.analyticsBarCol}>
+          <svg className={styles.analyticsBarSvg} viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true">
+            <rect
+              x="0"
+              y={100 - Math.max(4, (values[idx] / max) * 100)}
+              width="10"
+              height={Math.max(4, (values[idx] / max) * 100)}
+              fill="var(--accent)"
+              opacity={0.7 + 0.3 * (values[idx] / max)}
+            />
+          </svg>
+          <span className={styles.analyticsBarLabel}>{label}</span>
         </div>
       ))}
     </div>
@@ -141,7 +150,7 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
         <button type="button" className={`${styles.btnSm} ${styles.btnGhost}`}>Export Report</button>
       </div>
 
-      <div className={`${styles.statsRow} ${styles.statsRowCols4}`}>
+      <div className={styles.topCardsStack}>
         <div className={`${styles.statCard} ${styles.green}`}>
           <div className={styles.statLabel}>Revenue YTD</div>
           <div className={styles.statValue}>{formatMoney(revenueYtd, currency)}</div>
@@ -178,13 +187,13 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
           <div className={`${styles.donutWrap} ${styles.donutWrapLg}`}>
             <svg className={`${styles.donutSvg} ${styles.donutSvgLg}`} viewBox="0 0 36 36">
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3.8" />
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#a78bfa" strokeWidth="3.8"
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--accent)" strokeWidth="3.8"
                 strokeDasharray={`${tierRevenue.enterprisePct} ${100 - tierRevenue.enterprisePct}`}
                 strokeDashoffset="25" />
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#7b61ff" strokeWidth="3.8"
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--purple)" strokeWidth="3.8"
                 strokeDasharray={`${tierRevenue.growthPct} ${100 - tierRevenue.growthPct}`}
                 strokeDashoffset={25 - tierRevenue.enterprisePct} />
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f5a623" strokeWidth="3.8"
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--amber)" strokeWidth="3.8"
                 strokeDasharray={`${tierRevenue.starterPct} ${100 - tierRevenue.starterPct}`}
                 strokeDashoffset={25 - tierRevenue.enterprisePct - tierRevenue.growthPct} />
               <text x="18" y="21" textAnchor="middle" fontSize="4.5" fill="var(--text)" fontFamily="var(--font-syne)">

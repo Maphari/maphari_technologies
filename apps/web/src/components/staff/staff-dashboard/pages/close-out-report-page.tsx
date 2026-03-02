@@ -7,7 +7,11 @@ type ClientRow = {
   id: number;
   name: string;
   avatar: string;
-  color: string;
+  toneClass: string;
+  surfaceClass: string;
+  tabClass: string;
+  burnMeterClass: string;
+  retentionClass: string;
   project: string;
 };
 
@@ -44,8 +48,28 @@ type Report = {
 };
 
 const clients: ClientRow[] = [
-  { id: 1, name: "Volta Studios", avatar: "VS", color: "var(--accent)", project: "Brand Identity System" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "#ff8c00", project: "Annual Report 2025" }
+  {
+    id: 1,
+    name: "Volta Studios",
+    avatar: "VS",
+    toneClass: "corToneAccent",
+    surfaceClass: "corSurfaceAccent",
+    tabClass: "corProjectTabAccent",
+    burnMeterClass: "corBurnMeterAccent",
+    retentionClass: "corRetentionAccent",
+    project: "Brand Identity System"
+  },
+  {
+    id: 5,
+    name: "Okafor & Sons",
+    avatar: "OS",
+    toneClass: "corToneOrange",
+    surfaceClass: "corSurfaceOrange",
+    tabClass: "corProjectTabOrange",
+    burnMeterClass: "corBurnMeterOrange",
+    retentionClass: "corRetentionOrange",
+    project: "Annual Report 2025"
+  }
 ];
 
 const reports: Record<number, Report> = {
@@ -144,23 +168,13 @@ const reports: Record<number, Report> = {
 };
 
 function StatusBadge({ status }: { status: Milestone["status"] }) {
-  const cfg: Record<Milestone["status"], { label: string; color: string; bg: string }> = {
-    approved: { label: "Approved", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 10%, transparent)" },
-    in_progress: { label: "In progress", color: "#60a5fa", bg: "rgba(96,165,250,0.1)" },
-    upcoming: { label: "Upcoming", color: "var(--muted2)", bg: "rgba(160,160,176,0.06)" }
+  const cfg: Record<Milestone["status"], { label: string; toneClass: string }> = {
+    approved: { label: "Approved", toneClass: "corStatusApproved" },
+    in_progress: { label: "In progress", toneClass: "corStatusInProgress" },
+    upcoming: { label: "Upcoming", toneClass: "corStatusUpcoming" }
   };
   return (
-    <span
-      style={{
-        fontSize: 9,
-        padding: "2px 7px",
-        borderRadius: 2,
-        background: cfg[status].bg,
-        color: cfg[status].color,
-        letterSpacing: "0.08em",
-        textTransform: "uppercase"
-      }}
-    >
+    <span className={cx("corStatusBadge", cfg[status].toneClass)}>
       {cfg[status].label}
     </span>
   );
@@ -180,89 +194,50 @@ export function CloseOutReportPage({ isActive }: { isActive: boolean }) {
   const maxBurnHours = Math.max(...report.burnData.map((row) => row.hours), 1);
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-closeout-report">
-      <style>{`
-        .co-project-btn { transition: all 0.12s ease; cursor: pointer; }
-        .co-project-btn:hover { border-color: color-mix(in srgb, var(--accent) 20%, transparent) !important; }
-        .co-tab-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .co-export-btn { transition: all 0.15s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .co-export-btn:hover { background: #a8d420 !important; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-closeout-report">
+      <div className={cx("pageHeaderBar", "borderB", "pb0")}>
+        <div className={cx("flexBetween", "mb20")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
+            <div className={cx("pageEyebrow")}>
               Staff Dashboard / Workflow
             </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+            <h1 className={cx("pageTitle")}>
               Close-out Report
             </h1>
           </div>
           <button
-            className="co-export-btn"
-            style={{
-              padding: "10px 18px",
-              background: "var(--accent)",
-              color: "#050508",
-              border: "none",
-              borderRadius: 3,
-              fontSize: 11,
-              fontWeight: 500,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase"
-            }}
+            type="button"
+            className={cx("corExportBtn")}
           >
             Export PDF
           </button>
         </div>
 
-        <div style={{ display: "flex", gap: 10, marginBottom: 0 }}>
+        <div className={cx("flexRow", "gap10")}>
           {clients.map((row) => {
             const rowReport = reports[row.id];
             const isActiveProject = selectedId === row.id;
             return (
               <div
                 key={row.id}
-                className="co-project-btn"
+                className={cx("corProjectBtn", isActiveProject ? row.tabClass : "corProjectBtnIdle", isActiveProject && "corProjectBtnActive")}
                 onClick={() => setSelectedId(row.id)}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: "4px 4px 0 0",
-                  flex: "0 0 auto",
-                  border: `1px solid ${isActiveProject ? `${row.color}40` : "rgba(255,255,255,0.06)"}`,
-                  borderBottom: isActiveProject ? "1px solid #050508" : "1px solid rgba(255,255,255,0.06)",
-                  background: isActiveProject ? "#050508" : "rgba(255,255,255,0.01)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10
-                }}
               >
-                <div style={{ width: 22, height: 22, borderRadius: 2, background: `${row.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: row.color }}>
+                <div className={cx("corProjectAvatar", row.surfaceClass, row.toneClass)}>
                   {row.avatar}
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: isActiveProject ? "#fff" : "#a0a0b0" }}>{row.name}</div>
-                  <div style={{ fontSize: 10, color: "var(--muted2)" }}>{rowReport.project}</div>
+                  <div className={cx("text11", isActiveProject ? "colorText" : "colorMuted")}>{row.name}</div>
+                  <div className={cx("text10", "colorMuted2")}>{rowReport.project}</div>
                 </div>
-                <span
-                  style={{
-                    fontSize: 9,
-                    padding: "2px 6px",
-                    borderRadius: 2,
-                    background: rowReport.status === "complete" ? "color-mix(in srgb, var(--accent) 10%, transparent)" : "rgba(96,165,250,0.1)",
-                    color: rowReport.status === "complete" ? "var(--accent)" : "#60a5fa",
-                    letterSpacing: "0.06em",
-                    marginLeft: 4
-                  }}
-                >
+                <span className={cx("corProjectStatus", rowReport.status === "complete" ? "corProjectStatusComplete" : "corProjectStatusDraft")}>
                   {rowReport.status === "complete" ? "Complete" : "Draft"}
                 </span>
               </div>
             );
           })}
 
-          <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", alignItems: "flex-end" }}>
+          <div className={cx("corTabBarWrap")}>
             {[
               { key: "overview", label: "Overview" },
               { key: "finance", label: "Finance" },
@@ -271,18 +246,9 @@ export function CloseOutReportPage({ isActive }: { isActive: boolean }) {
             ].map((tab) => (
               <button
                 key={tab.key}
-                className="co-tab-btn"
+                type="button"
+                className={cx("corTabBtn", section === tab.key && "corTabBtnActive")}
                 onClick={() => setSection(tab.key as "overview" | "finance" | "milestones" | "retro")}
-                style={{
-                  padding: "10px 16px",
-                  fontSize: 11,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  background: "transparent",
-                  color: section === tab.key ? "var(--accent)" : "var(--muted2)",
-                  borderBottom: `2px solid ${section === tab.key ? "var(--accent)" : "transparent"}`,
-                  marginBottom: -1
-                }}
               >
                 {tab.label}
               </button>
@@ -291,77 +257,77 @@ export function CloseOutReportPage({ isActive }: { isActive: boolean }) {
         </div>
       </div>
 
-      <div style={{ paddingTop: 28 }}>
+      <div className={cx("pt8", "corTopPad")}>
         {section === "overview" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 28 }}>
+          <div className={cx("corOverviewGrid")}>
             <div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 3, background: `${client.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: client.color }}>
+              <div className={cx("flexRow", "gap10", "mb16")}>
+                <div className={cx("corClientAvatar", client.surfaceClass, client.toneClass)}>
                   {client.avatar}
                 </div>
                 <div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff" }}>{report.project}</div>
-                  <div style={{ fontSize: 11, color: "var(--muted2)" }}>{report.client} - {report.duration}</div>
+                  <div className={cx("fontDisplay", "fw800", "colorText", "corProjectTitle")}>{report.project}</div>
+                  <div className={cx("text11", "colorMuted2")}>{report.client} - {report.duration}</div>
                 </div>
               </div>
 
-              <div style={{ fontSize: 13, color: "#a0a0b0", lineHeight: 1.8, marginBottom: 24, maxWidth: 580 }}>{report.summary}</div>
+              <div className={cx("text13", "colorMuted", "corSummary")}>{report.summary}</div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 28 }}>
-                {[
-                  { label: "Duration", value: `${report.weeks}w`, color: "#a0a0b0" },
-                  { label: "Total hours", value: `${totalHours}h`, color: "#a0a0b0" },
-                  { label: "Accuracy", value: `${accuracy}%`, color: accuracy >= 85 ? "var(--accent)" : "#f5c518" },
-                  { label: "Satisfaction", value: `${report.satisfaction}/100`, color: report.satisfaction >= 85 ? "var(--accent)" : "#f5c518" }
-                ].map((stat) => (
-                  <div key={stat.label} style={{ padding: "14px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                    <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>{stat.label}</div>
-                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: stat.color }}>{stat.value}</div>
-                  </div>
-                ))}
+              <div className={cx("grid4", "gap12", "mb28")}>
+                  {[
+                    { label: "Duration", value: `${report.weeks}w`, toneClass: "corToneMuted" },
+                    { label: "Total hours", value: `${totalHours}h`, toneClass: "corToneMuted" },
+                    { label: "Accuracy", value: `${accuracy}%`, toneClass: accuracy >= 85 ? "corToneAccent" : "corToneAmber" },
+                    { label: "Satisfaction", value: `${report.satisfaction}/100`, toneClass: report.satisfaction >= 85 ? "corToneAccent" : "corToneAmber" }
+                  ].map((stat) => (
+                    <div key={stat.label} className={cx("corStatCard")}>
+                      <div className={cx("corStatLabel")}>{stat.label}</div>
+                      <div className={cx("fontDisplay", "fw800", "corStatValue", stat.toneClass)}>{stat.value}</div>
+                    </div>
+                  ))}
               </div>
 
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>Hours logged by week</div>
-              <div style={{ display: "flex", gap: 10, alignItems: "flex-end", height: 180, padding: "14px 12px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
+              <div className={cx("corSectionLabel", "mb12")}>Hours logged by week</div>
+              <div className={cx("corBurnChartRows")}>
                 {report.burnData.map((row) => (
-                  <div key={row.week} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", gap: 6 }}>
-                    <span style={{ fontSize: 10, color: "#a0a0b0" }}>{row.hours}h</span>
-                    <div style={{ width: "100%", maxWidth: 32, height: `${Math.max(8, Math.round((row.hours / maxBurnHours) * 110))}px`, borderRadius: "3px 3px 0 0", background: client.color, opacity: 0.75 }} />
-                    <span style={{ fontSize: 10, color: "var(--muted2)" }}>{row.week}</span>
+                  <div key={row.week} className={cx("corBurnRow")}>
+                    <span className={cx("text10", "colorMuted2", "noShrink", "corBurnWeek")}>{row.week}</span>
+                    <progress className={cx("corBurnMeter", client.burnMeterClass)} max={maxBurnHours} value={row.hours} />
+                    <span className={cx("text10", "colorMuted", "noShrink", "corBurnHours")}>{row.hours}h</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ padding: "16px", border: `1px solid ${client.color}30`, borderRadius: 4, background: `${client.color}05` }}>
-                <div style={{ fontSize: 10, color: client.color, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
+            <div className={cx("flexCol", "gap16")}>
+              <div className={cx("corRetentionCard", client.retentionClass)}>
+                <div className={cx("corRetentionLabel", client.toneClass)}>
                   Retention signal
                 </div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 8 }}>
+                <div className={cx("fontDisplay", "fw700", "colorText", "corRetentionTitle")}>
                   {report.recommendation}
                 </div>
-                <div style={{ fontSize: 9, padding: "2px 8px", borderRadius: 2, background: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent)", display: "inline-block", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                <div className={cx("corRetentionBadge")}>
                   {report.retentionRisk === "low" ? "Low churn risk" : "Monitor retention"}
                 </div>
               </div>
 
-              <div style={{ padding: "14px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3 }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Project value</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: "var(--accent)", marginBottom: 4 }}>
+              <div className={cx("corSideCard")}>
+                <div className={cx("corSectionLabel", "mb10")}>Project value</div>
+                <div className={cx("fontDisplay", "fw800", "colorAccent", "corValueAmount")}>
                   R{report.finance.totalValue.toLocaleString()}
                 </div>
-                <div style={{ fontSize: 11, color: "var(--muted2)" }}>Contracted + scope changes</div>
+                <div className={cx("text11", "colorMuted2")}>Contracted + scope changes</div>
               </div>
 
-              <div style={{ padding: "14px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3 }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Milestone summary</div>
-                {report.milestones.map((milestone) => (
-                  <div key={milestone.name} style={{ display: "flex", gap: 8, alignItems: "center", padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                    <span style={{ fontSize: 10, color: milestone.status === "approved" ? "var(--accent)" : milestone.status === "in_progress" ? "#60a5fa" : "var(--muted2)", flexShrink: 0 }}>
+              <div className={cx("corSideCard")}>
+                  <div className={cx("corSectionLabel", "mb10")}>Milestone summary</div>
+                  {report.milestones.map((milestone) => (
+                    <div key={milestone.name} className={cx("corMilestoneSummaryRow")}>
+                      <span className={cx("text10", "noShrink", milestone.status === "approved" ? "corToneAccent" : milestone.status === "in_progress" ? "corToneBlue" : "corToneMuted2")}>
                       {milestone.status === "approved" ? "v" : milestone.status === "in_progress" ? "*" : "o"}
                     </span>
-                    <span style={{ fontSize: 11, color: "#a0a0b0", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{milestone.name}</span>
+                    <span className={cx("text11", "colorMuted", "flex1", "truncate")}>{milestone.name}</span>
                   </div>
                 ))}
               </div>
@@ -370,66 +336,66 @@ export function CloseOutReportPage({ isActive }: { isActive: boolean }) {
         )}
 
         {section === "finance" && (
-          <div style={{ maxWidth: 600 }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 20 }}>Financial Summary</div>
+          <div className={cx("corFinanceWrap")}>
+            <div className={cx("fontDisplay", "fw800", "colorText", "corFinanceTitle")}>Financial Summary</div>
             {[
-              { label: "Contracted value", value: `R${report.finance.contracted.toLocaleString()}`, color: "#a0a0b0" },
-              { label: "Scope changes", value: `+ R${report.finance.scopeChanges.toLocaleString()}`, color: report.finance.scopeChanges > 0 ? "var(--accent)" : "var(--muted2)" },
-              { label: "Total project value", value: `R${report.finance.totalValue.toLocaleString()}`, color: "var(--accent)", bold: true },
-              { label: "Total invoiced", value: `R${report.finance.invoiced.toLocaleString()}`, color: "#a0a0b0" },
-              { label: "Total collected", value: `R${report.finance.collected.toLocaleString()}`, color: "var(--accent)" },
-              { label: "Outstanding", value: `R${(report.finance.invoiced - report.finance.collected).toLocaleString()}`, color: report.finance.invoiced - report.finance.collected > 0 ? "#ff4444" : "var(--muted2)" }
+              { label: "Contracted value", value: `R${report.finance.contracted.toLocaleString()}`, toneClass: "corToneMuted" },
+              { label: "Scope changes", value: `+ R${report.finance.scopeChanges.toLocaleString()}`, toneClass: report.finance.scopeChanges > 0 ? "corToneAccent" : "corToneMuted2" },
+              { label: "Total project value", value: `R${report.finance.totalValue.toLocaleString()}`, toneClass: "corToneAccent", bold: true },
+              { label: "Total invoiced", value: `R${report.finance.invoiced.toLocaleString()}`, toneClass: "corToneMuted" },
+              { label: "Total collected", value: `R${report.finance.collected.toLocaleString()}`, toneClass: "corToneAccent" },
+              { label: "Outstanding", value: `R${(report.finance.invoiced - report.finance.collected).toLocaleString()}`, toneClass: report.finance.invoiced - report.finance.collected > 0 ? "corToneRed" : "corToneMuted2" }
             ].map((row) => (
-              <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", background: row.bold ? "color-mix(in srgb, var(--accent) 3%, transparent)" : "transparent" }}>
-                <span style={{ fontSize: 13, color: "var(--muted2)" }}>{row.label}</span>
-                <span style={{ fontSize: 15, color: row.color, fontWeight: row.bold ? 700 : 400 }}>{row.value}</span>
+              <div key={row.label} className={cx("corFinanceRow", row.bold && "corFinanceRowBold")}>
+                <span className={cx("text13", "colorMuted2")}>{row.label}</span>
+                <span className={cx("corFinanceValue", row.toneClass, row.bold && "fw700")}>{row.value}</span>
               </div>
             ))}
 
-            <div style={{ marginTop: 20, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 3 }}>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Effective hourly rate</div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: "var(--accent)" }}>
+            <div className={cx("corHourlyRate")}>
+              <div className={cx("corSectionLabel", "mb8")}>Effective hourly rate</div>
+              <div className={cx("fontDisplay", "fw800", "colorAccent", "corHourlyValue")}>
                 R{Math.round(report.finance.totalValue / Math.max(totalHours, 1)).toLocaleString()} / hr
               </div>
-              <div style={{ fontSize: 11, color: "var(--muted2)", marginTop: 4 }}>Based on {totalHours}h logged</div>
+              <div className={cx("text11", "colorMuted2", "mt4")}>Based on {totalHours}h logged</div>
             </div>
           </div>
         )}
 
         {section === "milestones" && (
-          <div style={{ maxWidth: 680 }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 20 }}>Milestone Review</div>
+          <div className={cx("corMilestonesWrap")}>
+            <div className={cx("fontDisplay", "fw800", "colorText", "corFinanceTitle")}>Milestone Review</div>
             {report.milestones.map((milestone) => {
               const varianceHours = milestone.actual !== null ? milestone.actual - milestone.estimated : null;
               return (
-                <div key={milestone.name} style={{ padding: "16px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, marginBottom: 10, background: "rgba(255,255,255,0.01)" }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+                <div key={milestone.name} className={cx("corMilestoneCard")}>
+                  <div className={cx("flexBetween", "mb10")}>
                     <div>
-                      <div style={{ fontSize: 14, color: "var(--text)", marginBottom: 4 }}>{milestone.name}</div>
-                      {milestone.approved ? <div style={{ fontSize: 10, color: "var(--muted2)" }}>Approved {milestone.approved}</div> : null}
+                      <div className={cx("text14", "colorText", "mb4")}>{milestone.name}</div>
+                      {milestone.approved ? <div className={cx("text10", "colorMuted2")}>Approved {milestone.approved}</div> : null}
                     </div>
                     <StatusBadge status={milestone.status} />
                   </div>
                   {milestone.actual !== null ? (
-                    <div style={{ display: "flex", gap: 20 }}>
+                    <div className={cx("flexRow", "gap20")}>
                       <div>
-                        <div style={{ fontSize: 9, color: "var(--muted2)", marginBottom: 3 }}>ESTIMATED</div>
-                        <div style={{ fontSize: 14, color: "#a0a0b0" }}>{milestone.estimated}h</div>
+                        <div className={cx("corVarLabel")}>ESTIMATED</div>
+                        <div className={cx("text14", "colorMuted")}>{milestone.estimated}h</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 9, color: "var(--muted2)", marginBottom: 3 }}>ACTUAL</div>
-                        <div style={{ fontSize: 14, color: "#a0a0b0" }}>{milestone.actual}h</div>
+                        <div className={cx("corVarLabel")}>ACTUAL</div>
+                        <div className={cx("text14", "colorMuted")}>{milestone.actual}h</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 9, color: "var(--muted2)", marginBottom: 3 }}>VARIANCE</div>
-                        <div style={{ fontSize: 14, color: (varianceHours ?? 0) > 0 ? "#ff4444" : "var(--accent)" }}>
+                        <div className={cx("corVarLabel")}>VARIANCE</div>
+                        <div className={cx("text14", (varianceHours ?? 0) > 0 ? "corToneRed" : "corToneAccent")}>
                           {(varianceHours ?? 0) > 0 ? "+" : ""}
                           {varianceHours}h
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div style={{ fontSize: 11, color: "var(--muted2)" }}>Estimated {milestone.estimated}h - Not yet complete</div>
+                    <div className={cx("text11", "colorMuted2")}>Estimated {milestone.estimated}h - Not yet complete</div>
                   )}
                 </div>
               );
@@ -438,34 +404,34 @@ export function CloseOutReportPage({ isActive }: { isActive: boolean }) {
         )}
 
         {section === "retro" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28, maxWidth: 800 }}>
+          <div className={cx("corRetroGrid")}>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)" }} />
-                <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, color: "#fff" }}>What went well</span>
+              <div className={cx("flexRow", "gap8", "mb16")}>
+                <div className={cx("corRetroDot", "corRetroDotAccent")} />
+                <span className={cx("fontDisplay", "fw700", "colorText", "corRetroHeading")}>What went well</span>
               </div>
               {report.wellWent.map((item, index) => (
-                <div key={index} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 14px", border: "1px solid color-mix(in srgb, var(--accent) 10%, transparent)", borderRadius: 3, marginBottom: 8, background: "color-mix(in srgb, var(--accent) 3%, transparent)" }}>
-                  <span style={{ color: "var(--accent)", flexShrink: 0, fontSize: 12, marginTop: 1 }}>v</span>
-                  <span style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.6 }}>{item}</span>
+                <div key={index} className={cx("corRetroItemGreen")}>
+                  <span className={cx("colorAccent", "noShrink", "text12", "corRetroLead")}>v</span>
+                  <span className={cx("text12", "colorMuted", "corRetroItemText")}>{item}</span>
                 </div>
               ))}
             </div>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f5c518" }} />
-                <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, color: "#fff" }}>To improve</span>
+              <div className={cx("flexRow", "gap8", "mb16")}>
+                <div className={cx("corRetroDot", "corRetroDotAmber")} />
+                <span className={cx("fontDisplay", "fw700", "colorText", "corRetroHeading")}>To improve</span>
               </div>
               {report.toImprove.map((item, index) => (
-                <div key={index} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 14px", border: "1px solid rgba(245,197,24,0.1)", borderRadius: 3, marginBottom: 8, background: "rgba(245,197,24,0.03)" }}>
-                  <span style={{ color: "#f5c518", flexShrink: 0, fontSize: 12, marginTop: 1 }}>!</span>
-                  <span style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.6 }}>{item}</span>
+                <div key={index} className={cx("corRetroItemAmber")}>
+                  <span className={cx("colorAmber", "noShrink", "text12", "corRetroLead")}>!</span>
+                  <span className={cx("text12", "colorMuted", "corRetroItemText")}>{item}</span>
                 </div>
               ))}
 
-              <div style={{ marginTop: 20, padding: "14px", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 3, background: "rgba(167,139,250,0.05)" }}>
-                <div style={{ fontSize: 9, color: "#a78bfa", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Recommendation</div>
-                <div style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.6 }}>{report.recommendation}</div>
+              <div className={cx("corRecommendation")}>
+                <div className={cx("corRecommendationLabel")}>Recommendation</div>
+                <div className={cx("text12", "colorMuted", "corRetroItemText")}>{report.recommendation}</div>
               </div>
             </div>
           </div>

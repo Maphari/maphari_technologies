@@ -1,20 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { toneClass } from "./admin-page-utils";
 
 type VendorCategory = "Software" | "Freelancer" | "Supplier" | "Infrastructure";
 type VendorPriority = "critical" | "high" | "medium" | "low";
@@ -48,8 +36,8 @@ const costByProject = [
 
 const tabs = ["vendor registry", "software spend", "freelancers", "cost per project"] as const;
 
-const categoryColors: Record<VendorCategory, string> = { Software: C.blue, Freelancer: C.purple, Supplier: C.amber, Infrastructure: C.lime };
-const priorityColors: Record<VendorPriority, string> = { critical: C.red, high: C.orange, medium: C.amber, low: C.muted };
+const categoryColors: Record<VendorCategory, string> = { Software: "var(--blue)", Freelancer: "var(--purple)", Supplier: "var(--amber)", Infrastructure: "var(--accent)" };
+const priorityColors: Record<VendorPriority, string> = { critical: "var(--red)", high: "var(--orange)", medium: "var(--amber)", low: "var(--muted)" };
 
 export function VendorCostControlPage() {
   const [activeTab, setActiveTab] = useState<Tab>("vendor registry");
@@ -63,102 +51,70 @@ export function VendorCostControlPage() {
   const filtered = filterCat === "All" ? vendors : vendors.filter((v) => v.category === filterCat);
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32, gap: 12, flexWrap: "wrap" }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.lime, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / VENDOR & COST MANAGEMENT</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Vendor & Cost Control</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Vendors · Software spend · Freelancers · Cost per project</div>
+          <div className={styles.pageEyebrow}>ADMIN / VENDOR & COST MANAGEMENT</div>
+          <h1 className={styles.pageTitle}>Vendor & Cost Control</h1>
+          <div className={styles.pageSub}>Vendors · Software spend · Freelancers · Cost per project</div>
         </div>
-        <button style={{ background: C.lime, color: C.bg, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>+ Add Vendor</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent")}>+ Add Vendor</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "gap16", "mb28")}>
         {[
-          { label: "Total Monthly Vendor Cost", value: `R${(totalMonthly / 1000).toFixed(1)}k`, color: C.red, sub: "All active vendors" },
-          { label: "Software Spend", value: `R${(softwareMonthly / 1000).toFixed(1)}k`, color: C.blue, sub: "9 tools, 8 seats avg" },
-          { label: "Freelancer Spend", value: "R18k", color: C.purple, sub: "Feb 2026 · 1 active" },
-          { label: "Renewals Due (60d)", value: upcomingRenewals.toString(), color: C.amber, sub: "Require review" }
+          { label: "Total Monthly Vendor Cost", value: `R${(totalMonthly / 1000).toFixed(1)}k`, color: "var(--red)", sub: "All active vendors" },
+          { label: "Software Spend", value: `R${(softwareMonthly / 1000).toFixed(1)}k`, color: "var(--blue)", sub: "9 tools, 8 seats avg" },
+          { label: "Freelancer Spend", value: "R18k", color: "var(--purple)", sub: "Feb 2026 · 1 active" },
+          { label: "Renewals Due (60d)", value: upcomingRenewals.toString(), color: "var(--amber)", sub: "Require review" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, "vendorToneText", toneClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            style={{
-              background: "none",
-              border: "none",
-              color: activeTab === t ? C.lime : C.muted,
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontFamily: "Syne, sans-serif",
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              borderBottom: `2px solid ${activeTab === t ? C.lime : "transparent"}`,
-              marginBottom: -1,
-              transition: "all 0.2s"
-            }}
-          >
-            {t}
-          </button>
-        ))}
+      <div className={styles.filterRow}>
+        <select title="View" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        {activeTab === "vendor registry" ? (
+          <select title="Category" value={filterCat} onChange={e => setFilterCat(e.target.value as VendorCategory | "All")} className={styles.filterSelect}>
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        ) : null}
       </div>
 
       {activeTab === "vendor registry" && (
         <div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-            {categories.map((c) => (
-              <button
-                key={c}
-                onClick={() => setFilterCat(c)}
-                style={{
-                  background: filterCat === c ? (c === "All" ? C.lime : categoryColors[c]) : C.surface,
-                  color: filterCat === c ? C.bg : C.muted,
-                  border: `1px solid ${filterCat === c ? (c === "All" ? C.lime : categoryColors[c]) : C.border}`,
-                  padding: "6px 14px",
-                  borderRadius: 20,
-                  fontSize: 12,
-                  cursor: "pointer",
-                  fontFamily: "DM Mono, monospace"
-                }}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 100px 120px 80px 80px auto", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          <div className={cx("card", "overflowHidden")}>
+            <div className={cx("fontMono", "text10", "colorMuted", "uppercase", "vendorRegHead")}>
               {["Vendor", "Category", "Monthly", "Annual", "Renewal", "Status", "Priority", ""].map((h) => (
                 <span key={h}>{h}</span>
               ))}
             </div>
             {filtered.map((v, i) => (
-              <div key={v.id} style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 100px 120px 80px 80px auto", padding: "14px 24px", borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", background: v.status === "reviewing" ? C.surface : "transparent" }}>
+              <div
+                key={v.id}
+                className={cx("vendorRegRow", i < filtered.length - 1 && "borderB", v.status === "reviewing" && "vendorReviewRow")}
+              >
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{v.name}</div>
-                  {v.seats ? <div style={{ fontSize: 11, color: C.muted }}>{v.seats} seats</div> : null}
+                  <div className={cx("fw600", "text13")}>{v.name}</div>
+                  {v.seats ? <div className={cx("text11", "colorMuted")}>{v.seats} seats</div> : null}
                 </div>
-                <span style={{ fontSize: 10, color: categoryColors[v.category], background: `${categoryColors[v.category]}15`, padding: "3px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace" }}>{v.category}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: C.red, fontWeight: 700 }}>R{v.monthlyCost.toLocaleString()}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: C.muted, fontSize: 12 }}>{v.annualCost > 0 ? `R${(v.annualCost / 1000).toFixed(0)}k` : "—"}</span>
-                <span style={{ fontSize: 11, fontFamily: "DM Mono, monospace", color: v.renewalDate !== "Per project" && v.renewalDate !== "Per order" && new Date(v.renewalDate) < new Date("2026-04-01") ? C.amber : C.muted }}>{v.renewalDate}</span>
-                <span style={{ fontSize: 10, color: v.status === "active" ? C.lime : C.amber, background: `${v.status === "active" ? C.lime : C.amber}15`, padding: "3px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace" }}>{v.status}</span>
-                <span style={{ fontSize: 10, color: priorityColors[v.priority], fontFamily: "DM Mono, monospace" }}>{v.priority}</span>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button style={{ background: C.border, border: "none", color: C.text, padding: "4px 8px", borderRadius: 4, fontSize: 11, cursor: "pointer" }}>Edit</button>
-                  <button style={{ background: C.surface, color: C.amber, border: "none", padding: "4px 8px", borderRadius: 4, fontSize: 11, cursor: "pointer" }}>Review</button>
+                <span className={cx("text10", "fontMono", "vendorToneTag", toneClass(categoryColors[v.category]))}>{v.category}</span>
+                <span className={cx("fontMono", "colorRed", "fw700")}>R{v.monthlyCost.toLocaleString()}</span>
+                <span className={cx("fontMono", "colorMuted", "text12")}>{v.annualCost > 0 ? `R${(v.annualCost / 1000).toFixed(0)}k` : "\u2014"}</span>
+                <span className={cx("text11", "fontMono", "vendorToneText", toneClass(v.renewalDate !== "Per project" && v.renewalDate !== "Per order" && new Date(v.renewalDate) < new Date("2026-04-01") ? "var(--amber)" : "var(--muted)"))}>{v.renewalDate}</span>
+                <span className={cx("text10", "fontMono", "vendorToneTag", toneClass(v.status === "active" ? "var(--accent)" : "var(--amber)"))}>{v.status}</span>
+                <span className={cx("text10", "fontMono", "vendorToneText", toneClass(priorityColors[v.priority]))}>{v.priority}</span>
+                <div className={cx("flexRow", "gap6")}>
+                  <button type="button" className={cx("btnSm", "btnGhost")}>Edit</button>
+                  <button type="button" className={cx("btnSm", "btnGhost", "vendorAmberText")}>Review</button>
                 </div>
               </div>
             ))}
@@ -167,10 +123,10 @@ export function VendorCostControlPage() {
       )}
 
       {activeTab === "software spend" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Software Spend by Tool</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className={cx("vendorSoftwareSplit", "gap20")}>
+          <div className={cx("card", "p24")}>
+            <div className={cx("text13", "fw700", "mb20", "uppercase", "tracking")}>Software Spend by Tool</div>
+            <div className={cx("flexCol", "gap16")}>
               {vendors
                 .filter((v) => v.category === "Software")
                 .sort((a, b) => b.monthlyCost - a.monthlyCost)
@@ -178,101 +134,104 @@ export function VendorCostControlPage() {
                   const maxCost = vendors.filter((v2) => v2.category === "Software").reduce((m, v2) => Math.max(m, v2.monthlyCost), 0);
                   return (
                     <div key={v.id}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                      <div className={cx("flexBetween", "mb6")}>
                         <div>
-                          <span style={{ fontSize: 13, fontWeight: 600 }}>{v.name}</span>
-                          {v.seats ? <span style={{ fontSize: 11, color: C.muted, marginLeft: 8 }}>{v.seats} seats · R{Math.round(v.monthlyCost / v.seats).toLocaleString()}/seat</span> : null}
+                          <span className={cx("text13", "fw600")}>{v.name}</span>
+                          {v.seats ? <span className={cx("text11", "colorMuted", "vendorMl8")}>{v.seats} seats · R{Math.round(v.monthlyCost / v.seats).toLocaleString()}/seat</span> : null}
                         </div>
-                        <span style={{ fontFamily: "DM Mono, monospace", color: C.red, fontWeight: 700 }}>R{v.monthlyCost.toLocaleString()}</span>
+                        <span className={cx("fontMono", "colorRed", "fw700")}>R{v.monthlyCost.toLocaleString()}</span>
                       </div>
-                      <div style={{ height: 8, background: C.border, borderRadius: 4 }}>
-                        <div style={{ height: "100%", width: `${(v.monthlyCost / maxCost) * 100}%`, background: C.blue, borderRadius: 4 }} />
+                      <div className={cx("progressBar", "vendorBarSm")}>
+                        <progress className={cx("vendorBarFillRound")} max={maxCost} value={v.monthlyCost} aria-label={`${v.name} monthly software spend`} />
                       </div>
-                      <div style={{ fontSize: 10, color: C.muted, marginTop: 3 }}>Annual: R{v.annualCost.toLocaleString()} · Renews {v.renewalDate}</div>
+                      <div className={cx("text10", "colorMuted", "mt3")}>Annual: R{v.annualCost.toLocaleString()} · Renews {v.renewalDate}</div>
                     </div>
                   );
                 })}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Cost Optimisation</div>
+          <div className={cx("flexCol", "gap16")}>
+            <div className={cx("card", "p24")}>
+              <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>Cost Optimisation</div>
               {[
                 { tool: "Miro Teams", issue: "Low usage - 2/8 seats active", saving: "R160/mo", action: "Downgrade or cancel" },
                 { tool: "Slack Pro", issue: "Free tier may suffice", saving: "R480/mo", action: "Review usage" }
               ].map((opt) => (
-                <div key={opt.tool} style={{ padding: 14, background: C.surface, border: `1px solid ${C.lime}22`, borderRadius: 8, marginBottom: 10 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>{opt.tool}</div>
-                  <div style={{ fontSize: 12, color: C.muted, marginBottom: 8 }}>{opt.issue}</div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ color: C.lime, fontFamily: "DM Mono, monospace", fontWeight: 700 }}>Save {opt.saving}</span>
-                    <button style={{ background: C.lime, color: C.bg, border: "none", padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{opt.action}</button>
+                <div key={opt.tool} className={cx("card", "mb10", "vendorOptCard")}>
+                  <div className={cx("fw600", "mb4")}>{opt.tool}</div>
+                  <div className={cx("text12", "colorMuted", "mb8")}>{opt.issue}</div>
+                  <div className={cx("flexBetween")}>
+                    <span className={cx("colorAccent", "fontMono", "fw700")}>Save {opt.saving}</span>
+                    <button type="button" className={cx("btnSm", "btnAccent")}>{opt.action}</button>
                   </div>
                 </div>
               ))}
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Cost Per Head</div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: C.blue, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>R{Math.round(softwareMonthly / 5).toLocaleString()}</div>
-              <div style={{ fontSize: 12, color: C.muted }}>Software cost per staff member / month</div>
+            <div className={cx("card", "p24")}>
+              <div className={cx("text13", "fw700", "mb12", "uppercase", "tracking")}>Cost Per Head</div>
+              <div className={cx("fontMono", "fw800", "colorBlue", "mb4", "vendorCostHead")}>R{Math.round(softwareMonthly / 5).toLocaleString()}</div>
+              <div className={cx("text12", "colorMuted")}>Software cost per staff member / month</div>
             </div>
           </div>
         </div>
       )}
 
       {activeTab === "freelancers" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className={cx("flexCol", "gap16")}>
           {freelancers.map((f) => (
-            <div key={f.name} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24, display: "grid", gridTemplateColumns: "1fr 120px 120px 100px 80px auto", alignItems: "center", gap: 20 }}>
+            <div
+              key={f.name}
+              className={cx("card", "vendorFreeRow")}
+            >
               <div>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>{f.name}</div>
-                <div style={{ fontSize: 12, color: C.muted }}>{f.specialty}</div>
+                <div className={cx("fw700", "mb4")}>{f.name}</div>
+                <div className={cx("text12", "colorMuted")}>{f.specialty}</div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Rate</div>
-                <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, fontSize: 13 }}>{f.rate}</div>
+                <div className={cx("text11", "colorMuted", "mb4")}>Rate</div>
+                <div className={cx("fontMono", "fw700", "text13")}>{f.rate}</div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>YTD Spend</div>
-                <div style={{ fontFamily: "DM Mono, monospace", color: C.purple, fontWeight: 700 }}>R{f.ytd.toLocaleString()}</div>
+                <div className={cx("text11", "colorMuted", "mb4")}>YTD Spend</div>
+                <div className={cx("fontMono", "colorPurple", "fw700")}>R{f.ytd.toLocaleString()}</div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>This Month</div>
-                <div style={{ fontFamily: "DM Mono, monospace", color: f.projectsThisMonth > 0 ? C.lime : C.muted }}>{f.projectsThisMonth} project{f.projectsThisMonth !== 1 ? "s" : ""}</div>
+                <div className={cx("text11", "colorMuted", "mb4")}>This Month</div>
+                <div className={cx("fontMono", "vendorToneText", toneClass(f.projectsThisMonth > 0 ? "var(--accent)" : "var(--muted)"))}>{f.projectsThisMonth} project{f.projectsThisMonth !== 1 ? "s" : ""}</div>
               </div>
-              <span style={{ fontSize: 10, color: f.status === "active" ? C.lime : C.amber, background: `${f.status === "active" ? C.lime : C.amber}15`, padding: "3px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace" }}>{f.status}</span>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>Brief</button>
-                <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>Invoice</button>
+              <span className={cx("text10", "fontMono", "vendorToneTag", toneClass(f.status === "active" ? "var(--accent)" : "var(--amber)"))}>{f.status}</span>
+              <div className={cx("flexRow", "gap8")}>
+                <button type="button" className={cx("btnSm", "btnGhost")}>Brief</button>
+                <button type="button" className={cx("btnSm", "btnGhost")}>Invoice</button>
               </div>
             </div>
           ))}
-          <button style={{ background: C.surface, border: `1px dashed ${C.border}`, borderRadius: 10, padding: 20, color: C.muted, fontSize: 13, cursor: "pointer", textAlign: "center" }}>+ Add Freelancer</button>
+          <button type="button" className={cx("btnSm", "btnGhost", "textCenter", "vendorAddBtn")}>+ Add Freelancer</button>
         </div>
       )}
 
       {activeTab === "cost per project" && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 140px 120px 100px", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div className={cx("card", "overflowHidden")}>
+          <div className={cx("fontMono", "text10", "colorMuted", "uppercase", "vendorProjectHead")}>
             {["Project", "Tool Costs", "Freelancer Costs", "Supplier Costs", "Total"].map((h) => (
               <span key={h}>{h}</span>
             ))}
           </div>
           {costByProject.map((p, i) => (
-            <div key={p.project} style={{ display: "grid", gridTemplateColumns: "1fr 120px 140px 120px 100px", padding: "16px 24px", borderBottom: i < costByProject.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center" }}>
-              <span style={{ fontWeight: 600 }}>{p.project}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: C.blue }}>R{p.toolCosts.toLocaleString()}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: p.freelancerCosts > 0 ? C.purple : C.muted }}>{p.freelancerCosts > 0 ? `R${p.freelancerCosts.toLocaleString()}` : "—"}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: p.supplierCosts > 0 ? C.amber : C.muted }}>{p.supplierCosts > 0 ? `R${p.supplierCosts.toLocaleString()}` : "—"}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: C.red, fontWeight: 800 }}>R{p.total.toLocaleString()}</span>
+            <div key={p.project} className={cx("vendorProjectRow", i < costByProject.length - 1 && "borderB")}>
+              <span className={cx("fw600")}>{p.project}</span>
+              <span className={cx("fontMono", "colorBlue")}>R{p.toolCosts.toLocaleString()}</span>
+              <span className={cx("fontMono", "vendorToneText", toneClass(p.freelancerCosts > 0 ? "var(--purple)" : "var(--muted)"))}>{p.freelancerCosts > 0 ? `R${p.freelancerCosts.toLocaleString()}` : "\u2014"}</span>
+              <span className={cx("fontMono", "vendorToneText", toneClass(p.supplierCosts > 0 ? "var(--amber)" : "var(--muted)"))}>{p.supplierCosts > 0 ? `R${p.supplierCosts.toLocaleString()}` : "\u2014"}</span>
+              <span className={cx("fontMono", "colorRed", "fw800")}>R{p.total.toLocaleString()}</span>
             </div>
           ))}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 140px 120px 100px", padding: "16px 24px", borderTop: `2px solid ${C.border}`, background: "#0d0d14" }}>
-            <span style={{ fontWeight: 800, color: C.lime }}>TOTAL</span>
-            <span style={{ fontFamily: "DM Mono, monospace", color: C.blue, fontWeight: 700 }}>R{costByProject.reduce((s, p) => s + p.toolCosts, 0).toLocaleString()}</span>
-            <span style={{ fontFamily: "DM Mono, monospace", color: C.purple, fontWeight: 700 }}>R{costByProject.reduce((s, p) => s + p.freelancerCosts, 0).toLocaleString()}</span>
-            <span style={{ fontFamily: "DM Mono, monospace", color: C.amber, fontWeight: 700 }}>R{costByProject.reduce((s, p) => s + p.supplierCosts, 0).toLocaleString()}</span>
-            <span style={{ fontFamily: "DM Mono, monospace", color: C.red, fontWeight: 800 }}>R{costByProject.reduce((s, p) => s + p.total, 0).toLocaleString()}</span>
+          <div className={cx("bgSurface", "vendorProjectTotal")}>
+            <span className={cx("fw800", "colorAccent")}>TOTAL</span>
+            <span className={cx("fontMono", "colorBlue", "fw700")}>R{costByProject.reduce((s, p) => s + p.toolCosts, 0).toLocaleString()}</span>
+            <span className={cx("fontMono", "colorPurple", "fw700")}>R{costByProject.reduce((s, p) => s + p.freelancerCosts, 0).toLocaleString()}</span>
+            <span className={cx("fontMono", "colorAmber", "fw700")}>R{costByProject.reduce((s, p) => s + p.supplierCosts, 0).toLocaleString()}</span>
+            <span className={cx("fontMono", "colorRed", "fw800")}>R{costByProject.reduce((s, p) => s + p.total, 0).toLocaleString()}</span>
           </div>
         </div>
       )}

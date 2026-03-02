@@ -4,18 +4,7 @@ import { useMemo, useState } from "react";
 import { createNotificationJobWithRefresh, type NotificationJob } from "../../../../lib/api/admin";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
 
 type Tab = "queue" | "composer" | "delivery";
 
@@ -31,17 +20,17 @@ function fmt(value?: string | null): string {
   }).format(d);
 }
 
-function statusColor(status: string): string {
-  if (status === "SENT") return C.primary;
-  if (status === "FAILED") return C.red;
-  if (status === "QUEUED") return C.amber;
-  return C.muted;
+function statusToneClass(status: string): string {
+  if (status === "SENT") return styles.notifToneAccent;
+  if (status === "FAILED") return styles.notifToneRed;
+  if (status === "QUEUED") return styles.notifToneAmber;
+  return styles.notifToneMuted;
 }
 
-function channelColor(channel: string): string {
-  if (channel === "EMAIL") return C.blue;
-  if (channel === "SMS") return C.amber;
-  return C.primary;
+function channelToneClass(channel: string): string {
+  if (channel === "EMAIL") return styles.notifToneBlue;
+  if (channel === "SMS") return styles.notifToneAmber;
+  return styles.notifToneAccent;
 }
 
 export function NotificationsPage({
@@ -125,161 +114,148 @@ export function NotificationsPage({
   }
 
   return (
-    <div
-      style={{
-        background: C.bg,
-        height: "100%",
-        color: C.text,
-        fontFamily: "Syne, sans-serif",
-        padding: 0,
-        overflow: "hidden",
-        display: "grid",
-        gridTemplateRows: "auto auto auto 1fr",
-        minHeight: 0
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={cx(styles.pageBody, styles.notifRoot)}>
+      {/* Header */}
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / COMMUNICATION</div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>Notifications</h1>
-          <div style={{ marginTop: 4, fontSize: 13, color: C.muted }}>Queue triage · Delivery status · Channel health</div>
+          <div className={styles.pageEyebrow}>ADMIN / COMMUNICATION</div>
+          <div className={styles.pageTitle}>Notifications</div>
+          <div className={styles.pageSub}>Queue triage · Delivery status · Channel health</div>
         </div>
-        <button onClick={() => void onProcess()} disabled={processing} style={{ background: C.primary, color: C.bg, border: "none", padding: "8px 16px", fontFamily: "DM Mono, monospace", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: processing ? 0.7 : 1 }}>
-          {processing ? "Processing..." : "Process Queue"}
-        </button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent", processing && "opacity70")} onClick={() => void onProcess()} disabled={processing}>
+            {processing ? "Processing..." : "Process Queue"}
+          </button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      {/* Stats */}
+      <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Queued", value: queued.toString(), sub: "Pending dispatch", color: queued > 0 ? C.amber : C.primary },
-          { label: "Failed", value: failed.toString(), sub: "Requires retry", color: failed > 0 ? C.red : C.primary },
-          { label: "Sent", value: sent.toString(), sub: "Delivered notifications", color: C.blue },
-          { label: "Success Rate", value: `${successRate}%`, sub: `${jobs.length} total jobs`, color: successRate >= 85 ? C.primary : C.amber }
+          { label: "Queued", value: queued.toString(), sub: "Pending dispatch", toneClass: queued > 0 ? styles.notifToneAmber : styles.notifToneAccent },
+          { label: "Failed", value: failed.toString(), sub: "Requires retry", toneClass: failed > 0 ? styles.notifToneRed : styles.notifToneAccent },
+          { label: "Sent", value: sent.toString(), sub: "Delivered notifications", toneClass: styles.notifToneBlue },
+          { label: "Success Rate", value: `${successRate}%`, sub: `${jobs.length} total jobs`, toneClass: successRate >= 85 ? styles.notifToneAccent : styles.notifToneAmber }
         ].map((k) => (
-          <div key={k.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{k.label}</div>
-            <div style={{ fontFamily: "DM Mono, monospace", fontSize: 24, fontWeight: 800, color: k.color, marginBottom: 4 }}>{k.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{k.sub}</div>
+          <div key={k.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{k.label}</div>
+            <div className={cx(styles.statValue, k.toneClass)}>{k.value}</div>
+            <div className={cx("text10", "colorMuted")}>{k.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 14, marginBottom: 16 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+      {/* Filters + Tabs */}
+      <div className={cx("card", "p16", "mb12")}>
+        <div className={cx("flexRow", "gap10", "flexWrap")}>
+          <select title="Filter by status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className={styles.formInput}>
             <option value="ALL">All status</option>
             <option value="QUEUED">Queued</option>
             <option value="SENT">Sent</option>
             <option value="FAILED">Failed</option>
           </select>
-          <select value={channelFilter} onChange={(e) => setChannelFilter(e.target.value as typeof channelFilter)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+          <select title="Filter by channel" value={channelFilter} onChange={(e) => setChannelFilter(e.target.value as typeof channelFilter)} className={styles.formInput}>
             <option value="ALL">All channels</option>
             <option value="EMAIL">Email</option>
             <option value="SMS">SMS</option>
             <option value="PUSH">Push</option>
           </select>
-          <select value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+          <select title="Filter by client" value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} className={styles.formInput}>
             <option value="ALL">All clients</option>
             {snapshot.clients.map((client) => (
               <option key={client.id} value={client.id}>{client.name}</option>
             ))}
           </select>
-          <button onClick={() => { setStatusFilter("ALL"); setChannelFilter("ALL"); setClientFilter("ALL"); }} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.muted, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, cursor: "pointer" }}>
-            Reset
-          </button>
 
-          <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-            {(["queue", "composer", "delivery"] as Tab[]).map((tab) => (
-              <button key={tab} onClick={() => setActiveTab(tab)} style={{ background: "none", border: "none", borderBottom: activeTab === tab ? `2px solid ${C.primary}` : "none", color: activeTab === tab ? C.primary : C.muted, padding: "8px 12px", fontFamily: "Syne, sans-serif", fontSize: 12, fontWeight: 600, textTransform: "capitalize", letterSpacing: "0.06em", cursor: "pointer" }}>
-                {tab}
-              </button>
-            ))}
-          </div>
+          <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={cx(styles.filterSelect, "mlAuto")}>
+            {(["queue", "composer", "delivery"] as Tab[]).map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
         </div>
       </div>
 
+      {/* Queue tab */}
       {activeTab === "queue" ? (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden", minHeight: 0, display: "grid", gridTemplateRows: "auto 1fr" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "90px 120px 1.2fr 100px 90px 150px", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div className={cx("card", "notifGridSplit")}>
+          <div className={cx("notifTableHead", "fontMono", "textXs", "colorMuted", "uppercase")}>
             {["Channel", "Client", "Recipient", "Status", "Attempts", "Updated"].map((h) => <span key={h}>{h}</span>)}
           </div>
-          <div style={{ overflow: "auto", minHeight: 0 }}>
+          <div className={cx("overflowAuto", "minH0")}>
             {filtered.length > 0 ? (
-              filtered.map((job, i) => (
-                <div key={job.id} style={{ display: "grid", gridTemplateColumns: "90px 120px 1.2fr 100px 90px 150px", padding: "12px 20px", borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center" }}>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: channelColor(job.channel) }}>{job.channel}</span>
-                  <span style={{ fontSize: 11, color: C.muted }}>{job.clientId ? (byId.get(job.clientId) ?? "Unknown") : "-"}</span>
-                  <span style={{ fontSize: 12, color: C.text }}>{job.recipient}</span>
-                  <span style={{ fontSize: 10, color: statusColor(job.status), background: `${statusColor(job.status)}15`, padding: "3px 8px", fontFamily: "DM Mono, monospace", width: "fit-content" }}>{job.status}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.muted }}>{job.attempts}/{job.maxAttempts}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.muted }}>{fmt(job.updatedAt)}</span>
+              filtered.map((job) => (
+                <div key={job.id} className={cx("notifTableRow", "text12")}>
+                  <span className={cx(styles.fontMono, channelToneClass(job.channel))}>{job.channel}</span>
+                  <span className={cx("text11", "colorMuted")}>{job.clientId ? (byId.get(job.clientId) ?? "Unknown") : "-"}</span>
+                  <span>{job.recipient}</span>
+                  <span className={cx("fontMono", "text10", "wFit", statusToneClass(job.status))}>{job.status}</span>
+                  <span className={cx("fontMono", "colorMuted")}>{job.attempts}/{job.maxAttempts}</span>
+                  <span className={cx("fontMono", "colorMuted")}>{fmt(job.updatedAt)}</span>
                 </div>
               ))
             ) : (
-              <div style={{ padding: 20, color: C.muted, fontSize: 12 }}>No notification jobs match current filters.</div>
+              <div className={cx("p20", "colorMuted", "text12")}>No notification jobs match current filters.</div>
             )}
           </div>
         </div>
       ) : null}
 
+      {/* Composer tab */}
       {activeTab === "composer" ? (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20, overflow: "auto", minHeight: 0 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 10, marginBottom: 10 }}>
-            <select value={createClientId} onChange={(e) => setCreateClientId(e.target.value)} disabled={!canEdit} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+        <div className={cx("card", "p20", "overflowAuto", "minH0")}>
+          <div className={cx("grid2", "gap10", "mb10")}>
+            <select title="Client context" value={createClientId} onChange={(e) => setCreateClientId(e.target.value)} disabled={!canEdit} className={styles.formInput}>
               <option value="">No client context</option>
               {snapshot.clients.map((client) => (
                 <option key={client.id} value={client.id}>{client.name}</option>
               ))}
             </select>
-            <select value={createChannel} onChange={(e) => setCreateChannel(e.target.value as typeof createChannel)} disabled={!canEdit} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+            <select title="Notification channel" value={createChannel} onChange={(e) => setCreateChannel(e.target.value as typeof createChannel)} disabled={!canEdit} className={styles.formInput}>
               <option value="EMAIL">Email</option>
               <option value="SMS">SMS</option>
               <option value="PUSH">Push</option>
             </select>
-            <input value={createRecipient} onChange={(e) => setCreateRecipient(e.target.value)} placeholder="Recipient" disabled={!canEdit} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }} />
-            <input value={createSubject} onChange={(e) => setCreateSubject(e.target.value)} placeholder="Subject (optional)" disabled={!canEdit} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }} />
+            <input value={createRecipient} onChange={(e) => setCreateRecipient(e.target.value)} placeholder="Recipient" disabled={!canEdit} className={styles.formInput} />
+            <input value={createSubject} onChange={(e) => setCreateSubject(e.target.value)} placeholder="Subject (optional)" disabled={!canEdit} className={styles.formInput} />
           </div>
-          <textarea value={createMessage} onChange={(e) => setCreateMessage(e.target.value)} placeholder="Notification message" disabled={!canEdit} rows={8} style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "10px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, marginBottom: 10 }} />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 11, color: C.muted }}>{canEdit ? "Queue to notification gateway" : "Read-only mode"}</span>
-            <button onClick={() => void handleQueue()} disabled={!canEdit} style={{ background: C.primary, color: C.bg, border: "none", padding: "8px 14px", fontFamily: "DM Mono, monospace", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: canEdit ? 1 : 0.6 }}>
+          <textarea value={createMessage} onChange={(e) => setCreateMessage(e.target.value)} placeholder="Notification message" disabled={!canEdit} rows={8} className={cx("formTextarea", "mb10")} />
+          <div className={styles.flexBetween}>
+            <span className={cx("text11", "colorMuted")}>{canEdit ? "Queue to notification gateway" : "Read-only mode"}</span>
+            <button type="button" className={cx("btnSm", "btnAccent", !canEdit && "opacity60")} onClick={() => void handleQueue()} disabled={!canEdit}>
               Queue Notification
             </button>
           </div>
         </div>
       ) : null}
 
+      {/* Delivery tab */}
       {activeTab === "delivery" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, minHeight: 0 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20, overflow: "auto", minHeight: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14 }}>Delivery by Channel</div>
+        <div className={cx("grid2", "minH0")}>
+          <div className={cx("card", "p20", "overflowAuto", "minH0")}>
+            <div className={cx("text12", "fw700", "mb14")}>Delivery by Channel</div>
             {deliveryStats.map((row) => (
-              <div key={row.channel} style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, color: channelColor(row.channel) }}>{row.channel}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: row.pct >= 85 ? C.primary : C.amber }}>{row.pct}%</span>
+              <div key={row.channel} className={styles.mb12}>
+                <div className={cx("flexBetween", "mb4")}>
+                  <span className={cx(styles.text12, channelToneClass(row.channel))}>{row.channel}</span>
+                  <span className={cx(styles.fontMono, row.pct >= 85 ? styles.notifToneAccent : styles.notifToneAmber)}>{row.pct}%</span>
                 </div>
-                <div style={{ height: 6, background: C.border }}>
-                  <div style={{ height: "100%", width: `${row.pct}%`, background: channelColor(row.channel) }} />
-                </div>
-                <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{row.ok} sent · {row.fail} failed · {row.total} total</div>
+                <progress className={cx(styles.notifProgress, channelToneClass(row.channel))} max={100} value={row.pct} aria-label={`${row.channel} delivery ${row.pct}%`} />
+                <div className={cx("text10", "colorMuted", "mt4")}>{row.ok} sent · {row.fail} failed · {row.total} total</div>
               </div>
             ))}
           </div>
 
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20, overflow: "auto", minHeight: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14 }}>Failure Focus</div>
+          <div className={cx("card", "p20", "overflowAuto", "minH0")}>
+            <div className={cx("text12", "fw700", "mb14")}>Failure Focus</div>
             {jobs.filter((job) => job.status === "FAILED").slice(0, 12).map((job, i, arr) => (
-              <div key={job.id} style={{ padding: "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                  <span style={{ fontSize: 12, color: C.text }}>{job.recipient}</span>
-                  <span style={{ fontSize: 10, color: C.red, fontFamily: "DM Mono, monospace" }}>{job.channel}</span>
+              <div key={job.id} className={cx("py10", i < arr.length - 1 && "borderB")}>
+                <div className={cx("flexBetween", "mb3")}>
+                  <span className={styles.text12}>{job.recipient}</span>
+                  <span className={cx("text10", "fontMono", "colorRed")}>{job.channel}</span>
                 </div>
-                <div style={{ fontSize: 10, color: C.muted }}>{fmt(job.updatedAt)} · attempts {job.attempts}/{job.maxAttempts}</div>
+                <div className={cx("text10", "colorMuted")}>{fmt(job.updatedAt)} · attempts {job.attempts}/{job.maxAttempts}</div>
               </div>
             ))}
             {jobs.filter((job) => job.status === "FAILED").length === 0 ? (
-              <div style={{ fontSize: 12, color: C.muted }}>No failed jobs in current data.</div>
+              <div className={cx("text12", "colorMuted")}>No failed jobs in current data.</div>
             ) : null}
           </div>
         </div>

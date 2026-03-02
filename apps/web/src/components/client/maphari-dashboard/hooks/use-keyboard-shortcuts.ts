@@ -1,117 +1,138 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { PageId } from "../config";
 
-type UseKeyboardShortcutsParams = {
-  onNavigate: (page: PageId) => void;
-  onOpenSearch: () => void;
+// ─── Chord map: G + <letter> → PageId ────────────────────────────────────────
+
+const CHORD_MAP: Record<string, PageId> = {
+  d: "dashboard",
+  p: "projects",
+  m: "messages",
+  n: "notifications",
+  b: "billing",
+  s: "settings",
+  r: "reports",
+  i: "automation",
+  v: "services",
+  a: "approvals",
+  f: "files",
+  t: "team",
 };
+
+const CHORD_TIMEOUT_MS = 500;
+
+// ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useKeyboardShortcuts({
   onNavigate,
   onOpenSearch,
-}: UseKeyboardShortcutsParams) {
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  isSearchOpen,
+}: {
+  onNavigate: (page: PageId) => void;
+  onOpenSearch: () => void;
+  isSearchOpen: boolean;
+}) {
+  const [shortcutsVisible, setShortcutsVisible] = useState(false);
+  const gPressedRef = useRef(false);
+  const chordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const toggleShortcuts = useCallback(() => {
+    setShortcutsVisible((prev) => !prev);
+  }, []);
 
   useEffect(() => {
-    let gPressed = false;
-    let gTimeout: ReturnType<typeof setTimeout> | null = null;
+    function isInputFocused(): boolean {
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return true;
+      if (document.activeElement?.getAttribute("contenteditable") === "true") return true;
+      return false;
+    }
 
-    const handler = (e: KeyboardEvent) => {
-      /* Don't trigger when typing in inputs */
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.tagName === "SELECT" ||
-        target.isContentEditable
-      )
-        return;
+    function handleKeyDown(e: KeyboardEvent) {
+      // Don't capture when typing in inputs
+      if (isInputFocused()) return;
 
-      /* ? = toggle shortcuts panel */
-      if (e.key === "?" && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault();
-        setShortcutsOpen((prev) => !prev);
-        return;
-      }
+      // Don't interfere with modifier keys (except for Cmd+K)
+      if (e.altKey) return;
 
-      /* Escape = close shortcuts panel */
-      if (e.key === "Escape") {
-        setShortcutsOpen(false);
-        return;
-      }
-
-      /* Cmd/Ctrl+K = open search */
+      // Cmd/Ctrl+K → open search
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         onOpenSearch();
         return;
       }
 
-      /* G+letter navigation (G must be pressed first, then letter within 500ms) */
-      if (e.key === "g" && !e.metaKey && !e.ctrlKey) {
-        gPressed = true;
-        if (gTimeout) clearTimeout(gTimeout);
-        gTimeout = setTimeout(() => {
-          gPressed = false;
-        }, 500);
-        return;
-      }
+      // Don't process other shortcuts if modifiers are held
+      if (e.metaKey || e.ctrlKey) return;
 
-      if (gPressed) {
-        gPressed = false;
-        if (gTimeout) clearTimeout(gTimeout);
-        const navMap: Record<string, PageId> = {
-          d: "dashboard",
-          p: "projects",
-          m: "messages",
-          i: "invoices",
-          r: "reports",
-          s: "settings",
-          c: "calendar",
-          n: "notifications",
-          a: "analytics",
-          e: "exports",
-        };
-        const page = navMap[e.key];
-        if (page) {
-          e.preventDefault();
-          onNavigate(page);
+      // Escape → close shortcuts panel or close search
+      if (e.key === "Escape") {
+        if (shortcutsVisible) {
+          setShortcutsVisible(false);
         }
         return;
       }
 
-      /* N = new request */
-      if (e.key === "n" && !e.metaKey && !e.ctrlKey) {
-        onNavigate("create");
+      // ? → toggle shortcuts panel
+      if (e.key === "?") {
+        e.preventDefault();
+        setShortcutsVisible((prev) => !prev);
         return;
       }
-    };
 
-    window.addEventListener("keydown", handler);
+      // Don't process navigation shortcuts when search is open
+      if (isSearchOpen) return;
+
+      const key = e.key.toLowerCase();
+
+      // "G" starts a chord
+      if (key === "g" && !gPressedRef.current) {
+        gPressedRef.current = true;
+
+        // Clear any existing timer
+        if (chordTimerRef.current) {
+          clearTimeout(chordTimerRef.current);
+        }
+
+        // Reset after timeout
+        chordTimerRef.current = setTimeout(() => {
+          gPressedRef.current = false;
+          chordTimerRef.current = null;
+        }, CHORD_TIMEOUT_MS);
+
+        return;
+      }
+
+      // If G was pressed, check for a chord match
+      if (gPressedRef.current) {
+        gPressedRef.current = false;
+
+        if (chordTimerRef.current) {
+          clearTimeout(chordTimerRef.current);
+          chordTimerRef.current = null;
+        }
+
+        const target = CHORD_MAP[key];
+        if (target) {
+          e.preventDefault();
+          onNavigate(target);
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
     return () => {
-      window.removeEventListener("keydown", handler);
-      if (gTimeout) clearTimeout(gTimeout);
+      window.removeEventListener("keydown", handleKeyDown);
+      if (chordTimerRef.current) {
+        clearTimeout(chordTimerRef.current);
+      }
     };
-  }, [onNavigate, onOpenSearch]);
+  }, [onNavigate, onOpenSearch, isSearchOpen, shortcutsVisible]);
 
-  return { shortcutsOpen, setShortcutsOpen };
+  return {
+    shortcutsVisible,
+    toggleShortcuts,
+  };
 }
-
-export const SHORTCUTS = [
-  { key: "?", description: "Toggle shortcuts panel" },
-  { key: "\u2318 K", description: "Open search" },
-  { key: "G \u2192 D", description: "Go to Dashboard" },
-  { key: "G \u2192 P", description: "Go to Projects" },
-  { key: "G \u2192 M", description: "Go to Messages" },
-  { key: "G \u2192 I", description: "Go to Invoices" },
-  { key: "G \u2192 R", description: "Go to Reports" },
-  { key: "G \u2192 S", description: "Go to Settings" },
-  { key: "G \u2192 C", description: "Go to Calendar" },
-  { key: "G \u2192 N", description: "Go to Notifications" },
-  { key: "G \u2192 A", description: "Go to Analytics" },
-  { key: "G \u2192 E", description: "Go to Exports" },
-  { key: "N", description: "New Request" },
-  { key: "Esc", description: "Close panel / modal" },
-];

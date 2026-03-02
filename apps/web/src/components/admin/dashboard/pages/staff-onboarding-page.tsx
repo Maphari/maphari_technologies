@@ -2,19 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { AdminTabs } from "./shared";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { toneClass } from "./admin-page-utils";
 
 type OnboardingTask = {
   category: string;
@@ -48,7 +37,7 @@ const onboardings: Onboarding[] = [
     role: "Junior Copywriter",
     department: "Creative",
     avatar: "ZH",
-    color: C.primary,
+    color: "var(--accent)",
     startDate: "Mar 3 2026",
     manager: "Tapiwa Moyo",
     buddyAssigned: "Kira Bosman",
@@ -83,7 +72,7 @@ const onboardings: Onboarding[] = [
     role: "Copywriter",
     department: "Creative",
     avatar: "TM",
-    color: C.blue,
+    color: "var(--blue)",
     startDate: "Jan 15 2024",
     manager: "Renzo Fabbri",
     buddyAssigned: "Kira Bosman",
@@ -96,17 +85,17 @@ const onboardings: Onboarding[] = [
 const categories = ["Pre-Start Admin", "Tech & Tools Setup", "Day 1 Welcome", "Week 1 Training", "30-Day Check-In"] as const;
 
 const categoryColors: Record<(typeof categories)[number], string> = {
-  "Pre-Start Admin": C.primary,
-  "Tech & Tools Setup": C.blue,
-  "Day 1 Welcome": C.primary,
-  "Week 1 Training": C.orange,
-  "30-Day Check-In": C.amber
+  "Pre-Start Admin": "var(--accent)",
+  "Tech & Tools Setup": "var(--blue)",
+  "Day 1 Welcome": "var(--accent)",
+  "Week 1 Training": "var(--amber)",
+  "30-Day Check-In": "var(--amber)"
 };
 
-const statusConfig: Record<OnboardingStatus, { color: string; label: string }> = {
-  upcoming: { color: C.amber, label: "Upcoming" },
-  active: { color: C.blue, label: "Active" },
-  complete: { color: C.primary, label: "Complete" }
+const statusBadge: Record<OnboardingStatus, { badge: string; label: string }> = {
+  upcoming: { badge: "badgeAmber", label: "Upcoming" },
+  active: { badge: "badgeBlue", label: "Active" },
+  complete: { badge: "badgeGreen", label: "Complete" }
 };
 
 const templateChecklist: Record<(typeof categories)[number], string[]> = {
@@ -148,8 +137,9 @@ const templateChecklist: Record<(typeof categories)[number], string[]> = {
 };
 
 function Avatar({ initials, color, size = 36 }: { initials: string; color: string; size?: number }) {
+  const sizeClass = size <= 28 ? styles.onboardAvatar28 : styles.onboardAvatar36;
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: `${color}22`, border: `2px solid ${color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.32, fontWeight: 700, color, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>
+    <div className={cx("fontMono", "flexCenter", "noShrink", "fw700", styles.onboardAvatar, sizeClass, toneClass(color))}>
       {initials}
     </div>
   );
@@ -169,39 +159,27 @@ export function StaffOnboardingPage() {
   const overallPct = allTasks.length > 0 ? Math.round((doneTasks / allTasks.length) * 100) : 0;
 
   return (
-    <div
-      style={{
-        background: C.bg,
-        height: "100%",
-        fontFamily: "Syne, sans-serif",
-        color: C.text,
-        padding: 0,
-        overflow: "hidden",
-        display: "grid",
-        gridTemplateRows: "auto auto auto 1fr",
-        minHeight: 0
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={cx(styles.pageBody, styles.onboardRoot)}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / STAFF</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Staff Onboarding</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>New hire checklists, pre-start tasks, week 1 welcome, and 30-day check-ins</div>
+          <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+          <h1 className={styles.pageTitle}>Staff Onboarding</h1>
+          <div className={styles.pageSub}>New hire checklists, pre-start tasks, week 1 welcome, and 30-day check-ins</div>
         </div>
-        <button style={{ background: C.primary, color: C.bg, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>+ Start Onboarding</button>
+        <button type="button" className={cx("btnSm", "btnAccent")}>+ Start Onboarding</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Upcoming Starts", value: active.length.toString(), color: C.amber, sub: `${active[0]?.name ?? "-"} - ${active[0]?.startDate ?? "-"}` },
-          { label: "SOB-003 Progress", value: `${overallPct}%`, color: overallPct >= 60 ? C.primary : C.amber, sub: `${doneTasks}/${allTasks.length} tasks done` },
-          { label: "Days Until Start", value: active[0]?.daysUntilStart?.toString() ?? "-", color: (active[0]?.daysUntilStart ?? 99) <= 7 ? C.red : C.blue, sub: "Zoe Hendricks - Mar 3" },
-          { label: "Completed Onboardings", value: complete.length.toString(), color: C.primary, sub: "This FY" }
+          { label: "Upcoming Starts", value: active.length.toString(), color: "var(--amber)", sub: `${active[0]?.name ?? "-"} - ${active[0]?.startDate ?? "-"}` },
+          { label: "SOB-003 Progress", value: `${overallPct}%`, color: overallPct >= 60 ? "var(--accent)" : "var(--amber)", sub: `${doneTasks}/${allTasks.length} tasks done` },
+          { label: "Days Until Start", value: active[0]?.daysUntilStart?.toString() ?? "-", color: (active[0]?.daysUntilStart ?? 99) <= 7 ? "var(--red)" : "var(--blue)", sub: "Zoe Hendricks - Mar 3" },
+          { label: "Completed Onboardings", value: complete.length.toString(), color: "var(--accent)", sub: "This FY" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, "mb4", styles.onboardToneText, toneClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
@@ -210,20 +188,20 @@ export function StaffOnboardingPage() {
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        primaryColor={C.primary}
-        mutedColor={C.muted}
-        panelColor={C.surface}
-        borderColor={C.border}
+        primaryColor="var(--accent)"
+        mutedColor="var(--muted)"
+        panelColor="var(--surface)"
+        borderColor="var(--border)"
       />
 
-      <div style={{ overflow: "auto", minHeight: 0 }}>
+      <div className={cx("overflowAuto", "minH0")}>
         {activeTab === "active onboardings" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className={cx("flexCol", "gap16")}>
             {(active[0]?.daysUntilStart ?? 999) <= 10 ? (
-              <div style={{ padding: 16, background: "#1a0f00", border: `1px solid ${C.amber}44`, display: "flex", gap: 16, alignItems: "center" }}>
+              <div className={cx("card", "flexRow", "gap16", "p16", styles.onboardAlert)}>
                 <div>
-                  <div style={{ fontWeight: 700, color: C.amber }}>Action Required - Zoe starts in {active[0]?.daysUntilStart} days</div>
-                  <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
+                  <div className={cx("fw700", "colorAmber")}>Action Required - Zoe starts in {active[0]?.daysUntilStart} days</div>
+                  <div className={cx("text12", "colorMuted", "mt4")}>
                     {allTasks.filter((t) => !t.done && t.category === "Pre-Start Admin").length} pre-start admin tasks still outstanding.
                   </div>
                 </div>
@@ -234,64 +212,73 @@ export function StaffOnboardingPage() {
               const done = onb.checklist.filter((t) => t.done).length;
               const total = onb.checklist.length;
               const pct = Math.round((done / total) * 100);
-              const sc = statusConfig[onb.status];
+              const sc = statusBadge[onb.status];
               const isExp = expanded === onb.id;
 
               return (
-                <div key={onb.id} style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-                  <div style={{ padding: 24, cursor: "pointer" }} onClick={() => setExpanded(isExp ? "" : onb.id)}>
-                    <div style={{ display: "grid", gridTemplateColumns: "220px 1fr 120px 120px 100px auto", alignItems: "center", gap: 20 }}>
-                      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <div key={onb.id} className={styles.card}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className={cx("p24", "pointerCursor")}
+                    onClick={() => setExpanded(isExp ? "" : onb.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setExpanded(isExp ? "" : onb.id);
+                      }
+                    }}
+                  >
+                    <div className={styles.onboardRow}>
+                      <div className={cx("flexRow", "gap12")}>
                         <Avatar initials={onb.avatar} color={onb.color} />
                         <div>
-                          <div style={{ fontWeight: 700 }}>{onb.name}</div>
-                          <div style={{ fontSize: 11, color: C.muted }}>{onb.role}</div>
-                          <div style={{ fontSize: 10, color: C.muted }}>Starts {onb.startDate}</div>
+                          <div className={cx("fw700")}>{onb.name}</div>
+                          <div className={cx("text11", "colorMuted")}>{onb.role}</div>
+                          <div className={cx("text10", "colorMuted")}>Starts {onb.startDate}</div>
                         </div>
                       </div>
                       <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                          <span style={{ fontSize: 11, color: C.muted }}>{done}/{total} tasks</span>
-                          <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: pct >= 70 ? C.primary : C.amber }}>{pct}%</span>
+                        <div className={cx("flexBetween", "mb4")}>
+                          <span className={cx("text11", "colorMuted")}>{done}/{total} tasks</span>
+                          <span className={cx("fontMono", "fw700", styles.onboardToneText, pct >= 70 ? styles.onboardToneAccent : styles.onboardToneAmber)}>{pct}%</span>
                         </div>
-                        <div style={{ height: 8, background: C.border }}>
-                          <div style={{ height: "100%", width: `${pct}%`, background: pct >= 70 ? C.primary : C.amber }} />
-                        </div>
+                        <progress className={cx(styles.onboardProgTrack, styles.onboardProgFill, pct >= 70 ? styles.onboardToneAccent : styles.onboardToneAmber)} max={100} value={pct} aria-label={`${onb.name} onboarding completion ${pct}%`} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Manager</div>
-                        <div style={{ fontSize: 12 }}>{onb.manager.split(" ")[0]}</div>
+                        <div className={cx("text10", "colorMuted", "mb3")}>Manager</div>
+                        <div className={cx("text12")}>{onb.manager.split(" ")[0]}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Buddy</div>
-                        <div style={{ fontSize: 12 }}>{onb.buddyAssigned.split(" ")[0]}</div>
+                        <div className={cx("text10", "colorMuted", "mb3")}>Buddy</div>
+                        <div className={cx("text12")}>{onb.buddyAssigned.split(" ")[0]}</div>
                       </div>
-                      <span style={{ fontSize: 10, color: sc.color, background: `${sc.color}15`, padding: "4px 10px" }}>{sc.label}</span>
-                      <span style={{ color: isExp ? C.primary : C.muted }}>{isExp ? "▲" : "▼"}</span>
+                      <span className={cx("badge", sc.badge)}>{sc.label}</span>
+                      <span className={cx(styles.onboardToneText, isExp ? styles.onboardToneAccent : styles.onboardToneMuted)}>{isExp ? "\u25b2" : "\u25bc"}</span>
                     </div>
                   </div>
 
                   {isExp ? (
-                    <div style={{ padding: "0 24px 24px", borderTop: `1px solid ${C.border}` }}>
-                      <div style={{ paddingTop: 20, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+                    <div className={cx("borderB", styles.onboardExpanded)}>
+                      <div className={cx("grid3", "gap14", styles.onboardExpandedTop)}>
                         {categories.slice(0, 3).map((cat) => {
                           const catTasks = onb.checklist.filter((t) => t.category === cat);
                           const catDone = catTasks.filter((t) => t.done).length;
                           const catColor = categoryColors[cat];
                           return (
-                            <div key={cat} style={{ padding: 16, background: C.bg, border: `1px solid ${catColor}22` }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: catColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>{cat}</span>
-                                <span style={{ fontSize: 10, fontFamily: "DM Mono, monospace", color: catDone === catTasks.length ? C.primary : C.muted }}>{catDone}/{catTasks.length}</span>
+                            <div key={cat} className={cx("bgBg", "p16", styles.onboardToneBorder, toneClass(catColor))}>
+                              <div className={cx("flexBetween", "mb12")}>
+                                <span className={cx("text11", "fw700", "uppercase", "tracking", styles.onboardToneText, toneClass(catColor))}>{cat}</span>
+                                <span className={cx("text10", "fontMono", styles.onboardToneText, catDone === catTasks.length ? styles.onboardToneAccent : styles.onboardToneMuted)}>{catDone}/{catTasks.length}</span>
                               </div>
                               {catTasks.map((task, i) => (
-                                <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
-                                  <div style={{ width: 14, height: 14, border: `2px solid ${task.done ? C.primary : C.border}`, background: task.done ? C.primary : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-                                    {task.done ? <span style={{ fontSize: 8, color: C.bg, fontWeight: 800 }}>✓</span> : null}
+                                <div key={i} className={cx("flexRow", "gap8", "mb8", styles.onboardAlignStart)}>
+                                  <div className={cx("flexCenter", "noShrink", styles.onboardTaskCheck, toneClass(task.done ? "var(--accent)" : "var(--border)"), task.done && styles.onboardTaskCheckDone)}>
+                                    {task.done ? <span className={cx("fw800", styles.onboardCheckMark)}>&#10003;</span> : null}
                                   </div>
-                                  <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: 11, color: task.done ? C.muted : C.text, textDecoration: task.done ? "line-through" : "none" }}>{task.task}</div>
-                                    <div style={{ fontSize: 9, color: C.muted }}>{task.owner}{task.doneDate ? ` - Done ${task.doneDate}` : ""}</div>
+                                  <div className={styles.onboardGrow}>
+                                    <div className={cx("text11", styles.onboardTaskText, task.done && styles.onboardTaskDone)}>{task.task}</div>
+                                    <div className={cx("textXs", "colorMuted")}>{task.owner}{task.doneDate ? ` - Done ${task.doneDate}` : ""}</div>
                                   </div>
                                 </div>
                               ))}
@@ -300,25 +287,25 @@ export function StaffOnboardingPage() {
                         })}
                       </div>
 
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
+                      <div className={cx("grid2", "gap14", "mt16")}>
                         {categories.slice(3).map((cat) => {
                           const catTasks = onb.checklist.filter((t) => t.category === cat);
                           const catDone = catTasks.filter((t) => t.done).length;
                           const catColor = categoryColors[cat];
                           return (
-                            <div key={cat} style={{ padding: 16, background: C.bg, border: `1px solid ${catColor}22` }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: catColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>{cat}</span>
-                                <span style={{ fontSize: 10, fontFamily: "DM Mono, monospace", color: catDone === catTasks.length ? C.primary : C.muted }}>{catDone}/{catTasks.length}</span>
+                            <div key={cat} className={cx("bgBg", "p16", styles.onboardToneBorder, toneClass(catColor))}>
+                              <div className={cx("flexBetween", "mb12")}>
+                                <span className={cx("text11", "fw700", "uppercase", "tracking", styles.onboardToneText, toneClass(catColor))}>{cat}</span>
+                                <span className={cx("text10", "fontMono", styles.onboardToneText, catDone === catTasks.length ? styles.onboardToneAccent : styles.onboardToneMuted)}>{catDone}/{catTasks.length}</span>
                               </div>
                               {catTasks.map((task, i) => (
-                                <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
-                                  <div style={{ width: 14, height: 14, border: `2px solid ${task.done ? C.primary : C.border}`, background: task.done ? C.primary : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-                                    {task.done ? <span style={{ fontSize: 8, color: C.bg, fontWeight: 800 }}>✓</span> : null}
+                                <div key={i} className={cx("flexRow", "gap8", "mb8", styles.onboardAlignStart)}>
+                                  <div className={cx("flexCenter", "noShrink", styles.onboardTaskCheck, toneClass(task.done ? "var(--accent)" : "var(--border)"), task.done && styles.onboardTaskCheckDone)}>
+                                    {task.done ? <span className={cx("fw800", styles.onboardCheckMark)}>&#10003;</span> : null}
                                   </div>
-                                  <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: 11, color: task.done ? C.muted : C.text, textDecoration: task.done ? "line-through" : "none" }}>{task.task}</div>
-                                    <div style={{ fontSize: 9, color: C.muted }}>{task.owner}</div>
+                                  <div className={styles.onboardGrow}>
+                                    <div className={cx("text11", styles.onboardTaskText, task.done && styles.onboardTaskDone)}>{task.task}</div>
+                                    <div className={cx("textXs", "colorMuted")}>{task.owner}</div>
                                   </div>
                                 </div>
                               ))}
@@ -327,9 +314,9 @@ export function StaffOnboardingPage() {
                         })}
                       </div>
 
-                      <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
-                        <button style={{ background: C.primary, color: C.bg, border: "none", padding: "10px 20px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Update Tasks</button>
-                        <button style={{ background: C.border, border: "none", color: C.text, padding: "10px 16px", fontSize: 12, cursor: "pointer" }}>View Timeline</button>
+                      <div className={cx("flexRow", "gap8", "mt20")}>
+                        <button type="button" className={cx("btnSm", "btnAccent")}>Update Tasks</button>
+                        <button type="button" className={cx("btnSm", "btnGhost")}>View Timeline</button>
                       </div>
                     </div>
                   ) : null}
@@ -341,23 +328,23 @@ export function StaffOnboardingPage() {
 
         {activeTab === "template" ? (
           <div>
-            <div style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>Standard onboarding template applied to all new hires. Edit to customize per role or department.</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className={cx("text13", "colorMuted", "mb20")}>Standard onboarding template applied to all new hires. Edit to customize per role or department.</div>
+            <div className={cx("grid2", "gap14")}>
               {Object.entries(templateChecklist).map(([cat, tasks]) => {
                 const color = categoryColors[cat as keyof typeof categoryColors];
                 return (
-                  <div key={cat} style={{ background: C.surface, border: `1px solid ${color}33`, padding: 24 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color, textTransform: "uppercase", letterSpacing: "0.06em" }}>{cat}</div>
-                      <span style={{ fontSize: 10, fontFamily: "DM Mono, monospace", color: C.muted }}>{tasks.length} tasks</span>
+                  <div key={cat} className={cx(styles.card, styles.onboardTemplateCard, toneClass(color))}>
+                    <div className={cx("flexBetween", "mb16")}>
+                      <div className={cx("text12", "fw700", "uppercase", "tracking", styles.onboardToneText, toneClass(color))}>{cat}</div>
+                      <span className={cx("text10", "fontMono", "colorMuted")}>{tasks.length} tasks</span>
                     </div>
                     {tasks.map((task, i) => (
-                      <div key={i} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: `1px solid ${C.border}`, alignItems: "center" }}>
-                        <div style={{ width: 14, height: 14, border: `2px solid ${C.border}`, flexShrink: 0 }} />
-                        <span style={{ fontSize: 12, flex: 1 }}>{task}</span>
+                      <div key={i} className={cx("flexRow", "gap10", "borderB", "py10")}>
+                        <div className={cx("noShrink", styles.onboardTemplateChk)} />
+                        <span className={cx("text12", styles.onboardGrow)}>{task}</span>
                       </div>
                     ))}
-                    <button style={{ marginTop: 12, background: "none", border: `1px solid ${C.border}`, color: C.muted, padding: "4px 12px", fontSize: 11, cursor: "pointer" }}>+ Add Task</button>
+                    <button type="button" className={cx("btnSm", "btnGhost", "mt12")}>+ Add Task</button>
                   </div>
                 );
               })}
@@ -366,20 +353,22 @@ export function StaffOnboardingPage() {
         ) : null}
 
         {activeTab === "completed" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className={cx("flexCol", "gap10")}>
             {complete.map((onb) => (
-              <div key={onb.id} style={{ background: C.surface, border: `1px solid ${C.primary}22`, padding: 20, display: "grid", gridTemplateColumns: "220px 1fr 120px 120px auto", alignItems: "center", gap: 20 }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <Avatar initials={onb.avatar} color={onb.color} size={28} />
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{onb.name}</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>{onb.role}</div>
+              <div key={onb.id} className={cx(styles.card, styles.onboardCompleteCard)}>
+                <div className={styles.onboardCompleteRow}>
+                  <div className={cx("flexRow", "gap10")}>
+                    <Avatar initials={onb.avatar} color={onb.color} size={28} />
+                    <div>
+                      <div className={cx("fw600")}>{onb.name}</div>
+                      <div className={cx("text11", "colorMuted")}>{onb.role}</div>
+                    </div>
                   </div>
+                  <div className={cx("text11", "colorMuted")}>Started {onb.startDate}</div>
+                  <div className={cx("text11", "colorMuted")}>Manager: {onb.manager.split(" ")[0]}</div>
+                  <span className={cx("text10", "colorAccent")}>100% Complete</span>
+                  <button type="button" className={cx("btnSm", "btnGhost")}>View Archive</button>
                 </div>
-                <div style={{ fontSize: 11, color: C.muted }}>Started {onb.startDate}</div>
-                <div style={{ fontSize: 11, color: C.muted }}>Manager: {onb.manager.split(" ")[0]}</div>
-                <span style={{ fontSize: 10, color: C.primary }}>100% Complete</span>
-                <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 12px", fontSize: 11, cursor: "pointer" }}>View Archive</button>
               </div>
             ))}
           </div>

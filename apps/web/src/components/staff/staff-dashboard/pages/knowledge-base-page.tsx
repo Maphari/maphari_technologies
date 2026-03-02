@@ -7,7 +7,6 @@ type Category = {
   id: "onboarding" | "delivery" | "finance" | "comms" | "tools" | "culture";
   label: string;
   icon: string;
-  color: string;
 };
 
 type Article = {
@@ -23,12 +22,12 @@ type Article = {
 };
 
 const categories: Category[] = [
-  { id: "onboarding", label: "Client Onboarding", icon: "◈", color: "var(--accent)" },
-  { id: "delivery", label: "Delivery & QA", icon: "◎", color: "#a78bfa" },
-  { id: "finance", label: "Finance & Billing", icon: "₹", color: "#f5c518" },
-  { id: "comms", label: "Communication", icon: "✉", color: "#60a5fa" },
-  { id: "tools", label: "Tools & Access", icon: "⊡", color: "#ff8c00" },
-  { id: "culture", label: "Culture & Standards", icon: "◌", color: "#a0a0b0" }
+  { id: "onboarding", label: "Client Onboarding", icon: "◈" },
+  { id: "delivery", label: "Delivery & QA", icon: "◎" },
+  { id: "finance", label: "Finance & Billing", icon: "₹" },
+  { id: "comms", label: "Communication", icon: "✉" },
+  { id: "tools", label: "Tools & Access", icon: "⊡" },
+  { id: "culture", label: "Culture & Standards", icon: "◌" }
 ];
 
 const articles: Article[] = [
@@ -240,34 +239,29 @@ function ArticleRow({
   categoriesList: Category[];
 }) {
   const category = categoriesList.find((entry) => entry.id === article.category);
+
   return (
-    <div
-      onClick={onSelect}
-      style={{
-        padding: "11px 10px",
-        borderRadius: 3,
-        marginBottom: 3,
-        background: selected ? "color-mix(in srgb, var(--accent) 5%, transparent)" : "transparent",
-        border: `1px solid ${selected ? "color-mix(in srgb, var(--accent) 20%, transparent)" : "transparent"}`,
-        cursor: "pointer"
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-        <span style={{ fontSize: 11, color: category?.color, flexShrink: 0, marginTop: 1 }}>{category?.icon}</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, color: selected ? "#fff" : "#a0a0b0", lineHeight: 1.4, marginBottom: 4 }}>{article.title}</div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ fontSize: 9, color: "var(--muted2)" }}>{article.updatedAt}</span>
-            <span style={{ fontSize: 9, color: "var(--muted2)" }}>{article.readTime}</span>
+    <div onClick={onSelect} className={cx("kbArticleRow", "kbArticleRowShell", selected && "kbArticleRowSelected", "mb4")}>
+      <div className={cx("flexRow", "gap8", "kbArticleRowTop")}>
+        <span className={cx("text11", "noShrink", "kbCategoryTone")} data-category={article.category}>
+          {category?.icon}
+        </span>
+
+        <div className={cx("flex1", "minW0")}>
+          <div className={cx("text12", "mb4", "kbArticleTitle", selected && "kbArticleTitleSelected")}>{article.title}</div>
+          <div className={cx("flexRow", "gap8")}>
+            <span className={cx("textXs", "colorMuted2")}>{article.updatedAt}</span>
+            <span className={cx("textXs", "colorMuted2")}>{article.readTime}</span>
           </div>
         </div>
+
         <button
           type="button"
+          className={cx("kbBookmarkBtn", bookmarked && "kbBookmarkBtnActive")}
           onClick={(event) => {
             event.stopPropagation();
             onBookmark();
           }}
-          style={{ fontSize: 12, color: bookmarked ? "#f5c518" : "#222230", flexShrink: 0, background: "none", border: "none", cursor: "pointer" }}
         >
           {bookmarked ? "★" : "☆"}
         </button>
@@ -305,117 +299,121 @@ export function KnowledgeBasePage({ isActive }: { isActive: boolean }) {
   const toggleBookmark = (id: number) =>
     setBookmarked((previous) => (previous.includes(id) ? previous.filter((item) => item !== id) : [...previous, id]));
 
-  const renderContent = (content: string) => {
-    return content.split("\n").map((line, index) => {
+  const renderContent = (content: string) =>
+    content.split("\n").map((line, index) => {
       if (line.startsWith("## ")) {
         return (
-          <div key={index} style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, color: "#fff", margin: "20px 0 10px", letterSpacing: "-0.01em" }}>
+          <div key={index} className={cx("kbDocHeading")}>
             {line.replace("## ", "")}
           </div>
         );
       }
+
       if (line.startsWith("**") && line.endsWith("**")) {
         return (
-          <div key={index} style={{ fontSize: 13, color: "var(--accent)", fontWeight: 500, margin: "12px 0 6px" }}>
-            {line.replace(/\*\*/g, "")}
-          </div>
+          <div key={index} className={cx("kbDocStrong")}>{line.replace(/\*\*/g, "")}</div>
         );
       }
+
       if (line.startsWith("- [ ]")) {
         return (
-          <div key={index} style={{ display: "flex", gap: 10, alignItems: "flex-start", margin: "4px 0" }}>
-            <div style={{ width: 14, height: 14, border: "1px solid rgba(255,255,255,0.2)", borderRadius: 2, marginTop: 2, flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.5 }}>{line.replace("- [ ] ", "")}</span>
+          <div key={index} className={cx("kbDocChecklistRow")}>
+            <div className={cx("kbDocCheckbox")} />
+            <span className={cx("text12", "colorMuted", "kbDocChecklistText")}>{line.replace("- [ ] ", "")}</span>
           </div>
         );
       }
+
       if (line.startsWith("- ")) {
         return (
-          <div key={index} style={{ display: "flex", gap: 8, alignItems: "flex-start", margin: "4px 0 4px 8px" }}>
-            <span style={{ color: "var(--accent)", flexShrink: 0, marginTop: 6, fontSize: 6 }}>●</span>
-            <span style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.6 }}>{line.replace("- ", "")}</span>
+          <div key={index} className={cx("kbDocBulletRow")}>
+            <span className={cx("kbDocBullet")}>●</span>
+            <span className={cx("text12", "colorMuted", "kbDocBulletText")}>{line.replace("- ", "")}</span>
           </div>
         );
       }
-      if (line === "") return <div key={index} style={{ height: 6 }} />;
+
+      if (line === "") return <div key={index} className={cx("kbDocSpacer")} />;
+
       return (
-        <p key={index} style={{ fontSize: 13, color: "#a0a0b0", lineHeight: 1.8, margin: "4px 0" }}>
+        <p key={index} className={cx("text13", "colorMuted", "kbDocParagraph")}>
           {line}
         </p>
       );
     });
-  };
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-knowledge-base" style={{ padding: 0 }}>
-      <style>{`
-        .kb-cat-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; text-align: left; }
-        .kb-cat-btn:hover { background: rgba(255,255,255,0.04) !important; }
-        .kb-article-row { transition: all 0.12s ease; cursor: pointer; }
-        .kb-article-row:hover { background: rgba(255,255,255,0.03) !important; }
-      `}</style>
-
-      <div style={{ minHeight: "100vh", background: "#050508", fontFamily: "'DM Mono', monospace", color: "var(--text)", display: "grid", gridTemplateColumns: "240px 280px 1fr" }}>
-        <div style={{ borderRight: "1px solid rgba(255,255,255,0.06)", padding: "28px 16px", display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 6, paddingLeft: 8 }}>Staff Wiki</div>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 20, paddingLeft: 8 }}>Knowledge Base</div>
+    <section className={cx("page", "pageBody", isActive && "pageActive", "p0")} id="page-knowledge-base">
+      <div className={cx("kbShell")}>
+        <div className={cx("flexCol", "kbSidebar")}>
+          <div className={cx("pageHeaderBar", "kbSidePad8")}>
+            <div className={cx("pageEyebrowText", "mb6")}>Staff Wiki</div>
+            <h1 className={cx("pageTitleText", "mb20", "kbSideTitle")}>Knowledge Base</h1>
+          </div>
 
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search articles…"
-            style={{ width: "100%", padding: "8px 10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2, color: "var(--text)", fontSize: 11, marginBottom: 16, outline: "none" }}
+            placeholder="Search articles..."
+            className={cx("kbSearchInput")}
           />
 
           <button
             type="button"
-            className="kb-cat-btn"
+            className={cx("kbCatBtn", "flexBetween", "mb4", "kbCatBtnBase", selectedCat === "all" ? "kbCatBtnAllActive" : "kbCatBtnIdle")}
             onClick={() => setSelectedCat("all")}
-            style={{ padding: "8px 10px", borderRadius: 2, background: selectedCat === "all" ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent", color: selectedCat === "all" ? "var(--accent)" : "var(--muted2)", fontSize: 11, letterSpacing: "0.06em", marginBottom: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}
           >
             <span>All articles</span>
-            <span style={{ fontSize: 10, color: "var(--muted2)" }}>{articles.length}</span>
+            <span className={cx("text10", "colorMuted2")}>{articles.length}</span>
           </button>
 
-          <div style={{ width: "100%", height: 1, background: "rgba(255,255,255,0.06)", margin: "8px 0 10px" }} />
+          <div className={cx("kbDivider")} />
 
           {categories.map((category) => {
             const count = articles.filter((article) => article.category === category.id).length;
-            const isActive = selectedCat === category.id;
+            const selected = selectedCat === category.id;
+
             return (
               <button
                 key={category.id}
                 type="button"
-                className="kb-cat-btn"
+                className={cx("kbCatBtn", "flexRow", "gap8", "kbCatBtnBase", "kbCatBtnCategory", selected ? "kbCatBtnCategoryActive" : "kbCatBtnIdle")}
+                data-category={category.id}
                 onClick={() => setSelectedCat(category.id)}
-                style={{ padding: "8px 10px", borderRadius: 2, background: isActive ? `${category.color}12` : "transparent", fontSize: 11, marginBottom: 3, display: "flex", alignItems: "center", gap: 8, color: isActive ? category.color : "var(--muted2)" }}
               >
-                <span style={{ fontSize: 12 }}>{category.icon}</span>
-                <span style={{ flex: 1, textAlign: "left" }}>{category.label}</span>
-                <span style={{ fontSize: 10, color: "#333344" }}>{count}</span>
+                <span className={cx("text12")}>{category.icon}</span>
+                <span className={cx("flex1", "kbCatLabel")}>{category.label}</span>
+                <span className={cx("text10", "colorMuted2")}>{count}</span>
               </button>
             );
           })}
 
-          <div style={{ marginTop: "auto" }}>
-            <div style={{ width: "100%", height: 1, background: "rgba(255,255,255,0.06)", margin: "16px 0 10px" }} />
+          <div className={cx("kbSidebarBottom")}>
+            <div className={cx("kbDivider", "kbDividerBottom")} />
+
             <button
               type="button"
-              className="kb-cat-btn"
+              className={cx(
+                "kbCatBtn",
+                "wFull",
+                "flexRow",
+                "gap8",
+                "kbCatBtnBase",
+                selectedCat === "bookmarked" ? "kbBookBtnActive" : "kbCatBtnIdle"
+              )}
               onClick={() => setSelectedCat("bookmarked")}
-              style={{ padding: "8px 10px", borderRadius: 2, background: selectedCat === "bookmarked" ? "rgba(245,197,24,0.08)" : "transparent", color: selectedCat === "bookmarked" ? "#f5c518" : "var(--muted2)", fontSize: 11, width: "100%", display: "flex", alignItems: "center", gap: 8 }}
             >
               <span>★</span>
               <span>Bookmarked</span>
-              <span style={{ fontSize: 10, color: "#333344", marginLeft: "auto" }}>{bookmarked.length}</span>
+              <span className={cx("text10", "colorMuted2", "kbMlAuto")}>{bookmarked.length}</span>
             </button>
           </div>
         </div>
 
-        <div style={{ borderRight: "1px solid rgba(255,255,255,0.06)", padding: "20px 12px", overflowY: "auto" }}>
+        <div className={cx("kbListPane")}>
           {selectedCat !== "bookmarked" && pinned.length > 0 ? (
             <>
-              <div style={{ fontSize: 9, color: "#333344", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8, paddingLeft: 8 }}>Pinned</div>
+              <div className={cx("textXs", "uppercase", "mb8", "kbSubhead")}>Pinned</div>
               {pinned.map((article) => (
                 <ArticleRow
                   key={article.id}
@@ -427,7 +425,8 @@ export function KnowledgeBasePage({ isActive }: { isActive: boolean }) {
                   categoriesList={categories}
                 />
               ))}
-              {rest.length > 0 ? <div style={{ fontSize: 9, color: "#333344", letterSpacing: "0.12em", textTransform: "uppercase", margin: "14px 0 8px", paddingLeft: 8 }}>All</div> : null}
+
+              {rest.length > 0 ? <div className={cx("textXs", "uppercase", "kbSubhead", "kbSubheadAll")}>All</div> : null}
             </>
           ) : null}
 
@@ -443,53 +442,51 @@ export function KnowledgeBasePage({ isActive }: { isActive: boolean }) {
             />
           ))}
 
-          {filtered.length === 0 ? <div style={{ padding: "20px 8px", fontSize: 11, color: "#333344" }}>No articles found.</div> : null}
+          {filtered.length === 0 ? <div className={cx("text11", "kbListEmpty")}>No articles found.</div> : null}
         </div>
 
-        <div style={{ padding: "32px 40px", overflowY: "auto" }}>
+        <div className={cx("kbDetailPane")}>
           {selectedArticle ? (
             <>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
-                <div style={{ flex: 1 }}>
+              <div className={cx("flexBetween", "mb20", "kbDetailTop")}>
+                <div className={cx("flex1")}>
                   {(() => {
                     const category = categories.find((entry) => entry.id === selectedArticle.category);
                     return (
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                        <span style={{ fontSize: 10, color: category?.color, padding: "2px 8px", borderRadius: 2, background: `${category?.color}12`, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                      <div className={cx("flexRow", "gap8", "mb10")}>
+                        <span className={cx("text10", "uppercase", "kbCategoryChip")} data-category={selectedArticle.category}>
                           {category?.label}
                         </span>
-                        {selectedArticle.pinned ? <span style={{ fontSize: 10, color: "#f5c518" }}>◈ Pinned</span> : null}
+                        {selectedArticle.pinned ? <span className={cx("text10", "kbPinnedPill")}>◈ Pinned</span> : null}
                       </div>
                     );
                   })()}
-                  <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: "-0.01em", marginBottom: 10 }}>{selectedArticle.title}</h2>
-                  <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                    <span style={{ fontSize: 10, color: "var(--muted2)" }}>By {selectedArticle.author}</span>
-                    <span style={{ fontSize: 10, color: "var(--muted2)" }}>Updated {selectedArticle.updatedAt}</span>
-                    <span style={{ fontSize: 10, color: "var(--muted2)" }}>{selectedArticle.readTime} read</span>
+
+                  <h2 className={cx("fontDisplay", "fw800", "colorText", "mb10", "kbDetailTitle")}>{selectedArticle.title}</h2>
+                  <div className={cx("flexRow", "gap14")}>
+                    <span className={cx("text10", "colorMuted2")}>By {selectedArticle.author}</span>
+                    <span className={cx("text10", "colorMuted2")}>Updated {selectedArticle.updatedAt}</span>
+                    <span className={cx("text10", "colorMuted2")}>{selectedArticle.readTime} read</span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => toggleBookmark(selectedArticle.id)}
-                  style={{ fontSize: 18, color: bookmarked.includes(selectedArticle.id) ? "#f5c518" : "#333344", padding: "4px 8px", background: "none", border: "none", cursor: "pointer" }}
-                >
+
+                <button type="button" className={cx("kbBookmarkMain", bookmarked.includes(selectedArticle.id) && "kbBookmarkMainActive")} onClick={() => toggleBookmark(selectedArticle.id)}>
                   {bookmarked.includes(selectedArticle.id) ? "★" : "☆"}
                 </button>
               </div>
 
-              <div style={{ display: "flex", gap: 6, marginBottom: 28 }}>
+              <div className={cx("flexRow", "gap6", "mb28", "flexWrap")}>
                 {selectedArticle.tags.map((tag) => (
-                  <span key={tag} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 2, background: "rgba(255,255,255,0.04)", color: "var(--muted2)", letterSpacing: "0.06em" }}>
+                  <span key={tag} className={cx("text10", "colorMuted2", "kbTagChip")}>
                     {tag}
                   </span>
                 ))}
               </div>
 
-              <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 24 }}>{renderContent(selectedArticle.content)}</div>
+              <div className={cx("kbDocWrap")}>{renderContent(selectedArticle.content)}</div>
             </>
           ) : (
-            <div style={{ textAlign: "center", paddingTop: 80, color: "#333344" }}>Select an article to read</div>
+            <div className={cx("textCenter", "kbDetailEmpty")}>Select an article to read</div>
           )}
         </div>
       </div>

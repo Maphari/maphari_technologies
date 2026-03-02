@@ -10,24 +10,13 @@ import {
   type StaffAccessUser
 } from "../../../../lib/api/admin";
 import type { AuthSession } from "../../../../lib/auth/session";
-import { AdminFilterBar, AdminTabs, EmptyState, formatDate } from "./shared";
+import { AdminFilterBar, EmptyState, formatDate } from "./shared";
+import { cx, styles } from "../style";
 
 type StaffAccessPageProps = {
   session: AuthSession | null;
   onNotify: (tone: "success" | "error", message: string) => void;
 };
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
 
 const tabs = ["request queue", "staff accounts", "verification queue"] as const;
 type Tab = (typeof tabs)[number];
@@ -35,18 +24,33 @@ type Tab = (typeof tabs)[number];
 type RequestFilter = "all" | "PENDING_ADMIN" | "APPROVED" | "VERIFIED" | "REVOKED";
 type AccountFilter = "all" | "active" | "revoked";
 
-function statusBadge(status: StaffAccessRequest["status"]): { label: string; color: string; bg: string } {
+function statusBadgeClass(status: StaffAccessRequest["status"]): string {
   switch (status) {
     case "PENDING_ADMIN":
-      return { label: "Pending Admin", color: C.amber, bg: `${C.amber}15` };
+      return "badgeAmber";
     case "APPROVED":
-      return { label: "Approved", color: C.primary, bg: `${C.primary}15` };
+      return "badgePurple";
     case "VERIFIED":
-      return { label: "Verified", color: C.blue, bg: `${C.blue}15` };
+      return "badgeBlue";
     case "REVOKED":
-      return { label: "Revoked", color: C.red, bg: `${C.red}15` };
+      return "badgeRed";
     default:
-      return { label: status, color: C.muted, bg: `${C.muted}15` };
+      return "badgeMuted";
+  }
+}
+
+function statusLabel(status: StaffAccessRequest["status"]): string {
+  switch (status) {
+    case "PENDING_ADMIN":
+      return "Pending Admin";
+    case "APPROVED":
+      return "Approved";
+    case "VERIFIED":
+      return "Verified";
+    case "REVOKED":
+      return "Revoked";
+    default:
+      return status;
   }
 }
 
@@ -60,6 +64,15 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
   const [accountFilter, setAccountFilter] = useState<AccountFilter>("all");
   const [query, setQuery] = useState("");
   const previousPendingRef = useRef(0);
+
+  const statToneClass = (color: string): string => {
+    if (color === "var(--red)") return "colorRed";
+    if (color === "var(--amber)") return "colorAmber";
+    if (color === "var(--blue)") return "colorBlue";
+    if (color === "var(--purple)") return "colorPurple";
+    if (color === "var(--muted)") return "colorMuted";
+    return "colorAccent";
+  };
 
   const pendingRequests = useMemo(() => requests.filter((item) => item.status === "PENDING_ADMIN").length, [requests]);
   const approvedWaitingVerification = useMemo(() => requests.filter((item) => item.status === "APPROVED").length, [requests]);
@@ -164,150 +177,108 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
   }
 
   return (
-    <div
-      style={{
-        background: C.bg,
-        height: "100%",
-        fontFamily: "Syne, sans-serif",
-        color: C.text,
-        padding: 0,
-        overflow: "hidden",
-        display: "grid",
-        gridTemplateRows: "auto auto auto 1fr",
-        minHeight: 0
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={cx(styles.pageBody, styles.staffAccessRoot)}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / IDENTITY</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Staff Access</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Approve staff registration, track verification, and revoke staff accounts.</div>
+          <div className={styles.pageEyebrow}>ADMIN / IDENTITY</div>
+          <h1 className={styles.pageTitle}>Staff Access</h1>
+          <div className={styles.pageSub}>Approve staff registration, track verification, and revoke staff accounts.</div>
         </div>
         <button
           type="button"
           onClick={() => session && void refreshAll(session)}
           disabled={loading || !session}
-          style={{
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            color: C.text,
-            padding: "8px 14px",
-            fontSize: 12,
-            fontFamily: "DM Mono, monospace",
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.7 : 1
-          }}
+          className={cx("btnSm", "btnGhost", loading && "opacity70")}
         >
           {loading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack")}>
         {[
-          { label: "Pending Approval", value: pendingRequests.toString(), color: pendingRequests > 0 ? C.amber : C.primary, sub: "Awaiting admin decision" },
-          { label: "Approved · Awaiting PIN", value: approvedWaitingVerification.toString(), color: approvedWaitingVerification > 0 ? C.primary : C.muted, sub: "Not yet verified by staff" },
-          { label: "Active Staff Accounts", value: activeStaff.toString(), color: C.blue, sub: "Accounts currently enabled" },
-          { label: "Revoked Accounts", value: revokedStaff.toString(), color: revokedStaff > 0 ? C.red : C.muted, sub: "Disabled access records" }
+          { label: "Pending Approval", value: pendingRequests.toString(), color: pendingRequests > 0 ? "var(--amber)" : "var(--accent)", sub: "Awaiting admin decision" },
+          { label: "Approved · Awaiting PIN", value: approvedWaitingVerification.toString(), color: approvedWaitingVerification > 0 ? "var(--accent)" : "var(--muted)", sub: "Not yet verified by staff" },
+          { label: "Active Staff Accounts", value: activeStaff.toString(), color: "var(--blue)", sub: "Accounts currently enabled" },
+          { label: "Revoked Accounts", value: revokedStaff.toString(), color: revokedStaff > 0 ? "var(--red)" : "var(--muted)", sub: "Disabled access records" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx("statValue", statToneClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <AdminTabs
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        primaryColor={C.primary}
-        mutedColor={C.muted}
-        panelColor={C.surface}
-        borderColor={C.border}
-      />
+      <div className={cx("overflowAuto", "minH0")}>
+        <AdminFilterBar panelColor="var(--surface)" borderColor="var(--border)">
+          <select
+            title="Select staff access section"
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value as Tab)}
+            className={styles.filterSelect}
+          >
+            {tabs.map((tab) => (
+              <option key={tab} value={tab}>
+                {tab}
+              </option>
+            ))}
+          </select>
 
-      <div style={{ overflow: "auto", minHeight: 0 }}>
-        <AdminFilterBar panelColor={C.surface} borderColor={C.border}>
-          <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "DM Mono, monospace" }}>Filters</div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            {activeTab === "request queue" ? (
-              <select value={requestFilter} onChange={(e) => setRequestFilter(e.target.value as RequestFilter)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
-                <option value="all">Request status: All</option>
-                <option value="PENDING_ADMIN">Request status: Pending Admin</option>
-                <option value="APPROVED">Request status: Approved</option>
-                <option value="VERIFIED">Request status: Verified</option>
-                <option value="REVOKED">Request status: Revoked</option>
-              </select>
-            ) : null}
+          {activeTab === "request queue" ? (
+            <select title="Filter by request status" value={requestFilter} onChange={(e) => setRequestFilter(e.target.value as RequestFilter)} className={styles.filterSelect}>
+              <option value="all">Request status: All</option>
+              <option value="PENDING_ADMIN">Request status: Pending Admin</option>
+              <option value="APPROVED">Request status: Approved</option>
+              <option value="VERIFIED">Request status: Verified</option>
+              <option value="REVOKED">Request status: Revoked</option>
+            </select>
+          ) : null}
 
-            {activeTab === "staff accounts" ? (
-              <select value={accountFilter} onChange={(e) => setAccountFilter(e.target.value as AccountFilter)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
-                <option value="all">Account status: All</option>
-                <option value="active">Account status: Active</option>
-                <option value="revoked">Account status: Revoked</option>
-              </select>
-            ) : null}
+          {activeTab === "staff accounts" ? (
+            <select title="Filter by account status" value={accountFilter} onChange={(e) => setAccountFilter(e.target.value as AccountFilter)} className={styles.filterSelect}>
+              <option value="all">Account status: All</option>
+              <option value="active">Account status: Active</option>
+              <option value="revoked">Account status: Revoked</option>
+            </select>
+          ) : null}
 
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search email"
-              style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", minWidth: 220, fontFamily: "DM Mono, monospace", fontSize: 12 }}
-            />
-            {(query || requestFilter !== "all" || accountFilter !== "all") ? (
-              <button
-                onClick={() => {
-                  setQuery("");
-                  setRequestFilter("all");
-                  setAccountFilter("all");
-                }}
-                style={{ background: C.border, border: "none", color: C.text, padding: "8px 10px", fontSize: 11, cursor: "pointer", fontFamily: "DM Mono, monospace" }}
-              >
-                Clear
-              </button>
-            ) : null}
-          </div>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search email"
+            className={styles.formInput}
+          />
         </AdminFilterBar>
 
         {activeTab === "request queue" ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 120px 120px 160px 120px", padding: "10px 20px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", gap: 12 }}>
-              {[
-                "Staff Email",
-                "Status",
-                "PIN",
-                "Requested",
-                "Action"
-              ].map((h) => (
+          <div className={cx("card", "overflowHidden")}>
+            <div className={cx("staffReqHead")}>
+              {["Staff Email", "Status", "PIN", "Requested", "Action"].map((h) => (
                 <span key={h}>{h}</span>
               ))}
             </div>
 
             {requestRows.length > 0 ? (
-              requestRows.map((request, i) => {
-                const badge = statusBadge(request.status);
-                return (
-                  <div key={request.id} style={{ display: "grid", gridTemplateColumns: "1.5fr 120px 120px 160px 120px", padding: "13px 20px", borderBottom: i < requestRows.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", gap: 12 }}>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{request.email}</div>
-                      <div style={{ fontSize: 10, color: C.muted }}>{request.id}</div>
-                    </div>
-                    <span style={{ fontSize: 10, color: badge.color, background: badge.bg, padding: "3px 8px", fontFamily: "DM Mono, monospace", width: "fit-content" }}>{badge.label}</span>
-                    <span style={{ fontFamily: "DM Mono, monospace", color: request.pin ? C.text : C.muted, fontSize: 12 }}>{request.pin || "-"}</span>
-                    <span style={{ fontSize: 11, color: C.muted }}>{formatDate(request.requestedAt)}</span>
-                    {request.status === "PENDING_ADMIN" ? (
-                      <button type="button" onClick={() => void handleApprove(request.id)} style={{ background: C.primary, color: C.bg, border: "none", padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", width: "fit-content" }}>
-                        Approve
-                      </button>
-                    ) : (
-                      <span style={{ fontSize: 10, color: C.muted }}>No action</span>
-                    )}
+              requestRows.map((request, i) => (
+                <div key={request.id} className={styles.staffReqRow}>
+                  <div>
+                    <div className={cx("text12", "fw600")}>{request.email}</div>
+                    <div className={cx("text10", "colorMuted")}>{request.id}</div>
                   </div>
-                );
-              })
+                  <span className={cx("badge", statusBadgeClass(request.status))}>{statusLabel(request.status)}</span>
+                  <span className={cx("fontMono", "text12", request.pin ? "colorText" : "colorMuted")}>{request.pin || "-"}</span>
+                  <span className={cx("text11", "colorMuted")}>{formatDate(request.requestedAt)}</span>
+                  {request.status === "PENDING_ADMIN" ? (
+                    <button type="button" onClick={() => void handleApprove(request.id)} className={cx("btnSm", "btnAccent", "wFit")}>
+                      Approve
+                    </button>
+                  ) : (
+                    <span className={cx("text10", "colorMuted")}>No action</span>
+                  )}
+                </div>
+              ))
             ) : (
-              <div style={{ padding: 20 }}>
+              <div className={cx("p20")}>
                 <EmptyState title="No matching staff requests" subtitle="Try clearing filters or check again after new requests are submitted." compact />
               </div>
             )}
@@ -315,8 +286,8 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
         ) : null}
 
         {activeTab === "staff accounts" ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 120px 180px 140px", padding: "10px 20px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", gap: 12 }}>
+          <div className={cx("card", "overflowHidden")}>
+            <div className={styles.staffAcctHead}>
               {["Staff Email", "Status", "Created", "Action"].map((h) => (
                 <span key={h}>{h}</span>
               ))}
@@ -324,26 +295,26 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
 
             {accountRows.length > 0 ? (
               accountRows.map((user, i) => (
-                <div key={user.id} style={{ display: "grid", gridTemplateColumns: "1.5fr 120px 180px 140px", padding: "13px 20px", borderBottom: i < accountRows.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", gap: 12, background: user.isActive ? "transparent" : "#1a0a0a" }}>
+                <div key={user.id} className={cx("staffAcctRow", !user.isActive && "staffRowRevoked")}>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 600 }}>{user.email}</div>
-                    <div style={{ fontSize: 10, color: C.muted }}>{user.id}</div>
+                    <div className={cx("text12", "fw600")}>{user.email}</div>
+                    <div className={cx("text10", "colorMuted")}>{user.id}</div>
                   </div>
-                  <span style={{ fontSize: 10, color: user.isActive ? C.blue : C.red, background: user.isActive ? `${C.blue}15` : `${C.red}15`, padding: "3px 8px", fontFamily: "DM Mono, monospace", width: "fit-content" }}>
+                  <span className={cx("badge", user.isActive ? "badgeBlue" : "badgeRed")}>
                     {user.isActive ? "Active" : "Revoked"}
                   </span>
-                  <span style={{ fontSize: 11, color: C.muted }}>{formatDate(user.createdAt)}</span>
+                  <span className={cx("text11", "colorMuted")}>{formatDate(user.createdAt)}</span>
                   {user.isActive ? (
-                    <button type="button" onClick={() => void handleRevoke(user.id)} style={{ background: C.border, color: C.text, border: "none", padding: "6px 10px", fontSize: 11, cursor: "pointer", width: "fit-content" }}>
+                    <button type="button" onClick={() => void handleRevoke(user.id)} className={cx("btnSm", "btnGhost", "wFit")}>
                       Revoke Access
                     </button>
                   ) : (
-                    <span style={{ fontSize: 10, color: C.muted }}>No action</span>
+                    <span className={cx("text10", "colorMuted")}>No action</span>
                   )}
                 </div>
               ))
             ) : (
-              <div style={{ padding: 20 }}>
+              <div className={cx("p20")}>
                 <EmptyState title="No matching staff accounts" subtitle="Try a broader account status filter." compact />
               </div>
             )}
@@ -351,16 +322,16 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
         ) : null}
 
         {activeTab === "verification queue" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 18 }}>
-              <div style={{ fontSize: 12, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Awaiting Verification</div>
+          <div className={cx("grid2")}>
+            <div className={cx("card", "p18")}>
+              <div className={cx("text12", "colorMuted", "uppercase", "tracking", "mb12")}>Awaiting Verification</div>
               {verificationRows.filter((r) => r.status === "APPROVED").length ? (
                 verificationRows
                   .filter((r) => r.status === "APPROVED")
                   .map((row) => (
-                    <div key={row.id} style={{ padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{row.email}</div>
-                      <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>PIN {row.pin || "-"} · Approved {formatDate(row.requestedAt)}</div>
+                    <div key={row.id} className={cx("py10", "borderB")}>
+                      <div className={cx("text12", "fw600")}>{row.email}</div>
+                      <div className={cx("text10", "colorMuted", "mt4")}>PIN {row.pin || "-"} · Approved {formatDate(row.requestedAt)}</div>
                     </div>
                   ))
               ) : (
@@ -368,16 +339,16 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
               )}
             </div>
 
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 18 }}>
-              <div style={{ fontSize: 12, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Recently Verified</div>
+            <div className={cx("card", "p18")}>
+              <div className={cx("text12", "colorMuted", "uppercase", "tracking", "mb12")}>Recently Verified</div>
               {verificationRows.filter((r) => r.status === "VERIFIED").length ? (
                 verificationRows
                   .filter((r) => r.status === "VERIFIED")
                   .slice(0, 12)
                   .map((row) => (
-                    <div key={row.id} style={{ padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{row.email}</div>
-                      <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>Verified · Request submitted {formatDate(row.requestedAt)}</div>
+                    <div key={row.id} className={cx("py10", "borderB")}>
+                      <div className={cx("text12", "fw600")}>{row.email}</div>
+                      <div className={cx("text10", "colorMuted", "mt4")}>Verified · Request submitted {formatDate(row.requestedAt)}</div>
                     </div>
                   ))
               ) : (
@@ -388,7 +359,7 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
         ) : null}
 
         {loading ? (
-          <div style={{ marginTop: 12, fontSize: 12, color: C.muted, fontFamily: "DM Mono, monospace" }}>Refreshing staff access data...</div>
+          <div className={cx("mt12", "text12", "colorMuted", "fontMono")}>Refreshing staff access data...</div>
         ) : null}
       </div>
     </div>

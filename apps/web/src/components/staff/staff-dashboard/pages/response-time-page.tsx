@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { cx } from "../style";
 
 type TabKey = "overview" | "by_client" | "log";
+type Tier = "good" | "warn" | "bad";
 
 type Client = { id: number; name: string; avatar: string };
 type TrendPoint = { week: string; avg: number; best: number; worst: number };
@@ -70,19 +71,45 @@ const under2hRate = Math.round((recentResponses.filter((response) => response.on
 const fastestResponse = Math.min(...recentResponses.map((response) => response.responseTime));
 const slowestResponse = Math.max(...recentResponses.map((response) => response.responseTime));
 
+const tierToneClass: Record<Tier, string> = {
+  good: "rspToneGood",
+  warn: "rspToneWarn",
+  bad: "rspToneBad"
+};
+
+const tierMeterClass: Record<Tier, string> = {
+  good: "rspMeterGood",
+  warn: "rspMeterWarn",
+  bad: "rspMeterBad"
+};
+
+const tierBadgeClass: Record<Tier, string> = {
+  good: "rspTimeBadgeGood",
+  warn: "rspTimeBadgeWarn",
+  bad: "rspTimeBadgeBad"
+};
+
 function formatHours(hours: number) {
   if (hours < 1) return `${Math.round(hours * 60)}m`;
   if (hours < 24) return `${Math.round(hours * 10) / 10}h`;
   return `${Math.round((hours / 24) * 10) / 10}d`;
 }
 
-function ResponseBar({ value, max = 20 }: { value: number; max?: number }) {
-  const pct = Math.min((value / max) * 100, 100);
-  const color = value <= target ? "var(--accent)" : value <= target * 2 ? "#f5c518" : "#ff4444";
+function clientTier(value: number): Tier {
+  if (value <= target) return "good";
+  if (value <= target * 1.5) return "warn";
+  return "bad";
+}
+
+function logTier(value: number): Tier {
+  if (value <= target) return "good";
+  if (value <= target * 2) return "warn";
+  return "bad";
+}
+
+function ResponseBar({ value, max = 20, tier }: { value: number; max?: number; tier: Tier }) {
   return (
-    <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden", flex: 1 }}>
-      <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 2 }} />
-    </div>
+    <progress className={cx("rspBar", tierMeterClass[tier])} max={max} value={Math.min(value, max)} />
   );
 }
 
@@ -106,15 +133,15 @@ function MiniLineChart({ points }: { points: TrendPoint[] }) {
   return (
     <div>
       <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="180">
-        <line x1={xPad} x2={width - xPad} y1={targetY} y2={targetY} stroke="rgba(255,68,68,0.4)" strokeDasharray="4 4" />
+        <line x1={xPad} x2={width - xPad} y1={targetY} y2={targetY} stroke="color-mix(in srgb, var(--red) 40%, transparent)" strokeDasharray="4 4" />
         <polyline points={polyline} fill="none" stroke="var(--accent)" strokeWidth="2" />
         {coords.map((coord) => (
           <circle key={coord.point.week} cx={coord.x} cy={coord.y} r="3" fill="var(--accent)" />
         ))}
       </svg>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${points.length}, minmax(0, 1fr))`, gap: 8, marginTop: 6 }}>
+      <div className={cx("rspChartLabels")}>
         {points.map((point) => (
-          <div key={point.week} style={{ fontSize: 10, color: "var(--muted2)", textAlign: "center" }}>
+          <div key={point.week} className={cx("text10", "colorMuted2", "textCenter", "rspChartLabel")}>
             {point.week}
           </div>
         ))}
@@ -142,42 +169,28 @@ export function ResponseTimePage({ isActive }: { isActive: boolean }) {
   const maxClientAvg = Math.max(...byClient.map((client) => client.avg), target);
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-response-time">
-      <style>{`
-        .rt-tab-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .rt-filter-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .rt-filter-btn:hover { opacity: 0.8; }
-        .rt-response-row { transition: background 0.1s ease; }
-        .rt-response-row:hover { background: rgba(255,255,255,0.02) !important; }
-        .rt-client-row { transition: all 0.12s ease; cursor: pointer; }
-        .rt-client-row:hover { border-color: color-mix(in srgb, var(--accent) 20%, transparent) !important; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-response-time">
+      <div className={cx("pageHeaderBar", "borderB", "pb0")}>
+        <div className={cx("flexBetween", "mb20")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-              Staff Dashboard / Client Intelligence
-            </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              Response Time
-            </h1>
+            <div className={cx("pageEyebrow")}>Staff Dashboard / Client Intelligence</div>
+            <h1 className={cx("pageTitle")}>Response Time</h1>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
+          <div className={cx("flexRow", "gap24")}>
             {[
-              { label: "Portfolio avg", value: `${overallAvg}h`, color: overallAvg <= target ? "var(--accent)" : "#f5c518" },
-              { label: "Under 2h rate", value: `${under2hRate}%`, color: under2hRate >= 70 ? "var(--accent)" : "#f5c518" },
-              { label: "Target", value: `<${target}h`, color: "var(--muted2)" }
+              { label: "Portfolio avg", value: `${overallAvg}h`, colorClass: overallAvg <= target ? "rspToneGood" : "rspToneWarn" },
+              { label: "Under 2h rate", value: `${under2hRate}%`, colorClass: under2hRate >= 70 ? "rspToneGood" : "rspToneWarn" },
+              { label: "Target", value: `<${target}h`, colorClass: "rspToneMuted" }
             ].map((stat) => (
-              <div key={stat.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+              <div key={stat.label} className={cx("textRight")}>
+                <div className={cx("rspStatLabel")}>{stat.label}</div>
+                <div className={cx("fontDisplay", "fw800", "rspStatValue", stat.colorClass)}>{stat.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 0 }}>
+        <div className={cx("flexRow")}>
           {[
             { key: "overview", label: "Overview" },
             { key: "by_client", label: "By Client" },
@@ -186,18 +199,8 @@ export function ResponseTimePage({ isActive }: { isActive: boolean }) {
             <button
               key={entry.key}
               type="button"
-              className="rt-tab-btn"
+              className={cx("rspTabBtn", tab === entry.key && "rspTabBtnActive")}
               onClick={() => setTab(entry.key as TabKey)}
-              style={{
-                padding: "10px 20px",
-                fontSize: 11,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                background: "transparent",
-                color: tab === entry.key ? "var(--accent)" : "var(--muted2)",
-                borderBottom: `2px solid ${tab === entry.key ? "var(--accent)" : "transparent"}`,
-                marginBottom: -1
-              }}
             >
               {entry.label}
             </button>
@@ -205,63 +208,84 @@ export function ResponseTimePage({ isActive }: { isActive: boolean }) {
         </div>
       </div>
 
-      <div style={{ padding: "28px 12px 8px 0" }}>
+      <div className={cx("rspContent")}>
         {tab === "overview" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}>
+          <div className={cx("flexCol", "gap24")}>
+            <div className={cx("rspStatsGrid")}>
               {[
-                { label: "Overall avg", value: `${overallAvg}h`, color: overallAvg <= target ? "var(--accent)" : "#f5c518", sub: overallAvg <= target ? "On target" : "Above target" },
-                { label: "Fastest (4w)", value: formatHours(fastestResponse), color: "var(--accent)", sub: "Best response" },
-                { label: "Slowest (4w)", value: formatHours(slowestResponse), color: slowestResponse > 8 ? "#ff4444" : "#f5c518", sub: "Needs attention" },
-                { label: "Under 2h rate", value: `${under2hRate}%`, color: under2hRate >= 70 ? "var(--accent)" : "#f5c518", sub: `${recentResponses.filter((r) => r.onTarget).length} of ${recentResponses.length} responses` }
+                {
+                  label: "Overall avg",
+                  value: `${overallAvg}h`,
+                  colorClass: overallAvg <= target ? "rspToneGood" : "rspToneWarn",
+                  sub: overallAvg <= target ? "On target" : "Above target"
+                },
+                { label: "Fastest (4w)", value: formatHours(fastestResponse), colorClass: "rspToneGood", sub: "Best response" },
+                {
+                  label: "Slowest (4w)",
+                  value: formatHours(slowestResponse),
+                  colorClass: slowestResponse > 8 ? "rspToneBad" : "rspToneWarn",
+                  sub: "Needs attention"
+                },
+                {
+                  label: "Under 2h rate",
+                  value: `${under2hRate}%`,
+                  colorClass: under2hRate >= 70 ? "rspToneGood" : "rspToneWarn",
+                  sub: `${recentResponses.filter((response) => response.onTarget).length} of ${recentResponses.length} responses`
+                }
               ].map((stat) => (
-                <div key={stat.label} style={{ padding: "16px 18px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                  <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>{stat.label}</div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color: stat.color, marginBottom: 4 }}>{stat.value}</div>
-                  <div style={{ fontSize: 10, color: "var(--muted2)" }}>{stat.sub}</div>
+                <div key={stat.label} className={cx("rspStatCard")}>
+                  <div className={cx("rspCardLabel")}>{stat.label}</div>
+                  <div className={cx("fontDisplay", "fw800", "mb4", "rspCardValue", stat.colorClass)}>{stat.value}</div>
+                  <div className={cx("text10", "colorMuted2")}>{stat.sub}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Weekly Avg Response Time</div>
-                <div style={{ fontSize: 10, color: "var(--muted2)" }}>Target ({target}h)</div>
+            <div className={cx("rspChartCard")}>
+              <div className={cx("flexBetween", "mb16")}>
+                <div className={cx("rspCardLabel")}>Weekly Avg Response Time</div>
+                <div className={cx("text10", "colorMuted2")}>Target ({target}h)</div>
               </div>
               <MiniLineChart points={weeklyTrend} />
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-              <div style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Response Distribution</div>
+            <div className={cx("grid2", "gap20")}>
+              <div className={cx("rspChartCard")}>
+                <div className={cx("rspCardLabel", "mb16")}>Response Distribution</div>
                 {[
-                  { label: "Under 1h", count: recentResponses.filter((r) => r.responseTime < 1).length, color: "var(--accent)" },
-                  { label: "1-2h", count: recentResponses.filter((r) => r.responseTime >= 1 && r.responseTime < 2).length, color: "#a0c840" },
-                  { label: "2-4h", count: recentResponses.filter((r) => r.responseTime >= 2 && r.responseTime < 4).length, color: "#f5c518" },
-                  { label: "4-8h", count: recentResponses.filter((r) => r.responseTime >= 4 && r.responseTime < 8).length, color: "#ff8c00" },
-                  { label: "8h+", count: recentResponses.filter((r) => r.responseTime >= 8).length, color: "#ff4444" }
+                  { label: "Under 1h", count: recentResponses.filter((response) => response.responseTime < 1).length, meterClass: "rspMeterGood", toneClass: "rspToneGood" },
+                  { label: "1-2h", count: recentResponses.filter((response) => response.responseTime >= 1 && response.responseTime < 2).length, meterClass: "rspMeterGreen", toneClass: "rspToneGreen" },
+                  { label: "2-4h", count: recentResponses.filter((response) => response.responseTime >= 2 && response.responseTime < 4).length, meterClass: "rspMeterWarn", toneClass: "rspToneWarn" },
+                  { label: "4-8h", count: recentResponses.filter((response) => response.responseTime >= 4 && response.responseTime < 8).length, meterClass: "rspMeterOrange", toneClass: "rspToneOrange" },
+                  { label: "8h+", count: recentResponses.filter((response) => response.responseTime >= 8).length, meterClass: "rspMeterBad", toneClass: "rspToneBad" }
                 ].map((bucket) => (
-                  <div key={bucket.label} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                    <span style={{ fontSize: 11, color: "var(--muted2)", minWidth: 50 }}>{bucket.label}</span>
-                    <div style={{ flex: 1, height: 8, background: "rgba(255,255,255,0.05)", borderRadius: 2, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${(bucket.count / recentResponses.length) * 100}%`, background: bucket.color, borderRadius: 2 }} />
-                    </div>
-                    <span style={{ fontSize: 11, color: bucket.color, minWidth: 16, textAlign: "right" }}>{bucket.count}</span>
+                  <div key={bucket.label} className={cx("flexRow", "gap10", "mb8")}>
+                    <span className={cx("text11", "colorMuted2", "rspDistLabel")}>{bucket.label}</span>
+                    <progress
+                      className={cx("rspDistBar", bucket.meterClass)}
+                      max={recentResponses.length}
+                      value={bucket.count}
+                    />
+                    <span className={cx("text11", "rspDistCount", bucket.toneClass)}>{bucket.count}</span>
                   </div>
                 ))}
               </div>
 
-              <div style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Quick Insights</div>
+              <div className={cx("rspChartCard")}>
+                <div className={cx("rspCardLabel", "mb16")}>Quick Insights</div>
                 {[
-                  { icon: overallAvg <= target ? "↓" : "↑", text: `Portfolio avg ${overallAvg}h - ${overallAvg <= target ? "on" : "above"} target`, color: overallAvg <= target ? "var(--accent)" : "#f5c518" },
-                  { icon: "⚡", text: "Fastest client: Okafor & Sons (avg 0.9h)", color: "var(--accent)" },
-                  { icon: "⚑", text: "Kestrel Capital slowest at 3.1h - above target", color: "#ff4444" },
-                  { icon: "↑", text: "Response time improving - down 0.6h vs last month", color: "var(--accent)" }
+                  {
+                    icon: overallAvg <= target ? "\u2193" : "\u2191",
+                    text: `Portfolio avg ${overallAvg}h - ${overallAvg <= target ? "on" : "above"} target`,
+                    toneClass: overallAvg <= target ? "rspToneGood" : "rspToneWarn"
+                  },
+                  { icon: "\u26A1", text: "Fastest client: Okafor & Sons (avg 0.9h)", toneClass: "rspToneGood" },
+                  { icon: "\u2691", text: "Kestrel Capital slowest at 3.1h - above target", toneClass: "rspToneBad" },
+                  { icon: "\u2191", text: "Response time improving - down 0.6h vs last month", toneClass: "rspToneGood" }
                 ].map((item) => (
-                  <div key={item.text} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                    <span style={{ color: item.color, fontSize: 12, flexShrink: 0 }}>{item.icon}</span>
-                    <span style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.5 }}>{item.text}</span>
+                  <div key={item.text} className={cx("rspInsightRow")}>
+                    <span className={cx("text12", "noShrink", item.toneClass)}>{item.icon}</span>
+                    <span className={cx("text12", "colorMuted", "rspInsightText")}>{item.text}</span>
                   </div>
                 ))}
               </div>
@@ -270,35 +294,35 @@ export function ResponseTimePage({ isActive }: { isActive: boolean }) {
         ) : null}
 
         {tab === "by_client" ? (
-          <div style={{ maxWidth: 760 }}>
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>
-              Average response time per client - Target &lt;{target}h
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className={cx("rspClientWrap")}>
+            <div className={cx("rspCardLabel", "mb16")}>Average response time per client - Target &lt;{target}h</div>
+            <div className={cx("flexCol", "gap10")}>
               {sortedByClient.map((clientMetric) => {
                 const client = clients.find((row) => row.id === clientMetric.clientId);
-                const color = clientMetric.avg <= target ? "var(--accent)" : clientMetric.avg <= target * 1.5 ? "#f5c518" : "#ff4444";
+                const tier = clientTier(clientMetric.avg);
                 const hitRate = Math.round((clientMetric.under2h / clientMetric.responses) * 100);
                 return (
-                  <div key={clientMetric.clientId} className="rt-client-row" style={{ padding: "16px 18px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 2, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#a0a0b0", flexShrink: 0 }}>{client?.avatar}</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ fontSize: 13, color: "#fff" }}>{clientMetric.name}</span>
-                          <span style={{ fontSize: 10, color: clientMetric.trend === "down" ? "var(--accent)" : "#ff4444" }}>
-                            {clientMetric.trend === "down" ? "↓" : "↑"} {Math.abs(clientMetric.trendVal)}h vs last month
+                  <div key={clientMetric.clientId} className={cx("rspClientRow")}>
+                    <div className={cx("flexRow", "gap14", "mb10")}>
+                      <div className={cx("rspClientAvatar")}>{client?.avatar}</div>
+                      <div className={cx("flex1")}>
+                        <div className={cx("flexRow", "gap10")}>
+                          <span className={cx("text13", "colorText")}>{clientMetric.name}</span>
+                          <span className={cx("text10", clientMetric.trend === "down" ? "rspToneGood" : "rspToneBad")}>
+                            {clientMetric.trend === "down" ? "\u2193" : "\u2191"} {Math.abs(clientMetric.trendVal)}h vs last month
                           </span>
                         </div>
-                        <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 2 }}>{clientMetric.responses} responses - {hitRate}% under 2h</div>
+                        <div className={cx("text10", "colorMuted2", "mt4")}>
+                          {clientMetric.responses} responses - {hitRate}% under 2h
+                        </div>
                       </div>
-                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color, textAlign: "right" }}>{clientMetric.avg}h</div>
+                      <div className={cx("fontDisplay", "fw800", "textRight", "rspClientAvg", tierToneClass[tier])}>{clientMetric.avg}h</div>
                     </div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <ResponseBar value={clientMetric.avg} max={Math.max(maxClientAvg, 4)} />
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: color }} />
-                        <span style={{ fontSize: 10, color: clientMetric.avg <= target ? "var(--accent)" : "#f5c518" }}>
+                    <div className={cx("flexRow", "gap8")}>
+                      <ResponseBar value={clientMetric.avg} max={Math.max(maxClientAvg, 4)} tier={tier} />
+                      <div className={cx("flexRow", "gap4", "noShrink")}>
+                        <div className={cx("rspStatusDot", tierToneClass[tier])} />
+                        <span className={cx("text10", clientMetric.avg <= target ? "rspToneGood" : "rspToneWarn")}>
                           {clientMetric.avg <= target ? "On target" : "Above target"}
                         </span>
                       </div>
@@ -308,35 +332,33 @@ export function ResponseTimePage({ isActive }: { isActive: boolean }) {
               })}
             </div>
 
-            <div style={{ marginTop: 24, padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Response Time by Client</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className={cx("rspChartCard", "mt24")}>
+              <div className={cx("rspCardLabel", "mb16")}>Response Time by Client</div>
+              <div className={cx("flexCol", "gap8")}>
                 {byClient.map((clientMetric) => {
-                  const color = clientMetric.avg <= target ? "var(--accent)" : clientMetric.avg <= target * 1.5 ? "#f5c518" : "#ff4444";
+                  const tier = clientTier(clientMetric.avg);
                   return (
-                    <div key={`bar-${clientMetric.clientId}`} style={{ display: "grid", gridTemplateColumns: "120px 1fr 60px", gap: 12, alignItems: "center" }}>
-                      <span style={{ fontSize: 10, color: "var(--muted2)" }}>{clientMetric.name.split(" ")[0]}</span>
-                      <div style={{ height: 8, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${(clientMetric.avg / Math.max(maxClientAvg, 4)) * 100}%`, background: color }} />
-                      </div>
-                      <span style={{ fontSize: 10, color, textAlign: "right" }}>{clientMetric.avg}h</span>
+                    <div key={`bar-${clientMetric.clientId}`} className={cx("rspBarRow")}>
+                      <span className={cx("text10", "colorMuted2")}>{clientMetric.name.split(" ")[0]}</span>
+                      <progress
+                        className={cx("rspBarRowMeter", tierMeterClass[tier])}
+                        max={Math.max(maxClientAvg, 4)}
+                        value={clientMetric.avg}
+                      />
+                      <span className={cx("text10", "textRight", tierToneClass[tier])}>{clientMetric.avg}h</span>
                     </div>
                   );
                 })}
               </div>
-              <div style={{ marginTop: 10, fontSize: 10, color: "var(--muted2)" }}>Dashed threshold (conceptual): target &lt; {target}h</div>
+              <div className={cx("text10", "colorMuted2", "mt10")}>Dashed threshold (conceptual): target &lt; {target}h</div>
             </div>
           </div>
         ) : null}
 
         {tab === "log" ? (
-          <div style={{ maxWidth: 780 }}>
-            <div style={{ display: "flex", gap: 10, marginBottom: 20, alignItems: "center", flexWrap: "wrap" }}>
-              <select
-                value={clientFilter}
-                onChange={(event) => setClientFilter(event.target.value)}
-                style={{ padding: "7px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2, color: "var(--text)", fontSize: 11, fontFamily: "'DM Mono', monospace", outline: "none" }}
-              >
+          <div className={cx("rspLogWrap")}>
+            <div className={cx("flexRow", "gap10", "mb20", "flexWrap")}>
+              <select aria-label="Filter response log by client" value={clientFilter} onChange={(event) => setClientFilter(event.target.value)} className={cx("rspSelect")}>
                 <option value="all">All clients</option>
                 {clients.map((client) => (
                   <option key={client.id} value={client.id}>
@@ -344,44 +366,37 @@ export function ResponseTimePage({ isActive }: { isActive: boolean }) {
                   </option>
                 ))}
               </select>
-              <div style={{ display: "flex", gap: 4 }}>
-                {(["time", "fastest", "slowest"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    className="rt-filter-btn"
-                    onClick={() => setSortBy(mode)}
-                    style={{ padding: "6px 12px", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: 2, background: sortBy === mode ? "rgba(255,255,255,0.08)" : "transparent", color: sortBy === mode ? "var(--text)" : "var(--muted2)" }}
-                  >
-                    {mode === "time" ? "Most recent" : mode === "fastest" ? "Fastest first" : "Slowest first"}
-                  </button>
-                ))}
-              </div>
-              <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted2)" }}>{filteredResponses.length} responses</span>
+              <select
+                className={cx("filterSelect")}
+                aria-label="Sort response log"
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value as "time" | "fastest" | "slowest")}
+              >
+                <option value="time">Most recent</option>
+                <option value="fastest">Fastest first</option>
+                <option value="slowest">Slowest first</option>
+              </select>
+              <span className={cx("text11", "colorMuted2", "rspCountMeta")}>{filteredResponses.length} responses</span>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <div className={cx("flexCol")}>
               {filteredResponses.map((response) => {
-                const color = response.responseTime <= target ? "var(--accent)" : response.responseTime <= target * 2 ? "#f5c518" : "#ff4444";
+                const tier = logTier(response.responseTime);
                 return (
-                  <div key={response.id} className="rt-response-row" style={{ display: "flex", gap: 16, alignItems: "flex-start", padding: "13px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                    <div style={{ minWidth: 56, padding: "6px 0", textAlign: "center", border: `1px solid ${color}30`, borderRadius: 3, background: `${color}08`, flexShrink: 0 }}>
-                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color, lineHeight: 1 }}>
-                        {formatHours(response.responseTime)}
-                      </div>
-                      <div style={{ fontSize: 8, color, marginTop: 2, letterSpacing: "0.06em" }}>{response.onTarget ? "OK" : "SLOW"}</div>
+                  <div key={response.id} className={cx("rspResponseRow")}>
+                    <div className={cx("rspTimeBadge", tierBadgeClass[tier])}>
+                      <div className={cx("fontDisplay", "fw800", "rspTimeBadgeValue", tierToneClass[tier])}>{formatHours(response.responseTime)}</div>
+                      <div className={cx("rspTimeBadgeLabel", tierToneClass[tier])}>{response.onTarget ? "OK" : "SLOW"}</div>
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                        <span style={{ fontSize: 11, color: "#a0a0b0", fontWeight: 500 }}>{response.client}</span>
-                        <span style={{ fontSize: 10, color: "#333344" }}>·</span>
-                        <span style={{ fontSize: 10, color: "var(--muted2)" }}>Received {response.sentAt}</span>
-                        <span style={{ fontSize: 10, color: "#333344" }}>→</span>
-                        <span style={{ fontSize: 10, color: "var(--muted2)" }}>Replied {response.respondedAt}</span>
+                    <div className={cx("flex1", "minW0")}>
+                      <div className={cx("flexRow", "gap10", "mb4")}>
+                        <span className={cx("text11", "colorMuted", "fw600")}>{response.client}</span>
+                        <span className={cx("text10", "colorMuted2")}>&middot;</span>
+                        <span className={cx("text10", "colorMuted2")}>Received {response.sentAt}</span>
+                        <span className={cx("text10", "colorMuted2")}>&rarr;</span>
+                        <span className={cx("text10", "colorMuted2")}>Replied {response.respondedAt}</span>
                       </div>
-                      <div style={{ fontSize: 12, color: "var(--muted2)", lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        "{response.messagePreview}"
-                      </div>
+                      <div className={cx("text12", "colorMuted2", "truncate", "rspPreview")}>&ldquo;{response.messagePreview}&rdquo;</div>
                     </div>
                   </div>
                 );

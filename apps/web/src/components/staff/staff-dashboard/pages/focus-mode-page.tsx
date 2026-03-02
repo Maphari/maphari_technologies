@@ -9,10 +9,10 @@ type Phase = "setup" | "active" | "break";
 
 const clients: ClientRow[] = [
   { id: 1, name: "Volta Studios", avatar: "VS", color: "var(--accent)" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "#a78bfa" },
-  { id: 3, name: "Mira Health", avatar: "MH", color: "#60a5fa" },
-  { id: 4, name: "Dune Collective", avatar: "DC", color: "#f5c518" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "#ff8c00" }
+  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "var(--purple)" },
+  { id: 3, name: "Mira Health", avatar: "MH", color: "var(--blue)" },
+  { id: 4, name: "Dune Collective", avatar: "DC", color: "var(--amber)" },
+  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "var(--amber)" }
 ];
 
 const taskPool: TaskItem[] = [
@@ -34,6 +34,42 @@ const DURATIONS = [
 ];
 
 const BREAK_DURATION = 5 * 60;
+const FOCUS_TIPS = ["Close unneeded tabs before starting", "Put your phone face-down", "One task at a time - no switching", "Hydrate between sessions"];
+
+function clientToneClass(clientId?: number | null) {
+  if (clientId === 1) return "fmToneAccent";
+  if (clientId === 2) return "fmTonePurple";
+  if (clientId === 3) return "fmToneBlue";
+  if (clientId === 4) return "fmToneAmber";
+  if (clientId === 5) return "fmToneOrange";
+  return "colorMuted2";
+}
+
+function taskSelectedToneClass(clientId?: number | null) {
+  if (clientId === 1) return "fmTaskSelAccent";
+  if (clientId === 2) return "fmTaskSelPurple";
+  if (clientId === 3) return "fmTaskSelBlue";
+  if (clientId === 4) return "fmTaskSelAmber";
+  if (clientId === 5) return "fmTaskSelOrange";
+  return undefined;
+}
+
+function avatarSelectedToneClass(clientId?: number | null) {
+  if (clientId === 1) return "fmAvatarAccent";
+  if (clientId === 2) return "fmAvatarPurple";
+  if (clientId === 3) return "fmAvatarBlue";
+  if (clientId === 4) return "fmAvatarAmber";
+  if (clientId === 5) return "fmAvatarOrange";
+  return undefined;
+}
+
+function progressToneClass(clientId?: number | null) {
+  if (clientId === 2) return "fmProgressPurple";
+  if (clientId === 3) return "fmProgressBlue";
+  if (clientId === 4) return "fmProgressAmber";
+  if (clientId === 5) return "fmProgressOrange";
+  return "fmProgressAccent";
+}
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -148,73 +184,58 @@ export function FocusModePage({ isActive }: { isActive: boolean }) {
   const ringR = 80;
   const ringCirc = 2 * Math.PI * ringR;
   const ringDash = (phase === "break" ? (BREAK_DURATION - breakLeft) / BREAK_DURATION : (totalDuration - timeLeft) / totalDuration) * ringCirc;
-  const ringColor = phase === "break" ? "#60a5fa" : client?.color ?? "var(--accent)";
+  const ringColor = phase === "break" ? "var(--blue)" : client?.color ?? "var(--accent)";
   const dailyGoalPct = Math.min((totalFocusToday / 240) * 100, 100);
 
   const recentSessions = useMemo(() => completedSessions.slice(0, 8), [completedSessions]);
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-focus-mode">
-      <style>{`
-        textarea { outline: none; font-family: 'DM Mono', monospace; resize: none; }
-        textarea:focus { border-color: color-mix(in srgb, var(--accent) 25%, transparent) !important; }
-        .fm-task-option { transition: all 0.12s ease; cursor: pointer; }
-        .fm-task-option:hover { border-color: color-mix(in srgb, var(--accent) 20%, transparent) !important; background: color-mix(in srgb, var(--accent) 2%, transparent) !important; }
-        .fm-dur-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .fm-dur-btn:hover { border-color: color-mix(in srgb, var(--accent) 30%, transparent) !important; }
-        .fm-ctrl-btn { transition: all 0.15s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .fm-ctrl-btn:hover { opacity: 0.8; transform: scale(1.02); }
-        .fm-abandon-btn { transition: all 0.12s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .fm-abandon-btn:hover { color: #ff4444 !important; border-color: rgba(255,68,68,0.3) !important; }
-        @keyframes fmPulseRing { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        @keyframes fmCheckPop { 0% { transform: scale(1); } 50% { transform: scale(1.25); } 100% { transform: scale(1); } }
-        .fm-check-pop { animation: fmCheckPop 0.4s ease; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px 32px 20px" }}>
-        <div>
-          <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 6 }}>Staff Dashboard / Focus</div>
-          <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: "-0.01em" }}>Focus Mode</h1>
-        </div>
-        <div style={{ display: "flex", gap: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-focus-mode">
+      <div className={cx("pageHeaderBar", "fmHeaderBar")}>
+        <div className={cx("flexBetween", "gap12")}>
+          <div>
+            <div className={cx("pageEyebrowText", "mb6")}>Staff Dashboard / Focus</div>
+            <h1 className={cx("pageTitleText")}>Focus Mode</h1>
+          </div>
+          <div className={cx("flexRow", "gap20")}>
           {[
-            { label: "Sessions today", value: sessionsToday, color: "#a0a0b0" },
-            { label: "Focus time", value: `${totalFocusToday}m`, color: "var(--accent)" }
+            { label: "Sessions today", value: sessionsToday, valueClass: "colorMuted" },
+            { label: "Focus time", value: `${totalFocusToday}m`, valueClass: "colorAccent" }
           ].map((stat) => (
-            <div key={stat.label} style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{stat.label}</div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+            <div key={stat.label} className={cx("textRight")}>
+              <div className={cx("statLabelNew", "mb0")}>{stat.label}</div>
+              <div className={cx("statValueNew", stat.valueClass)}>{stat.value}</div>
             </div>
           ))}
+          </div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", minHeight: "calc(100vh - 120px)" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 32px", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
+      <div className={cx("fmLayout")}>
+        <div className={cx("fmMainPane")}>
           {phase === "setup" ? (
-            <div style={{ width: "100%", maxWidth: 500, display: "flex", flexDirection: "column", gap: 24 }}>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: "#fff", marginBottom: 6 }}>What are you focusing on?</div>
-                <div style={{ fontSize: 12, color: "var(--muted2)" }}>Pick a task and a duration to begin.</div>
+            <div className={cx("fmSetupWrap")}>
+              <div className={cx("textCenter")}>
+                <div className={cx("fmSetupHeading")}>What are you focusing on?</div>
+                <div className={cx("text12", "colorMuted2")}>Pick a task and a duration to begin.</div>
               </div>
 
               <div>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>Select task</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div className={cx("sectionLabel", "mb10")}>Select task</div>
+                <div className={cx("flexCol", "gap6")}>
                   {taskPool.map((task) => {
                     const taskClient = clients.find((entry) => entry.id === task.clientId);
                     const isSelected = selectedTask?.id === task.id;
                     return (
                       <div
                         key={task.id}
-                        className="fm-task-option"
+                        className={cx("fmTaskOption", "fmTaskRow", isSelected && "fmTaskOptionSelected", isSelected && taskSelectedToneClass(task.clientId))}
                         onClick={() => setSelectedTask(isSelected ? null : task)}
-                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", border: `1px solid ${isSelected ? `${taskClient?.color}40` : "rgba(255,255,255,0.06)"}`, borderRadius: 3, background: isSelected ? `${taskClient?.color}08` : "rgba(255,255,255,0.01)" }}
                       >
-                        <div style={{ width: 20, height: 20, borderRadius: 2, background: isSelected ? `${taskClient?.color}20` : "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: taskClient?.color ?? "#a0a0b0", flexShrink: 0 }}>{taskClient?.avatar}</div>
-                        <span style={{ flex: 1, fontSize: 12, color: isSelected ? "#fff" : "#a0a0b0" }}>{task.title}</span>
-                        <span style={{ fontSize: 10, color: "var(--muted2)" }}>{task.estimate}m</span>
-                        {isSelected ? <span style={{ fontSize: 12, color: taskClient?.color }}>✓</span> : null}
+                        <div className={cx("fmTaskAvatar", isSelected ? avatarSelectedToneClass(task.clientId) : "fmTaskAvatarIdle")}>{taskClient?.avatar}</div>
+                        <span className={cx("fmTaskTitle", isSelected ? "fmTaskTitleSelected" : "fmTaskTitleIdle")}>{task.title}</span>
+                        <span className={cx("text10", "colorMuted2", "noShrink")}>{task.estimate}m</span>
+                        {isSelected ? <span className={cx("fmCheck", clientToneClass(taskClient?.id))}>✓</span> : null}
                       </div>
                     );
                   })}
@@ -222,17 +243,16 @@ export function FocusModePage({ isActive }: { isActive: boolean }) {
               </div>
 
               <div>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>Duration</div>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div className={cx("sectionLabel", "mb10")}>Duration</div>
+                <div className={cx("flexRow", "gap8")}>
                   {DURATIONS.map((duration) => (
-                    <button
+                    <button type="button"
                       key={duration.value}
-                      className="fm-dur-btn"
+                      className={cx("fmDurBtn", "fmDurPill", selectedDuration === duration.value ? "fmDurPillActive" : "fmDurPillIdle")}
                       onClick={() => {
                         setSelectedDuration(duration.value);
                         setTimeLeft(duration.value);
                       }}
-                      style={{ flex: 1, padding: "10px 0", borderRadius: 3, fontSize: 12, border: `1px solid ${selectedDuration === duration.value ? "color-mix(in srgb, var(--accent) 40%, transparent)" : "rgba(255,255,255,0.08)"}`, background: selectedDuration === duration.value ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent", color: selectedDuration === duration.value ? "var(--accent)" : "var(--muted2)" }}
                     >
                       {duration.label}
                     </button>
@@ -241,63 +261,62 @@ export function FocusModePage({ isActive }: { isActive: boolean }) {
               </div>
 
               <div>
-                <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>Intention <span style={{ color: "#333344", fontWeight: 400 }}>Optional</span></div>
+                <div className={cx("sectionLabel", "mb8")}>
+                  Intention <span className={cx("colorMuted2", "fw600")}>Optional</span>
+                </div>
                 <textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="What do you want to achieve in this session?"
-                  style={{ width: "100%", minHeight: 56, padding: "10px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12, lineHeight: 1.6 }}
+                  className={cx("fmTextarea", "inputBase", "fmNoteBox", "text12", "wFull")}
                 />
               </div>
 
-              <button
-                className="fm-ctrl-btn"
-                onClick={start}
-                style={{ padding: "14px", background: "var(--accent)", color: "#050508", border: "none", borderRadius: 3, fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", width: "100%" }}
-              >
+              <button type="button" className={cx("fmCtrlBtn", "fmPrimaryBtn", "fmStartBtn")} onClick={start}>
                 Start focus session →
               </button>
             </div>
           ) : null}
 
           {phase === "active" ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28 }}>
-              <div style={{ position: "relative", width: 220, height: 220 }}>
-                <svg width={220} height={220} viewBox="0 0 220 220">
-                  <circle cx={110} cy={110} r={ringR} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
-                  <circle cx={110} cy={110} r={ringR} fill="none" stroke={ringColor} strokeWidth="6" strokeDasharray={`${ringDash} ${ringCirc}`} strokeLinecap="round" transform="rotate(-90 110 110)" style={{ transition: "stroke-dasharray 1s linear", animation: running ? "fmPulseRing 3s ease infinite" : "none" }} />
+            <div className={cx("fmCenterStack")}>
+              <div className={cx("fmRingWrap")}>
+                <svg width={220} height={220} viewBox="0 0 220 220" className={cx("fmRingSvg")}>
+                  <circle cx={110} cy={110} r={ringR} fill="none" className={cx("fmRingTrack")} strokeWidth="6" />
+                  <circle
+                    cx={110}
+                    cy={110}
+                    r={ringR}
+                    fill="none"
+                    stroke={ringColor}
+                    className={cx("fmRingProgress", running && "fmRingProgressRunning")}
+                    strokeWidth="6"
+                    strokeDasharray={`${ringDash} ${ringCirc}`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 110 110)"
+                  />
                 </svg>
-                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 42, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>{formatTime(timeLeft)}</div>
-                  <div style={{ fontSize: 11, color: "var(--muted2)", marginTop: 6 }}>{running ? "Focusing" : "Paused"}</div>
+                <div className={cx("fmRingCenter")}>
+                  <div className={cx("fmTimerValue")}>{formatTime(timeLeft)}</div>
+                  <div className={cx("fmTimerLabel")}>{running ? "Focusing" : "Paused"}</div>
                 </div>
               </div>
 
               {selectedTask ? (
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 10, color: client?.color, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>{client?.name}</div>
-                  <div style={{ fontSize: 15, color: "#fff", maxWidth: 360, textAlign: "center", lineHeight: 1.4 }}>{selectedTask.title}</div>
-                  {note ? <div style={{ fontSize: 12, color: "var(--muted2)", marginTop: 8, fontStyle: "italic" }}>"{note}"</div> : null}
+                <div className={cx("fmTaskFocusMeta")}>
+                  <div className={cx("text10", "uppercase", "tracking", "mb6", clientToneClass(client?.id))}>{client?.name}</div>
+                  <div className={cx("fmTaskFocusTitle")}>{selectedTask.title}</div>
+                  {note ? <div className={cx("text12", "colorMuted2", "mt8")}>&quot;{note}&quot;</div> : null}
                 </div>
               ) : null}
 
-              <div style={{ width: 320, height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2 }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: ringColor, borderRadius: 2, transition: "width 1s linear" }} />
-              </div>
+              <progress className={cx("progressMeter", "fmLinearProgress", progressToneClass(client?.id))} max={100} value={pct} />
 
-              <div style={{ display: "flex", gap: 12 }}>
-                <button
-                  className="fm-ctrl-btn"
-                  onClick={running ? pause : resume}
-                  style={{ padding: "12px 28px", background: "var(--accent)", color: "#050508", border: "none", borderRadius: 3, fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}
-                >
+              <div className={cx("flexRow", "gap12")}>
+                <button type="button" className={cx("fmCtrlBtn", "fmPrimaryBtn", "fmControlBtn")} onClick={running ? pause : resume}>
                   {running ? "⏸ Pause" : "▶ Resume"}
                 </button>
-                <button
-                  className="fm-abandon-btn"
-                  onClick={abandon}
-                  style={{ padding: "12px 18px", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 3, color: "var(--muted2)", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase" }}
-                >
+                <button type="button" className={cx("fmAbandonBtn", "fmGhostBtn", "fmControlBtn")} onClick={abandon}>
                   Abandon
                 </button>
               </div>
@@ -305,49 +324,41 @@ export function FocusModePage({ isActive }: { isActive: boolean }) {
           ) : null}
 
           {phase === "break" ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-              <div style={{ textAlign: "center" }}>
-                <div className={markPulse ? "fm-check-pop" : undefined} style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#60a5fa", marginBottom: 8 }}>Session complete ✓</div>
-                <div style={{ fontSize: 13, color: "var(--muted2)" }}>Take a 5-minute break. You've earned it.</div>
+            <div className={cx("fmCenterStack", "gap24")}>
+              <div className={cx("textCenter")}>
+                <div className={cx("fmCompleteTitle", markPulse && "fmCheckPop")}>Session complete ✓</div>
+                <div className={cx("text13", "colorMuted2")}>Take a 5-minute break. You&apos;ve earned it.</div>
               </div>
 
-              <div style={{ position: "relative", width: 180, height: 180 }}>
+              <div className={cx("fmBreakWrap")}>
                 <svg width={180} height={180} viewBox="0 0 180 180">
-                  <circle cx={90} cy={90} r={70} fill="none" stroke="rgba(96,165,250,0.12)" strokeWidth="5" />
+                  <circle cx={90} cy={90} r={70} fill="none" className={cx("fmBreakTrack")} strokeWidth="5" />
                   <circle
                     cx={90}
                     cy={90}
                     r={70}
                     fill="none"
-                    stroke="#60a5fa"
+                    stroke="var(--blue)"
+                    className={cx("fmBreakRingProgress")}
                     strokeWidth="5"
                     strokeDasharray={`${((BREAK_DURATION - breakLeft) / BREAK_DURATION) * (2 * Math.PI * 70)} ${2 * Math.PI * 70}`}
                     strokeLinecap="round"
                     transform="rotate(-90 90 90)"
-                    style={{ transition: "stroke-dasharray 1s linear" }}
                   />
                 </svg>
-                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, color: "#60a5fa" }}>{formatTime(breakLeft)}</div>
-                  <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 4 }}>Break</div>
+                <div className={cx("fmBreakCenter")}>
+                  <div className={cx("fmBreakValue")}>{formatTime(breakLeft)}</div>
+                  <div className={cx("fmBreakLabel")}>Break</div>
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 10 }}>
+              <div className={cx("flexRow", "gap10")}>
                 {!running ? (
-                  <button
-                    className="fm-ctrl-btn"
-                    onClick={startBreakTimer}
-                    style={{ padding: "10px 20px", background: "rgba(96,165,250,0.12)", border: "1px solid rgba(96,165,250,0.25)", borderRadius: 3, color: "#60a5fa", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase" }}
-                  >
+                  <button type="button" className={cx("fmCtrlBtn", "fmBreakBtn")} onClick={startBreakTimer}>
                     Start break timer
                   </button>
                 ) : null}
-                <button
-                  className="fm-abandon-btn"
-                  onClick={skipBreak}
-                  style={{ padding: "10px 18px", background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--muted2)", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase" }}
-                >
+                <button type="button" className={cx("fmAbandonBtn", "fmGhostBtn", "fmControlBtn")} onClick={skipBreak}>
                   Skip break →
                 </button>
               </div>
@@ -355,61 +366,54 @@ export function FocusModePage({ isActive }: { isActive: boolean }) {
           ) : null}
         </div>
 
-        <div style={{ padding: "24px 20px", display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className={cx("fmSidePane")}>
           <div>
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>Today's focus</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+            <div className={cx("sectionLabel", "mb12")}>Today&apos;s focus</div>
+            <div className={cx("fmSideGrid", "mb14")}>
               {[
-                { label: "Sessions", value: sessionsToday, color: "#a78bfa" },
+                { label: "Sessions", value: sessionsToday, color: "var(--purple)" },
                 { label: "Minutes", value: totalFocusToday, color: "var(--accent)" }
               ].map((stat) => (
-                <div key={stat.label} style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                  <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+                <div key={stat.label} className={cx("fmSideStatCard")}>
+                  <div className={cx("text10", "colorMuted2", "uppercase", "mb4")}>{stat.label}</div>
+                  <div className={cx("fontDisplay", "fw800", "text20", stat.label === "Sessions" ? "colorPurple" : "colorAccent")}>{stat.value}</div>
                 </div>
               ))}
             </div>
 
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                <span style={{ fontSize: 10, color: "var(--muted2)" }}>Daily focus goal</span>
-                <span style={{ fontSize: 10, color: totalFocusToday >= 240 ? "var(--accent)" : "var(--muted2)" }}>{Math.round((totalFocusToday / 60) * 10) / 10}h / 4h</span>
+              <div className={cx("fmGoalRow")}>
+                <span className={cx("text10", "colorMuted2")}>Daily focus goal</span>
+                <span className={cx("text10", totalFocusToday >= 240 ? "colorAccent" : "colorMuted2")}>{Math.round((totalFocusToday / 60) * 10) / 10}h / 4h</span>
               </div>
-              <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3 }}>
-                <div style={{ height: "100%", width: `${dailyGoalPct}%`, background: "var(--accent)", borderRadius: 3, transition: "width 0.5s ease" }} />
-              </div>
+              <progress className={cx("progressMeter", "progressMeterAccent", "fmGoalProgress")} max={100} value={dailyGoalPct} />
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>Completed sessions</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className={cx("sectionLabel", "mb12")}>Completed sessions</div>
+            <div className={cx("fmSessionList")}>
               {recentSessions.map((session, index) => {
                 const sessionClient = clients.find((entry) => entry.name === session.client);
                 return (
-                  <div key={`${session.task}-${String(index)}`} style={{ padding: "10px 12px", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-                      <span style={{ fontSize: 10, color: sessionClient?.color ?? "#a0a0b0" }}>{session.client}</span>
-                      <span style={{ fontSize: 10, color: "var(--accent)" }}>{session.duration}m ✓</span>
+                  <div key={`${session.task}-${String(index)}`} className={cx("fmSessionCard")}>
+                    <div className={cx("fmSessionTop")}>
+                      <span className={cx("text10", clientToneClass(sessionClient?.id))}>{session.client}</span>
+                      <span className={cx("text10", "colorAccent")}>{session.duration}m ✓</span>
                     </div>
-                    <div style={{ fontSize: 11, color: "#a0a0b0", lineHeight: 1.3 }}>{session.task}</div>
+                    <div className={cx("fmSessionTask")}>{session.task}</div>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div style={{ marginTop: "auto", padding: "14px", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Focus tips</div>
-            {[
-              "Close unneeded tabs before starting",
-              "Put your phone face-down",
-              "One task at a time - no switching",
-              "Hydrate between sessions"
-            ].map((tip) => (
-              <div key={tip} style={{ display: "flex", gap: 6, alignItems: "flex-start", padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                <span style={{ fontSize: 9, color: "var(--accent)", marginTop: 3 }}>◆</span>
-                <span style={{ fontSize: 11, color: "var(--muted2)", lineHeight: 1.4 }}>{tip}</span>
+          <div className={cx("fmTipsCard")}>
+            <div className={cx("sectionLabel", "mb8")}>Focus tips</div>
+            {FOCUS_TIPS.map((tip, index) => (
+              <div key={tip} className={cx("fmTipRow", index === FOCUS_TIPS.length - 1 && "fmTipRowLast")}>
+                <span className={cx("fmTipBullet")}>◆</span>
+                <span className={cx("fmTipText")}>{tip}</span>
               </div>
             ))}
           </div>

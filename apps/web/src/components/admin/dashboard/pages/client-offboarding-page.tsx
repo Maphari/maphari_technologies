@@ -1,20 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { cx, styles } from "../style";
 import { AdminTabs } from "./shared";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { colorClass } from "./admin-page-utils";
 
 type ReasonType = "natural" | "churn" | "paused";
 
@@ -57,7 +46,7 @@ const offboardings: Offboarding[] = [
   {
     id: "OFB-003",
     client: "Studio Outpost",
-    clientColor: C.red,
+    clientColor: "var(--red)",
     reason: "Project complete - no retainer renewal",
     reasonType: "natural",
     am: "Nomsa Dlamini",
@@ -84,7 +73,7 @@ const offboardings: Offboarding[] = [
   {
     id: "OFB-002",
     client: "Helios Digital",
-    clientColor: C.orange,
+    clientColor: "var(--amber)",
     reason: "Client churned - dissatisfied with deliverable quality",
     reasonType: "churn",
     am: "Renzo Fabbri",
@@ -108,7 +97,7 @@ const offboardings: Offboarding[] = [
 const postMortems: PostMortem[] = [
   {
     client: "Helios Digital",
-    clientColor: C.orange,
+    clientColor: "var(--amber)",
     type: "churn",
     completedDate: "Feb 2",
     rootCause: "Deliverable quality did not meet client expectations on rounds 3+. No escalation was triggered until too late.",
@@ -136,61 +125,100 @@ const tabs = ["active offboardings", "post-mortems", "offboarding template", "ch
 type Tab = (typeof tabs)[number];
 
 const categoryColors: Record<ChecklistItem["category"], string> = {
-  Financial: C.primary,
-  Delivery: C.blue,
-  Legal: C.primary,
-  Communication: C.amber,
-  System: C.orange,
-  BD: C.muted
+  Financial: "var(--accent)",
+  Delivery: "var(--blue)",
+  Legal: "var(--accent)",
+  Communication: "var(--amber)",
+  System: "var(--amber)",
+  BD: "var(--muted)"
 };
 
 const reasonColors: Record<ReasonType, string> = {
-  natural: C.blue,
-  churn: C.red,
-  paused: C.amber
+  natural: "var(--blue)",
+  churn: "var(--red)",
+  paused: "var(--amber)"
 };
+
+function fillClass(color: string): string {
+  switch (color) {
+    case "var(--accent)":
+      return styles.cobFillAccent;
+    case "var(--red)":
+      return styles.cobFillRed;
+    case "var(--amber)":
+      return styles.cobFillAmber;
+    case "var(--blue)":
+      return styles.cobFillBlue;
+    case "var(--purple)":
+      return styles.cobFillPurple;
+    default:
+      return styles.cobFillMuted;
+  }
+}
+
+function reasonClass(color: string): string {
+  switch (color) {
+    case "var(--accent)":
+      return styles.cobReasonAccent;
+    case "var(--red)":
+      return styles.cobReasonRed;
+    case "var(--amber)":
+      return styles.cobReasonAmber;
+    case "var(--blue)":
+      return styles.cobReasonBlue;
+    case "var(--purple)":
+      return styles.cobReasonPurple;
+    default:
+      return styles.cobReasonMuted;
+  }
+}
+
+function templateCardClass(color: string): string {
+  switch (color) {
+    case "var(--accent)":
+      return styles.cobTemplateCardAccent;
+    case "var(--red)":
+      return styles.cobTemplateCardRed;
+    case "var(--amber)":
+      return styles.cobTemplateCardAmber;
+    case "var(--blue)":
+      return styles.cobTemplateCardBlue;
+    case "var(--purple)":
+      return styles.cobTemplateCardPurple;
+    default:
+      return styles.cobTemplateCardMuted;
+  }
+}
 
 export function ClientOffboardingPage() {
   const [activeTab, setActiveTab] = useState<Tab>("active offboardings");
   const [expanded, setExpanded] = useState<string>("OFB-003");
 
-  const active = useMemo(() => offboardings.filter((o) => o.status === "in-progress"), []);
-  const complete = useMemo(() => offboardings.filter((o) => o.status === "complete"), []);
+  const active = offboardings.filter((o) => o.status === "in-progress");
+  const complete = offboardings.filter((o) => o.status === "complete");
 
   return (
-    <div
-      style={{
-        background: C.bg,
-        height: "100%",
-        fontFamily: "Syne, sans-serif",
-        color: C.text,
-        padding: 0,
-        overflow: "hidden",
-        display: "grid",
-        gridTemplateRows: "auto auto auto 1fr",
-        minHeight: 0
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={cx(styles.pageBody, styles.cobRoot)}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / OPERATIONS</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Client Offboarding</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Structured exits, file handover, IP transfer, and post-mortems</div>
+          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <h1 className={styles.pageTitle}>Client Offboarding</h1>
+          <div className={styles.pageSub}>Structured exits, file handover, IP transfer, and post-mortems</div>
         </div>
-        <button style={{ background: C.primary, color: C.bg, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>+ Start Offboarding</button>
+        <button type="button" className={cx("btnSm", "btnAccent")}>+ Start Offboarding</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Active Offboardings", value: active.length.toString(), color: C.amber, sub: "In progress" },
-          { label: "Completed (90d)", value: complete.length.toString(), color: C.muted, sub: "Archived" },
-          { label: "Outstanding Invoices", value: `R${offboardings.reduce((s, o) => s + o.outstandingInvoice, 0).toLocaleString()}`, color: offboardings.some((o) => o.outstandingInvoice > 0) ? C.red : C.primary, sub: "Across active offboardings" },
-          { label: "MRR Lost (90d)", value: `R${offboardings.filter((o) => o.status === "complete").reduce((s, o) => s + o.mrr, 0).toLocaleString()}`, color: C.red, sub: "From churned clients" }
+          { label: "Active Offboardings", value: active.length.toString(), color: "var(--amber)", sub: "In progress" },
+          { label: "Completed (90d)", value: complete.length.toString(), color: "var(--muted)", sub: "Archived" },
+          { label: "Outstanding Invoices", value: `R${offboardings.reduce((s, o) => s + o.outstandingInvoice, 0).toLocaleString()}`, color: offboardings.some((o) => o.outstandingInvoice > 0) ? "var(--red)" : "var(--accent)", sub: "Across active offboardings" },
+          { label: "MRR Lost (90d)", value: `R${offboardings.filter((o) => o.status === "complete").reduce((s, o) => s + o.mrr, 0).toLocaleString()}`, color: "var(--red)", sub: "From churned clients" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
@@ -199,15 +227,15 @@ export function ClientOffboardingPage() {
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        primaryColor={C.primary}
-        mutedColor={C.muted}
-        panelColor={C.surface}
-        borderColor={C.border}
+        primaryColor={"var(--accent)"}
+        mutedColor={"var(--muted)"}
+        panelColor={"var(--surface)"}
+        borderColor={"var(--border)"}
       />
 
-      <div style={{ overflow: "auto", minHeight: 0 }}>
+      <div className={cx("overflowAuto", "minH0")}>
         {activeTab === "active offboardings" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className={styles.cobList}>
             {offboardings.map((ofb) => {
               const done = ofb.checklist.filter((t) => t.done).length;
               const total = ofb.checklist.length;
@@ -218,46 +246,57 @@ export function ClientOffboardingPage() {
                 .filter((c) => c.tasks.length > 0);
 
               return (
-                <div key={ofb.id} style={{ background: C.surface, border: `1px solid ${ofb.status === "complete" ? C.primary + "33" : C.border}` }}>
-                  <div style={{ padding: 24, cursor: "pointer" }} onClick={() => setExpanded(isExpanded ? "" : ofb.id)}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-                      <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                        <div style={{ width: 4, height: 52, background: ofb.status === "complete" ? C.primary : reasonColors[ofb.reasonType], flexShrink: 0 }} />
+                <div key={ofb.id} className={cx(styles.cobCard, ofb.status === "complete" && styles.cobCardComplete)}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className={styles.cobHead}
+                    onClick={() => setExpanded(isExpanded ? "" : ofb.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setExpanded(isExpanded ? "" : ofb.id);
+                      }
+                    }}
+                  >
+                    <div className={styles.cobHeadRow}>
+                      <div className={styles.cobClientBlock}>
+                        <div className={cx(styles.cobLeadBar, fillClass(ofb.status === "complete" ? "var(--accent)" : reasonColors[ofb.reasonType]))} />
                         <div>
-                          <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 4 }}>
-                            <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{ofb.id}</span>
-                            <span style={{ fontSize: 10, color: reasonColors[ofb.reasonType], background: `${reasonColors[ofb.reasonType]}15`, padding: "2px 8px", fontFamily: "DM Mono, monospace" }}>{ofb.reasonType}</span>
+                          <div className={styles.cobHeadMeta}>
+                            <span className={styles.cobMono}>{ofb.id}</span>
+                            <span className={cx(styles.cobReasonPill, reasonClass(reasonColors[ofb.reasonType]))}>{ofb.reasonType}</span>
                           </div>
-                          <div style={{ fontSize: 18, fontWeight: 800, color: ofb.clientColor, marginBottom: 4 }}>{ofb.client}</div>
-                          <div style={{ fontSize: 12, color: C.muted }}>{ofb.reason}</div>
-                          <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>AM: {ofb.am} · Target: {ofb.targetDate}</div>
+                          <div className={cx(styles.cobClientName, colorClass(ofb.clientColor))}>{ofb.client}</div>
+                          <div className={styles.cobMuted}>{ofb.reason}</div>
+                          <div className={styles.cobMuted}>AM: {ofb.am} · Target: {ofb.targetDate}</div>
                         </div>
                       </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 36, fontWeight: 800, color: pct === 100 ? C.primary : pct >= 60 ? C.amber : C.red, fontFamily: "DM Mono, monospace" }}>{pct}%</div>
-                        <div style={{ fontSize: 11, color: C.muted }}>{done}/{total} tasks</div>
-                        {ofb.outstandingInvoice > 0 ? <div style={{ fontSize: 11, color: C.red, marginTop: 4 }}>R{ofb.outstandingInvoice.toLocaleString()} outstanding</div> : null}
+                      <div className={styles.cobProgressBlock}>
+                        <div className={cx(styles.cobProgressPct, pct === 100 ? "colorAccent" : pct >= 60 ? "colorAmber" : "colorRed")}>{pct}%</div>
+                        <div className={styles.cobMuted}>{done}/{total} tasks</div>
+                        {ofb.outstandingInvoice > 0 ? <div className={styles.cobOutstanding}>R{ofb.outstandingInvoice.toLocaleString()} outstanding</div> : null}
                       </div>
                     </div>
-                    <div style={{ height: 8, background: C.border }}>
-                      <div style={{ height: "100%", width: `${pct}%`, background: pct === 100 ? C.primary : pct >= 60 ? C.amber : C.red }} />
+                    <div className={styles.progressBar}>
+                      <progress className={cx("barFill", "uiProgress", pct === 100 ? styles.cobFillAccent : pct >= 60 ? styles.cobFillAmber : styles.cobFillRed)} max={100} value={pct} />
                     </div>
                   </div>
 
                   {isExpanded ? (
-                    <div style={{ padding: "0 24px 24px", borderTop: `1px solid ${C.border}` }}>
-                      <div style={{ paddingTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+                    <div className={styles.cobExpanded}>
+                      <div className={styles.cobExpandedGrid}>
                         {byCategory.map((cat) => (
-                          <div key={cat.category} style={{ padding: 16, background: C.bg }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: categoryColors[cat.category], textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>{cat.category}</div>
+                          <div key={cat.category} className={styles.cobCategoryCard}>
+                            <div className={cx(styles.cobCategoryTitle, colorClass(categoryColors[cat.category]))}>{cat.category}</div>
                             {cat.tasks.map((task) => (
-                              <div key={task.id} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
-                                <div style={{ width: 14, height: 14, border: `2px solid ${task.done ? C.primary : C.border}`, background: task.done ? C.primary : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
-                                  {task.done ? <span style={{ fontSize: 8, color: C.bg, fontWeight: 800 }}>✓</span> : null}
+                              <div key={task.id} className={styles.cobTaskRow}>
+                                <div className={cx(styles.cobCheck, task.done && styles.cobCheckDone)}>
+                                  {task.done ? <span className={styles.cobCheckMark}>✓</span> : null}
                                 </div>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: 12, color: task.done ? C.muted : C.text, textDecoration: task.done ? "line-through" : "none" }}>{task.task}</div>
-                                  {task.doneDate ? <div style={{ fontSize: 9, color: C.muted }}>{task.doneDate}</div> : null}
+                                <div className={styles.cobTaskTextWrap}>
+                                  <div className={cx(styles.cobTaskText, task.done && styles.cobTaskTextDone)}>{task.task}</div>
+                                  {task.doneDate ? <div className={styles.cobTaskDate}>{task.doneDate}</div> : null}
                                 </div>
                               </div>
                             ))}
@@ -266,10 +305,10 @@ export function ClientOffboardingPage() {
                       </div>
 
                       {ofb.status === "in-progress" ? (
-                        <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                          <button style={{ background: C.primary, color: C.bg, border: "none", padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Mark Complete</button>
-                          <button style={{ background: C.border, border: "none", color: C.text, padding: "8px 16px", fontSize: 12, cursor: "pointer" }}>Update Progress</button>
-                          <button style={{ background: `${C.primary}15`, border: `1px solid ${C.primary}44`, color: C.primary, padding: "8px 16px", fontSize: 12, cursor: "pointer" }}>Start Post-Mortem</button>
+                        <div className={styles.cobActionRow}>
+                          <button type="button" className={cx("btnSm", "btnAccent")}>Mark Complete</button>
+                          <button type="button" className={cx("btnSm", "btnGhost")}>Update Progress</button>
+                          <button type="button" className={styles.cobPostBtn}>Start Post-Mortem</button>
                         </div>
                       ) : null}
                     </div>
@@ -281,52 +320,52 @@ export function ClientOffboardingPage() {
         ) : null}
 
         {activeTab === "post-mortems" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className={styles.cobPmList}>
             {postMortems.map((pm) => (
-              <div key={pm.client} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 28 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+              <div key={pm.client} className={styles.cobPmCard}>
+                <div className={styles.cobPmHead}>
                   <div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: pm.clientColor, marginBottom: 4 }}>{pm.client}</div>
-                    <div style={{ fontSize: 12, color: C.muted }}>Post-mortem completed {pm.completedDate}</div>
+                    <div className={cx(styles.cobPmClient, colorClass(pm.clientColor))}>{pm.client}</div>
+                    <div className={styles.cobMuted}>Post-mortem completed {pm.completedDate}</div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>Exit NPS</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontSize: 28, fontWeight: 800, color: pm.npsScore >= 8 ? C.primary : pm.npsScore >= 5 ? C.amber : C.red }}>{pm.npsScore}/10</div>
+                  <div className={styles.cobPmScoreWrap}>
+                    <div className={styles.cobLabel}>Exit NPS</div>
+                    <div className={cx(styles.cobPmScore, pm.npsScore >= 8 ? "colorAccent" : pm.npsScore >= 5 ? "colorAmber" : "colorRed")}>{pm.npsScore}/10</div>
                   </div>
                 </div>
-                <div style={{ padding: 16, background: C.bg, marginBottom: 16, borderLeft: `3px solid ${C.red}` }}>
-                  <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Root Cause</div>
-                  <div style={{ fontSize: 13, lineHeight: 1.6 }}>{pm.rootCause}</div>
+                <div className={styles.cobRootCause}>
+                  <div className={styles.cobRootCauseLabel}>Root Cause</div>
+                  <div className={styles.cobRootCauseText}>{pm.rootCause}</div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-                  <div style={{ padding: 16, background: "#0a1a0a" }}>
-                    <div style={{ fontSize: 11, color: C.primary, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>What Went Well</div>
-                    {pm.whatWentWell.map((w) => <div key={w} style={{ fontSize: 12, color: C.muted, marginBottom: 6 }}>+ {w}</div>)}
+                <div className={styles.cobPmGrid3}>
+                  <div className={styles.cobPmWell}>
+                    <div className={styles.cobPmHeadingWell}>What Went Well</div>
+                    {pm.whatWentWell.map((w) => <div key={w} className={styles.cobPmLine}>+ {w}</div>)}
                   </div>
-                  <div style={{ padding: 16, background: "#1a0a0a" }}>
-                    <div style={{ fontSize: 11, color: C.red, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>What Went Wrong</div>
-                    {pm.whatWentWrong.map((w) => <div key={w} style={{ fontSize: 12, color: C.muted, marginBottom: 6 }}>- {w}</div>)}
+                  <div className={styles.cobPmWrong}>
+                    <div className={styles.cobPmHeadingWrong}>What Went Wrong</div>
+                    {pm.whatWentWrong.map((w) => <div key={w} className={styles.cobPmLine}>- {w}</div>)}
                   </div>
-                  <div style={{ padding: 16, background: "#0a0f1a" }}>
-                    <div style={{ fontSize: 11, color: C.blue, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Prevention Actions</div>
-                    {pm.preventionActions.map((a) => <div key={a} style={{ fontSize: 12, color: C.muted, marginBottom: 6 }}>&gt; {a}</div>)}
+                  <div className={styles.cobPmPrev}>
+                    <div className={styles.cobPmHeadingPrev}>Prevention Actions</div>
+                    {pm.preventionActions.map((a) => <div key={a} className={styles.cobPmLine}>&gt; {a}</div>)}
                   </div>
                 </div>
               </div>
             ))}
-            <button style={{ background: C.surface, border: `1px dashed ${C.border}`, padding: 20, color: C.muted, fontSize: 13, cursor: "pointer", textAlign: "center" }}>+ Create Post-Mortem</button>
+            <button type="button" className={styles.cobCreateBtn}>+ Create Post-Mortem</button>
           </div>
         ) : null}
 
         {activeTab === "offboarding template" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className={styles.cobTemplateGrid}>
             {offboardingTemplate.map((cat) => (
-              <div key={cat.category} style={{ background: C.surface, border: `1px solid ${categoryColors[cat.category]}33`, padding: 24 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: categoryColors[cat.category], marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>{cat.category}</div>
+              <div key={cat.category} className={cx(styles.cobTemplateCard, templateCardClass(categoryColors[cat.category]))}>
+                <div className={cx(styles.cobTemplateTitle, colorClass(categoryColors[cat.category]))}>{cat.category}</div>
                 {cat.tasks.map((task, i) => (
-                  <div key={i} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: `1px solid ${C.border}`, alignItems: "center" }}>
-                    <div style={{ width: 14, height: 14, border: `2px solid ${C.border}`, flexShrink: 0 }} />
-                    <span style={{ fontSize: 12 }}>{task}</span>
+                  <div key={i} className={styles.cobTemplateTask}>
+                    <div className={styles.cobTemplateBox} />
+                    <span className={styles.text12}>{task}</span>
                   </div>
                 ))}
               </div>
@@ -335,39 +374,37 @@ export function ClientOffboardingPage() {
         ) : null}
 
         {activeTab === "churn analysis" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Offboarding Reasons</div>
+          <div className={styles.cobAnalysisSplit}>
+            <div className={cx("card", "p24")}>
+              <div className={styles.cobSectionTitle}>Offboarding Reasons</div>
               {[
-                { reason: "Project complete - no renewal", count: 1, color: C.blue },
-                { reason: "Quality dissatisfaction", count: 1, color: C.red },
-                { reason: "Budget constraints", count: 0, color: C.amber },
-                { reason: "Went in-house", count: 0, color: C.muted }
+                { reason: "Project complete - no renewal", count: 1, color: "var(--blue)" },
+                { reason: "Quality dissatisfaction", count: 1, color: "var(--red)" },
+                { reason: "Budget constraints", count: 0, color: "var(--amber)" },
+                { reason: "Went in-house", count: 0, color: "var(--muted)" }
               ].map((r) => (
-                <div key={r.reason} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                  <span style={{ fontSize: 12, flex: 1 }}>{r.reason}</span>
-                  <div style={{ width: 80, height: 8, background: C.border }}>
-                    <div style={{ height: "100%", width: `${(r.count / offboardings.length) * 100}%`, background: r.color }} />
+                <div key={r.reason} className={styles.cobBarRow}>
+                  <span className={styles.text12}>{r.reason}</span>
+                  <div className={styles.cobTrack80}>
+                    <progress className={cx("barFill", "uiProgress", fillClass(r.color))} max={100} value={(r.count / offboardings.length) * 100} />
                   </div>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: r.color, fontWeight: 700, width: 16 }}>{r.count}</span>
+                  <span className={cx(styles.cobBarCount, colorClass(r.color))}>{r.count}</span>
                 </div>
               ))}
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Re-Engagement Pipeline</div>
-              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, marginBottom: 16 }}>
-                Clients who leave on good terms are logged for re-engagement at 3-6 months. Churned clients are logged with context for learnings only.
-              </div>
+            <div className={cx("card", "p24")}>
+              <div className={styles.cobSectionTitle}>Re-Engagement Pipeline</div>
+              <div className={styles.cobMutedBlock}>Clients who leave on good terms are logged for re-engagement at 3-6 months. Churned clients are logged with context for learnings only.</div>
               {[
-                { client: "Studio Outpost", date: "Aug 2026", type: "Re-engage", color: C.primary },
-                { client: "Helios Digital", date: "n/a", type: "Learnings only", color: C.muted }
+                { client: "Studio Outpost", date: "Aug 2026", type: "Re-engage", color: "var(--accent)" },
+                { client: "Helios Digital", date: "n/a", type: "Learnings only", color: "var(--muted)" }
               ].map((re) => (
-                <div key={re.client} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}`, alignItems: "center" }}>
+                <div key={re.client} className={styles.cobReRow}>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{re.client}</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>{re.type}</div>
+                    <div className={styles.cobCellStrong}>{re.client}</div>
+                    <div className={styles.cobMuted}>{re.type}</div>
                   </div>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: re.color, fontSize: 12 }}>{re.date}</span>
+                  <span className={cx(styles.cobMonoDate, colorClass(re.color))}>{re.date}</span>
                 </div>
               ))}
             </div>

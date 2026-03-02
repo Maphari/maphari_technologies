@@ -1,20 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0",
-};
+import { cx, styles } from "../style";
 
 type Trend = "stable" | "improving" | "declining";
 type SurveyStatus = "overdue" | "due" | "upcoming";
@@ -38,7 +25,7 @@ type ClientRecord = {
 const clients: ClientRecord[] = [
   {
     name: "Volta Studios",
-    color: C.lime,
+    color: "var(--accent)",
     avatar: "VS",
     am: "Nomsa Dlamini",
     nps: 9,
@@ -57,7 +44,7 @@ const clients: ClientRecord[] = [
   },
   {
     name: "Kestrel Capital",
-    color: C.purple,
+    color: "var(--purple)",
     avatar: "KC",
     am: "Nomsa Dlamini",
     nps: 4,
@@ -76,7 +63,7 @@ const clients: ClientRecord[] = [
   },
   {
     name: "Mira Health",
-    color: C.blue,
+    color: "var(--blue)",
     avatar: "MH",
     am: "Nomsa Dlamini",
     nps: 8,
@@ -95,7 +82,7 @@ const clients: ClientRecord[] = [
   },
   {
     name: "Dune Collective",
-    color: C.amber,
+    color: "var(--amber)",
     avatar: "DC",
     am: "Renzo Fabbri",
     nps: 3,
@@ -114,7 +101,7 @@ const clients: ClientRecord[] = [
   },
   {
     name: "Okafor & Sons",
-    color: C.orange,
+    color: "var(--amber)",
     avatar: "OS",
     am: "Tapiwa Moyo",
     nps: 10,
@@ -134,13 +121,42 @@ const clients: ClientRecord[] = [
 ];
 
 const surveySchedules: Array<{ client: string; color: string; type: string; due: string; status: SurveyStatus }> = [
-  { client: "Kestrel Capital", color: C.purple, type: "Monthly CSAT", due: "Feb 28", status: "overdue" },
-  { client: "Dune Collective", color: C.amber, type: "Monthly CSAT", due: "Feb 28", status: "due" },
-  { client: "Mira Health", color: C.blue, type: "Quarterly NPS", due: "Mar 15", status: "upcoming" },
-  { client: "Volta Studios", color: C.lime, type: "Quarterly NPS", due: "Mar 20", status: "upcoming" },
+  { client: "Kestrel Capital", color: "var(--purple)", type: "Monthly CSAT", due: "Feb 28", status: "overdue" },
+  { client: "Dune Collective", color: "var(--amber)", type: "Monthly CSAT", due: "Feb 28", status: "due" },
+  { client: "Mira Health", color: "var(--blue)", type: "Quarterly NPS", due: "Mar 15", status: "upcoming" },
+  { client: "Volta Studios", color: "var(--accent)", type: "Quarterly NPS", due: "Mar 20", status: "upcoming" },
 ];
 
 const tabs: Tab[] = ["satisfaction scores", "survey schedule", "feedback log", "trends"];
+
+function npsColor(score: number | null): string {
+  if (score === null) return "var(--border)";
+  if (score >= 8) return "var(--accent)";
+  if (score >= 6) return "var(--amber)";
+  return "var(--red)";
+}
+
+function trendColor(trend: Trend): string {
+  if (trend === "improving") return "var(--accent)";
+  if (trend === "declining") return "var(--red)";
+  return "var(--muted)";
+}
+
+function surveyStatusColor(status: SurveyStatus): string {
+  if (status === "overdue") return "var(--red)";
+  if (status === "due") return "var(--amber)";
+  return "var(--muted)";
+}
+
+function toneClass(color: string): string {
+  if (color === "var(--red)") return styles.csatToneRed;
+  if (color === "var(--blue)") return styles.csatToneBlue;
+  if (color === "var(--amber)") return styles.csatToneAmber;
+  if (color === "var(--purple)") return styles.csatTonePurple;
+  if (color === "var(--muted)") return styles.csatToneMuted;
+  if (color === "var(--border)") return styles.csatToneBorder;
+  return styles.csatToneAccent;
+}
 
 function MiniChart({ history }: { history: HistoryPoint[] }) {
   const validData = history.filter((h): h is { month: string; nps: number; csat: number | null } => h.nps !== null);
@@ -156,29 +172,29 @@ function MiniChart({ history }: { history: HistoryPoint[] }) {
     })
     .join(" ");
   return (
-    <svg width={w} height={h} style={{ overflow: "visible" }}>
-      <polyline points={pts} fill="none" stroke={C.lime} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={w} height={h} className={styles.csatMiniChartSvg}>
+      <polyline points={pts} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       {validData.map((d, i) => {
         const x = (i / Math.max(history.length - 1, 1)) * w;
         const y = h - ((d.nps - min) / (max - min)) * h;
-        return <circle key={i} cx={x} cy={y} r="3" fill={C.lime} />;
+        return <circle key={i} cx={x} cy={y} r="3" fill="var(--accent)" />;
       })}
     </svg>
   );
 }
 
 function NPSGauge({ score }: { score: number }) {
-  const color = score >= 8 ? C.lime : score >= 6 ? C.amber : C.red;
+  const color = npsColor(score);
   const pct = (score / 10) * 100;
   return (
-    <div style={{ position: "relative", width: 80, height: 80 }}>
-      <svg width={80} height={80} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={40} cy={40} r={32} fill="none" stroke={C.border} strokeWidth={8} />
+    <div className={styles.csatGauge}>
+      <svg width={80} height={80} className={styles.csatGaugeSvg}>
+        <circle cx={40} cy={40} r={32} fill="none" stroke="var(--border)" strokeWidth={8} />
         <circle cx={40} cy={40} r={32} fill="none" stroke={color} strokeWidth={8} strokeDasharray={`${(pct / 100) * 201} 201`} strokeLinecap="round" />
       </svg>
-      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 20, color, lineHeight: 1 }}>{score}</div>
-        <div style={{ fontSize: 8, color: C.muted }}>NPS</div>
+      <div className={styles.csatGaugeInner}>
+        <div className={cx(styles.csatGaugeScore, toneClass(color))}>{score}</div>
+        <div className={cx("textXs", "colorMuted")}>NPS</div>
       </div>
     </div>
   );
@@ -193,73 +209,71 @@ export function ClientSatisfactionPage() {
   const detractors = clients.filter((c) => c.nps <= 6).length;
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.lime, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / CLIENT MANAGEMENT</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Client Satisfaction</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>NPS - CSAT - Trends - Survey scheduling</div>
+          <div className={styles.pageEyebrow}>ADMIN / CLIENT MANAGEMENT</div>
+          <h1 className={styles.pageTitle}>Client Satisfaction</h1>
+          <div className={styles.pageSub}>NPS - CSAT - Trends - Survey scheduling</div>
         </div>
-        <button style={{ background: C.lime, color: C.bg, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>Send Survey Now</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent")}>Send Survey Now</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack")}>
         {[
-          { label: "Portfolio NPS", value: avgNPS, color: parseFloat(avgNPS) >= 7 ? C.lime : C.amber, sub: `${promoters} promoters - ${detractors} detractors` },
-          { label: "Portfolio CSAT", value: `${avgCSAT}/10`, color: parseFloat(avgCSAT) >= 8 ? C.lime : C.amber, sub: "Avg client satisfaction" },
-          { label: "Surveys Due", value: surveySchedules.filter((s) => s.status !== "upcoming").length.toString(), color: C.amber, sub: "Overdue or due this week" },
-          { label: "Declining Clients", value: clients.filter((c) => c.trend === "declining").length.toString(), color: C.red, sub: "Negative NPS trend" },
+          { label: "Portfolio NPS", value: avgNPS, color: parseFloat(avgNPS) >= 7 ? "var(--accent)" : "var(--amber)", sub: `${promoters} promoters - ${detractors} detractors` },
+          { label: "Portfolio CSAT", value: `${avgCSAT}/10`, color: parseFloat(avgCSAT) >= 8 ? "var(--accent)" : "var(--amber)", sub: "Avg client satisfaction" },
+          { label: "Surveys Due", value: surveySchedules.filter((s) => s.status !== "upcoming").length.toString(), color: "var(--amber)", sub: "Overdue or due this week" },
+          { label: "Declining Clients", value: clients.filter((c) => c.trend === "declining").length.toString(), color: "var(--red)", sub: "Negative NPS trend" },
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={cx(styles.statCard, toneClass(s.color))}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx("statValue", "csatDynColor")}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-        {tabs.map((t) => (
-          <button key={t} onClick={() => setActiveTab(t)} style={{ background: "none", border: "none", color: activeTab === t ? C.lime : C.muted, padding: "8px 16px", cursor: "pointer", fontFamily: "Syne, sans-serif", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: `2px solid ${activeTab === t ? C.lime : "transparent"}`, marginBottom: -1 }}>
-            {t}
-          </button>
-        ))}
+      <div className={styles.filterRow}>
+        <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
       {activeTab === "satisfaction scores" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className={cx("flexCol", "gap12")}>
           {[...clients].sort((a, b) => a.nps - b.nps).map((c) => (
-            <div key={c.name} style={{ background: C.surface, border: `1px solid ${c.nps <= 6 ? `${C.red}44` : C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "180px 80px 200px 1fr 120px 100px auto", alignItems: "center", gap: 20 }}>
+            <div key={c.name} className={cx("csatScoreCard", toneClass(c.color), c.nps <= 6 && "csatScoreCardDanger")}>
+              <div className={styles.csatScoreGrid}>
                 <div>
-                  <div style={{ fontWeight: 700, color: c.color, fontSize: 15 }}>{c.name}</div>
-                  <div style={{ fontSize: 11, color: C.muted }}>{c.am}</div>
+                  <div className={styles.csatClientName}>{c.name}</div>
+                  <div className={cx("text11", "colorMuted")}>{c.am}</div>
                 </div>
                 <NPSGauge score={c.nps} />
                 <div>
-                  <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>CSAT Score</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 24, color: c.csat >= 8 ? C.lime : c.csat >= 7 ? C.amber : C.red }}>{c.csat}</div>
-                  <div style={{ fontSize: 10, color: C.muted }}>out of 10</div>
+                  <div className={cx("text11", "colorMuted", "mb4")}>CSAT Score</div>
+                  <div className={cx(styles.csatBigScore, toneClass(npsColor(c.csat)))}>{c.csat}</div>
+                  <div className={cx("text10", "colorMuted")}>out of 10</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 8 }}>NPS Trend (5 months)</div>
+                  <div className={cx("text10", "colorMuted", "mb8")}>NPS Trend (5 months)</div>
                   <MiniChart history={c.history} />
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 16 }}>{c.trend === "improving" ? "▲" : c.trend === "declining" ? "▼" : "→"}</span>
-                  <span style={{ fontSize: 12, color: c.trend === "improving" ? C.lime : c.trend === "declining" ? C.red : C.muted }}>{c.trend}</span>
+                <div className={cx("flexRow", "gap6")}>
+                  <span className={styles.csatTrendIcon}>{c.trend === "improving" ? "\u25B2" : c.trend === "declining" ? "\u25BC" : "\u2192"}</span>
+                  <span className={cx(styles.csatTrendLabel, toneClass(trendColor(c.trend)))}>{c.trend}</span>
                 </div>
-                <div style={{ fontSize: 11, fontFamily: "DM Mono, monospace", color: C.muted }}>Survey: {c.latestSurvey}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>View</button>
-                  {c.surveysDue ? <button style={{ background: C.amber, color: C.bg, border: "none", padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Send</button> : null}
+                <div className={cx("text11", "fontMono", "colorMuted")}>Survey: {c.latestSurvey}</div>
+                <div className={cx("flexCol", "gap6")}>
+                  <button type="button" className={cx("btnSm", "btnGhost")}>View</button>
+                  {c.surveysDue ? <button type="button" className={cx("btnSm", "btnAccent")}>Send</button> : null}
                 </div>
               </div>
               {c.feedback ? (
-                <div style={{ marginTop: 16, padding: 12, background: C.bg, borderRadius: 8, borderLeft: `3px solid ${c.color}`, fontSize: 12, color: C.muted, fontStyle: "italic" }}>
-                  "{c.feedback}"
+                <div className={styles.csatFeedbackQuote}>
+                  &ldquo;{c.feedback}&rdquo;
                 </div>
               ) : null}
             </div>
@@ -268,58 +282,58 @@ export function ClientSatisfactionPage() {
       )}
 
       {activeTab === "survey schedule" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className={cx("flexCol", "gap10")}>
           {surveySchedules.map((s) => (
-            <div key={s.client + s.type} style={{ background: C.surface, border: `1px solid ${s.status === "overdue" ? `${C.red}44` : C.border}`, borderRadius: 10, padding: 20, display: "grid", gridTemplateColumns: "180px 180px 120px 100px auto", alignItems: "center", gap: 20 }}>
-              <div style={{ fontWeight: 700, color: s.color }}>{s.client}</div>
-              <div style={{ fontSize: 12, color: C.muted }}>{s.type}</div>
-              <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: s.status === "overdue" ? C.red : s.status === "due" ? C.amber : C.muted }}>{s.due}</div>
-              <span style={{ fontSize: 10, color: s.status === "overdue" ? C.red : s.status === "due" ? C.amber : C.muted, background: `${s.status === "overdue" ? C.red : s.status === "due" ? C.amber : C.muted}15`, padding: "3px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace" }}>{s.status}</span>
-              <button style={{ background: s.status !== "upcoming" ? C.amber : C.border, color: s.status !== "upcoming" ? C.bg : C.text, border: "none", padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: s.status !== "upcoming" ? 700 : 400, cursor: "pointer" }}>{s.status !== "upcoming" ? "Send Now" : "Schedule"}</button>
+            <div key={s.client + s.type} className={cx("csatSurveyRow", toneClass(s.color), s.status === "overdue" && "csatScoreCardDanger")}>
+              <div className={styles.csatClientName}>{s.client}</div>
+              <div className={cx("text12", "colorMuted")}>{s.type}</div>
+              <div className={cx("fontMono", "text12", "csatDynColor", toneClass(surveyStatusColor(s.status)))}>{s.due}</div>
+              <span className={cx("badge", s.status === "overdue" ? "badgeRed" : s.status === "due" ? "badgeAmber" : "badgeMuted")}>{s.status}</span>
+              <button type="button" className={cx("btnSm", s.status !== "upcoming" ? "btnAccent" : "btnGhost")}>{s.status !== "upcoming" ? "Send Now" : "Schedule"}</button>
             </div>
           ))}
         </div>
       )}
 
       {activeTab === "feedback log" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className={cx("flexCol", "gap10")}>
           {clients
             .filter((c) => c.feedback)
             .map((c) => (
-              <div key={c.name} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <div style={{ fontWeight: 700, color: c.color }}>{c.name}</div>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: c.nps >= 8 ? C.lime : c.nps >= 6 ? C.amber : C.red }}>NPS {c.nps}</span>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: C.muted }}>CSAT {c.csat}</span>
+              <article key={c.name} className={cx("card", "p24", toneClass(c.color))}>
+                <div className={cx("flexBetween", "mb12")}>
+                  <div className={cx("flexRow", "gap12")}>
+                    <div className={styles.csatClientName}>{c.name}</div>
+                    <span className={cx("fontMono", "text12", "csatDynColor", toneClass(npsColor(c.nps)))}>NPS {c.nps}</span>
+                    <span className={cx("fontMono", "text12", "colorMuted")}>CSAT {c.csat}</span>
                   </div>
-                  <span style={{ fontSize: 11, color: C.muted, fontFamily: "DM Mono, monospace" }}>{c.latestSurvey}</span>
+                  <span className={cx("text11", "colorMuted", "fontMono")}>{c.latestSurvey}</span>
                 </div>
-                <div style={{ padding: 14, background: C.bg, borderRadius: 8, borderLeft: `3px solid ${c.color}`, fontSize: 13, color: C.text, lineHeight: 1.6, fontStyle: "italic" }}>
-                  "{c.feedback}"
+                <div className={styles.csatFeedbackQuote}>
+                  &ldquo;{c.feedback}&rdquo;
                 </div>
-              </div>
+              </article>
             ))}
         </div>
       )}
 
       {activeTab === "trends" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div className={styles.grid2}>
           {clients.map((c) => (
-            <div key={c.name} style={{ background: C.surface, border: `1px solid ${c.color}33`, borderRadius: 10, padding: 24 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
+            <div key={c.name} className={cx("card", "p24", "csatTrendCard", toneClass(c.color))}>
+              <div className={cx("flexBetween", "mb20")}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: c.color }}>{c.name}</div>
-                  <div style={{ fontSize: 12, color: c.trend === "improving" ? C.lime : c.trend === "declining" ? C.red : C.muted }}>{c.trend === "improving" ? "▲ Improving" : c.trend === "declining" ? "▼ Declining" : "→ Stable"}</div>
+                  <div className={styles.csatClientName}>{c.name}</div>
+                  <div className={cx(styles.csatTrendLabel, toneClass(trendColor(c.trend)))}>{c.trend === "improving" ? "\u25B2 Improving" : c.trend === "declining" ? "\u25BC Declining" : "\u2192 Stable"}</div>
                 </div>
                 <NPSGauge score={c.nps} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
+              <div className={styles.csatTrendGrid}>
                 {c.history.map((h, i) => (
-                  <div key={i} style={{ textAlign: "center" }}>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, fontSize: 16, color: h.nps !== null ? (h.nps >= 8 ? C.lime : h.nps >= 6 ? C.amber : C.red) : C.border }}>{h.nps ?? "—"}</div>
-                    <div style={{ fontSize: 9, color: C.muted, marginTop: 2 }}>{h.month}</div>
-                    <div style={{ height: 3, background: C.border, borderRadius: 2, marginTop: 4 }}>{h.nps !== null ? <div style={{ height: "100%", width: `${(h.nps / 10) * 100}%`, background: h.nps >= 8 ? C.lime : h.nps >= 6 ? C.amber : C.red, borderRadius: 2 }} /> : null}</div>
+                  <div key={i} className={cx("textCenter", toneClass(npsColor(h.nps)))}>
+                    <div className={styles.csatTrendScore}>{h.nps ?? "\u2014"}</div>
+                    <div className={styles.csatTrendMonth}>{h.month}</div>
+                    <progress className={cx(styles.csatTrendTrack, "mt4")} max={10} value={h.nps ?? 0} aria-label={`${c.name} ${h.month} NPS ${h.nps ?? 0}`} />
                   </div>
                 ))}
               </div>

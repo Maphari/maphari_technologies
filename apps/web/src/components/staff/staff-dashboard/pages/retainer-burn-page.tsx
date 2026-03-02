@@ -157,58 +157,53 @@ const retainers: RetainerRecord[] = [
   }
 ];
 
-const statusConfig: Record<RetainerStatus, { label: string; color: string; bg: string; bar: string }> = {
-  healthy: { label: "Healthy", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 8%, transparent)", bar: "var(--accent)" },
-  moderate: { label: "Moderate", color: "#f5c518", bg: "rgba(245,197,24,0.08)", bar: "#f5c518" },
-  critical: { label: "Critical", color: "#ff8c00", bg: "rgba(255,140,0,0.08)", bar: "#ff8c00" },
-  exceeded: { label: "Exceeded", color: "#ff4444", bg: "rgba(255,68,68,0.08)", bar: "#ff4444" }
-};
+function statusClass(status: RetainerStatus) {
+  if (status === "healthy") return "rbStatusHealthy";
+  if (status === "moderate") return "rbStatusModerate";
+  if (status === "critical") return "rbStatusCritical";
+  return "rbStatusExceeded";
+}
 
-const categoryColors: Record<RetainerTask["category"], string> = {
-  Design: "var(--accent)",
-  Strategy: "#a78bfa",
-  Research: "#60a5fa",
-  Admin: "#a0a0b0",
-  Production: "#f5c518"
-};
+function statusMeterClass(status: RetainerStatus) {
+  if (status === "healthy") return "rbMeterHealthy";
+  if (status === "moderate") return "rbMeterModerate";
+  if (status === "critical") return "rbMeterCritical";
+  return "rbMeterExceeded";
+}
 
-function BurnBar({ used, total, status, height = 8 }: { used: number; total: number; status: RetainerStatus; height?: number }) {
+function statusStroke(status: RetainerStatus) {
+  if (status === "healthy") return "var(--accent)";
+  if (status === "moderate") return "var(--amber)";
+  if (status === "critical") return "var(--amber)";
+  return "var(--red)";
+}
+
+function categoryClass(category: RetainerTask["category"]) {
+  if (category === "Design") return "rbCatDesign";
+  if (category === "Strategy") return "rbCatStrategy";
+  if (category === "Research") return "rbCatResearch";
+  if (category === "Production") return "rbCatProduction";
+  return "rbCatAdmin";
+}
+
+function actionToneClass(index: number) {
+  if (index === 0) return "rbActionPrimary";
+  if (index === 1) return "rbActionWarn";
+  return "rbActionNeutral";
+}
+
+function BurnBar({ used, total, status, compact = false }: { used: number; total: number; status: RetainerStatus; compact?: boolean }) {
   const pct = Math.min((used / total) * 100, 100);
   const over = used > total;
-  const cfg = statusConfig[status];
   return (
-    <div style={{ position: "relative", height, background: "rgba(255,255,255,0.06)", borderRadius: height / 2, overflow: "visible" }}>
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          height: "100%",
-          width: `${pct}%`,
-          background: cfg.bar,
-          borderRadius: height / 2,
-          transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)"
-        }}
-      />
-      {over ? (
-        <div
-          style={{
-            position: "absolute",
-            right: -2,
-            top: -2,
-            width: height + 4,
-            height: height + 4,
-            background: "#ff4444",
-            borderRadius: "50%",
-            border: "2px solid #050508"
-          }}
-        />
-      ) : null}
+    <div className={cx("rbBurnBarTrack", compact ? "rbBurnBarTrackSm" : "rbBurnBarTrackLg")}>
+      <progress className={cx("progressMeter", "rbBurnProgress", compact ? "rbBurnProgressSm" : "rbBurnProgressLg", statusMeterClass(status))} max={100} value={pct} />
+      {over ? <div className={cx("rbBurnOverDot", compact ? "rbBurnOverDotSm" : "rbBurnOverDotLg")} /> : null}
     </div>
   );
 }
 
-function MiniSparkline({ data, color }: { data: number[]; color: string }) {
+function MiniSparkline({ data, status }: { data: number[]; status: RetainerStatus }) {
   const max = Math.max(...data, 100);
   const points = data
     .map((value, index) => {
@@ -218,13 +213,15 @@ function MiniSparkline({ data, color }: { data: number[]; color: string }) {
     })
     .join(" ");
 
+  const stroke = statusStroke(status);
+
   return (
-    <svg width="120" height="32" viewBox="0 0 120 32">
-      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+    <svg width="120" height="32" viewBox="0 0 120 32" className={cx("rbSparkline")}>
+      <polyline points={points} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
       {data.map((value, index) => {
         const x = (index / (data.length - 1)) * 120;
         const y = 30 - (value / max) * 28;
-        return index === data.length - 1 ? <circle key={index} cx={x} cy={y} r="2.5" fill={color} /> : null;
+        return index === data.length - 1 ? <circle key={index} cx={x} cy={y} r="2.5" fill={stroke} /> : null;
       })}
     </svg>
   );
@@ -237,80 +234,51 @@ export function RetainerBurnPage({ isActive }: { isActive: boolean }) {
   const burnPct = Math.round((current.hoursUsed / current.retainerHours) * 100);
   const remaining = Math.max(current.retainerHours - current.hoursUsed, 0);
   const projectedTotal = current.hoursUsed + (current.hoursUsed / (30 - current.daysLeft)) * current.daysLeft;
-  const cfg = statusConfig[current.status];
 
   const r = 54;
   const circ = 2 * Math.PI * r;
   const usedDash = Math.min(burnPct / 100, 1) * circ;
-  const overColor = current.status === "exceeded" ? "#ff4444" : cfg.bar;
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-retainer-burn">
-      <style>{`
-        .retainer-client-tab { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .retainer-client-tab:hover { background: color-mix(in srgb, var(--accent) 5%, transparent) !important; }
-        .retainer-task-row { transition: background 0.1s ease; }
-        .retainer-task-row:hover { background: rgba(255,255,255,0.02) !important; }
-        .retainer-action-btn { transition: all 0.15s ease; cursor: pointer; }
-        .retainer-action-btn:hover { opacity: 0.75; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0, marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-retainer-burn">
+      <div className={cx("pageHeaderBar", "rbHeaderBar")}>
+        <div className={cx("flexBetween", "mb20")}> 
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-              Staff Dashboard / Client Finance
-            </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              Retainer Burn
-            </h1>
+            <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Finance</div>
+            <h1 className={cx("pageTitleText")}>Retainer Burn</h1>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
+          <div className={cx("rbTopStats")}>
             {[
-              { label: "Cycle", value: "Feb 2026", color: "#a0a0b0" },
-              { label: "Days left", value: "6", color: "#f5c518" },
-              { label: "Exceeded", value: retainers.filter((retainer) => retainer.status === "exceeded").length, color: "#ff4444" },
-              { label: "Critical", value: retainers.filter((retainer) => retainer.status === "critical").length, color: "#ff8c00" }
+              { label: "Cycle", value: "Feb 2026", className: "colorMuted" },
+              { label: "Days left", value: "6", className: "colorAmber" },
+              { label: "Exceeded", value: retainers.filter((retainer) => retainer.status === "exceeded").length, className: "colorRed" },
+              { label: "Critical", value: retainers.filter((retainer) => retainer.status === "critical").length, className: "rbToneCritical" }
             ].map((summary) => (
-              <div key={summary.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{summary.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: summary.color }}>{summary.value}</div>
+              <div key={summary.label} className={cx("textRight")}>
+                <div className={cx("statLabelNew")}>{summary.label}</div>
+                <div className={cx("statValueNew", summary.className)}>{summary.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 0, overflowX: "auto" }}>
+        <div className={cx("rbClientTabs")}> 
           {retainers.map((retainer) => {
             const pct = Math.round((retainer.hoursUsed / retainer.retainerHours) * 100);
-            const tabCfg = statusConfig[retainer.status];
             const isCurrent = selected === retainer.id;
             return (
-              <button
+              <button type="button"
                 key={retainer.id}
-                className="retainer-client-tab"
+                className={cx("rbClientTab", "rbClientTabCard", isCurrent ? "rbClientTabActive" : "rbClientTabIdle", statusClass(retainer.status))}
                 onClick={() => setSelected(retainer.id)}
-                type="button"
-                style={{
-                  padding: "12px 20px",
-                  background: "transparent",
-                  borderBottom: `2px solid ${isCurrent ? tabCfg.color : "transparent"}`,
-                  marginBottom: -1,
-                  minWidth: 140,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4
-                }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: tabCfg.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: isCurrent ? "#fff" : "var(--muted2)", letterSpacing: "0.04em" }}>{retainer.client}</span>
+                <div className={cx("rbClientTabHead")}>
+                  <div className={cx("rbTabDot", statusClass(retainer.status))} />
+                  <span className={cx("rbClientTabName", isCurrent ? "colorText" : "colorMuted2")}>{retainer.client}</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ flex: 1, height: 2, background: "rgba(255,255,255,0.06)", borderRadius: 1, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, background: tabCfg.bar, borderRadius: 1 }} />
-                  </div>
-                  <span style={{ fontSize: 10, color: tabCfg.color, minWidth: 28 }}>{pct}%</span>
+                <div className={cx("rbClientTabBarRow")}>
+                  <progress className={cx("progressMeter", "rbClientTabProgress", statusMeterClass(retainer.status))} max={100} value={Math.min(pct, 100)} />
+                  <span className={cx("text10", statusClass(retainer.status), "rbPctMin")}>{pct}%</span>
                 </div>
               </button>
             );
@@ -318,186 +286,156 @@ export function RetainerBurnPage({ isActive }: { isActive: boolean }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 32 }}>
+      <div className={cx("rbLayout")}> 
         <div>
           {current.alert ? (
-            <div
-              style={{
-                padding: "12px 16px",
-                marginBottom: 24,
-                border: `1px solid ${current.status === "exceeded" ? "rgba(255,68,68,0.3)" : "rgba(255,140,0,0.3)"}`,
-                borderRadius: 3,
-                background: current.status === "exceeded" ? "rgba(255,68,68,0.06)" : "rgba(255,140,0,0.06)",
-                display: "flex",
-                alignItems: "center",
-                gap: 10
-              }}
-            >
-              <span style={{ fontSize: 14 }}>⚠</span>
-              <span style={{ fontSize: 12, color: current.status === "exceeded" ? "#ff4444" : "#ff8c00" }}>{current.alert}</span>
+            <div className={cx("rbAlertBanner", current.status === "exceeded" ? "rbAlertExceeded" : "rbAlertCritical", "mb24")}>
+              <span className={cx("text14")}>⚠</span>
+              <span className={cx("text12", current.status === "exceeded" ? "colorRed" : "rbToneCritical")}>{current.alert}</span>
             </div>
           ) : null}
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 28 }}>
+          <div className={cx("rbStatGrid", "mb28")}>
             {[
-              { label: "Hours used", value: current.hoursUsed, unit: "h", color: cfg.bar },
-              { label: "Retainer total", value: current.retainerHours, unit: "h", color: "#a0a0b0" },
-              { label: "Remaining", value: current.status === "exceeded" ? `-${current.overage}` : remaining, unit: "h", color: current.status === "exceeded" ? "#ff4444" : "var(--accent)" },
-              { label: "Overage cost", value: current.overage > 0 ? `R${(current.overage * current.hourlyRate).toLocaleString()}` : "-", unit: "", color: current.overage > 0 ? "#ff4444" : "#333344" }
+              { label: "Hours used", value: `${current.hoursUsed}`, unit: "h", className: statusClass(current.status) },
+              { label: "Retainer total", value: `${current.retainerHours}`, unit: "h", className: "colorMuted" },
+              {
+                label: "Remaining",
+                value: `${current.status === "exceeded" ? `-${current.overage}` : remaining}`,
+                unit: "h",
+                className: current.status === "exceeded" ? "colorRed" : "colorAccent"
+              },
+              {
+                label: "Overage cost",
+                value: current.overage > 0 ? `R${(current.overage * current.hourlyRate).toLocaleString()}` : "-",
+                unit: "",
+                className: current.overage > 0 ? "colorRed" : "colorMuted2"
+              }
             ].map((stat) => (
-              <div key={stat.label} style={{ padding: "14px 16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3 }}>
-                <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: stat.color }}>
+              <div key={stat.label} className={cx("rbStatCard")}>
+                <div className={cx("text10", "colorMuted2", "uppercase", "tracking", "mb6")}>{stat.label}</div>
+                <div className={cx("fontDisplay", "fw800", "text20", stat.className)}>
                   {stat.value}
-                  <span style={{ fontSize: 12, color: "var(--muted2)", fontFamily: "'DM Mono', monospace", fontWeight: 400 }}>{stat.unit}</span>
+                  <span className={cx("text12", "colorMuted2", "fontMono", "fw400")}>{stat.unit}</span>
                 </div>
               </div>
             ))}
           </div>
 
-          <div style={{ marginBottom: 28 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Cycle burn</div>
-              <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                <span style={{ fontSize: 11, color: "var(--muted2)" }}>{current.cycleStart}</span>
-                <span style={{ fontSize: 11, color: "var(--muted2)" }}>→</span>
-                <span style={{ fontSize: 11, color: "var(--muted2)" }}>{current.cycleEnd}</span>
-                <span style={{ fontSize: 11, color: cfg.color, fontWeight: 500 }}>{burnPct}%</span>
+          <div className={cx("mb28")}>
+            <div className={cx("rbCycleHead")}>
+              <div className={cx("sectionLabel")}>Cycle burn</div>
+              <div className={cx("rbCycleMeta")}>
+                <span className={cx("text11", "colorMuted2")}>{current.cycleStart}</span>
+                <span className={cx("text11", "colorMuted2")}>→</span>
+                <span className={cx("text11", "colorMuted2")}>{current.cycleEnd}</span>
+                <span className={cx("text11", "fw600", statusClass(current.status))}>{burnPct}%</span>
               </div>
             </div>
-            <BurnBar used={current.hoursUsed} total={current.retainerHours} status={current.status} height={12} />
+            <BurnBar used={current.hoursUsed} total={current.retainerHours} status={current.status} />
             {current.status === "exceeded" ? (
-              <div style={{ marginTop: 6, fontSize: 10, color: "#ff4444" }}>
+              <div className={cx("text10", "colorRed", "mt6")}>
                 Exceeded by {current.overage}h - R{(current.overage * current.hourlyRate).toLocaleString()} unbilled
               </div>
             ) : null}
           </div>
 
           <div>
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 14 }}>Hours by Task</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <div className={cx("sectionLabel", "mb14")}>Hours by Task</div>
+            <div className={cx("flexCol")}>
               {[...current.tasks]
                 .sort((left, right) => right.hours - left.hours)
                 .map((task, index) => {
                   const pct = (task.hours / current.hoursUsed) * 100;
-                  const catColor = categoryColors[task.category] ?? "#a0a0b0";
                   return (
-                    <div key={index} className="retainer-task-row" style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: catColor, flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                          <span style={{ fontSize: 12, color: "var(--text)" }}>{task.name}</span>
-                          <span style={{ fontSize: 11, color: "#a0a0b0" }}>{task.hours}h</span>
+                    <div key={index} className={cx("rbTaskRow", "rbTaskRowCard")}>
+                      <div className={cx("rbTaskDot", categoryClass(task.category))} />
+                      <div className={cx("flex1", "minW0")}>
+                        <div className={cx("rbTaskHead")}>
+                          <span className={cx("text12", "colorText")}>{task.name}</span>
+                          <span className={cx("text11", "colorMuted")}>{task.hours}h</span>
                         </div>
-                        <div style={{ height: 3, background: "rgba(255,255,255,0.05)", borderRadius: 2, overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: `${pct}%`, background: catColor, borderRadius: 2, opacity: 0.7 }} />
-                        </div>
+                        <progress className={cx("progressMeter", "rbTaskProgress", categoryClass(task.category))} max={100} value={pct} />
                       </div>
-                      <span style={{ fontSize: 10, color: catColor, minWidth: 28, textAlign: "right" }}>{Math.round(pct)}%</span>
+                      <span className={cx("text10", categoryClass(task.category), "rbPctMin", "textRight")}>{Math.round(pct)}%</span>
                     </div>
                   );
                 })}
             </div>
 
-            <div style={{ display: "flex", gap: 14, marginTop: 16, flexWrap: "wrap" }}>
-              {Object.entries(categoryColors).map(([category, color]) => (
-                <div key={category} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: color }} />
-                  <span style={{ fontSize: 10, color: "var(--muted2)" }}>{category}</span>
+            <div className={cx("rbLegendRow")}> 
+              {(["Design", "Strategy", "Research", "Admin", "Production"] as const).map((category) => (
+                <div key={category} className={cx("rbLegendItem")}>
+                  <div className={cx("rbCatDot", categoryClass(category))} />
+                  <span className={cx("text10", "colorMuted2")}>{category}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16, alignSelf: "flex-start" }}>
-              Burn overview
-            </div>
-            <svg width="132" height="132" viewBox="0 0 132 132">
-              <circle cx="66" cy="66" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
+        <div className={cx("rbSideCol")}>
+          <div className={cx("rbOverviewCard")}>
+            <div className={cx("sectionLabel", "mb16", "wFull")}>Burn overview</div>
+            <svg width="132" height="132" viewBox="0 0 132 132" className={cx("rbDonut")}> 
+              <circle cx="66" cy="66" r={r} fill="none" className={cx("rbDonutTrack")} strokeWidth="10" />
               <circle
                 cx="66"
                 cy="66"
                 r={r}
                 fill="none"
-                stroke={overColor}
+                stroke={statusStroke(current.status)}
+                className={cx("rbDonutArc")}
                 strokeWidth="10"
                 strokeDasharray={`${usedDash} ${circ}`}
                 strokeLinecap="round"
                 transform="rotate(-90 66 66)"
-                style={{ transition: "stroke-dasharray 1s cubic-bezier(0.4,0,0.2,1)" }}
               />
-              <text x="66" y="60" textAnchor="middle" fill={overColor} fontFamily="'Syne', sans-serif" fontSize="22" fontWeight="800">
-                {burnPct}%
-              </text>
-              <text x="66" y="76" textAnchor="middle" fill="var(--muted2)" fontFamily="'DM Mono', monospace" fontSize="9">
-                burned
-              </text>
+              <text x="66" y="60" textAnchor="middle" fill={statusStroke(current.status)} className={cx("rbDonutPct")}>{burnPct}%</text>
+              <text x="66" y="76" textAnchor="middle" className={cx("rbDonutLabel")}>burned</text>
             </svg>
-            <div style={{ width: "100%", marginTop: 16 }}>
+            <div className={cx("wFull", "mt16")}>
               {[
-                { label: "Used", value: `${current.hoursUsed}h`, color: cfg.bar },
-                { label: "Total", value: `${current.retainerHours}h`, color: "var(--muted2)" },
-                { label: "Value", value: `R${current.retainerValue.toLocaleString()}`, color: "#a0a0b0" },
-                { label: "Cycle", value: current.billingCycle, color: "#a0a0b0" }
-              ].map((row) => (
-                <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <span style={{ fontSize: 11, color: "var(--muted2)" }}>{row.label}</span>
-                  <span style={{ fontSize: 11, color: row.color }}>{row.value}</span>
+                { label: "Used", value: `${current.hoursUsed}h`, className: statusClass(current.status) },
+                { label: "Total", value: `${current.retainerHours}h`, className: "colorMuted2" },
+                { label: "Value", value: `R${current.retainerValue.toLocaleString()}`, className: "colorMuted" },
+                { label: "Cycle", value: current.billingCycle, className: "colorMuted" }
+              ].map((row, index, arr) => (
+                <div key={row.label} className={cx("rbOverviewRow", index === arr.length - 1 && "rbOverviewRowLast")}>
+                  <span className={cx("text11", "colorMuted2")}>{row.label}</span>
+                  <span className={cx("text11", row.className)}>{row.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div style={{ padding: 16, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>6-Month Trend</div>
-            <MiniSparkline data={current.burnHistory} color={cfg.bar} />
-            <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 8 }}>
+          <div className={cx("rbDetailCard")}>
+            <div className={cx("sectionLabel", "mb12")}>6-Month Trend</div>
+            <MiniSparkline data={current.burnHistory} status={current.status} />
+            <div className={cx("text10", "colorMuted2", "mt8")}>
               {current.burnHistory[current.burnHistory.length - 1] > current.burnHistory[0]
                 ? "↑ Burn rate increasing - check scope creep"
                 : "↓ Burn rate stable or decreasing"}
             </div>
           </div>
 
-          <div style={{ padding: 16, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>End-of-cycle Projection</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800, color: projectedTotal > current.retainerHours ? "#ff4444" : "var(--accent)", marginBottom: 4 }}>
+          <div className={cx("rbDetailCard")}>
+            <div className={cx("sectionLabel", "mb12")}>End-of-cycle Projection</div>
+            <div className={cx("fontDisplay", "fw800", "text24", projectedTotal > current.retainerHours ? "colorRed" : "colorAccent", "mb4")}>
               {Math.round(projectedTotal * 10) / 10}h
             </div>
-            <div style={{ fontSize: 11, color: "var(--muted2)" }}>
+            <div className={cx("text11", "colorMuted2")}>
               {projectedTotal > current.retainerHours
                 ? `Will exceed by ~${Math.round((projectedTotal - current.retainerHours) * 10) / 10}h`
                 : `~${Math.round((current.retainerHours - projectedTotal) * 10) / 10}h buffer remaining`}
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Actions</div>
-            {[
-              { label: "Request scope extension", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 8%, transparent)", border: "color-mix(in srgb, var(--accent) 20%, transparent)" },
-              { label: "Flag to admin", color: "#ff8c00", bg: "rgba(255,140,0,0.06)", border: "rgba(255,140,0,0.2)" },
-              { label: "Export burn report", color: "#a0a0b0", bg: "rgba(255,255,255,0.03)", border: "rgba(255,255,255,0.08)" }
-            ].map((action) => (
-              <button
-                key={action.label}
-                className="retainer-action-btn"
-                type="button"
-                style={{
-                  padding: "10px 14px",
-                  border: `1px solid ${action.border}`,
-                  borderRadius: 3,
-                  background: action.bg,
-                  color: action.color,
-                  fontSize: 11,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  textAlign: "left",
-                  fontFamily: "'DM Mono', monospace"
-                }}
-              >
-                {action.label}
+          <div className={cx("rbActions")}> 
+            <div className={cx("sectionLabel", "mb4")}>Actions</div>
+            {["Request scope extension", "Flag to admin", "Export burn report"].map((label, index) => (
+              <button key={label} className={cx("rbActionBtn", "rbActionBtnBase", actionToneClass(index))} type="button">
+                {label}
               </button>
             ))}
           </div>

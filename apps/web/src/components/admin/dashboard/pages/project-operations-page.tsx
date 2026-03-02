@@ -3,18 +3,8 @@
 import { useMemo, useState } from "react";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { colorClass } from "./admin-page-utils";
 
 type ViewMode = "execution board" | "ops queue" | "checkpoint tracker";
 
@@ -58,16 +48,30 @@ function money(amountCents: number, currency?: string): string {
 
 function statusTone(status: string): string {
   const s = status.toUpperCase();
-  if (["BLOCKED", "DELAYED", "ON_HOLD", "CANCELLED"].includes(s)) return C.red;
-  if (["REVIEW", "PLANNING"].includes(s)) return C.amber;
-  if (s === "IN_PROGRESS") return C.blue;
-  return C.primary;
+  if (["BLOCKED", "DELAYED", "ON_HOLD", "CANCELLED"].includes(s)) return "var(--red)";
+  if (["REVIEW", "PLANNING"].includes(s)) return "var(--amber)";
+  if (s === "IN_PROGRESS") return "var(--blue)";
+  return "var(--accent)";
 }
 
 function riskTone(risk: string): string {
-  if (risk === "HIGH") return C.red;
-  if (risk === "MEDIUM") return C.amber;
-  return C.primary;
+  if (risk === "HIGH") return "var(--red)";
+  if (risk === "MEDIUM") return "var(--amber)";
+  return "var(--accent)";
+}
+
+function statusClass(status: string): string {
+  const s = status.toUpperCase();
+  if (["BLOCKED", "DELAYED", "ON_HOLD", "CANCELLED"].includes(s)) return "colorRed";
+  if (["REVIEW", "PLANNING"].includes(s)) return "colorAmber";
+  if (s === "IN_PROGRESS") return "colorBlue";
+  return "colorAccent";
+}
+
+function riskClass(risk: string): string {
+  if (risk === "HIGH") return "colorRed";
+  if (risk === "MEDIUM") return "colorAmber";
+  return "colorAccent";
 }
 
 function health(project: {
@@ -96,12 +100,12 @@ function checkpointState(project: {
   riskLevel: string;
   idleDays: number;
 }): { label: string; color: string } {
-  if (project.status === "COMPLETED") return { label: "Closed", color: C.primary };
-  if (project.dueDays !== null && project.dueDays < 0) return { label: "Missed", color: C.red };
-  if (project.riskLevel === "HIGH") return { label: "At Risk", color: C.red };
-  if (project.dueDays !== null && project.dueDays <= 7) return { label: "Due Soon", color: C.amber };
-  if (project.idleDays >= 7) return { label: "Stale", color: C.amber };
-  return { label: "On Rhythm", color: C.blue };
+  if (project.status === "COMPLETED") return { label: "Closed", color: "var(--accent)" };
+  if (project.dueDays !== null && project.dueDays < 0) return { label: "Missed", color: "var(--red)" };
+  if (project.riskLevel === "HIGH") return { label: "At Risk", color: "var(--red)" };
+  if (project.dueDays !== null && project.dueDays <= 7) return { label: "Due Soon", color: "var(--amber)" };
+  if (project.idleDays >= 7) return { label: "Stale", color: "var(--amber)" };
+  return { label: "On Rhythm", color: "var(--blue)" };
 }
 
 export function ProjectOperationsPage({
@@ -185,11 +189,11 @@ export function ProjectOperationsPage({
   const canOperate = session?.user.role === "ADMIN" || session?.user.role === "STAFF";
 
   const lanes: Array<{ key: string; label: string; color: string }> = [
-    { key: "PLANNING", label: "Planning", color: C.amber },
-    { key: "IN_PROGRESS", label: "In Progress", color: C.blue },
-    { key: "REVIEW", label: "Review", color: C.amber },
-    { key: "AT_RISK", label: "At Risk", color: C.red },
-    { key: "COMPLETED", label: "Completed", color: C.primary }
+    { key: "PLANNING", label: "Planning", color: "var(--amber)" },
+    { key: "IN_PROGRESS", label: "In Progress", color: "var(--blue)" },
+    { key: "REVIEW", label: "Review", color: "var(--amber)" },
+    { key: "AT_RISK", label: "At Risk", color: "var(--red)" },
+    { key: "COMPLETED", label: "Completed", color: "var(--accent)" }
   ];
 
   const queue = filtered
@@ -209,151 +213,122 @@ export function ProjectOperationsPage({
     });
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: "Syne, sans-serif", padding: 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / OPERATIONS</div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>Project Operations</h1>
-          <div style={{ marginTop: 4, fontSize: 13, color: C.muted }}>Execution control · Blocker queue · Checkpoint discipline</div>
+          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <h1 className={styles.pageTitle}>Project Operations</h1>
+          <div className={styles.pageSub}>Execution control · Blocker queue · Checkpoint discipline</div>
         </div>
-        <button style={{ background: C.primary, color: C.bg, border: "none", padding: "8px 16px", fontFamily: "DM Mono, monospace", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ New Project</button>
+        <button type="button" className={cx("btnSm", "btnAccent")}>+ New Project</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack", "gap16", "mb16")}>
         {[
-          { label: "Active Projects", value: filtered.length.toString(), sub: `${active} in execution`, color: C.primary },
-          { label: "Blocked / High Risk", value: blocked.toString(), sub: "Needs admin action", color: blocked > 0 ? C.red : C.primary },
-          { label: "Overdue", value: overdue.toString(), sub: "Past checkpoint", color: overdue > 0 ? C.red : C.primary },
-          { label: "Stale Updates", value: stale.toString(), sub: "No update in 7d+", color: stale > 0 ? C.amber : C.primary },
+          { label: "Active Projects", value: filtered.length.toString(), sub: `${active} in execution`, color: "var(--accent)" },
+          { label: "Blocked / High Risk", value: blocked.toString(), sub: "Needs admin action", color: blocked > 0 ? "var(--red)" : "var(--accent)" },
+          { label: "Overdue", value: overdue.toString(), sub: "Past checkpoint", color: overdue > 0 ? "var(--red)" : "var(--accent)" },
+          { label: "Stale Updates", value: stale.toString(), sub: "No update in 7d+", color: stale > 0 ? "var(--amber)" : "var(--accent)" },
           {
             label: "Ops Health",
             value: `${avgHealth}`,
             sub: money(filtered.reduce((sum, p) => sum + p.budgetCents, 0), currency) + " managed",
-            color: avgHealth >= 75 ? C.primary : avgHealth >= 60 ? C.amber : C.red
+            color: avgHealth >= 75 ? "var(--accent)" : avgHealth >= 60 ? "var(--amber)" : "var(--red)"
           }
         ].map((kpi) => (
-          <div key={kpi.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{kpi.label}</div>
-            <div style={{ fontFamily: "DM Mono, monospace", fontSize: 24, fontWeight: 800, color: kpi.color, marginBottom: 4 }}>{kpi.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{kpi.sub}</div>
+          <div key={kpi.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{kpi.label}</div>
+            <div className={cx(styles.statValue, colorClass(kpi.color))}>{kpi.value}</div>
+            <div className={cx("text11", "colorMuted")}>{kpi.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 14, marginBottom: 16 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search project, client, owner"
-            style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", minWidth: 280, fontFamily: "DM Mono, monospace", fontSize: 12 }}
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-            style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}
-          >
-            <option value="ALL">All status</option>
-            <option value="PLANNING">Planning</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="REVIEW">Review</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="ON_HOLD">On Hold</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
-          <select
-            value={riskFilter}
-            onChange={(e) => setRiskFilter(e.target.value as typeof riskFilter)}
-            style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}
-          >
-            <option value="ALL">All risk</option>
-            <option value="LOW">Low</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HIGH">High</option>
-          </select>
-          <select
-            value={checkpointFilter}
-            onChange={(e) => setCheckpointFilter(e.target.value as typeof checkpointFilter)}
-            style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}
-          >
-            <option value="ALL">All checkpoints</option>
-            <option value="ON_RHYTHM">On Rhythm</option>
-            <option value="DUE_SOON">Due Soon</option>
-            <option value="AT_RISK">At Risk</option>
-            <option value="MISSED">Missed</option>
-            <option value="STALE">Stale</option>
-          </select>
-          <button
-            onClick={() => {
-              setQuery("");
-              setStatusFilter("ALL");
-              setRiskFilter("ALL");
-              setCheckpointFilter("ALL");
-            }}
-            style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.muted, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, cursor: "pointer" }}
-          >
-            Reset
-          </button>
-          <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-            {(["execution board", "ops queue", "checkpoint tracker"] as ViewMode[]).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setView(tab)}
-                style={{
-                  background: "none",
-                  color: view === tab ? C.primary : C.muted,
-                  border: "none",
-                  borderBottom: view === tab ? `2px solid ${C.primary}` : "none",
-                  padding: "8px 12px",
-                  fontFamily: "Syne, sans-serif",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  letterSpacing: "0.06em",
-                  textTransform: "capitalize",
-                  cursor: "pointer"
-                }}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className={styles.filterRow}>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search project, client, owner"
+          className={cx("formInput", styles.projOpsSearch)}
+        />
+        <select
+          title="Filter by status"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+          className={styles.filterSelect}
+        >
+          <option value="ALL">All status</option>
+          <option value="PLANNING">Planning</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="REVIEW">Review</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="ON_HOLD">On Hold</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+        <select
+          title="Filter by risk"
+          value={riskFilter}
+          onChange={(e) => setRiskFilter(e.target.value as typeof riskFilter)}
+          className={styles.filterSelect}
+        >
+          <option value="ALL">All risk</option>
+          <option value="LOW">Low</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="HIGH">High</option>
+        </select>
+        <select
+          title="Filter by checkpoint"
+          value={checkpointFilter}
+          onChange={(e) => setCheckpointFilter(e.target.value as typeof checkpointFilter)}
+          className={styles.filterSelect}
+        >
+          <option value="ALL">All checkpoints</option>
+          <option value="ON_RHYTHM">On Rhythm</option>
+          <option value="DUE_SOON">Due Soon</option>
+          <option value="AT_RISK">At Risk</option>
+          <option value="MISSED">Missed</option>
+          <option value="STALE">Stale</option>
+        </select>
+        <select title="Select view" value={view} onChange={e => setView(e.target.value as ViewMode)} className={cx(styles.filterSelect, "mlAuto")}>
+          {(["execution board", "ops queue", "checkpoint tracker"] as ViewMode[]).map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
       {view === "execution board" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+        <div className={styles.projOpsBoardSplit}>
+          <div className={styles.projOpsLanes}>
             {lanes.map((lane) => {
               const items = filtered.filter((p) => {
                 if (lane.key === "AT_RISK") return p.riskLevel === "HIGH" || ["BLOCKED", "DELAYED", "ON_HOLD"].includes(p.status);
                 return p.status === lane.key;
               });
               return (
-                <div key={lane.key} style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-                  <div style={{ padding: "12px 10px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, letterSpacing: "0.08em", color: lane.color, textTransform: "uppercase" }}>{lane.label}</span>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{items.length}</span>
+                <div key={lane.key} className={styles.projOpsLane}>
+                  <div className={styles.projOpsLaneHead}>
+                    <span className={cx("fontMono", "text10", "uppercase", colorClass(lane.color))}>{lane.label}</span>
+                    <span className={cx("fontMono", "text11", "colorMuted")}>{items.length}</span>
                   </div>
-                  <div style={{ padding: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div className={styles.projOpsLaneBody}>
                     {items.length > 0 ? (
                       items.map((p) => (
-                        <div key={p.id} style={{ background: C.bg, border: `1px solid ${p.id === selectedId ? `${C.primary}66` : C.border}`, padding: 8 }}>
-                          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{p.name}</div>
-                          <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>{p.clientName}</div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "DM Mono, monospace", fontSize: 10 }}>
-                            <span style={{ color: riskTone(p.riskLevel) }}>{p.riskLevel}</span>
-                            <span style={{ color: p.overdue ? C.red : C.muted }}>{p.dueDays === null ? "No due" : `${p.dueDays}d`}</span>
+                        <div key={p.id} className={cx(styles.projOpsLaneItem, p.id === selectedId && styles.projOpsLaneItemActive)}>
+                          <div className={styles.projOpsLaneName}>{p.name}</div>
+                          <div className={styles.projOpsLaneClient}>{p.clientName}</div>
+                          <div className={styles.projOpsLaneMeta}>
+                            <span className={riskClass(p.riskLevel)}>{p.riskLevel}</span>
+                            <span className={p.overdue ? "colorRed" : "colorMuted"}>{p.dueDays === null ? "No due" : `${p.dueDays}d`}</span>
                           </div>
                           <button
+                            type="button"
                             onClick={() => setSelectedId(p.id)}
-                            style={{ marginTop: 6, background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "4px 8px", fontFamily: "DM Mono, monospace", fontSize: 10, cursor: "pointer" }}
+                            className={styles.projOpsMiniBtn}
                           >
                             Open
                           </button>
                         </div>
                       ))
                     ) : (
-                      <div style={{ padding: 8, color: C.muted, fontSize: 11 }}>No items</div>
+                      <div className={styles.projOpsEmpty11}>No items</div>
                     )}
                   </div>
                 </div>
@@ -361,34 +336,34 @@ export function ProjectOperationsPage({
             })}
           </div>
 
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700 }}>Execution Detail</div>
-              <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted }}>{selected?.id.slice(0, 8) ?? "No project"}</span>
+          <div className={styles.projOpsDetailCard}>
+            <div className={styles.projOpsDetailHead}>
+              <div className={cx("text12", "fw700")}>Execution Detail</div>
+              <span className={styles.projOpsIdTag}>{selected?.id.slice(0, 8) ?? "No project"}</span>
             </div>
             {selected ? (
               <>
-                <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 4 }}>{selected.name}</div>
-                <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>{selected.clientName} · Owner: {selected.ownerName ?? "Unassigned"}</div>
+                <div className={styles.projOpsDetailName}>{selected.name}</div>
+                <div className={styles.projOpsDetailMeta}>{selected.clientName} · Owner: {selected.ownerName ?? "Unassigned"}</div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                <div className={styles.projOpsMetricGrid}>
                   {[
                     { label: "Status", value: selected.status, color: statusTone(selected.status) },
                     { label: "Risk", value: selected.riskLevel, color: riskTone(selected.riskLevel) },
-                    { label: "Progress", value: `${selected.progressPercent}%`, color: selected.progressPercent >= 70 ? C.primary : selected.progressPercent >= 40 ? C.amber : C.red },
+                    { label: "Progress", value: `${selected.progressPercent}%`, color: selected.progressPercent >= 70 ? "var(--accent)" : selected.progressPercent >= 40 ? "var(--amber)" : "var(--red)" },
                     { label: "Checkpoint", value: selected.checkpoint.label, color: selected.checkpoint.color },
-                    { label: "Due", value: selected.dueDays === null ? "Not set" : `${selected.dueDays}d`, color: selected.overdue ? C.red : C.muted },
-                    { label: "Idle", value: `${selected.idleDays}d`, color: selected.idleDays >= 7 ? C.amber : C.muted }
+                    { label: "Due", value: selected.dueDays === null ? "Not set" : `${selected.dueDays}d`, color: selected.overdue ? "var(--red)" : "var(--muted)" },
+                    { label: "Idle", value: `${selected.idleDays}d`, color: selected.idleDays >= 7 ? "var(--amber)" : "var(--muted)" }
                   ].map((m) => (
-                    <div key={m.label} style={{ background: C.bg, border: `1px solid ${C.border}`, padding: 10 }}>
-                      <div style={{ fontSize: 9, color: C.muted, textTransform: "uppercase", marginBottom: 4 }}>{m.label}</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: m.color }}>{m.value}</div>
+                    <div key={m.label} className={styles.projOpsMetricCard}>
+                      <div className={styles.projOpsMetricLabel}>{m.label}</div>
+                      <div className={cx("fontMono", "fw700", colorClass(m.color))}>{m.value}</div>
                     </div>
                   ))}
                 </div>
 
-                <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>Operations Focus</div>
-                <div style={{ background: C.bg, border: `1px solid ${C.border}`, padding: 10, marginBottom: 12, fontSize: 12 }}>
+                <div className={styles.projOpsFocusLabel}>Operations Focus</div>
+                <div className={styles.projOpsFocusCard}>
                   {selected.overdue
                     ? "Rebaseline scope and secure immediate client checkpoint update."
                     : selected.riskLevel === "HIGH"
@@ -398,56 +373,62 @@ export function ProjectOperationsPage({
                         : "Current execution rhythm is healthy; keep weekly checkpoint updates."}
                 </div>
 
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div className={styles.projOpsActionRow}>
                   <button
+                    type="button"
                     onClick={() => onNotify("success", "Escalation logged for Project Operations.")}
                     disabled={!canOperate}
-                    style={{ background: C.primary, color: C.bg, border: "none", padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 11, fontWeight: 700, cursor: "pointer", opacity: canOperate ? 1 : 0.5 }}
+                    className={cx("btnSm", "btnAccent", !canOperate && "opacity60")}
+                    aria-disabled={!canOperate}
                   >
                     Log Escalation
                   </button>
                   <button
+                    type="button"
                     onClick={() => onNotify("success", "Owner follow-up queued.")}
                     disabled={!canOperate}
-                    style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 11, cursor: "pointer", opacity: canOperate ? 1 : 0.5 }}
+                    className={cx("btnSm", "btnGhost", !canOperate && "opacity60")}
+                    aria-disabled={!canOperate}
                   >
                     Nudge Owner
                   </button>
                   <button
+                    type="button"
                     onClick={() => onNotify("success", "Checkpoint reminder scheduled.")}
                     disabled={!canOperate}
-                    style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 11, cursor: "pointer", opacity: canOperate ? 1 : 0.5 }}
+                    className={cx("btnSm", "btnGhost", !canOperate && "opacity60")}
+                    aria-disabled={!canOperate}
                   >
                     Send Checkpoint Prompt
                   </button>
                 </div>
               </>
             ) : (
-              <div style={{ color: C.muted, fontSize: 12 }}>Select a project to view execution details.</div>
+              <div className={cx("text12", "colorMuted")}>Select a project to view execution details.</div>
             )}
           </div>
         </div>
       ) : null}
 
       {view === "ops queue" ? (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 100px 90px 90px 100px 1fr", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div className={cx("card", "overflowHidden", "p0")}>
+          <div className={cx(styles.projOpsQueueGrid, "px20", "borderB", "fontMono", "text10", "colorMuted", "uppercase", "tracking")}>
             {["Project", "Status", "Risk", "Due", "Idle", "Recommended Action"].map((h) => (
               <span key={h}>{h}</span>
             ))}
           </div>
           {queue.length > 0 ? (
             queue.map((p, i) => (
-              <div key={p.id} style={{ display: "grid", gridTemplateColumns: "1.2fr 100px 90px 90px 100px 1fr", padding: "12px 20px", borderBottom: i < queue.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center" }}>
+              <div key={p.id} className={cx(styles.projOpsQueueGrid, styles.projOpsQueueRowAlign, "px20", "py12", i < queue.length - 1 && "borderB")}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700 }}>{p.name}</div>
-                  <div style={{ fontSize: 11, color: C.muted }}>{p.clientName}</div>
+                  <div className={cx("text12", "fw700")}>{p.name}</div>
+                  <div className={cx("text11", "colorMuted")}>{p.clientName}</div>
                 </div>
-                <span style={{ fontFamily: "DM Mono, monospace", color: statusTone(p.status) }}>{p.status}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: riskTone(p.riskLevel) }}>{p.riskLevel}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: p.overdue ? C.red : C.muted }}>{p.dueDays === null ? "Not set" : `${p.dueDays}d`}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: p.idleDays >= 7 ? C.amber : C.muted }}>{p.idleDays}d</span>
-                <span style={{ fontSize: 11, color: C.muted }}>
+                <span className={cx("fontMono", statusClass(p.status))}>{p.status}</span>
+                <span className={cx("fontMono", riskClass(p.riskLevel))}>{p.riskLevel}</span>
+                <span className={cx("fontMono", p.overdue ? "colorRed" : "colorMuted")}>{p.dueDays === null ? "Not set" : `${p.dueDays}d`}</span>
+                <span className={cx("fontMono", p.idleDays >= 7 ? "colorAmber" : "colorMuted")}>{p.idleDays}d</span>
+                <span className={cx("text11", "colorMuted")}>
                   {p.overdue
                     ? "Rebaseline and send client recovery timeline."
                     : p.riskLevel === "HIGH"
@@ -459,61 +440,62 @@ export function ProjectOperationsPage({
               </div>
             ))
           ) : (
-            <div style={{ padding: 20, color: C.muted, fontSize: 12 }}>No active blockers in current filter set.</div>
+            <div className={cx("p20", "colorMuted", "text12")}>No active blockers in current filter set.</div>
           )}
         </div>
       ) : null}
 
       {view === "checkpoint tracker" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 90px 90px 100px 110px", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div className={styles.projOpsCheckpointSplit}>
+          <div className={cx("card", "overflowHidden", "p0")}>
+            <div className={cx(styles.projOpsCheckGrid, "px20", "borderB", "fontMono", "text10", "colorMuted", "uppercase", "tracking")}>
               {["Project", "Status", "Risk", "Checkpoint", "Due"].map((h) => (
                 <span key={h}>{h}</span>
               ))}
             </div>
             {checkpoints.length > 0 ? (
               checkpoints.map((p, i) => (
-                <div key={p.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 90px 90px 100px 110px", padding: "12px 20px", borderBottom: i < checkpoints.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center" }}>
+                <div key={p.id} className={cx(styles.projOpsCheckGrid, styles.projOpsQueueRowAlign, "px20", "py12", i < checkpoints.length - 1 && "borderB")}>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 700 }}>{p.name}</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>{p.clientName}</div>
+                    <div className={cx("text12", "fw700")}>{p.name}</div>
+                    <div className={cx("text11", "colorMuted")}>{p.clientName}</div>
                   </div>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: statusTone(p.status), fontSize: 11 }}>{p.status}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: riskTone(p.riskLevel), fontSize: 11 }}>{p.riskLevel}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: p.checkpoint.color, fontSize: 11 }}>{p.checkpoint.label}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: p.overdue ? C.red : p.dueDays !== null && p.dueDays <= 7 ? C.amber : C.muted, fontSize: 11 }}>
+                  <span className={cx("fontMono", "text11", statusClass(p.status))}>{p.status}</span>
+                  <span className={cx("fontMono", "text11", riskClass(p.riskLevel))}>{p.riskLevel}</span>
+                  <span className={cx("fontMono", "text11", colorClass(p.checkpoint.color))}>{p.checkpoint.label}</span>
+                  <span className={cx("fontMono", "text11", p.overdue ? "colorRed" : p.dueDays !== null && p.dueDays <= 7 ? "colorAmber" : "colorMuted")}>
                     {p.dueDays === null ? "Not set" : `${fmtDate(p.dueAt)} (${p.dueDays}d)`}
                   </span>
                 </div>
               ))
             ) : (
-              <div style={{ padding: 20, color: C.muted, fontSize: 12 }}>No checkpoints available for current filter.</div>
+              <div className={cx("p20", "colorMuted", "text12")}>No checkpoints available for current filter.</div>
             )}
           </div>
 
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Checkpoint Discipline</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+          <div className={styles.projOpsDetailCard}>
+            <div className={cx("text12", "fw700", "mb10")}>Checkpoint Discipline</div>
+            <div className={styles.projOpsMetricGrid}>
               {[
-                { label: "Due this week", value: String(checkpoints.filter((p) => p.dueDays !== null && p.dueDays >= 0 && p.dueDays <= 7).length), color: C.amber },
-                { label: "Missed", value: String(checkpoints.filter((p) => p.dueDays !== null && p.dueDays < 0).length), color: C.red },
-                { label: "No due date", value: String(checkpoints.filter((p) => p.dueDays === null).length), color: C.muted },
-                { label: "Invoice risk linked", value: String(checkpoints.filter((p) => p.invoiceOverdue > 0).length), color: C.red }
+                { label: "Due this week", value: String(checkpoints.filter((p) => p.dueDays !== null && p.dueDays >= 0 && p.dueDays <= 7).length), color: "var(--amber)" },
+                { label: "Missed", value: String(checkpoints.filter((p) => p.dueDays !== null && p.dueDays < 0).length), color: "var(--red)" },
+                { label: "No due date", value: String(checkpoints.filter((p) => p.dueDays === null).length), color: "var(--muted)" },
+                { label: "Invoice risk linked", value: String(checkpoints.filter((p) => p.invoiceOverdue > 0).length), color: "var(--red)" }
               ].map((m) => (
-                <div key={m.label} style={{ background: C.bg, border: `1px solid ${C.border}`, padding: 10 }}>
-                  <div style={{ fontSize: 9, color: C.muted, textTransform: "uppercase", marginBottom: 4 }}>{m.label}</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: m.color }}>{m.value}</div>
+                <div key={m.label} className={styles.projOpsMetricCard}>
+                  <div className={styles.projOpsMetricLabel}>{m.label}</div>
+                  <div className={cx("fontMono", "fw700", colorClass(m.color))}>{m.value}</div>
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>
+            <div className={styles.projOpsDiscNote}>
               This view focuses only on operational discipline: checkpoint dates, stale ownership, and risk states. Planning depth and capacity remain in Portfolio, Gantt, and Resource Allocation.
             </div>
             <button
+              type="button"
               onClick={() => onNotify("success", "Weekly checkpoint digest queued.")}
               disabled={!canOperate}
-              style={{ width: "100%", background: C.primary, color: C.bg, border: "none", padding: "10px 12px", fontFamily: "DM Mono, monospace", fontSize: 11, fontWeight: 700, cursor: "pointer", opacity: canOperate ? 1 : 0.5 }}
+              className={cx("btnSm", "btnAccent", "wFull", !canOperate && "opacity60")}
             >
               Send Weekly Checkpoint Digest
             </button>

@@ -25,6 +25,13 @@ export function StaffSidebar({
   staffName,
   staffRole
 }: StaffSidebarProps) {
+  const navLinkTextStyle = {
+    fontSize: "var(--text-aside-link, 0.82rem)",
+    lineHeight: 1.2,
+    fontFamily: "var(--font-syne), sans-serif",
+    fontWeight: 600,
+  } as const;
+
   const [showAllPages, setShowAllPages] = useState(false);
   const [allPagesQuery, setAllPagesQuery] = useState("");
   const popupPanelRef = useRef<HTMLDivElement | null>(null);
@@ -135,17 +142,6 @@ export function StaffSidebar({
         </div>
       </div>
 
-      <div className={styles.statusBar}>
-        <div className={styles.statusDot} />
-        <div className={styles.statusText}>Available</div>
-        <select className={styles.statusSelect} defaultValue="Available">
-          <option>Available</option>
-          <option>In a meeting</option>
-          <option>Focused</option>
-          <option>Away</option>
-        </select>
-      </div>
-
       <nav className={styles.sidebarNav}>
         {navSections.map(([section, items]) => (
           <div key={section}>
@@ -154,7 +150,8 @@ export function StaffSidebar({
               <button
                 key={item.id}
                 type="button"
-                className={cx("navItem", activePage === item.id && "navItemActive")}
+                className={`${styles.navItem} ${activePage === item.id ? styles.navItemActive : ""}`}
+                style={navLinkTextStyle}
                 onClick={() => onNavigate(item.id)}
               >
                 <NavIcon id={item.id} className={styles.navIcon} />
@@ -168,11 +165,6 @@ export function StaffSidebar({
             ))}
           </div>
         ))}
-        <div className={styles.navSectionActions}>
-          <button type="button" className={styles.navActionBtn} onClick={() => (showAllPages ? closeAllPages() : openAllPages())}>
-            {showAllPages ? "Close app grid" : "Open app grid"} <span className={styles.navActionHint}>Ctrl/⌘+K</span>
-          </button>
-        </div>
       </nav>
 
       {showAllPages ? (
@@ -227,7 +219,10 @@ export function StaffSidebar({
               <div className={styles.navPopupSections}>
                 {Object.entries(groupedPageResults).map(([section, items]) => (
                   <section key={section} className={styles.navPopupSection}>
-                    <div className={styles.navPopupSectionTitle}>{section}</div>
+                    <div className={styles.navPopupSectionHeader}>
+                      <div className={styles.navPopupSectionTitle}>{section}</div>
+                      <div className={styles.navPopupSectionCount}>{items.length} pages</div>
+                    </div>
                     <div className={styles.navPageGrid}>
                       {items.map((item) => (
                         <button
@@ -239,7 +234,9 @@ export function StaffSidebar({
                             closeAllPages();
                           }}
                         >
-                          <NavIcon id={item.id} className={styles.navIcon} />
+                          <span className={styles.navPageTileIcon}>
+                            <NavIcon id={item.id} className={styles.navIcon} />
+                          </span>
                           <div>
                             <div className={styles.navPageTileLabel}>{item.label}</div>
                             <div className={styles.navPageTileMeta}>{item.id}</div>
@@ -256,13 +253,13 @@ export function StaffSidebar({
       ) : null}
 
       <div className={styles.sidebarFooter}>
-        <div className={styles.userRow}>
+        <div className={styles.userCard}>
           <div className={styles.userAvatar}>{staffInitials}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className={styles.userInfo}>
             <div className={styles.userName}>{staffName}</div>
             <div className={styles.userRole}>{staffRole}</div>
           </div>
-          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ color: "var(--muted2)", flexShrink: 0 }}>
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" className={styles.navChevron}>
             <path d="M5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
           </svg>
         </div>

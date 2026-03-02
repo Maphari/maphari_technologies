@@ -56,6 +56,25 @@ export type PageId =
   | "reports"
   | "audit"
   | "experience"
+  | "knowledgeBaseAdmin"
+  | "decisionRegistry"
+  | "handoverManagement"
+  | "closeoutReview"
+  | "staffTransitionPlanner"
+  | "serviceCatalogManager"
+  | "requestInbox"
+  | "changeRequestManager"
+  | "supportQueue"
+  | "lifecycleDashboard"
+  | "stakeholderDirectory"
+  | "aiActionRecommendations"
+  | "updateQueueManager"
+  | "standupFeed"
+  | "eodDigest"
+  | "peerReviewQueue"
+  | "automationAuditTrail"
+  | "projectBriefing"
+  | "activeHealthMonitor"
   | "settings";
 
 // ─── Re-exports for backward compatibility ───
@@ -126,6 +145,25 @@ export const navItems: NavItem[] = [
   { id: "reports", label: "Reports", section: "Governance" },
   { id: "access", label: "Access Control", section: "Governance" },
   { id: "audit", label: "Audit Log", section: "Governance" },
+  { id: "knowledgeBaseAdmin", label: "Knowledge Base", section: "Knowledge" },
+  { id: "decisionRegistry", label: "Decision Registry", section: "Knowledge" },
+  { id: "handoverManagement", label: "Handover Management", section: "Knowledge" },
+  { id: "closeoutReview", label: "Close-out Review", section: "Knowledge" },
+  { id: "staffTransitionPlanner", label: "Staff Transition Planner", section: "Knowledge" },
+  { id: "serviceCatalogManager", label: "Service Catalog", section: "Knowledge" },
+  { id: "requestInbox", label: "Request Inbox", section: "Lifecycle" },
+  { id: "changeRequestManager", label: "Change Requests", section: "Lifecycle" },
+  { id: "supportQueue", label: "Support Queue", section: "Lifecycle" },
+  { id: "lifecycleDashboard", label: "Lifecycle Dashboard", section: "Lifecycle" },
+  { id: "stakeholderDirectory", label: "Stakeholder Directory", section: "Lifecycle" },
+  { id: "aiActionRecommendations", label: "AI Recommendations", section: "AI/ML" },
+  { id: "updateQueueManager", label: "Update Queue", section: "AI/ML" },
+  { id: "standupFeed", label: "Standup Feed", section: "Governance" },
+  { id: "eodDigest", label: "EOD Digest", section: "Governance" },
+  { id: "peerReviewQueue", label: "Peer Review Queue", section: "Governance" },
+  { id: "automationAuditTrail", label: "Automation Audit", section: "Governance" },
+  { id: "projectBriefing", label: "Project Briefing", section: "Governance" },
+  { id: "activeHealthMonitor", label: "Active Health Monitor", section: "Governance" },
   { id: "settings", label: "Settings", section: "Governance" }
 ];
 

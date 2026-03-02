@@ -7,8 +7,11 @@ type ClientRow = {
   id: number;
   name: string;
   avatar: string;
-  color: string;
   project: string;
+  toneClass: string;
+  activeClass: string;
+  avatarClass: string;
+  meterClass: string;
 };
 
 type ChecklistItem = {
@@ -20,21 +23,50 @@ type ChecklistItem = {
 type ChecklistSection = {
   section: string;
   icon: string;
-  color: string;
+  toneClass: string;
+  meterClass: string;
   items: ChecklistItem[];
 };
 
 const clients: ClientRow[] = [
-  { id: 1, name: "Volta Studios", avatar: "VS", color: "var(--accent)", project: "Brand Identity System" },
-  { id: 3, name: "Mira Health", avatar: "MH", color: "#60a5fa", project: "Website Redesign" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "#ff8c00", project: "Annual Report 2025" }
+  {
+    id: 1,
+    name: "Volta Studios",
+    avatar: "VS",
+    project: "Brand Identity System",
+    toneClass: "hoToneAccent",
+    activeClass: "hoClientActiveAccent",
+    avatarClass: "hoAvatarAccent",
+    meterClass: "hoMeterAccent"
+  },
+  {
+    id: 3,
+    name: "Mira Health",
+    avatar: "MH",
+    project: "Website Redesign",
+    toneClass: "hoToneBlue",
+    activeClass: "hoClientActiveBlue",
+    avatarClass: "hoAvatarBlue",
+    meterClass: "hoMeterBlue"
+  },
+  {
+    id: 5,
+    name: "Okafor & Sons",
+    avatar: "OS",
+    project: "Annual Report 2025",
+    toneClass: "hoToneOrange",
+    activeClass: "hoClientActiveOrange",
+    avatarClass: "hoAvatarOrange",
+    meterClass: "hoMeterOrange"
+  }
 ];
 
 const checklistTemplate: ChecklistSection[] = [
   {
     section: "Files & Assets",
     icon: "⊡",
-    color: "#60a5fa",
+    toneClass: "hoToneBlue",
+    meterClass: "hoMeterBlue",
     items: [
       { id: "f1", label: "All final files exported in agreed formats", note: "RGB + CMYK where applicable" },
       { id: "f2", label: "File naming convention applied throughout", note: "Client_Project_Deliverable_v1" },
@@ -47,7 +79,8 @@ const checklistTemplate: ChecklistSection[] = [
   {
     section: "Documentation",
     icon: "◎",
-    color: "#a78bfa",
+    toneClass: "hoTonePurple",
+    meterClass: "hoMeterPurple",
     items: [
       { id: "d1", label: "Brand guidelines / usage document complete", note: "If applicable to project" },
       { id: "d2", label: "Handover notes written - what was built and why", note: null },
@@ -59,7 +92,8 @@ const checklistTemplate: ChecklistSection[] = [
   {
     section: "Client Comms",
     icon: "✉",
-    color: "#f5c518",
+    toneClass: "hoToneAmber",
+    meterClass: "hoMeterAmber",
     items: [
       { id: "c1", label: "Final delivery email sent with asset summary", note: null },
       { id: "c2", label: "Client walked through deliverables on call", note: "Or async video if preferred" },
@@ -71,7 +105,8 @@ const checklistTemplate: ChecklistSection[] = [
   {
     section: "Finance",
     icon: "₹",
-    color: "var(--accent)",
+    toneClass: "hoToneAccent",
+    meterClass: "hoMeterAccent",
     items: [
       { id: "fin1", label: "Final invoice raised and sent", note: null },
       { id: "fin2", label: "All retainer hours reconciled", note: "Overage or underuse noted" },
@@ -82,7 +117,8 @@ const checklistTemplate: ChecklistSection[] = [
   {
     section: "Access & Offboarding",
     icon: "◌",
-    color: "#ff8c00",
+    toneClass: "hoToneOrange",
+    meterClass: "hoMeterOrange",
     items: [
       { id: "a1", label: "Client portal access revoked", note: "Within 24h of close confirmation" },
       { id: "a2", label: "Shared Drive folder archived (not deleted)", note: null },
@@ -94,7 +130,8 @@ const checklistTemplate: ChecklistSection[] = [
   {
     section: "Internal Close",
     icon: "◈",
-    color: "#a0a0b0",
+    toneClass: "hoToneMuted",
+    meterClass: "hoMeterMuted",
     items: [
       { id: "i1", label: "Hours logged and finalised for all tasks", note: null },
       { id: "i2", label: "Project retrospective notes written", note: "What went well, what to improve" },
@@ -115,6 +152,12 @@ function buildInitialState(clientId: number) {
     });
   });
   return state;
+}
+
+function overallToneClass(pct: number): string {
+  if (pct === 100) return "hoToneAccent";
+  if (pct > 50) return "hoToneAmber";
+  return "hoToneMuted";
 }
 
 export function HandoverChecklistPage({ isActive }: { isActive: boolean }) {
@@ -172,154 +215,97 @@ export function HandoverChecklistPage({ isActive }: { isActive: boolean }) {
       : checklistTemplate;
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-handover-checklist">
-      <style>{`
-        textarea { outline: none; font-family: 'DM Mono', monospace; resize: none; }
-        textarea:focus { border-color: color-mix(in srgb, var(--accent) 20%, transparent) !important; }
-        .hc-client-btn { transition: all 0.12s ease; cursor: pointer; }
-        .hc-client-btn:hover { border-color: color-mix(in srgb, var(--accent) 20%, transparent) !important; }
-        .hc-check-row { transition: background 0.1s ease; }
-        .hc-check-row:hover { background: rgba(255,255,255,0.02) !important; }
-        .hc-filter-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .hc-mark-btn { transition: all 0.12s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .hc-mark-btn:hover { color: var(--accent) !important; border-color: color-mix(in srgb, var(--accent) 30%, transparent) !important; }
-        @keyframes hcCheck { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-handover-checklist">
+      <div className={cx("pageHeaderBar", "borderB", "hoHeaderBar")}>
+        <div className={cx("flexBetween", "mb20", "hoHeaderTop")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-              Staff Dashboard / Workflow
-            </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              Handover Checklist
-            </h1>
+            <div className={cx("pageEyebrow", "mb8")}>Staff Dashboard / Workflow</div>
+            <h1 className={cx("pageTitle")}>Handover Checklist</h1>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>
-                Progress
-              </div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: pct === 100 ? "var(--accent)" : pct > 50 ? "#f5c518" : "#a0a0b0" }}>
-                {pct}%
-              </div>
+          <div className={cx("flexRow", "gap24")}> 
+            <div className={cx("textRight")}>
+              <div className={cx("pageEyebrow", "mb4", "hoStatLabel")}>Progress</div>
+              <div className={cx("fontDisplay", "fw800", "hoStatValue", overallToneClass(pct))}>{pct}%</div>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>
-                Remaining
-              </div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: "#a0a0b0" }}>
-                {totalItems - doneCount}
-              </div>
+            <div className={cx("textRight")}>
+              <div className={cx("pageEyebrow", "mb4", "hoStatLabel")}>Remaining</div>
+              <div className={cx("fontDisplay", "fw800", "hoStatValue", "hoToneMuted")}>{totalItems - doneCount}</div>
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <div className={cx("flexRow", "gap10", "mb16")}> 
           {clients.map((client) => {
             const cp = clientProgress(client);
             const isActiveClient = selectedClient.id === client.id;
             return (
               <div
                 key={client.id}
-                className="hc-client-btn"
+                className={cx("hoClientBtn", "hoClientCard", "flex1", isActiveClient ? client.activeClass : "hoClientCardIdle")}
                 onClick={() => setSelectedClient(client)}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 4,
-                  flex: 1,
-                  border: `1px solid ${isActiveClient ? `${client.color}40` : "rgba(255,255,255,0.06)"}`,
-                  background: isActiveClient ? `${client.color}06` : "rgba(255,255,255,0.01)"
-                }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 20, height: 20, borderRadius: 2, background: `${client.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: client.color }}>
-                    {client.avatar}
-                  </div>
-                  <span style={{ fontSize: 11, color: isActiveClient ? "#fff" : "#a0a0b0" }}>{client.name}</span>
-                  <span style={{ marginLeft: "auto", fontSize: 12, color: client.color, fontWeight: 700 }}>{cp}%</span>
+                <div className={cx("flexRow", "gap8", "mb8", "hoClientHead")}> 
+                  <div className={cx("flexCenter", "hoClientAvatar", client.avatarClass)}>{client.avatar}</div>
+                  <span className={cx("text11", isActiveClient ? "colorText" : "colorMuted")}>{client.name}</span>
+                  <span className={cx("text12", "fw700", "hoClientPct", client.toneClass)}>{cp}%</span>
                 </div>
-                <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2 }}>
-                  <div style={{ height: "100%", width: `${cp}%`, background: cp === 100 ? "var(--accent)" : client.color, borderRadius: 2, transition: "width 0.4s ease" }} />
-                </div>
-                <div style={{ fontSize: 10, color: "var(--muted2)", marginTop: 5 }}>{client.project}</div>
+                <progress className={cx("hoClientMeter", cp === 100 ? "hoMeterAccent" : client.meterClass)} max={100} value={cp} />
+                <div className={cx("text10", "colorMuted2", "mt4", "hoClientProject")}>{client.project}</div>
               </div>
             );
           })}
         </div>
 
-        <div style={{ display: "flex", gap: 6 }}>
-          {[
-            { k: "all" as const, l: "All items" },
-            { k: "incomplete" as const, l: "Incomplete only" }
-          ].map((item) => (
-            <button
-              key={item.k}
-              className="hc-filter-btn"
-              onClick={() => setFilter(item.k)}
-              style={{
-                padding: "5px 12px",
-                fontSize: 10,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                borderRadius: 2,
-                background: filter === item.k ? "rgba(255,255,255,0.08)" : "transparent",
-                color: filter === item.k ? "var(--text)" : "var(--muted2)"
-              }}
-            >
-              {item.l}
-            </button>
-          ))}
+        <div className={cx("filterRow")}>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter checklist items"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value as "all" | "incomplete")}
+          >
+            <option value="all">All items</option>
+            <option value="incomplete">Incomplete only</option>
+          </select>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: "calc(100vh - 170px)" }}>
-        <div style={{ padding: "24px 32px", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
-          {visibleSections
-            .slice(0, 3)
-            .map((section) => (
-              <Section
-                key={section.section}
-                section={section}
-                isChecked={isChecked}
-                toggle={toggle}
-                markSectionDone={markSectionDone}
-                sectionProgress={sectionProgress}
-                notes={notes}
-                setNotes={setNotes}
-                clientId={selectedClient.id}
-              />
-            ))}
+      <div className={cx("hoLayout")}> 
+        <div className={cx("hoCol", "hoColLeft")}>
+          {visibleSections.slice(0, 3).map((section) => (
+            <Section
+              key={section.section}
+              section={section}
+              isChecked={isChecked}
+              toggle={toggle}
+              markSectionDone={markSectionDone}
+              sectionProgress={sectionProgress}
+              notes={notes}
+              setNotes={setNotes}
+              clientId={selectedClient.id}
+            />
+          ))}
         </div>
-        <div style={{ padding: "24px 32px" }}>
-          {visibleSections
-            .slice(3)
-            .map((section) => (
-              <Section
-                key={section.section}
-                section={section}
-                isChecked={isChecked}
-                toggle={toggle}
-                markSectionDone={markSectionDone}
-                sectionProgress={sectionProgress}
-                notes={notes}
-                setNotes={setNotes}
-                clientId={selectedClient.id}
-              />
-            ))}
+
+        <div className={cx("hoCol")}> 
+          {visibleSections.slice(3).map((section) => (
+            <Section
+              key={section.section}
+              section={section}
+              isChecked={isChecked}
+              toggle={toggle}
+              markSectionDone={markSectionDone}
+              sectionProgress={sectionProgress}
+              notes={notes}
+              setNotes={setNotes}
+              clientId={selectedClient.id}
+            />
+          ))}
 
           {pct === 100 ? (
-            <div style={{ marginTop: 20, padding: "20px", border: "1px solid color-mix(in srgb, var(--accent) 30%, transparent)", borderRadius: 4, background: "color-mix(in srgb, var(--accent) 6%, transparent)", textAlign: "center" }}>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: "var(--accent)", marginBottom: 6 }}>
-                ✓ Handover complete
-              </div>
-              <div style={{ fontSize: 12, color: "var(--muted2)" }}>
-                {selectedClient.name} · {selectedClient.project}
-              </div>
-              <div style={{ fontSize: 11, color: "var(--muted2)", marginTop: 6 }}>
-                Ready to generate close-out report →
-              </div>
+            <div className={cx("mt20", "textCenter", "hoCompleteCard")}>
+              <div className={cx("fontDisplay", "fw800", "colorAccent", "mb6", "hoCompleteTitle")}>✓ Handover complete</div>
+              <div className={cx("text12", "colorMuted2")}>{selectedClient.name} · {selectedClient.project}</div>
+              <div className={cx("text11", "colorMuted2", "mt6")}>Ready to generate close-out report →</div>
             </div>
           ) : null}
         </div>
@@ -353,84 +339,62 @@ function Section({
   const [showNote, setShowNote] = useState(false);
 
   return (
-    <div style={{ marginBottom: 28 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <span style={{ fontSize: 14, color: section.color }}>{section.icon}</span>
-        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: done ? "var(--accent)" : "#fff" }}>
-          {section.section}
-        </span>
-        <div style={{ flex: 1, height: 3, background: "rgba(255,255,255,0.05)", borderRadius: 2, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${progress.pct}%`, background: done ? "var(--accent)" : section.color, borderRadius: 2, transition: "width 0.3s ease" }} />
-        </div>
-        <span style={{ fontSize: 10, color: done ? "var(--accent)" : "var(--muted2)", flexShrink: 0 }}>
-          {progress.done}/{progress.total}
-        </span>
+    <div className={cx("mb28")}>
+      <div className={cx("flexRow", "gap10", "mb12", "hoSectionHead")}>
+        <span className={cx("text14", section.toneClass)}>{section.icon}</span>
+        <span className={cx("fontDisplay", "text14", "fw700", done ? "hoToneAccent" : "colorText")}>{section.section}</span>
+        <progress
+          className={cx("hoSectionMeter", done ? "hoMeterAccent" : section.meterClass)}
+          max={progress.total}
+          value={progress.done}
+        />
+        <span className={cx("text10", "noShrink", done ? "hoToneAccent" : "colorMuted2")}>{progress.done}/{progress.total}</span>
         {!done ? (
           <button
-            className="hc-mark-btn"
+            type="button"
+            className={cx("hoMarkBtn", "uppercase")}
             onClick={() => markSectionDone(section)}
-            style={{ fontSize: 9, padding: "3px 8px", background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2, color: "var(--muted2)", letterSpacing: "0.06em", textTransform: "uppercase" }}
           >
             All done
           </button>
         ) : null}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div className={cx("flexCol", "gap4")}>
         {section.items.map((item) => {
           const checked = isChecked(item.id);
           return (
             <div
               key={item.id}
-              className="hc-check-row"
+              className={cx("hoCheckRow", "hoCheckItem", checked && "hoCheckItemChecked")}
               onClick={() => toggle(item.id)}
-              style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "9px 10px", borderRadius: 3, cursor: "pointer", background: checked ? "color-mix(in srgb, var(--accent) 3%, transparent)" : "transparent" }}
             >
-              <div
-                style={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: 3,
-                  flexShrink: 0,
-                  marginTop: 1,
-                  border: `1.5px solid ${checked ? "var(--accent)" : "rgba(255,255,255,0.15)"}`,
-                  background: checked ? "color-mix(in srgb, var(--accent) 15%, transparent)" : "transparent",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 10,
-                  color: "var(--accent)",
-                  transition: "all 0.15s ease"
-                }}
-              >
-                {checked ? <span style={{ animation: "hcCheck 0.15s ease" }}>✓</span> : null}
+              <div className={cx("flexCenter", "noShrink", "hoCheckBox", checked && "hoCheckBoxChecked")}>
+                {checked ? <span className={cx("hoCheckAnim")}>✓</span> : null}
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, color: checked ? "var(--muted2)" : "#a0a0b0", textDecoration: checked ? "line-through" : "none", lineHeight: 1.4 }}>
-                  {item.label}
-                </div>
-                {item.note ? <div style={{ fontSize: 10, color: "#333344", marginTop: 2 }}>{item.note}</div> : null}
+              <div className={cx("flex1")}>
+                <div className={cx("text12", "hoItemLabel", checked && "hoItemLabelChecked")}>{item.label}</div>
+                {item.note ? <div className={cx("text10", "mt4", "hoItemNote")}>{item.note}</div> : null}
               </div>
             </div>
           );
         })}
       </div>
 
-      <div style={{ marginTop: 8 }}>
+      <div className={cx("mt8")}>
         <button
+          type="button"
           onClick={() => setShowNote((value) => !value)}
-          style={{ fontSize: 10, color: "var(--muted2)", background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em" }}
+          className={cx("hoNoteToggle")}
         >
           {showNote ? "− Hide note" : `+ ${notes[noteKey] ? "Edit" : "Add"} section note`}
         </button>
         {showNote ? (
           <textarea
+            className={cx("hoTextarea", "hoNoteInput")}
             value={notes[noteKey] ?? ""}
-            onChange={(event) =>
-              setNotes((previous) => ({ ...previous, [noteKey]: event.target.value }))
-            }
+            onChange={(event) => setNotes((previous) => ({ ...previous, [noteKey]: event.target.value }))}
             placeholder={`Notes for ${section.section}…`}
-            style={{ display: "block", width: "100%", marginTop: 6, minHeight: 56, padding: "8px 10px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "#a0a0b0", fontSize: 11, lineHeight: 1.6 }}
           />
         ) : null}
       </div>

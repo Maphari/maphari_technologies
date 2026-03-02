@@ -55,7 +55,7 @@ export const projectRows: ProjectRow[] = [
     budget: "R 68,000",
     avatars: [
       { label: "JM", bg: "var(--accent)", color: "#050508" },
-      { label: "TK", bg: "var(--purple)", color: "#fff" },
+      { label: "TK", bg: "var(--blue)", color: "#fff" },
       { label: "LN", bg: "var(--amber)", color: "#050508" }
     ]
   },
@@ -83,7 +83,7 @@ export const projectRows: ProjectRow[] = [
     due: "Apr 30, 2026",
     client: "Nexus Logistics",
     budget: "R 32,000",
-    avatars: [{ label: "TK", bg: "var(--purple)", color: "#fff" }]
+    avatars: [{ label: "TK", bg: "var(--blue)", color: "#fff" }]
   }
 ];
 
@@ -181,7 +181,7 @@ export const messageThreads: MessageThread[] = [
     time: "Yesterday",
     preview: "Stripe integration is live on staging.",
     unread: true,
-    tagColor: "var(--purple)",
+    tagColor: "var(--blue)",
     messages: []
   },
   {
@@ -206,7 +206,7 @@ export const messageThreads: MessageThread[] = [
 
 export const activityFeed = [
   { color: "var(--accent)", text: "INV-2026-014 marked as sent to Nexus Logistics", time: "15 min ago" },
-  { color: "var(--purple)", text: "Client Portal v2 moved to Review stage", time: "2h ago" },
+  { color: "var(--blue)", text: "Client Portal v2 moved to Review stage", time: "2h ago" },
   { color: "var(--amber)", text: "Savanna Tech invoice overdue — 14 days", time: "Today, 09:00" },
   { color: "var(--accent)", text: "Veldt Finance paid INV-2026-012 (R 28,000)", time: "Yesterday" },
   { color: "var(--muted2)", text: "New project scoped for Birchwood Media", time: "Feb 15" }

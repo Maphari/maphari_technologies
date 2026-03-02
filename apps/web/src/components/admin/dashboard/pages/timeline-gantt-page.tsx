@@ -1,24 +1,14 @@
 "use client";
 
 import { useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0",
-};
+import { cx, styles } from "../style";
+import { colorClass } from "./admin-page-utils";
 
 const START = new Date("2026-02-01");
 const END = new Date("2026-04-30");
 const TOTAL_DAYS = Math.round((END.getTime() - START.getTime()) / 86400000);
+const SVG_WIDTH = 1000;
+const SVG_HEIGHT = 72;
 const TODAY = new Date("2026-02-23");
 const todayOffset = Math.round((TODAY.getTime() - START.getTime()) / 86400000);
 
@@ -56,7 +46,7 @@ const projects: Array<{
 }> = [
   {
     client: "Volta Studios",
-    clientColor: C.lime,
+    clientColor: "var(--accent)",
     clientAvatar: "VS",
     name: "Brand Identity System",
     phases: [
@@ -75,7 +65,7 @@ const projects: Array<{
   },
   {
     client: "Kestrel Capital",
-    clientColor: C.purple,
+    clientColor: "var(--purple)",
     clientAvatar: "KC",
     name: "Q1 Campaign Strategy",
     phases: [
@@ -93,7 +83,7 @@ const projects: Array<{
   },
   {
     client: "Mira Health",
-    clientColor: C.blue,
+    clientColor: "var(--blue)",
     clientAvatar: "MH",
     name: "Website Redesign",
     phases: [
@@ -113,7 +103,7 @@ const projects: Array<{
   },
   {
     client: "Dune Collective",
-    clientColor: C.amber,
+    clientColor: "var(--amber)",
     clientAvatar: "DC",
     name: "Editorial Design System",
     phases: [
@@ -131,7 +121,7 @@ const projects: Array<{
   },
   {
     client: "Okafor & Sons",
-    clientColor: C.orange,
+    clientColor: "var(--amber)",
     clientAvatar: "OS",
     name: "Annual Report 2025",
     phases: [
@@ -156,14 +146,56 @@ const months = [
 ];
 
 const statusColors: Record<ProjectStatus, string> = {
-  "on-track": C.lime,
-  "at-risk": C.amber,
-  "off-track": C.red,
+  "on-track": "var(--accent)",
+  "at-risk": "var(--amber)",
+  "off-track": "var(--red)",
 };
+
+function toneVarClass(color: string): string {
+  switch (color) {
+    case "var(--accent)":
+      return styles.timelineToneAccent;
+    case "var(--red)":
+      return styles.timelineToneRed;
+    case "var(--amber)":
+      return styles.timelineToneAmber;
+    case "var(--blue)":
+      return styles.timelineToneBlue;
+    case "var(--purple)":
+      return styles.timelineTonePurple;
+    default:
+      return styles.timelineToneMuted;
+  }
+}
+
+function fillClass(color: string): string {
+  switch (color) {
+    case "var(--accent)":
+      return styles.timelineFillAccent;
+    case "var(--red)":
+      return styles.timelineFillRed;
+    case "var(--amber)":
+      return styles.timelineFillAmber;
+    case "var(--blue)":
+      return styles.timelineFillBlue;
+    case "var(--purple)":
+      return styles.timelineFillPurple;
+    default:
+      return styles.timelineFillMuted;
+  }
+}
+
+function monthCellClass(index: number): string {
+  if (index === 0) return styles.timelineMonthCellFeb;
+  if (index === 1) return styles.timelineMonthCellMar;
+  return styles.timelineMonthCellApr;
+}
 
 function Avatar({ initials, color, size = 30 }: { initials: string; color: string; size?: number }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: `${color}22`, border: `2px solid ${color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.32, fontWeight: 700, color, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>
+    <div
+      className={cx("fontMono", "fw700", "timelineAvatar", toneVarClass(color), size === 28 ? "timelineAvatar28" : "timelineAvatar30")}
+    >
       {initials}
     </div>
   );
@@ -173,170 +205,199 @@ export function TimelineGanttPage() {
   const [hoveredPhase, setHoveredPhase] = useState<string | null>(null);
   const [showMilestones, setShowMilestones] = useState(true);
 
-  const ROW_H = 64;
-  const LABEL_W = 260;
-
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.lime, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / OPERATIONS</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Timeline &amp; Gantt</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Cross-portfolio project timelines - Phases - Milestones</div>
+          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <h1 className={styles.pageTitle}>Timeline &amp; Gantt</h1>
+          <div className={styles.pageSub}>Cross-portfolio project timelines - Phases - Milestones</div>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button onClick={() => setShowMilestones(!showMilestones)} style={{ background: showMilestones ? `${C.lime}15` : C.surface, border: `1px solid ${showMilestones ? C.lime : C.border}`, color: showMilestones ? C.lime : C.muted, padding: "8px 16px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>
+        <div className={cx("flexRow", "gap8")}>
+          <button
+            type="button"
+            onClick={() => setShowMilestones(!showMilestones)}
+            className={cx("btnSm", showMilestones ? "btnAccent" : "btnGhost")}
+          >
             ◆ Milestones {showMilestones ? "On" : "Off"}
           </button>
-          <button style={{ background: C.lime, color: C.bg, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>Export PDF</button>
+          <button type="button" className={cx("btnSm", "btnAccent")}>Export PDF</button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack")}>
         {[
-          { label: "Projects On-Track", value: projects.filter((p) => p.status === "on-track").length.toString(), color: C.lime, sub: `of ${projects.length} total` },
-          { label: "At Risk", value: projects.filter((p) => p.status === "at-risk").length.toString(), color: C.amber, sub: "Review required" },
-          { label: "Off Track", value: projects.filter((p) => p.status === "off-track").length.toString(), color: C.red, sub: "Immediate action" },
+          { label: "Projects On-Track", value: projects.filter((p) => p.status === "on-track").length.toString(), color: "var(--accent)", sub: `of ${projects.length} total` },
+          { label: "At Risk", value: projects.filter((p) => p.status === "at-risk").length.toString(), color: "var(--amber)", sub: "Review required" },
+          { label: "Off Track", value: projects.filter((p) => p.status === "off-track").length.toString(), color: "var(--red)", sub: "Immediate action" },
           {
             label: "Milestones Due (14d)",
             value: projects
               .flatMap((p) => p.milestones)
               .filter((m) => !m.done && dayOffset(m.date) >= 0 && dayOffset(m.date) <= 14).length.toString(),
-            color: C.blue,
+            color: "var(--blue)",
             sub: "Across all projects",
           },
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ display: "flex", borderBottom: `1px solid ${C.border}` }}>
-          <div style={{ width: LABEL_W, flexShrink: 0, padding: "10px 20px", fontSize: 11, color: C.muted, borderRight: `1px solid ${C.border}` }}>Project</div>
-          <div style={{ flex: 1, display: "flex", position: "relative" }}>
-            {months.map((m) => (
-              <div key={m.label} style={{ width: `${(m.days / TOTAL_DAYS) * 100}%`, padding: "10px 12px", fontSize: 11, fontWeight: 700, color: C.lime, borderRight: `1px solid ${C.border}`, textAlign: "center" }}>
-                {m.label}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {projects.map((project, pi) => (
-          <div key={project.name} style={{ display: "flex", borderBottom: pi < projects.length - 1 ? `1px solid ${C.border}` : "none", minHeight: ROW_H + 16 }}>
-            <div style={{ width: LABEL_W, flexShrink: 0, padding: "12px 20px", borderRight: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10 }}>
-              <Avatar initials={project.clientAvatar} color={project.clientColor} size={28} />
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3 }}>{project.name}</div>
-                <div style={{ fontSize: 10, color: project.clientColor, marginTop: 2 }}>{project.client}</div>
-                <div style={{ fontSize: 9, color: statusColors[project.status], marginTop: 2, textTransform: "uppercase", letterSpacing: "0.06em" }}>{project.status.replace("-", " ")}</div>
-              </div>
+      <div className={cx("card", styles.timelineScrollShell)}>
+        <div className={styles.timelineScrollInner}>
+          <div className={cx("flexRow", "borderB")}>
+            <div className={cx("text11", "colorMuted", "timelineProjectHead")}>Project</div>
+            <div className={styles.timelineMonthsRow}>
+              {months.map((m, index) => (
+                <div key={m.label} className={cx("text11", "fw700", "colorAccent", "textCenter", "timelineMonthCell", monthCellClass(index))}>
+                  {m.label}
+                </div>
+              ))}
             </div>
+          </div>
 
-            <div style={{ flex: 1, position: "relative", padding: "16px 0" }}>
-              <div style={{ position: "absolute", left: `${(todayOffset / TOTAL_DAYS) * 100}%`, top: 0, bottom: 0, width: 2, background: C.lime, opacity: 0.6, zIndex: 10 }} />
+          {projects.map((project, pi) => (
+            <div key={project.name} className={cx("flexRow", "timelineProjectRow", pi < projects.length - 1 && "borderB")}>
+              <div className={styles.timelineProjectCell}>
+                <Avatar initials={project.clientAvatar} color={project.clientColor} size={28} />
+                <div>
+                  <div className={cx("fw600", "text12", "timelineLine13")}>{project.name}</div>
+                  <div className={cx("text10", "mt4", colorClass(project.clientColor))}>{project.client}</div>
+                  <div className={cx("uppercase", "mt4", "timelineStatusText", colorClass(statusColors[project.status]))}>{project.status.replace("-", " ")}</div>
+                </div>
+              </div>
 
-              {project.phases.map((phase, i) => {
-                const pStart = Math.max(0, dayOffset(phase.start));
-                const pEnd = Math.min(TOTAL_DAYS, dayOffset(phase.end));
-                if (pEnd <= 0 || pStart >= TOTAL_DAYS) return null;
-                const left = (pStart / TOTAL_DAYS) * 100;
-                const width = ((pEnd - pStart) / TOTAL_DAYS) * 100;
-                const bg = phase.done ? `${project.clientColor}55` : phase.current ? project.clientColor : `${project.clientColor}33`;
-                const border = phase.overdue ? `2px solid ${C.red}` : phase.current ? `1px solid ${project.clientColor}` : "none";
-                return (
-                  <div
-                    key={i}
-                    onMouseEnter={() => setHoveredPhase(`${project.name}-${i}`)}
-                    onMouseLeave={() => setHoveredPhase(null)}
-                    style={{ position: "absolute", left: `${left}%`, width: `${width}%`, height: 28, top: 10, borderRadius: 4, background: bg, border, display: "flex", alignItems: "center", paddingLeft: 8, cursor: "default", overflow: "hidden", transition: "opacity 0.2s", opacity: hoveredPhase && hoveredPhase !== `${project.name}-${i}` ? 0.5 : 1 }}
-                  >
-                    <span style={{ fontSize: 10, color: phase.done ? `${project.clientColor}99` : phase.current ? C.bg : project.clientColor, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden" }}>
-                      {phase.done ? "✓ " : ""}
-                      {phase.name}
-                    </span>
-                  </div>
-                );
-              })}
+              <div className={styles.timelineTrackCell}>
+                <svg
+                  className={styles.timelineTrackSvg}
+                  viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <line
+                    className={styles.timelineTodayMarkerLine}
+                    x1={(todayOffset / TOTAL_DAYS) * SVG_WIDTH}
+                    x2={(todayOffset / TOTAL_DAYS) * SVG_WIDTH}
+                    y1={0}
+                    y2={SVG_HEIGHT}
+                  />
 
-              {showMilestones
-                ? project.milestones.map((ms, i) => {
-                    const msOffset = dayOffset(ms.date);
-                    if (msOffset < 0 || msOffset > TOTAL_DAYS) return null;
-                    const left = (msOffset / TOTAL_DAYS) * 100;
+                  {project.phases.map((phase, i) => {
+                    const pStart = Math.max(0, dayOffset(phase.start));
+                    const pEnd = Math.min(TOTAL_DAYS, dayOffset(phase.end));
+                    if (pEnd <= 0 || pStart >= TOTAL_DAYS) return null;
+                    const left = (pStart / TOTAL_DAYS) * SVG_WIDTH;
+                    const width = Math.max(((pEnd - pStart) / TOTAL_DAYS) * SVG_WIDTH, 8);
+                    const phaseKey = `${project.name}-${i}`;
+                    const dimmed = Boolean(hoveredPhase && hoveredPhase !== phaseKey);
+                    const fill = phase.done
+                      ? `color-mix(in oklab, ${project.clientColor} 33%, transparent)`
+                      : phase.current
+                        ? project.clientColor
+                        : `color-mix(in oklab, ${project.clientColor} 20%, transparent)`;
+                    const stroke = phase.overdue ? "var(--red)" : phase.current ? project.clientColor : "none";
+                    const strokeWidth = phase.overdue ? 0.7 : phase.current ? 0.35 : 0;
+                    const labelColor = phase.current
+                      ? "var(--bg)"
+                      : phase.done
+                        ? "rgba(240, 237, 232, 0.76)"
+                        : "rgba(240, 237, 232, 0.9)";
                     return (
-                      <div key={i} style={{ position: "absolute", left: `${left}%`, top: 44, transform: "translateX(-50%)", zIndex: 5 }}>
-                        <div style={{ width: 10, height: 10, background: ms.done ? C.lime : ms.overdue ? C.red : project.clientColor, transform: "rotate(45deg)", border: `2px solid ${C.bg}` }} />
-                        <div style={{ fontSize: 8, color: ms.done ? C.lime : ms.overdue ? C.red : project.clientColor, whiteSpace: "nowrap", marginTop: 4, textAlign: "center", transform: "translateX(-30%)" }}>{ms.name}</div>
-                      </div>
+                      <g key={phaseKey} onMouseEnter={() => setHoveredPhase(phaseKey)} onMouseLeave={() => setHoveredPhase(null)}>
+                        <rect x={left} y={10} width={width} height={28} rx={2.2} ry={2.2} fill={fill} stroke={stroke} strokeWidth={strokeWidth} opacity={dimmed ? 0.5 : 1} />
+                        <text x={left + 14} y={26.4} className={styles.timelinePhaseLabelSvg} fill={labelColor} opacity={dimmed ? 0.5 : 1}>
+                          {phase.done ? "\u2713 " : ""}
+                          {phase.name}
+                        </text>
+                      </g>
                     );
-                  })
-                : null}
+                  })}
 
-              {(() => {
-                const dl = dayOffset(project.deadline);
-                if (dl < 0 || dl > TOTAL_DAYS) return null;
-                return (
-                  <div style={{ position: "absolute", left: `${(dl / TOTAL_DAYS) * 100}%`, top: 0, bottom: 0, width: 1, background: statusColors[project.status], opacity: 0.8 }}>
-                    <div style={{ position: "absolute", bottom: 4, left: 4, fontSize: 8, color: statusColors[project.status], whiteSpace: "nowrap" }}>deadline</div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        ))}
+                  {showMilestones
+                    ? project.milestones.map((ms, i) => {
+                        const msOffset = dayOffset(ms.date);
+                        if (msOffset < 0 || msOffset > TOTAL_DAYS) return null;
+                        const left = (msOffset / TOTAL_DAYS) * SVG_WIDTH;
+                        const milestoneColor = ms.done ? "var(--accent)" : ms.overdue ? "var(--red)" : project.clientColor;
+                        return (
+                          <g key={`${project.name}-ms-${i}`} transform={`translate(${left} 49)`}>
+                            <rect x={-9} y={-9} width={18} height={18} transform="rotate(45)" fill={milestoneColor} stroke="var(--bg)" strokeWidth={3} />
+                          <text x={7} y={16.5} className={styles.timelineMilestoneLabelSvg} fill={ms.overdue ? "var(--red)" : "rgba(240, 237, 232, 0.94)"}>
+                            {ms.name}
+                          </text>
+                          </g>
+                        );
+                      })
+                    : null}
 
-        <div style={{ padding: "14px 20px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 11, color: C.muted, fontWeight: 700 }}>Legend:</span>
-          {[
-            { label: "Completed phase", style: { background: `${C.lime}55`, border: "none" } },
-            { label: "Active phase", style: { background: C.lime, border: "none" } },
-            { label: "Upcoming phase", style: { background: `${C.lime}22`, border: `1px solid ${C.lime}33` } },
-            { label: "Overdue", style: { background: `${C.red}33`, border: `2px solid ${C.red}` } },
-          ].map((l) => (
-            <div key={l.label} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <div style={{ width: 24, height: 12, borderRadius: 3, ...l.style }} />
-              <span style={{ fontSize: 11, color: C.muted }}>{l.label}</span>
+                  {(() => {
+                    const dl = dayOffset(project.deadline);
+                    if (dl < 0 || dl > TOTAL_DAYS) return null;
+                    const deadlineLeft = (dl / TOTAL_DAYS) * SVG_WIDTH;
+                    const deadlineColor = statusColors[project.status];
+                    return (
+                      <g>
+                        <line x1={deadlineLeft} x2={deadlineLeft} y1={0} y2={SVG_HEIGHT} className={styles.timelineDeadlineLineSvg} stroke={deadlineColor} />
+                        <text x={deadlineLeft + 8} y={68} className={styles.timelineDeadlineLabelSvg} fill={deadlineColor}>deadline</text>
+                      </g>
+                    );
+                  })()}
+                </svg>
+              </div>
             </div>
           ))}
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <div style={{ width: 10, height: 10, background: C.lime, transform: "rotate(45deg)" }} />
-            <span style={{ fontSize: 11, color: C.muted }}>Milestone</span>
-          </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <div style={{ width: 2, height: 16, background: C.lime, opacity: 0.6 }} />
-            <span style={{ fontSize: 11, color: C.muted }}>Today</span>
+
+          <div className={cx("flexRow", "gap20", "flexWrap", "timelineLegendWrap")}>
+            <span className={cx("text11", "colorMuted", "fw700")}>Legend:</span>
+            {[
+              { label: "Completed phase", cls: "timelineLegendCompleted" },
+              { label: "Active phase", cls: "timelineLegendActive" },
+              { label: "Upcoming phase", cls: "timelineLegendUpcoming" },
+              { label: "Overdue", cls: "timelineLegendOverdue" },
+            ].map((l) => (
+              <div key={l.label} className={cx("flexRow", "gap8")}>
+                <div className={cx("timelineLegendSwatch", l.cls)} />
+                <span className={cx("text11", "colorMuted")}>{l.label}</span>
+              </div>
+            ))}
+            <div className={cx("flexRow", "gap8")}>
+              <div className={styles.timelineLegendDiamond} />
+              <span className={cx("text11", "colorMuted")}>Milestone</span>
+            </div>
+            <div className={cx("flexRow", "gap8")}>
+              <div className={styles.timelineLegendToday} />
+              <span className={cx("text11", "colorMuted")}>Today</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div style={{ marginTop: 24 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Upcoming Milestones - Next 30 Days</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className={cx("mt24")}>
+        <div className={cx("text13", "fw700", "mb16", "uppercase", "timelineTracking")}>Upcoming Milestones - Next 30 Days</div>
+        <div className={cx("flexCol", "gap10")}>
           {projects
             .flatMap((p) => p.milestones.map((m) => ({ ...m, project: p.name, client: p.client, clientColor: p.clientColor, status: p.status })))
             .filter((m) => !m.done && dayOffset(m.date) >= 0 && dayOffset(m.date) <= 30)
             .sort((a, b) => dayOffset(a.date) - dayOffset(b.date))
             .map((m, i) => (
-              <div key={i} style={{ background: C.surface, border: `1px solid ${m.overdue ? `${C.red}55` : C.border}`, borderRadius: 8, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <div style={{ width: 10, height: 10, background: m.overdue ? C.red : m.clientColor, transform: "rotate(45deg)", flexShrink: 0 }} />
+              <div key={i} className={cx("card", "flexBetween", "timelineMilestoneItem", m.overdue && "timelineMilestoneOverdue")}>
+                <div className={cx("flexRow", "gap12")}>
+                  <div className={cx(styles.timelineMilestoneDot, m.overdue ? styles.timelineFillRed : fillClass(m.clientColor))} />
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{m.name}</div>
-                    <div style={{ fontSize: 11, color: m.clientColor }}>
+                    <div className={cx("fw600", "text13")}>{m.name}</div>
+                    <div className={cx("text11", colorClass(m.clientColor))}>
                       {m.project} - {m.client}
                     </div>
                   </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontFamily: "DM Mono, monospace", color: m.overdue ? C.red : dayOffset(m.date) <= 7 ? C.amber : C.muted }}>{m.date}</div>
-                  <div style={{ fontSize: 10, color: m.overdue ? C.red : C.muted }}>{m.overdue ? "OVERDUE" : `in ${dayOffset(m.date)}d`}</div>
+                <div className={styles.timelineTextRight}>
+                  <div className={cx("fontMono", m.overdue ? "colorRed" : dayOffset(m.date) <= 7 ? "colorAmber" : "colorMuted")}>{m.date}</div>
+                  <div className={cx("text10", m.overdue ? "colorRed" : "colorMuted")}>{m.overdue ? "OVERDUE" : `in ${dayOffset(m.date)}d`}</div>
                 </div>
               </div>
             ))}

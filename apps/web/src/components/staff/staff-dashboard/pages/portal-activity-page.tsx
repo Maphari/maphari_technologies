@@ -54,25 +54,22 @@ const initialFeed: ActivityEvent[] = [
   { id: 12, clientId: 3, client: "Mira Health", type: "sent_message", label: "Sent message", detail: "Re: booking flow revision feedback", time: "Feb 19", ts: 12, read: true, priority: false }
 ];
 
-const typeConfig: Record<
-  ActivityType,
-  { icon: string; color: string; bg: string; label: string }
-> = {
-  viewed_milestone: { icon: "◎", color: "#a78bfa", bg: "rgba(167,139,250,0.1)", label: "Milestone view" },
-  approved_milestone: { icon: "✓", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 10%, transparent)", label: "Approved" },
-  viewed_invoice: { icon: "₹", color: "#f5c518", bg: "rgba(245,197,24,0.1)", label: "Invoice view" },
-  downloaded_file: { icon: "↓", color: "#60a5fa", bg: "rgba(96,165,250,0.1)", label: "Download" },
-  uploaded_file: { icon: "↑", color: "#60a5fa", bg: "rgba(96,165,250,0.1)", label: "Upload" },
-  logged_in: { icon: "◉", color: "#ff8c00", bg: "rgba(255,140,0,0.1)", label: "Login" },
-  sent_message: { icon: "✉", color: "#a0a0b0", bg: "rgba(160,160,176,0.1)", label: "Message" }
+const typeConfig: Record<ActivityType, { icon: string; label: string; iconClass: string; toneClass: string }> = {
+  viewed_milestone: { icon: "◎", label: "Milestone view", iconClass: "paTypeViewedMilestone", toneClass: "paToneViewedMilestone" },
+  approved_milestone: { icon: "✓", label: "Approved", iconClass: "paTypeApprovedMilestone", toneClass: "paToneApprovedMilestone" },
+  viewed_invoice: { icon: "₹", label: "Invoice view", iconClass: "paTypeViewedInvoice", toneClass: "paToneViewedInvoice" },
+  downloaded_file: { icon: "↓", label: "Download", iconClass: "paTypeDownloadedFile", toneClass: "paToneDownloadedFile" },
+  uploaded_file: { icon: "↑", label: "Upload", iconClass: "paTypeUploadedFile", toneClass: "paToneUploadedFile" },
+  logged_in: { icon: "◉", label: "Login", iconClass: "paTypeLoggedIn", toneClass: "paToneLoggedIn" },
+  sent_message: { icon: "✉", label: "Message", iconClass: "paTypeSentMessage", toneClass: "paToneSentMessage" }
 };
 
-const clientColors: Record<number, string> = {
-  1: "var(--accent)",
-  2: "#a78bfa",
-  3: "#60a5fa",
-  4: "#f5c518",
-  5: "#ff8c00"
+const clientToneClass: Record<number, string> = {
+  1: "paClientTone1",
+  2: "paClientTone2",
+  3: "paClientTone3",
+  4: "paClientTone4",
+  5: "paClientTone5"
 };
 
 const portalStats: Record<
@@ -87,6 +84,15 @@ const portalStats: Record<
 };
 
 type GroupKey = "Today" | "Yesterday" | "Earlier";
+
+function heatLevelClass(activity: number): string {
+  if (activity <= 0) return "paHeatLevel0";
+  if (activity === 1) return "paHeatLevel1";
+  if (activity === 2) return "paHeatLevel2";
+  if (activity === 3) return "paHeatLevel3";
+  if (activity === 4) return "paHeatLevel4";
+  return "paHeatLevel5";
+}
 
 export function PortalActivityPage({ isActive }: { isActive: boolean }) {
   const [feed, setFeed] = useState(initialFeed);
@@ -136,109 +142,91 @@ export function PortalActivityPage({ isActive }: { isActive: boolean }) {
   const selClient = selectedClient ? clients.find((client) => client.id === selectedClient) : null;
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-portal-activity">
-      <style>{`
-        .pa-event-row { transition: all 0.12s ease; cursor: pointer; }
-        .pa-event-row:hover { background: color-mix(in srgb, var(--accent) 2%, transparent) !important; border-color: color-mix(in srgb, var(--accent) 15%, transparent) !important; }
-        .pa-filter-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .pa-filter-btn:hover { opacity: 0.8; }
-        .pa-client-pill { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .pa-client-pill:hover { opacity: 0.8; }
-        .pa-mark-btn { transition: all 0.12s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .pa-mark-btn:hover { opacity: 0.7; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-portal-activity">
+      <div className={cx("pageHeaderBar", "borderB", "paHeaderBar")}>
+        <div className={cx("flexBetween", "mb20", "paHeaderTop")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-              Staff Dashboard / Client Intelligence
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-                Portal Activity
-              </h1>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", background: "color-mix(in srgb, var(--accent) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)", borderRadius: 2 }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", opacity: liveIndicator ? 1 : 0.3, transition: "opacity 0.6s ease" }} />
-                <span style={{ fontSize: 10, color: "var(--accent)", letterSpacing: "0.1em" }}>LIVE</span>
+            <div className={cx("pageEyebrow")}>Staff Dashboard / Client Intelligence</div>
+            <div className={cx("flexRow", "gap12", "paHeaderTitleRow")}>
+              <h1 className={cx("pageTitle")}>Portal Activity</h1>
+              <div className={cx("paLiveIndicator")}>
+                <div className={cx("paLiveDot", liveIndicator ? "paLiveDotOn" : "paLiveDotDim")} />
+                <span className={cx("text10", "colorAccent", "paLiveLabel")}>LIVE</span>
               </div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
+          <div className={cx("flexRow", "gap24", "paTopStats")}>
             {[
-              { label: "Unread", value: unreadCount, color: unreadCount > 0 ? "#ff4444" : "var(--muted2)" },
-              { label: "Priority", value: priorityCount, color: priorityCount > 0 ? "#ff8c00" : "var(--muted2)" },
-              { label: "Today", value: feed.filter((event) => event.time.includes("ago") || event.time.includes("h ago")).length, color: "#a0a0b0" }
+              { label: "Unread", value: unreadCount, toneClass: unreadCount > 0 ? "paToneRed" : "paToneMuted" },
+              { label: "Priority", value: priorityCount, toneClass: priorityCount > 0 ? "paToneOrange" : "paToneMuted" },
+              { label: "Today", value: feed.filter((event) => event.time.includes("ago") || event.time.includes("h ago")).length, toneClass: "paToneSoft" }
             ].map((stat) => (
-              <div key={stat.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+              <div key={stat.label} className={cx("textRight")}>
+                <div className={cx("text11", "colorMuted2", "uppercase", "mb4", "paStatLabel")}>{stat.label}</div>
+                <div className={cx("fontDisplay", "fw800", "paStatValue", stat.toneClass)}>{stat.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            className="pa-client-pill"
-            onClick={() => {
-              setClientFilter("all");
-              setSelectedClient(null);
+        <div className={cx("filterRow", "mb14")}>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter client activity"
+            value={clientFilter === "all" ? "all" : String(clientFilter)}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (value === "all") {
+                setClientFilter("all");
+                setSelectedClient(null);
+                return;
+              }
+              const clientId = Number.parseInt(value, 10);
+              setClientFilter(clientId);
+              setSelectedClient(clientId);
             }}
-            style={{ padding: "6px 12px", borderRadius: 2, fontSize: 11, background: clientFilter === "all" ? "var(--accent)" : "rgba(255,255,255,0.04)", color: clientFilter === "all" ? "#050508" : "#a0a0b0" }}
           >
-            All clients
-          </button>
-          {clients.map((client) => {
-            const isActive = clientFilter === client.id;
-            const cColor = clientColors[client.id];
-            const clientUnread = feed.filter((event) => event.clientId === client.id && !event.read).length;
-            return (
-              <button
-                key={client.id}
-                type="button"
-                className="pa-client-pill"
-                onClick={() => {
-                  setClientFilter(isActive ? "all" : client.id);
-                  setSelectedClient(isActive ? null : client.id);
-                }}
-                style={{ padding: "6px 12px", borderRadius: 2, fontSize: 11, background: isActive ? `${cColor}18` : "rgba(255,255,255,0.04)", color: isActive ? cColor : "#a0a0b0", display: "flex", alignItems: "center", gap: 6, outline: isActive ? `1px solid ${cColor}40` : "none" }}
-              >
-                {client.name}
-                {clientUnread > 0 ? <span style={{ fontSize: 9, background: "#ff4444", color: "#fff", borderRadius: 10, padding: "1px 5px" }}>{clientUnread}</span> : null}
-              </button>
-            );
-          })}
+            <option value="all">All clients</option>
+            {clients.map((client) => {
+              const clientUnread = feed.filter((event) => event.clientId === client.id && !event.read).length;
+              return (
+                <option key={client.id} value={String(client.id)}>
+                  {client.name}{clientUnread > 0 ? ` (${clientUnread} unread)` : ""}
+                </option>
+              );
+            })}
+          </select>
         </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          {(["all", "viewed_milestone", "approved_milestone", "viewed_invoice", "downloaded_file", "logged_in"] as const).map((type) => (
-            <button
-              key={type}
-              type="button"
-              className="pa-filter-btn"
-              onClick={() => setTypeFilter(type)}
-              style={{ padding: "5px 10px", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", borderRadius: 2, background: typeFilter === type ? "rgba(255,255,255,0.08)" : "transparent", color: typeFilter === type ? "var(--text)" : "var(--muted2)" }}
+        <div className={cx("flexRow", "gap8", "flexWrap", "paToolbar")}> 
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter activity type"
+            value={typeFilter}
+            onChange={(event) => setTypeFilter(event.target.value as "all" | ActivityType)}
+          >
+            <option value="all">All activity</option>
+            <option value="viewed_milestone">Viewed milestone</option>
+            <option value="approved_milestone">Approved milestone</option>
+            <option value="viewed_invoice">Viewed invoice</option>
+            <option value="downloaded_file">Downloaded file</option>
+            <option value="logged_in">Logged in</option>
+          </select>
+          <div className={cx("flexRow", "gap10", "paToolbarRight")}>
+            <select
+              className={cx("filterSelect")}
+              aria-label="Unread activity filter"
+              value={showUnreadOnly ? "unread" : "all"}
+              onChange={(event) => setShowUnreadOnly(event.target.value === "unread")}
             >
-              {type === "all" ? "All activity" : typeConfig[type]?.label}
-            </button>
-          ))}
-          <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center" }}>
-            <button
-              type="button"
-              className="pa-filter-btn"
-              onClick={() => setShowUnreadOnly((value) => !value)}
-              style={{ padding: "5px 12px", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: 2, background: showUnreadOnly ? "rgba(255,68,68,0.1)" : "transparent", color: showUnreadOnly ? "#ff4444" : "var(--muted2)", border: `1px solid ${showUnreadOnly ? "rgba(255,68,68,0.2)" : "transparent"}` }}
-            >
-              Unread only
-            </button>
+              <option value="all">All activity</option>
+              <option value="unread">Unread only</option>
+            </select>
             {unreadCount > 0 ? (
               <button
                 type="button"
-                className="pa-mark-btn"
+                className={cx("paMarkBtn", "uppercase", "paMarkBtnGhost")}
                 onClick={markAllRead}
-                style={{ padding: "5px 12px", fontSize: 10, letterSpacing: "0.08em", background: "transparent", color: "var(--muted2)" }}
               >
                 Mark all read
               </button>
@@ -247,46 +235,43 @@ export function PortalActivityPage({ isActive }: { isActive: boolean }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: selectedClient ? "1fr 300px" : "1fr", minHeight: "calc(100vh - 260px)" }}>
-        <div style={{ padding: "20px 12px 8px 0", borderRight: selectedClient ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-          {filtered.length === 0 ? <div style={{ textAlign: "center", paddingTop: 60, color: "#333344", fontSize: 12 }}>No activity matches your filters.</div> : null}
+      <div className={cx(selectedClient ? "paLayoutWithPanel" : "paLayout")}> 
+        <div className={cx("paFeedPane", selectedClient !== null && "paFeedPaneWithPanel")}>
+          {filtered.length === 0 ? <div className={cx("textCenter", "text12", "paEmptyState")}>No activity matches your filters.</div> : null}
           {(["Today", "Yesterday", "Earlier"] as GroupKey[]).map((group) => {
             const events = groupedByTime[group];
             if (!events?.length) return null;
             return (
-              <div key={group} style={{ marginBottom: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                  <span style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase" }}>{group}</span>
-                  <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.04)" }} />
+              <div key={group} className={cx("mb24")}> 
+                <div className={cx("flexRow", "gap12", "mb12")}> 
+                  <span className={cx("text10", "colorMuted2", "uppercase", "paGroupLabel")}>{group}</span>
+                  <div className={cx("flex1", "paGroupLine")} />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div className={cx("flexCol", "gap6")}> 
                   {events.map((event) => {
                     const tCfg = typeConfig[event.type];
-                    const cColor = clientColors[event.clientId];
                     return (
                       <div
                         key={event.id}
-                        className="pa-event-row"
+                        className={cx("paEventRow", "flexRow", "gap14", event.read ? "paEventRead" : "paEventUnread")}
                         onClick={() => markRead(event.id)}
-                        style={{ display: "flex", alignItems: "center", gap: 14, padding: "11px 14px", border: `1px solid ${!event.read ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)"}`, borderRadius: 3, background: !event.read ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.005)", opacity: event.read ? 0.7 : 1 }}
                       >
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: !event.read ? (event.priority ? "#ff8c00" : "var(--accent)") : "transparent", flexShrink: 0 }} />
-                        <div style={{ width: 28, height: 28, borderRadius: "50%", background: tCfg.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: tCfg.color, flexShrink: 0 }}>
-                          {tCfg.icon}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                            <span style={{ fontSize: 11, color: cColor, fontWeight: 500 }}>{event.client}</span>
-                            <span style={{ fontSize: 11, color: "var(--muted2)" }}>{event.label}</span>
-                            {event.priority && !event.read ? (
-                              <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 2, background: "rgba(255,140,0,0.12)", color: "#ff8c00", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                                Notable
-                              </span>
-                            ) : null}
+                        <div
+                          className={cx(
+                            "paUnreadDot",
+                            event.read ? "paUnreadDotRead" : event.priority ? "paUnreadDotPriority" : "paUnreadDotActive"
+                          )}
+                        />
+                        <div className={cx("paTypeIcon", tCfg.iconClass)}>{tCfg.icon}</div>
+                        <div className={cx("flex1", "minW0")}>
+                          <div className={cx("flexRow", "gap8", "paEventHead")}> 
+                            <span className={cx("text11", "fw600", clientToneClass[event.clientId])}>{event.client}</span>
+                            <span className={cx("text11", "colorMuted2")}>{event.label}</span>
+                            {event.priority && !event.read ? <span className={cx("paNotableBadge")}>Notable</span> : null}
                           </div>
-                          <div style={{ fontSize: 12, color: "#a0a0b0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{event.detail}</div>
+                          <div className={cx("text12", "colorMuted", "truncate")}>{event.detail}</div>
                         </div>
-                        <span style={{ fontSize: 10, color: "#333344", flexShrink: 0 }}>{event.time}</span>
+                        <span className={cx("text10", "noShrink", "colorMuted2")}>{event.time}</span>
                       </div>
                     );
                   })}
@@ -297,49 +282,47 @@ export function PortalActivityPage({ isActive }: { isActive: boolean }) {
         </div>
 
         {selectedClient && stats ? (
-          <div style={{ padding: "20px 20px" }}>
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 3, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#a0a0b0" }}>
-                  {selClient?.avatar}
-                </div>
+          <div className={cx("p20", "paPanel", clientToneClass[selectedClient])}>
+            <div className={cx("mb20")}> 
+              <div className={cx("flexRow", "gap10", "mb6")}>
+                <div className={cx("paClientAvatar")}>{selClient?.avatar}</div>
                 <div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: "#fff" }}>{selClient?.name}</div>
-                  <div style={{ fontSize: 10, color: "var(--muted2)" }}>Portal stats · last 30 days</div>
+                  <div className={cx("fontDisplay", "fw800", "paPanelTitle")}>{selClient?.name}</div>
+                  <div className={cx("text10", "colorMuted2")}>Portal stats · last 30 days</div>
                 </div>
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+            <div className={cx("formGrid2", "mb20", "paStatsGrid")}>
               {[
-                { label: "Sessions", value: stats.sessions, color: clientColors[selectedClient] },
-                { label: "Active days", value: stats.activeDays, color: clientColors[selectedClient] },
-                { label: "Avg session", value: `${stats.avgSessionMin}m`, color: "#a0a0b0" },
-                { label: "Last login", value: stats.lastLogin, color: "#a0a0b0" }
+                { label: "Sessions", value: stats.sessions, toneClass: "paCurrentTone" },
+                { label: "Active days", value: stats.activeDays, toneClass: "paCurrentTone" },
+                { label: "Avg session", value: `${stats.avgSessionMin}m`, toneClass: "paToneSoft" },
+                { label: "Last login", value: stats.lastLogin, toneClass: "paToneSoft" }
               ].map((stat) => (
-                <div key={stat.label} style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                  <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                  <div style={{ fontSize: 14, color: stat.color, fontWeight: 500 }}>{stat.value}</div>
+                <div key={stat.label} className={cx("paStatCard")}>
+                  <div className={cx("text10", "colorMuted2", "uppercase", "mb4", "paMiniLabel")}>{stat.label}</div>
+                  <div className={cx("text14", "fw600", stat.toneClass)}>{stat.value}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)", marginBottom: 20 }}>
-              <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Most common action</div>
-              <div style={{ fontSize: 13, color: clientColors[selectedClient] }}>{stats.topAction}</div>
+            <div className={cx("paStatCard", "mb20")}>
+              <div className={cx("uppercase", "mb4", "paMiniLabel")}>Most common action</div>
+              <div className={cx("text13", "paCurrentTone")}>{stats.topAction}</div>
             </div>
 
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Activity · last 7 days</div>
-              <div style={{ display: "flex", gap: 4 }}>
+            <div className={cx("mb20")}>
+              <div className={cx("text10", "colorMuted2", "uppercase", "mb10", "paSectionLabel")}>Activity · last 7 days</div>
+              <div className={cx("flexRow", "gap4")}>
                 {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, index) => {
                   const activity = [3, 0, 5, 2, 4, 0, 1][index];
                   return (
-                    <div key={day} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                      <div style={{ width: "100%", height: 32, borderRadius: 2, background: activity > 0 ? `${clientColors[selectedClient]}` : "rgba(255,255,255,0.04)", opacity: activity > 0 ? 0.15 + (activity / 5) * 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {activity > 0 ? <span style={{ fontSize: 10, color: clientColors[selectedClient] }}>{activity}</span> : null}
+                    <div key={day} className={cx("flex1", "flexCol", "flexCenter", "gap4")}>
+                      <div className={cx("wFull", "flexCenter", "paHeatCell", heatLevelClass(activity))}>
+                        {activity > 0 ? <span className={cx("text10", "paCurrentTone")}>{activity}</span> : null}
                       </div>
-                      <span style={{ fontSize: 8, color: "#333344" }}>{day}</span>
+                      <span className={cx("paDayLabel")}>{day}</span>
                     </div>
                   );
                 })}
@@ -347,18 +330,19 @@ export function PortalActivityPage({ isActive }: { isActive: boolean }) {
             </div>
 
             <div>
-              <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Recent events</div>
+              <div className={cx("text10", "colorMuted2", "uppercase", "mb10", "paSectionLabel")}>Recent events</div>
               {feed
                 .filter((event) => event.clientId === selectedClient)
                 .slice(0, 4)
-                .map((event) => {
+                .map((event, index, rows) => {
                   const tCfg = typeConfig[event.type];
+                  const isLast = index === rows.length - 1;
                   return (
-                    <div key={event.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                      <span style={{ fontSize: 12, color: tCfg.color, flexShrink: 0 }}>{tCfg.icon}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, color: "#a0a0b0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{event.detail}</div>
-                        <div style={{ fontSize: 9, color: "var(--muted2)", marginTop: 1 }}>{event.time}</div>
+                    <div key={event.id} className={cx("flexRow", "gap10", "paRecentRow", isLast && "paRecentRowLast")}>
+                      <span className={cx("text12", "noShrink", tCfg.toneClass)}>{tCfg.icon}</span>
+                      <div className={cx("flex1", "minW0")}>
+                        <div className={cx("text11", "colorMuted", "truncate")}>{event.detail}</div>
+                        <div className={cx("mt4", "paRecentTime")}>{event.time}</div>
                       </div>
                     </div>
                   );

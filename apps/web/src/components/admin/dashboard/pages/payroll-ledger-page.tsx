@@ -1,20 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { cx, styles } from "../style";
 import { AdminTabs } from "./shared";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { toneClass } from "./admin-page-utils";
 
 type StaffMember = {
   id: string;
@@ -31,12 +20,12 @@ type StaffMember = {
 };
 
 const staff: StaffMember[] = [
-  { id: "EMP-001", name: "Sipho Nkosi", role: "Founder & CEO", avatar: "SN", color: C.primary, grossSalary: 60000, taxRate: 0.36, uifRate: 0.01, startDate: "Jan 2020", contractType: "Permanent", bankLast4: "7823" },
-  { id: "EMP-002", name: "Leilani Fotu", role: "Head of Operations", avatar: "LF", color: C.blue, grossSalary: 44000, taxRate: 0.3, uifRate: 0.01, startDate: "Mar 2022", contractType: "Permanent", bankLast4: "4412" },
-  { id: "EMP-003", name: "Renzo Fabbri", role: "Creative Director", avatar: "RF", color: C.orange, grossSalary: 52000, taxRate: 0.33, uifRate: 0.01, startDate: "Jun 2021", contractType: "Permanent", bankLast4: "9934" },
-  { id: "EMP-004", name: "Nomsa Dlamini", role: "Account Manager", avatar: "ND", color: C.primary, grossSalary: 38000, taxRate: 0.27, uifRate: 0.01, startDate: "Feb 2023", contractType: "Permanent", bankLast4: "2281" },
-  { id: "EMP-005", name: "Kira Bosman", role: "UX Designer", avatar: "KB", color: C.amber, grossSalary: 33500, taxRate: 0.25, uifRate: 0.01, startDate: "Aug 2023", contractType: "Permanent", bankLast4: "6670" },
-  { id: "EMP-006", name: "Tapiwa Moyo", role: "Copywriter", avatar: "TM", color: C.blue, grossSalary: 28000, taxRate: 0.22, uifRate: 0.01, startDate: "Jan 2024", contractType: "Permanent", bankLast4: "3345" }
+  { id: "EMP-001", name: "Sipho Nkosi", role: "Founder & CEO", avatar: "SN", color: "var(--accent)", grossSalary: 60000, taxRate: 0.36, uifRate: 0.01, startDate: "Jan 2020", contractType: "Permanent", bankLast4: "7823" },
+  { id: "EMP-002", name: "Leilani Fotu", role: "Head of Operations", avatar: "LF", color: "var(--blue)", grossSalary: 44000, taxRate: 0.3, uifRate: 0.01, startDate: "Mar 2022", contractType: "Permanent", bankLast4: "4412" },
+  { id: "EMP-003", name: "Renzo Fabbri", role: "Creative Director", avatar: "RF", color: "var(--amber)", grossSalary: 52000, taxRate: 0.33, uifRate: 0.01, startDate: "Jun 2021", contractType: "Permanent", bankLast4: "9934" },
+  { id: "EMP-004", name: "Nomsa Dlamini", role: "Account Manager", avatar: "ND", color: "var(--accent)", grossSalary: 38000, taxRate: 0.27, uifRate: 0.01, startDate: "Feb 2023", contractType: "Permanent", bankLast4: "2281" },
+  { id: "EMP-005", name: "Kira Bosman", role: "UX Designer", avatar: "KB", color: "var(--amber)", grossSalary: 33500, taxRate: 0.25, uifRate: 0.01, startDate: "Aug 2023", contractType: "Permanent", bankLast4: "6670" },
+  { id: "EMP-006", name: "Tapiwa Moyo", role: "Copywriter", avatar: "TM", color: "var(--blue)", grossSalary: 28000, taxRate: 0.22, uifRate: 0.01, startDate: "Jan 2024", contractType: "Permanent", bankLast4: "3345" }
 ];
 
 const tabs = ["feb payroll", "payroll history", "payslips", "compliance"] as const;
@@ -51,23 +40,10 @@ function calcPayslip(member: StaffMember) {
 }
 
 function Avatar({ initials, color, size = 36 }: { initials: string; color: string; size?: number }) {
+  const sizeClass = size <= 28 ? styles.payAvatar28 : styles.payAvatar36;
   return (
     <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: `${color}22`,
-        border: `2px solid ${color}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: size * 0.32,
-        fontWeight: 700,
-        color,
-        fontFamily: "DM Mono, monospace",
-        flexShrink: 0
-      }}
+      className={cx("flexCenter", "fontMono", "fw700", "noShrink", styles.payAvatar, sizeClass, toneClass(color))}
     >
       {initials}
     </div>
@@ -87,42 +63,30 @@ export function PayrollLedgerPage() {
   }, []);
 
   return (
-    <div
-      style={{
-        background: C.bg,
-        height: "100%",
-        fontFamily: "Syne, sans-serif",
-        color: C.text,
-        padding: 0,
-        overflow: "hidden",
-        display: "grid",
-        gridTemplateRows: "auto auto auto 1fr",
-        minHeight: 0
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={cx(styles.pageBody, styles.payRoot)}>
+      <div className={cx("flexBetween", "mb28")}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / FINANCIAL</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Payroll Ledger</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Monthly payroll, payslips, PAYE, UIF, and SARS compliance</div>
+          <div className={cx("pageEyebrow")}>ADMIN / FINANCIAL</div>
+          <h1 className={cx("pageTitle")}>Payroll Ledger</h1>
+          <div className={cx("pageSub")}>Monthly payroll, payslips, PAYE, UIF, and SARS compliance</div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "8px 16px", fontSize: 12, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>Export EMP201</button>
-          <button style={{ background: C.primary, color: C.bg, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>Run Payroll</button>
+        <div className={cx("flexRow", "gap8")}>
+          <button type="button" className={cx("btnSm", "btnGhost", "fontMono")}>Export EMP201</button>
+          <button type="button" className={cx("btnSm", "btnAccent", "fontMono")}>Run Payroll</button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack", "gap16", "mb16")}>
         {[
-          { label: "Total Gross Payroll", value: `R${(totals.totalGross / 1000).toFixed(0)}k`, color: C.amber, sub: "Feb 2026" },
-          { label: "Total Net Pay", value: `R${(totals.totalNet / 1000).toFixed(0)}k`, color: C.primary, sub: "After deductions" },
-          { label: "PAYE to SARS", value: `R${(totals.totalPAYE / 1000).toFixed(1)}k`, color: C.red, sub: "Due 7 Mar" },
-          { label: "UIF Contributions", value: `R${(totals.totalUIF / 1000).toFixed(1)}k`, color: C.blue, sub: "Employee + employer" }
+          { label: "Total Gross Payroll", value: `R${(totals.totalGross / 1000).toFixed(0)}k`, color: "var(--amber)", sub: "Feb 2026" },
+          { label: "Total Net Pay", value: `R${(totals.totalNet / 1000).toFixed(0)}k`, color: "var(--accent)", sub: "After deductions" },
+          { label: "PAYE to SARS", value: `R${(totals.totalPAYE / 1000).toFixed(1)}k`, color: "var(--red)", sub: "Due 7 Mar" },
+          { label: "UIF Contributions", value: `R${(totals.totalUIF / 1000).toFixed(1)}k`, color: "var(--blue)", sub: "Employee + employer" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={cx("statCard")}>
+            <div className={cx("statLabel")}>{s.label}</div>
+            <div className={cx("statValue", styles.payToneText, toneClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
@@ -131,44 +95,56 @@ export function PayrollLedgerPage() {
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        primaryColor={C.primary}
-        mutedColor={C.muted}
-        panelColor={C.surface}
-        borderColor={C.border}
+        primaryColor="var(--accent)"
+        mutedColor="var(--muted)"
+        panelColor="var(--surface)"
+        borderColor="var(--border)"
       />
 
-      <div style={{ overflow: "auto", minHeight: 0 }}>
+      <div className={cx("overflowAuto", "minH0")}>
         {activeTab === "feb payroll" ? (
-          <div style={{ display: "grid", gridTemplateColumns: selectedStaff ? "1fr 320px" : "1fr", gap: 20 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 100px 80px 80px 100px 80px", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", gap: 16 }}>
+          <div className={cx(styles.payMainSplit, selectedStaff ? styles.payMainSplitTwo : styles.payMainSplitOne)}>
+            <div className={cx("card", "overflowHidden")}>
+              <div className={cx("payTableHead", "text10", "colorMuted", "uppercase")}>
                 {["Employee", "Role", "Gross", "PAYE", "UIF", "Net Pay", ""].map((h) => <span key={h}>{h}</span>)}
               </div>
-              {staff.map((member, i) => {
+              {staff.map((member) => {
                 const { paye, uif, netPay } = calcPayslip(member);
                 const isSel = selectedStaff?.id === member.id;
                 return (
-                  <div key={member.id} onClick={() => setSelectedStaff(isSel ? null : member)} style={{ display: "grid", gridTemplateColumns: "200px 1fr 100px 80px 80px 100px 80px", padding: "16px 24px", borderBottom: i < staff.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", gap: 16, cursor: "pointer", background: isSel ? `${C.primary}08` : "transparent" }}>
-                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <div
+                    key={member.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedStaff(isSel ? null : member)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedStaff(isSel ? null : member);
+                      }
+                    }}
+                    className={cx("payTableRow", "pointerCursor", isSel && styles.payRowSelected)}
+                  >
+                    <div className={cx("flexRow", "gap10", styles.payAlignCenter)}>
                       <Avatar initials={member.avatar} color={member.color} size={28} />
-                      <span style={{ fontWeight: 600, fontSize: 13 }}>{member.name}</span>
+                      <span className={cx("fw600", "text13")}>{member.name}</span>
                     </div>
-                    <span style={{ fontSize: 12, color: C.muted }}>{member.role}</span>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: C.amber }}>R{member.grossSalary.toLocaleString()}</span>
-                    <span style={{ fontFamily: "DM Mono, monospace", color: C.red }}>R{paye.toLocaleString()}</span>
-                    <span style={{ fontFamily: "DM Mono, monospace", color: C.blue }}>R{uif.toLocaleString()}</span>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: C.primary }}>R{netPay.toLocaleString()}</span>
-                    <button style={{ background: C.border, border: "none", color: C.text, padding: "4px 10px", fontSize: 10, cursor: "pointer" }}>Payslip</button>
+                    <span className={cx("text12", "colorMuted")}>{member.role}</span>
+                    <span className={cx("fontMono", "fw700", "colorAmber")}>R{member.grossSalary.toLocaleString()}</span>
+                    <span className={cx("fontMono", "colorRed")}>R{paye.toLocaleString()}</span>
+                    <span className={cx("fontMono", "colorBlue")}>R{uif.toLocaleString()}</span>
+                    <span className={cx("fontMono", "fw700", "colorAccent")}>R{netPay.toLocaleString()}</span>
+                    <button type="button" className={cx("btnSm", "btnGhost", "text10")}>Payslip</button>
                   </div>
                 );
               })}
-              <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 100px 80px 80px 100px 80px", padding: "14px 24px", borderTop: `2px solid ${C.border}`, alignItems: "center", gap: 16, background: C.surface }}>
-                <span style={{ fontWeight: 700, color: C.primary }}>TOTAL</span>
+              <div className={styles.payTableFoot}>
+                <span className={cx("fw700", "colorAccent")}>TOTAL</span>
                 <span />
-                <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, color: C.amber }}>R{totals.totalGross.toLocaleString()}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: C.red }}>R{totals.totalPAYE.toLocaleString()}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: C.blue }}>R{totals.totalUIF.toLocaleString()}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, color: C.primary }}>R{totals.totalNet.toLocaleString()}</span>
+                <span className={cx("fontMono", "fw800", "colorAmber")}>R{totals.totalGross.toLocaleString()}</span>
+                <span className={cx("fontMono", "fw700", "colorRed")}>R{totals.totalPAYE.toLocaleString()}</span>
+                <span className={cx("fontMono", "fw700", "colorBlue")}>R{totals.totalUIF.toLocaleString()}</span>
+                <span className={cx("fontMono", "fw800", "colorAccent")}>R{totals.totalNet.toLocaleString()}</span>
                 <span />
               </div>
             </div>
@@ -176,42 +152,42 @@ export function PayrollLedgerPage() {
             {selectedStaff ? (() => {
               const { paye, uif, totalDeductions, netPay } = calcPayslip(selectedStaff);
               return (
-                <div style={{ background: C.surface, border: `1px solid ${selectedStaff.color}44`, padding: 24 }}>
-                  <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 24 }}>
+                <div className={cx("card", "p24", styles.payToneBorder, toneClass(selectedStaff.color))}>
+                  <div className={cx("flexRow", "gap12", "mb24", styles.payAlignCenter)}>
                     <Avatar initials={selectedStaff.avatar} color={selectedStaff.color} />
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 16 }}>{selectedStaff.name}</div>
-                      <div style={{ fontSize: 12, color: C.muted }}>{selectedStaff.role}</div>
+                      <div className={cx("fw700", styles.payTitle16)}>{selectedStaff.name}</div>
+                      <div className={cx("text12", "colorMuted")}>{selectedStaff.role}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>February 2026 Payslip</div>
+                  <div className={cx("text11", "fw700", "colorMuted", "uppercase", "mb12")}>February 2026 Payslip</div>
                   {[
-                    { label: "Gross Salary", value: `R${selectedStaff.grossSalary.toLocaleString()}`, color: C.text, bold: false, large: false },
-                    { label: `PAYE (${Math.round(selectedStaff.taxRate * 100)}%)`, value: `-R${paye.toLocaleString()}`, color: C.red, bold: false, large: false },
-                    { label: "UIF (1%)", value: `-R${uif.toLocaleString()}`, color: C.red, bold: false, large: false },
-                    { label: "Total Deductions", value: `-R${totalDeductions.toLocaleString()}`, color: C.red, bold: true, large: false },
-                    { label: "NET PAY", value: `R${netPay.toLocaleString()}`, color: C.primary, bold: true, large: true }
+                    { label: "Gross Salary", value: `R${selectedStaff.grossSalary.toLocaleString()}`, color: "var(--text)", bold: false, large: false },
+                    { label: `PAYE (${Math.round(selectedStaff.taxRate * 100)}%)`, value: `-R${paye.toLocaleString()}`, color: "var(--red)", bold: false, large: false },
+                    { label: "UIF (1%)", value: `-R${uif.toLocaleString()}`, color: "var(--red)", bold: false, large: false },
+                    { label: "Total Deductions", value: `-R${totalDeductions.toLocaleString()}`, color: "var(--red)", bold: true, large: false },
+                    { label: "NET PAY", value: `R${netPay.toLocaleString()}`, color: "var(--accent)", bold: true, large: true }
                   ].map((r) => (
-                    <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
-                      <span style={{ fontSize: r.bold ? 13 : 12, color: C.muted, fontWeight: r.bold ? 700 : 400 }}>{r.label}</span>
-                      <span style={{ fontFamily: "DM Mono, monospace", fontWeight: r.bold ? 800 : 600, color: r.color, fontSize: r.large ? 18 : 13 }}>{r.value}</span>
+                    <div key={r.label} className={cx("flexBetween", "borderB", "py10")}>
+                      <span className={cx("colorMuted", r.bold ? styles.payLabelBold : styles.payLabelNorm)}>{r.label}</span>
+                      <span className={cx("fontMono", r.bold ? styles.payValueBold : styles.payValueNorm, r.large && styles.payValueLg, styles.payToneText, toneClass(r.color))}>{r.value}</span>
                     </div>
                   ))}
-                  <div style={{ marginTop: 16, padding: 12, background: C.bg }}>
+                  <div className={cx("bgBg", "mt16", styles.payPad12)}>
                     {[
                       { label: "Bank Account", value: `****${selectedStaff.bankLast4}` },
                       { label: "Contract", value: selectedStaff.contractType },
                       { label: "Start Date", value: selectedStaff.startDate }
                     ].map((r) => (
-                      <div key={r.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "4px 0" }}>
-                        <span style={{ color: C.muted }}>{r.label}</span>
-                        <span style={{ fontFamily: "DM Mono, monospace" }}>{r.value}</span>
+                      <div key={r.label} className={cx("flexBetween", "text11", styles.payPy4)}>
+                        <span className={cx("colorMuted")}>{r.label}</span>
+                        <span className={cx("fontMono")}>{r.value}</span>
                       </div>
                     ))}
                   </div>
-                  <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                    <button style={{ flex: 1, background: C.primary, color: C.bg, border: "none", padding: "10px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Download PDF</button>
-                    <button style={{ flex: 1, background: C.border, border: "none", color: C.text, padding: "10px", fontSize: 12, cursor: "pointer" }}>Email to Staff</button>
+                  <div className={cx("flexRow", "gap8", "mt16")}>
+                    <button type="button" className={cx("btnSm", "btnAccent", "text12", "fw700", styles.payFlex1)}>Download PDF</button>
+                    <button type="button" className={cx("btnSm", "btnGhost", "text12", styles.payFlex1)}>Email to Staff</button>
                   </div>
                 </div>
               );
@@ -220,8 +196,8 @@ export function PayrollLedgerPage() {
         ) : null}
 
         {activeTab === "payroll history" ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "120px 120px 120px 120px 120px 100px 80px", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", gap: 16 }}>
+          <div className={cx("card", "overflowHidden")}>
+            <div className={cx("payHistHead", "text10", "colorMuted", "uppercase")}>
               {["Month", "Gross", "PAYE", "UIF", "Net", "Status", ""].map((h) => <span key={h}>{h}</span>)}
             </div>
             {["Feb 2026", "Jan 2026", "Dec 2025", "Nov 2025"].map((month, i) => {
@@ -231,14 +207,14 @@ export function PayrollLedgerPage() {
               const uif = Math.round(totals.totalUIF * (1 + variation));
               const net = gross - paye - uif;
               return (
-                <div key={month} style={{ display: "grid", gridTemplateColumns: "120px 120px 120px 120px 120px 100px 80px", padding: "14px 24px", borderBottom: i < 3 ? `1px solid ${C.border}` : "none", alignItems: "center", gap: 16 }}>
-                  <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 600 }}>{month}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.amber }}>R{gross.toLocaleString()}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.red }}>R{paye.toLocaleString()}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.blue }}>R{uif.toLocaleString()}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: C.primary }}>R{net.toLocaleString()}</span>
-                  <span style={{ fontSize: 10, color: i === 0 ? C.amber : C.primary, background: `${i === 0 ? C.amber : C.primary}15`, padding: "3px 8px" }}>{i === 0 ? "Pending" : "Processed"}</span>
-                  <button style={{ background: C.border, border: "none", color: C.text, padding: "4px 10px", fontSize: 10, cursor: "pointer" }}>View</button>
+                <div key={month} className={styles.payHistRow}>
+                  <span className={cx("fontMono", "fw600")}>{month}</span>
+                  <span className={cx("fontMono", "colorAmber")}>R{gross.toLocaleString()}</span>
+                  <span className={cx("fontMono", "colorRed")}>R{paye.toLocaleString()}</span>
+                  <span className={cx("fontMono", "colorBlue")}>R{uif.toLocaleString()}</span>
+                  <span className={cx("fontMono", "colorAccent")}>R{net.toLocaleString()}</span>
+                  <span className={cx("text10", "fontMono", styles.payToneTag, i === 0 ? "toneAmber" : "toneAccent")}>{i === 0 ? "Pending" : "Processed"}</span>
+                  <button type="button" className={cx("btnSm", "btnGhost", "text10")}>View</button>
                 </div>
               );
             })}
@@ -246,22 +222,22 @@ export function PayrollLedgerPage() {
         ) : null}
 
         {activeTab === "payslips" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className={cx("grid2", "gap12")}>
             {staff.map((member) => {
               const { netPay } = calcPayslip(member);
               return (
-                <div key={member.id} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <div key={member.id} className={cx("card", "p20", "flexBetween", styles.payAlignCenter)}>
+                  <div className={cx("flexRow", "gap12", styles.payAlignCenter)}>
                     <Avatar initials={member.avatar} color={member.color} size={36} />
                     <div>
-                      <div style={{ fontWeight: 600 }}>{member.name}</div>
-                      <div style={{ fontSize: 12, color: C.muted }}>{member.role}</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", color: C.primary, fontWeight: 700, marginTop: 4 }}>R{netPay.toLocaleString()} net</div>
+                      <div className={cx("fw600")}>{member.name}</div>
+                      <div className={cx("text12", "colorMuted")}>{member.role}</div>
+                      <div className={cx("fontMono", "colorAccent", "fw700", "mt4")}>R{netPay.toLocaleString()} net</div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button style={{ background: C.primary, color: C.bg, border: "none", padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>PDF</button>
-                    <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 10px", fontSize: 11, cursor: "pointer" }}>Email</button>
+                  <div className={cx("flexRow", "gap8")}>
+                    <button type="button" className={cx("btnSm", "btnAccent", "text11", "fw700")}>PDF</button>
+                    <button type="button" className={cx("btnSm", "btnGhost", "text11")}>Email</button>
                   </div>
                 </div>
               );
@@ -270,44 +246,44 @@ export function PayrollLedgerPage() {
         ) : null}
 
         {activeTab === "compliance" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>SARS Submission Deadlines</div>
+          <div className={cx("grid2", "gap20")}>
+            <div className={cx("card", "p24")}>
+              <div className={cx("text13", "fw700", "mb20", "uppercase")}>SARS Submission Deadlines</div>
               {[
                 { task: "EMP201 - PAYE monthly return", due: "7 Mar 2026", status: "upcoming", amount: `R${totals.totalPAYE.toLocaleString()}` },
                 { task: "UIF monthly contribution", due: "7 Mar 2026", status: "upcoming", amount: `R${(totals.totalUIF * 2).toLocaleString()}` },
                 { task: "IRP5 certificates (EMP501)", due: "31 May 2026", status: "future", amount: "Annual" },
                 { task: "EMP501 half-year reconciliation", due: "31 Oct 2026", status: "future", amount: "Annual" }
               ].map((d) => (
-                <div key={d.task} style={{ padding: "12px 0", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div key={d.task} className={cx("flexBetween", "borderB", styles.payRuleRow)}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{d.task}</div>
-                    <div style={{ fontSize: 11, color: d.status === "upcoming" ? C.amber : C.muted }}>{d.due}</div>
+                    <div className={cx("text13", "fw600")}>{d.task}</div>
+                    <div className={cx("text11", styles.payToneText, d.status === "upcoming" ? "toneAmber" : "toneMuted")}>{d.due}</div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontFamily: "DM Mono, monospace", color: C.red, fontWeight: 700 }}>{d.amount}</div>
-                    <span style={{ fontSize: 10, color: d.status === "upcoming" ? C.amber : C.muted }}>{d.status}</span>
+                  <div className={cx("textRight")}>
+                    <div className={cx("fontMono", "colorRed", "fw700")}>{d.amount}</div>
+                    <span className={cx("text10", styles.payToneText, d.status === "upcoming" ? "toneAmber" : "toneMuted")}>{d.status}</span>
                   </div>
                 </div>
               ))}
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Payroll Cost Summary</div>
+            <div className={cx("card", "p24")}>
+              <div className={cx("text13", "fw700", "mb20", "uppercase")}>Payroll Cost Summary</div>
               {[
-                { label: "Gross payroll", value: totals.totalGross, color: C.amber },
-                { label: "PAYE (employee)", value: totals.totalPAYE, color: C.red },
-                { label: "UIF (employee 1%)", value: totals.totalUIF, color: C.blue },
-                { label: "UIF (employer 1%)", value: totals.totalUIF, color: C.blue },
-                { label: "SDL (1% of payroll)", value: Math.round(totals.totalGross * 0.01), color: C.primary }
+                { label: "Gross payroll", value: totals.totalGross, color: "var(--amber)" },
+                { label: "PAYE (employee)", value: totals.totalPAYE, color: "var(--red)" },
+                { label: "UIF (employee 1%)", value: totals.totalUIF, color: "var(--blue)" },
+                { label: "UIF (employer 1%)", value: totals.totalUIF, color: "var(--blue)" },
+                { label: "SDL (1% of payroll)", value: Math.round(totals.totalGross * 0.01), color: "var(--accent)" }
               ].map((r) => (
-                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}`, fontSize: 13 }}>
-                  <span style={{ color: C.muted }}>{r.label}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: r.color, fontWeight: 700 }}>R{r.value.toLocaleString()}</span>
+                <div key={r.label} className={cx("flexBetween", "borderB", "text13", styles.payPy10)}>
+                  <span className={cx("colorMuted")}>{r.label}</span>
+                  <span className={cx("fontMono", "fw700", styles.payToneText, toneClass(r.color))}>R{r.value.toLocaleString()}</span>
                 </div>
               ))}
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", fontSize: 14 }}>
-                <span style={{ fontWeight: 700 }}>Total Employment Cost</span>
-                <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, color: C.primary }}>
+              <div className={cx("flexBetween", "text14", styles.payPy12)}>
+                <span className={cx("fw700")}>Total Employment Cost</span>
+                <span className={cx("fontMono", "fw800", "colorAccent")}>
                   R{(totals.totalGross + totals.totalUIF + Math.round(totals.totalGross * 0.01)).toLocaleString()}
                 </span>
               </div>

@@ -90,7 +90,7 @@ export function TimeLogPage({
   }, [entryFilter, entrySearch, recentTimeEntries]);
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-timelog">
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-timelog">
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>Time Tracking</div>
@@ -117,10 +117,9 @@ export function TimeLogPage({
           <div className={styles.timerTask}>{timerTaskName}</div>
           <div className={styles.timerActions}>
             <button
-              className={cx("timerButton", "timerPlay")}
+              className={cx("timerButton", "timerPlay", timerRunning && "timerPlayActive")}
               type="button"
               onClick={onTimerToggle}
-              style={timerRunning ? { background: "var(--amber)", color: "#07090f" } : undefined}
             >
               {timerRunning ? "⏸" : "▶"}
             </button>
@@ -128,12 +127,11 @@ export function TimeLogPage({
           </div>
         </div>
         <div className={styles.timerInputsGrid}>
-          <div className={styles.field} style={{ marginBottom: 0 }}>
+          <div className={cx("field", "mb0")}>
             <label className={styles.fieldLabel} htmlFor="timelog-project">Project</label>
             <select
               id="timelog-project"
-              className={cx("fieldInput", "fieldSelect")}
-              style={{ paddingTop: 7, paddingBottom: 7 }}
+              className={cx("fieldInput", "fieldSelect", "timerInputCompact")}
               value={selectedTimerProjectId}
               onChange={(event) => onTimerProjectChange(event.target.value)}
             >
@@ -143,13 +141,12 @@ export function TimeLogPage({
               ))}
             </select>
           </div>
-          <div className={styles.field} style={{ marginBottom: 0 }}>
+          <div className={cx("field", "mb0")}>
             <label className={styles.fieldLabel} htmlFor="timelog-workstream">Workstream</label>
             <input
               id="timelog-workstream"
-              className={styles.fieldInput}
+              className={cx("fieldInput", "timerInputCompact")}
               placeholder="What are you working on?"
-              style={{ paddingTop: 7, paddingBottom: 7 }}
               value={timerTaskLabel}
               onChange={(event) => onTimerTaskLabelChange(event.target.value)}
             />
@@ -157,7 +154,7 @@ export function TimeLogPage({
         </div>
       </div>
 
-      <div className={styles.grid2} style={{ marginBottom: 14 }}>
+      <div className={cx("grid2", "mb14")}>
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <span className={styles.cardHeaderTitle}>Goal Progress</span>
@@ -173,14 +170,14 @@ export function TimeLogPage({
                   <span className={styles.timeRowValue}>{formatDuration(todayMinutes)} / {formatDuration(dailyTargetMinutes)}</span>
                 </div>
                 <div className={styles.timeBar}>
-                  <div style={{ width: `${todayProgressPercent}%`, height: "100%", background: "var(--accent)", borderRadius: 2 }} />
+                  <progress className={cx("progressMeter", "progressMeterAccent")} max={100} value={todayProgressPercent} />
                 </div>
-                <div className={styles.timeRow} style={{ marginTop: 8 }}>
+                <div className={cx("timeRow", "mt8")}>
                   <span>This week</span>
                   <span className={styles.timeRowValue}>{formatDuration(weekMinutes)} / {formatDuration(weeklyTargetMinutes)}</span>
                 </div>
                 <div className={styles.timeBar}>
-                  <div style={{ width: `${weekProgressPercent}%`, height: "100%", background: "var(--green)", borderRadius: 2 }} />
+                  <progress className={cx("progressMeter", "progressMeterAccent")} max={100} value={weekProgressPercent} />
                 </div>
               </>
             )}
@@ -195,21 +192,17 @@ export function TimeLogPage({
               <div className={styles.emptyState}>No entries available to filter yet.</div>
             ) : (
               <>
-                <div className={styles.filterTabs} style={{ marginBottom: 8 }}>
-                  {[
-                    { id: "all", label: "All" },
-                    { id: "today", label: "Today" },
-                    { id: "week", label: "Last 7 Days" }
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      className={cx("filterTab", tab.id === entryFilter && "filterTabActive")}
-                      type="button"
-                      onClick={() => setEntryFilter(tab.id as "all" | "today" | "week")}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
+                <div className={cx("filterRow", "mb8")}>
+                  <select
+                    className={cx("filterSelect")}
+                    aria-label="Filter time entries"
+                    value={entryFilter}
+                    onChange={(event) => setEntryFilter(event.target.value as "all" | "today" | "week")}
+                  >
+                    <option value="all">All</option>
+                    <option value="today">Today</option>
+                    <option value="week">Last 7 days</option>
+                  </select>
                 </div>
                 <input
                   className={styles.fieldInput}
@@ -232,15 +225,15 @@ export function TimeLogPage({
           <div className={styles.cardBody}>
             <div className={styles.weekChart}>
               {weekData.days.map((day, index) => {
-                const pct = weekMax > 0 ? (weekData.dailyMinutes[index] / weekMax) * 100 : 0;
                 const isToday = day.date.toDateString() === new Date().toDateString();
                 return (
                   <div key={day.label} className={styles.weekColumn}>
-                    <div
-                      className={styles.weekBar}
-                      style={{ height: `${pct}%`, background: isToday ? "var(--accent)" : "color-mix(in srgb, var(--accent) 22%, transparent)" }}
+                    <progress
+                      className={cx("tlWeekProgress", isToday ? "tlWeekProgressToday" : "tlWeekProgressBase")}
+                      max={Math.max(1, weekMax)}
+                      value={weekData.dailyMinutes[index]}
                     />
-                    <div className={styles.weekLabel} style={{ color: isToday ? "var(--accent)" : "var(--muted2)" }}>{day.label}</div>
+                    <div className={cx("weekLabel", isToday ? "colorAccent" : "colorMuted2")}>{day.label}</div>
                   </div>
                 );
               })}
@@ -253,7 +246,7 @@ export function TimeLogPage({
                 projectTimeBreakdown.map(([project, minutes]) => (
                   <div key={project} className={styles.weekRow}>
                     <span>{project}</span>
-                    <span style={{ color: "var(--accent)" }}>{formatDuration(minutes)}</span>
+                    <span className={styles.colorAccent}>{formatDuration(minutes)}</span>
                   </div>
                 ))
               )}
@@ -263,7 +256,7 @@ export function TimeLogPage({
 
         <div className={styles.card}>
           <div className={styles.cardHeader}><span className={styles.cardHeaderTitle}>Recent Entries</span></div>
-          <div className={styles.cardBody} style={{ paddingTop: 8, paddingBottom: 8 }}>
+          <div className={cx("cardBody", "pt8", "pb8")}>
             <div className={styles.timeEntries}>
               {filteredEntries.length === 0 ? (
                 <div className={styles.emptyState}>No time entries yet.</div>

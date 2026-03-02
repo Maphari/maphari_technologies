@@ -5,19 +5,8 @@ import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { createPublicApiKeyWithRefresh, type PartnerApiKey } from "../../../../lib/api/admin";
 import type { DashboardToast } from "../../../shared/dashboard-core";
 import type { AuthSession } from "../../../../lib/auth/session";
-import { EmptyState, formatDate } from "./admin-page-utils";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { EmptyState, formatDate, toneClass } from "./admin-page-utils";
+import { cx, styles } from "../style";
 
 export function AdminIntegrationsPageClient({
   keys,
@@ -40,7 +29,7 @@ export function AdminIntegrationsPageClient({
   const [createClientId, setCreateClientId] = useState(snapshot.clients[0]?.id ?? "");
   const [createLabel, setCreateLabel] = useState("");
 
-  const nowMs = Date.now();
+  const nowMs = Date.parse("2026-02-28T00:00:00.000Z");
 
   const enrichedKeys = useMemo(() => {
     return keys.map((key) => {
@@ -84,165 +73,172 @@ export function AdminIntegrationsPageClient({
   }
 
   return (
-    <div style={{ background: C.bg, height: "100%", color: C.text, fontFamily: "Syne, sans-serif", padding: 0, overflow: "hidden", display: "grid", gridTemplateRows: "auto auto auto 1fr", minHeight: 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={cx(styles.pageBody, styles.reportsRoot)}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>AUTOMATION / INTEGRATIONS</div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>Integrations</h1>
-          <div style={{ marginTop: 4, fontSize: 13, color: C.muted }}>API key lifecycle, provider posture, and integration readiness boundaries.</div>
+          <div className={styles.pageEyebrow}>AUTOMATION / INTEGRATIONS</div>
+          <h1 className={styles.pageTitle}>Integrations</h1>
+          <div className={styles.pageSub}>API key lifecycle, provider posture, and integration readiness boundaries.</div>
         </div>
-        <button type="button" onClick={() => void onRefreshKeys()} style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "8px 14px", fontSize: 12, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>Refresh Keys</button>
+        <button type="button" onClick={() => void onRefreshKeys()} className={cx("btnSm", "btnGhost")}>Refresh Keys</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack")}>
         {[
-          { label: "Total Keys", value: `${enrichedKeys.length}`, color: C.primary, sub: "Active integration keys" },
-          { label: "High Rotation Risk", value: `${highRiskKeys}`, color: highRiskKeys > 0 ? C.red : C.primary, sub: "Older than 180 days" },
-          { label: "Client-Bound Keys", value: `${clientBoundKeys}`, color: C.blue, sub: `${globalKeys} global keys` },
-          { label: "Last Key Issued", value: newestKeyAt ? formatDate(newestKeyAt) : "N/A", color: C.amber, sub: "Most recent credential event" }
+          { label: "Total Keys", value: `${enrichedKeys.length}`, color: "var(--accent)", sub: "Active integration keys" },
+          { label: "High Rotation Risk", value: `${highRiskKeys}`, color: highRiskKeys > 0 ? "var(--red)" : "var(--accent)", sub: "Older than 180 days" },
+          { label: "Client-Bound Keys", value: `${clientBoundKeys}`, color: "var(--blue)", sub: `${globalKeys} global keys` },
+          { label: "Last Key Issued", value: newestKeyAt ? formatDate(newestKeyAt) : "N/A", color: "var(--amber)", sub: "Most recent credential event" }
         ].map((kpi) => (
-          <div key={kpi.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{kpi.label}</div>
-            <div style={{ fontFamily: "DM Mono, monospace", fontSize: 24, fontWeight: 800, color: kpi.color, marginBottom: 4 }}>{kpi.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{kpi.sub}</div>
+          <div key={kpi.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{kpi.label}</div>
+            <div className={cx(styles.statValue, styles.integrationsToneText, toneClass(kpi.color))}>{kpi.value}</div>
+            <div className={cx("text11", "colorMuted")}>{kpi.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 14, marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-          <div style={{ display: "flex", gap: 4 }}>
-            {tabs.map((tab) => (
-              <button key={tab} onClick={() => setActiveTab(tab)} style={{ background: "none", border: "none", color: activeTab === tab ? C.primary : C.muted, padding: "8px 16px", cursor: "pointer", fontFamily: "Syne, sans-serif", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: activeTab === tab ? `2px solid ${C.primary}` : "none" }}>
-                {tab}
-              </button>
-            ))}
-          </div>
-          <div style={{ fontSize: 11, color: C.muted }}>Access control and permission policy remain in the <span style={{ color: C.primary }}>Access Control</span> page.</div>
-        </div>
+      <div className={styles.filterRow}>
+        <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
-      <div style={{ overflow: "auto", minHeight: 0 }}>
+      <div className={cx("overflowAuto", "minH0")}>
         {(activeTab === "keys inventory" || activeTab === "security posture") ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 12, marginBottom: 16 }}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <select value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+          <div className={cx("card", "p12", "mb12")}>
+            <div className={cx("flexRow", "gap8", "flexWrap")}>
+              <select title="Filter by client" value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} className={styles.formInput}>
                 <option value="ALL">Client: All</option>
                 {snapshot.clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
               </select>
-              <input placeholder="Search label, client, key id" value={query} onChange={(e) => setQuery(e.target.value)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, minWidth: 280 }} />
-              {(clientFilter !== "ALL" || query.trim()) ? (
-                <button onClick={() => { setClientFilter("ALL"); setQuery(""); }} style={{ background: C.border, border: "none", color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 11, cursor: "pointer" }}>Clear</button>
-              ) : null}
+              <input placeholder="Search label, client, key id" value={query} onChange={(e) => setQuery(e.target.value)} className={cx("formInput", styles.integrationsSearchInput)} />
             </div>
           </div>
         ) : null}
 
         {activeTab === "keys inventory" ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr 110px 110px 110px", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "DM Mono, monospace", gap: 12 }}>
+          <div className={cx("card", "overflowHidden")}>
+            <div
+              className={cx("fontMono", "text10", "colorMuted", "uppercase", "gap12", styles.integrationsKeyHead)}
+            >
               {["Label", "Client", "Key ID", "Scope", "Age", "Risk"].map((h) => <span key={h}>{h}</span>)}
             </div>
             {filteredKeys.length > 0 ? filteredKeys.map((key, idx) => (
-              <div key={key.id} style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr 110px 110px 110px", padding: "13px 20px", borderBottom: idx < filteredKeys.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", gap: 12, background: key.risk === "high" ? "#1a0a0a" : "transparent" }}>
+              <div
+                key={key.id}
+                className={cx(styles.integrationsKeyRow, idx < filteredKeys.length - 1 && "borderB", key.risk === "high" && styles.integrationsRiskHighRow)}
+              >
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600 }}>{key.label}</div>
-                  <div style={{ fontSize: 10, color: C.muted }}>Created {formatDate(key.createdAt)}</div>
+                  <div className={cx("text12", "fw600")}>{key.label}</div>
+                  <div className={cx("text10", "colorMuted")}>Created {formatDate(key.createdAt)}</div>
                 </div>
-                <span style={{ fontSize: 11, color: C.text }}>{snapshot.clients.find((c) => c.id === key.clientId)?.name ?? "Global"}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{key.keyId.slice(0, 16)}...</span>
-                <span style={{ fontSize: 10, color: key.scope === "client-bound" ? C.blue : C.amber, background: `${key.scope === "client-bound" ? C.blue : C.amber}15`, padding: "3px 8px", fontFamily: "DM Mono, monospace", textTransform: "uppercase", width: "fit-content" }}>{key.scope === "client-bound" ? "Client" : "Global"}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{key.ageDays}d</span>
-                <span style={{ fontSize: 10, color: key.risk === "high" ? C.red : key.risk === "medium" ? C.amber : C.primary, background: `${key.risk === "high" ? C.red : key.risk === "medium" ? C.amber : C.primary}15`, padding: "3px 8px", fontFamily: "DM Mono, monospace", textTransform: "uppercase", width: "fit-content" }}>{key.risk}</span>
+                <span className={cx("text11")}>{snapshot.clients.find((c) => c.id === key.clientId)?.name ?? "Global"}</span>
+                <span className={cx("fontMono", "text11", "colorMuted")}>{key.keyId.slice(0, 16)}...</span>
+                <span
+                  className={cx("fontMono", "text10", "uppercase", "wFit", styles.integrationsToneTag, toneClass(key.scope === "client-bound" ? "var(--blue)" : "var(--amber)"))}
+                >
+                  {key.scope === "client-bound" ? "Client" : "Global"}
+                </span>
+                <span className={cx("fontMono", "text11", "colorMuted")}>{key.ageDays}d</span>
+                <span
+                  className={cx("fontMono", "text10", "uppercase", "wFit", styles.integrationsToneTag, toneClass(key.risk === "high" ? "var(--red)" : key.risk === "medium" ? "var(--amber)" : "var(--accent)"))}
+                >
+                  {key.risk}
+                </span>
               </div>
             )) : (
-              <div style={{ padding: 20 }}><EmptyState title="No API keys match current filters" subtitle="Broaden filters or issue a new key to populate this inventory." compact variant="security" /></div>
+              <div className={cx("p20")}><EmptyState title="No API keys match current filters" subtitle="Broaden filters or issue a new key to populate this inventory." compact variant="security" /></div>
             )}
           </div>
         ) : null}
 
         {activeTab === "issue key" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Issue API Key</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
-                <select value={createClientId} onChange={(e) => setCreateClientId(e.target.value)} disabled={!canEdit} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+          <div className={cx("grid2", "gap16")}>
+            <div className={cx("card", "p20")}>
+              <div className={cx("text12", "fw700", "mb14", "uppercase", "tracking")}>Issue API Key</div>
+              <div className={cx("flexCol", "gap10")}>
+                <select title="Select client for key" value={createClientId} onChange={(e) => setCreateClientId(e.target.value)} disabled={!canEdit} className={styles.formInput}>
                   <option value="">Select client (optional)</option>
                   {snapshot.clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
                 </select>
-                <input placeholder="Key label (e.g. Zapier Production)" value={createLabel} onChange={(e) => setCreateLabel(e.target.value)} disabled={!canEdit} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }} />
+                <input placeholder="Key label (e.g. Zapier Production)" value={createLabel} onChange={(e) => setCreateLabel(e.target.value)} disabled={!canEdit} className={styles.formInput} />
                 {canEdit ? (
-                  <button type="button" onClick={() => void handleIssueKey()} style={{ background: C.primary, border: "none", color: C.bg, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, fontWeight: 700, cursor: "pointer", width: "fit-content" }}>Issue Key</button>
+                  <button type="button" onClick={() => void handleIssueKey()} className={cx("btnSm", "btnAccent", "wFit")}>Issue Key</button>
                 ) : (
-                  <div style={{ fontSize: 12, color: C.muted }}>Read-only mode for this role.</div>
+                  <div className={cx("text12", "colorMuted")}>Read-only mode for this role.</div>
                 )}
               </div>
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Issuance Guardrails</div>
+            <div className={cx("card", "p20")}>
+              <div className={cx("text12", "fw700", "mb10", "uppercase", "tracking")}>Issuance Guardrails</div>
               {["Scope keys to specific client integrations where possible.", "Rotate keys routinely and remove stale credentials.", "Do not expose secrets in query parameters or client bundles.", "Monitor unusual key usage and isolate by integration."].map((rule) => (
-                <div key={rule} style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.7 }}>• {rule}</div>
+                <div key={rule} className={cx("text12", "colorMuted", "mb10", styles.integrationsLine17)}>{"\u2022"} {rule}</div>
               ))}
-              <div style={{ marginTop: 8, padding: 12, background: C.bg, border: `1px solid ${C.border}`, fontSize: 11, color: C.muted, lineHeight: 1.6 }}>Secrets are only shown at issuance time by providers in most flows. Store them in a secure vault and avoid sharing over chat/email.</div>
+              <div className={cx("mt8", "bgBg", "borderDefault", "p12", "text11", "colorMuted", styles.integrationsLine16)}>Secrets are only shown at issuance time by providers in most flows. Store them in a secure vault and avoid sharing over chat/email.</div>
             </div>
           </div>
         ) : null}
 
         {activeTab === "security posture" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Rotation Watchlist</div>
+          <div className={cx("grid2", "gap16")}>
+            <div className={cx("card", "p20")}>
+              <div className={cx("text12", "fw700", "mb12", "uppercase", "tracking")}>Rotation Watchlist</div>
               {filteredKeys.length > 0 ? filteredKeys.slice().sort((a, b) => b.ageDays - a.ageDays).slice(0, 8).map((key) => (
-                <div key={key.id} style={{ padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                    <span style={{ fontSize: 12 }}>{key.label}</span>
-                    <span style={{ fontSize: 10, color: key.risk === "high" ? C.red : key.risk === "medium" ? C.amber : C.primary, fontFamily: "DM Mono, monospace" }}>{key.ageDays}d</span>
+                <div key={key.id} className={cx("py10", "borderB")}>
+                  <div className={cx("flexBetween", "mb3")}>
+                    <span className={cx("text12")}>{key.label}</span>
+                    <span className={cx("fontMono", "text10", styles.integrationsToneText, toneClass(key.risk === "high" ? "var(--red)" : key.risk === "medium" ? "var(--amber)" : "var(--accent)"))}>{key.ageDays}d</span>
                   </div>
-                  <div style={{ fontSize: 10, color: C.muted }}>{snapshot.clients.find((c) => c.id === key.clientId)?.name ?? "Global"} · {key.risk.toUpperCase()} risk</div>
+                  <div className={cx("text10", "colorMuted")}>{snapshot.clients.find((c) => c.id === key.clientId)?.name ?? "Global"} · {key.risk.toUpperCase()} risk</div>
                 </div>
               )) : <EmptyState title="No keys in scope" subtitle="Issue a key or clear filters to populate rotation watchlist." compact variant="security" />}
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Posture Checks</div>
+            <div className={cx("card", "p20")}>
+              <div className={cx("text12", "fw700", "mb12", "uppercase", "tracking")}>Posture Checks</div>
               {[
-                { label: "Inventory tracked", value: `${enrichedKeys.length} keys`, color: C.primary },
-                { label: "Keys older than 180 days", value: `${highRiskKeys}`, color: highRiskKeys > 0 ? C.red : C.primary },
-                { label: "Client-bound key ratio", value: enrichedKeys.length > 0 ? `${Math.round((clientBoundKeys / enrichedKeys.length) * 100)}%` : "0%", color: C.blue },
-                { label: "Global key ratio", value: enrichedKeys.length > 0 ? `${Math.round((globalKeys / enrichedKeys.length) * 100)}%` : "0%", color: C.amber }
+                { label: "Inventory tracked", value: `${enrichedKeys.length} keys`, color: "var(--accent)" },
+                { label: "Keys older than 180 days", value: `${highRiskKeys}`, color: highRiskKeys > 0 ? "var(--red)" : "var(--accent)" },
+                { label: "Client-bound key ratio", value: enrichedKeys.length > 0 ? `${Math.round((clientBoundKeys / enrichedKeys.length) * 100)}%` : "0%", color: "var(--blue)" },
+                { label: "Global key ratio", value: enrichedKeys.length > 0 ? `${Math.round((globalKeys / enrichedKeys.length) * 100)}%` : "0%", color: "var(--amber)" }
               ].map((row) => (
-                <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
-                  <span style={{ color: C.muted }}>{row.label}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: row.color, fontWeight: 700 }}>{row.value}</span>
+                <div key={row.label} className={cx("flexBetween", "py10", "borderB", "text12")}>
+                  <span className={cx("colorMuted")}>{row.label}</span>
+                  <span className={cx("fontMono", "fw700", styles.integrationsToneText, toneClass(row.color))}>{row.value}</span>
                 </div>
               ))}
-              <div style={{ marginTop: 12, fontSize: 11, color: C.muted, lineHeight: 1.7 }}>Permission grants and role policies are handled in Access Control. This page tracks integration credential hygiene only.</div>
+              <div className={cx("mt12", "text11", "colorMuted", styles.integrationsLine17)}>Permission grants and role policies are handled in Access Control. This page tracks integration credential hygiene only.</div>
             </div>
           </div>
         ) : null}
 
         {activeTab === "provider map" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Provider Readiness</div>
+          <div className={cx("grid2", "gap16")}>
+            <div className={cx("card", "p20")}>
+              <div className={cx("text12", "fw700", "mb12", "uppercase", "tracking")}>Provider Readiness</div>
               {[
-                { provider: "Webhook Gateway", state: enrichedKeys.length > 0 ? "connected" : "idle", color: enrichedKeys.length > 0 ? C.primary : C.muted, detail: `${enrichedKeys.length} credentials available` },
-                { provider: "Partner API", state: enrichedKeys.length > 0 ? "connected" : "idle", color: enrichedKeys.length > 0 ? C.blue : C.muted, detail: `${enrichedKeys.length} keys issued` },
-                { provider: "Billing Sync", state: snapshot.invoices.length > 0 ? "connected" : "idle", color: snapshot.invoices.length > 0 ? C.primary : C.muted, detail: `${snapshot.invoices.length} invoices in data` },
-                { provider: "Lead Intake Hooks", state: snapshot.leads.length > 0 ? "connected" : "idle", color: snapshot.leads.length > 0 ? C.amber : C.muted, detail: `${snapshot.leads.length} leads in stream` }
+                { provider: "Webhook Gateway", state: enrichedKeys.length > 0 ? "connected" : "idle", color: enrichedKeys.length > 0 ? "var(--accent)" : "var(--muted)", detail: `${enrichedKeys.length} credentials available` },
+                { provider: "Partner API", state: enrichedKeys.length > 0 ? "connected" : "idle", color: enrichedKeys.length > 0 ? "var(--blue)" : "var(--muted)", detail: `${enrichedKeys.length} keys issued` },
+                { provider: "Billing Sync", state: snapshot.invoices.length > 0 ? "connected" : "idle", color: snapshot.invoices.length > 0 ? "var(--accent)" : "var(--muted)", detail: `${snapshot.invoices.length} invoices in data` },
+                { provider: "Lead Intake Hooks", state: snapshot.leads.length > 0 ? "connected" : "idle", color: snapshot.leads.length > 0 ? "var(--amber)" : "var(--muted)", detail: `${snapshot.leads.length} leads in stream` }
               ].map((p) => (
-                <div key={p.provider} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}`, alignItems: "center" }}>
+                <div key={p.provider} className={cx("flexBetween", "py10", "borderB")}>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 600 }}>{p.provider}</div>
-                    <div style={{ fontSize: 10, color: C.muted }}>{p.detail}</div>
+                    <div className={cx("text12", "fw600")}>{p.provider}</div>
+                    <div className={cx("text10", "colorMuted")}>{p.detail}</div>
                   </div>
-                  <span style={{ fontSize: 10, color: p.color, background: `${p.color}15`, padding: "3px 8px", fontFamily: "DM Mono, monospace", textTransform: "uppercase" }}>{p.state}</span>
+                  <span
+                    className={cx("fontMono", "text10", "uppercase", styles.integrationsToneTag, toneClass(p.color))}
+                  >
+                    {p.state}
+                  </span>
                 </div>
               ))}
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ownership Boundaries</div>
+            <div className={cx("card", "p20")}>
+              <div className={cx("text12", "fw700", "mb12", "uppercase", "tracking")}>Ownership Boundaries</div>
               {["Integrations: credential lifecycle and provider readiness.", "Workflows: orchestration triggers and simulation behavior.", "Notifications: queue processing, delivery, and retries.", "Access Control: role permissions and admin delegation."].map((line) => (
-                <div key={line} style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.7 }}>• {line}</div>
+                <div key={line} className={cx("text12", "colorMuted", "mb10", styles.integrationsLine17)}>{"\u2022"} {line}</div>
               ))}
             </div>
           </div>

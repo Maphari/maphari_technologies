@@ -1,444 +1,414 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
-import { formatMoney } from "../utils";
-import type { PortalInvoice, PortalProject } from "../../../../lib/api/portal";
 
-type ClientReportsPageProps = {
-  active: boolean;
-  invoices?: PortalInvoice[];
-  projects?: PortalProject[];
-  allMilestones?: Array<{ milestone: { status: string; updatedAt: string }; projectId: string }>;
-  convertMoney?: (cents: number, currency: string) => number;
-  displayCurrency?: string;
+type LaunchTab = "Status Page" | "Go-Live Checklist" | "Acceptance Criteria" | "Project Wrap Report";
+
+type ChecklistItem = {
+  name: string;
+  owner: string;
+  done: boolean;
 };
 
-type RangeLabel = "This Week" | "This Month" | "Last Month" | "Q1 2026" | "Custom";
+type ChecklistSection = {
+  title: string;
+  items: ChecklistItem[];
+};
 
-const STATIC_BAR_DATA = [
-  { lbl: "Oct", inv: 28000, hrs: 148, ms: 3 },
-  { lbl: "Nov", inv: 35000, hrs: 162, ms: 4 },
-  { lbl: "Dec", inv: 18000, hrs: 90,  ms: 2 },
-  { lbl: "Jan", inv: 42000, hrs: 180, ms: 5 },
-  { lbl: "Feb", inv: 61000, hrs: 210, ms: 6 }
+type CriteriaItem = {
+  text: string;
+  met: boolean | null;
+};
+
+type CriteriaSection = {
+  name: string;
+  items: CriteriaItem[];
+};
+
+const CHECKLIST_SECTIONS: ChecklistSection[] = [
+  {
+    title: "Content & Copy",
+    items: [
+      { name: "All page copy finalised and approved", owner: "Client (Naledi D.)", done: true },
+      { name: "Legal pages: Privacy Policy, T&Cs", owner: "Client (Naledi D.)", done: false },
+      { name: "Images and media assets supplied", owner: "Client (Naledi D.)", done: false },
+      { name: "Favicon and social share images", owner: "Lerato M.", done: true },
+    ],
+  },
+  {
+    title: "Technical",
+    items: [
+      { name: "Domain configured and pointing correctly", owner: "James M.", done: true },
+      { name: "SSL certificate installed", owner: "James M.", done: true },
+      { name: "All forms tested and sending", owner: "Thabo K.", done: false },
+      { name: "Performance score > 90 on Lighthouse", owner: "James M.", done: false },
+      { name: "Mobile responsiveness QA passed", owner: "Thabo K.", done: false },
+      { name: "Cross-browser testing complete", owner: "Thabo K.", done: false },
+    ],
+  },
+  {
+    title: "Analytics & Tracking",
+    items: [
+      { name: "Google Analytics / GA4 installed", owner: "James M.", done: true },
+      { name: "Conversion goals configured", owner: "James M.", done: false },
+      { name: "Hotjar / session recording active", owner: "James M.", done: false },
+    ],
+  },
+  {
+    title: "Approvals",
+    items: [
+      { name: "Client final sign-off obtained", owner: "Client (Naledi D.)", done: false },
+      { name: "Legal review of content complete", owner: "Client (Naledi D.)", done: false },
+      { name: "Go-live date confirmed by both parties", owner: "Sipho N.", done: true },
+    ],
+  },
+];
+
+const CRITERIA: CriteriaSection[] = [
+  {
+    name: "Homepage Design",
+    items: [
+      { text: "Hero section communicates the core value proposition within 5 seconds", met: true },
+      { text: "Navigation is visible and functional on both mobile and desktop", met: true },
+      { text: "CTA button is above the fold on all screen sizes", met: null },
+      { text: "Page load time under 2 seconds on a 4G connection", met: null },
+    ],
+  },
+  {
+    name: "Dashboard UI Design",
+    items: [
+      { text: "All 6 core widgets are visible on a 1440px screen without scrolling", met: null },
+      { text: "Data updates reflect in real time without page refresh", met: null },
+      { text: "Empty states are designed for all zero-data scenarios", met: null },
+      { text: "Accessible — meets WCAG AA contrast requirements", met: null },
+    ],
+  },
+  {
+    name: "Authentication Flows",
+    items: [
+      { text: "Login, signup, and password reset flows all functional", met: null },
+      { text: "Error states handled gracefully with user-friendly messages", met: null },
+      { text: "Session timeout redirects to login without data loss", met: null },
+    ],
+  },
+];
+
+const TABS: LaunchTab[] = ["Status Page", "Go-Live Checklist", "Acceptance Criteria", "Project Wrap Report"];
+
+const COMPONENTS = [
+  { name: "Design System", status: "Operational", color: "var(--green)" },
+  { name: "Frontend Build", status: "Not started", color: "var(--muted2)" },
+  { name: "API Integration", status: "Not started", color: "var(--muted2)" },
+  { name: "Authentication", status: "Not started", color: "var(--muted2)" },
+  { name: "Database", status: "Not started", color: "var(--muted2)" },
+  { name: "Hosting / Infra", status: "Configured", color: "var(--accent)" },
 ] as const;
 
-const STATIC_TIME_LOG = [
-  { task: "Stripe Payment Integration",   project: "Client Portal v2", who: "Thabo K.",   hrs: 18.5, date: "Feb 19", pct: 74 },
-  { task: "Figma Design — Screen 9–14",   project: "Client Portal v2", who: "Lerato M.",  hrs: 12,   date: "Feb 18", pct: 48 },
-  { task: "API Endpoint Documentation",   project: "Lead Pipeline",    who: "Thabo K.",   hrs: 6,    date: "Feb 16", pct: 24 },
-  { task: "UAT Checklist Preparation",    project: "Lead Pipeline",    who: "Nomsa D.",   hrs: 4.5,  date: "Feb 17", pct: 18 },
-  { task: "Sprint Planning & Backlog",    project: "All Projects",     who: "Aisha P.",   hrs: 8,    date: "Feb 14", pct: 32 },
-  { task: "Load Testing — Staging",       project: "Lead Pipeline",    who: "James M.",   hrs: 5,    date: "Feb 18", pct: 20 }
-] as const;
+export function ReportsPage() {
+  const [tab, setTab] = useState<LaunchTab>("Status Page");
+  const [checks, setChecks] = useState<ChecklistSection[]>(CHECKLIST_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.map((item) => ({ ...item })),
+  })));
+  const [criteriaState, setCriteriaState] = useState<CriteriaSection[]>(CRITERIA.map((section) => ({
+    ...section,
+    items: section.items.map((item) => ({ ...item })),
+  })));
+  const [toast, setToast] = useState<{ title: string; subtitle: string } | null>(null);
 
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
-const DONUT_COLORS = ["var(--accent)", "var(--purple)", "var(--amber)", "var(--muted2)", "var(--green)"] as const;
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 3200);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
-function DonutChart({ data, size = 120 }: { data: ReadonlyArray<{ lbl: string; pct: number; color: string }>; size?: number }) {
-  const r = 44;
-  const cx2 = size / 2;
-  const cy2 = size / 2;
-  const circ = 2 * Math.PI * r;
-  let offset = 0;
-  const slices = data.map((e) => {
-    const dash = (e.pct / 100) * circ;
-    const s = { ...e, dash, gap: circ - dash, offset };
-    offset += dash;
-    return s;
-  });
-  const totalPct = data.reduce((s, e) => s + e.pct, 0);
-  return (
-    <svg width={size} height={size} style={{ flexShrink: 0 }}>
-      <circle cx={cx2} cy={cy2} r={r} fill="none" stroke="var(--muted3)" strokeWidth="14" />
-      {slices.map((s) => (
-        <circle
-          key={s.lbl}
-          cx={cx2} cy={cy2} r={r}
-          fill="none"
-          stroke={s.color}
-          strokeWidth="14"
-          strokeDasharray={`${s.dash} ${s.gap}`}
-          strokeDashoffset={-s.offset + circ / 4}
-          style={{ transition: "stroke-dasharray .8s cubic-bezier(.23,1,.32,1)" }}
-        />
-      ))}
-      <text x={cx2} y={cy2 - 4} textAnchor="middle" fill="var(--text)" fontSize="13" fontWeight="800" fontFamily="Syne">{totalPct}%</text>
-      <text x={cx2} y={cy2 + 12} textAnchor="middle" fill="var(--muted)" fontSize="8" fontFamily="DM Mono">allocated</text>
-    </svg>
-  );
-}
+  const allItems = useMemo(() => checks.flatMap((section) => section.items), [checks]);
+  const doneCount = useMemo(() => allItems.filter((item) => item.done).length, [allItems]);
+  const donePct = useMemo(() => {
+    const total = allItems.length || 1;
+    return Math.round((doneCount / total) * 100);
+  }, [allItems.length, doneCount]);
 
-function BarChart({ children, height = 140 }: { children: React.ReactNode; height?: number }) {
-  return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height }}>
-      {children}
-    </div>
-  );
-}
+  function notify(title: string, subtitle: string): void {
+    setToast({ title, subtitle });
+  }
 
-function BarCol({ label, value, height, color }: { label: string; value: string; height: string; color: string }) {
-  return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
-      <div style={{ fontFamily: "var(--font-dm-sans), monospace", fontSize: "0.54rem", color: "var(--muted)" }}>{value}</div>
-      <div style={{ flex: 1, display: "flex", alignItems: "flex-end", width: "100%" }}>
-        <div style={{ width: "100%", background: color, borderRadius: "2px 2px 0 0", minHeight: 2, height, transition: "height 0.6s" }} />
-      </div>
-      <div style={{ fontFamily: "var(--font-dm-sans), monospace", fontSize: "0.52rem", color: "var(--muted2)", whiteSpace: "nowrap" }}>{label}</div>
-    </div>
-  );
-}
-
-export function ClientReportsPage({
-  active,
-  invoices,
-  projects,
-  allMilestones,
-  convertMoney,
-  displayCurrency = "ZAR"
-}: ClientReportsPageProps) {
-  const [activeRange, setActiveRange] = useState<RangeLabel>("This Month");
-
-  /* ── Dynamic bar data from real invoices (last 5 months) ── */
-  const barData = useMemo(() => {
-    if (!invoices?.length) return STATIC_BAR_DATA.map((b) => ({ lbl: b.lbl, inv: b.inv, ms: b.ms }));
-    const now = new Date();
-    return Array.from({ length: 5 }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - (4 - i), 1);
-      const month = d.getMonth();
-      const year = d.getFullYear();
-      const monthInv = invoices
-        .filter((inv) => {
-          const issued = new Date(inv.issuedAt ?? inv.createdAt);
-          return issued.getMonth() === month && issued.getFullYear() === year;
-        })
-        .reduce(
-          (sum, inv) => sum + (convertMoney ? convertMoney(inv.amountCents, inv.currency) : inv.amountCents / 100),
-          0
-        );
-      const monthMs = (allMilestones ?? []).filter((e) => {
-        if (e.milestone.status !== "COMPLETED") return false;
-        const completed = new Date(e.milestone.updatedAt);
-        return completed.getMonth() === month && completed.getFullYear() === year;
-      }).length;
-      return { lbl: MONTH_NAMES[month], inv: monthInv, ms: monthMs };
-    });
-  }, [invoices, allMilestones, convertMoney]);
-
-  const maxInv = Math.max(...barData.map((r) => r.inv), 1);
-  const maxMs = Math.max(...barData.map((r) => r.ms), 1);
-
-  /* ── Donut data from real project budget allocation ── */
-  const donutData = useMemo(() => {
-    if (!projects?.length) {
-      return [
-        { lbl: "Client Portal v2",  pct: 48, color: "var(--accent)" as const },
-        { lbl: "Lead Pipeline",     pct: 32, color: "var(--purple)" as const },
-        { lbl: "Automation Suite",  pct: 12, color: "var(--amber)" as const },
-        { lbl: "Admin & Misc",      pct: 8,  color: "var(--muted2)" as const }
-      ];
-    }
-    const totalBudget = projects.reduce((sum, p) => sum + p.budgetCents, 0);
-    if (totalBudget === 0) return [{ lbl: "No budget data", pct: 100, color: "var(--muted3)" as const }];
-    const top = projects.slice(0, 4);
-    const slices = top.map((p, i) => ({
-      lbl: p.name,
-      pct: Math.round((p.budgetCents / totalBudget) * 100),
-      color: DONUT_COLORS[i % DONUT_COLORS.length] as string
+  function toggleCheck(sectionIndex: number, itemIndex: number): void {
+    setChecks((prev) => prev.map((section, si) => {
+      if (si !== sectionIndex) return section;
+      return {
+        ...section,
+        items: section.items.map((item, ii) => (ii === itemIndex ? { ...item, done: !item.done } : item)),
+      };
     }));
-    // ensure percentages sum to 100
-    const assigned = slices.reduce((s, e) => s + e.pct, 0);
-    if (slices.length > 0 && assigned < 100) slices[0].pct += 100 - assigned;
-    return slices;
-  }, [projects]);
+  }
 
-  /* ── KPI stats from real data ── */
-  const kpiStats = useMemo(() => {
-    const hasRealData = Boolean(invoices?.length ?? projects?.length);
-    if (!hasRealData) {
-      return [
-        { label: "Invoiced",          value: "R 61,000",  delta: "↑ 18% vs last month", bar: styles.statBarAccent, deltaClass: styles.statDeltaUp },
-        { label: "Hours Logged",      value: "54h",        delta: "↑ 14% vs last month", bar: styles.statBarPurple, deltaClass: styles.statDeltaUp },
-        { label: "Milestones Closed", value: "3",          delta: "Same as last month",  bar: styles.statBarGreen,  deltaClass: "" },
-        { label: "Delivery Velocity", value: "+14%",       delta: "On track for Mar 14", bar: styles.statBarAmber,  deltaClass: styles.statDeltaUp }
-      ];
-    }
-    const totalInvoiced = (invoices ?? []).reduce(
-      (sum, inv) => sum + (convertMoney ? convertMoney(inv.amountCents, inv.currency) : inv.amountCents / 100),
-      0
-    );
-    const completedMs = (allMilestones ?? []).filter((e) => e.milestone.status === "COMPLETED").length;
-    const activeProjects = (projects ?? []).filter((p) => p.status === "IN_PROGRESS").length;
-    const avgProgress = projects?.length
-      ? Math.round(projects.reduce((s, p) => s + (p.progressPercent ?? 0), 0) / projects.length)
-      : 0;
-    return [
-      { label: "Total Invoiced",     value: formatMoney(totalInvoiced, displayCurrency),  delta: `${(invoices ?? []).length} invoice${(invoices ?? []).length === 1 ? "" : "s"}`, bar: styles.statBarAccent, deltaClass: styles.statDeltaUp },
-      { label: "Active Projects",    value: String(activeProjects),                         delta: `${(projects ?? []).length} total`,                                              bar: styles.statBarPurple, deltaClass: "" },
-      { label: "Milestones Closed",  value: String(completedMs),                            delta: "Total completed",                                                              bar: styles.statBarGreen,  deltaClass: completedMs > 0 ? styles.statDeltaUp : "" },
-      { label: "Avg. Progress",      value: `${avgProgress}%`,                              delta: "Across all projects",                                                          bar: styles.statBarAmber,  deltaClass: avgProgress >= 70 ? styles.statDeltaUp : "" }
-    ];
-  }, [invoices, projects, allMilestones, convertMoney, displayCurrency]);
-
-  /* ── ROI cards ── */
-  const roiCards = useMemo(() => {
-    const hasRealData = Boolean(invoices?.length);
-    const totalInvoiced = hasRealData
-      ? (invoices ?? []).reduce(
-          (sum, inv) => sum + (convertMoney ? convertMoney(inv.amountCents, inv.currency) : inv.amountCents / 100),
-          0
-        )
-      : 184000;
-    return [
-      { label: "Total Investment",          value: formatMoney(totalInvoiced, displayCurrency),   desc: `Invoiced across ${(projects ?? []).length || 3} project${(projects ?? []).length === 1 ? "" : "s"}. Payments tracked in the invoices section.`, bar: styles.statBarAccent },
-      { label: "Estimated Value Delivered", value: "2.1×",    desc: "Projected impact from portal launch, pipeline automation, and operational improvements.", bar: styles.statBarGreen },
-      { label: "ROI Multiple",              value: "Pending",  desc: "ROI analysis will be generated once milestone delivery data is available.", bar: styles.statBarPurple }
-    ];
-  }, [invoices, projects, convertMoney, displayCurrency]);
+  function toggleCriteria(sectionIndex: number, itemIndex: number, value: boolean): void {
+    setCriteriaState((prev) => prev.map((section, si) => {
+      if (si !== sectionIndex) return section;
+      return {
+        ...section,
+        items: section.items.map((item, ii) => {
+          if (ii !== itemIndex) return item;
+          return { ...item, met: item.met === value ? null : value };
+        }),
+      };
+    }));
+  }
 
   return (
-    <section className={cx(styles.page, active && styles.pageActive)} id="page-reports">
-      {/* Page header */}
-      <div className={styles.pageHeader}>
-        <div>
-          <div className={styles.eyebrow}>Intelligence</div>
-          <div className={styles.pageTitle}>Reports</div>
-          <div className={styles.pageSub}>
-            Project performance, time logs, ROI, and milestone KPIs — all in one view.
-          </div>
-        </div>
-        <div className={styles.headerRight}>
-          <button type="button" className={cx(styles.button, styles.buttonGhost, styles.buttonSm)}>
-            📊 Export CSV
-          </button>
-        </div>
-      </div>
+    <div className={cx("pageBody", styles.statusLaunchRoot)}>
+      <div className={styles.statusLaunchLayout}>
+        <aside className={styles.statusLaunchSidebar}>
+          <div className={styles.statusLaunchSection}>Launch Tools</div>
+          {[
+            { label: "Status Page", tone: styles.statusLaunchToneGreen },
+            { label: "Go-Live Checklist", tone: styles.statusLaunchToneAccent },
+            { label: "Acceptance Criteria", tone: styles.statusLaunchTonePurple },
+            { label: "Project Wrap Report", tone: styles.statusLaunchToneBlue },
+          ].map((item) => (
+            <button key={item.label} type="button" className={cx(styles.statusLaunchSideItem, tab === item.label && styles.statusLaunchSideItemActive)} onClick={() => setTab(item.label as LaunchTab)}>
+              <span className={cx(styles.statusLaunchDot, item.tone)} />
+              <span>{item.label}</span>
+            </button>
+          ))}
 
-      {/* Date range filter bar */}
-      <div className={styles.filterBar}>
-        {(["This Week", "This Month", "Last Month", "Q1 2026", "Custom"] as const).map((range) => (
-          <button
-            key={range}
-            type="button"
-            className={cx(styles.filterTab, activeRange === range && styles.filterTabActive)}
-            onClick={() => setActiveRange(range)}
-          >
-            {range}
-          </button>
-        ))}
-        {activeRange === "Custom" ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 8 }}>
-            <input type="date" title="start date" className={styles.topbarSelect} defaultValue="2026-01-01" />
-            <span className={styles.tableMuted}>→</span>
-            <input type="date" title="end date" className={styles.topbarSelect} defaultValue="2026-02-21" />
-          </div>
-        ) : null}
-      </div>
-
-      {/* KPI stat grid */}
-      <div className={styles.statGrid}>
-        {kpiStats.map((stat, i) => (
-          <div key={stat.label} className={styles.statCard} style={{ "--i": i } as React.CSSProperties}>
-            <div className={cx(styles.statBar, stat.bar)} />
-            <div className={styles.statLabel}>{stat.label}</div>
-            <div className={styles.statValue}>{stat.value}</div>
-            <div className={cx(styles.statDelta, stat.deltaClass)}>{stat.delta}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Page body */}
-      <div className={styles.pageBody}>
-
-        {/* Charts */}
-        <div className={styles.cols2Main}>
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div>
-                <div className={styles.cardTitle}>Invoice Revenue Trend</div>
-                <div className={styles.cardSub}>Monthly invoiced amounts across all projects</div>
-              </div>
-            </div>
-            <div className={styles.cardBody}>
-              <BarChart height={140}>
-                {barData.map((bar, i) => (
-                  <BarCol
-                    key={bar.lbl}
-                    label={bar.lbl}
-                    value={bar.inv >= 1000 ? `${displayCurrency === "ZAR" ? "R" : displayCurrency} ${(bar.inv / 1000).toFixed(0)}k` : bar.inv > 0 ? formatMoney(bar.inv, displayCurrency) : "–"}
-                    height={`${(bar.inv / maxInv) * 100}%`}
-                    color={i === barData.length - 1 ? "var(--accent)" : "var(--muted3)"}
-                  />
-                ))}
-              </BarChart>
+          <div className={styles.statusLaunchDivider} />
+          <div className={styles.statusLaunchProgressCard}>
+            <div className={styles.statusLaunchProgressTitle}>Launch Readiness</div>
+            <div className={styles.statusLaunchProgressTrack}><div className={styles.statusLaunchProgressFill} style={{ width: `${donePct}%` }} /></div>
+            <div className={styles.statusLaunchProgressMeta}>
+              <span>{doneCount}/{allItems.length} checks</span>
+              <span>{donePct}%</span>
             </div>
           </div>
 
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div>
-                <div className={styles.cardTitle}>Budget by Project</div>
-                <div className={styles.cardSub}>{projects?.length ? "Project budget allocation" : "Hours distribution this month"}</div>
-              </div>
-            </div>
-            <div className={styles.cardBody}>
-              <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-                <DonutChart data={donutData} />
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {donutData.map((item) => (
-                    <div key={item.lbl} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
-                      <div className={styles.tableMonospace} style={{ flex: 1, color: "var(--text)", fontSize: "0.72rem" }}>{item.lbl}</div>
-                      <div className={styles.tableMonospace}>{item.pct}%</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <div className={styles.statusLaunchDateCard}>
+            <div>🚀 Launch date: <strong>Mar 28, 2026</strong></div>
+            <div className={donePct < 80 ? styles.statusLaunchWarn : styles.statusLaunchReady}>{donePct < 80 ? "Not yet ready" : "Ready to launch"}</div>
           </div>
-        </div>
+        </aside>
 
-        {/* Secondary charts */}
-        <div className={styles.cols2}>
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div>
-                <div className={styles.cardTitle}>Milestone Velocity</div>
-                <div className={styles.cardSub}>Milestones completed per month</div>
-              </div>
+        <section className={styles.statusLaunchMain}>
+          <div className={cx("pageHeader", "mb0")}>
+            <div>
+              <div className={cx("pageEyebrow")}>Veldt Finance · Launch</div>
+              <h1 className={cx("pageTitle")}>Status &amp; Launch</h1>
+              <p className={cx("pageSub")}>Real-time project health, go-live checklist, and clean handover readiness.</p>
             </div>
-            <div className={styles.cardBody}>
-              <BarChart height={100}>
-                {barData.map((bar, i) => (
-                  <BarCol
-                    key={`${bar.lbl}-ms`}
-                    label={bar.lbl}
-                    value={bar.ms > 0 ? String(bar.ms) : "–"}
-                    height={`${(bar.ms / maxMs) * 100}%`}
-                    color={i === barData.length - 1 ? "var(--purple)" : "var(--muted3)"}
-                  />
-                ))}
-              </BarChart>
+            <div className={cx("pageActions")}>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => notify("Link copied", "Public status page URL copied")}>Share Status Page</button>
+              <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => notify("Report generated", "Wrap report downloaded as PDF")}>Wrap Report</button>
             </div>
           </div>
 
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div>
-                <div className={styles.cardTitle}>Project Progress</div>
-                <div className={styles.cardSub}>Completion % per active project</div>
-              </div>
-            </div>
-            <div className={styles.cardBody}>
-              {projects?.length ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {projects.slice(0, 5).map((p) => (
-                    <div key={p.id}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                        <span className={styles.tableMonospace} style={{ fontSize: "0.72rem", color: "var(--text)" }}>{p.name}</span>
-                        <span className={styles.tableMonospace}>{p.progressPercent ?? 0}%</span>
-                      </div>
-                      <div className={styles.progressTrack}>
-                        <div className={styles.progressFill} style={{ width: `${p.progressPercent ?? 0}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <BarChart height={100}>
-                  {STATIC_BAR_DATA.map((bar, i) => (
-                    <BarCol
-                      key={`${bar.lbl}-hrs`}
-                      label={bar.lbl}
-                      value={`${bar.hrs}h`}
-                      height={`${(bar.hrs / 210) * 100}%`}
-                      color={i === STATIC_BAR_DATA.length - 1 ? "var(--green)" : "var(--muted3)"}
-                    />
-                  ))}
-                </BarChart>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ROI cards */}
-        <div>
-          <div className={styles.sectionTitle}>ROI & Value Delivered</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginTop: 12 }}>
-            {roiCards.map((roi) => (
-              <div key={roi.label} className={styles.card} style={{ position: "relative", overflow: "hidden" }}>
-                <div className={cx(styles.statBar, roi.bar)} />
-                <div className={styles.cardBody} style={{ paddingTop: 20 }}>
-                  <div className={styles.statLabel}>{roi.label}</div>
-                  <div className={styles.statValue} style={{ fontSize: "1.4rem" }}>{roi.value}</div>
-                  <p className={styles.pageSub} style={{ marginTop: 6 }}>{roi.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Time log table */}
-        <div>
-          <div className={styles.sectionTitle}>Time Log — This Month</div>
-          <div className={styles.tableWrap} style={{ marginTop: 12 }}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Task</th>
-                  <th>Who</th>
-                  <th>Hours</th>
-                  <th>Date</th>
-                  <th>% of Month</th>
-                </tr>
-              </thead>
-              <tbody>
-                {STATIC_TIME_LOG.map((row) => (
-                  <tr key={row.task}>
-                    <td>
-                      <div style={{ fontWeight: 700, fontSize: "0.78rem" }}>{row.task}</div>
-                      <div className={styles.tableMonospace}>{row.project}</div>
-                    </td>
-                    <td className={styles.tableMonospace}>{row.who}</td>
-                    <td className={styles.tableMonospace}>{row.hrs}h</td>
-                    <td className={styles.tableMonospace}>{row.date}</td>
-                    <td>
-                      <div className={styles.progressTrack} style={{ marginBottom: 3 }}>
-                        <div className={styles.progressFill} style={{ width: `${row.pct}%` }} />
-                      </div>
-                      <div className={styles.tableMonospace} style={{ fontSize: "0.56rem" }}>{row.pct}%</div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "flex-end" }}>
-              <span style={{ fontFamily: "var(--font-dm-sans), monospace", fontSize: "0.72rem", color: "var(--accent)", fontWeight: 700 }}>
-                {STATIC_TIME_LOG.reduce((s, r) => s + r.hrs, 0).toFixed(1)}h logged this month
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Export row */}
-        <div>
-          <div className={styles.sectionTitle}>Export & Share</div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
-            {[
-              { icon: "📄", label: "Export PDF Report" },
-              { icon: "📊", label: "Export CSV Data" },
-              { icon: "📧", label: "Email to Stakeholders" },
-              { icon: "🔗", label: "Shareable Link" },
-              { icon: "📅", label: "Schedule Weekly Digest" }
-            ].map((item) => (
-              <button key={item.label} type="button" className={cx(styles.button, styles.buttonGhost)}>
-                {item.icon} {item.label}
+          <div className={styles.statusLaunchTabs}>
+            {TABS.map((item) => (
+              <button key={item} type="button" className={cx(styles.statusLaunchTab, tab === item && styles.statusLaunchTabActive)} onClick={() => setTab(item)}>
+                {item}
               </button>
             ))}
           </div>
-        </div>
+
+          {tab === "Status Page" ? (
+            <div className={styles.statusLaunchContent}>
+              <div className={styles.statusLaunchHero}>
+                <div className={styles.statusLaunchBadge}><span className={styles.statusLaunchBadgeDot} /><span>All Systems Operational</span></div>
+                <div className={styles.statusLaunchHeroTitle}>Veldt Finance Dashboard</div>
+                <div className={styles.statusLaunchHeroSub}>Project status · Updated Feb 21, 2026 at 14:32</div>
+              </div>
+
+              <div>
+                <div className={styles.statusLaunchSectionTitle}>System Components</div>
+                <div className={styles.statusLaunchComponentsGrid}>
+                  {COMPONENTS.map((component, index) => (
+                    <div key={component.name} className={styles.statusLaunchCompItem}>
+                      <div className={styles.statusLaunchCompName}><span className={styles.statusLaunchCompDot} style={{ background: component.color }} />{component.name}</div>
+                      <div className={styles.statusLaunchCompStatus} style={{ color: component.color }}>{component.status}</div>
+                      <div className={styles.statusLaunchUptimeRow}>
+                        {Array.from({ length: 30 }).map((_, day) => (
+                          <span
+                            key={`${component.name}-${day}`}
+                            className={styles.statusLaunchUptimeBar}
+                            style={{ background: index === 0 ? (day > 20 ? "var(--green)" : "var(--muted3)") : "var(--muted3)" }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className={styles.statusLaunchSectionTitle}>Recent Incidents</div>
+                <div className={styles.statusLaunchIncidentCard}>
+                  <div className={styles.statusLaunchIncidentHead}><div className={styles.statusLaunchIncidentTitle}>No incidents recorded</div><span className={cx("badge", "badgeGreen")}>Resolved</span></div>
+                  <div className={styles.statusLaunchIncidentBody}>All project systems are running as expected. No disruptions in the last 30 days.</div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {tab === "Go-Live Checklist" ? (
+            <div className={styles.statusLaunchContent}>
+              <div>
+                <div className={styles.statusLaunchChecklistHead}>
+                  <div className={styles.statusLaunchChecklistIntro}>Collaborative launch checklist — both client and team can tick items. Launch happens only when everything is green.</div>
+                  <span className={cx("badge", "badgeAmber")}>{donePct}% ready</span>
+                </div>
+
+                {checks.map((section, sectionIndex) => (
+                  <div key={section.title} className={cx("card", styles.statusLaunchChecklistCard)}>
+                    <div className={styles.statusLaunchChecklistSectionTitle}>{section.title} · {section.items.filter((item) => item.done).length}/{section.items.length}</div>
+                    {section.items.map((item, itemIndex) => (
+                      <div key={`${section.title}-${item.name}`} className={styles.statusLaunchChecklistItem}>
+                        <button type="button" className={cx(styles.statusLaunchCheck, item.done && styles.statusLaunchCheckDone)} onClick={() => toggleCheck(sectionIndex, itemIndex)} aria-label={item.done ? "Mark incomplete" : "Mark complete"}>{item.done ? "✓" : ""}</button>
+                        <div className={styles.statusLaunchGrow}>
+                          <div className={cx(styles.statusLaunchChecklistName, item.done && styles.statusLaunchStrike)}>{item.name}</div>
+                          <div className={styles.statusLaunchChecklistOwner}>{item.owner}</div>
+                        </div>
+                        {item.done ? <span className={cx("badge", "badgeGreen")}>Done</span> : null}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {tab === "Acceptance Criteria" ? (
+            <div className={styles.statusLaunchContent}>
+              <div>
+                <div className={styles.statusLaunchSectionTitle}>Acceptance Criteria</div>
+                <div className={styles.statusLaunchInfoStrip}>These criteria were agreed at project start. A deliverable is only complete when criteria are met.</div>
+
+                {criteriaState.map((section, sectionIndex) => (
+                  <div key={section.name} className={styles.statusLaunchCriteriaCard}>
+                    <div className={styles.statusLaunchCriteriaHead}>
+                      <div className={styles.statusLaunchCriteriaName}>{section.name}</div>
+                      <span className={cx("badge", section.items.every((item) => item.met === true) ? "badgeGreen" : section.items.some((item) => item.met === false) ? "badgeRed" : "badgeMuted")}>
+                        {section.items.every((item) => item.met === true) ? "All Met" : section.items.some((item) => item.met === false) ? "Issues Found" : "Pending Review"}
+                      </span>
+                    </div>
+
+                    <div className={styles.statusLaunchCriteriaBody}>
+                      {section.items.map((item, itemIndex) => (
+                        <div key={`${section.name}-${itemIndex}`} className={styles.statusLaunchCriterionRow}>
+                          <span className={styles.statusLaunchCriterionNum}>{itemIndex + 1}.</span>
+                          <span className={styles.statusLaunchCriterionText}>{item.text}</span>
+                          <div className={styles.statusLaunchCriterionActions}>
+                            <button type="button" className={cx(styles.statusLaunchCriterionBtn, item.met === true && styles.statusLaunchCriterionYes)} onClick={() => toggleCriteria(sectionIndex, itemIndex, true)}>Met</button>
+                            <button type="button" className={cx(styles.statusLaunchCriterionBtn, item.met === false && styles.statusLaunchCriterionNo)} onClick={() => toggleCriteria(sectionIndex, itemIndex, false)}>Not Met</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {tab === "Project Wrap Report" ? (
+            <div className={styles.statusLaunchContent}>
+              <div className={styles.statusLaunchReportHead}>
+                <div className={styles.statusLaunchSectionTitle}>Auto-Generated Wrap Report</div>
+                <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => notify("Report downloaded", "Project Wrap Report saved as PDF")}>Download PDF</button>
+              </div>
+
+              <div className={styles.statusLaunchWarnStrip}>This report finalises at project completion (Mar 28, 2026). Preview reflects current data.</div>
+
+              <div className={styles.statusLaunchReportCard}>
+                <div className={styles.statusLaunchReportTitle}>Project Overview</div>
+                <div className={styles.statusLaunchReportText}>
+                  <p><strong>Project:</strong> Veldt Finance Dashboard Rebuild</p>
+                  <p><strong>Client:</strong> Veldt Finance (Naledi Dlamini)</p>
+                  <p><strong>Agency:</strong> Maphari (Sipho Ndlovu, Project Lead)</p>
+                  <p><strong>Duration:</strong> Jan 10 – Mar 28, 2026 (12 weeks)</p>
+                  <p><strong>Scope:</strong> Brand Identity, UI/UX Design, Frontend Development, QA, Launch</p>
+                </div>
+                <div className={styles.statusLaunchStatsGrid}>
+                  {[{ value: "6", label: "Milestones" }, { value: "R 80K", label: "Budget" }, { value: "35", label: "Deliverables" }].map((stat) => (
+                    <div key={stat.label} className={styles.statusLaunchStatCard}><div className={styles.statusLaunchStatValue}>{stat.value}</div><div className={styles.statusLaunchStatLabel}>{stat.label}</div></div>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.statusLaunchReportCard}>
+                <div className={styles.statusLaunchReportTitle}>What Was Delivered</div>
+                <div className={styles.statusLaunchReportText}>
+                  {[
+                    "Brand Identity System (logo, guidelines, colour palette, typography)",
+                    "UI/UX Design for 12 screens",
+                    "Frontend build — React + TypeScript",
+                    "Authentication & user management",
+                    "Dashboard with real-time data visualisation",
+                    "Mobile-responsive design across all screens",
+                    "QA & cross-browser testing",
+                    "Deployment to production",
+                  ].map((item) => (
+                    <div key={item} className={styles.statusLaunchBulletRow}><span>✓</span><span>{item}</span></div>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.statusLaunchReportCard}>
+                <div className={styles.statusLaunchReportTitle}>Timeline Summary</div>
+                <div className={styles.statusLaunchReportText}>
+                  {[
+                    { phase: "Discovery & Strategy", dates: "Jan 10–14", status: "On time" },
+                    { phase: "Brand Identity", dates: "Jan 14 – Feb 12", status: "On time" },
+                    { phase: "UI/UX Design", dates: "Feb 12 – Feb 28", status: "In progress" },
+                    { phase: "Frontend Dev", dates: "Mar 1 – Mar 21", status: "Upcoming" },
+                    { phase: "QA & Testing", dates: "Mar 21 – Apr 4", status: "Upcoming" },
+                    { phase: "Launch", dates: "Mar 28", status: "Upcoming" },
+                  ].map((row) => (
+                    <div key={row.phase} className={styles.statusLaunchTimelineRow}>
+                      <span>{row.phase}</span>
+                      <span>{row.dates}</span>
+                      <span className={row.status === "On time" ? styles.statusLaunchReady : row.status === "In progress" ? styles.statusLaunchAccent : styles.statusLaunchMuted}>{row.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.statusLaunchReportCard}>
+                <div className={styles.statusLaunchReportTitle}>Budget Summary</div>
+                <div className={styles.statusLaunchStatsGrid}>
+                  {[{ value: "R 80,000", label: "Total Budget" }, { value: "R 32,800", label: "Spent to Date" }, { value: "R 47,200", label: "Remaining" }].map((stat) => (
+                    <div key={stat.label} className={styles.statusLaunchStatCard}><div className={styles.statusLaunchStatValue}>{stat.value}</div><div className={styles.statusLaunchStatLabel}>{stat.label}</div></div>
+                  ))}
+                </div>
+                <div className={styles.statusLaunchReportText}>Based on current burn rate, the project is forecast to complete at <strong style={{ color: "var(--accent)" }}>R 78,400</strong> — approximately R 1,600 under budget.</div>
+              </div>
+
+              <div className={styles.statusLaunchReportCard}>
+                <div className={styles.statusLaunchReportTitle}>Key Decisions</div>
+                <div className={styles.statusLaunchReportText}>
+                  {[
+                    "Switched from purple to lime accent colour (Feb 14)",
+                    "Reduced homepage sections from 8 to 5 for clarity (Feb 17)",
+                    "Added mobile-first approach to all screens (Feb 19)",
+                    "Deferred dark mode to Phase 2 (Feb 21)",
+                  ].map((decision) => (
+                    <div key={decision} className={styles.statusLaunchBulletRow}><span>→</span><span>{decision}</span></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </section>
       </div>
-    </section>
+
+      {toast ? (
+        <div className={cx("toastStack")}>
+          <div className={cx("toast", "toastSuccess")}>
+            <strong>{toast.title}</strong>
+            <div>{toast.subtitle}</div>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }

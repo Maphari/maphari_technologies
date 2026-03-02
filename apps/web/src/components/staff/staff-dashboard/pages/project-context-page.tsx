@@ -199,10 +199,10 @@ const projects: ProjectContext[] = [
   }
 ];
 
-const statusConfig: Record<ProjectStatus, { label: string; color: string; bg: string }> = {
-  active: { label: "Active", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 10%, transparent)" },
-  at_risk: { label: "At Risk", color: "#f5c518", bg: "rgba(245,197,24,0.1)" },
-  critical: { label: "Critical", color: "#ff4444", bg: "rgba(255,68,68,0.1)" }
+const statusConfig: Record<ProjectStatus, { label: string; dotClass: string; badgeClass: string }> = {
+  active: { label: "Active", dotClass: "pcStatusDotActive", badgeClass: "pcStatusBadgeActive" },
+  at_risk: { label: "At Risk", dotClass: "pcStatusDotAtRisk", badgeClass: "pcStatusBadgeAtRisk" },
+  critical: { label: "Critical", dotClass: "pcStatusDotCritical", badgeClass: "pcStatusBadgeCritical" }
 };
 
 function CopyableField({ label, value, hidden }: { label: string; value: string; hidden: boolean }) {
@@ -216,40 +216,18 @@ function CopyableField({ label, value, hidden }: { label: string; value: string;
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "8px 12px",
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: 3,
-        gap: 12
-      }}
-    >
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div
-          style={{
-            fontSize: 9,
-            color: "var(--muted2)",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            marginBottom: 2
-          }}
-        >
-          {label}
-        </div>
-        <div style={{ fontSize: 11, color: hidden && !revealed ? "#333344" : "#a0a0b0", fontFamily: "'DM Mono', monospace" }}>
-          {hidden && !revealed ? "••••••••••••" : value}
+    <div className={cx("pcCredentialRow")}>
+      <div className={cx("flex1", "minW0")}>
+        <div className={cx("pcCredentialLabel")}>{label}</div>
+        <div className={cx("pcCredentialValue", hidden && !revealed ? "pcCredentialValueHidden" : "pcCredentialValueVisible")}>
+          {hidden && !revealed ? "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" : value}
         </div>
       </div>
-      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+      <div className={cx("flexRow", "gap6", "noShrink")}>
         {hidden ? (
-          <button
+          <button type="button"
             onClick={() => setRevealed((previous) => !previous)}
-            type="button"
-            style={{ fontSize: 10, color: "var(--muted2)", background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}
+            className={cx("pcCredentialBtn")}
           >
             {revealed ? "Hide" : "Show"}
           </button>
@@ -257,15 +235,7 @@ function CopyableField({ label, value, hidden }: { label: string; value: string;
         <button
           onClick={handleCopy}
           type="button"
-          style={{
-            fontSize: 10,
-            color: copied ? "var(--accent)" : "var(--muted2)",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "2px 6px",
-            fontFamily: "'DM Mono', monospace"
-          }}
+          className={cx("pcCredentialBtn", copied ? "pcCredentialBtnCopied" : "pcCredentialBtnIdle")}
         >
           {copied ? "Copied!" : "Copy"}
         </button>
@@ -287,41 +257,27 @@ export function ProjectContextPage({ isActive }: { isActive: boolean }) {
   const current = projects.find((project) => project.id === selected);
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-context">
-      <style>{`
-        .context-proj-item { transition: all 0.12s ease; cursor: pointer; }
-        .context-proj-item:hover { background: color-mix(in srgb, var(--accent) 4%, transparent) !important; }
-        .context-tab-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-      `}</style>
-
-      <div style={{ minHeight: "calc(100vh - 220px)", display: "grid", gridTemplateColumns: "280px 1fr" }}>
-        <div style={{ borderRight: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 6 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-context">
+      <div className={cx("pcLayout")}>
+        <div className={cx("pcSidebar")}>
+          <div className={cx("pageHeaderBar", "pcSidebarHeader")}>
+            <div className={cx("pageEyebrow", "mb6")}>
               Staff Dashboard
             </div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 14 }}>
+            <h1 className={cx("pageTitle", "pcSidebarTitle")}>
               Project Context
-            </div>
+            </h1>
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search projects..."
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: 3,
-                color: "var(--text)",
-                fontSize: 11
-              }}
+              className={cx("pcSearchInput")}
             />
           </div>
 
           {filtered.some((project) => project.pinned) ? (
-            <div style={{ padding: "12px 20px 6px" }}>
-              <div style={{ fontSize: 9, color: "#333344", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
+            <div className={cx("pcSidebarSection")}>
+              <div className={cx("pcSidebarGroupLabel")}>
                 Pinned
               </div>
               {filtered
@@ -332,52 +288,22 @@ export function ProjectContextPage({ isActive }: { isActive: boolean }) {
                   return (
                     <div
                       key={project.id}
-                      className="context-proj-item"
+                      className={cx("pcProjectItem", isSelected && "pcProjectItemActive")}
                       onClick={() => {
                         setSelected(project.id);
                         setActiveTab("overview");
                       }}
-                      style={{
-                        padding: "10px 12px",
-                        borderRadius: 3,
-                        marginBottom: 4,
-                        background: isSelected ? "color-mix(in srgb, var(--accent) 6%, transparent)" : "transparent",
-                        border: `1px solid ${isSelected ? "color-mix(in srgb, var(--accent) 20%, transparent)" : "transparent"}`
-                      }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <div
-                          style={{
-                            width: 22,
-                            height: 22,
-                            borderRadius: 2,
-                            background: "rgba(255,255,255,0.06)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 8,
-                            color: "#a0a0b0"
-                          }}
-                        >
+                      <div className={cx("flexRow", "gap8", "mb4")}>
+                        <div className={cx("pcProjectAvatar")}>
                           {project.avatar}
                         </div>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            color: isSelected ? "#fff" : "#a0a0b0",
-                            fontWeight: isSelected ? 500 : 400,
-                            flex: 1,
-                            minWidth: 0,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap"
-                          }}
-                        >
+                        <span className={cx("pcProjectName", isSelected ? "pcProjectNameActive" : "pcProjectNameIdle")}>
                           {project.client}
                         </span>
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: status.color, flexShrink: 0 }} />
+                        <div className={cx("pcStatusDot", status.dotClass)} />
                       </div>
-                      <div style={{ fontSize: 10, color: "#333344", paddingLeft: 30, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div className={cx("pcProjectSub")}>
                         {project.project}
                       </div>
                     </div>
@@ -386,8 +312,8 @@ export function ProjectContextPage({ isActive }: { isActive: boolean }) {
             </div>
           ) : null}
 
-          <div style={{ padding: "6px 20px 20px", flex: 1 }}>
-            <div style={{ fontSize: 9, color: "#333344", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, marginTop: 8 }}>
+          <div className={cx("pcSidebarSectionAll")}>
+            <div className={cx("pcSidebarGroupLabel", "mt8")}>
               All Projects
             </div>
             {filtered
@@ -398,52 +324,22 @@ export function ProjectContextPage({ isActive }: { isActive: boolean }) {
                 return (
                   <div
                     key={project.id}
-                    className="context-proj-item"
+                    className={cx("pcProjectItem", isSelected && "pcProjectItemActive")}
                     onClick={() => {
                       setSelected(project.id);
                       setActiveTab("overview");
                     }}
-                    style={{
-                      padding: "10px 12px",
-                      borderRadius: 3,
-                      marginBottom: 4,
-                      background: isSelected ? "color-mix(in srgb, var(--accent) 6%, transparent)" : "transparent",
-                      border: `1px solid ${isSelected ? "color-mix(in srgb, var(--accent) 20%, transparent)" : "transparent"}`
-                    }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <div
-                        style={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: 2,
-                          background: "rgba(255,255,255,0.06)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 8,
-                          color: "#a0a0b0"
-                        }}
-                      >
+                    <div className={cx("flexRow", "gap8", "mb4")}>
+                      <div className={cx("pcProjectAvatar")}>
                         {project.avatar}
                       </div>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          color: isSelected ? "#fff" : "#a0a0b0",
-                          fontWeight: isSelected ? 500 : 400,
-                          flex: 1,
-                          minWidth: 0,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap"
-                        }}
-                      >
+                      <span className={cx("pcProjectName", isSelected ? "pcProjectNameActive" : "pcProjectNameIdle")}>
                         {project.client}
                       </span>
-                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: status.color, flexShrink: 0 }} />
+                      <div className={cx("pcStatusDot", status.dotClass)} />
                     </div>
-                    <div style={{ fontSize: 10, color: "#333344", paddingLeft: 30, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div className={cx("pcProjectSub")}>
                       {project.project}
                     </div>
                   </div>
@@ -453,64 +349,32 @@ export function ProjectContextPage({ isActive }: { isActive: boolean }) {
         </div>
 
         {current ? (
-          <div style={{ display: "flex", flexDirection: "column", overflowY: "auto" }}>
-            <div style={{ padding: "16px 24px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+          <div className={cx("flexCol", "overflowAuto")}>
+            <div className={cx("pcDetailHeader")}>
+              <div className={cx("flexBetween", "mb16")}>
                 <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                    <div
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 3,
-                        background: "rgba(255,255,255,0.06)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 10,
-                        color: "#a0a0b0"
-                      }}
-                    >
+                  <div className={cx("flexRow", "gap10", "mb6")}>
+                    <div className={cx("pcDetailAvatar")}>
                       {current.avatar}
                     </div>
                     <div>
-                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: "#fff" }}>{current.client}</div>
-                      <div style={{ fontSize: 11, color: "var(--muted2)" }}>{current.project}</div>
+                      <div className={cx("fontDisplay", "fw800", "colorText", "pcDetailClientName")}>{current.client}</div>
+                      <div className={cx("text11", "colorMuted2")}>{current.project}</div>
                     </div>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      padding: "4px 10px",
-                      borderRadius: 2,
-                      background: statusConfig[current.status].bg,
-                      color: statusConfig[current.status].color,
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase"
-                    }}
-                  >
+                <div className={cx("flexRow", "gap8")}>
+                  <span className={cx("pcStatusBadge", statusConfig[current.status].badgeClass)}>
                     {statusConfig[current.status].label}
                   </span>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      padding: "4px 10px",
-                      borderRadius: 2,
-                      background: "rgba(255,255,255,0.04)",
-                      color: "#a0a0b0",
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase"
-                    }}
-                  >
+                  <span className={cx("pcPhaseBadge")}>
                     {current.phase}
                   </span>
-                  {current.pinned ? <span style={{ fontSize: 12, color: "var(--accent)" }}>◈</span> : null}
+                  {current.pinned ? <span className={cx("text12", "colorAccent")}>&loz;</span> : null}
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
+              <div className={cx("flexRow", "gap24", "mb16")}>
                 {[
                   { label: "Timezone", value: current.timezone },
                   { label: "Started", value: current.startDate },
@@ -519,15 +383,15 @@ export function ProjectContextPage({ isActive }: { isActive: boolean }) {
                   { label: "Lead", value: current.staffLead }
                 ].map((meta) => (
                   <div key={meta.label}>
-                    <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>
+                    <div className={cx("pcMetaLabel")}>
                       {meta.label}
                     </div>
-                    <div style={{ fontSize: 11, color: "#a0a0b0" }}>{meta.value}</div>
+                    <div className={cx("text11", "colorMuted")}>{meta.value}</div>
                   </div>
                 ))}
               </div>
 
-              <div style={{ display: "flex", gap: 0 }}>
+              <div className={cx("flexRow")}>
                 {[
                   { key: "overview", label: "Overview" },
                   { key: "preferences", label: "Preferences" },
@@ -535,21 +399,10 @@ export function ProjectContextPage({ isActive }: { isActive: boolean }) {
                   { key: "credentials", label: "Credentials" },
                   { key: "decisions", label: "Decisions" }
                 ].map((tab) => (
-                  <button
+                  <button type="button"
                     key={tab.key}
-                    className="context-tab-btn"
+                    className={cx("pcTabBtn", activeTab === tab.key && "pcTabBtnActive")}
                     onClick={() => setActiveTab(tab.key as "overview" | "preferences" | "constraints" | "credentials" | "decisions")}
-                    type="button"
-                    style={{
-                      padding: "10px 18px",
-                      fontSize: 11,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      background: "transparent",
-                      color: activeTab === tab.key ? "var(--accent)" : "var(--muted2)",
-                      borderBottom: `2px solid ${activeTab === tab.key ? "var(--accent)" : "transparent"}`,
-                      marginBottom: -1
-                    }}
                   >
                     {tab.label}
                   </button>
@@ -557,78 +410,57 @@ export function ProjectContextPage({ isActive }: { isActive: boolean }) {
               </div>
             </div>
 
-            <div style={{ padding: "24px", flex: 1 }}>
+            <div className={cx("pcTabContent")}>
               {activeTab === "overview" ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+                <div className={cx("grid2", "gap24")}>
                   <div>
-                    <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 14 }}>
+                    <div className={cx("pcSectionLabel", "mb14")}>
                       Primary Contact
                     </div>
-                    <div
-                      style={{
-                        padding: 16,
-                        border: "1px solid rgba(255,255,255,0.06)",
-                        borderRadius: 4,
-                        background: "rgba(255,255,255,0.01)",
-                        marginBottom: 16
-                      }}
-                    >
-                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 2 }}>
+                    <div className={cx("pcContactCard")}>
+                      <div className={cx("fontDisplay", "fw700", "colorText", "pcContactName")}>
                         {current.contactName}
                       </div>
-                      <div style={{ fontSize: 11, color: "var(--muted2)", marginBottom: 10 }}>{current.contactRole}</div>
-                      <div style={{ fontSize: 11, color: "#a0a0b0", marginBottom: 6 }}>✉ {current.contactEmail}</div>
-                      <div style={{ fontSize: 11, color: "#a0a0b0" }}>◷ {current.responseTime}</div>
+                      <div className={cx("text11", "colorMuted2", "mb10")}>{current.contactRole}</div>
+                      <div className={cx("text11", "colorMuted", "mb6")}>&hearts; {current.contactEmail}</div>
+                      <div className={cx("text11", "colorMuted")}>&loz; {current.responseTime}</div>
                     </div>
 
-                    <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>
+                    <div className={cx("pcSectionLabel", "mb10")}>
                       Staff Notes
                     </div>
-                    <div
-                      style={{
-                        padding: "14px 16px",
-                        background: "rgba(167,139,250,0.05)",
-                        border: "1px solid rgba(167,139,250,0.15)",
-                        borderRadius: 4,
-                        fontSize: 12,
-                        color: "#a0a0b0",
-                        lineHeight: 1.7
-                      }}
-                    >
+                    <div className={cx("pcNotesCard")}>
                       {current.notes}
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 14 }}>
+                    <div className={cx("pcSectionLabel", "mb14")}>
                       Key Preferences
                     </div>
-                    <div style={{ marginBottom: 20 }}>
+                    <div className={cx("mb20")}>
                       {current.preferences.slice(0, 3).map((preference, index) => (
-                        <div
-                          key={index}
-                          style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}
-                        >
-                          <span style={{ color: "var(--accent)", fontSize: 12, flexShrink: 0, marginTop: 1 }}>→</span>
-                          <span style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.5 }}>{preference}</span>
+                        <div key={index} className={cx("pcPrefRow")}>
+                          <span className={cx("colorAccent", "text12", "noShrink", "pcArrowTight")}>&rarr;</span>
+                          <span className={cx("text12", "colorMuted", "pcCopyTight")}>{preference}</span>
                         </div>
                       ))}
                     </div>
 
-                    <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 14 }}>
+                    <div className={cx("pcSectionLabel", "mb14")}>
                       Latest Decision
                     </div>
                     {current.decisions[0] ? (
-                      <div style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, background: "rgba(255,255,255,0.01)" }}>
-                        <div style={{ fontSize: 10, color: "var(--muted2)", marginBottom: 6 }}>{current.decisions[0].date}</div>
-                        <div style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.5 }}>{current.decisions[0].text}</div>
+                      <div className={cx("pcDecisionCard")}>
+                        <div className={cx("text10", "colorMuted2", "mb6")}>{current.decisions[0].date}</div>
+                        <div className={cx("text12", "colorMuted", "pcCopyTight")}>{current.decisions[0].text}</div>
                       </div>
                     ) : null}
 
                     {current.status === "critical" ? (
-                      <div style={{ marginTop: 16, padding: "12px 14px", border: "1px solid rgba(255,68,68,0.25)", borderRadius: 4, background: "rgba(255,68,68,0.06)" }}>
-                        <div style={{ fontSize: 11, color: "#ff4444", marginBottom: 4 }}>⚠ Critical status</div>
-                        <div style={{ fontSize: 11, color: "#a0a0b0" }}>This project requires immediate attention. Review notes and escalate if needed.</div>
+                      <div className={cx("pcCriticalBanner")}>
+                        <div className={cx("text11", "colorRed", "mb4")}>&loz; Critical status</div>
+                        <div className={cx("text11", "colorMuted")}>This project requires immediate attention. Review notes and escalate if needed.</div>
                       </div>
                     ) : null}
                   </div>
@@ -636,42 +468,42 @@ export function ProjectContextPage({ isActive }: { isActive: boolean }) {
               ) : null}
 
               {activeTab === "preferences" ? (
-                <div style={{ maxWidth: 580 }}>
-                  <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>
+                <div className={cx("pcListWrap")}>
+                  <div className={cx("pcSectionLabel", "mb16")}>
                     Working Preferences - {current.client}
                   </div>
                   {current.preferences.map((preference, index) => (
-                    <div key={index} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                      <span style={{ color: "var(--accent)", fontSize: 14, flexShrink: 0, marginTop: 1 }}>→</span>
-                      <span style={{ fontSize: 13, color: "#a0a0b0", lineHeight: 1.6 }}>{preference}</span>
+                    <div key={index} className={cx("pcListRow")}>
+                      <span className={cx("colorAccent", "text14", "noShrink", "pcArrowTight")}>&rarr;</span>
+                      <span className={cx("text13", "colorMuted", "pcCopyRelaxed")}>{preference}</span>
                     </div>
                   ))}
                 </div>
               ) : null}
 
               {activeTab === "constraints" ? (
-                <div style={{ maxWidth: 580 }}>
-                  <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>
+                <div className={cx("pcListWrap")}>
+                  <div className={cx("pcSectionLabel", "mb16")}>
                     Constraints & Rules - {current.client}
                   </div>
                   {current.constraints.map((constraint, index) => (
-                    <div key={index} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                      <span style={{ color: "#ff4444", fontSize: 12, flexShrink: 0, marginTop: 2 }}>⚑</span>
-                      <span style={{ fontSize: 13, color: "#a0a0b0", lineHeight: 1.6 }}>{constraint}</span>
+                    <div key={index} className={cx("pcListRow")}>
+                      <span className={cx("colorRed", "text12", "noShrink", "pcSquareTight")}>&squf;</span>
+                      <span className={cx("text13", "colorMuted", "pcCopyRelaxed")}>{constraint}</span>
                     </div>
                   ))}
                 </div>
               ) : null}
 
               {activeTab === "credentials" ? (
-                <div style={{ maxWidth: 480 }}>
-                  <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
+                <div className={cx("pcCredentialsWrap")}>
+                  <div className={cx("pcSectionLabel", "mb6")}>
                     Credentials & Links
                   </div>
-                  <div style={{ fontSize: 11, color: "#333344", marginBottom: 16 }}>
+                  <div className={cx("text11", "colorMuted2", "mb16")}>
                     Sensitive credentials are hidden by default. Click Show to reveal.
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div className={cx("flexCol", "gap8")}>
                     {current.credentials.map((credential, index) => (
                       <CopyableField key={index} label={credential.label} value={credential.value} hidden={credential.hidden} />
                     ))}
@@ -680,32 +512,21 @@ export function ProjectContextPage({ isActive }: { isActive: boolean }) {
               ) : null}
 
               {activeTab === "decisions" ? (
-                <div style={{ maxWidth: 580 }}>
-                  <div style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>
+                <div className={cx("pcListWrap")}>
+                  <div className={cx("pcSectionLabel", "mb16")}>
                     Decision Log - {current.client}
                   </div>
                   {current.decisions.map((decision, index) => (
-                    <div key={index} style={{ display: "flex", gap: 16, padding: "14px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                      <div style={{ width: 60, flexShrink: 0, paddingTop: 2 }}>
-                        <span style={{ fontSize: 10, color: "var(--muted2)" }}>{decision.date}</span>
+                    <div key={index} className={cx("pcDecisionRow")}>
+                      <div className={cx("pcDecisionDate")}>
+                        <span className={cx("text10", "colorMuted2")}>{decision.date}</span>
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, color: "#a0a0b0", lineHeight: 1.6 }}>{decision.text}</div>
+                      <div className={cx("flex1")}>
+                        <div className={cx("text13", "colorMuted", "pcCopyRelaxed")}>{decision.text}</div>
                       </div>
                     </div>
                   ))}
-                  <div
-                    style={{
-                      marginTop: 16,
-                      padding: "12px 16px",
-                      border: "1px dashed rgba(255,255,255,0.1)",
-                      borderRadius: 3,
-                      fontSize: 11,
-                      color: "#333344",
-                      cursor: "pointer",
-                      textAlign: "center"
-                    }}
-                  >
+                  <div className={cx("pcAddDecision")}>
                     + Log a new decision
                   </div>
                 </div>

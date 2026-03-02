@@ -1,20 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AdminFilterBar, AdminTabs } from "./shared";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { AdminFilterBar } from "./shared";
+import { colorClass } from "./admin-page-utils";
 
 type Project = {
   id: string;
@@ -39,35 +28,35 @@ type Project = {
 
 const projects: Project[] = [
   {
-    id: "PRJ-001", name: "Brand Identity System", client: "Volta Studios", clientColor: C.primary,
+    id: "PRJ-001", name: "Brand Identity System", client: "Volta Studios", clientColor: "var(--accent)",
     type: "Retainer", status: "active", phase: "Execution",
     budget: 22000, invoiced: 22000, collected: 22000,
     costs: { staffTime: 8400, freelancers: 0, tools: 600, overhead: 2200 },
     hoursSpent: 96, hoursEstimated: 110
   },
   {
-    id: "PRJ-002", name: "Q1 Campaign Strategy", client: "Kestrel Capital", clientColor: C.primary,
+    id: "PRJ-002", name: "Q1 Campaign Strategy", client: "Kestrel Capital", clientColor: "var(--accent)",
     type: "Project", status: "active", phase: "Review",
     budget: 42000, invoiced: 42000, collected: 0,
     costs: { staffTime: 14700, freelancers: 0, tools: 800, overhead: 4200 },
     hoursSpent: 168, hoursEstimated: 150
   },
   {
-    id: "PRJ-003", name: "Website Redesign", client: "Mira Health", clientColor: C.blue,
+    id: "PRJ-003", name: "Website Redesign", client: "Mira Health", clientColor: "var(--blue)",
     type: "Project", status: "active", phase: "Design",
     budget: 42000, invoiced: 21000, collected: 21000,
     costs: { staffTime: 10500, freelancers: 4800, tools: 1200, overhead: 4200 },
     hoursSpent: 120, hoursEstimated: 280
   },
   {
-    id: "PRJ-004", name: "Editorial Design System", client: "Dune Collective", clientColor: C.amber,
+    id: "PRJ-004", name: "Editorial Design System", client: "Dune Collective", clientColor: "var(--amber)",
     type: "Retainer", status: "at-risk", phase: "Execution",
     budget: 48000, invoiced: 48000, collected: 0,
     costs: { staffTime: 15400, freelancers: 18000, tools: 900, overhead: 4800 },
     hoursSpent: 176, hoursEstimated: 160
   },
   {
-    id: "PRJ-005", name: "Annual Report 2025", client: "Okafor & Sons", clientColor: C.orange,
+    id: "PRJ-005", name: "Annual Report 2025", client: "Okafor & Sons", clientColor: "var(--amber)",
     type: "Project", status: "active", phase: "Final Review",
     budget: 12000, invoiced: 12000, collected: 12000,
     costs: { staffTime: 5040, freelancers: 0, tools: 300, overhead: 1200 },
@@ -78,6 +67,34 @@ const projects: Project[] = [
 const tabs = ["project margins", "hours analysis", "collected vs invoiced", "cost breakdown"] as const;
 type Tab = (typeof tabs)[number];
 type SortBy = "margin" | "profit" | "budget";
+
+function toneBorderClass(isRisk: boolean): string {
+  return isRisk ? styles.pppToneRed : styles.pppToneBorder;
+}
+
+function toneFillClass(value: string): string {
+  if (value === "var(--red)") return styles.pppFillRed;
+  if (value === "var(--blue)") return styles.pppFillBlue;
+  if (value === "var(--amber)") return styles.pppFillAmber;
+  if (value === "var(--purple)") return styles.pppFillPurple;
+  if (value === "var(--muted)") return styles.pppFillMuted;
+  return styles.pppFillAccent;
+}
+
+function marginClass(value: string): string {
+  if (value === "var(--red)") return styles.pppMarginRed;
+  if (value === "var(--amber)") return styles.pppMarginAmber;
+  return styles.pppMarginAccent;
+}
+
+function dotClass(value: string): string {
+  if (value === "var(--red)") return styles.pppDotRed;
+  if (value === "var(--blue)") return styles.pppDotBlue;
+  if (value === "var(--amber)") return styles.pppDotAmber;
+  if (value === "var(--purple)") return styles.pppDotPurple;
+  if (value === "var(--muted)") return styles.pppDotMuted;
+  return styles.pppDotAccent;
+}
 
 export function ProfitabilityPerProjectPage() {
   const [activeTab, setActiveTab] = useState<Tab>("project margins");
@@ -124,126 +141,95 @@ export function ProfitabilityPerProjectPage() {
   const avgMargin = Math.round((totalProfit / Math.max(totalBudget, 1)) * 100);
 
   return (
-    <div
-      style={{
-        background: C.bg,
-        height: "100%",
-        fontFamily: "Syne, sans-serif",
-        color: C.text,
-        padding: 0,
-        overflow: "hidden",
-        display: "grid",
-        gridTemplateRows: "auto auto auto 1fr",
-        minHeight: 0
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={cx(styles.pageBody, styles.pppRoot)}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / FINANCIAL</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Profitability per Project</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Budget vs cost, hours variance, collection rate, and true margin</div>
+          <div className={styles.pageEyebrow}>ADMIN / FINANCIAL</div>
+          <h1 className={styles.pageTitle}>Profitability per Project</h1>
+          <div className={styles.pageSub}>Budget vs cost, hours variance, collection rate, and true margin</div>
         </div>
-        <button style={{ background: C.primary, color: C.bg, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>
-          Export Report
-        </button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnAccent")}>Export Report</button>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack", "gap16", "mb16")}>
         {[
-          { label: "Total Project Revenue", value: `R${(totalBudget / 1000).toFixed(0)}k`, color: C.primary, sub: "All active projects" },
-          { label: "Total Project Cost", value: `R${(totalCost / 1000).toFixed(0)}k`, color: C.red, sub: "Staff + freelancers + tools" },
-          { label: "Avg Project Margin", value: `${avgMargin}%`, color: avgMargin >= 50 ? C.primary : C.amber, sub: "Gross profit margin" },
-          { label: "Cash Collected", value: `R${(totalCollected / 1000).toFixed(0)}k`, color: C.blue, sub: `of R${(totalBudget / 1000).toFixed(0)}k invoiced` }
+          { label: "Total Project Revenue", value: `R${(totalBudget / 1000).toFixed(0)}k`, color: "var(--accent)", sub: "All active projects" },
+          { label: "Total Project Cost", value: `R${(totalCost / 1000).toFixed(0)}k`, color: "var(--red)", sub: "Staff + freelancers + tools" },
+          { label: "Avg Project Margin", value: `${avgMargin}%`, color: avgMargin >= 50 ? "var(--accent)" : "var(--amber)", sub: "Gross profit margin" },
+          { label: "Cash Collected", value: `R${(totalCollected / 1000).toFixed(0)}k`, color: "var(--blue)", sub: `of R${(totalBudget / 1000).toFixed(0)}k invoiced` }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <AdminTabs
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        primaryColor={C.primary}
-        mutedColor={C.muted}
-        panelColor={C.surface}
-        borderColor={C.border}
-      />
-
-      <div style={{ overflow: "auto", minHeight: 0 }}>
-        {activeTab === "project margins" ? (
-          <AdminFilterBar panelColor={C.surface} borderColor={C.border}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "DM Mono, monospace" }}>Sort</div>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+      <div className={cx("overflowAuto", "minH0")}>
+        <AdminFilterBar panelColor={"var(--surface)"} borderColor={"var(--border)"}>
+          <select title="Select tab" value={activeTab} onChange={(e) => setActiveTab(e.target.value as Tab)} className={styles.formInput}>
+            {tabs.map((tab) => (
+              <option key={tab} value={tab}>{tab}</option>
+            ))}
+          </select>
+          {activeTab === "project margins" ? (
+            <select title="Sort projects" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)} className={styles.formInput}>
               <option value="margin">Margin</option>
               <option value="profit">Profit</option>
               <option value="budget">Budget</option>
             </select>
-          </AdminFilterBar>
-        ) : null}
+          ) : null}
+        </AdminFilterBar>
 
         {activeTab === "project margins" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className={styles.pppList14}>
             {sorted.map((p) => {
-              const marginColor = p.margin >= 55 ? C.primary : p.margin >= 35 ? C.amber : C.red;
+              const marginColor = p.margin >= 55 ? "var(--accent)" : p.margin >= 35 ? "var(--amber)" : "var(--red)";
               return (
-                <div key={p.id} style={{ background: C.surface, border: `1px solid ${p.margin < 30 ? C.red + "44" : C.border}`, padding: 24 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "220px 1fr 90px 90px 90px 90px 80px", alignItems: "center", gap: 16, marginBottom: 16 }}>
+                <div key={p.id} className={cx(styles.pppCard, toneBorderClass(p.margin < 30))}>
+                  <div className={styles.pppMainGrid}>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{p.name}</div>
-                      <div style={{ fontSize: 11, color: p.clientColor }}>{p.client} · {p.type}</div>
+                      <div className={styles.pppProjName}>{p.name}</div>
+                      <div className={cx(styles.pppClientMeta, colorClass(p.clientColor))}>{p.client} · {p.type}</div>
                     </div>
                     <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                        <span style={{ fontSize: 10, color: C.muted }}>Cost vs Budget</span>
-                        <span style={{ fontSize: 10, fontFamily: "DM Mono, monospace", color: marginColor }}>{p.margin}% margin</span>
+                      <div className={styles.pppTopRow}>
+                        <span className={styles.pppMiniLabel}>Cost vs Budget</span>
+                        <span className={cx(styles.pppMiniMono, colorClass(marginColor))}>{p.margin}% margin</span>
                       </div>
-                      <div style={{ height: 8, background: C.border, overflow: "hidden", display: "flex" }}>
-                        <div style={{ width: `${Math.min((p.totalCost / p.budget) * 100, 100)}%`, background: C.red, opacity: 0.7 }} />
-                        <div style={{ flex: 1, background: marginColor }} />
+                      <div className={styles.pppStackBar}>
+                        <svg className={styles.pppStackSvg} viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true">
+                          <rect className={styles.pppCostBar} x="0" y="0" width={Math.min((p.totalCost / p.budget) * 100, 100)} height="8" />
+                          <rect className={cx(styles.pppMarginBar, marginClass(marginColor))} x={Math.min((p.totalCost / p.budget) * 100, 100)} y="0" width={100 - Math.min((p.totalCost / p.budget) * 100, 100)} height="8" />
+                        </svg>
                       </div>
                     </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 9, color: C.muted, marginBottom: 3 }}>Budget</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: C.primary }}>R{(p.budget / 1000).toFixed(0)}k</div>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 9, color: C.muted, marginBottom: 3 }}>Cost</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: C.red }}>R{(p.totalCost / 1000).toFixed(1)}k</div>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 9, color: C.muted, marginBottom: 3 }}>Profit</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12, fontWeight: 700, color: p.grossProfit >= 0 ? C.primary : C.red }}>R{(p.grossProfit / 1000).toFixed(1)}k</div>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 9, color: C.muted, marginBottom: 3 }}>Collected</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: p.collectionRate === 100 ? C.primary : C.amber }}>{p.collectionRate}%</div>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 9, color: C.muted, marginBottom: 3 }}>Margin</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 20, color: marginColor }}>{p.margin}%</div>
-                    </div>
+                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Budget</div><div className={styles.pppValueAccent}>R{(p.budget / 1000).toFixed(0)}k</div></div>
+                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Cost</div><div className={styles.pppValueRed}>R{(p.totalCost / 1000).toFixed(1)}k</div></div>
+                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Profit</div><div className={cx(styles.pppValueStrong, p.grossProfit >= 0 ? "colorAccent" : "colorRed")}>R{(p.grossProfit / 1000).toFixed(1)}k</div></div>
+                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Collected</div><div className={cx(styles.pppValueMono, p.collectionRate === 100 ? "colorAccent" : "colorAmber")}>{p.collectionRate}%</div></div>
+                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Margin</div><div className={cx(styles.pppMarginBig, colorClass(marginColor))}>{p.margin}%</div></div>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                  <div className={styles.pppCostGrid}>
                     {[
-                      { label: "Staff Time", value: p.costs.staffTime, color: C.primary },
-                      { label: "Freelancers", value: p.costs.freelancers, color: C.amber },
-                      { label: "Tools", value: p.costs.tools, color: C.blue },
-                      { label: "Overhead", value: p.costs.overhead, color: C.muted }
+                      { label: "Staff Time", value: p.costs.staffTime, color: "var(--accent)" },
+                      { label: "Freelancers", value: p.costs.freelancers, color: "var(--amber)" },
+                      { label: "Tools", value: p.costs.tools, color: "var(--blue)" },
+                      { label: "Overhead", value: p.costs.overhead, color: "var(--muted)" }
                     ].map((c) => (
-                      <div key={c.label} style={{ padding: 8, background: C.bg, textAlign: "center" }}>
-                        <div style={{ fontFamily: "DM Mono, monospace", color: c.color, fontWeight: 700, fontSize: 13 }}>R{(c.value / 1000).toFixed(1)}k</div>
-                        <div style={{ fontSize: 9, color: C.muted, marginTop: 2 }}>{c.label}</div>
+                      <div key={c.label} className={styles.pppCostBox}>
+                        <div className={cx(styles.pppCostValue, colorClass(c.color))}>R{(c.value / 1000).toFixed(1)}k</div>
+                        <div className={styles.pppCostLabel}>{c.label}</div>
                       </div>
                     ))}
                   </div>
 
                   {p.collected === 0 ? (
-                    <div style={{ marginTop: 10, padding: 8, background: "#1a0a0a", borderLeft: `3px solid ${C.red}`, fontSize: 11, color: C.red }}>
+                    <div className={styles.pppWarnRow}>
                       R{(p.invoiced / 1000).toFixed(0)}k invoiced - R0 collected. Realized margin is negative until paid.
                     </div>
                   ) : null}
@@ -254,40 +240,29 @@ export function ProfitabilityPerProjectPage() {
         ) : null}
 
         {activeTab === "hours analysis" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className={styles.pppList14}>
             {withCalc.map((p) => {
               const variance = p.hoursVariance;
               const pct = Math.round((p.hoursSpent / Math.max(p.hoursEstimated, 1)) * 100);
-              const color = pct <= 100 ? C.primary : pct <= 115 ? C.amber : C.red;
+              const color = pct <= 100 ? "var(--accent)" : pct <= 115 ? "var(--amber)" : "var(--red)";
               return (
-                <div key={p.id} style={{ background: C.surface, border: `1px solid ${pct > 115 ? C.red + "44" : C.border}`, padding: 20 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "220px 1fr 120px 120px 100px 80px", alignItems: "center", gap: 16 }}>
+                <div key={p.id} className={cx(styles.pppHoursCard, toneBorderClass(pct > 115))}>
+                  <div className={styles.pppHoursGrid}>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</div>
-                      <div style={{ fontSize: 11, color: p.clientColor }}>{p.client}</div>
+                      <div className={styles.pppProjName}>{p.name}</div>
+                      <div className={cx(styles.pppClientMeta, colorClass(p.clientColor))}>{p.client}</div>
                     </div>
                     <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                        <span style={{ fontSize: 10, color: C.muted }}>{p.hoursSpent}h spent of {p.hoursEstimated}h estimated</span>
-                        <span style={{ fontSize: 10, fontFamily: "DM Mono, monospace", color }}>{pct}%</span>
+                      <div className={styles.pppTopRow}>
+                        <span className={styles.pppMiniLabel}>{p.hoursSpent}h spent of {p.hoursEstimated}h estimated</span>
+                        <span className={cx(styles.pppMiniMono, colorClass(color))}>{pct}%</span>
                       </div>
-                      <div style={{ height: 8, background: C.border, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, background: color }} />
-                      </div>
+                      <progress className={cx(styles.pppTrack8, toneFillClass(color))} max={100} value={Math.min(pct, 100)} aria-label={`${p.name} hours usage ${pct}%`} />
                     </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 9, color: C.muted, marginBottom: 3 }}>Variance</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: variance <= 0 ? C.primary : C.red }}>{variance > 0 ? "+" : ""}{variance}h</div>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 9, color: C.muted, marginBottom: 3 }}>Effective Rate</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", color: C.blue }}>R{p.effectiveRate}/h</div>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 9, color: C.muted, marginBottom: 3 }}>Actual Rate</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", color: p.actualRate >= p.effectiveRate ? C.primary : C.red }}>R{p.actualRate}/h</div>
-                    </div>
-                    {pct > 115 ? <span style={{ fontSize: 9, color: C.red, background: `${C.red}15`, padding: "3px 8px" }}>Over-hours</span> : <span />}
+                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Variance</div><div className={cx(styles.pppValueStrong, variance <= 0 ? "colorAccent" : "colorRed")}>{variance > 0 ? "+" : ""}{variance}h</div></div>
+                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Effective Rate</div><div className={styles.pppValueMonoBlue}>R{p.effectiveRate}/h</div></div>
+                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Actual Rate</div><div className={cx(styles.pppValueMono, p.actualRate >= p.effectiveRate ? "colorAccent" : "colorRed")}>R{p.actualRate}/h</div></div>
+                    {pct > 115 ? <span className={styles.pppOverHours}>Over-hours</span> : <span />}
                   </div>
                 </div>
               );
@@ -296,55 +271,34 @@ export function ProfitabilityPerProjectPage() {
         ) : null}
 
         {activeTab === "collected vs invoiced" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className={styles.pppList12}>
             {withCalc.map((p) => (
-              <div key={p.id} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "220px 1fr 120px 120px 80px", alignItems: "center", gap: 16 }}>
+              <div key={p.id} className={styles.pppCollectCard}>
+                <div className={styles.pppCollectGrid}>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</div>
-                    <div style={{ fontSize: 11, color: p.clientColor }}>{p.client}</div>
+                    <div className={styles.pppProjName}>{p.name}</div>
+                    <div className={cx(styles.pppClientMeta, colorClass(p.clientColor))}>{p.client}</div>
                   </div>
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                      <span style={{ fontSize: 10, color: C.muted }}>R{(p.collected / 1000).toFixed(0)}k collected of R{(p.invoiced / 1000).toFixed(0)}k invoiced</span>
-                      <span style={{ fontSize: 10, fontFamily: "DM Mono, monospace", color: p.collectionRate === 100 ? C.primary : C.red }}>{p.collectionRate}%</span>
+                    <div className={styles.pppTopRow}>
+                      <span className={styles.pppMiniLabel}>R{(p.collected / 1000).toFixed(0)}k collected of R{(p.invoiced / 1000).toFixed(0)}k invoiced</span>
+                      <span className={cx(styles.pppMiniMono, p.collectionRate === 100 ? "colorAccent" : "colorRed")}>{p.collectionRate}%</span>
                     </div>
-                    <div style={{ height: 8, background: C.border, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${p.collectionRate}%`, background: p.collectionRate === 100 ? C.primary : C.amber }} />
-                    </div>
+                    <progress className={cx(styles.pppTrack8, p.collectionRate === 100 ? styles.pppFillAccent : styles.pppFillAmber)} max={100} value={p.collectionRate} aria-label={`${p.name} collection rate ${p.collectionRate}%`} />
                   </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 9, color: C.muted, marginBottom: 3 }}>Outstanding</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: p.invoiced - p.collected > 0 ? C.red : C.primary }}>
-                      R{((p.invoiced - p.collected) / 1000).toFixed(0)}k
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 9, color: C.muted, marginBottom: 3 }}>Realized Profit</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: p.realizedProfit >= 0 ? C.primary : C.red }}>
-                      R{(p.realizedProfit / 1000).toFixed(1)}k
-                    </div>
-                  </div>
-                  {p.collectionRate < 100 ? <button style={{ background: C.amber, color: C.bg, border: "none", padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Chase</button> : <span />}
+                  <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Outstanding</div><div className={cx(styles.pppValueStrong, p.invoiced - p.collected > 0 ? "colorRed" : "colorAccent")}>R{((p.invoiced - p.collected) / 1000).toFixed(0)}k</div></div>
+                  <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Realized Profit</div><div className={cx(styles.pppValueStrong, p.realizedProfit >= 0 ? "colorAccent" : "colorRed")}>R{(p.realizedProfit / 1000).toFixed(1)}k</div></div>
+                  {p.collectionRate < 100 ? <button type="button" className={styles.pppChaseBtn}>Chase</button> : <span />}
                 </div>
               </div>
             ))}
-            <div style={{ padding: 20, background: C.surface, border: `1px solid ${C.primary}22` }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontWeight: 700 }}>Portfolio Total</span>
-                <div style={{ display: "flex", gap: 40 }}>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 10, color: C.muted }}>Invoiced</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", color: C.primary, fontWeight: 700 }}>R{(totalBudget / 1000).toFixed(0)}k</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 10, color: C.muted }}>Collected</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", color: C.blue, fontWeight: 700 }}>R{(totalCollected / 1000).toFixed(0)}k</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 10, color: C.muted }}>Outstanding</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", color: C.red, fontWeight: 700 }}>R{((totalBudget - totalCollected) / 1000).toFixed(0)}k</div>
-                  </div>
+            <div className={styles.pppPortfolioCard}>
+              <div className={styles.pppPortfolioRow}>
+                <span className={cx("fw700")}>Portfolio Total</span>
+                <div className={styles.pppPortfolioStats}>
+                  <div className={styles.pppPortfolioItem}><div className={styles.pppMiniLabel}>Invoiced</div><div className={styles.pppValueStrongAccent}>R{(totalBudget / 1000).toFixed(0)}k</div></div>
+                  <div className={styles.pppPortfolioItem}><div className={styles.pppMiniLabel}>Collected</div><div className={styles.pppValueStrongBlue}>R{(totalCollected / 1000).toFixed(0)}k</div></div>
+                  <div className={styles.pppPortfolioItem}><div className={styles.pppMiniLabel}>Outstanding</div><div className={styles.pppValueStrongRed}>R{((totalBudget - totalCollected) / 1000).toFixed(0)}k</div></div>
                 </div>
               </div>
             </div>
@@ -352,37 +306,33 @@ export function ProfitabilityPerProjectPage() {
         ) : null}
 
         {activeTab === "cost breakdown" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Cost Type vs Total</div>
+          <div className={cx("grid2", "gap20")}>
+            <div className={cx("card", "p24")}>
+              <div className={styles.sciSecTitle}>Cost Type vs Total</div>
               {(["staffTime", "freelancers", "tools", "overhead"] as const).map((key, i) => {
                 const total = withCalc.reduce((s, p) => s + p.costs[key], 0);
                 const labels = { staffTime: "Staff Time", freelancers: "Freelancers", tools: "Tools", overhead: "Overhead" } as const;
-                const colors = [C.primary, C.amber, C.blue, C.muted] as const;
+                  const colors = ["var(--accent)", "var(--amber)", "var(--blue)", "var(--muted)"] as const;
                 return (
-                  <div key={key} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                    <div style={{ width: 10, height: 10, background: colors[i], flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, flex: 1 }}>{labels[key]}</span>
-                    <div style={{ width: 100, height: 8, background: C.border }}>
-                      <div style={{ height: "100%", width: `${(total / Math.max(totalCost, 1)) * 100}%`, background: colors[i] }} />
-                    </div>
-                    <span style={{ fontFamily: "DM Mono, monospace", color: colors[i], fontWeight: 700, width: 60, textAlign: "right" }}>R{(total / 1000).toFixed(1)}k</span>
+                  <div key={key} className={styles.pppCostLine}>
+                    <div className={cx(styles.pppDot, dotClass(colors[i]))} />
+                    <span className={styles.pppLineLabel}>{labels[key]}</span>
+                    <progress className={cx(styles.pppLineTrack, toneFillClass(colors[i]))} max={100} value={(total / Math.max(totalCost, 1)) * 100} aria-label={`${labels[key]} share`} />
+                    <span className={cx(styles.pppLineValue, colorClass(colors[i]))}>R{(total / 1000).toFixed(1)}k</span>
                   </div>
                 );
               })}
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Most Costly Projects</div>
+            <div className={cx("card", "p24")}>
+              <div className={styles.sciSecTitle}>Most Costly Projects</div>
               {[...withCalc].sort((a, b) => b.totalCost - a.totalCost).map((p) => {
                 const maxCost = Math.max(...withCalc.map((row) => row.totalCost), 1);
                 return (
-                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                    <div style={{ width: 8, height: 8, background: p.clientColor, flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, flex: 1, color: p.clientColor }}>{p.name.length > 22 ? `${p.name.slice(0, 22)}...` : p.name}</span>
-                    <div style={{ width: 100, height: 8, background: C.border }}>
-                      <div style={{ height: "100%", width: `${(p.totalCost / maxCost) * 100}%`, background: p.clientColor }} />
-                    </div>
-                    <span style={{ fontFamily: "DM Mono, monospace", color: p.clientColor, fontWeight: 700, width: 60, textAlign: "right" }}>R{(p.totalCost / 1000).toFixed(1)}k</span>
+                  <div key={p.id} className={styles.pppCostLine}>
+                    <div className={cx(styles.pppDot, dotClass(p.clientColor))} />
+                    <span className={cx(styles.pppLineLabel, colorClass(p.clientColor))}>{p.name.length > 22 ? `${p.name.slice(0, 22)}...` : p.name}</span>
+                    <progress className={cx(styles.pppLineTrack, toneFillClass(p.clientColor))} max={100} value={(p.totalCost / maxCost) * 100} aria-label={`${p.name} cost relative ${Math.round((p.totalCost / maxCost) * 100)}%`} />
+                    <span className={cx(styles.pppLineValue, colorClass(p.clientColor))}>R{(p.totalCost / 1000).toFixed(1)}k</span>
                   </div>
                 );
               })}

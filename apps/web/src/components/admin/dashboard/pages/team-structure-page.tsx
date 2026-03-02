@@ -1,20 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { cx, styles } from "../style";
+import { toneClass } from "./admin-page-utils";
 
 type OrgPerson = {
   id: string;
@@ -31,7 +19,7 @@ const org: OrgPerson = {
   name: "Sipho Nkosi",
   role: "Founder & CEO",
   avatar: "SN",
-  color: C.lime,
+  color: "var(--accent)",
   department: "Leadership",
   reports: [
     {
@@ -39,11 +27,11 @@ const org: OrgPerson = {
       name: "Leilani Fotu",
       role: "Head of Operations",
       avatar: "LF",
-      color: C.blue,
+      color: "var(--blue)",
       department: "Operations",
       reports: [
-        { id: "nomsa", name: "Nomsa Dlamini", role: "Account Manager", avatar: "ND", color: C.purple, department: "Client Success", reports: [] },
-        { id: "tapiwa", name: "Tapiwa Moyo", role: "Copywriter", avatar: "TM", color: C.amber, department: "Content", reports: [] }
+        { id: "nomsa", name: "Nomsa Dlamini", role: "Account Manager", avatar: "ND", color: "var(--purple)", department: "Client Success", reports: [] },
+        { id: "tapiwa", name: "Tapiwa Moyo", role: "Copywriter", avatar: "TM", color: "var(--amber)", department: "Content", reports: [] }
       ]
     },
     {
@@ -51,19 +39,19 @@ const org: OrgPerson = {
       name: "Renzo Fabbri",
       role: "Creative Director",
       avatar: "RF",
-      color: C.orange,
+      color: "var(--amber)",
       department: "Design",
-      reports: [{ id: "kira", name: "Kira Bosman", role: "UX Designer", avatar: "KB", color: C.red, department: "Design", reports: [] }]
+      reports: [{ id: "kira", name: "Kira Bosman", role: "UX Designer", avatar: "KB", color: "var(--red)", department: "Design", reports: [] }]
     }
   ]
 };
 
 const departments = [
-  { name: "Leadership", headcount: 1, color: C.lime, budget: 60000 },
-  { name: "Operations", headcount: 1, color: C.blue, budget: 44000 },
-  { name: "Design", headcount: 2, color: C.orange, budget: 73500 },
-  { name: "Client Success", headcount: 1, color: C.purple, budget: 42000 },
-  { name: "Content", headcount: 1, color: C.amber, budget: 31000 }
+  { name: "Leadership", headcount: 1, color: "var(--accent)", budget: 60000 },
+  { name: "Operations", headcount: 1, color: "var(--blue)", budget: 44000 },
+  { name: "Design", headcount: 2, color: "var(--amber)", budget: 73500 },
+  { name: "Client Success", headcount: 1, color: "var(--purple)", budget: 42000 },
+  { name: "Content", headcount: 1, color: "var(--amber)", budget: 31000 }
 ] as const;
 
 const roles = [
@@ -86,7 +74,7 @@ type Tab = (typeof tabs)[number];
 
 function Avatar({ initials, color, size = 40 }: { initials: string; color: string; size?: number }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: `${color}22`, border: `2px solid ${color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.3, fontWeight: 700, color, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>
+    <div className={cx("fontMono", "flexCenter", "noShrink", "fw700", styles.teamAvatar, toneClass(color), size === 36 ? "teamAvatar36" : "teamAvatar40")}>
       {initials}
     </div>
   );
@@ -95,43 +83,41 @@ function Avatar({ initials, color, size = 40 }: { initials: string; color: strin
 function OrgNode({ person, depth = 0 }: { person: OrgPerson; depth?: number }) {
   const [collapsed, setCollapsed] = useState(false);
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <div className={cx("flexCol", styles.teamCenterCol)}>
       <div
-        style={{ background: C.surface, border: `1px solid ${person.color}55`, borderRadius: 10, padding: "14px 20px", minWidth: 160, textAlign: "center", position: "relative", cursor: person.reports.length > 0 ? "pointer" : "default" }}
+        className={cx(styles.card, styles.teamOrgCard, toneClass(person.color))}
+        role={person.reports.length > 0 ? "button" : undefined}
+        tabIndex={person.reports.length > 0 ? 0 : undefined}
         onClick={() => person.reports.length > 0 && setCollapsed(!collapsed)}
+        onKeyDown={(event) => {
+          if (person.reports.length === 0) return;
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setCollapsed((value) => !value);
+          }
+        }}
       >
         <Avatar initials={person.avatar} color={person.color} size={36} />
-        <div style={{ fontWeight: 700, fontSize: 13, marginTop: 8 }}>{person.name}</div>
-        <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{person.role}</div>
-        <div style={{ fontSize: 10, color: person.color, marginTop: 4, fontFamily: "DM Mono, monospace" }}>{person.department}</div>
+        <div className={cx("fw700", "text13", "mt8")}>{person.name}</div>
+        <div className={cx("text11", "colorMuted", "mt4")}>{person.role}</div>
+        <div className={cx("text10", "fontMono", "mt4", styles.teamToneText, toneClass(person.color))}>{person.department}</div>
         {person.reports.length > 0 ? (
-          <div style={{ position: "absolute", bottom: -10, left: "50%", transform: "translateX(-50%)", fontSize: 12, color: C.muted }}>{collapsed ? "+" : "−"}</div>
+          <div className={cx("colorMuted", "text12", styles.teamCollapseIcon)}>{collapsed ? "+" : "\u2212"}</div>
         ) : null}
       </div>
 
       {!collapsed && person.reports.length > 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 0 }}>
-          <div style={{ width: 1, height: 24, background: C.border }} />
+        <div className={cx("flexCol", styles.teamCenterCol)}>
+          <div className={styles.teamConnV24} />
           {person.reports.length > 1 ? (
-            <div style={{ position: "relative", display: "flex", alignItems: "flex-start" }}>
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  right: "calc(50% - 100px)",
-                  height: 1,
-                  background: C.border,
-                  minWidth: `${(person.reports.length - 1) * 220}px`,
-                  transform: "translateX(-50%)",
-                  left: "50%"
-                }}
-              />
+            <div className={styles.teamBranchWrap}>
+              <div className={cx(styles.teamBranchLine, styles.teamBranchLine220)} />
             </div>
           ) : null}
-          <div style={{ display: "flex", gap: 40, alignItems: "flex-start", marginTop: 0 }}>
+          <div className={cx("flexRow", "gap20", styles.teamAlignStart)}>
             {person.reports.map((report) => (
-              <div key={report.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ width: 1, height: 24, background: C.border }} />
+              <div key={report.id} className={cx("flexCol", styles.teamCenterCol)}>
+                <div className={styles.teamConnV24} />
                 <OrgNode person={report} depth={depth + 1} />
               </div>
             ))}
@@ -149,73 +135,51 @@ export function TeamStructurePage() {
   const totalPayroll = departments.reduce((s, d) => s + d.budget, 0);
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.lime, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / ORGANIZATIONAL STRUCTURE</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Team Structure</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Org chart · Departments · Roles · Headcount planning</div>
+          <div className={styles.pageEyebrow}>ADMIN / ORGANIZATIONAL STRUCTURE</div>
+          <h1 className={styles.pageTitle}>Team Structure</h1>
+          <div className={styles.pageSub}>Org chart &middot; Departments &middot; Roles &middot; Headcount planning</div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "8px 16px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>Export Org Chart</button>
-          <button style={{ background: C.lime, color: C.bg, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>+ Add Staff</button>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnGhost")}>Export Org Chart</button>
+          <button type="button" className={cx("btnSm", "btnAccent")}>+ Add Staff</button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Total Headcount", value: totalHeadcount.toString(), color: C.lime, sub: "Full-time staff" },
-          { label: "Departments", value: departments.length.toString(), color: C.blue, sub: "Active teams" },
-          { label: "Monthly Payroll", value: `R${(totalPayroll / 1000).toFixed(0)}k`, color: C.red, sub: "Salaries only" },
-          { label: "Open Positions", value: headcountPlan.length.toString(), color: C.amber, sub: "Planned hires" }
+          { label: "Total Headcount", value: totalHeadcount.toString(), color: "var(--accent)", sub: "Full-time staff" },
+          { label: "Departments", value: departments.length.toString(), color: "var(--blue)", sub: "Active teams" },
+          { label: "Monthly Payroll", value: `R${(totalPayroll / 1000).toFixed(0)}k`, color: "var(--red)", sub: "Salaries only" },
+          { label: "Open Positions", value: headcountPlan.length.toString(), color: "var(--amber)", sub: "Planned hires" }
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{s.label}</div>
+            <div className={cx(styles.statValue, "mb4", styles.teamToneText, toneClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            style={{
-              background: "none",
-              border: "none",
-              color: activeTab === t ? C.lime : C.muted,
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontFamily: "Syne, sans-serif",
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              borderBottom: `2px solid ${activeTab === t ? C.lime : "transparent"}`,
-              marginBottom: -1,
-              transition: "all 0.2s"
-            }}
-          >
-            {t}
-          </button>
-        ))}
+      <div className={styles.filterRow}>
+        <select title="View" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
       {activeTab === "org chart" ? (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 48, overflowX: "auto" }}>
-          <div style={{ display: "flex", justifyContent: "center", minWidth: 700 }}>
+        <div className={cx(styles.card, styles.teamOrgWrap)}>
+          <div className={cx("flexCenter", styles.teamOrgMin)}>
             <OrgNode person={org} />
           </div>
-          <div style={{ marginTop: 32, paddingTop: 20, borderTop: `1px solid ${C.border}`, display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
+          <div className={cx("flexRow", "gap20", "flexWrap", "mt32", styles.teamDeptLegend)}>
             {departments.map((d) => (
-              <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: d.color }} />
-                <span style={{ color: C.muted }}>{d.name}</span>
-                <span style={{ color: d.color, fontFamily: "DM Mono, monospace" }}>({d.headcount})</span>
+              <div key={d.name} className={cx("flexRow", "gap6", "text12")}>
+                <div className={cx(styles.teamDot, toneClass(d.color))} />
+                <span className={cx("colorMuted")}>{d.name}</span>
+                <span className={cx("fontMono", styles.teamToneText, toneClass(d.color))}>({d.headcount})</span>
               </div>
             ))}
           </div>
@@ -223,57 +187,57 @@ export function TeamStructurePage() {
       ) : null}
 
       {activeTab === "departments" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        <div className={cx("grid3")}>
           {departments.map((d) => (
-            <div key={d.name} style={{ background: C.surface, border: `1px solid ${d.color}44`, borderRadius: 10, padding: 24 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+            <div key={d.name} className={cx(styles.card, styles.teamDeptCard, toneClass(d.color))}>
+              <div className={cx("flexBetween", "mb20")}>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{d.name}</div>
-                  <div style={{ fontSize: 12, color: C.muted }}>
+                  <div className={cx("fw700", "mb4", styles.teamTitle16)}>{d.name}</div>
+                  <div className={cx("text12", "colorMuted")}>
                     {d.headcount} staff member{d.headcount !== 1 ? "s" : ""}
                   </div>
                 </div>
-                <div style={{ width: 12, height: 12, borderRadius: "50%", background: d.color, marginTop: 4 }} />
+                <div className={cx(styles.teamDotLg, toneClass(d.color))} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div style={{ padding: 12, background: C.bg, borderRadius: 8 }}>
-                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>Monthly Budget</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: C.red }}>R{d.budget.toLocaleString()}</div>
+              <div className={cx("grid2", "gap12")}>
+                <div className={cx("bgBg", "p12", styles.teamRounded8)}>
+                  <div className={cx("text10", "colorMuted", "mb4")}>Monthly Budget</div>
+                  <div className={cx("fontMono", "fw700", "colorRed")}>R{d.budget.toLocaleString()}</div>
                 </div>
-                <div style={{ padding: 12, background: C.bg, borderRadius: 8 }}>
-                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>Cost per Head</div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700 }}>R{Math.round(d.budget / d.headcount).toLocaleString()}</div>
+                <div className={cx("bgBg", "p12", styles.teamRounded8)}>
+                  <div className={cx("text10", "colorMuted", "mb4")}>Cost per Head</div>
+                  <div className={cx("fontMono", "fw700")}>R{Math.round(d.budget / d.headcount).toLocaleString()}</div>
                 </div>
               </div>
-              <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-                <button style={{ flex: 1, background: C.border, border: "none", color: C.text, padding: "8px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>View Team</button>
-                <button style={{ flex: 1, background: `${d.color}15`, border: `1px solid ${d.color}44`, color: d.color, padding: "8px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Edit</button>
+              <div className={cx("flexRow", "gap8", "mt16")}>
+                <button type="button" className={cx("btnSm", "btnGhost", styles.teamFlex1)}>View Team</button>
+                <button type="button" className={cx("btnSm", styles.teamToneBtn, styles.teamFlex1, toneClass(d.color))}>Edit</button>
               </div>
             </div>
           ))}
-          <div style={{ border: `1px dashed ${C.border}`, borderRadius: 10, padding: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.muted, fontSize: 13 }}>
+          <div className={cx("flexCenter", "colorMuted", "text13", "pointerCursor", styles.teamAddCard)}>
             + Add Department
           </div>
         </div>
       ) : null}
 
       {activeTab === "roles & permissions" ? (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 140px 100px 80px 1fr", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div className={cx("card", "overflowHidden")}>
+          <div className={styles.teamRolesHead}>
             {["Role Title", "Department", "Level", "Reports", "Dashboard Permissions"].map((h) => <span key={h}>{h}</span>)}
           </div>
-          {roles.map((r, i) => (
-            <div key={r.title} style={{ display: "grid", gridTemplateColumns: "1fr 140px 100px 80px 1fr", padding: "16px 24px", borderBottom: i < roles.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center" }}>
-              <span style={{ fontWeight: 600, fontSize: 13 }}>{r.title}</span>
-              <span style={{ fontSize: 12, color: C.muted }}>{r.department}</span>
-              <span style={{ fontSize: 10, color: r.level === "C-Suite" ? C.lime : r.level === "Head" ? C.blue : C.muted, background: `${r.level === "C-Suite" ? C.lime : r.level === "Head" ? C.blue : C.muted}15`, padding: "3px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace" }}>{r.level}</span>
-              <span style={{ fontFamily: "DM Mono, monospace", color: C.muted }}>{r.reportCount}</span>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          {roles.map((r) => (
+            <div key={r.title} className={cx(styles.teamRolesRow, styles.teamRolesRowPad)}>
+              <span className={cx("fw600", "text13")}>{r.title}</span>
+              <span className={cx("text12", "colorMuted")}>{r.department}</span>
+              <span className={cx("badge", r.level === "C-Suite" ? "badgeGreen" : r.level === "Head" ? "badgeBlue" : "badgeMuted")}>{r.level}</span>
+              <span className={cx("fontMono", "colorMuted")}>{r.reportCount}</span>
+              <div className={cx("flexRow", "flexWrap", "gap4")}>
                 {r.permissions.some((p) => p === "all") ? (
-                  <span style={{ fontSize: 10, color: C.lime, background: `${C.lime}15`, padding: "2px 8px", borderRadius: 4 }}>★ Full Access</span>
+                  <span className={cx("badge", "badgeGreen")}>&#9733; Full Access</span>
                 ) : (
                   r.permissions.map((p) => (
-                    <span key={p} style={{ fontSize: 10, color: C.blue, background: `${C.blue}15`, padding: "2px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace" }}>
+                    <span key={p} className={cx("badge", "badgeBlue")}>
                       {p}
                     </span>
                   ))
@@ -285,33 +249,35 @@ export function TeamStructurePage() {
       ) : null}
 
       {activeTab === "headcount plan" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.lime}22`, borderRadius: 10, padding: 16, fontSize: 12, color: C.muted }}>
-            Planned hires for 2026. Approved positions have budget allocated. Planned positions require finance sign-off before posting.
+        <div className={cx("flexCol", "gap16")}>
+          <div className={cx(styles.card, styles.teamInfoCard)}>
+            <span className={cx("text12", "colorMuted")}>Planned hires for 2026. Approved positions have budget allocated. Planned positions require finance sign-off before posting.</span>
           </div>
           {headcountPlan.map((h) => (
-            <div key={h.role} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24, display: "grid", gridTemplateColumns: "1fr 120px 100px 120px 100px auto", alignItems: "center", gap: 20 }}>
-              <div>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>{h.role}</div>
-                <div style={{ fontSize: 12, color: C.muted }}>{h.department}</div>
-              </div>
-              <span style={{ fontSize: 10, color: { critical: C.red, high: C.orange, medium: C.amber }[h.priority], background: `${{ critical: C.red, high: C.orange, medium: C.amber }[h.priority]}18`, padding: "3px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace", textTransform: "uppercase" }}>{h.priority}</span>
-              <div>
-                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Target</div>
-                <div style={{ fontSize: 12, fontFamily: "DM Mono, monospace" }}>{h.targetDate}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Monthly Budget</div>
-                <div style={{ fontFamily: "DM Mono, monospace", color: C.lime, fontWeight: 700 }}>R{h.budget.toLocaleString()}</div>
-              </div>
-              <span style={{ fontSize: 10, color: h.status === "interviewing" ? C.blue : h.status === "approved" ? C.lime : C.muted, background: `${h.status === "interviewing" ? C.blue : h.status === "approved" ? C.lime : C.muted}15`, padding: "3px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace" }}>{h.status}</span>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button style={{ background: C.border, border: "none", color: C.text, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>Edit</button>
-                {h.status === "planned" ? <button style={{ background: `${C.lime}15`, border: `1px solid ${C.lime}44`, color: C.lime, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>Approve</button> : null}
+            <div key={h.role} className={cx(styles.card, styles.teamHireCard)}>
+              <div className={styles.teamHeadcountRow}>
+                <div>
+                  <div className={cx("fw700", "mb4")}>{h.role}</div>
+                  <div className={cx("text12", "colorMuted")}>{h.department}</div>
+                </div>
+                <span className={cx("badge", h.priority === "critical" ? "badgeRed" : h.priority === "high" ? "badgeAmber" : "badgeAmber")}>{h.priority}</span>
+                <div>
+                  <div className={cx("text10", "colorMuted", "mb3")}>Target</div>
+                  <div className={cx("text12", "fontMono")}>{h.targetDate}</div>
+                </div>
+                <div>
+                  <div className={cx("text10", "colorMuted", "mb3")}>Monthly Budget</div>
+                  <div className={cx("fontMono", "colorAccent", "fw700")}>R{h.budget.toLocaleString()}</div>
+                </div>
+                <span className={cx("badge", h.status === "interviewing" ? "badgeBlue" : h.status === "approved" ? "badgeGreen" : "badgeMuted")}>{h.status}</span>
+                <div className={cx("flexRow", "gap8")}>
+                  <button type="button" className={cx("btnSm", "btnGhost")}>Edit</button>
+                  {h.status === "planned" ? <button type="button" className={cx("btnSm", "btnAccent")}>Approve</button> : null}
+                </div>
               </div>
             </div>
           ))}
-          <button style={{ background: C.surface, border: `1px dashed ${C.border}`, borderRadius: 10, padding: 20, color: C.muted, fontSize: 13, cursor: "pointer", textAlign: "center" }}>+ Add Planned Hire</button>
+          <button type="button" className={cx("btnSm", "btnGhost", "textCenter", styles.teamAddHireBtn)}>+ Add Planned Hire</button>
         </div>
       ) : null}
     </div>

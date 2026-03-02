@@ -40,10 +40,10 @@ type SprintTask = {
 
 const clients: Client[] = [
   { id: 1, name: "Volta Studios", avatar: "VS", color: "var(--accent)" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "#a78bfa" },
-  { id: 3, name: "Mira Health", avatar: "MH", color: "#60a5fa" },
-  { id: 4, name: "Dune Collective", avatar: "DC", color: "#f5c518" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "#ff8c00" }
+  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "var(--purple)" },
+  { id: 3, name: "Mira Health", avatar: "MH", color: "var(--blue)" },
+  { id: 4, name: "Dune Collective", avatar: "DC", color: "var(--amber)" },
+  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "var(--amber)" }
 ];
 
 const initialBacklog: BacklogItem[] = [
@@ -73,23 +73,40 @@ const initialSprint: SprintTask[] = [
 const days: Day[] = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const sprintCapacity = 40;
 const priorityOrder: Record<Priority, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
-const priorityColors: Record<Priority, string> = { urgent: "#ff4444", high: "#f5c518", medium: "#60a5fa", low: "var(--muted2)" };
-const statusConfig: Record<Status, { label: string; color: string }> = {
-  todo: { label: "To do", color: "var(--muted2)" },
-  in_progress: { label: "In progress", color: "var(--accent)" },
-  done: { label: "Done", color: "#a78bfa" }
-};
-const categoryColors: Record<Category, string> = {
-  Design: "#a78bfa",
-  Strategy: "#60a5fa",
-  Admin: "#a0a0b0",
-  Comms: "#f5c518"
-};
 
 function formatDate(base: Date, offset: number) {
   const date = new Date(base);
   date.setDate(date.getDate() + offset);
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+function statusToneClass(status: Status) {
+  if (status === "in_progress") return "spStatusInProgress";
+  if (status === "done") return "spStatusDone";
+  return "spStatusTodo";
+}
+
+function priorityToneClass(priority: Priority) {
+  if (priority === "urgent") return "spPriorityUrgent";
+  if (priority === "high") return "spPriorityHigh";
+  if (priority === "medium") return "spPriorityMedium";
+  return "spPriorityLow";
+}
+
+function categoryToneClass(category: Category) {
+  if (category === "Design") return "spCategoryDesign";
+  if (category === "Strategy") return "spCategoryStrategy";
+  if (category === "Comms") return "spCategoryComms";
+  return "spCategoryAdmin";
+}
+
+function clientToneClass(clientId?: number) {
+  if (clientId === 1) return "spClientOne";
+  if (clientId === 2) return "spClientTwo";
+  if (clientId === 3) return "spClientThree";
+  if (clientId === 4) return "spClientFour";
+  if (clientId === 5) return "spClientFive";
+  return "colorMuted2";
 }
 
 export function SprintPlanningPage({ isActive }: { isActive: boolean }) {
@@ -98,7 +115,7 @@ export function SprintPlanningPage({ isActive }: { isActive: boolean }) {
   const [tab, setTab] = useState<"board" | "list" | "backlog">("board");
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [dragging, setDragging] = useState<number | null>(null);
-  const [dragOver, setDragOver] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<Day | "unassigned" | null>(null);
 
   const totalEstimate = sprint.reduce((sum, task) => sum + task.estimate, 0);
   const burnPct = Math.round((totalEstimate / sprintCapacity) * 100);
@@ -155,107 +172,85 @@ export function SprintPlanningPage({ isActive }: { isActive: boolean }) {
     return grouped;
   }, [filtered]);
 
-  return (
-    <section className={cx("page", isActive && "pageActive")} id="page-sprint-planning">
-      <style>{`
-        .sp-tab-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .sp-filter-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .sp-filter-btn:hover { opacity: 0.8; }
-        .sp-task-card { transition: border-color 0.12s ease; }
-        .sp-task-card:hover .sp-task-actions { opacity: 1 !important; }
-        .sp-status-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .sp-status-btn:hover { opacity: 0.75; }
-        .sp-day-pill { transition: all 0.12s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .sp-day-pill:hover { background: rgba(255,255,255,0.08) !important; }
-        .sp-add-btn { transition: all 0.12s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .sp-add-btn:hover { background: color-mix(in srgb, var(--accent) 12%, transparent) !important; color: var(--accent) !important; }
-        .sp-remove-btn { transition: all 0.12s ease; cursor: pointer; font-family: 'DM Mono', monospace; }
-        .sp-remove-btn:hover { color: #ff4444 !important; }
-      `}</style>
+  const burnToneClass = burnPct > 90 ? "colorRed" : burnPct > 70 ? "colorAmber" : "colorAccent";
+  const burnMeterClass = burnPct > 90 ? "spCapRed" : burnPct > 70 ? "spCapAmber" : "spCapAccent";
 
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+  return (
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-sprint-planning">
+      <div className={cx("pageHeaderBar", "spHeaderBar")}>
+        <div className={cx("flexBetween", "mb16")}> 
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-              Staff Dashboard / Planning
-            </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              Sprint Planning
-            </h1>
-            <div style={{ fontSize: 11, color: "var(--muted2)", marginTop: 6 }}>
+            <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Planning</div>
+            <h1 className={cx("pageTitleText")}>Sprint Planning</h1>
+            <div className={cx("text11", "colorMuted2", "mt6")}>
               {formatDate(sprintStart, 0)} - {formatDate(sprintEnd, 0)} · 2 weeks
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Capacity used</div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: burnPct > 90 ? "#ff4444" : burnPct > 70 ? "#f5c518" : "var(--accent)" }}>
-                {totalEstimate}h <span style={{ fontSize: 13, color: "var(--muted2)", fontWeight: 400 }}>/ {sprintCapacity}h</span>
+          <div className={cx("spTopStats")}>
+            <div className={cx("textRight")}>
+              <div className={cx("statLabelNew")}>Capacity used</div>
+              <div className={cx("statValueNew", burnToneClass)}>
+                {totalEstimate}h <span className={cx("spCapacityBase")}>/ {sprintCapacity}h</span>
               </div>
-              <div style={{ width: 160, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, marginTop: 6, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.min(burnPct, 100)}%`, background: burnPct > 90 ? "#ff4444" : burnPct > 70 ? "#f5c518" : "var(--accent)", borderRadius: 2 }} />
-              </div>
+              <progress className={cx("progressMeter", "spCapacityMeter", burnMeterClass)} max={100} value={Math.min(burnPct, 100)} />
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Done</div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: "#a78bfa" }}>{doneCount}/{sprint.length}</div>
+            <div className={cx("textRight")}>
+              <div className={cx("statLabelNew")}>Done</div>
+              <div className={cx("statValueNew", "spDoneValue")}>{doneCount}/{sprint.length}</div>
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", gap: 0 }}>
+        <div className={cx("flexBetween", "gap10")}>
+          <div className={cx("flexRow")}> 
             {[
               { key: "board" as const, label: "Day board" },
               { key: "list" as const, label: "Task list" },
               { key: "backlog" as const, label: `Backlog (${backlog.length})` }
             ].map((tabItem) => (
-              <button
+              <button type="button"
                 key={tabItem.key}
-                className="sp-tab-btn"
+                className={cx("spTabBtn", "spTabPill", tab === tabItem.key ? "spTabPillActive" : "spTabPillIdle")}
                 onClick={() => setTab(tabItem.key)}
-                style={{ padding: "10px 20px", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", background: "transparent", color: tab === tabItem.key ? "var(--accent)" : "var(--muted2)", borderBottom: `2px solid ${tab === tabItem.key ? "var(--accent)" : "transparent"}`, marginBottom: -1 }}
               >
                 {tabItem.label}
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 6, paddingBottom: 10 }}>
-            <button
-              className="sp-filter-btn"
-              onClick={() => setClientFilter("all")}
-              style={{ padding: "5px 10px", fontSize: 10, borderRadius: 2, background: clientFilter === "all" ? "rgba(255,255,255,0.08)" : "transparent", color: clientFilter === "all" ? "var(--text)" : "var(--muted2)" }}
+          <div className={cx("filterRow", "pb10")}>
+            <select
+              className={cx("filterSelect")}
+              aria-label="Filter sprint by client"
+              value={clientFilter}
+              onChange={(event) => setClientFilter(event.target.value)}
             >
-              All
-            </button>
-            {clients.map((client) => (
-              <button
-                key={client.id}
-                className="sp-filter-btn"
-                onClick={() => setClientFilter(clientFilter === String(client.id) ? "all" : String(client.id))}
-                style={{ padding: "5px 10px", fontSize: 10, borderRadius: 2, background: clientFilter === String(client.id) ? `${client.color}18` : "transparent", color: clientFilter === String(client.id) ? client.color : "var(--muted2)" }}
-              >
-                {client.avatar}
-              </button>
-            ))}
+              <option value="all">All clients</option>
+              {clients.map((client) => (
+                <option key={client.id} value={String(client.id)}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
 
-      <div style={{ padding: "20px 0" }}>
+      <div className={cx("spSectionPad")}> 
         {tab === "board" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr) 200px", gap: 14 }}>
+          <div className={cx("spBoardGrid")}>
             {days.map((day, dayIndex) => {
               const dayTasks = byDay[day] ?? [];
               const dayHours = dayTasks.reduce((sum, task) => sum + task.estimate, 0);
               return (
                 <div
                   key={day}
+                  className={cx("spDropZone", "spDayColumn", dragOver === day && "spDayColumnOver")}
                   onDragOver={(event) => {
                     event.preventDefault();
                     setDragOver(day);
                   }}
+                  onDragLeave={() => setDragOver((previous) => (previous === day ? null : previous))}
                   onDrop={() => {
                     if (dragging) {
                       assignDay(dragging, day);
@@ -263,16 +258,15 @@ export function SprintPlanningPage({ isActive }: { isActive: boolean }) {
                       setDragOver(null);
                     }
                   }}
-                  style={{ background: dragOver === day ? "color-mix(in srgb, var(--accent) 4%, transparent)" : "transparent", borderRadius: 4, transition: "background 0.12s ease" }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div className={cx("spDayHead")}>
                     <div>
-                      <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 500 }}>{day}</div>
-                      <div style={{ fontSize: 10, color: "var(--muted2)" }}>{formatDate(sprintStart, dayIndex)}</div>
+                      <div className={cx("spDayName")}>{day}</div>
+                      <div className={cx("spDayDate")}>{formatDate(sprintStart, dayIndex)}</div>
                     </div>
-                    <div style={{ fontSize: 10, color: dayHours > 8 ? "#ff4444" : "var(--muted2)" }}>{dayHours}h</div>
+                    <div className={cx("spDayHours", dayHours > 8 && "spDayHoursWarn")}>{dayHours}h</div>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: 80 }}>
+                  <div className={cx("spDayTaskList")}>
                     {dayTasks.map((task) => (
                       <TaskCard
                         key={task.id}
@@ -284,19 +278,20 @@ export function SprintPlanningPage({ isActive }: { isActive: boolean }) {
                         onDragStart={() => setDragging(task.id)}
                       />
                     ))}
-                    {dragOver === day && dragging ? <div style={{ height: 36, border: "1px dashed color-mix(in srgb, var(--accent) 30%, transparent)", borderRadius: 3 }} /> : null}
+                    {dragOver === day && dragging ? <div className={cx("spDragPlaceholder")} /> : null}
                   </div>
                 </div>
               );
             })}
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted2)", marginBottom: 10, fontWeight: 500 }}>Unscheduled</div>
+            <div className={cx("spUnscheduledCol", dragOver === "unassigned" && "spUnscheduledOver")}> 
+              <div className={cx("spUnscheduledTitle")}>Unscheduled</div>
               <div
-                style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                className={cx("spDayTaskList")}
                 onDragOver={(event) => {
                   event.preventDefault();
                   setDragOver("unassigned");
                 }}
+                onDragLeave={() => setDragOver((previous) => (previous === "unassigned" ? null : previous))}
                 onDrop={() => {
                   if (dragging) {
                     assignDay(dragging, null);
@@ -323,52 +318,46 @@ export function SprintPlanningPage({ isActive }: { isActive: boolean }) {
         ) : null}
 
         {tab === "list" ? (
-          <div style={{ maxWidth: 720 }}>
+          <div className={cx("spListWrap")}>
             {(["urgent", "high", "medium", "low"] as Priority[]).map((priority) => {
               const tasks = filtered
                 .filter((task) => task.priority === priority)
                 .sort((a, b) => (a.status === "done" ? 1 : 0) - (b.status === "done" ? 1 : 0));
               if (tasks.length === 0) return null;
               return (
-                <div key={priority} style={{ marginBottom: 20 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: priorityColors[priority] }} />
-                    <span style={{ fontSize: 10, color: priorityColors[priority], letterSpacing: "0.12em", textTransform: "uppercase" }}>{priority} priority</span>
-                    <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.04)" }} />
+                <div key={priority} className={cx("spPrioritySection")}>
+                  <div className={cx("spPriorityHead")}>
+                    <div className={cx("spPriorityDot", priorityToneClass(priority))} />
+                    <span className={cx("spPriorityLabel", priorityToneClass(priority))}>{priority} priority</span>
+                    <div className={cx("spDivider")} />
                   </div>
                   {tasks.map((task) => {
                     const client = clients.find((candidate) => candidate.id === task.clientId);
-                    const status = statusConfig[task.status];
                     return (
-                      <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 3, marginBottom: 6, background: "rgba(255,255,255,0.01)", opacity: task.status === "done" ? 0.5 : 1 }}>
-                        <button
-                          className="sp-status-btn"
-                          onClick={() => cycleStatus(task.id)}
-                          style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${status.color}`, background: task.status === "done" ? `${status.color}20` : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: status.color, flexShrink: 0 }}
-                        >
+                      <div key={task.id} className={cx("spListTaskRow", task.status === "done" && "spTaskDoneRow")}>
+                        <button type="button" className={cx("spStatusBtn", "spStatusBtnLg", statusToneClass(task.status), task.status === "done" && "spStatusDoneFill")} onClick={() => cycleStatus(task.id)}>
                           {task.status === "done" ? "✓" : task.status === "in_progress" ? "◉" : ""}
                         </button>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, color: task.status === "done" ? "var(--muted2)" : "var(--text)", textDecoration: task.status === "done" ? "line-through" : "none" }}>{task.title}</div>
-                          <div style={{ display: "flex", gap: 8, marginTop: 3 }}>
-                            <span style={{ fontSize: 10, color: client?.color }}>{client?.name}</span>
-                            <span style={{ fontSize: 10, color: categoryColors[task.category] }}>{task.category}</span>
+                        <div className={cx("flex1", "minW0")}>
+                          <div className={cx("spTaskTitle", task.status === "done" && "spTaskTitleDone")}>{task.title}</div>
+                          <div className={cx("spTaskMetaRow")}>
+                            <span className={cx("text10", clientToneClass(client?.id))}>{client?.name}</span>
+                            <span className={cx("text10", categoryToneClass(task.category))}>{task.category}</span>
                           </div>
                         </div>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <div className={cx("flexRow", "gap6")}> 
                           {days.map((day) => (
-                            <button
+                            <button type="button"
                               key={day}
-                              className="sp-day-pill"
+                              className={cx("spDayPill", task.day === day ? "spDayPillActive" : "spDayPillIdle")}
                               onClick={() => assignDay(task.id, task.day === day ? null : day)}
-                              style={{ padding: "2px 7px", fontSize: 9, borderRadius: 2, background: task.day === day ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "rgba(255,255,255,0.04)", color: task.day === day ? "var(--accent)" : "var(--muted2)", border: "none" }}
                             >
                               {day}
                             </button>
                           ))}
                         </div>
-                        <span style={{ fontSize: 11, color: "var(--muted2)", flexShrink: 0 }}>{task.estimate}h</span>
-                        <button className="sp-remove-btn" onClick={() => removeFromSprint(task.id)} style={{ fontSize: 14, color: "#333344", background: "none", border: "none", padding: "0 4px", cursor: "pointer" }}>
+                        <span className={cx("text11", "colorMuted2", "noShrink")}>{task.estimate}h</span>
+                        <button type="button" className={cx("spRemoveBtn", "spRemoveIcon")} onClick={() => removeFromSprint(task.id)}>
                           ×
                         </button>
                       </div>
@@ -381,32 +370,28 @@ export function SprintPlanningPage({ isActive }: { isActive: boolean }) {
         ) : null}
 
         {tab === "backlog" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 800 }}>
+          <div className={cx("spBacklogGrid")}>
             {[...backlog]
               .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority])
               .map((item) => {
                 const client = clients.find((candidate) => candidate.id === item.clientId);
                 return (
-                  <div key={item.id} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "13px 14px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 5 }}>{item.title}</div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <span style={{ fontSize: 10, color: client?.color }}>{client?.name}</span>
-                        <span style={{ fontSize: 9, color: priorityColors[item.priority], letterSpacing: "0.06em", textTransform: "uppercase" }}>{item.priority}</span>
-                        <span style={{ fontSize: 10, color: "var(--muted2)" }}>{item.estimate}h</span>
+                  <div key={item.id} className={cx("spBacklogCard")}>
+                    <div className={cx("flex1", "minW0")}>
+                      <div className={cx("spBacklogTitle")}>{item.title}</div>
+                      <div className={cx("spBacklogMeta")}>
+                        <span className={cx("text10", clientToneClass(client?.id))}>{client?.name}</span>
+                        <span className={cx("text10", "uppercase", priorityToneClass(item.priority))}>{item.priority}</span>
+                        <span className={cx("text10", "colorMuted2")}>{item.estimate}h</span>
                       </div>
                     </div>
-                    <button
-                      className="sp-add-btn"
-                      onClick={() => addToSprint(item)}
-                      style={{ padding: "6px 12px", fontSize: 10, letterSpacing: "0.08em", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--muted2)", textTransform: "uppercase", cursor: "pointer" }}
-                    >
+                    <button type="button" className={cx("spAddBtn", "spBacklogAddBtn")} onClick={() => addToSprint(item)}>
                       + Add
                     </button>
                   </div>
                 );
               })}
-            {backlog.length === 0 ? <div style={{ color: "var(--muted2)", fontSize: 12, gridColumn: "span 2", padding: "40px 0", textAlign: "center" }}>All backlog items are in the sprint.</div> : null}
+            {backlog.length === 0 ? <div className={cx("spBacklogEmpty")}>All backlog items are in the sprint.</div> : null}
           </div>
         ) : null}
       </div>
@@ -432,36 +417,38 @@ function TaskCard({
   compact?: boolean;
 }) {
   const client = clients.find((candidate) => candidate.id === task.clientId);
-  const status = statusConfig[task.status];
+
   return (
     <div
-      className="sp-task-card"
-      draggable={draggable}
+      className={cx(
+        "spTaskCard",
+        "spTaskCardBase",
+        compact && "spTaskCardCompact",
+        task.status === "in_progress" && "spTaskCardProgress",
+        task.status === "done" && "spTaskCardDone",
+        draggable && "spTaskCardDraggable"
+      )}
+      draggable={Boolean(draggable)}
       onDragStart={onDragStart}
-      style={{ padding: compact ? "8px 10px" : "10px 12px", border: `1px solid ${task.status === "in_progress" ? "color-mix(in srgb, var(--accent) 20%, transparent)" : "rgba(255,255,255,0.06)"}`, borderRadius: 3, background: task.status === "done" ? "rgba(255,255,255,0.005)" : "rgba(255,255,255,0.02)", cursor: draggable ? "grab" : "default", opacity: task.status === "done" ? 0.5 : 1 }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-        <button
-          className="sp-status-btn"
-          onClick={onStatus}
-          style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${status.color}`, background: task.status === "done" ? `${status.color}20` : "transparent", flexShrink: 0, marginTop: 2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: status.color }}
-        >
+      <div className={cx("spTaskInner")}>
+        <button type="button" className={cx("spStatusBtn", "spStatusBtnSm", statusToneClass(task.status), task.status === "done" && "spStatusDoneFill")} onClick={onStatus}>
           {task.status === "done" ? "✓" : task.status === "in_progress" ? "●" : ""}
         </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 11, color: task.status === "done" ? "var(--muted2)" : "var(--text)", lineHeight: 1.3, textDecoration: task.status === "done" ? "line-through" : "none", marginBottom: 3 }}>{task.title}</div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 9, color: client?.color }}>{client?.avatar}</span>
-            <span style={{ fontSize: 9, color: "var(--muted2)" }}>{task.estimate}h</span>
+        <div className={cx("flex1", "minW0")}>
+          <div className={cx("spTaskTitleMini", task.status === "done" && "spTaskTitleMiniDone")}>{task.title}</div>
+          <div className={cx("spTaskMetaMini")}>
+            <span className={cx("text10", clientToneClass(client?.id))}>{client?.avatar}</span>
+            <span className={cx("text10", "colorMuted2")}>{task.estimate}h</span>
           </div>
         </div>
-        <button className="sp-remove-btn" onClick={onRemove} style={{ fontSize: 12, color: "#222230", background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }}>
+        <button type="button" className={cx("spRemoveBtn", "spTaskRemoveMini")} onClick={onRemove}>
           ×
         </button>
       </div>
-      <div className="sp-task-actions" style={{ opacity: 0, transition: "opacity 0.12s", marginTop: 4, display: "flex", gap: 3 }}>
-        <div style={{ width: 6, height: 6, borderRadius: "50%", background: priorityColors[task.priority] }} />
-        <span style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.06em" }}>{task.priority}</span>
+      <div className={cx("spTaskActions")}>
+        <div className={cx("spPriorityDot", priorityToneClass(task.priority))} />
+        <span className={cx("spPriorityText")}>{task.priority}</span>
       </div>
     </div>
   );

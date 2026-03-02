@@ -1,20 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0",
-};
+import { cx, styles } from "../style";
+import { toneClass } from "./admin-page-utils";
 
 type DeliverableStatus = "in-review" | "approved" | "changes-requested" | "rejected";
 type Tab = "all deliverables" | "pending review" | "approved" | "revision history" | "qa metrics";
@@ -41,7 +29,7 @@ const deliverables: Array<{
     id: "DLV-041",
     project: "Brand Identity System",
     client: "Volta Studios",
-    clientColor: C.lime,
+    clientColor: "var(--accent)",
     name: "Logo System & Variants",
     type: "Design",
     assignee: "Renzo Fabbri",
@@ -64,7 +52,7 @@ const deliverables: Array<{
     id: "DLV-040",
     project: "Website Redesign",
     client: "Mira Health",
-    clientColor: C.blue,
+    clientColor: "var(--blue)",
     name: "Homepage Wireframe",
     type: "UX",
     assignee: "Kira Bosman",
@@ -90,7 +78,7 @@ const deliverables: Array<{
     id: "DLV-039",
     project: "Q1 Campaign Strategy",
     client: "Kestrel Capital",
-    clientColor: C.purple,
+    clientColor: "var(--purple)",
     name: "Campaign Strategy Deck",
     type: "Strategy",
     assignee: "Nomsa Dlamini",
@@ -113,7 +101,7 @@ const deliverables: Array<{
     id: "DLV-038",
     project: "Annual Report 2025",
     client: "Okafor & Sons",
-    clientColor: C.orange,
+    clientColor: "var(--amber)",
     name: "Annual Report Draft v2",
     type: "Copy + Design",
     assignee: "Tapiwa Moyo",
@@ -136,7 +124,7 @@ const deliverables: Array<{
     id: "DLV-037",
     project: "Editorial Design System",
     client: "Dune Collective",
-    clientColor: C.amber,
+    clientColor: "var(--amber)",
     name: "Template Library - Vol 1",
     type: "Design",
     assignee: "Renzo Fabbri",
@@ -162,18 +150,18 @@ const deliverables: Array<{
 ];
 
 const statusConfig: Record<DeliverableStatus, { color: string; label: string; bg: string }> = {
-  "in-review": { color: C.blue, label: "In Review", bg: `${C.blue}15` },
-  approved: { color: C.lime, label: "Approved", bg: `${C.lime}15` },
-  "changes-requested": { color: C.amber, label: "Changes Requested", bg: `${C.amber}15` },
-  rejected: { color: C.red, label: "Rejected", bg: `${C.red}15` },
+  "in-review": { color: "var(--blue)", label: "In Review", bg: "color-mix(in srgb, var(--blue) 8%, transparent)" },
+  approved: { color: "var(--accent)", label: "Approved", bg: "color-mix(in srgb, var(--accent) 8%, transparent)" },
+  "changes-requested": { color: "var(--amber)", label: "Changes Requested", bg: "color-mix(in srgb, var(--amber) 8%, transparent)" },
+  rejected: { color: "var(--red)", label: "Rejected", bg: "color-mix(in srgb, var(--red) 8%, transparent)" },
 };
 
 const typeColors: Record<string, string> = {
-  Design: C.purple,
-  UX: C.blue,
-  Strategy: C.lime,
-  Copy: C.amber,
-  "Copy + Design": C.orange,
+  Design: "var(--purple)",
+  UX: "var(--blue)",
+  Strategy: "var(--accent)",
+  Copy: "var(--amber)",
+  "Copy + Design": "var(--amber)",
 };
 
 const tabs: Tab[] = ["all deliverables", "pending review", "approved", "revision history", "qa metrics"];
@@ -198,119 +186,91 @@ export function QualityAssurancePage() {
           : deliverables.filter((d) => d.status === filterStatus);
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={styles.pageBody}>
+      <div className={cx("flexBetween", "mb32")}>
         <div>
-          <div style={{ fontSize: 11, color: C.lime, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / OPERATIONS</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Quality Assurance</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Deliverable review - Revision rounds - Approval gates</div>
+          <div className={cx("pageEyebrow")}>ADMIN / OPERATIONS</div>
+          <h1 className={cx("pageTitle")}>Quality Assurance</h1>
+          <div className={cx("pageSub")}>Deliverable review - Revision rounds - Approval gates</div>
         </div>
-        <button style={{ background: C.lime, color: C.bg, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace", border: "none" }}>+ Log Deliverable</button>
+        <button type="button" className={cx("btnSm", "btnAccent", "fontMono")}>+ Log Deliverable</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div className={cx("topCardsStack", "gap16", "mb28")}>
         {[
-          { label: "Pending Review", value: pending.length.toString(), color: C.blue, sub: "Awaiting QA sign-off" },
-          { label: "Approval Rate", value: `${approvalRate}%`, color: approvalRate >= 60 ? C.lime : C.amber, sub: "First-pass or later" },
-          { label: "Avg Revision Rounds", value: avgRounds, color: parseFloat(avgRounds) <= 1.5 ? C.lime : C.amber, sub: "Target: <= 1.5 rounds" },
-          { label: "Rejected / Blocked", value: deliverables.filter((d) => d.status === "rejected").length.toString(), color: C.red, sub: "Needs escalation" },
+          { label: "Pending Review", value: pending.length.toString(), color: "var(--blue)", sub: "Awaiting QA sign-off" },
+          { label: "Approval Rate", value: `${approvalRate}%`, color: approvalRate >= 60 ? "var(--accent)" : "var(--amber)", sub: "First-pass or later" },
+          { label: "Avg Revision Rounds", value: avgRounds, color: parseFloat(avgRounds) <= 1.5 ? "var(--accent)" : "var(--amber)", sub: "Target: <= 1.5 rounds" },
+          { label: "Rejected / Blocked", value: deliverables.filter((d) => d.status === "rejected").length.toString(), color: "var(--red)", sub: "Needs escalation" },
         ].map((s) => (
-          <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: "DM Mono, monospace", marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+          <div key={s.label} className={cx("statCard")}>
+            <div className={cx("statLabel")}>{s.label}</div>
+            <div className={cx("statValue", styles.qaToneText, toneClass(s.color))}>{s.value}</div>
+            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ display: "flex", gap: 4 }}>
-          {tabs.map((t) => (
-            <button
-              key={t}
-              onClick={() => setActiveTab(t)}
-              style={{
-                background: "none",
-                border: "none",
-                color: activeTab === t ? C.lime : C.muted,
-                padding: "8px 14px",
-                cursor: "pointer",
-                fontFamily: "Syne, sans-serif",
-                fontSize: 11,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                borderBottom: `2px solid ${activeTab === t ? C.lime : "transparent"}`,
-                marginBottom: -1,
-                transition: "all 0.2s",
-              }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+      <div className={styles.filterRow}>
+        <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
         {activeTab === "all deliverables" ? (
-          <div style={{ display: "flex", gap: 6, paddingBottom: 8 }}>
-            {(["All", ...Object.keys(statusConfig)] as Array<"All" | DeliverableStatus>).map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(s)}
-                style={{
-                  background: filterStatus === s ? (s === "All" ? C.lime : statusConfig[s].color) : C.surface,
-                  color: filterStatus === s ? C.bg : C.muted,
-                  border: `1px solid ${filterStatus === s ? (s === "All" ? C.lime : statusConfig[s].color) : C.border}`,
-                  padding: "4px 10px",
-                  borderRadius: 20,
-                  fontSize: 10,
-                  cursor: "pointer",
-                  fontFamily: "DM Mono, monospace",
-                }}
-              >
-                {s === "All" ? "All" : statusConfig[s].label}
-              </button>
+          <select title="Filter by status" value={filterStatus} onChange={e => setFilterStatus(e.target.value as FilterStatus)} className={styles.filterSelect}>
+            {(["All", ...Object.keys(statusConfig)] as Array<"All" | DeliverableStatus>).map(s => (
+              <option key={s} value={s}>{s === "All" ? "All" : statusConfig[s].label}</option>
             ))}
-          </div>
+          </select>
         ) : null}
       </div>
 
       {(activeTab === "all deliverables" || activeTab === "pending review" || activeTab === "approved") && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className={cx("flexCol", "gap12")}>
           {filtered.map((d) => {
             const sc = statusConfig[d.status];
             const checklistDone = d.checklist.filter((c) => c.done).length;
             const isExpanded = expanded === d.id;
-            return (
-              <div key={d.id} style={{ background: C.surface, border: `1px solid ${d.status === "rejected" ? `${C.red}55` : d.status === "changes-requested" ? `${C.amber}44` : C.border}`, borderRadius: 12 }}>
-                <div style={{ padding: 24, cursor: "pointer" }} onClick={() => setExpanded(isExpanded ? null : d.id)}>
-                  <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 100px 120px 100px 80px 100px 80px", alignItems: "center", gap: 16 }}>
-                    <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted }}>{d.id}</span>
+          return (
+              <div key={d.id} className={cx("card", styles.qaCardTone, d.status === "rejected" ? "toneRed" : d.status === "changes-requested" ? "toneAmber" : "toneMuted")}>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className={cx("p24", "pointerCursor")}
+                  onClick={() => setExpanded(isExpanded ? null : d.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setExpanded(isExpanded ? null : d.id);
+                    }
+                  }}
+                >
+                  <div className={styles.qaDeliverableRow}>
+                    <span className={cx("fontMono", "text10", "colorMuted")}>{d.id}</span>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{d.name}</div>
-                      <div style={{ fontSize: 11, color: d.clientColor }}>
+                      <div className={cx("fw700", "text14", "mb3")}>{d.name}</div>
+                      <div className={cx("text11", styles.qaToneText, toneClass(d.clientColor))}>
                         {d.project} - {d.client}
                       </div>
                     </div>
-                    <span style={{ fontSize: 10, color: typeColors[d.type] || C.muted, background: `${typeColors[d.type] || C.muted}15`, padding: "3px 8px", borderRadius: 4 }}>{d.type}</span>
+                    <span className={cx("text10", "fontMono", styles.qaToneTag, toneClass(typeColors[d.type] || "var(--muted)"))}>{d.type}</span>
                     <div>
-                      <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Assignee → Reviewer</div>
-                      <div style={{ fontSize: 11 }}>
-                        {d.assignee.split(" ")[0]} → {d.reviewer.split(" ")[0]}
+                      <div className={cx("text10", "colorMuted", "mb3")}>Assignee &rarr; Reviewer</div>
+                      <div className={cx("text11")}>
+                        {d.assignee.split(" ")[0]} &rarr; {d.reviewer.split(" ")[0]}
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Due</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12 }}>{d.reviewDue}</div>
+                      <div className={cx("text10", "colorMuted", "mb3")}>Due</div>
+                      <div className={cx("fontMono", "text12")}>{d.reviewDue}</div>
                     </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Round</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 700, color: d.round >= 3 ? C.red : d.round >= 2 ? C.amber : C.lime }}>{d.round}</div>
+                    <div className={cx("textCenter")}>
+                      <div className={cx("text10", "colorMuted", "mb3")}>Round</div>
+                      <div className={cx("fontMono", "fw700", styles.qaToneText, d.round >= 3 ? "toneRed" : d.round >= 2 ? "toneAmber" : "toneAccent")}>{d.round}</div>
                     </div>
-                    <span style={{ fontSize: 10, color: sc.color, background: sc.bg, padding: "4px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace", whiteSpace: "nowrap" }}>{sc.label}</span>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>Checklist</div>
-                      <div style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: checklistDone === d.checklist.length ? C.lime : C.amber }}>
+                    <span className={cx("text10", "fontMono", styles.qaStatusChip, toneClass(sc.color))}>{sc.label}</span>
+                    <div className={cx("textRight")}>
+                      <div className={cx("text10", "colorMuted", "mb3")}>Checklist</div>
+                      <div className={cx("fontMono", "text12", styles.qaToneText, checklistDone === d.checklist.length ? "toneAccent" : "toneAmber")}>
                         {checklistDone}/{d.checklist.length}
                       </div>
                     </div>
@@ -318,41 +278,47 @@ export function QualityAssurancePage() {
                 </div>
 
                 {isExpanded ? (
-                  <div style={{ padding: "0 24px 24px", borderTop: `1px solid ${C.border}` }}>
-                    <div style={{ paddingTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
+                  <div className={styles.qaExpandedWrap}>
+                    <div className={styles.qaExpandedGrid}>
                       <div>
-                        <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>QA Checklist</div>
-                        {d.checklist.map((c, i) => (
-                          <div key={i} style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}>
-                            <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${c.done ? C.lime : C.border}`, background: c.done ? C.lime : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>{c.done ? <span style={{ fontSize: 9, color: C.bg, fontWeight: 800 }}>✓</span> : null}</div>
-                            <span style={{ fontSize: 12, color: c.done ? C.muted : C.text, textDecoration: c.done ? "line-through" : "none" }}>{c.item}</span>
+                        <div className={cx("text11", "colorMuted", "uppercase", "mb12")}>QA Checklist</div>
+                        {d.checklist.map((c, i) => {
+                          const cTone = c.done ? "var(--muted)" : "var(--text)";
+                          return (
+                          <div key={i} className={cx("flexRow", "gap10", "mb8", styles.qaAlignStart)}>
+                            <div
+                              className={cx("flexCenter", "noShrink", styles.qaCheckBox, c.done && styles.qaCheckBoxDone)}
+                            >
+                              {c.done ? <span className={styles.qaCheckTick}>&#10003;</span> : null}
+                            </div>
+                            <span className={cx("text12", styles.qaToneText, toneClass(cTone), c.done && styles.qaLineThrough)}>{c.item}</span>
                           </div>
-                        ))}
+                        )})}
                       </div>
 
                       <div>
-                        <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Revision History</div>
+                        <div className={cx("text11", "colorMuted", "uppercase", "mb12")}>Revision History</div>
                         {d.revisions.length === 0
-                          ? <div style={{ fontSize: 12, color: C.lime }}>✓ No revisions required</div>
+                          ? <div className={cx("text12", "colorAccent")}>&#10003; No revisions required</div>
                           : d.revisions.map((rev, i) => (
-                              <div key={i} style={{ padding: 12, background: C.bg, borderRadius: 8, marginBottom: 8, borderLeft: `3px solid ${C.amber}` }}>
-                                <div style={{ fontSize: 10, color: C.muted, marginBottom: 4, fontFamily: "DM Mono, monospace" }}>
+                              <div key={i} className={cx("bgBg", "mb8", styles.qaRevisionCard)}>
+                                <div className={cx("text10", "colorMuted", "fontMono", "mb4")}>
                                   {rev.date} - {rev.requestedBy}
                                 </div>
-                                <div style={{ fontSize: 12 }}>{rev.note}</div>
+                                <div className={cx("text12")}>{rev.note}</div>
                               </div>
                             ))}
                       </div>
 
                       <div>
-                        <div style={{ fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Actions</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {d.status !== "approved" ? <button style={{ background: C.lime, color: C.bg, border: "none", padding: "10px 14px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>✓ Approve Deliverable</button> : null}
-                          <button style={{ background: C.border, border: "none", color: C.text, padding: "10px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", textAlign: "left" }}>✎ Request Changes</button>
-                          <button style={{ background: C.surface, color: C.red, border: `1px solid ${C.red}33`, padding: "10px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", textAlign: "left" }}>✗ Reject</button>
+                        <div className={cx("text11", "colorMuted", "uppercase", "mb12")}>Actions</div>
+                        <div className={cx("flexCol", "gap8")}>
+                          {d.status !== "approved" ? <button type="button" className={cx("btnSm", "btnAccent", styles.qaTextLeft)}>&#10003; Approve Deliverable</button> : null}
+                          <button type="button" className={cx("btnSm", "btnGhost", styles.qaTextLeft)}>&#9998; Request Changes</button>
+                          <button type="button" className={cx("btnSm", styles.qaRejectBtn, styles.qaTextLeft)}>&#10007; Reject</button>
                           {d.score ? (
-                            <div style={{ padding: 10, background: C.bg, borderRadius: 6, fontSize: 12 }}>
-                              Quality Score: <span style={{ color: C.lime, fontFamily: "DM Mono, monospace", fontWeight: 700 }}>{d.score}/100</span>
+                            <div className={cx("bgBg", "text12", styles.qaScoreBox)}>
+                              Quality Score: <span className={cx("colorAccent", "fontMono", "fw700")}>{d.score}/100</span>
                             </div>
                           ) : null}
                         </div>
@@ -367,64 +333,64 @@ export function QualityAssurancePage() {
       )}
 
       {activeTab === "revision history" ? (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "60px 80px 1fr 140px 140px auto", padding: "12px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div className={cx("card", "overflowHidden")}>
+          <div className={cx("qaRevisionHead", "text10", "colorMuted", "uppercase", "fontMono")}>
             {["DLV ID", "Date", "Revision Note", "Deliverable", "Requested By", "Round"].map((h) => <span key={h}>{h}</span>)}
           </div>
           {deliverables
             .flatMap((d) => d.revisions.map((r, i) => ({ ...r, deliverable: d.name, id: d.id, client: d.client, clientColor: d.clientColor, round: i + 1 })))
             .map((r, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 80px 1fr 140px 140px auto", padding: "14px 24px", borderBottom: `1px solid ${C.border}`, alignItems: "center" }}>
-                <span style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: C.muted }}>{r.id}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted }}>{r.date}</span>
-                <span style={{ fontSize: 12, color: C.text }}>{r.note}</span>
-                <span style={{ fontSize: 11, color: r.clientColor }}>{r.deliverable.substring(0, 20)}...</span>
-                <span style={{ fontSize: 12 }}>{r.requestedBy.split(" ")[0]}</span>
-                <span style={{ fontFamily: "DM Mono, monospace", color: r.round >= 3 ? C.red : r.round >= 2 ? C.amber : C.lime, fontWeight: 700 }}>R{r.round}</span>
+              <div key={i} className={styles.qaRevisionRow}>
+                <span className={cx("fontMono", "text10", "colorMuted")}>{r.id}</span>
+                <span className={cx("fontMono", "text11", "colorMuted")}>{r.date}</span>
+                <span className={cx("text12")}>{r.note}</span>
+                <span className={cx("text11", styles.qaToneText, toneClass(r.clientColor))}>{r.deliverable.substring(0, 20)}...</span>
+                <span className={cx("text12")}>{r.requestedBy.split(" ")[0]}</span>
+                <span className={cx("fontMono", "fw700", styles.qaToneText, r.round >= 3 ? "toneRed" : r.round >= 2 ? "toneAmber" : "toneAccent")}>R{r.round}</span>
               </div>
             ))}
         </div>
       ) : null}
 
       {activeTab === "qa metrics" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>Revision Rounds by Assignee</div>
+        <div className={cx("grid2", "gap20")}>
+          <div className={cx("card", "p24")}>
+            <div className={cx("text13", "fw700", "mb20", "uppercase")}>Revision Rounds by Assignee</div>
             {["Renzo Fabbri", "Kira Bosman", "Nomsa Dlamini", "Tapiwa Moyo"].map((name) => {
               const theirWork = deliverables.filter((d) => d.assignee === name);
               const avg = theirWork.length > 0 ? (theirWork.reduce((s, d) => s + d.round, 0) / theirWork.length).toFixed(1) : "0.0";
               const avgNum = parseFloat(avg);
-              const color = avgNum <= 1.5 ? C.lime : avgNum <= 2.5 ? C.amber : C.red;
+              const color = avgNum <= 1.5 ? "var(--accent)" : avgNum <= 2.5 ? "var(--amber)" : "var(--red)";
               return (
-                <div key={name} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                  <span style={{ fontSize: 13, flex: 1 }}>{name}</span>
-                  <div style={{ width: 100, height: 6, background: C.border, borderRadius: 3 }}>
-                    <div style={{ height: "100%", width: `${Math.min((avgNum / 4) * 100, 100)}%`, background: color, borderRadius: 3 }} />
+                <div key={name} className={cx("flexRow", "gap12", "mb14", styles.qaAlignCenter)}>
+                  <span className={cx("text13", styles.qaFlex1)}>{name}</span>
+                  <div className={cx("progressBar", styles.qaTrack100)}>
+                    <progress className={cx("barFill", "uiProgress", styles.qaFillRound3, toneClass(color))} max={100} value={Math.min((avgNum / 4) * 100, 100)} />
                   </div>
-                  <span style={{ fontFamily: "DM Mono, monospace", color, fontWeight: 700, width: 32, textAlign: "right" }}>{avg}</span>
+                  <span className={cx("fontMono", "fw700", "textRight", styles.qaToneText, styles.qaW32, toneClass(color))}>{avg}</span>
                 </div>
               );
             })}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>QA Status Breakdown</div>
+          <div className={cx("flexCol", "gap16")}>
+            <div className={cx("card", "p24")}>
+              <div className={cx("text13", "fw700", "mb16", "uppercase")}>QA Status Breakdown</div>
               {Object.entries(statusConfig).map(([status, cfg]) => {
                 const count = deliverables.filter((d) => d.status === status).length;
                 return (
-                  <div key={status} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                    <span style={{ fontSize: 12, flex: 1, color: cfg.color }}>{cfg.label}</span>
-                    <div style={{ width: 80, height: 6, background: C.border, borderRadius: 3 }}>
-                      <div style={{ height: "100%", width: `${(count / deliverables.length) * 100}%`, background: cfg.color, borderRadius: 3 }} />
-                    </div>
-                    <span style={{ fontFamily: "DM Mono, monospace", color: cfg.color, fontWeight: 700, width: 20, textAlign: "right" }}>{count}</span>
+                <div key={status} className={cx("flexRow", "gap12", "mb12", styles.qaAlignCenter)}>
+                  <span className={cx("text12", styles.qaFlex1, styles.qaToneText, toneClass(cfg.color))}>{cfg.label}</span>
+                  <div className={cx("progressBar", styles.qaTrack80)}>
+                    <progress className={cx("barFill", "uiProgress", styles.qaFillRound3, toneClass(cfg.color))} max={100} value={(count / deliverables.length) * 100} />
                   </div>
-                );
+                  <span className={cx("fontMono", "fw700", "textRight", styles.qaToneText, styles.qaW20, toneClass(cfg.color))}>{count}</span>
+                </div>
+              );
               })}
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.amber}33`, borderRadius: 10, padding: 20 }}>
-              <div style={{ fontWeight: 700, color: C.amber, marginBottom: 8 }}>⚠ QA Advisory</div>
-              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7 }}>
+            <div className={cx("card", "p20", styles.qaAdvisoryCard)}>
+              <div className={cx("fw700", "colorAmber", "mb8")}>&#9888; QA Advisory</div>
+              <div className={cx("text12", "colorMuted", styles.qaLine17)}>
                 Dune Collective deliverable is on round 3. This signals a deeper scope or communication issue - recommend admin-level conversation before submitting again.
               </div>
             </div>

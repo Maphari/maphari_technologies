@@ -7,7 +7,8 @@ type StaffMember = {
   id: number;
   name: string;
   avatar: string;
-  color: string;
+  toneClass: string;
+  surfaceClass: string;
   role: string;
 };
 
@@ -15,7 +16,9 @@ type ClientRow = {
   id: number;
   name: string;
   avatar: string;
-  color: string;
+  toneClass: string;
+  surfaceClass: string;
+  bannerClass: string;
 };
 
 type CollabType = "review" | "feedback" | "pairing" | "cover" | "input";
@@ -57,33 +60,33 @@ type Draft = {
 };
 
 const staff: StaffMember[] = [
-  { id: 1, name: "You", avatar: "YU", color: "var(--accent)", role: "Senior Designer" },
-  { id: 2, name: "Priya Nair", avatar: "PN", color: "#a78bfa", role: "Brand Strategist" },
-  { id: 3, name: "James Osei", avatar: "JO", color: "#60a5fa", role: "Junior Designer" },
-  { id: 4, name: "Zara Hoffman", avatar: "ZH", color: "#f5c518", role: "Account Manager" },
-  { id: 5, name: "Luca Ferreira", avatar: "LF", color: "#ff8c00", role: "Motion Designer" }
+  { id: 1, name: "You", avatar: "YU", toneClass: "prToneAccent", surfaceClass: "prSurfaceAccent", role: "Senior Designer" },
+  { id: 2, name: "Priya Nair", avatar: "PN", toneClass: "prTonePurple", surfaceClass: "prSurfacePurple", role: "Brand Strategist" },
+  { id: 3, name: "James Osei", avatar: "JO", toneClass: "prToneBlue", surfaceClass: "prSurfaceBlue", role: "Junior Designer" },
+  { id: 4, name: "Zara Hoffman", avatar: "ZH", toneClass: "prToneAmber", surfaceClass: "prSurfaceAmber", role: "Account Manager" },
+  { id: 5, name: "Luca Ferreira", avatar: "LF", toneClass: "prToneOrange", surfaceClass: "prSurfaceOrange", role: "Motion Designer" }
 ];
 
 const clients: ClientRow[] = [
-  { id: 1, name: "Volta Studios", avatar: "VS", color: "var(--accent)" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC", color: "#a78bfa" },
-  { id: 3, name: "Mira Health", avatar: "MH", color: "#60a5fa" },
-  { id: 4, name: "Dune Collective", avatar: "DC", color: "#f5c518" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", color: "#ff8c00" }
+  { id: 1, name: "Volta Studios", avatar: "VS", toneClass: "prToneAccent", surfaceClass: "prSurfaceAccent", bannerClass: "prClientBannerAccent" },
+  { id: 2, name: "Kestrel Capital", avatar: "KC", toneClass: "prTonePurple", surfaceClass: "prSurfacePurple", bannerClass: "prClientBannerPurple" },
+  { id: 3, name: "Mira Health", avatar: "MH", toneClass: "prToneBlue", surfaceClass: "prSurfaceBlue", bannerClass: "prClientBannerBlue" },
+  { id: 4, name: "Dune Collective", avatar: "DC", toneClass: "prToneAmber", surfaceClass: "prSurfaceAmber", bannerClass: "prClientBannerAmber" },
+  { id: 5, name: "Okafor & Sons", avatar: "OS", toneClass: "prToneOrange", surfaceClass: "prSurfaceOrange", bannerClass: "prClientBannerOrange" }
 ];
 
-const collabTypes: Record<CollabType, { label: string; icon: string; color: string; bg: string }> = {
-  review: { label: "Peer Review", icon: "◎", color: "#a78bfa", bg: "rgba(167,139,250,0.08)" },
-  feedback: { label: "Feedback", icon: "◌", color: "#60a5fa", bg: "rgba(96,165,250,0.08)" },
-  pairing: { label: "Pair Session", icon: "◉", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 8%, transparent)" },
-  cover: { label: "Coverage", icon: "⊡", color: "#ff8c00", bg: "rgba(255,140,0,0.08)" },
-  input: { label: "Expert Input", icon: "◈", color: "#f5c518", bg: "rgba(245,197,24,0.08)" }
+const collabTypes: Record<CollabType, { label: string; icon: string; badgeClass: string; sideClass: string }> = {
+  review: { label: "Peer Review", icon: "\u25CE", badgeClass: "prTypeReview", sideClass: "prCardReview" },
+  feedback: { label: "Feedback", icon: "\u25CC", badgeClass: "prTypeFeedback", sideClass: "prCardFeedback" },
+  pairing: { label: "Pair Session", icon: "\u25C9", badgeClass: "prTypePairing", sideClass: "prCardPairing" },
+  cover: { label: "Coverage", icon: "\u22A1", badgeClass: "prTypeCover", sideClass: "prCardCover" },
+  input: { label: "Expert Input", icon: "\u25C8", badgeClass: "prTypeInput", sideClass: "prCardInput" }
 };
 
-const urgencyColors: Record<Urgency, string> = {
-  high: "#ff8c00",
-  medium: "#f5c518",
-  low: "var(--muted2)"
+const urgencyClasses: Record<Urgency, string> = {
+  high: "prToneOrange",
+  medium: "prToneAmber",
+  low: "prToneMuted2"
 };
 
 const initialRequests: PeerRequest[] = [
@@ -202,11 +205,11 @@ const initialRequests: PeerRequest[] = [
   }
 ];
 
-const statusConfig: Record<RequestStatus, { label: string; color: string; bg: string; border: string }> = {
-  pending: { label: "Pending", color: "#f5c518", bg: "rgba(245,197,24,0.08)", border: "rgba(245,197,24,0.2)" },
-  accepted: { label: "Accepted", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 8%, transparent)", border: "color-mix(in srgb, var(--accent) 20%, transparent)" },
-  completed: { label: "Completed", color: "#a0a0b0", bg: "rgba(160,160,176,0.06)", border: "rgba(160,160,176,0.15)" },
-  declined: { label: "Declined", color: "#ff4444", bg: "rgba(255,68,68,0.08)", border: "rgba(255,68,68,0.2)" }
+const statusConfig: Record<RequestStatus, { label: string; badgeClass: string }> = {
+  pending: { label: "Pending", badgeClass: "prStatusPending" },
+  accepted: { label: "Accepted", badgeClass: "prStatusAccepted" },
+  completed: { label: "Completed", badgeClass: "prStatusCompleted" },
+  declined: { label: "Declined", badgeClass: "prStatusDeclined" }
 };
 
 const emptyDraft: Draft = {
@@ -274,62 +277,44 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
   };
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-peer-requests">
-      <style>{`
-        input,textarea,select{outline:none;font-family:'DM Mono',monospace;}
-        input:focus,textarea:focus{border-color:color-mix(in srgb, var(--accent) 25%, transparent)!important;}
-        textarea{resize:none;}
-        .req-row{transition:all 0.12s ease;cursor:pointer;}
-        .req-row:hover{border-color:color-mix(in srgb, var(--accent) 20%, transparent)!important;background:color-mix(in srgb, var(--accent) 2%, transparent)!important;}
-        .tab-btn{transition:all 0.12s ease;cursor:pointer;border:none;font-family:'DM Mono',monospace;}
-        .status-btn{transition:all 0.15s ease;cursor:pointer;font-family:'DM Mono',monospace;}
-        .status-btn:hover{opacity:0.8;transform:translateY(-1px);}
-        .new-btn{transition:all 0.15s ease;cursor:pointer;font-family:'DM Mono',monospace;}
-        .new-btn:hover{background:#a8d420!important;}
-        .save-btn{transition:all 0.15s ease;cursor:pointer;font-family:'DM Mono',monospace;}
-        .save-btn:hover:not(:disabled){background:#a8d420!important;}
-        .save-btn:disabled{opacity:0.3;cursor:not-allowed;}
-        .send-btn{transition:all 0.12s ease;cursor:pointer;font-family:'DM Mono',monospace;}
-        .send-btn:hover{opacity:0.8;}
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-peer-requests">
+      <div className={cx("pageHeaderBar", "borderB", "pb0")}>
+        <div className={cx("flexBetween", "mb20")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>Staff Dashboard / Collaboration</div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>Peer Requests</h1>
+            <div className={cx("pageEyebrow")}>Staff Dashboard / Collaboration</div>
+            <h1 className={cx("pageTitle")}>Peer Requests</h1>
           </div>
-          <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+          <div className={cx("flexRow", "gap20")}>
             {[
-              { label: "Incoming", value: incoming.length, color: "#a0a0b0" },
-              { label: "Needs reply", value: pendingIncoming, color: pendingIncoming > 0 ? "#f5c518" : "var(--muted2)" },
-              { label: "Outgoing", value: outgoing.length, color: "#a0a0b0" }
+              { label: "Incoming", value: incoming.length, toneClass: "prToneMuted" },
+              { label: "Needs reply", value: pendingIncoming, toneClass: pendingIncoming > 0 ? "prToneAmber" : "prToneMuted2" },
+              { label: "Outgoing", value: outgoing.length, toneClass: "prToneMuted" }
             ].map((stat) => (
-              <div key={stat.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+              <div key={stat.label} className={cx("textRight")}>
+                <div className={cx("prStatLabel")}>{stat.label}</div>
+                <div className={cx("fontDisplay", "fw800", stat.toneClass)}>{stat.value}</div>
               </div>
             ))}
             <button
-              className="new-btn"
+              type="button"
+              className={cx("prNewBtn")}
               onClick={() => {
                 setCreating(true);
                 setSelected(null);
               }}
-              style={{ padding: "10px 18px", background: "var(--accent)", color: "#050508", border: "none", borderRadius: 3, fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", marginLeft: 8 }}
             >
               + New request
             </button>
           </div>
         </div>
 
-        <div style={{ display: "flex" }}>
+        <div className={cx("flexRow")}>
           {[{ key: "all", label: "All" }, { key: "incoming", label: `Incoming${pendingIncoming > 0 ? ` (${pendingIncoming})` : ""}` }, { key: "outgoing", label: "Outgoing" }].map((tab) => (
             <button
               key={tab.key}
-              className="tab-btn"
+              type="button"
+              className={cx("prTabBtn", view === tab.key && "prTabBtnActive")}
               onClick={() => setView(tab.key as "all" | "incoming" | "outgoing")}
-              style={{ padding: "10px 20px", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", background: "transparent", color: view === tab.key ? "var(--accent)" : "var(--muted2)", borderBottom: `2px solid ${view === tab.key ? "var(--accent)" : "transparent"}`, marginBottom: -1 }}
             >
               {tab.label}
             </button>
@@ -337,8 +322,8 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", minHeight: "calc(100vh - 170px)" }}>
-        <div style={{ borderRight: "1px solid rgba(255,255,255,0.06)", padding: "14px", display: "flex", flexDirection: "column", gap: 7, overflowY: "auto" }}>
+      <div className={cx("prMainGrid")}>
+        <div className={cx("prSidebar")}>
           {filtered.map((request) => {
             const ct = collabTypes[request.type];
             const from = staff.find((item) => item.id === request.fromId);
@@ -349,47 +334,46 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
             return (
               <div
                 key={request.id}
-                className="req-row"
+                className={cx("prRequestCard", ct.sideClass, isSelected && "prRequestCardActive", request.status === "completed" && "prRequestCardCompleted")}
                 onClick={() => {
                   setSelected(request);
                   setCreating(false);
                 }}
-                style={{ padding: "12px 13px", borderRadius: 3, border: `1px solid ${isSelected ? "color-mix(in srgb, var(--accent) 25%, transparent)" : "rgba(255,255,255,0.06)"}`, borderLeft: `3px solid ${ct.color}`, background: isSelected ? "color-mix(in srgb, var(--accent) 2%, transparent)" : "rgba(255,255,255,0.01)", opacity: request.status === "completed" ? 0.6 : 1 }}
               >
-                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
-                  <span style={{ fontSize: 9, padding: "1px 6px", background: ct.bg, color: ct.color, borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{ct.icon} {ct.label}</span>
-                  <span style={{ fontSize: 9, padding: "1px 6px", background: sc.bg, color: sc.color, borderRadius: 2, letterSpacing: "0.06em", textTransform: "uppercase" }}>{sc.label}</span>
+                <div className={cx("flexRow", "gap6", "mb6", "flexWrap")}>
+                  <span className={cx("prTypeBadge", ct.badgeClass)}>{ct.icon} {ct.label}</span>
+                  <span className={cx("prTypeBadge", sc.badgeClass)}>{sc.label}</span>
                 </div>
-                <div style={{ fontSize: 12, color: isSelected ? "#fff" : "#a0a0b0", lineHeight: 1.3, marginBottom: 5 }}>{request.title}</div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 10, color: "var(--muted2)" }}>
+                <div className={cx("text12", "mb6", "prRequestTitle", isSelected ? "prToneText" : "prToneMuted")}>{request.title}</div>
+                <div className={cx("flexBetween")}>
+                  <span className={cx("text10", "colorMuted2")}>
                     {isIncoming ? `from ${from?.name}` : `to ${to?.name}`}
                   </span>
-                  <span style={{ fontSize: 9, color: urgencyColors[request.urgency] }}>●</span>
+                  <span className={cx("prUrgencyDot", urgencyClasses[request.urgency])}>&bull;</span>
                 </div>
-                <div style={{ fontSize: 9, color: "var(--muted2)", marginTop: 4 }}>{request.estimatedTime} - Due {request.dueBy}</div>
+                <div className={cx("text10", "colorMuted2", "mt4")}>{request.estimatedTime} - Due {request.dueBy}</div>
               </div>
             );
           })}
         </div>
 
-        <div style={{ overflowY: "auto" }}>
+        <div className={cx("overflowAuto")}>
           {creating ? (
-            <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: 18, maxWidth: 600 }}>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: "#fff" }}>New Collaboration Request</div>
+            <div className={cx("prDetailPane")}>
+              <div className={cx("fontDisplay", "fw800", "colorText", "prFormTitle")}>New Collaboration Request</div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className={cx("formGrid2")}>
                 <div>
-                  <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Request from</label>
-                  <select value={draft.toId} onChange={(event) => setDraft((previous) => ({ ...previous, toId: Number(event.target.value) }))} style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }}>
+                  <label className={cx("prFormLabel")}>Request from</label>
+                  <select aria-label="Request recipient" value={draft.toId} onChange={(event) => setDraft((previous) => ({ ...previous, toId: Number(event.target.value) }))} className={cx("prFormSelect")}>
                     {staff.filter((item) => item.id !== 1).map((item) => (
                       <option key={item.id} value={item.id}>{item.name} - {item.role}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Client</label>
-                  <select value={draft.clientId} onChange={(event) => setDraft((previous) => ({ ...previous, clientId: Number(event.target.value) }))} style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }}>
+                  <label className={cx("prFormLabel")}>Client</label>
+                  <select aria-label="Request client" value={draft.clientId} onChange={(event) => setDraft((previous) => ({ ...previous, clientId: Number(event.target.value) }))} className={cx("prFormSelect")}>
                     {clients.map((item) => (
                       <option key={item.id} value={item.id}>{item.name}</option>
                     ))}
@@ -397,49 +381,49 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div className={cx("prFormGrid3")}>
                 <div>
-                  <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Type</label>
-                  <select value={draft.type} onChange={(event) => setDraft((previous) => ({ ...previous, type: event.target.value as CollabType }))} style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }}>
+                  <label className={cx("prFormLabel")}>Type</label>
+                  <select aria-label="Request type" value={draft.type} onChange={(event) => setDraft((previous) => ({ ...previous, type: event.target.value as CollabType }))} className={cx("prFormSelect")}>
                     {Object.entries(collabTypes).map(([key, value]) => (
                       <option key={key} value={key}>{value.label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Urgency</label>
-                  <select value={draft.urgency} onChange={(event) => setDraft((previous) => ({ ...previous, urgency: event.target.value as Urgency }))} style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }}>
+                  <label className={cx("prFormLabel")}>Urgency</label>
+                  <select aria-label="Request urgency" value={draft.urgency} onChange={(event) => setDraft((previous) => ({ ...previous, urgency: event.target.value as Urgency }))} className={cx("prFormSelect")}>
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
                     <option value="low">Low</option>
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Due by</label>
-                  <input value={draft.dueBy} onChange={(event) => setDraft((previous) => ({ ...previous, dueBy: event.target.value }))} placeholder="e.g. Feb 25" style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }} />
+                  <label className={cx("prFormLabel")}>Due by</label>
+                  <input value={draft.dueBy} onChange={(event) => setDraft((previous) => ({ ...previous, dueBy: event.target.value }))} placeholder="e.g. Feb 25" className={cx("prFormInput")} />
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Title</label>
-                <input value={draft.title} onChange={(event) => setDraft((previous) => ({ ...previous, title: event.target.value }))} placeholder="What are you asking for?" style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }} />
+                <label className={cx("prFormLabel")}>Title</label>
+                <input value={draft.title} onChange={(event) => setDraft((previous) => ({ ...previous, title: event.target.value }))} placeholder="What are you asking for?" className={cx("prFormInput")} />
               </div>
 
               <div>
-                <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Description</label>
-                <textarea value={draft.description} onChange={(event) => setDraft((previous) => ({ ...previous, description: event.target.value }))} placeholder="Context, what you need from them, and what a good outcome looks like." style={{ width: "100%", minHeight: 100, padding: "10px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12, lineHeight: 1.7 }} />
+                <label className={cx("prFormLabel")}>Description</label>
+                <textarea value={draft.description} onChange={(event) => setDraft((previous) => ({ ...previous, description: event.target.value }))} placeholder="Context, what you need from them, and what a good outcome looks like." className={cx("prFormTextarea")} />
               </div>
 
               <div>
-                <label style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Estimated time needed</label>
-                <input value={draft.estimatedTime} onChange={(event) => setDraft((previous) => ({ ...previous, estimatedTime: event.target.value }))} placeholder="e.g. 30 min, 1 hour" style={{ width: 200, padding: "9px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12 }} />
+                <label className={cx("prFormLabel")}>Estimated time needed</label>
+                <input value={draft.estimatedTime} onChange={(event) => setDraft((previous) => ({ ...previous, estimatedTime: event.target.value }))} placeholder="e.g. 30 min, 1 hour" className={cx("prFormInputShort")} />
               </div>
 
-              <div style={{ display: "flex", gap: 10 }}>
-                <button className="save-btn" disabled={!draft.title.trim() || !draft.description.trim()} onClick={saveRequest} style={{ padding: "11px 24px", background: "var(--accent)", color: "#050508", border: "none", borderRadius: 3, fontSize: 12, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <div className={cx("flexRow", "gap10")}>
+                <button type="button" className={cx("prSaveBtn")} disabled={!draft.title.trim() || !draft.description.trim()} onClick={saveRequest}>
                   Send request
                 </button>
-                <button onClick={() => setCreating(false)} style={{ padding: "11px 16px", background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--muted2)", fontSize: 11, cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>
+                <button type="button" className={cx("prCancelBtn")} onClick={() => setCreating(false)}>
                   Cancel
                 </button>
               </div>
@@ -455,48 +439,48 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
                 const sc = statusConfig[selected.status];
                 const isIncoming = selected.toId === 1;
                 return (
-                  <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: 20, maxWidth: 680 }}>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, padding: "3px 9px", background: ct.bg, color: ct.color, borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{ct.icon} {ct.label}</span>
-                      <span style={{ fontSize: 10, padding: "3px 9px", background: sc.bg, color: sc.color, borderRadius: 2, border: `1px solid ${sc.border}`, letterSpacing: "0.08em", textTransform: "uppercase" }}>{sc.label}</span>
-                      <span style={{ fontSize: 10, padding: "3px 9px", background: "rgba(255,255,255,0.04)", color: urgencyColors[selected.urgency], borderRadius: 2, letterSpacing: "0.06em", textTransform: "uppercase" }}>{selected.urgency} priority</span>
+                  <div className={cx("prDetailPane")}>
+                    <div className={cx("flexRow", "gap8", "flexWrap", "mb4")}>
+                      <span className={cx("prDetailBadge", ct.badgeClass)}>{ct.icon} {ct.label}</span>
+                      <span className={cx("prDetailBadge", sc.badgeClass, "prDetailBadgeStatus")}>{sc.label}</span>
+                      <span className={cx("prDetailBadge", "prDetailBadgeNeutral", urgencyClasses[selected.urgency])}>{selected.urgency} priority</span>
                     </div>
-                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: "#fff", lineHeight: 1.3 }}>{selected.title}</div>
+                    <div className={cx("fontDisplay", "fw800", "colorText", "prDetailTitle")}>{selected.title}</div>
 
-                    <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                    <div className={cx("flexRow", "gap16", "flexWrap")}>
                       {[from, to].map((item, index) => (
-                        <div key={index} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          {index === 1 ? <span style={{ fontSize: 12, color: "var(--muted2)" }}>-&gt;</span> : null}
-                          <div style={{ width: 24, height: 24, borderRadius: 2, background: `${item?.color ?? "#a0a0b0"}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: item?.color ?? "#a0a0b0" }}>{item?.avatar ?? "??"}</div>
+                        <div key={index} className={cx("flexRow", "gap6")}>
+                          {index === 1 ? <span className={cx("text12", "colorMuted2")}>&rarr;</span> : null}
+                          <div className={cx("prPersonAvatar", item?.surfaceClass ?? "prSurfaceMuted", item?.toneClass ?? "prToneMuted")}>{item?.avatar ?? "??"}</div>
                           <div>
-                            <div style={{ fontSize: 11, color: item?.id === 1 ? "var(--accent)" : "var(--text)" }}>{item?.name ?? "Unknown"}</div>
-                            <div style={{ fontSize: 9, color: "var(--muted2)" }}>{item?.role ?? "Unknown role"}</div>
+                            <div className={cx("text11", item?.id === 1 ? "prToneAccent" : "colorText")}>{item?.name ?? "Unknown"}</div>
+                            <div className={cx("prPersonRole")}>{item?.role ?? "Unknown role"}</div>
                           </div>
                         </div>
                       ))}
-                      <div style={{ marginLeft: "auto", display: "flex", gap: 16 }}>
-                        <div><div style={{ fontSize: 9, color: "var(--muted2)", marginBottom: 2 }}>DUE</div><div style={{ fontSize: 11, color: "#a0a0b0" }}>{selected.dueBy}</div></div>
-                        <div><div style={{ fontSize: 9, color: "var(--muted2)", marginBottom: 2 }}>TIME NEEDED</div><div style={{ fontSize: 11, color: "#a0a0b0" }}>{selected.estimatedTime}</div></div>
+                      <div className={cx("prDueMeta")}>
+                        <div><div className={cx("prDueMetaLabel")}>DUE</div><div className={cx("text11", "colorMuted")}>{selected.dueBy}</div></div>
+                        <div><div className={cx("prDueMetaLabel")}>TIME NEEDED</div><div className={cx("text11", "colorMuted")}>{selected.estimatedTime}</div></div>
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: `${cl?.color ?? "#a0a0b0"}08`, border: `1px solid ${(cl?.color ?? "#a0a0b0")}25`, borderRadius: 3 }}>
-                      <div style={{ width: 20, height: 20, borderRadius: 2, background: `${cl?.color ?? "#a0a0b0"}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: cl?.color ?? "#a0a0b0" }}>{cl?.avatar ?? "??"}</div>
-                      <span style={{ fontSize: 11, color: cl?.color ?? "#a0a0b0" }}>{cl?.name ?? "Unknown client"}</span>
+                    <div className={cx("prClientBanner", cl?.bannerClass ?? "prClientBannerMuted")}>
+                      <div className={cx("prClientBannerAvatar", cl?.surfaceClass ?? "prSurfaceMuted", cl?.toneClass ?? "prToneMuted")}>{cl?.avatar ?? "??"}</div>
+                      <span className={cx("text11", cl?.toneClass ?? "prToneMuted")}>{cl?.name ?? "Unknown client"}</span>
                     </div>
 
-                    <div style={{ padding: "14px 16px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 3, background: "rgba(255,255,255,0.01)" }}>
-                      <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Request details</div>
-                      <div style={{ fontSize: 13, color: "#a0a0b0", lineHeight: 1.8 }}>{selected.description}</div>
+                    <div className={cx("prDescriptionCard")}>
+                      <div className={cx("prDescriptionLabel")}>Request details</div>
+                      <div className={cx("text13", "colorMuted", "prDescriptionText")}>{selected.description}</div>
                     </div>
 
                     {selected.attachments.length > 0 ? (
                       <div>
-                        <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Attachments</div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <div className={cx("prDescriptionLabel")}>Attachments</div>
+                        <div className={cx("flexRow", "gap8", "flexWrap")}>
                           {selected.attachments.map((attachment) => (
-                            <div key={attachment} style={{ padding: "6px 12px", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, fontSize: 11, color: "#a0a0b0", display: "flex", alignItems: "center", gap: 6 }}>
-                              <span style={{ color: "#60a5fa" }}>⊡</span>{attachment}
+                            <div key={attachment} className={cx("prAttachment")}>
+                              <span className={cx("colorBlue")}>&squf;</span>{attachment}
                             </div>
                           ))}
                         </div>
@@ -505,16 +489,16 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
 
                     {selected.thread.length > 0 ? (
                       <div>
-                        <div style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Thread</div>
+                        <div className={cx("prDescriptionLabel", "mb10")}>Thread</div>
                         {selected.thread.map((message, index) => {
                           const author = staff.find((item) => item.id === message.authorId);
                           const isMe = message.authorId === 1;
                           return (
-                            <div key={index} style={{ display: "flex", gap: 10, marginBottom: 10, flexDirection: isMe ? "row-reverse" : "row" }}>
-                              <div style={{ width: 22, height: 22, borderRadius: 2, background: `${author?.color ?? "#a0a0b0"}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, color: author?.color ?? "#a0a0b0", flexShrink: 0 }}>{author?.avatar ?? "??"}</div>
-                              <div style={{ maxWidth: "72%", padding: "9px 12px", borderRadius: 3, background: isMe ? "color-mix(in srgb, var(--accent) 6%, transparent)" : "rgba(255,255,255,0.04)", border: `1px solid ${isMe ? "color-mix(in srgb, var(--accent) 15%, transparent)" : "rgba(255,255,255,0.06)"}` }}>
-                                <div style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.6 }}>{message.text}</div>
-                                <div style={{ fontSize: 9, color: "var(--muted2)", marginTop: 4 }}>{message.time}</div>
+                            <div key={index} className={cx("prThreadRow", isMe ? "prThreadRowMe" : "prThreadRowOther")}>
+                              <div className={cx("prThreadAvatar", author?.surfaceClass ?? "prSurfaceMuted", author?.toneClass ?? "prToneMuted")}>{author?.avatar ?? "??"}</div>
+                              <div className={cx(isMe ? "prThreadBubbleMe" : "prThreadBubbleOther")}>
+                                <div className={cx("text12", "colorMuted", "prThreadText")}>{message.text}</div>
+                                <div className={cx("prThreadTime")}>{message.time}</div>
                               </div>
                             </div>
                           );
@@ -523,26 +507,26 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
                     ) : null}
 
                     {isIncoming && selected.status === "pending" ? (
-                      <div style={{ display: "flex", gap: 10 }}>
-                        <button className="status-btn" onClick={() => updateStatus(selected.id, "accepted")} style={{ padding: "10px 20px", background: "color-mix(in srgb, var(--accent) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--accent) 25%, transparent)", borderRadius: 3, color: "var(--accent)", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                          ✓ Accept
+                      <div className={cx("flexRow", "gap10")}>
+                        <button type="button" className={cx("prAcceptBtn")} onClick={() => updateStatus(selected.id, "accepted")}>
+                          &#10003; Accept
                         </button>
-                        <button className="status-btn" onClick={() => updateStatus(selected.id, "declined")} style={{ padding: "10px 16px", background: "rgba(255,68,68,0.06)", border: "1px solid rgba(255,68,68,0.2)", borderRadius: 3, color: "#ff4444", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                        <button type="button" className={cx("prDeclineBtn")} onClick={() => updateStatus(selected.id, "declined")}>
                           Decline
                         </button>
                       </div>
                     ) : null}
                     {selected.status === "accepted" ? (
-                      <div style={{ padding: "10px 14px", border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)", borderRadius: 3, background: "color-mix(in srgb, var(--accent) 4%, transparent)" }}>
-                        <button className="status-btn" onClick={() => updateStatus(selected.id, "completed")} style={{ fontSize: 11, color: "var(--accent)", background: "none", border: "none", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                          Mark as completed -&gt;
+                      <div className={cx("prCompleteWrap")}>
+                        <button type="button" className={cx("prCompleteBtn")} onClick={() => updateStatus(selected.id, "completed")}>
+                          Mark as completed &rarr;
                         </button>
                       </div>
                     ) : null}
 
-                    <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-                      <textarea value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Reply to this request..." style={{ flex: 1, minHeight: 52, padding: "10px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, color: "var(--text)", fontSize: 12, lineHeight: 1.6 }} />
-                      <button className="send-btn" onClick={() => sendReply(selected.id)} style={{ padding: "10px 16px", background: "var(--accent)", color: "#050508", border: "none", borderRadius: 3, fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", height: 52, flexShrink: 0 }}>
+                    <div className={cx("prReplyRow")}>
+                      <textarea value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Reply to this request..." className={cx("prReplyInput")} />
+                      <button type="button" className={cx("prSendBtn")} onClick={() => sendReply(selected.id)}>
                         Send
                       </button>
                     </div>

@@ -1,20 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  lime: "#a78bfa",
-  purple: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  orange: "#ff8c00",
-  muted: "#a0a0b0",
-  text: "#e8e8f0",
-};
+import { cx, styles } from "../style";
+import { toneClass } from "./admin-page-utils";
 
 type Priority = "critical" | "high" | "medium" | "low";
 
@@ -98,10 +86,17 @@ const focusItems: Array<{ text: string; priority: Priority; done: boolean }> = [
 ];
 
 const priorityColors: Record<Priority, string> = {
-  critical: C.red,
-  high: C.orange,
-  medium: C.amber,
-  low: C.muted,
+  critical: "var(--red)",
+  high: "var(--amber)",
+  medium: "var(--amber)",
+  low: "var(--muted)",
+};
+
+const priorityBadge: Record<Priority, string> = {
+  critical: "badgeRed",
+  high: "badgeAmber",
+  medium: "badgeAmber",
+  low: "badgeMuted",
 };
 
 const tabs = ["owner dashboard", "personal okrs", "decision journal", "private notes"] as const;
@@ -116,141 +111,141 @@ export function OwnersWorkspacePage() {
   };
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Syne, sans-serif", color: C.text, padding: 0 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.lime, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>ADMIN / PERSONAL WORKSPACE</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Owner&apos;s Workspace</h1>
-          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Private - Only visible to you</div>
+          <div className={styles.pageEyebrow}>ADMIN / PERSONAL WORKSPACE</div>
+          <h1 className={styles.pageTitle}>Owner&apos;s Workspace</h1>
+          <div className={styles.pageSub}>Private - Only visible to you</div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: C.surface, border: `1px solid ${C.lime}33`, borderRadius: 8 }}>
-          <span style={{ fontSize: 14 }}>🔒</span>
-          <span style={{ fontSize: 12, color: C.lime, fontFamily: "DM Mono, monospace" }}>Admin-only - Not visible to staff</span>
+        <div className={cx("flexRow", "gap8", "p16", styles.ownerLockCard)}>
+          <span className={cx("text14")}>&#128274;</span>
+          <span className={cx("text12", "colorAccent", "fontMono")}>Admin-only - Not visible to staff</span>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}` }}>
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            style={{
-              background: "none",
-              border: "none",
-              color: activeTab === t ? C.lime : C.muted,
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontFamily: "Syne, sans-serif",
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              borderBottom: `2px solid ${activeTab === t ? C.lime : "transparent"}`,
-              marginBottom: -1,
-              transition: "all 0.2s",
-            }}
-          >
-            {t}
-          </button>
-        ))}
+      <div className={styles.filterRow}>
+        <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
       {activeTab === "owner dashboard" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Today&apos;s Focus - Mon 23 Feb</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className={styles.ownerDashSplit}>
+          <div className={cx("flexCol", "gap16")}>
+            <div className={cx(styles.card, styles.ownerCard24)}>
+              <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>Today&apos;s Focus - Mon 23 Feb</div>
+              <div className={cx("flexCol", "gap10")}>
                 {todos.map((item, i) => (
-                  <div key={item.text} onClick={() => toggleTodo(i)} style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer", opacity: item.done ? 0.5 : 1, padding: "10px 12px", borderRadius: 8, background: item.done ? C.bg : "transparent", border: `1px solid ${item.done ? C.border : "transparent"}`, transition: "all 0.2s" }}>
-                    <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${item.done ? C.lime : priorityColors[item.priority]}`, background: item.done ? C.lime : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>{item.done && <span style={{ fontSize: 10, color: C.bg, fontWeight: 800 }}>✓</span>}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, textDecoration: item.done ? "line-through" : "none", color: item.done ? C.muted : C.text }}>{item.text}</div>
+                  <div
+                    key={item.text}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleTodo(i)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        toggleTodo(i);
+                      }
+                    }}
+                    className={cx("flexRow", "gap12", "pointerCursor", toneClass(priorityColors[item.priority]), item.done && "opacity50")}
+                  >
+                    <div className={cx(styles.ownerTodoRow, item.done && styles.ownerTodoDone)}>
+                      <div className={cx("flexCenter", "noShrink", styles.ownerTodoCheck, item.done && styles.ownerTodoCheckDone)}>{item.done && <span className={cx("text10", "fw800", styles.ownerCheckMark)}>&#10003;</span>}</div>
+                      <div className={styles.ownerFlex1}>
+                        <div className={cx("text13", styles.ownerTodoText, item.done && styles.ownerTodoTextDone)}>{item.text}</div>
+                      </div>
                     </div>
-                    <span style={{ fontSize: 10, color: priorityColors[item.priority], fontFamily: "DM Mono, monospace", textTransform: "uppercase", flexShrink: 0 }}>{item.priority}</span>
+                    <span className={cx("text10", "fontMono", "uppercase", "noShrink", styles.ownerToneText)}>{item.priority}</span>
                   </div>
                 ))}
-                <button style={{ background: "none", border: `1px dashed ${C.border}`, borderRadius: 8, padding: "10px 12px", color: C.muted, fontSize: 12, cursor: "pointer", textAlign: "left" }}>+ Add focus item</button>
+                <button type="button" className={cx("btnSm", "btnGhost", "colorMuted", styles.ownerAddFocusBtn)}>+ Add focus item</button>
               </div>
             </div>
 
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Business Pulse</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+            <div className={cx(styles.card, styles.ownerCard24)}>
+              <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>Business Pulse</div>
+              <div className={cx("grid3", "gap12")}>
                 {[
-                  { label: "MRR", value: "R398.6k", sub: "▲ 5.4% MoM", color: C.lime },
-                  { label: "Team Util.", value: "81%", sub: "Target: 85%", color: C.amber },
-                  { label: "Client Health", value: "74/100", sub: "2 at risk", color: C.amber },
-                  { label: "Pipeline", value: "R168k", sub: "5 prospects", color: C.blue },
-                  { label: "Overdue Inv.", value: "R21k", sub: "1 invoice", color: C.red },
-                  { label: "Runway", value: "3.9mo", sub: "Cash reserves", color: C.purple },
+                  { label: "MRR", value: "R398.6k", sub: "\u25b2 5.4% MoM", color: "var(--accent)" },
+                  { label: "Team Util.", value: "81%", sub: "Target: 85%", color: "var(--amber)" },
+                  { label: "Client Health", value: "74/100", sub: "2 at risk", color: "var(--amber)" },
+                  { label: "Pipeline", value: "R168k", sub: "5 prospects", color: "var(--blue)" },
+                  { label: "Overdue Inv.", value: "R21k", sub: "1 invoice", color: "var(--red)" },
+                  { label: "Runway", value: "3.9mo", sub: "Cash reserves", color: "var(--purple)" },
                 ].map((s) => (
-                  <div key={s.label} style={{ padding: 14, background: C.bg, borderRadius: 8 }}>
-                    <div style={{ fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{s.label}</div>
-                    <div style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, fontSize: 18, color: s.color, marginBottom: 2 }}>{s.value}</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>{s.sub}</div>
+                  <div key={s.label} className={cx("bgBg", "p16", styles.ownerRounded8)}>
+                    <div className={cx("text10", "colorMuted", "uppercase", "tracking", "mb4")}>{s.label}</div>
+                    <div className={cx("fontMono", "fw800", "mb3", styles.ownerValue18, styles.ownerToneText, toneClass(s.color))}>{s.value}</div>
+                    <div className={cx("text11", "colorMuted")}>{s.sub}</div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>OKR Snapshot</div>
+          <div className={cx("flexCol", "gap16")}>
+            <div className={cx(styles.card, styles.ownerCard24)}>
+              <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>OKR Snapshot</div>
               {ownerOKRs.map((okr) => {
                 const avgProgress = Math.round(okr.keyResults.reduce((s, kr) => s + kr.progress, 0) / okr.keyResults.length);
                 return (
-                  <div key={okr.objective} style={{ marginBottom: 16 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.4 }}>{okr.objective}</span>
-                      <span style={{ fontFamily: "DM Mono, monospace", fontSize: 13, color: avgProgress >= 75 ? C.lime : avgProgress >= 50 ? C.amber : C.red, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>{avgProgress}%</span>
+                  <div key={okr.objective} className={cx("mb16")}>
+                    <div className={cx("flexBetween", "mb6")}>
+                      <span className={cx("text12", "fw600", styles.ownerLine14)}>{okr.objective}</span>
+                      <span className={cx("fontMono", "text13", "fw700", "noShrink", styles.ownerToneText, styles.ownerMl8, toneClass(avgProgress >= 75 ? "var(--accent)" : avgProgress >= 50 ? "var(--amber)" : "var(--red)"))}>{avgProgress}%</span>
                     </div>
-                    <div style={{ height: 6, background: C.border, borderRadius: 3 }}>
-                      <div style={{ height: "100%", width: `${avgProgress}%`, background: avgProgress >= 75 ? C.lime : avgProgress >= 50 ? C.amber : C.red, borderRadius: 3 }} />
+                    <div className={cx(styles.progressBar, styles.ownerProgSm)}>
+                      <progress
+                        className={cx(styles.ownerProgFill, "uiProgress", toneClass(avgProgress >= 75 ? "var(--accent)" : avgProgress >= 50 ? "var(--amber)" : "var(--red)"))}
+                        max={100}
+                        value={avgProgress}
+                      />
                     </div>
                   </div>
                 );
               })}
-              <button style={{ width: "100%", background: "none", border: `1px solid ${C.border}`, color: C.muted, padding: "8px", borderRadius: 6, fontSize: 12, cursor: "pointer", marginTop: 4 }}>View Full OKRs -&gt;</button>
+              <button type="button" className={cx("btnSm", "btnGhost", "wFull", "mt4")}>View Full OKRs -&gt;</button>
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.06em" }}>Recent Decisions</div>
+            <div className={cx(styles.card, styles.ownerCard24)}>
+              <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>Recent Decisions</div>
               {decisions.slice(0, 2).map((d) => (
-                <div key={d.title} style={{ padding: 12, background: C.bg, borderRadius: 8, marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, color: C.muted, marginBottom: 4, fontFamily: "DM Mono, monospace" }}>{d.date}</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.4 }}>{d.title}</div>
+                <div key={d.title} className={cx("bgBg", "mb10", styles.ownerDecisionMini)}>
+                  <div className={cx("text11", "colorMuted", "mb4", "fontMono")}>{d.date}</div>
+                  <div className={cx("text12", "fw600", styles.ownerLine14)}>{d.title}</div>
                 </div>
               ))}
-              <button style={{ width: "100%", background: "none", border: `1px solid ${C.border}`, color: C.muted, padding: "8px", borderRadius: 6, fontSize: 12, cursor: "pointer", marginTop: 4 }}>View Decision Journal -&gt;</button>
+              <button type="button" className={cx("btnSm", "btnGhost", "wFull", "mt4")}>View Decision Journal -&gt;</button>
             </div>
           </div>
         </div>
       )}
 
       {activeTab === "personal okrs" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <div className={cx("flexCol", "gap24")}>
           {ownerOKRs.map((okr) => (
-            <div key={okr.objective} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 20, color: C.lime }}>◎ {okr.objective}</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div key={okr.objective} className={cx(styles.card, styles.ownerCard24)}>
+              <div className={cx("fw800", "colorAccent", "mb20", styles.ownerTitle16)}>&#9678; {okr.objective}</div>
+              <div className={cx("flexCol", "gap16")}>
                 {okr.keyResults.map((kr, i) => (
-                  <div key={kr.kr} style={{ padding: 16, background: C.bg, borderRadius: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>
+                  <div key={kr.kr} className={cx("bgBg", "p16", styles.ownerRounded8)}>
+                    <div className={cx("flexBetween", "mb8")}>
+                      <span className={cx("text13", "fw600")}>
                         KR{i + 1}: {kr.kr}
                       </span>
-                      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                        {"note" in kr && kr.note ? <span style={{ fontSize: 11, color: C.amber, fontFamily: "DM Mono, monospace" }}>{kr.note}</span> : null}
-                        <span style={{ fontFamily: "DM Mono, monospace", fontWeight: 800, color: kr.progress >= 75 ? C.lime : kr.progress >= 50 ? C.amber : C.red }}>{kr.progress}%</span>
+                      <div className={cx("flexRow", "gap12")}>
+                        {"note" in kr && kr.note ? <span className={cx("text11", "colorAmber", "fontMono")}>{kr.note}</span> : null}
+                        <span className={cx("fontMono", "fw800", styles.ownerToneText, toneClass(kr.progress >= 75 ? "var(--accent)" : kr.progress >= 50 ? "var(--amber)" : "var(--red)"))}>{kr.progress}%</span>
                       </div>
                     </div>
-                    <div style={{ height: 8, background: C.border, borderRadius: 4 }}>
-                      <div style={{ height: "100%", width: `${kr.progress}%`, background: kr.progress >= 75 ? C.lime : kr.progress >= 50 ? C.amber : C.red, borderRadius: 4, transition: "width 0.8s" }} />
+                    <div className={cx(styles.progressBar, styles.ownerProgMd)}>
+                      <progress
+                        className={cx(styles.ownerProgFillMd, "uiProgress", toneClass(kr.progress >= 75 ? "var(--accent)" : kr.progress >= 50 ? "var(--amber)" : "var(--red)"))}
+                        max={100}
+                        value={kr.progress}
+                      />
                     </div>
-                    <div style={{ fontSize: 11, color: C.muted, marginTop: 6, fontFamily: "DM Mono, monospace" }}>
+                    <div className={cx("text11", "colorMuted", "mt6", "fontMono")}>
                       Current: {kr.current} / Target: {kr.target}
                     </div>
                   </div>
@@ -262,49 +257,51 @@ export function OwnersWorkspacePage() {
       )}
 
       {activeTab === "decision journal" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
-            <button style={{ background: C.lime, color: C.bg, border: "none", padding: "8px 16px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>+ Log Decision</button>
+        <div className={cx("flexCol", "gap16")}>
+          <div className={cx("flexEnd", "mb4")}>
+            <button type="button" className={cx("btnSm", "btnAccent")}>+ Log Decision</button>
           </div>
           {decisions.map((d) => (
-            <div key={d.title} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+            <div key={d.title} className={cx(styles.card, styles.ownerCard24)}>
+              <div className={cx("flexBetween", "mb12", styles.ownerAlignStart)}>
                 <div>
-                  <div style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: C.muted, marginBottom: 6 }}>{d.date}</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8, lineHeight: 1.4 }}>{d.title}</div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <div className={cx("fontMono", "text11", "colorMuted", "mb6")}>{d.date}</div>
+                  <div className={cx("fw700", "mb8", styles.ownerTitle15, styles.ownerLine14)}>{d.title}</div>
+                  <div className={cx("flexRow", "gap6", "flexWrap")}>
                     {d.tags.map((tag) => (
-                      <span key={tag} style={{ fontSize: 10, color: C.blue, background: `${C.blue}15`, padding: "2px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace" }}>{tag}</span>
+                      <span key={tag} className={cx("badge", "badgeBlue")}>{tag}</span>
                     ))}
                   </div>
                 </div>
-                <span style={{ fontSize: 10, color: d.outcome === "implemented" ? C.lime : d.outcome === "in-progress" ? C.amber : C.muted, background: `${d.outcome === "implemented" ? C.lime : d.outcome === "in-progress" ? C.amber : C.muted}15`, padding: "3px 10px", borderRadius: 4, fontFamily: "DM Mono, monospace", flexShrink: 0 }}>{d.outcome}</span>
+                <span className={cx("badge", "noShrink", d.outcome === "implemented" ? "badgeGreen" : d.outcome === "in-progress" ? "badgeAmber" : "badgeMuted")}>{d.outcome}</span>
               </div>
-              <div style={{ padding: 14, background: C.bg, borderRadius: 8, fontSize: 13, color: C.text, lineHeight: 1.6, borderLeft: `3px solid ${C.lime}` }}>{d.context}</div>
+              <div className={cx("bgBg", "text13", styles.ownerDecisionBody)}>{d.context}</div>
             </div>
           ))}
         </div>
       )}
 
       {activeTab === "private notes" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.amber}33`, borderRadius: 10, padding: 14, fontSize: 12, color: C.muted }}>🔒 These notes are private and only visible to you. They are not logged in the audit trail and not accessible to other admins.</div>
+        <div className={cx("flexCol", "gap16")}>
+          <div className={cx(styles.card, styles.ownerPrivateAlert)}>
+            <span className={cx("text12", "colorMuted")}>&#128274; These notes are private and only visible to you. They are not logged in the audit trail and not accessible to other admins.</span>
+          </div>
           {privateNotes.map((note) => (
-            <div key={note.client + note.date} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 24 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: C.lime }}>{note.client}</span>
-                  <span style={{ fontSize: 10, color: priorityColors[note.priority], background: `${priorityColors[note.priority]}18`, padding: "2px 8px", borderRadius: 4, fontFamily: "DM Mono, monospace", textTransform: "uppercase" }}>{note.priority}</span>
+            <div key={note.client + note.date} className={cx(styles.card, styles.ownerCard24)}>
+              <div className={cx("flexBetween", "mb12")}>
+                <div className={cx("flexRow", "gap10")}>
+                  <span className={cx("fw700", "text14", "colorAccent")}>{note.client}</span>
+                  <span className={cx("badge", priorityBadge[note.priority])}>{note.priority}</span>
                 </div>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <span style={{ fontSize: 11, color: C.muted, fontFamily: "DM Mono, monospace" }}>{note.date}</span>
-                  <button style={{ background: C.border, border: "none", color: C.text, padding: "4px 10px", borderRadius: 4, fontSize: 11, cursor: "pointer" }}>Edit</button>
+                <div className={cx("flexRow", "gap6")}>
+                  <span className={cx("text11", "colorMuted", "fontMono")}>{note.date}</span>
+                  <button type="button" className={cx("btnSm", "btnGhost")}>Edit</button>
                 </div>
               </div>
-              <div style={{ fontSize: 13, color: C.text, lineHeight: 1.7, padding: 14, background: C.bg, borderRadius: 8, borderLeft: `3px solid ${priorityColors[note.priority]}` }}>{note.note}</div>
+              <div className={cx("text13", "bgBg", styles.ownerPrivateNote, toneClass(priorityColors[note.priority]))}>{note.note}</div>
             </div>
           ))}
-          <button style={{ background: C.surface, border: `1px dashed ${C.border}`, borderRadius: 10, padding: 20, color: C.muted, fontSize: 13, cursor: "pointer", textAlign: "center" }}>+ Add Private Note</button>
+          <button type="button" className={cx("btnSm", "btnGhost", "textCenter", styles.ownerAddPrivateBtn)}>+ Add Private Note</button>
         </div>
       )}
     </div>

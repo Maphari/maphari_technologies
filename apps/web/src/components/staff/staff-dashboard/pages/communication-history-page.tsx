@@ -62,18 +62,18 @@ const allEvents: TimelineEvent[] = [
   { id: 26, clientId: 5, type: "message", direction: "inbound", title: "Positive feedback", excerpt: "The charts look exceptional - exactly what the board needed to see. Thank you.", date: "Feb 20", time: "9:30 AM", read: true }
 ];
 
-const typeConfig: Record<EventType, { icon: string; label: string; color: string; bg: string }> = {
-  message: { icon: "✉", label: "Message", color: "#a0a0b0", bg: "rgba(160,160,176,0.08)" },
-  milestone: { icon: "◎", label: "Milestone", color: "#a78bfa", bg: "rgba(167,139,250,0.08)" },
-  invoice: { icon: "₹", label: "Invoice", color: "var(--accent)", bg: "color-mix(in srgb, var(--accent) 8%, transparent)" },
-  call: { icon: "◌", label: "Call", color: "#60a5fa", bg: "rgba(96,165,250,0.08)" },
-  file: { icon: "⊡", label: "File", color: "#f5c518", bg: "rgba(245,197,24,0.08)" }
+const typeConfig: Record<EventType, { icon: string; label: string; iconClass: string; badgeClass: string }> = {
+  message: { icon: "✉", label: "Message", iconClass: "commsTypeMessage", badgeClass: "commsTypeBadgeMessage" },
+  milestone: { icon: "◎", label: "Milestone", iconClass: "commsTypeMilestone", badgeClass: "commsTypeBadgeMilestone" },
+  invoice: { icon: "₹", label: "Invoice", iconClass: "commsTypeInvoice", badgeClass: "commsTypeBadgeInvoice" },
+  call: { icon: "◌", label: "Call", iconClass: "commsTypeCall", badgeClass: "commsTypeBadgeCall" },
+  file: { icon: "⊡", label: "File", iconClass: "commsTypeFile", badgeClass: "commsTypeBadgeFile" }
 };
 
-const directionConfig: Record<Direction, { label: string; color: string }> = {
-  outbound: { label: "Sent", color: "var(--muted2)" },
-  inbound: { label: "Received", color: "var(--accent)" },
-  both: { label: "Joint", color: "#60a5fa" }
+const directionConfig: Record<Direction, { label: string; toneClass: string }> = {
+  outbound: { label: "Sent", toneClass: "commsDirectionOutbound" },
+  inbound: { label: "Received", toneClass: "commsDirectionInbound" },
+  both: { label: "Joint", toneClass: "commsDirectionBoth" }
 };
 
 export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
@@ -89,7 +89,12 @@ export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
         .filter((event) => (selectedClient === "all" ? true : event.clientId === selectedClient))
         .filter((event) => (filterType === "all" ? true : event.type === filterType))
         .filter((event) => (filterDir === "all" ? true : event.direction === filterDir))
-        .filter((event) => !search || event.title.toLowerCase().includes(search.toLowerCase()) || event.excerpt.toLowerCase().includes(search.toLowerCase()))
+        .filter(
+          (event) =>
+            !search
+            || event.title.toLowerCase().includes(search.toLowerCase())
+            || event.excerpt.toLowerCase().includes(search.toLowerCase())
+        )
         .sort((a, b) => b.id - a.id),
     [filterDir, filterType, search, selectedClient]
   );
@@ -105,106 +110,93 @@ export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
   }, [events]);
 
   return (
-    <section className={cx("page", isActive && "pageActive")} id="page-communication-history">
-      <style>{`
-        .comms-filter-btn { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; }
-        .comms-filter-btn:hover { opacity: 0.8; }
-        .comms-event-row { transition: all 0.15s ease; cursor: pointer; }
-        .comms-event-row:hover { border-color: color-mix(in srgb, var(--accent) 20%, transparent) !important; background: color-mix(in srgb, var(--accent) 2%, transparent) !important; }
-        .comms-client-pill { transition: all 0.12s ease; cursor: pointer; border: none; font-family: 'DM Mono', monospace; white-space: nowrap; }
-        .comms-client-pill:hover { opacity: 0.8; }
-      `}</style>
-
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
+      <div className={cx("pageHeaderBar", "borderB", "commsHeaderBar")}>
+        <div className={cx("flexBetween", "mb20", "commsHeaderTop")}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-              Staff Dashboard / Client Intelligence
-            </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
-              Communication History
-            </h1>
+            <div className={cx("pageEyebrow", "mb8")}>Staff Dashboard / Client Intelligence</div>
+            <h1 className={cx("pageTitle")}>Communication History</h1>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
+          <div className={cx("flexRow", "gap24", "commsTopStats")}>
             {[
-              { label: "Total events", value: allEvents.length, color: "#a0a0b0" },
-              { label: "Unread inbound", value: unreadCount, color: unreadCount > 0 ? "#ff4444" : "var(--accent)" },
-              { label: "Clients", value: clients.length, color: "#a0a0b0" }
+              { label: "Total events", value: allEvents.length, toneClass: "commsToneSoft" },
+              { label: "Unread inbound", value: unreadCount, toneClass: unreadCount > 0 ? "commsToneRed" : "commsToneAccent" },
+              { label: "Clients", value: clients.length, toneClass: "commsToneSoft" }
             ].map((stat) => (
-              <div key={stat.label} style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--muted2)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+              <div key={stat.label} className={cx("textRight")}>
+                <div className={cx("pageEyebrow", "mb4", "commsStatLabel")}>{stat.label}</div>
+                <div className={cx("fontDisplay", "fw800", "commsStatValue", stat.toneClass)}>{stat.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 14, paddingBottom: 2 }}>
-          {[{ id: "all" as const, name: "All clients", avatar: "◈" }, ...clients].map((client) => {
-            const isSelected = selectedClient === client.id;
-            return (
-              <button
-                key={client.id}
-                type="button"
-                className="comms-client-pill"
-                onClick={() => setSelectedClient(client.id)}
-                style={{ padding: "6px 12px", borderRadius: 2, fontSize: 11, background: isSelected ? "var(--accent)" : "rgba(255,255,255,0.04)", color: isSelected ? "#050508" : "#a0a0b0", display: "flex", alignItems: "center", gap: 6 }}
-              >
-                <span style={{ fontSize: 9 }}>{client.avatar}</span>
+        <div className={cx("filterRow", "mb14", "commsClientRow")}>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter by client"
+            value={selectedClient === "all" ? "all" : String(selectedClient)}
+            onChange={(event) => {
+              const value = event.target.value;
+              setSelectedClient(value === "all" ? "all" : Number.parseInt(value, 10));
+            }}
+          >
+            <option value="all">All clients</option>
+            {clients.map((client) => (
+              <option key={client.id} value={String(client.id)}>
                 {client.name}
-              </button>
-            );
-          })}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <div className={cx("flexRow", "gap10", "flexWrap", "commsFilterRow")}>
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search events..."
-            style={{ width: 220, padding: "7px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2, color: "var(--text)", fontSize: 11 }}
+            className={cx("commsSearchInput")}
           />
-          <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.08)" }} />
-          {(["all", "message", "milestone", "invoice", "call", "file"] as const).map((type) => (
-            <button
-              key={type}
-              type="button"
-              className="comms-filter-btn"
-              onClick={() => setFilterType(type)}
-              style={{ padding: "5px 12px", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: 2, background: filterType === type ? "rgba(255,255,255,0.08)" : "transparent", color: filterType === type ? "var(--text)" : "var(--muted2)" }}
-            >
-              {type === "all" ? "All types" : type}
-            </button>
-          ))}
-          <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.08)" }} />
-          {(["all", "inbound", "outbound"] as const).map((direction) => (
-            <button
-              key={direction}
-              type="button"
-              className="comms-filter-btn"
-              onClick={() => setFilterDir(direction)}
-              style={{ padding: "5px 12px", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: 2, background: filterDir === direction ? "rgba(255,255,255,0.08)" : "transparent", color: filterDir === direction ? "var(--text)" : "var(--muted2)" }}
-            >
-              {direction === "all" ? "Both directions" : direction}
-            </button>
-          ))}
-          <div style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted2)" }}>{events.length} events</div>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter by event type"
+            value={filterType}
+            onChange={(event) => setFilterType(event.target.value as "all" | EventType)}
+          >
+            <option value="all">All types</option>
+            <option value="message">Message</option>
+            <option value="milestone">Milestone</option>
+            <option value="invoice">Invoice</option>
+            <option value="call">Call</option>
+            <option value="file">File</option>
+          </select>
+          <select
+            className={cx("filterSelect")}
+            aria-label="Filter by direction"
+            value={filterDir}
+            onChange={(event) => setFilterDir(event.target.value as "all" | "inbound" | "outbound")}
+          >
+            <option value="all">Both directions</option>
+            <option value="inbound">Inbound</option>
+            <option value="outbound">Outbound</option>
+          </select>
+          <div className={cx("text11", "colorMuted2", "commsEventCount")}>{events.length} events</div>
         </div>
       </div>
 
-      <div style={{ padding: "28px 8px 8px 0", maxWidth: 860 }}>
+      <div className={cx("commsContent")}> 
         {Object.entries(groupedByDate).length === 0 ? (
-          <div style={{ textAlign: "center", paddingTop: 60, color: "#333344", fontSize: 12 }}>No events match your filters.</div>
+          <div className={cx("textCenter", "text12", "commsEmptyState")}>No events match your filters.</div>
         ) : null}
 
         {Object.entries(groupedByDate).map(([date, dateEvents]) => (
-          <div key={date} style={{ marginBottom: 28 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-              <span style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.12em", textTransform: "uppercase" }}>{date}</span>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.04)" }} />
+          <div key={date} className={cx("mb28")}>
+            <div className={cx("flexRow", "gap12", "mb14")}>
+              <span className={cx("text10", "colorMuted2", "uppercase", "commsDateLabel")}>{date}</span>
+              <div className={cx("flex1", "commsDateLine")} />
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <div className={cx("flexCol")}>
               {dateEvents.map((event, index) => {
                 const tCfg = typeConfig[event.type];
                 const dCfg = directionConfig[event.direction];
@@ -212,39 +204,47 @@ export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
                 const isExpanded = expanded === event.id;
                 const isLast = index === dateEvents.length - 1;
                 return (
-                  <div key={event.id} style={{ display: "flex", gap: 0 }}>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 40, flexShrink: 0 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, border: `1.5px solid ${event.read || event.direction === "outbound" ? tCfg.color : "#ff4444"}`, background: tCfg.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: tCfg.color, zIndex: 1 }}>
+                  <div key={event.id} className={cx("flexRow", "commsTimelineEntry")}>
+                    <div className={cx("flexCol", "noShrink", "commsTimelineCol")}>
+                      <div
+                        className={cx(
+                          "flexCenter",
+                          "noShrink",
+                          "commsTimelineIcon",
+                          tCfg.iconClass,
+                          !event.read && event.direction === "inbound" && "commsTimelineIconUnread"
+                        )}
+                      >
                         {tCfg.icon}
                       </div>
-                      {!isLast ? <div style={{ width: 1, flex: 1, minHeight: 16, background: "rgba(255,255,255,0.06)", margin: "2px 0" }} /> : null}
+                      {!isLast ? <div className={cx("commsTimelineRail")} /> : null}
                     </div>
 
                     <div
-                      className="comms-event-row"
+                      className={cx(
+                        "commsEventRow",
+                        "flex1",
+                        isExpanded ? "commsEventRowExpanded" : (!event.read && event.direction === "inbound" ? "commsEventRowUnread" : "commsEventRowIdle"),
+                        isLast ? "commsEventRowLast" : "commsEventRowGap"
+                      )}
                       onClick={() => setExpanded(isExpanded ? null : event.id)}
-                      style={{ flex: 1, marginBottom: isLast ? 0 : 6, marginLeft: 12, padding: "10px 14px", border: `1px solid ${isExpanded ? "color-mix(in srgb, var(--accent) 20%, transparent)" : !event.read && event.direction === "inbound" ? "rgba(255,68,68,0.2)" : "rgba(255,255,255,0.05)"}`, borderRadius: 3, background: isExpanded ? "color-mix(in srgb, var(--accent) 2%, transparent)" : "rgba(255,255,255,0.01)" }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: isExpanded ? 8 : 0 }}>
-                        <span style={{ fontSize: 11, color: "var(--text)", flex: 1, fontWeight: isExpanded ? 500 : 400 }}>{event.title}</span>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                          {selectedClient === "all" ? <span style={{ fontSize: 9, color: "var(--muted2)", padding: "1px 6px", background: "rgba(255,255,255,0.04)", borderRadius: 2 }}>{clientName}</span> : null}
-                          <span style={{ fontSize: 9, color: dCfg.color, letterSpacing: "0.08em", textTransform: "uppercase" }}>{dCfg.label}</span>
-                          {!event.read && event.direction === "inbound" ? <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ff4444" }} /> : null}
-                          <span style={{ fontSize: 10, color: "#333344" }}>{event.time}</span>
+                      <div className={cx("flexRow", "gap10", isExpanded ? "commsEventHeadExpanded" : "commsEventHead")}> 
+                        <span className={cx("text11", "colorText", "flex1", isExpanded ? "commsTitleExpanded" : "commsTitle")}>{event.title}</span>
+                        <div className={cx("flexRow", "gap8", "noShrink")}>
+                          {selectedClient === "all" ? <span className={cx("textXs", "colorMuted2", "commsClientTag")}>{clientName}</span> : null}
+                          <span className={cx("textXs", "uppercase", "commsDirectionLabel", dCfg.toneClass)}>{dCfg.label}</span>
+                          {!event.read && event.direction === "inbound" ? <div className={cx("commsUnreadPing")} /> : null}
+                          <span className={cx("text10", "colorMuted2")}>{event.time}</span>
                         </div>
                       </div>
 
                       {isExpanded ? (
-                        <div style={{ overflow: "hidden" }}>
-                          <div style={{ fontSize: 12, color: "#a0a0b0", lineHeight: 1.6, padding: "8px 0", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-                            {event.excerpt}
-                          </div>
-                          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                            <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 2, background: tCfg.bg, color: tCfg.color, letterSpacing: "0.08em", textTransform: "uppercase" }}>{tCfg.label}</span>
-                            <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 2, background: "rgba(255,255,255,0.04)", color: "var(--muted2)" }}>
-                              {date} - {event.time}
-                            </span>
+                        <div className={cx("overflowHidden")}>
+                          <div className={cx("text12", "colorMuted", "commsExcerpt")}>{event.excerpt}</div>
+                          <div className={cx("flexRow", "gap8", "mt8")}>
+                            <span className={cx("textXs", "uppercase", "commsTypeBadge", tCfg.badgeClass)}>{tCfg.label}</span>
+                            <span className={cx("textXs", "colorMuted2", "commsDateBadge")}>{date} - {event.time}</span>
                           </div>
                         </div>
                       ) : null}

@@ -1,22 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { getProjectPreferenceWithRefresh, setProjectPreferenceWithRefresh, type NotificationJob } from "../../../../lib/api/admin";
 import type { DashboardToast } from "../../../shared/dashboard-core";
-import { EmptyState, formatDate, formatDateTime } from "./admin-page-utils";
-
-const C = {
-  bg: "#050508",
-  surface: "#0d0d14",
-  border: "#1a1a2e",
-  primary: "#a78bfa",
-  blue: "#60a5fa",
-  amber: "#f5c518",
-  red: "#ff4444",
-  muted: "#a0a0b0",
-  text: "#e8e8f0"
-} as const;
+import { useAdminWorkspaceContext } from "../../admin-workspace-context";
+import { cx, styles } from "../style";
+import { EmptyState, colorClass, formatDate, formatDateTime } from "./admin-page-utils";
 
 function readJsonObject(value: string | null | undefined): Record<string, unknown> | null {
   if (!value) return null;
@@ -27,6 +16,21 @@ function readJsonObject(value: string | null | undefined): Record<string, unknow
   } catch {
     return null;
   }
+}
+
+function fillClass(value: string): string {
+  if (value === "var(--red)") return styles.autoFillRed;
+  if (value === "var(--blue)") return styles.autoFillBlue;
+  if (value === "var(--amber)") return styles.autoFillAmber;
+  if (value === "var(--purple)") return styles.autoFillPurple;
+  if (value === "var(--muted)") return styles.autoFillMuted;
+  return styles.autoFillAccent;
+}
+
+function statusClass(state: "ACTIVE" | "AT_RISK" | "DRAFT"): string {
+  if (state === "ACTIVE") return styles.autoStatusAccent;
+  if (state === "AT_RISK") return styles.autoStatusRed;
+  return styles.autoStatusMuted;
 }
 
 export function AdminAutomationPageClient({
@@ -74,9 +78,9 @@ export function AdminAutomationPageClient({
   const [lastSavedPhase2, setLastSavedPhase2] = useState<string | null>(null);
 
   const failureByChannel = [
-    { channel: "EMAIL", failed: jobs.filter((j) => j.channel === "EMAIL" && j.status === "FAILED").length, total: jobs.filter((j) => j.channel === "EMAIL").length, color: C.blue },
-    { channel: "SMS", failed: jobs.filter((j) => j.channel === "SMS" && j.status === "FAILED").length, total: jobs.filter((j) => j.channel === "SMS").length, color: C.amber },
-    { channel: "PUSH", failed: jobs.filter((j) => j.channel === "PUSH" && j.status === "FAILED").length, total: jobs.filter((j) => j.channel === "PUSH").length, color: C.primary }
+    { channel: "EMAIL", failed: jobs.filter((j) => j.channel === "EMAIL" && j.status === "FAILED").length, total: jobs.filter((j) => j.channel === "EMAIL").length, color: "var(--blue)" },
+    { channel: "SMS", failed: jobs.filter((j) => j.channel === "SMS" && j.status === "FAILED").length, total: jobs.filter((j) => j.channel === "SMS").length, color: "var(--amber)" },
+    { channel: "PUSH", failed: jobs.filter((j) => j.channel === "PUSH" && j.status === "FAILED").length, total: jobs.filter((j) => j.channel === "PUSH").length, color: "var(--accent)" }
   ];
 
   const workflowStatus = [
@@ -109,17 +113,26 @@ export function AdminAutomationPageClient({
   }, [session]);
 
   async function savePhase2Settings(): Promise<void> {
-    if (!session) { onNotify("error", "Session required to save phase settings."); return; }
+    if (!session) {
+      onNotify("error", "Session required to save phase settings.");
+      return;
+    }
     const savedAt = new Date().toISOString();
     const payload = { leadTrigger, billingTrigger, projectTrigger, autoEscalateSla, autoRetryFailures, publishState, savedAt };
     const result = await setProjectPreferenceWithRefresh(session, { key: "settingsAutomationPhase2", value: JSON.stringify(payload) });
-    if (!result.nextSession || result.error) { onNotify("error", result.error?.message ?? "Unable to save automation phase settings."); return; }
+    if (!result.nextSession || result.error) {
+      onNotify("error", result.error?.message ?? "Unable to save automation phase settings.");
+      return;
+    }
     setLastSavedPhase2(savedAt);
     onNotify("success", "Automation phase settings saved.");
   }
 
   async function retryFailedQueue(): Promise<void> {
-    if (!canManage) { onNotify("error", "Retry actions are available to admin and staff roles."); return; }
+    if (!canManage) {
+      onNotify("error", "Retry actions are available to admin and staff roles.");
+      return;
+    }
     await onProcessQueue();
     onNotify("success", "Retry cycle requested for queued and failed jobs.");
   }
@@ -138,243 +151,251 @@ export function AdminAutomationPageClient({
     }
   }
 
-  // Suppress unused-variable lint for recentRuns (used for potential future display)
   void recentRuns;
 
   return (
-    <div style={{ background: C.bg, height: "100%", color: C.text, fontFamily: "Syne, sans-serif", padding: 0, overflow: "hidden", display: "grid", gridTemplateRows: "auto auto auto 1fr", minHeight: 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className={cx(styles.pageBody, styles.autoRoot)}>
+      <div className={styles.pageHeader}>
         <div>
-          <div style={{ fontSize: 11, color: C.primary, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>AUTOMATION / ORCHESTRATION</div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>Workflows</h1>
-          <div style={{ marginTop: 4, fontSize: 13, color: C.muted }}>Orchestration health, trigger controls, and safe simulation for core automations.</div>
+          <div className={styles.pageEyebrow}>AUTOMATION / ORCHESTRATION</div>
+          <h1 className={styles.pageTitle}>Workflows</h1>
+          <div className={styles.pageSub}>Orchestration health, trigger controls, and safe simulation for core automations.</div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" onClick={() => void onRunMaintenance()} style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "8px 14px", fontSize: 12, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>Run Maintenance Check</button>
-          <button type="button" onClick={() => void retryFailedQueue()} style={{ background: C.primary, border: "none", color: C.bg, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>Retry Failed Queue</button>
+        <div className={styles.pageActions}>
+          <button type="button" onClick={() => void onRunMaintenance()} className={cx("btnSm", "btnGhost")}>Run Maintenance Check</button>
+          <button type="button" onClick={() => void retryFailedQueue()} className={cx("btnSm", "btnAccent")}>Retry Failed Queue</button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Queued Jobs", value: queued.toString(), color: queued > 0 ? C.amber : C.primary, sub: "Pending workflow dispatches" },
-          { label: "Sent Jobs", value: sent.toString(), color: C.blue, sub: "Successful executions" },
-          { label: "Failed Jobs", value: failed.toString(), color: failed > 0 ? C.red : C.primary, sub: "Needs retry attention" },
-          { label: "Success Rate", value: `${successRate}%`, color: successRate >= 90 ? C.primary : C.amber, sub: `${analyticsPoints} analytics points` }
+          { label: "Queued Jobs", value: queued.toString(), color: queued > 0 ? "var(--amber)" : "var(--accent)", sub: "Pending workflow dispatches" },
+          { label: "Sent Jobs", value: sent.toString(), color: "var(--blue)", sub: "Successful executions" },
+          { label: "Failed Jobs", value: failed.toString(), color: failed > 0 ? "var(--red)" : "var(--accent)", sub: "Needs retry attention" },
+          { label: "Success Rate", value: `${successRate}%`, color: successRate >= 90 ? "var(--accent)" : "var(--amber)", sub: `${analyticsPoints} analytics points` }
         ].map((k) => (
-          <div key={k.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-            <div style={{ fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{k.label}</div>
-            <div style={{ fontFamily: "DM Mono, monospace", fontSize: 24, fontWeight: 800, color: k.color, marginBottom: 4 }}>{k.value}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>{k.sub}</div>
+          <div key={k.label} className={styles.statCard}>
+            <div className={styles.statLabel}>{k.label}</div>
+            <div className={cx(styles.statValue, colorClass(k.color))}>{k.value}</div>
+            <div className={cx("text11", "colorMuted")}>{k.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 14, marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-          <div style={{ display: "flex", gap: 4 }}>
-            {tabs.map((tab) => (
-              <button key={tab} onClick={() => setActiveTab(tab)} style={{ background: "none", border: "none", color: activeTab === tab ? C.primary : C.muted, padding: "8px 16px", cursor: "pointer", fontFamily: "Syne, sans-serif", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: activeTab === tab ? `2px solid ${C.primary}` : "none" }}>
-                {tab}
-              </button>
-            ))}
-          </div>
-          <div style={{ fontSize: 11, color: C.muted, fontFamily: "DM Mono, monospace" }}>
-            {lastSavedPhase2 ? `Phase settings saved ${formatDateTime(lastSavedPhase2)}` : "Phase settings not saved"}
-          </div>
-        </div>
+      <div className={styles.filterRow}>
+        <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
+          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
-      <div style={{ overflow: "auto", minHeight: 0 }}>
+      <div className={cx("overflowAuto", "minH0")}>
         {(activeTab === "workflow health" || activeTab === "coverage map") ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 12, marginBottom: 16 }}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+          <div className={cx("card", "p14", "mb12")}>
+            <div className={styles.autoFiltersRow}>
+              <select title="Filter by status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className={styles.formInput}>
                 <option value="all">Status: All</option>
                 <option value="ACTIVE">Status: Active</option>
                 <option value="AT_RISK">Status: At Risk</option>
                 <option value="DRAFT">Status: Draft</option>
               </select>
-              <select value={domainFilter} onChange={(e) => setDomainFilter(e.target.value as DomainFilter)} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+              <select title="Filter by domain" value={domainFilter} onChange={(e) => setDomainFilter(e.target.value as DomainFilter)} className={styles.formInput}>
                 <option value="all">Domain: All</option>
                 <option value="billing">Domain: Billing</option>
                 <option value="sales">Domain: Sales</option>
                 <option value="delivery">Domain: Delivery</option>
                 <option value="comms">Domain: Comms</option>
               </select>
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search workflow" style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, minWidth: 220 }} />
-              {(statusFilter !== "all" || domainFilter !== "all" || search.trim()) ? (
-                <button onClick={() => { setStatusFilter("all"); setDomainFilter("all"); setSearch(""); }} style={{ background: C.border, border: "none", color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 11, cursor: "pointer" }}>Clear</button>
-              ) : null}
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search workflow" className={cx("formInput", styles.autoSearch)} />
             </div>
           </div>
         ) : null}
 
         {activeTab === "workflow health" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr 100px 120px 130px", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "DM Mono, monospace", gap: 12 }}>
-                {["Workflow", "Trigger", "Status", "Success", "Last Run"].map((h) => <span key={h}>{h}</span>)}
+          <div className={styles.autoSplitHealth}>
+            <div className={cx("card", "overflowHidden")}>
+              <div className={cx(styles.autoFlowHead, "fontMono", "text10", "colorMuted", "uppercase")}>
+                {"Workflow|Trigger|Status|Success|Last Run".split("|").map((h) => <span key={h}>{h}</span>)}
               </div>
               {filteredWorkflows.length ? filteredWorkflows.map((item, idx) => (
-                <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr 100px 120px 130px", padding: "13px 20px", borderBottom: idx < filteredWorkflows.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", gap: 12 }}>
+                <div key={item.id} className={cx(styles.autoFlowRow, idx < filteredWorkflows.length - 1 && "borderB")}>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 600 }}>{item.workflow}</div>
-                    <div style={{ fontSize: 10, color: C.muted, textTransform: "capitalize" }}>{item.domain}</div>
+                    <div className={cx("text12", "fw600")}>{item.workflow}</div>
+                    <div className={cx("text10", "colorMuted", "capitalize")}>{item.domain}</div>
                   </div>
-                  <span style={{ fontSize: 11, color: C.muted }}>{item.trigger}</span>
-                  <span style={{ fontSize: 10, color: item.state === "ACTIVE" ? C.primary : item.state === "AT_RISK" ? C.red : C.muted, background: `${item.state === "ACTIVE" ? C.primary : item.state === "AT_RISK" ? C.red : C.muted}15`, padding: "3px 8px", fontFamily: "DM Mono, monospace", width: "fit-content" }}>{item.state === "AT_RISK" ? "AT RISK" : item.state}</span>
-                  <span style={{ fontFamily: "DM Mono, monospace", color: item.successRate >= 90 ? C.primary : item.successRate >= 75 ? C.amber : C.red }}>{item.successRate}%</span>
-                  <span style={{ fontSize: 11, color: C.muted }}>{item.lastRun ? formatDate(item.lastRun) : "Not run yet"}</span>
+                  <span className={cx("text11", "colorMuted")}>{item.trigger}</span>
+                  <span className={cx(styles.autoStatusChip, statusClass(item.state))}>{item.state === "AT_RISK" ? "AT RISK" : item.state}</span>
+                  <span className={cx("fontMono", item.successRate >= 90 ? "colorAccent" : item.successRate >= 75 ? "colorAmber" : "colorRed")}>{item.successRate}%</span>
+                  <span className={cx("text11", "colorMuted")}>{item.lastRun ? formatDate(item.lastRun) : "Not run yet"}</span>
                 </div>
               )) : (
-                <div style={{ padding: 20 }}><EmptyState title="No workflows match current filters" subtitle="Clear filters to view all workflow domains and states." compact variant="message" /></div>
+                <div className={cx("p20")}><EmptyState title="No workflows match current filters" subtitle="Clear filters to view all workflow domains and states." compact variant="message" /></div>
               )}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14 }}>Failure Hotspots by Channel</div>
+
+            <div className={styles.autoStack16}>
+              <div className={cx("card", "p20")}>
+                <div className={cx("text12", "fw700", "mb14")}>Failure Hotspots by Channel</div>
                 {failureByChannel.map((row) => {
                   const pct = row.total > 0 ? Math.round((row.failed / row.total) * 100) : 0;
                   return (
-                    <div key={row.channel} style={{ marginBottom: 12 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                        <span style={{ fontSize: 12, color: row.color }}>{row.channel}</span>
-                        <span style={{ fontFamily: "DM Mono, monospace", color: pct > 20 ? C.red : pct > 8 ? C.amber : C.primary }}>{pct}% fail</span>
+                    <div key={row.channel} className={cx("mb12")}>
+                      <div className={cx("flexBetween", "mb4")}>
+                        <span className={cx("text12", colorClass(row.color))}>{row.channel}</span>
+                        <span className={cx("fontMono", pct > 20 ? "colorRed" : pct > 8 ? "colorAmber" : "colorAccent")}>{pct}% fail</span>
                       </div>
-                      <div style={{ height: 6, background: C.border }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: pct > 20 ? C.red : pct > 8 ? C.amber : C.primary }} />
-                      </div>
-                      <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{row.failed} failed of {row.total}</div>
+                      <progress className={cx(styles.autoFailTrack, pct > 20 ? styles.autoFillRed : pct > 8 ? styles.autoFillAmber : styles.autoFillAccent)} max={100} value={pct} aria-label={`${row.channel} failure ${pct}%`} />
+                      <div className={cx("text10", "colorMuted", "mt4")}>{row.failed} failed of {row.total}</div>
                     </div>
                   );
                 })}
               </div>
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Scope Boundary</div>
-                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7 }}>Queue-level triage and message payload editing remain in Notifications. Workflows focuses on orchestration health, control states, and simulation.</div>
+
+              <div className={cx("card", "p20")}>
+                <div className={cx("text12", "fw700", "mb8")}>Scope Boundary</div>
+                <div className={styles.autoBodyText}>Queue-level triage and message payload editing remain in Notifications. Workflows focuses on orchestration health, control states, and simulation.</div>
               </div>
             </div>
           </div>
         ) : null}
 
         {activeTab === "run controls" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>Trigger Manager</span>
-                <span style={{ fontSize: 10, color: C.muted, fontFamily: "DM Mono, monospace" }}>{publishState}</span>
+          <div className={cx("grid2", "gap16")}>
+            <div className={cx("card", "p20")}>
+              <div className={cx("flexBetween", "flexCenter", "mb14")}>
+                <span className={cx("text12", "fw700", "uppercase")}>Trigger Manager</span>
+                <span className={cx("text10", "colorMuted", "fontMono")}>{publishState}</span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 11, color: C.muted }}>
+              <div className={styles.autoControlGrid}>
+                <label className={styles.autoControlLabel}>
                   Lead follow-ups trigger
-                  <select value={leadTrigger} onChange={(e) => setLeadTrigger(e.target.value as "event" | "schedule")} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+                  <select title="Lead trigger mode" value={leadTrigger} onChange={(e) => setLeadTrigger(e.target.value as "event" | "schedule")} className={styles.formInput}>
                     <option value="event">Event driven</option>
                     <option value="schedule">Scheduled</option>
                   </select>
                 </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 11, color: C.muted }}>
+                <label className={styles.autoControlLabel}>
                   Billing trigger
-                  <select value={billingTrigger} onChange={(e) => setBillingTrigger(e.target.value as "event" | "schedule")} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+                  <select title="Billing trigger mode" value={billingTrigger} onChange={(e) => setBillingTrigger(e.target.value as "event" | "schedule")} className={styles.formInput}>
                     <option value="event">Event driven</option>
                     <option value="schedule">Scheduled</option>
                   </select>
                 </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 11, color: C.muted }}>
+                <label className={styles.autoControlLabel}>
                   Project alerts trigger
-                  <select value={projectTrigger} onChange={(e) => setProjectTrigger(e.target.value as "event" | "schedule")} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+                  <select title="Project alerts trigger mode" value={projectTrigger} onChange={(e) => setProjectTrigger(e.target.value as "event" | "schedule")} className={styles.formInput}>
                     <option value="event">Event driven</option>
                     <option value="schedule">Scheduled</option>
                   </select>
                 </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 11, color: C.muted }}>
+                <label className={styles.autoControlLabel}>
                   Publish state
-                  <select value={publishState} onChange={(e) => setPublishState(e.target.value as "DRAFT" | "REVIEW" | "PUBLISHED")} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12 }}>
+                  <select title="Workflow publish state" value={publishState} onChange={(e) => setPublishState(e.target.value as "DRAFT" | "REVIEW" | "PUBLISHED")} className={styles.formInput}>
                     <option value="DRAFT">Draft</option>
                     <option value="REVIEW">Review</option>
                     <option value="PUBLISHED">Published</option>
                   </select>
                 </label>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8, alignItems: "center", marginBottom: 8 }}>
+
+              <div className={styles.autoToggleRow}>
                 <div>
-                  <div style={{ fontSize: 12, color: C.text }}>Auto escalate SLA misses</div>
-                  <div style={{ fontSize: 10, color: C.muted }}>Route alerts to escalation workflow</div>
+                  <div className={cx("text12", "colorText")}>Auto escalate SLA misses</div>
+                  <div className={cx("text10", "colorMuted")}>Route alerts to escalation workflow</div>
                 </div>
-                <button type="button" onClick={() => setAutoEscalateSla((v) => !v)} style={{ background: autoEscalateSla ? C.primary : C.border, border: "none", color: autoEscalateSla ? C.bg : C.muted, padding: "6px 10px", fontFamily: "DM Mono, monospace", fontSize: 11, cursor: "pointer" }}>{autoEscalateSla ? "ON" : "OFF"}</button>
+                <button
+                  type="button"
+                  onClick={() => setAutoEscalateSla((v) => !v)}
+                  className={cx("btnSm", autoEscalateSla ? "btnAccent" : "btnGhost")}
+                >
+                  {autoEscalateSla ? "ON" : "OFF"}
+                </button>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8, alignItems: "center", marginBottom: 14 }}>
+
+              <div className={cx(styles.autoToggleRow, "mb14")}>
                 <div>
-                  <div style={{ fontSize: 12, color: C.text }}>Auto retry failed jobs</div>
-                  <div style={{ fontSize: 10, color: C.muted }}>Retry policy for transient failures</div>
+                  <div className={cx("text12", "colorText")}>Auto retry failed jobs</div>
+                  <div className={cx("text10", "colorMuted")}>Retry policy for transient failures</div>
                 </div>
-                <button type="button" onClick={() => setAutoRetryFailures((v) => !v)} style={{ background: autoRetryFailures ? C.primary : C.border, border: "none", color: autoRetryFailures ? C.bg : C.muted, padding: "6px 10px", fontFamily: "DM Mono, monospace", fontSize: 11, cursor: "pointer" }}>{autoRetryFailures ? "ON" : "OFF"}</button>
+                <button
+                  type="button"
+                  onClick={() => setAutoRetryFailures((v) => !v)}
+                  className={cx("btnSm", autoRetryFailures ? "btnAccent" : "btnGhost")}
+                >
+                  {autoRetryFailures ? "ON" : "OFF"}
+                </button>
               </div>
-              <button type="button" onClick={() => void savePhase2Settings()} style={{ background: C.primary, border: "none", color: C.bg, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "DM Mono, monospace" }}>Save Controls</button>
+
+              <button type="button" onClick={() => void savePhase2Settings()} className={cx("btnSm", "btnAccent")}>Save Controls</button>
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.06em" }}>Operational Guardrails</div>
+
+            <div className={cx("card", "p20")}>
+              <div className={cx("text12", "fw700", "mb14", "uppercase")}>Operational Guardrails</div>
               {[
-                { label: "Retry Policy", value: autoRetryFailures ? "Enabled" : "Disabled", tone: autoRetryFailures ? C.primary : C.amber },
-                { label: "Escalation Policy", value: autoEscalateSla ? "Enabled" : "Disabled", tone: autoEscalateSla ? C.primary : C.amber },
-                { label: "Current Release State", value: publishState, tone: publishState === "PUBLISHED" ? C.primary : publishState === "REVIEW" ? C.amber : C.muted },
-                { label: "Recent Workflow Run", value: latestJobAt ? formatDateTime(latestJobAt) : "No runs", tone: C.blue }
+                { label: "Retry Policy", value: autoRetryFailures ? "Enabled" : "Disabled", tone: autoRetryFailures ? "var(--accent)" : "var(--amber)" },
+                { label: "Escalation Policy", value: autoEscalateSla ? "Enabled" : "Disabled", tone: autoEscalateSla ? "var(--accent)" : "var(--amber)" },
+                { label: "Current Release State", value: publishState, tone: publishState === "PUBLISHED" ? "var(--accent)" : publishState === "REVIEW" ? "var(--amber)" : "var(--muted)" },
+                { label: "Recent Workflow Run", value: latestJobAt ? formatDateTime(latestJobAt) : "No runs", tone: "var(--blue)" }
               ].map((row) => (
-                <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
-                  <span style={{ color: C.muted }}>{row.label}</span>
-                  <span style={{ color: row.tone, fontFamily: "DM Mono, monospace", fontWeight: 700 }}>{row.value}</span>
+                <div key={row.label} className={styles.autoGuardRow}>
+                  <span className={cx("colorMuted")}>{row.label}</span>
+                  <span className={cx("fontMono", "fw700", colorClass(row.tone))}>{row.value}</span>
                 </div>
               ))}
-              <div style={{ marginTop: 14, fontSize: 11, color: C.muted, lineHeight: 1.7 }}>Queue diagnostics and per-message recovery actions are handled in Notifications for clearer operational separation.</div>
+              <div className={cx("text11", "colorMuted", "mt12", styles.autoBodyText)}>Queue diagnostics and per-message recovery actions are handled in Notifications for clearer operational separation.</div>
             </div>
           </div>
         ) : null}
 
         {activeTab === "simulation lab" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12 }}>Simulation Payload</div>
-              <textarea value={simulationPayload} onChange={(e) => setSimulationPayload(e.target.value)} rows={14} style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, color: C.text, padding: "10px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, marginBottom: 10 }} />
-              <div style={{ display: "flex", gap: 8 }}>
-                <button type="button" onClick={() => runSimulation()} style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.text, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, cursor: "pointer" }}>Run Dry Run</button>
-                <button type="button" onClick={() => setPublishState("REVIEW")} style={{ background: C.primary, border: "none", color: C.bg, padding: "8px 12px", fontFamily: "DM Mono, monospace", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Submit For Review</button>
+          <div className={cx("grid2", "gap16")}>
+            <div className={cx("card", "p20")}>
+              <div className={cx("text12", "fw700", "mb12")}>Simulation Payload</div>
+              <textarea value={simulationPayload} onChange={(e) => setSimulationPayload(e.target.value)} rows={14} className={cx("formTextarea", "mb10")} />
+              <div className={cx("flexRow", "gap8")}>
+                <button type="button" onClick={() => runSimulation()} className={cx("btnSm", "btnGhost")}>Run Dry Run</button>
+                <button type="button" onClick={() => setPublishState("REVIEW")} className={cx("btnSm", "btnAccent")}>Submit For Review</button>
               </div>
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12 }}>Simulation Result</div>
+            <div className={cx("card", "p20")}>
+              <div className={cx("text12", "fw700", "mb12")}>Simulation Result</div>
               {simulationResult ? (
-                <div style={{ background: C.bg, border: `1px solid ${C.border}`, padding: 14, fontSize: 12, color: C.text, lineHeight: 1.7 }}>{simulationResult}</div>
+                <div className={styles.autoResultBox}>{simulationResult}</div>
               ) : (
                 <EmptyState title="No simulation yet" subtitle="Run a dry run to validate trigger and policy behavior before publishing." compact variant="message" />
               )}
-              <div style={{ marginTop: 14, fontSize: 11, color: C.muted, lineHeight: 1.7 }}>Simulations validate orchestration logic only; recipient-level message checks belong to Notifications.</div>
+              <div className={cx("text11", "colorMuted", "mt12", styles.autoBodyText)}>Simulations validate orchestration logic only; recipient-level message checks belong to Notifications.</div>
             </div>
           </div>
         ) : null}
 
         {activeTab === "coverage map" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.9fr 100px 100px", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "DM Mono, monospace", gap: 12 }}>
-                {["Flow", "Coverage", "Status", "Domain"].map((h) => <span key={h}>{h}</span>)}
+          <div className={cx("grid2", "gap16")}>
+            <div className={cx("card", "overflowHidden")}>
+              <div className={cx(styles.autoCoverageHead, "fontMono", "text10", "colorMuted", "uppercase")}>
+                {"Flow|Coverage|Status|Domain".split("|").map((h) => <span key={h}>{h}</span>)}
               </div>
               {filteredWorkflows.map((item, idx) => (
-                <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1.2fr 0.9fr 100px 100px", padding: "13px 20px", borderBottom: idx < filteredWorkflows.length - 1 ? `1px solid ${C.border}` : "none", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600 }}>{item.workflow}</span>
-                  <span style={{ fontSize: 11, color: C.muted }}>
+                <div key={item.id} className={cx(styles.autoCoverageRow, idx < filteredWorkflows.length - 1 && "borderB")}>
+                  <span className={cx("text12", "fw600")}>{item.workflow}</span>
+                  <span className={cx("text11", "colorMuted")}>
                     {item.id === "billing-core" ? `${snapshot.invoices.length} invoices` : item.id === "lead-followups" ? `${snapshot.leads.length} leads` : item.id === "project-alerts" ? `${snapshot.projects.length} projects` : `${jobs.length} runs`}
                   </span>
-                  <span style={{ fontSize: 10, color: item.state === "ACTIVE" ? C.primary : item.state === "AT_RISK" ? C.red : C.muted, background: `${item.state === "ACTIVE" ? C.primary : item.state === "AT_RISK" ? C.red : C.muted}15`, padding: "3px 8px", fontFamily: "DM Mono, monospace", width: "fit-content" }}>{item.state === "AT_RISK" ? "AT RISK" : item.state}</span>
-                  <span style={{ fontSize: 11, color: C.muted, textTransform: "capitalize" }}>{item.domain}</span>
+                  <span className={cx(styles.autoStatusChip, statusClass(item.state))}>{item.state === "AT_RISK" ? "AT RISK" : item.state}</span>
+                  <span className={cx("text11", "colorMuted", "capitalize")}>{item.domain}</span>
                 </div>
               ))}
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12 }}>Operational Notes</div>
-              {["Workflows manages trigger strategy and automation health.", "Notifications handles queue-level triage and message execution.", "Integrations owns external keys and provider connectivity.", "Access Control governs who can change workflow settings."].map((note) => (
-                <div key={note} style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.7 }}>• {note}</div>
+            <div className={cx("card", "p20")}>
+              <div className={cx("text12", "fw700", "mb12")}>Operational Notes</div>
+              {[
+                "Workflows manages trigger strategy and automation health.",
+                "Notifications handles queue-level triage and message execution.",
+                "Integrations owns external keys and provider connectivity.",
+                "Access Control governs who can change workflow settings."
+              ].map((note) => (
+                <div key={note} className={styles.autoNoteRow}>- {note}</div>
               ))}
-              <div style={{ marginTop: 10, padding: 12, background: C.bg, border: `1px solid ${C.border}`, fontSize: 11, color: C.muted, lineHeight: 1.7 }}>This boundary reduces duplication and keeps operational ownership clear across admin pages.</div>
+              <div className={styles.autoInsetNote}>This boundary reduces duplication and keeps operational ownership clear across admin pages.</div>
             </div>
           </div>
         ) : null}
