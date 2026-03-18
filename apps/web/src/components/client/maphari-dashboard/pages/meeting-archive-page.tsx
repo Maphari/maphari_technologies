@@ -12,6 +12,10 @@ import {
   type PortalAppointment,
   type PortalMeeting,
 } from "../../../../lib/api/portal";
+import {
+  getGoogleCalendarStatusWithRefresh,
+  syncMeetingToGoogleWithRefresh,
+} from "../../../../lib/api/portal/integrations";
 import { usePageToast } from "../hooks/use-page-toast";
 
 // ── Archive list data ─────────────────────────────────────────────────────────
@@ -143,6 +147,11 @@ export function MeetingArchivePage() {
   const [meetingMoods,    setMeetingMoods]    = useState<Record<number, string>>({});
   const notify = usePageToast();
 
+  // Google Calendar sync state
+  const [gcalConnected,  setGcalConnected]  = useState(false);
+  const [syncingId,      setSyncingId]      = useState<string | null>(null);
+  const [syncedIds,      setSyncedIds]      = useState<Set<string>>(new Set());
+
   // ── Derived stat counts from real meeting data ───────────────────────────
   const totalMeetings  = calMeetings.length + archiveMeetings.length;
   const sprintDemos    = useMemo(() =>
@@ -210,7 +219,30 @@ export function MeetingArchivePage() {
         setMeetingMoods(moods);
       }
     });
+    void getGoogleCalendarStatusWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data?.connected) setGcalConnected(true);
+    });
   }, [session]);
+
+  async function handleSyncMeeting(meetingId: string): Promise<void> {
+    if (!session || syncingId === meetingId) return;
+    setSyncingId(meetingId);
+    try {
+      const r = await syncMeetingToGoogleWithRefresh(session, meetingId);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data?.synced) {
+        setSyncedIds((prev) => new Set([...prev, meetingId]));
+        notify("success", "Synced to Google Calendar", "Meeting added to your calendar.");
+      } else {
+        notify("error", "Sync failed", r.error?.message ?? "Unable to sync meeting.");
+      }
+    } catch {
+      notify("error", "Sync failed", "Please try again.");
+    } finally {
+      setSyncingId(null);
+    }
+  }
 
   function toggleAction(day: number, idx: number) {
     setActionsDone((prev) => {
@@ -631,6 +663,26 @@ export function MeetingArchivePage() {
                           );
                         })}
                       </div>
+
+                      {/* Google Calendar sync */}
+                      {gcalConnected && (
+                        <div className={cx("flexRow", "gap8", "mt12")}>
+                          {syncedIds.has(m.id) ? (
+                            <span className={cx("gcSyncedBadge")}>
+                              <Ic n="check" sz={11} c="var(--green)" /> Synced to Google Calendar
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              className={cx("gcSyncBtn")}
+                              disabled={syncingId === m.id}
+                              onClick={(e) => { e.stopPropagation(); void handleSyncMeeting(m.id); }}
+                            >
+                              {syncingId === m.id ? "Syncing…" : "Sync to Calendar"}
+                            </button>
+                          )}
+                        </div>
+                      )}
 
                     </div>
                   </div>

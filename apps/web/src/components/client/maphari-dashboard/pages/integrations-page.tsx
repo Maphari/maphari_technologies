@@ -2,11 +2,12 @@
 
 // ════════════════════════════════════════════════════════════════════════════
 // integrations-page.tsx — Client Portal Integrations Hub
-// Connected state is persisted via settingsApiAccess preference key.
-// Connecting opens an OAuth popup (placeholder client IDs).
+// Google Calendar uses a real OAuth2 flow.
+// All other integrations submit a support-ticket request.
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
@@ -17,6 +18,12 @@ import {
   setPortalPreferenceWithRefresh,
   createPortalSupportTicketWithRefresh,
 } from "../../../../lib/api/portal";
+import {
+  getGoogleCalendarAuthUrlWithRefresh,
+  getGoogleCalendarStatusWithRefresh,
+  disconnectGoogleCalendarWithRefresh,
+  type GcalStatus,
+} from "../../../../lib/api/portal/integrations";
 
 // ── OAuth is not yet configured — connections are requested via support ticket ──
 // When OAuth client IDs are set up in env, replace this with real OAuth flows.
@@ -49,31 +56,99 @@ const INTEGRATIONS: Integration[] = [
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function IntegrationsPage() {
-  const { session } = useProjectLayer();
-  const notify      = usePageToast();
+  const { session }  = useProjectLayer();
+  const notify       = usePageToast();
+  const searchParams = useSearchParams();
 
-  const [connected,    setConnected]    = useState<Record<string, boolean>>({});
-  const [requested,    setRequested]    = useState<Record<string, boolean>>({});
-  const [loading,      setLoading]      = useState(true);
-  const [requesting,   setRequesting]   = useState<string | null>(null);
+  const [connected,      setConnected]      = useState<Record<string, boolean>>({});
+  const [requested,      setRequested]      = useState<Record<string, boolean>>({});
+  const [loading,        setLoading]        = useState(true);
+  const [requesting,     setRequesting]     = useState<string | null>(null);
 
-  // Load connected state from preferences
+  // Google Calendar specific state
+  const [gcalStatus,     setGcalStatus]     = useState<GcalStatus | null>(null);
+  const [gcalConnecting, setGcalConnecting] = useState(false);
+  const [gcalDisconn,    setGcalDisconn]    = useState(false);
+
+  // Load connected state from preferences + Google Calendar status
   useEffect(() => {
     if (!session) { setLoading(false); return; }
-    void getPortalPreferenceWithRefresh(session, "settingsApiAccess").then((r) => {
+
+    const prefPromise = getPortalPreferenceWithRefresh(session, "settingsApiAccess").then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
       if (r.data?.value) {
         try { setConnected(JSON.parse(r.data.value) as Record<string, boolean>); } catch { /**/ }
       }
-      setLoading(false);
     });
+
+    const gcalPromise = getGoogleCalendarStatusWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data) setGcalStatus(r.data);
+    });
+
+    void Promise.all([prefPromise, gcalPromise]).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
+
+  // Handle redirect-back from Google OAuth
+  useEffect(() => {
+    const connected = searchParams.get("connected");
+    const error     = searchParams.get("error");
+
+    if (connected === "google-calendar") {
+      notify("success", "Google Calendar connected", "Your calendar is now synced.");
+      // Refresh status
+      if (session) {
+        void getGoogleCalendarStatusWithRefresh(session).then((r) => {
+          if (r.nextSession) saveSession(r.nextSession);
+          if (r.data) setGcalStatus(r.data);
+        });
+      }
+    } else if (error === "oauth_failed") {
+      notify("error", "Connection failed", "Unable to connect Google Calendar. Please try again.");
+    } else if (error === "oauth_cancelled") {
+      notify("info", "Cancelled", "Google Calendar connection was cancelled.");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function persistConnected(next: Record<string, boolean>): void {
     if (session) {
       void setPortalPreferenceWithRefresh(session, { key: "settingsApiAccess", value: JSON.stringify(next) })
         .then((r) => { if (r.nextSession) saveSession(r.nextSession); });
+    }
+  }
+
+  async function handleConnectGoogleCalendar(): Promise<void> {
+    if (!session || gcalConnecting) return;
+    setGcalConnecting(true);
+    try {
+      const r = await getGoogleCalendarAuthUrlWithRefresh(session);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data?.authUrl) {
+        window.location.href = r.data.authUrl;
+      } else {
+        notify("error", "Connection failed", r.error?.message ?? "Unable to start Google Calendar OAuth.");
+      }
+    } catch {
+      notify("error", "Connection failed", "Please try again.");
+    } finally {
+      setGcalConnecting(false);
+    }
+  }
+
+  async function handleDisconnectGoogleCalendar(): Promise<void> {
+    if (!session || gcalDisconn) return;
+    setGcalDisconn(true);
+    try {
+      const r = await disconnectGoogleCalendarWithRefresh(session);
+      if (r.nextSession) saveSession(r.nextSession);
+      setGcalStatus({ connected: false, email: null, expiresAt: null });
+      notify("info", "Google Calendar disconnected", "Your calendar integration has been removed.");
+    } catch {
+      notify("error", "Disconnect failed", "Please try again.");
+    } finally {
+      setGcalDisconn(false);
     }
   }
 
@@ -107,8 +182,12 @@ export function IntegrationsPage() {
     notify("info", `${integration.name} disconnected`, "Integration has been removed.");
   }
 
-  const connectedCount = useMemo(() => Object.values(connected).filter(Boolean).length, [connected]);
-  const availableCount = INTEGRATIONS.filter((i) => i.status === "Available").length;
+  const gcalConnected  = gcalStatus?.connected === true;
+  const connectedCount = useMemo(
+    () => Object.values(connected).filter(Boolean).length + (gcalConnected ? 1 : 0),
+    [connected, gcalConnected]
+  );
+  const availableCount  = INTEGRATIONS.filter((i) => i.status === "Available").length;
   const comingSoonCount = INTEGRATIONS.filter((i) => i.status === "Coming Soon").length;
 
   return (
@@ -148,6 +227,62 @@ export function IntegrationsPage() {
         </span>
       </div>
 
+      {/* ── Google Calendar — real OAuth card ── */}
+      <div className={cx("card", "mb16", "borderLeft3")} style={{ "--border-color": gcalConnected ? "var(--lime)" : "var(--b2)" } as React.CSSProperties}>
+        <div className={cx("cardBodyPad", "pt16")}>
+          <div className={cx("flexRow", "gap12", "mb10")}>
+            <div className={cx("intIconBox", "dynBgColor", "dynBorderColor", "dynColor")} style={{ "--bg-color": "color-mix(in oklab, var(--lime) 15%, transparent)", "--border-color": "color-mix(in oklab, var(--lime) 30%, transparent)", "--color": "var(--lime)" } as React.CSSProperties}>
+              G
+            </div>
+            <div className={cx("flex1")}>
+              <div className={cx("fw700", "text12")}>Google Calendar</div>
+              <span className={cx("text10", "colorMuted")}>Calendar · OAuth2</span>
+            </div>
+            {gcalConnected ? (
+              <span className={cx("badge", "badgeGreen", "noShrink", "alignSelfStart")}>Connected</span>
+            ) : (
+              <div className={cx("dot8", "dotBgB3", "noShrink", "alignSelfCenter")} />
+            )}
+          </div>
+
+          <div className={cx("text11", "colorMuted", "mb12")}>
+            Sync scheduled meetings and milestone due dates to your Google Calendar automatically.
+            {gcalConnected && gcalStatus?.email && (
+              <span className={cx("colorGreen")}> Connected as <strong>{gcalStatus.email}</strong>.</span>
+            )}
+          </div>
+
+          <div className={cx("flexRow", "gap8")}>
+            {loading ? (
+              <div className={cx("skeletonBlock")} style={{ width: 120, height: 28, borderRadius: 6 }} />
+            ) : gcalConnected ? (
+              <>
+                <span className={cx("text11", "colorGreen", "flexRow", "alignCenter", "gap4", "mr4")}>
+                  <Ic n="check" sz={11} c="var(--green)" /> Active
+                </span>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnGhost")}
+                  disabled={gcalDisconn}
+                  onClick={() => void handleDisconnectGoogleCalendar()}
+                >
+                  {gcalDisconn ? "Disconnecting…" : "Disconnect"}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className={cx("btnSm", "btnAccent")}
+                disabled={gcalConnecting}
+                onClick={() => void handleConnectGoogleCalendar()}
+              >
+                {gcalConnecting ? "Redirecting…" : "Connect Google Calendar"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* ── Integration grid ── */}
       {loading ? (
         <div className={cx("grid2Cols12Gap")}>
@@ -157,7 +292,7 @@ export function IntegrationsPage() {
         </div>
       ) : (
         <div className={cx("grid2Cols12Gap")}>
-          {INTEGRATIONS.map((integration) => {
+          {INTEGRATIONS.filter((i) => i.id !== "gcal").map((integration) => {
             const isComingSoon  = integration.status === "Coming Soon";
             const isConnected   = !isComingSoon && (connected[integration.id] === true);
             const borderColor   = isConnected ? "var(--lime)" : isComingSoon ? "var(--b2)" : "var(--b2)";

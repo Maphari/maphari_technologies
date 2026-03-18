@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { styles } from "./style";
 import Link from "next/link";
 import { DashboardUtilityIcon } from "@/components/shared/dashboard-utility-icon";
+import { ThemeToggle } from "@/components/shared/ui/theme-toggle";
 
 export function AdminTopbar({
   title,
@@ -105,6 +106,7 @@ export function AdminTopbar({
         >
           <DashboardUtilityIcon kind="help" className={styles.topbarIcon} />
         </Link>
+        <ThemeToggle />
         <div className={styles.topbarUserMenu} ref={profileMenuRef}>
           <button
             title="Open profile menu"

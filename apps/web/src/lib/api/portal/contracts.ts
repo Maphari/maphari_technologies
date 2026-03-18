@@ -90,6 +90,35 @@ export async function signPortalContractWithRefresh(
   });
 }
 
+// ── Sign a contract with canvas signature dataURL ─────────────────────────────
+
+export async function signContractWithSignatureWithRefresh(
+  session: AuthSession,
+  contractId: string,
+  signedByName: string,
+  signatureDataUrl: string
+): Promise<AuthorizedResult<PortalContract>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalContract>(
+      `/contracts/${contractId}/sign`,
+      accessToken,
+      { method: "POST", body: { signerName: signedByName, signatureDataUrl } }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code    ?? "CONTRACT_SIGN_FAILED",
+          response.payload.error?.message ?? "Unable to sign contract."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
 // ── Get contract download fileId ──────────────────────────────────────────────
 
 export async function getPortalContractFileIdWithRefresh(

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { cx, styles } from "./style";
 import { DashboardUtilityIcon } from "@/components/shared/dashboard-utility-icon";
 import { Ic } from "./ui";
+import { ThemeToggle } from "@/components/shared/ui/theme-toggle";
 
 type ClientTopbarProps = {
   eyebrow: string;
@@ -153,6 +154,9 @@ export function ClientTopbar({
         >
           <Ic n="grid" sz={15} c="var(--muted)" />
         </button>
+
+        {/* Theme toggle */}
+        <ThemeToggle />
 
         {/* Separator */}
         <div className={styles.topbarSep} />

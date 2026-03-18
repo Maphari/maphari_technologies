@@ -463,6 +463,65 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
     }
   });
 
+  // ── POST /contracts/:id/sign ─────────────────────────────────────────────────
+  // Canvas e-signature endpoint: stores signature PNG data URL + marks contract signed
+  app.post<{
+    Params: { id: string };
+    Body: { signerName: string; signatureDataUrl: string };
+  }>("/contracts/:id/sign", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const { id } = request.params;
+    const { signerName, signatureDataUrl } = request.body ?? {} as { signerName: string; signatureDataUrl: string };
+
+    if (!signerName || !signatureDataUrl) {
+      reply.status(400);
+      return { success: false, error: { code: "VALIDATION_ERROR", message: "signerName and signatureDataUrl are required." } } as ApiResponse;
+    }
+
+    try {
+      const existing = await prisma.clientContract.findUnique({ where: { id } });
+      if (!existing) {
+        reply.status(404);
+        return { success: false, error: { code: "NOT_FOUND", message: "Contract not found." } } as ApiResponse;
+      }
+
+      // Clients may only sign their own contracts
+      if (scope.role === "CLIENT" && existing.clientId !== scope.clientId) {
+        reply.status(403);
+        return { success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse;
+      }
+
+      // Merge signatureDataUrl into the notes JSON (preserve existing template metadata)
+      let existingNotes: Record<string, unknown> = {};
+      try {
+        existingNotes = JSON.parse(existing.notes ?? "{}") as Record<string, unknown>;
+      } catch {
+        // ignore parse errors
+      }
+      const updatedNotes = JSON.stringify({ ...existingNotes, signatureDataUrl });
+
+      const updated = await prisma.clientContract.update({
+        where: { id },
+        data: {
+          signed:       true,
+          signedAt:     new Date(),
+          signedByName: signerName,
+          status:       "SIGNED",
+          notes:        updatedNotes,
+        },
+      });
+
+      await cache.delete(CacheKeys.contracts(existing.clientId));
+      await cache.delete(CacheKeys.contracts("all"));
+
+      return { success: true, data: updated, meta: { requestId: scope.requestId } } as ApiResponse<typeof updated>;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "CONTRACT_SIGN_FAILED", message: "Unable to sign contract." } } as ApiResponse;
+    }
+  });
+
   // ── GET /contracts/:id/download ─────────────────────────────────────────────
   // Returns { fileId } so the gateway/frontend can fetch a presigned download URL
   app.get("/contracts/:id/download", async (request, reply) => {

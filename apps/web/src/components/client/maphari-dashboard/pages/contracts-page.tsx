@@ -9,11 +9,13 @@ import {
   createPortalSupportTicketWithRefresh,
   loadPortalContractsWithRefresh,
   signPortalContractWithRefresh,
+  signContractWithSignatureWithRefresh,
   getPortalContractFileIdWithRefresh,
   getPortalFileDownloadUrlWithRefresh,
   loadContractTemplateWithRefresh,
   type PortalContract,
 } from "../../../../lib/api/portal";
+import { SignaturePad } from "../../../shared/ui/signature-pad";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -116,19 +118,20 @@ interface ContractViewerProps {
   html:       string;
   loading:    boolean;
   onClose:    () => void;
-  onSigned:   (name: string) => void;
+  onSigned:   (name: string, signatureDataUrl: string) => void;
 }
 
 function ContractViewer({ doc, html, loading, onClose, onSigned }: ContractViewerProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const [scrollPct,      setScrollPct]      = useState(0);
-  const [hasReadFull,    setHasReadFull]    = useState(false);
-  const [viewState,      setViewState]      = useState<"viewing" | "signing" | "signed">("viewing");
-  const [signatureName,  setSignatureName]  = useState("");
-  const [agreed,         setAgreed]         = useState(false);
-  const [signing,        setSigning]        = useState(false);
-  const [signedAt,       setSignedAt]       = useState<string | null>(null);
+  const [scrollPct,        setScrollPct]        = useState(0);
+  const [hasReadFull,      setHasReadFull]      = useState(false);
+  const [viewState,        setViewState]        = useState<"viewing" | "signing" | "signed">("viewing");
+  const [signatureName,    setSignatureName]    = useState("");
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
+  const [agreed,           setAgreed]           = useState(false);
+  const [signing,          setSigning]          = useState(false);
+  const [signedAt,         setSignedAt]         = useState<string | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -162,7 +165,7 @@ function ContractViewer({ doc, html, loading, onClose, onSigned }: ContractViewe
     }
   }, [html, loading]);
 
-  const canSign = signatureName.trim().length > 0 && agreed && !signing;
+  const canSign = signatureName.trim().length > 0 && signatureDataUrl !== null && agreed && !signing;
   const now = useMemo(() => new Date(), []);
 
   async function handleSign(): Promise<void> {
@@ -174,7 +177,7 @@ function ContractViewer({ doc, html, loading, onClose, onSigned }: ContractViewe
     await new Promise<void>((r) => setTimeout(r, 500));
     setSigning(false);
     setViewState("signed");
-    onSigned(signatureName.trim());
+    onSigned(signatureName.trim(), signatureDataUrl ?? "");
   }
 
   return (
@@ -268,7 +271,7 @@ function ContractViewer({ doc, html, loading, onClose, onSigned }: ContractViewe
                   autoFocus
                 />
 
-                {/* Signature preview */}
+                {/* Signature preview (typed name) */}
                 <div
                   className={cx("ctSigPreview")}
                 >
@@ -276,6 +279,30 @@ function ContractViewer({ doc, html, loading, onClose, onSigned }: ContractViewe
                     ? signatureName
                     : <span className={cx("ctSigPreviewEmpty")}>Your signature appears here</span>
                   }
+                </div>
+
+                {/* Canvas signature pad */}
+                <div>
+                  <span className={cx("sigLabel")}>Draw your signature</span>
+                  {signatureDataUrl ? (
+                    <div className={cx("sigCanvasConfirmed")}>
+                      <span style={{ fontSize: 13 }}>✓ Signature drawn</span>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnGhost")}
+                        onClick={() => setSignatureDataUrl(null)}
+                        style={{ fontSize: "0.75rem" }}
+                      >
+                        Redo
+                      </button>
+                    </div>
+                  ) : (
+                    <SignaturePad
+                      height={140}
+                      onSave={(dataUrl) => setSignatureDataUrl(dataUrl)}
+                      onClear={() => setSignatureDataUrl(null)}
+                    />
+                  )}
                 </div>
 
                 {/* Timestamp */}
@@ -431,7 +458,7 @@ export function ContractsPage() {
 
   // ── Handle sign completion ───────────────────────────────────────────────
 
-  async function handleSigned(doc: DisplayDoc, name: string): Promise<void> {
+  async function handleSigned(doc: DisplayDoc, name: string, signatureDataUrl?: string): Promise<void> {
     const id = doc.id;
     // Optimistic update
     if (id) {
@@ -442,7 +469,10 @@ export function ContractsPage() {
     if (session) {
       try {
         if (id) {
-          const sr = await signPortalContractWithRefresh(session, id, name);
+          // Use canvas e-signature endpoint when a drawn signature is present
+          const sr = signatureDataUrl
+            ? await signContractWithSignatureWithRefresh(session, id, name, signatureDataUrl)
+            : await signPortalContractWithRefresh(session, id, name);
           if (sr.nextSession) saveSession(sr.nextSession);
           if (sr.data?.signed) {
             setSignedIds((prev) => new Set([...prev, id]));
@@ -566,8 +596,8 @@ export function ContractsPage() {
           html={contractHtml}
           loading={loadingHtml}
           onClose={() => setActiveContract(null)}
-          onSigned={(name) => {
-            void handleSigned(activeContract, name);
+          onSigned={(name, sigDataUrl) => {
+            void handleSigned(activeContract, name, sigDataUrl);
           }}
         />
       )}

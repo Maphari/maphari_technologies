@@ -5494,3 +5494,24 @@
 .afMeta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
 .afBadge { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: var(--s2); color: var(--text-muted); flex-shrink: 0; margin-top: 3px; }
 
+/* ─── E-Signature Canvas Pad ─────────────────────────────────────────────── */
+
+.sigModal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px; }
+.sigModalBox { background: var(--s1); border-radius: var(--r-lg); padding: 28px; width: 100%; max-width: 540px; border: 1px solid var(--b2); }
+.sigModalTitle { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+.sigModalSub { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px; }
+.sigNameInput { width: 100%; padding: 10px 14px; border: 1px solid var(--b2); border-radius: var(--r-sm); background: var(--s2); color: var(--text); font-size: 0.85rem; margin-bottom: 16px; box-sizing: border-box; }
+.sigLabel { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block; }
+.sigSuccessBadge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; background: color-mix(in srgb, var(--green, #24b8a8) 15%, transparent); color: var(--green, #24b8a8); font-size: 0.75rem; font-weight: 600; }
+.sigCanvasConfirmed { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border: 1px solid var(--b2); border-radius: var(--r-sm); background: color-mix(in srgb, var(--lime, #c8f135) 10%, transparent); color: var(--text); font-size: 0.8rem; font-weight: 500; }
+
+/* ─── Calendar Sync ──────────────────────────────────────────────────────── */
+.gcIntCard { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 20px; display: flex; align-items: center; gap: 16px; }
+.gcIntLogo { width: 36px; height: 36px; border-radius: var(--r-sm); background: var(--s3); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+.gcIntInfo { flex: 1; }
+.gcIntName { font-size: 0.9rem; font-weight: 600; }
+.gcIntStatus { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+.gcConnected { color: var(--green, #24b8a8); }
+.gcSyncBtn { font-size: 0.72rem; padding: 4px 10px; border-radius: 10px; border: 1px solid var(--b2); background: transparent; color: var(--text-muted); cursor: pointer; }
+.gcSyncedBadge { font-size: 0.7rem; color: var(--green, #24b8a8); display: flex; align-items: center; gap: 4px; }
+

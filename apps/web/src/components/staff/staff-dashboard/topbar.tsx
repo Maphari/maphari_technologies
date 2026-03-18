@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { styles } from "./style";
 import { Ic } from "./ui";
 import { DashboardUtilityIcon } from "@/components/shared/dashboard-utility-icon";
+import { ThemeToggle } from "@/components/shared/ui/theme-toggle";
 
 type StaffTopbarProps = {
   eyebrow: string;
@@ -209,6 +210,9 @@ export function StaffTopbar({
         >
           <DashboardUtilityIcon kind="help" className={styles.topbarIcon} />
         </button>
+
+        {/* Theme toggle */}
+        <ThemeToggle />
 
         {/* Separator */}
         <div className={styles.topbarSep} />

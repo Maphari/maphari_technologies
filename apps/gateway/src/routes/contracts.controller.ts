@@ -106,6 +106,21 @@ export class ContractsController {
     return proxyRequest(`${this.baseUrl}/contract-templates/${id}${qs ? "?" + qs : ""}`, "GET", undefined, this.headers(userId, role, clientId, requestId, traceId));
   }
 
+  // ── POST /contracts/:id/sign ─────────────────────────────────────────────
+  @Roles("CLIENT", "ADMIN", "STAFF")
+  @Post("contracts/:id/sign")
+  async signContractWithSignature(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string,
+  ): Promise<ApiResponse> {
+    return proxyRequest(`${this.baseUrl}/contracts/${id}/sign`, "POST", body as Record<string, unknown>, this.headers(userId, role, clientId, requestId, traceId));
+  }
+
   // ── POST /contracts/generate ─────────────────────────────────────────────
   @Roles("ADMIN", "STAFF")
   @Post("contracts/generate")

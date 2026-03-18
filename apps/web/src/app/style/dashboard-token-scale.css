@@ -115,3 +115,48 @@
   --palette-accent: #24b8a8;
   --palette-accent-2: #64d9cc;
 }
+
+/* ── Dark mode overrides ─────────────────────────────────────── */
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg-page: #0d0d0f;
+  --s1: #161618;
+  --s2: #1e1e22;
+  --s3: #262628;
+  --s4: #2e2e32;
+
+  /* Borders */
+  --b1: #2a2a2e;
+  --b2: #323238;
+  --b3: #3e3e46;
+
+  /* Text */
+  --text: #f0f0f2;
+  --text-muted: #8888a0;
+  --text-faint: #555566;
+
+  /* Shadows */
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.5);
+  --shadow-modal: 0 8px 40px rgba(0,0,0,0.7);
+
+  /* Accent colours stay the same (lime, purple, teal) */
+  /* Client lime: #c8f135 — no change */
+  /* Admin purple: #8b6fff — no change */
+  /* Staff teal: #24b8a8 — no change */
+}
+
+[data-theme="light"] {
+  --bg-page: #f5f5f7;
+  --s1: #ffffff;
+  --s2: #f8f8fa;
+  --s3: #f0f0f4;
+  --s4: #e8e8ee;
+  --b1: #e8e8ee;
+  --b2: #dcdce6;
+  --b3: #c8c8d8;
+  --text: #0d0d0f;
+  --text-muted: #666680;
+  --text-faint: #9999b0;
+  --shadow-card: 0 1px 4px rgba(0,0,0,0.08);
+  --shadow-modal: 0 8px 32px rgba(0,0,0,0.15);
+}
