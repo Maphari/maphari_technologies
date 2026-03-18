@@ -8845,3 +8845,16 @@
 .npsScoreAmber { color: var(--amber, #f59e0b); }
 .npsScoreGreen { color: var(--green, #24b8a8); }
 .npsThanks { text-align: center; padding: 20px; color: var(--lime); font-size: 1rem; font-weight: 600; }
+
+/* ── Approvals polish ────────────────────────────────────────── */
+.apvTabContent { animation: apvTabFadeIn 0.15s ease; }
+@keyframes apvTabFadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+.apvChevron { display: inline-flex; align-items: center; transition: transform 0.2s; color: var(--text-muted); margin-right: 6px; }
+.apvChevronOpen { transform: rotate(90deg); }
+.apvDueBadge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+.apvDueAmber { background: color-mix(in srgb, var(--amber, #f59e0b) 15%, transparent); color: var(--amber, #f59e0b); }
+.apvDueRed   { background: color-mix(in srgb, var(--red, #ef4444) 15%, transparent); color: var(--red, #ef4444); }
+
+/* ── NPS star colours ────────────────────────────────────────── */
+.starFilled { color: var(--lime, #c8f135); }
+.starEmpty  { color: var(--b3); }

@@ -61,9 +61,7 @@ function Stars({ value, onChange }: { value: number; onChange: (n: number) => vo
           style={{ "--bg-color": n <= display ? `color-mix(in oklab, ${starColor(display)} 14%, transparent)` : "var(--s3)" } as React.CSSProperties}
           aria-label={`${n} star${n !== 1 ? "s" : ""}`}
         >
-          <svg width={18} height={18} viewBox="0 0 24 24" fill={n <= display ? starColor(display) : "var(--b2)"} stroke="none">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
+          <span className={cx(n <= display ? "starFilled" : "starEmpty")} aria-hidden="true">★</span>
         </button>
       ))}
       {value > 0 && (
@@ -132,7 +130,7 @@ function NpsQuickCard({
             type="button"
             className={cx("npsScoreBtn", score === n && "npsScoreBtnSelected", score === null && npsScoreClass(n))}
             onClick={() => setScore(n)}
-            aria-label={`NPS score ${n}`}
+            aria-label={`Rate ${n} out of 10`}
           >
             {n}
           </button>
@@ -308,7 +306,7 @@ export function SatisfactionSurveyPage() {
                     "--color": n <= displayNps && displayNps >= 0 ? npsColor(displayNps) : "var(--muted2)",
                     "--fw": n === nps ? 800 : 600,
                   } as React.CSSProperties}
-                    aria-label={`NPS score ${n}`}
+                    aria-label={`Rate ${n} out of 10`}
                   >
                     {n}
                   </button>

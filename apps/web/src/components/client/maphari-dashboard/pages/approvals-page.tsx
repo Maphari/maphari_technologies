@@ -10,6 +10,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
+import { ConfirmDialog } from "@/components/shared/ui/confirm-dialog";
 import { AutomationBanner } from "../../../shared/automation-banner";
 import { usePageToast } from "../hooks/use-page-toast";
 import { useProjectLayer } from "../hooks/use-project-layer";
@@ -141,9 +142,15 @@ function impactTone(value: string): string {
 function DeadlineBadge({ isoDate }: { isoDate: string | null }) {
   const info = deadlineInfo(isoDate);
   if (!info) return null;
+  const isOverdue = info.variant === "overdue";
   return (
-    <span className={info.variant === "overdue" ? styles.deadlineBadgeOverdue : styles.deadlineBadgeDue}>
-      {info.variant === "overdue" ? "⚠ " : "🕐 "}{info.label}
+    <span className={cx("apvDueBadge", isOverdue ? "apvDueRed" : "apvDueAmber")}>
+      <svg aria-hidden="true" width="10" height="10" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="2"/>
+        <line x1="8" y1="4" x2="8" y2="9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <circle cx="8" cy="12" r="1" fill="currentColor"/>
+      </svg>
+      {info.label}
     </span>
   );
 }
@@ -170,6 +177,9 @@ export function ApprovalsPage() {
   const [revisionOpenId, setRevisionOpenId] = useState<string | null>(null);
   const [revisionNote, setRevisionNote] = useState("");
   const [submitting, setSubmitting] = useState<string | null>(null);
+
+  // ── Approve confirm dialog state ─────────────────────────────────────────
+  const [approveTarget, setApproveTarget] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session || !projectId) return;
@@ -386,7 +396,7 @@ export function ApprovalsPage() {
 
       {/* ── Milestones tab ──────────────────────────────────────────────────── */}
       {topTab === "Milestones" && (
-        <div className={cx("flexCol", "gap16")}>
+        <div className={cx("flexCol", "gap16", "apvTabContent")}>
           {milestones.length === 0 && !loading && (
             <div className={cx("card", "p24", "textCenter", "colorMuted")}>No milestones found for this project.</div>
           )}
@@ -458,7 +468,7 @@ export function ApprovalsPage() {
             ))}
           </div>
 
-          <div className={cx("flexCol", "gap16")}>
+          <div className={cx("flexCol", "gap16", "apvTabContent")}>
             {filteredDeliverables.length === 0 && !loading && (
               <div className={cx("card", "p24", "textCenter", "colorMuted")}>
                 No {deliverableTab === "All" ? "" : deliverableTab.toLowerCase() + " "}deliverables found.
@@ -512,7 +522,7 @@ export function ApprovalsPage() {
                           type="button"
                           className={cx("btnSm", "btnAccent")}
                           disabled={submitting === item.id}
-                          onClick={() => void handleDeliverableDecision(item.id, "APPROVED")}
+                          onClick={() => setApproveTarget(item.id)}
                         >
                           {submitting === item.id ? "…" : "Approve ✓"}
                         </button>
@@ -526,6 +536,11 @@ export function ApprovalsPage() {
                             setRevisionNote("");
                           }}
                         >
+                          <span className={cx("apvChevron", revisionOpenId === item.id ? "apvChevronOpen" : "")}>
+                            <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true">
+                              <path d="M2 1l4 3-4 3V1z"/>
+                            </svg>
+                          </span>
                           Request Revision
                         </button>
                         {/* Reject */}
@@ -607,7 +622,7 @@ export function ApprovalsPage() {
             ))}
           </div>
 
-          <div className={cx("flexCol", "gap16")}>
+          <div className={cx("flexCol", "gap16", "apvTabContent")}>
             {filteredChanges.map((item) => (
               <div
                 key={item.id}
@@ -668,6 +683,16 @@ export function ApprovalsPage() {
           </div>
         </>
       )}
+
+      {/* Approve confirm dialog (deliverables) */}
+      <ConfirmDialog
+        open={approveTarget !== null}
+        title="Approve this deliverable?"
+        body="Once approved, the team will be notified and work can proceed. This cannot be undone."
+        confirmLabel="Approve"
+        onConfirm={() => { if (approveTarget) void handleDeliverableDecision(approveTarget, "APPROVED"); setApproveTarget(null); }}
+        onCancel={() => setApproveTarget(null)}
+      />
 
       {/* Decline modal (change requests) */}
       {declineModalId !== null && (
