@@ -13,6 +13,8 @@ import {
   type UtilisationRow,
   type UtilisationSummary,
 } from "../../../../lib/api/admin/utilisation";
+import { SkeletonTable } from "@/components/shared/ui/page-skeleton";
+import { Tooltip } from "@/components/shared/ui/tooltip";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Period = "30d" | "90d" | "month";
@@ -157,23 +159,17 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
         <div className={cx("text10", "colorMuted", "uppercase", "fontMono", styles.sutCell)}
           style={{ display: "grid", gridTemplateColumns: "2fr 1.5fr 80px 80px 90px 100px 1fr", gap: 0 }}
         >
-          {["Name", "Role", "Billable", "Available", "Util %", "vs Target", "Trend bar"].map((h) => (
+          {["Name", "Role", "Billable", "Available", "Util %"].map((h) => (
             <span key={h} className={styles.sutCell}>{h}</span>
           ))}
+          <span className={styles.sutCell}>
+            <Tooltip label="Percentage points above/below 75% target">vs Target</Tooltip>
+          </span>
+          <span className={styles.sutCell}>Trend bar</span>
         </div>
 
         {/* Loading skeleton */}
-        {loading && Array.from({ length: SKELETON_ROWS }).map((_, i) => (
-          <div
-            key={i}
-            className={styles.sutCell}
-            style={{ display: "grid", gridTemplateColumns: "2fr 1.5fr 80px 80px 90px 100px 1fr", gap: 0, borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))" }}
-          >
-            {Array.from({ length: 7 }).map((__, j) => (
-              <span key={j} className={cx(styles.sutCell, "skeletonLine")} style={{ height: 14, borderRadius: 4, background: "rgba(255,255,255,0.06)", display: "block", width: "60%" }} />
-            ))}
-          </div>
-        ))}
+        {loading && <SkeletonTable rows={5} cols={6} />}
 
         {/* Empty state */}
         {!loading && staff.length === 0 && (
@@ -187,20 +183,17 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
         {!loading && sorted.map((row) => (
           <div
             key={row.staffId}
+            className={styles.tableRow}
             style={{ display: "grid", gridTemplateColumns: "2fr 1.5fr 80px 80px 90px 100px 1fr", gap: 0, borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))" }}
           >
             {/* Name */}
             <div className={cx(styles.sutCell, "flexRow", "gap10")}>
               <div
-                className={cx("flexCenter", "fontMono", "fw700", "noShrink")}
+                className={cx(styles.sutAvatar, "flexCenter", "fontMono", "fw700")}
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
                   fontSize: 10,
                   background: row.avatarColor ?? "var(--accent)",
                   color: "#000",
-                  flexShrink: 0,
                 }}
               >
                 {row.avatarInitials}

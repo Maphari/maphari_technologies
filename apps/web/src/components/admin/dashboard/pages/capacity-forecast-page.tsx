@@ -5,13 +5,14 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import type { CapacityForecast, ForecastPeriod, StaffForecast } from "../../../../lib/api/admin/capacity";
 import { loadCapacityForecastWithRefresh } from "../../../../lib/api/admin/capacity";
+import { SkeletonTable } from "@/components/shared/ui/page-skeleton";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -84,7 +85,7 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
             <h1 className={styles.pageTitle}>Capacity Forecast</h1>
           </div>
         </div>
-        <div className={cx("colorMuted", "text13")}>Computing capacity forecast…</div>
+        <SkeletonTable rows={4} cols={5} />
       </div>
     );
   }
@@ -188,7 +189,7 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
           return (
             <div
               key={s.staffId}
-              className={cx("flexRow", "gap12", "px20", "py14", !isLast && "borderB")}
+              className={cx(styles.tableRow, "flexRow", "gap12", "px20", "py14", !isLast && "borderB")}
               style={{ alignItems: "center" }}
             >
               {/* Name + role */}
@@ -206,10 +207,7 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
                 <div className={styles.cfMiniBar}>
                   <div
                     className={styles.cfMiniBarFill}
-                    style={{
-                      width: `${Math.min(periods30, 100)}%`,
-                      background: miniBarColor(periods30)
-                    }}
+                    style={{ "--bar-w": `${Math.min(periods30, 100)}%`, background: miniBarColor(periods30) } as CSSProperties}
                   />
                 </div>
                 {s.status30d !== "OK" && (
@@ -228,10 +226,7 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
                 <div className={styles.cfMiniBar}>
                   <div
                     className={styles.cfMiniBarFill}
-                    style={{
-                      width: `${Math.min(periods60, 100)}%`,
-                      background: miniBarColor(periods60)
-                    }}
+                    style={{ "--bar-w": `${Math.min(periods60, 100)}%`, background: miniBarColor(periods60) } as CSSProperties}
                   />
                 </div>
               </div>
@@ -245,10 +240,7 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
                 <div className={styles.cfMiniBar}>
                   <div
                     className={styles.cfMiniBarFill}
-                    style={{
-                      width: `${Math.min(periods90, 100)}%`,
-                      background: miniBarColor(periods90)
-                    }}
+                    style={{ "--bar-w": `${Math.min(periods90, 100)}%`, background: miniBarColor(periods90) } as CSSProperties}
                   />
                 </div>
               </div>

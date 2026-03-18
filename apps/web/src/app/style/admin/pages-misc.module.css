@@ -2542,3 +2542,10 @@
 .cbColorInput { flex: 1; }
 .cbToggleRow { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--b1); margin-top: 4px; }
 @media (max-width: 900px) { .cbLayout { grid-template-columns: 1fr; } }
+
+/* ── Pipeline Analytics — funnel + trend bar CSS custom props ─── */
+.pfStageBar { flex-basis: var(--stage-w, 20%); }
+.pfTrendBar { height: var(--bar-h, 0px); }
+
+/* ── Invoice Chasing — sequence track container ───────────────── */
+.icSequenceTrackFlex { display: flex; align-items: center; gap: 6px; }

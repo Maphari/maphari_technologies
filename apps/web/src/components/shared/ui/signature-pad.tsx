@@ -115,7 +115,10 @@ export function SignaturePad({ onSave, onClear, height = 160, className }: Signa
     const last = strokesRef.current.pop();
     if (last && canvasRef.current) {
       const c = canvasRef.current.getContext("2d");
-      c?.putImageData(last, 0, 0);
+      if (c) {
+        c.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        c.putImageData(last, 0, 0);
+      }
     }
     if (strokesRef.current.length === 0) setIsEmpty(true);
   };

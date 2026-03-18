@@ -1149,7 +1149,7 @@
 .cfSurplusPos { color: var(--green, #24b8a8); }
 .cfSurplusNeg { color: var(--red, #ef4444); }
 .cfMiniBar { height: 6px; border-radius: 3px; background: var(--s3); overflow: hidden; margin: 3px 0; }
-.cfMiniBarFill { height: 100%; border-radius: 3px; }
+.cfMiniBarFill { width: var(--bar-w, 0%); height: 100%; border-radius: 3px; }
 .cfRecommendBox { background: color-mix(in srgb, var(--accent, #8b6fff) 8%, transparent); border: 1px solid color-mix(in srgb, var(--accent, #8b6fff) 30%, transparent); border-radius: var(--r-md); padding: 16px 20px; margin-top: 24px; }
 @media (max-width: 900px) { .cfPeriodGrid { grid-template-columns: 1fr; } }
 
@@ -1181,3 +1181,26 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* ── Row interactions ────────────────────────────────────────── */
+.tableRow { transition: background 0.12s; }
+.tableRow:hover { background: var(--s2); }
+.tableRowClickable { cursor: pointer; }
+.tableRowClickable:hover { background: var(--s2); }
+
+/* ── Expandable chevron ──────────────────────────────────────── */
+.expandChevron { display: inline-flex; align-items: center; transition: transform 0.2s ease; color: var(--text-muted); margin-right: 6px; }
+.expandChevronOpen { transform: rotate(90deg); }
+
+/* ── Tab animation ───────────────────────────────────────────── */
+.tabPane { animation: adminTabFadeIn 0.15s ease; }
+@keyframes adminTabFadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Inline bar colours ──────────────────────────────────────── */
+.barGreen  { background: var(--green, #24b8a8); }
+.barAmber  { background: var(--amber, #f59e0b); }
+.barRed    { background: var(--red, #ef4444); }
+.barAccent { background: var(--accent, #8b6fff); }
+
+/* ── Avatar cell ─────────────────────────────────────────────── */
+.sutAvatar { width: 28px; height: 28px; border-radius: 8px; display: inline-block; flex-shrink: 0; }

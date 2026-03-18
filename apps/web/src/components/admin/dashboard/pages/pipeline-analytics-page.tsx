@@ -12,6 +12,8 @@ import { colorClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { loadPipelineAnalyticsWithRefresh, type PipelineAnalytics, type FunnelStage } from "../../../../lib/api/admin/pipeline";
+import { SkeletonCard } from "@/components/shared/ui/page-skeleton";
+import { Tooltip } from "@/components/shared/ui/tooltip";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -99,9 +101,7 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
         </div>
       </div>
 
-      {loading && (
-        <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading pipeline analytics…</div>
-      )}
+      {loading && <SkeletonCard rows={3} />}
 
       {!loading && !data && (
         <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No pipeline data available.</div>
@@ -163,13 +163,19 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
                 return (
                   <div
                     key={stage.stage}
-                    className={`${styles.paFunnelStage} ${stageToneCls(stage.stage)}`}
-                    style={{ flexBasis: `${widthPct}%` } as CSSProperties}
+                    className={`${styles.paFunnelStage} ${stageToneCls(stage.stage)} ${styles.pfStageBar}`}
+                    style={{ "--stage-w": `${widthPct}%` } as CSSProperties}
                   >
                     <div className={styles.paFunnelCount}>{stage.count}</div>
                     <div className={styles.paFunnelLabel}>{stageLabel(stage.stage)}</div>
                     <div className={styles.paFunnelRate}>
-                      {i === 0 ? "Entry" : `${stage.conversionRate}% conv.`}
+                      {i === 0
+                        ? "Entry"
+                        : (
+                          <Tooltip label="Conversion rate from previous stage">
+                            {`${stage.conversionRate}% conv.`}
+                          </Tooltip>
+                        )}
                     </div>
                     {i < data.funnel.length - 1 && (
                       <span className={styles.paFunnelArrow} aria-hidden="true">›</span>
@@ -186,7 +192,7 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
               <div className={cx(styles.revfSectionTitle, "mb4")}>Monthly Trend — Last 6 Months</div>
               <div className={cx("text11", "colorMuted", "mb12")}>
                 <span className={cx("colorAccent")}>■</span> Won &nbsp;
-                <span style={{ color: "var(--red)" }}>■</span> Lost
+                <span className={cx("colorRed")}>■</span> Lost
               </div>
               <div className={styles.paTrendBars}>
                 {data.monthlyTrend.map((m) => {
@@ -195,13 +201,13 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
                   return (
                     <div key={m.month} className={styles.paTrendGroup}>
                       <div
-                        className={styles.paTrendWon}
-                        style={{ height: wonH } as CSSProperties}
+                        className={`${styles.paTrendWon} ${styles.pfTrendBar}`}
+                        style={{ "--bar-h": `${wonH}px` } as CSSProperties}
                         title={`Won: ${m.won}`}
                       />
                       <div
-                        className={styles.paTrendLost}
-                        style={{ height: lostH } as CSSProperties}
+                        className={`${styles.paTrendLost} ${styles.pfTrendBar}`}
+                        style={{ "--bar-h": `${lostH}px` } as CSSProperties}
                         title={`Lost: ${m.lost}`}
                       />
                     </div>

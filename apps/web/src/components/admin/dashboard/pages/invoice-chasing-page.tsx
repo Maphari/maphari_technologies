@@ -16,6 +16,8 @@ import {
   type ChaseStage,
 } from "../../../../lib/api/admin/billing";
 import { cx, styles } from "../style";
+import { ConfirmDialog } from "@/components/shared/ui/confirm-dialog";
+import { Tooltip } from "@/components/shared/ui/tooltip";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -53,12 +55,12 @@ function ChaseSequenceTrack({ highlightStage }: { highlightStage: ChaseStage | n
           (highlightStage === "CHASE_7D" && s.stage === "CHASE_3D") ||
           (highlightStage === "CHASE_14D" && (s.stage === "CHASE_3D" || s.stage === "CHASE_7D"));
         return (
-          <div key={s.stage} style={{ display: "flex", alignItems: "center", flex: i < stages.length - 1 ? "1" : undefined }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <div key={s.stage} className={cx(styles.icSequenceTrackFlex)} style={{ flex: i < stages.length - 1 ? "1" : undefined }}>
+            <div className={cx(styles.icSequenceTrackFlex)} style={{ flexDirection: "column", gap: 4 }}>
               <div className={cx(styles.icStageDot, isActive && styles.icStageDotActive)}>
                 {s.label}
               </div>
-              <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{s.days}</span>
+              <span className={cx("text10", "colorMuted")} style={{ whiteSpace: "nowrap" }}>{s.days}</span>
             </div>
             {i < stages.length - 1 && (
               <div className={cx(styles.icStageLine, isActive && styles.icStageLineActive)} />
@@ -99,6 +101,7 @@ export function InvoiceChasingPage({
   const [invoices, setInvoices] = useState<OverdueInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState<string | null>(null);
+  const [confirmChase, setConfirmChase] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!session) { setLoading(false); return; }
@@ -222,6 +225,7 @@ export function InvoiceChasingPage({
                 key={inv.id}
                 className={cx(
                   styles.icChaseGrid,
+                  styles.tableRow,
                   "px20",
                   "invcRowPad16",
                   "invcRowAlign",
@@ -242,18 +246,22 @@ export function InvoiceChasingPage({
                 <span className={cx("text11", "fontMono", "colorMuted")}>{fmtDate(inv.lastChasedAt)}</span>
                 <span className={cx("text11", "fontMono", "colorMuted")}>{fmtDate(inv.nextChaseAt)}</span>
                 <div className={cx("flexRow", "gap6")}>
-                  <button
-                    type="button"
-                    className={cx("btnSm", "btnGhost")}
-                    disabled={actioning !== null || inv.chaseStage === "PAUSED"}
-                    onClick={() => void handleAction(inv, "send")}
-                  >
-                    {actioning === inv.id + ":send" ? "Sending…" : "Send Now"}
-                  </button>
+                  <Tooltip label="Send an overdue reminder email to the client">
+                    <button
+                      type="button"
+                      className={cx("btnSm", "btnGhost")}
+                      tabIndex={0}
+                      disabled={actioning !== null || inv.chaseStage === "PAUSED"}
+                      onClick={() => setConfirmChase(inv.id)}
+                    >
+                      {actioning === inv.id + ":send" ? "Sending…" : "Send Now"}
+                    </button>
+                  </Tooltip>
                   {inv.chaseStage === "PAUSED" ? (
                     <button
                       type="button"
                       className={cx("btnSm", "btnGhost")}
+                      tabIndex={0}
                       disabled={actioning !== null}
                       onClick={() => void handleAction(inv, "resume")}
                     >
@@ -263,6 +271,7 @@ export function InvoiceChasingPage({
                     <button
                       type="button"
                       className={cx("btnSm", "btnGhost")}
+                      tabIndex={0}
                       disabled={actioning !== null}
                       onClick={() => void handleAction(inv, "pause")}
                     >
@@ -275,6 +284,21 @@ export function InvoiceChasingPage({
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmChase !== null}
+        title="Send reminder now?"
+        body="A reminder email will be sent to the client immediately."
+        confirmLabel="Send"
+        onConfirm={() => {
+          if (confirmChase) {
+            const inv = invoices.find((i) => i.id === confirmChase);
+            if (inv) void handleAction(inv, "send");
+          }
+          setConfirmChase(null);
+        }}
+        onCancel={() => setConfirmChase(null)}
+      />
     </div>
   );
 }
