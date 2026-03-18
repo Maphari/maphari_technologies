@@ -39,6 +39,7 @@ import { ClientTopbar } from "./maphari-dashboard/topbar";
 import { HomePage } from "./maphari-dashboard/pages/home-page";
 import { DashboardPage } from "./maphari-dashboard/pages/dashboard-page";
 import { NotificationsPage } from "./maphari-dashboard/pages/notifications-page";
+import { ActivityFeedPage } from "./maphari-dashboard/pages/activity-feed-page";
 // Projects
 import { MyProjectsPage } from "./maphari-dashboard/pages/my-projects-page";
 import { ProjectRequestPage } from "./maphari-dashboard/pages/project-request-page";
@@ -459,6 +460,7 @@ export function MaphariClientDashboard() {
               />
             )}
             {nav.activePage === "notifications" && <NotificationsPage />}
+            {nav.activePage === "activityFeed" && <ActivityFeedPage />}
 
             {/* ── Projects ────────────────────────────────────────────── */}
             {nav.activePage === "myProjects" && <MyProjectsPage projects={clientData.projects} onNavigate={handleNavigate} />}

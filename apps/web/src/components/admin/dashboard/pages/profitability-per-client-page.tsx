@@ -2,8 +2,9 @@
 // profitability-per-client-page.tsx — Admin profitability per client (real API)
 // Data   : loadAdminSnapshotWithRefresh  → clients + invoices
 //          loadExpensesWithRefresh       → expenses (cost per client)
+//          loadTimeEntriesWithRefresh    → time entries (hours × staff rate)
 // Revenue: sum of PAID invoice amountCents per clientId
-// Cost   : sum of approved expense amountCents per clientId
+// Cost   : time-entry hours × STAFF_HOURLY_COST_ZAR (default R850/h) + approved expenses
 // Margin : (revenue - cost) / revenue × 100
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -15,21 +16,43 @@ import { AdminFilterBar } from "./shared";
 import { colorClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
-import type { AdminClient, AdminInvoice } from "../../../../lib/api/admin/types";
+import type { AdminClient, AdminInvoice, ProjectTimeEntry } from "../../../../lib/api/admin/types";
 import type { AdminExpense } from "../../../../lib/api/admin/expenses";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
 import { loadExpensesWithRefresh } from "../../../../lib/api/admin/expenses";
+import { loadTimeEntriesWithRefresh } from "../../../../lib/api/admin/tasks";
+
+// Staff hourly cost in ZAR (cents). Override via NEXT_PUBLIC_STAFF_HOURLY_COST_ZAR.
+const STAFF_HOURLY_COST_CENTS = (() => {
+  const env = process.env.NEXT_PUBLIC_STAFF_HOURLY_COST_ZAR;
+  const parsed = env ? parseInt(env, 10) : NaN;
+  return isNaN(parsed) ? 85000 : parsed * 100; // default R850 → 85000 cents
+})();
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 const tabs = ["profitability", "cost breakdown", "ltv analysis", "margin trends"] as const;
 type Tab = (typeof tabs)[number];
-type SortBy = "margin" | "profit" | "revenue";
+type SortBy = "margin" | "margin-asc" | "profit" | "revenue";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function marginClass(margin: number): string {
   if (margin >= 50) return "colorAccent";
   if (margin >= 30) return "colorAmber";
   return "colorRed";
+}
+
+/** Returns the CSS fill class for the P&L margin bar */
+function plFillClass(margin: number): string {
+  if (margin >= 30) return styles.plGreen;
+  if (margin >= 10) return styles.plAmber;
+  return styles.plRed;
+}
+
+/** Returns RAG CSS class for inline dot */
+function plRagClass(margin: number): string {
+  if (margin >= 30) return styles.plGreen;
+  if (margin >= 10) return styles.plAmber;
+  return styles.plRed;
 }
 
 function centsToK(cents: number): string {
@@ -99,28 +122,34 @@ interface Props {
 // ── Component ─────────────────────────────────────────────────────────────────
 export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("profitability");
-  const [sortBy, setSortBy] = useState<SortBy>("margin");
+  // Default: worst margin first (ascending) so unprofitable clients surface immediately
+  const [sortBy, setSortBy] = useState<SortBy>("margin-asc");
   const [clients, setClients] = useState<AdminClient[]>([]);
   const [invoices, setInvoices] = useState<AdminInvoice[]>([]);
   const [expenses, setExpenses] = useState<AdminExpense[]>([]);
+  const [timeEntries, setTimeEntries] = useState<ProjectTimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     void (async () => {
-      const [snapshotResult, expensesResult] = await Promise.all([
+      const [snapshotResult, expensesResult, timeResult] = await Promise.all([
         loadAdminSnapshotWithRefresh(session),
-        loadExpensesWithRefresh(session)
+        loadExpensesWithRefresh(session),
+        loadTimeEntriesWithRefresh(session)
       ]);
       if (cancelled) return;
       if (snapshotResult.nextSession) saveSession(snapshotResult.nextSession);
       if (expensesResult.nextSession) saveSession(expensesResult.nextSession);
+      if (timeResult.nextSession) saveSession(timeResult.nextSession);
       if (snapshotResult.error) onNotify("error", snapshotResult.error.message);
       if (expensesResult.error) onNotify("error", expensesResult.error.message);
+      if (timeResult.error) onNotify("error", timeResult.error.message);
       setClients(snapshotResult.data?.clients ?? []);
       setInvoices(snapshotResult.data?.invoices ?? []);
       setExpenses(expensesResult.data ?? []);
+      setTimeEntries(timeResult.data ?? []);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -133,28 +162,35 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
       const revenue = invoices
         .filter((i) => i.clientId === client.id && i.status === "PAID")
         .reduce((s, i) => s + i.amountCents, 0);
-      const cost = expenses
+
+      // Time-entry-based staff cost: sum minutes for this client → hours × hourly rate
+      const clientEntries = timeEntries.filter((te) => te.clientId === client.id);
+      const hoursSpent = clientEntries.reduce((s, te) => s + te.minutes, 0) / 60;
+      const costsStaffTime = Math.round(hoursSpent * STAFF_HOURLY_COST_CENTS);
+
+      // Approved expenses (non-staff line items: tools, freelancers, overhead)
+      const approvedExpenses = expenses
         .filter((e) => e.clientId === client.id && (e.status === "APPROVED" || e.status === "approved"))
         .reduce((s, e) => s + e.amountCents, 0);
+
+      const costsTools = Math.round(approvedExpenses * 0.1);
+      const costsFreelancers = Math.round(approvedExpenses * 0.2);
+      const costsOverhead = approvedExpenses - costsTools - costsFreelancers;
+
+      const totalCost = costsStaffTime + approvedExpenses;
       const outstanding = invoices
         .filter((i) => i.clientId === client.id && (i.status === "ISSUED" || i.status === "OVERDUE"))
         .reduce((s, i) => s + i.amountCents, 0);
-      const totalCost = cost;
       const profit = revenue - totalCost;
       const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
-      // Approx LTV: revenue × months active
+      // Approx LTV: actual collected revenue so far
       const firstInvoice = invoices
         .filter((i) => i.clientId === client.id)
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
       const monthsActive = firstInvoice
         ? Math.max(1, Math.round((Date.now() - new Date(firstInvoice.createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000)))
         : 1;
-      const ltv = revenue; // actual collected = LTV so far
-      // Cost breakdown — we only have total from expenses; model remainder as overhead
-      const costsStaffTime = Math.round(cost * 0.6);
-      const costsTools = Math.round(cost * 0.1);
-      const costsFreelancers = Math.round(cost * 0.2);
-      const costsOverhead = cost - costsStaffTime - costsTools - costsFreelancers;
+      const ltv = revenue;
       return {
         id: client.id,
         name: client.name ?? client.id,
@@ -168,15 +204,17 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
         outstanding,
         ltv,
         months: monthsActive,
+        hoursSpent: Math.round(hoursSpent * 10) / 10,
         costs: { staffTime: costsStaffTime, tools: costsTools, freelancers: costsFreelancers, overhead: Math.max(0, costsOverhead) },
         mrr: Math.round(revenue / Math.max(monthsActive, 1))
       };
     });
-  }, [clients, invoices, expenses]);
+  }, [clients, invoices, expenses, timeEntries]);
 
   const sorted = useMemo(() => {
     return [...withCalc].sort((a, b) =>
-      sortBy === "margin" ? b.margin - a.margin
+      sortBy === "margin-asc" ? a.margin - b.margin  // worst first
+        : sortBy === "margin" ? b.margin - a.margin  // best first
         : sortBy === "profit" ? b.profit - a.profit
         : b.revenue - a.revenue
     );
@@ -197,7 +235,37 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
           <div className={styles.pageSub}>True margin after staff time, tools, freelancers and overhead</div>
         </div>
         <div className={styles.pageActions}>
-          <button type="button" className={cx("btnSm", "btnAccent")}>Export Report</button>
+          <button
+            type="button"
+            className={cx("btnSm", "btnAccent")}
+            onClick={() => {
+              const header = "Client,Tier,AM,Revenue (R),Total Cost (R),Hours Spent,Staff Cost (R),Profit (R),Margin %,Outstanding (R)";
+              const rows = sorted.map((c) =>
+                [
+                  `"${c.name}"`,
+                  c.tier,
+                  `"${c.am}"`,
+                  (c.revenue / 100).toFixed(2),
+                  (c.totalCost / 100).toFixed(2),
+                  c.hoursSpent.toFixed(1),
+                  (c.costs.staffTime / 100).toFixed(2),
+                  (c.profit / 100).toFixed(2),
+                  c.margin,
+                  (c.outstanding / 100).toFixed(2)
+                ].join(",")
+              );
+              const csv = [header, ...rows].join("\n");
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `profitability-per-client-${new Date().toISOString().slice(0, 10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            Export CSV
+          </button>
         </div>
       </div>
 
@@ -229,7 +297,8 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
             </select>
             {activeTab === "profitability" ? (
               <select title="Sort client profitability" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)} className={styles.formInput}>
-                <option value="margin">Margin</option>
+                <option value="margin-asc">Margin (worst first)</option>
+                <option value="margin">Margin (best first)</option>
                 <option value="profit">Profit</option>
                 <option value="revenue">Revenue</option>
               </select>
@@ -245,7 +314,10 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
                 <div key={c.id} className={cx(styles.ppcClientCard, c.margin < 30 && styles.ppcClientCardRisk)}>
                   <div className={styles.ppcMainGrid}>
                     <div>
-                      <div className={cx(styles.ppcClientName, colorClass(c.color))}>{c.name}</div>
+                      <div className={styles.ppcClientNameRow}>
+                        <span className={cx(styles.plRag, plRagClass(c.margin))} title={c.margin >= 30 ? "Healthy" : c.margin >= 10 ? "Watch" : "At risk"} />
+                        <div className={cx(styles.ppcClientName, colorClass(c.color))}>{c.name}</div>
+                      </div>
                       <div className={cx("text11", "colorMuted")}>{c.tier} · {c.am}</div>
                     </div>
                     <ProfitBar revenue={c.revenue} totalCost={c.totalCost} />
@@ -254,8 +326,9 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
                       <div className={styles.ppcRevVal}>{centsToK(c.revenue)}</div>
                     </div>
                     <div className={styles.ppcNumCenter}>
-                      <div className={styles.ppcMiniLabel}>Cost</div>
+                      <div className={styles.ppcMiniLabel}>Cost (hrs×rate)</div>
                       <div className={styles.ppcCostVal}>{centsToK(c.totalCost)}</div>
+                      <div className={cx("text11", "colorMuted")}>{c.hoursSpent}h @ R{Math.round(STAFF_HOURLY_COST_CENTS / 100)}/h</div>
                     </div>
                     <div className={styles.ppcNumCenter}>
                       <div className={styles.ppcMiniLabel}>Profit</div>
@@ -264,6 +337,12 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
                     <div className={styles.ppcNumCenter}>
                       <div className={styles.ppcMiniLabel}>Margin</div>
                       <div className={cx(styles.ppcMarginBig, marginClass(c.margin))}>{c.margin}%</div>
+                      <div className={styles.plMarginBar}>
+                        <div
+                          className={cx(styles.plMarginFill, plFillClass(c.margin))}
+                          style={{ width: `${Math.min(Math.max(c.margin, 0), 100)}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
                   <div className={styles.ppcCostGrid}>

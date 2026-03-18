@@ -257,6 +257,49 @@ export async function getPortalDesignReviewsWithRefresh(
   });
 }
 
+// ── Generic Approval Decision ─────────────────────────────────────────────────
+
+export interface PortalApprovalDecisionBody {
+  status: "APPROVED" | "REVISION_REQUESTED" | "REJECTED";
+  notes?: string;
+}
+
+export interface PortalApprovalDecisionResult {
+  id: string;
+  status: string;
+  updatedAt: string;
+}
+
+/**
+ * PATCH /sign-offs/:id
+ * Submit a client approval decision on a sign-off / deliverable item.
+ */
+export async function submitApprovalDecisionWithRefresh(
+  session: AuthSession,
+  id: string,
+  body: PortalApprovalDecisionBody
+): Promise<AuthorizedResult<PortalApprovalDecisionResult>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const res = await callGateway<PortalApprovalDecisionResult>(
+      `/sign-offs/${id}`,
+      accessToken,
+      { method: "PATCH", body }
+    );
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success || !res.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          res.payload.error?.code ?? "APPROVAL_DECISION_FAILED",
+          res.payload.error?.message ?? "Unable to submit approval decision."
+        ),
+      };
+    }
+    return { unauthorized: false, data: res.payload.data, error: null };
+  });
+}
+
 export async function approvePortalDesignReviewWithRefresh(
   session: AuthSession,
   reviewId: string,

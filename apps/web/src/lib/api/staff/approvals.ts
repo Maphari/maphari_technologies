@@ -32,6 +32,7 @@ export interface StaffApprovalItem {
   requestedAt: string;
   priority:    ApprovalPriority;
   status:      ApprovalStatus;
+  dueDate?:    string | null;
 }
 
 // ── API functions ─────────────────────────────────────────────────────────────
@@ -57,6 +58,32 @@ export async function getStaffApprovals(
       };
     }
     return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+/** Send a reminder to the client for an overdue/waiting sign-off item */
+export async function sendStaffApprovalReminderWithRefresh(
+  session: AuthSession,
+  signOffId: string
+): Promise<AuthorizedResult<{ reminderId: string; sentAt: string }>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ reminderId: string; sentAt: string }>(
+      `/sign-offs/${signOffId}/remind`,
+      accessToken,
+      { method: "POST" }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "REMINDER_SEND_FAILED",
+          response.payload.error?.message ?? "Unable to send reminder."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
   });
 }
 

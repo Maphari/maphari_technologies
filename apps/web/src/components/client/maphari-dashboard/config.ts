@@ -4,6 +4,7 @@ export type PageId =
   | "home"
   | "dashboard"
   | "notifications"
+  | "activityFeed"
   // Projects
   | "myProjects"
   | "projectRequest"
@@ -72,6 +73,7 @@ export const navSections: NavSection[] = [
       { id: "home", label: "Home" },
       { id: "dashboard", label: "Mission Control" },
       { id: "notifications", label: "Notifications" },
+      { id: "activityFeed", label: "Activity Feed" },
       { id: "onboardingStatus", label: "Onboarding Status" },
     ],
   },

@@ -100,6 +100,107 @@ export async function registerSprintRoutes(app: FastifyInstance): Promise<void> 
     }
   });
 
+  // ── Burn-down / velocity ──────────────────────────────────────────────────
+
+  /** GET /sprints/burn-down?projectId=X — burn-down chart data for a sprint */
+  app.get("/sprints/burn-down", async (request) => {
+    const scope = readScopeHeaders(request);
+    const { projectId } = request.query as { projectId?: string };
+    const scopedClientId = resolveClientFilter(scope.role, scope.clientId);
+
+    if (!projectId) {
+      return { success: false, error: { code: "MISSING_PROJECT_ID", message: "projectId query param is required." } } as ApiResponse;
+    }
+
+    try {
+      // Fetch the most recent ACTIVE sprint (or COMPLETED) for this project
+      const sprint = await prisma.projectSprint.findFirst({
+        where: {
+          projectId,
+          ...(scopedClientId ? { clientId: scopedClientId } : {}),
+          status: { in: ["ACTIVE", "COMPLETED"] }
+        },
+        orderBy: { startAt: "desc" },
+        include: { tasks: true }
+      });
+
+      // Also fetch last 5 sprints for velocity history
+      const allSprints = await prisma.projectSprint.findMany({
+        where: {
+          projectId,
+          ...(scopedClientId ? { clientId: scopedClientId } : {})
+        },
+        orderBy: { startAt: "desc" },
+        take: 5,
+        include: { tasks: true }
+      });
+
+      if (!sprint) {
+        return { success: true, data: null, meta: { requestId: scope.requestId } } as ApiResponse<null>;
+      }
+
+      const tasks = sprint.tasks;
+      const totalPoints = tasks.reduce((sum, t) => sum + (t.storyPoints ?? 1), 0);
+      const completedPoints = tasks
+        .filter((t) => t.status === "DONE")
+        .reduce((sum, t) => sum + (t.storyPoints ?? 1), 0);
+
+      // Build daily remaining — walk day by day from start to end (or today)
+      const startDate = sprint.startAt ? new Date(sprint.startAt) : new Date();
+      const endDate   = sprint.endAt   ? new Date(sprint.endAt)   : new Date(Date.now() + 13 * 86_400_000);
+      const today     = new Date();
+
+      const msPerDay = 86_400_000;
+      const totalDays = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / msPerDay) + 1);
+
+      const dailyRemaining: { date: string; remaining: number; ideal: number }[] = [];
+
+      for (let d = 0; d < totalDays; d++) {
+        const dayDate = new Date(startDate.getTime() + d * msPerDay);
+        const dayLabel = dayDate.toISOString().slice(0, 10);
+
+        // Count tasks completed on or before this day (use updatedAt as proxy for completedAt)
+        const completedByDay = tasks
+          .filter((t) => t.status === "DONE" && t.updatedAt <= dayDate)
+          .reduce((sum, t) => sum + (t.storyPoints ?? 1), 0);
+
+        const remaining = Math.max(0, totalPoints - completedByDay);
+        const ideal     = Math.max(0, totalPoints - Math.round((totalPoints / Math.max(totalDays - 1, 1)) * d));
+
+        // Only emit past days and today (don't project future actual)
+        if (dayDate <= today) {
+          dailyRemaining.push({ date: dayLabel, remaining, ideal });
+        } else {
+          // For future days only push ideal
+          dailyRemaining.push({ date: dayLabel, remaining: -1, ideal });
+        }
+      }
+
+      // Velocity history — last 5 sprints (planned vs completed)
+      const velocityHistory = allSprints.map((s) => ({
+        sprintName: s.name,
+        planned: s.tasks.length > 0 ? s.tasks.reduce((sum, t) => sum + (t.storyPoints ?? 1), 0) : s.totalTasks,
+        completed: s.tasks.filter((t) => t.status === "DONE").reduce((sum, t) => sum + (t.storyPoints ?? 1), 0)
+      })).reverse();
+
+      const result = {
+        sprintId:         sprint.id,
+        sprintName:       sprint.name,
+        startDate:        startDate.toISOString(),
+        endDate:          endDate.toISOString(),
+        totalPoints,
+        completedPoints,
+        dailyRemaining,
+        velocityHistory
+      };
+
+      return { success: true, data: result, meta: { requestId: scope.requestId } } as ApiResponse<typeof result>;
+    } catch (error) {
+      request.log.error(error);
+      return { success: false, error: { code: "BURNDOWN_FETCH_FAILED", message: "Unable to fetch burn-down data." } } as ApiResponse;
+    }
+  });
+
   /** PATCH /projects/:projectId/sprints/:sprintId — update sprint or sync metrics */
   app.patch("/projects/:projectId/sprints/:sprintId", async (request, reply) => {
     const scope = readScopeHeaders(request);

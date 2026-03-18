@@ -5,6 +5,7 @@ import { cx, styles } from "../style";
 import {
   getStaffApprovals,
   resolveStaffApproval,
+  sendStaffApprovalReminderWithRefresh,
   type StaffApprovalItem,
   type ApprovalItemType,
   type ApprovalEntityType
@@ -38,10 +39,22 @@ function IcoX() {
   );
 }
 
+function IcoBell() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M6 1a3.5 3.5 0 0 0-3.5 3.5v2L1 8h10l-1.5-1.5v-2A3.5 3.5 0 0 0 6 1Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+      <path d="M5 9.5a1 1 0 0 0 2 0" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const TYPE_OPTS = ["All", "Milestone", "Change Request", "Design Review"] as const;
 type TypeFilter = typeof TYPE_OPTS[number];
+
+/** Threshold in days — items waiting longer show "Send Reminder" */
+const REMINDER_THRESHOLD_DAYS = 2;
 
 function priorityTone(p: string) {
   if (p === "Urgent") return "badgeRed";
@@ -71,6 +84,22 @@ function fmtDate(iso: string): string {
   }
 }
 
+/** How many whole days since the given ISO date */
+function daysSince(iso: string): number {
+  try {
+    const ms = Date.now() - new Date(iso).getTime();
+    return Math.floor(ms / (1000 * 60 * 60 * 24));
+  } catch {
+    return 0;
+  }
+}
+
+/** True if item is past its due date */
+function isOverdue(item: StaffApprovalItem): boolean {
+  if (!item.dueDate) return false;
+  return new Date(item.dueDate).getTime() < Date.now();
+}
+
 // ── Page component ────────────────────────────────────────────────────────────
 
 export function ApprovalQueuePage({ isActive, session, onFeedback }: ApprovalQueuePageProps) {
@@ -78,6 +107,7 @@ export function ApprovalQueuePage({ isActive, session, onFeedback }: ApprovalQue
   const [loading, setLoading]     = useState(true);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("All");
   const [resolving, setResolving] = useState<string | null>(null); // item.id being resolved
+  const [reminding, setReminding] = useState<string | null>(null); // item.id whose reminder is in flight
 
   // ── Load approvals ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -123,6 +153,22 @@ export function ApprovalQueuePage({ isActive, session, onFeedback }: ApprovalQue
     }
     setResolving(null);
   }, [session, resolving, onFeedback]);
+
+  // ── Remind handler ──────────────────────────────────────────────────────
+  const handleRemind = useCallback(async (item: StaffApprovalItem) => {
+    if (!session || reminding) return;
+    setReminding(item.id);
+
+    const result = await sendStaffApprovalReminderWithRefresh(session, item.id);
+    if (result.nextSession) saveSession(result.nextSession);
+
+    if (result.data) {
+      onFeedback?.("success", `Reminder sent for "${item.title}".`);
+    } else if (result.error) {
+      onFeedback?.("error", result.error.message ?? "Failed to send reminder.");
+    }
+    setReminding(null);
+  }, [session, reminding, onFeedback]);
 
   // ── Derived data ────────────────────────────────────────────────────────
   const pending   = items.filter((i) => i.status === "Pending");
@@ -244,43 +290,68 @@ export function ApprovalQueuePage({ isActive, session, onFeedback }: ApprovalQue
                   </tr>
                 )
               ) : (
-                filteredPending.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div className={cx("aqItemTitle")}>{item.title}</div>
-                      <div className={cx("aqItemClient")}>{item.client}</div>
-                    </td>
-                    <td><span className={cx("aqTypeChip")}>{item.type}</span></td>
-                    <td className={cx("text12", "colorMuted")}>{item.project}</td>
-                    <td className={cx("text12")}>{item.requestedBy}</td>
-                    <td className={cx("text12", "colorMuted")}>{fmtDate(item.requestedAt)}</td>
-                    <td><span className={cx("badge", priorityTone(item.priority))}>{item.priority}</span></td>
-                    <td>
-                      <div className={cx("aqActionRow")}>
-                        <button
-                          type="button"
-                          className={cx("aqApproveBtn")}
-                          disabled={resolving === item.id}
-                          onClick={() => void handleResolve(item, "approve")}
-                          aria-label={`Approve ${item.title}`}
-                        >
-                          <span className={cx("aqBtnIco")}><IcoCheck /></span>
-                          {resolving === item.id ? "…" : "Approve"}
-                        </button>
-                        <button
-                          type="button"
-                          className={cx("aqRejectBtn")}
-                          disabled={resolving === item.id}
-                          onClick={() => void handleResolve(item, "reject")}
-                          aria-label={`Reject ${item.title}`}
-                        >
-                          <span className={cx("aqBtnIco")}><IcoX /></span>
-                          {resolving === item.id ? "…" : "Reject"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                filteredPending.map((item) => {
+                  const waiting = daysSince(item.requestedAt);
+                  const overdue = isOverdue(item);
+                  const showRemind = waiting >= REMINDER_THRESHOLD_DAYS;
+
+                  return (
+                    <tr key={item.id} className={overdue ? cx("aqRowOverdue") : undefined}>
+                      <td>
+                        <div className={cx("aqItemTitle")}>{item.title}</div>
+                        <div className={cx("aqItemClient")}>{item.client}</div>
+                        {/* Days waiting / overdue sub-text */}
+                        {waiting > 0 && (
+                          <div className={overdue ? cx("aqWaitingText", "aqWaitingTextOverdue") : cx("aqWaitingText")}>
+                            {overdue ? `Overdue · ${waiting}d waiting` : `Waiting ${waiting} day${waiting === 1 ? "" : "s"}`}
+                          </div>
+                        )}
+                      </td>
+                      <td><span className={cx("aqTypeChip")}>{item.type}</span></td>
+                      <td className={cx("text12", "colorMuted")}>{item.project}</td>
+                      <td className={cx("text12")}>{item.requestedBy}</td>
+                      <td className={cx("text12", "colorMuted")}>{fmtDate(item.requestedAt)}</td>
+                      <td><span className={cx("badge", priorityTone(item.priority))}>{item.priority}</span></td>
+                      <td>
+                        <div className={cx("aqActionRow")}>
+                          <button
+                            type="button"
+                            className={cx("aqApproveBtn")}
+                            disabled={resolving === item.id}
+                            onClick={() => void handleResolve(item, "approve")}
+                            aria-label={`Approve ${item.title}`}
+                          >
+                            <span className={cx("aqBtnIco")}><IcoCheck /></span>
+                            {resolving === item.id ? "…" : "Approve"}
+                          </button>
+                          <button
+                            type="button"
+                            className={cx("aqRejectBtn")}
+                            disabled={resolving === item.id}
+                            onClick={() => void handleResolve(item, "reject")}
+                            aria-label={`Reject ${item.title}`}
+                          >
+                            <span className={cx("aqBtnIco")}><IcoX /></span>
+                            {resolving === item.id ? "…" : "Reject"}
+                          </button>
+                          {/* Send Reminder — only shown after threshold days */}
+                          {showRemind && (
+                            <button
+                              type="button"
+                              className={cx("aqRemindBtn")}
+                              disabled={reminding === item.id}
+                              onClick={() => void handleRemind(item)}
+                              aria-label={`Send reminder for ${item.title}`}
+                            >
+                              <span className={cx("aqBtnIco")}><IcoBell /></span>
+                              {reminding === item.id ? "…" : "Remind"}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

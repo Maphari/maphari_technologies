@@ -7699,3 +7699,72 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Approval deadline countdown badges ─────────────────────────── */
+.deadlineBadgeDue {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-family: var(--font-dm-mono), monospace;
+  background: rgba(245,166,35,0.12);
+  color: var(--amber, #f5a623);
+  border: 1px solid rgba(245,166,35,0.25);
+}
+.deadlineBadgeOverdue {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-family: var(--font-dm-mono), monospace;
+  background: rgba(255,95,95,0.12);
+  color: var(--red, #ff5f5f);
+  border: 1px solid rgba(255,95,95,0.25);
+}
+
+/* Revision modal textarea for approvals */
+.approvalRevisionTextarea {
+  width: 100%;
+  min-height: 90px;
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-size: 0.76rem;
+  font-family: var(--font-syne), sans-serif;
+  padding: 10px 12px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.14s;
+}
+.approvalRevisionTextarea:focus {
+  border-color: var(--b3);
+}
+
+/* Inline revision modal (inside card, not full-screen overlay) */
+.approvalRevisionBox {
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+}
+.approvalRevisionBoxTitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-syne), sans-serif;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.approvalRevisionBtnRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: flex-end;
+}

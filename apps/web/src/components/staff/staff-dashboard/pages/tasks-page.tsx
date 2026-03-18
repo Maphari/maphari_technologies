@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { cx, styles } from "../style";
 import type { TaskContext } from "../types";
 import { capitalize, formatDuration } from "../utils";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { CommentThread } from "../../../shared/ui/comment-thread";
 
 function dueToneClass(tone: string) {
   if (tone === "var(--red)") return "colorRed";

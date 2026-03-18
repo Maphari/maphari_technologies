@@ -1,4 +1,5 @@
 export * from "./types";
+export * from "./activity";
 export * from "./projects";
 export * from "./project-layer";
 export * from "./client-cx";

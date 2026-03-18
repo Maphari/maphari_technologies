@@ -6,6 +6,7 @@ export const pageTitles: Record<PageId, string> = {
   home:                 "Overview / Home",
   dashboard:            "Overview / Mission Control",
   notifications:        "Overview / Notifications",
+  activityFeed:         "Overview / Activity Feed",
   // Projects
   myProjects:           "Projects / My Projects",
   projectRequest:       "Projects / New Request",

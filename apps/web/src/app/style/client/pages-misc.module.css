@@ -5483,3 +5483,14 @@
 .rdmUpcomingList { margin-top: 8px; }
 .rdmUpcomingRow { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--b1); }
 
+/* ─── Activity Feed ──────────────────────────────────────────────────────── */
+
+.afWrap { padding: 0 0 32px; }
+.afDayHeader { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 16px 0 8px; border-bottom: 1px solid var(--b1); margin-bottom: 4px; }
+.afItem { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--b1); }
+.afDot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.afContent { flex: 1; min-width: 0; }
+.afAction { font-size: 0.85rem; font-weight: 500; color: var(--text); line-height: 1.4; }
+.afMeta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+.afBadge { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: var(--s2); color: var(--text-muted); flex-shrink: 0; margin-top: 3px; }
+

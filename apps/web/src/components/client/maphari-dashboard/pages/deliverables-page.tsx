@@ -6,6 +6,7 @@ import { Ic, Av } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import { loadPortalDeliverablesWithRefresh, type PortalDeliverable } from "../../../../lib/api/portal/project-layer";
 import { saveSession } from "../../../../lib/auth/session";
+import { CommentThread } from "../../../shared/ui/comment-thread";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -15,7 +16,6 @@ type DCategory = "Design" | "Development" | "QA" | "Documentation";
 type DTab      = "All" | DStatus;
 
 type DVersion = { ver: number; date: string; note: string };
-type DComment = { author: string; initials: string; time: string; text: string };
 
 type Deliverable = {
   id:             string;
@@ -31,7 +31,6 @@ type Deliverable = {
   ownerInitials:  string;
   ownerRole:      string;
   versions:       DVersion[];
-  comments:       DComment[];
   tags:           string[];
 };
 
@@ -101,7 +100,6 @@ function mapApiDeliverable(d: PortalDeliverable, idx: number): Deliverable {
     ownerInitials:  initials,
     ownerRole:      "Team Member",
     versions:       [],
-    comments:       [],
     tags:           [],
   };
 }
@@ -133,8 +131,6 @@ export function DeliverablesPage() {
   const [expanded,      setExpanded]      = useState<string | null>(null);
   const [accepted,      setAccepted]      = useState<Record<string, boolean>>({});
   const [revised,       setRevised]       = useState<Record<string, boolean>>({});
-  const [newComment,    setNewComment]    = useState<Record<string, string>>({});
-  const [extraComments, setExtraComments] = useState<Record<string, DComment[]>>({});
 
   const MILESTONES = useMemo(() =>
     [...new Set(DATA.map((d) => d.milestone))].sort(),
@@ -180,22 +176,6 @@ export function DeliverablesPage() {
     if (accepted[d.id]) return "Accepted";
     if (revised[d.id])  return "Pending Review";
     return d.status;
-  };
-
-  const sendComment = (id: string) => {
-    const text = (newComment[id] ?? "").trim();
-    if (!text) return;
-    const now = new Date();
-    const emailPrefix = session?.user?.email?.split("@")[0] ?? "me";
-    const initials = emailPrefix.slice(0, 2).toUpperCase();
-    const comment: DComment = {
-      author:   "You",
-      initials,
-      time:     `${now.toLocaleDateString("en-ZA", { day: "numeric", month: "short" })} · ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
-      text,
-    };
-    setExtraComments(p => ({ ...p, [id]: [...(p[id] ?? []), comment] }));
-    setNewComment(p => ({ ...p, [id]: "" }));
   };
 
   return (
@@ -359,7 +339,6 @@ export function DeliverablesPage() {
           const status      = resolvedStatus(d);
           const cfg         = TYPE_CFG[d.type];
           const catCfg      = CAT_CFG[d.category];
-          const allComments = [...d.comments, ...(extraComments[d.id] ?? [])];
           const latestVer   = d.versions.length > 0 ? d.versions[d.versions.length - 1] : null;
           const isClickable = d.status !== "Upcoming";
 
@@ -459,41 +438,13 @@ export function DeliverablesPage() {
                       )}
 
                       {/* Comments */}
-                      <div>
-                        <div className={cx("flexRow", "flexCenter", "gap6", "mb8")}>
-                          <span className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01")}>Comments</span>
-                          {allComments.length > 0 && (
-                            <span className={cx("tagPillSm", "fontMono", "text10", "colorMuted2")}>{allComments.length}</span>
-                          )}
-                        </div>
-                        {allComments.length > 0 && (
-                          <div className={cx("flexCol", "gap10", "mb10")}>
-                            {allComments.map((c, ci) => (
-                              <div key={ci} className={cx("flexRow", "gap8")}>
-                                <Av initials={c.initials} size={26} />
-                                <div className={cx("flex1")}>
-                                  <div className={cx("flexRow", "flexCenter", "gap8", "mb3")}>
-                                    <span className={cx("fw600", "text11")}>{c.author}</span>
-                                    <span className={cx("fontMono", "text10", "colorMuted2")}>{c.time}</span>
-                                  </div>
-                                  <div className={cx("text11", "colorMuted", "lineH155")}>{c.text}</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <div className={cx("flexRow", "gap8")}>
-                          <input
-                            type="text"
-                            className={cx("input", "flex1", "h32")}
-                            placeholder="Add a comment…"
-                            value={newComment[d.id] ?? ""}
-                            onChange={e => setNewComment(p => ({ ...p, [d.id]: e.target.value }))}
-                            onKeyDown={e => { if (e.key === "Enter") sendComment(d.id); }}
-                          />
-                          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => sendComment(d.id)}>Send</button>
-                        </div>
-                      </div>
+                      <CommentThread
+                        entityType="deliverable"
+                        entityId={d.id}
+                        session={session}
+                        currentUserName={session?.user?.email?.split("@")[0] ?? "You"}
+                        compact
+                      />
                     </div>
 
                     {/* ── Right col ── */}

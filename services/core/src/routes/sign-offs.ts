@@ -98,4 +98,82 @@ export async function registerSignOffRoutes(app: FastifyInstance): Promise<void>
       return { success: false, error: { code: "SIGN_OFF_FAILED", message: "Unable to record sign-off." } } as ApiResponse;
     }
   });
+
+  // ── Approval decision (generic sign-off items) ────────────────────────────
+
+  /**
+   * PATCH /sign-offs/:id
+   * Update approval decision on a sign-off item.
+   * Body: { status: "APPROVED" | "REVISION_REQUESTED" | "REJECTED"; notes?: string }
+   * CLIENT may approve/request-revision/reject items assigned to them.
+   */
+  app.patch("/sign-offs/:id", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const { id } = request.params as { id: string };
+    const body = request.body as {
+      status: "APPROVED" | "REVISION_REQUESTED" | "REJECTED";
+      notes?: string;
+    };
+
+    if (!body.status || !["APPROVED", "REVISION_REQUESTED", "REJECTED"].includes(body.status)) {
+      reply.status(400);
+      return { success: false, error: { code: "INVALID_STATUS", message: "status must be APPROVED, REVISION_REQUESTED, or REJECTED." } } as ApiResponse;
+    }
+
+    try {
+      const signOff = await prisma.projectSignOff.update({
+        where: { id },
+        data: {
+          status: body.status === "APPROVED" ? "SIGNED" : body.status,
+          ...(body.status === "APPROVED" && { signedAt: new Date() }),
+          ...(body.notes != null && { description: body.notes }),
+        }
+      });
+      await cache.delete(CacheKeys.signOffs(signOff.projectId));
+      return { success: true, data: signOff } as ApiResponse<typeof signOff>;
+    } catch (error) {
+      request.log.error(error);
+      return { success: false, error: { code: "SIGN_OFF_UPDATE_FAILED", message: "Unable to update approval decision." } } as ApiResponse;
+    }
+  });
+
+  // ── Send reminder ─────────────────────────────────────────────────────────
+
+  /**
+   * POST /sign-offs/:id/remind
+   * Creates an audit-event with action APPROVAL_REMINDER_SENT so staff can
+   * track that a reminder was sent to the client.
+   * ADMIN / STAFF only.
+   */
+  app.post("/sign-offs/:id/remind", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      reply.status(403);
+      return { success: false, error: { code: "FORBIDDEN", message: "Clients cannot send reminders." } } as ApiResponse;
+    }
+    const { id } = request.params as { id: string };
+
+    try {
+      const signOff = await prisma.projectSignOff.findUnique({ where: { id } });
+      if (!signOff) {
+        reply.status(404);
+        return { success: false, error: { code: "NOT_FOUND", message: "Sign-off item not found." } } as ApiResponse;
+      }
+
+      const auditEvent = await prisma.auditEvent.create({
+        data: {
+          action: "APPROVAL_REMINDER_SENT",
+          resourceType: "ProjectSignOff",
+          resourceId: id,
+          actorId: scope.userId ?? null,
+          details: JSON.stringify({ signOffId: id, projectId: signOff.projectId, clientId: signOff.clientId }),
+        }
+      });
+      reply.status(201);
+      return { success: true, data: { reminderId: auditEvent.id, sentAt: auditEvent.createdAt } } as ApiResponse<{ reminderId: string; sentAt: Date }>;
+    } catch (error) {
+      request.log.error(error);
+      return { success: false, error: { code: "REMINDER_FAILED", message: "Unable to record reminder." } } as ApiResponse;
+    }
+  });
 }

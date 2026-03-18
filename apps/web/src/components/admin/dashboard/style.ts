@@ -1,4 +1,5 @@
 import shared from "@/app/style/shared/maphari-dashboard-shared.module.css";
+import adminPrimitives from "@/app/style/admin.module.css";
 import core from "@/app/style/admin/core.module.css";
 import pagesA from "@/app/style/admin/pages-a.module.css";
 import pagesB from "@/app/style/admin/pages-b.module.css";
@@ -10,6 +11,7 @@ import { createCx } from "@/lib/utils/cx";
 
 const styles = {
   ...shared,
+  ...adminPrimitives,
   ...core,
   ...pagesA,
   ...pagesB,

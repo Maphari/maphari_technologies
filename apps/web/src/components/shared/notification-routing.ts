@@ -10,6 +10,7 @@ export const CLIENT_PAGE_TO_NOTIFICATION_TAB: Record<ClientPageId, DashboardNoti
   home:                 "dashboard",
   dashboard:            "dashboard",
   notifications:        "operations",
+  activityFeed:         "operations",
   // Projects
   myProjects:           "projects",
   projectRequest:       "projects",

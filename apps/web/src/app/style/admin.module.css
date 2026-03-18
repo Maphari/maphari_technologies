@@ -1126,6 +1126,16 @@
   background: var(--red, #ef4444);
 }
 
+/* ── Profitability P&L ───────────────────────────────────────────────────── */
+.plMarginBar { height: 6px; border-radius: 3px; background: var(--surface-2, #222); overflow: hidden; margin-top: 4px; }
+.plMarginFill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+.plGreen { background: var(--green, #24b8a8); }
+.plAmber { background: var(--amber, #f59e0b); }
+.plRed { background: var(--red, #ef4444); }
+.plOverBudget { color: var(--red); font-size: 0.75rem; }
+.plDrillRow { background: var(--s2); padding: 0 20px 16px; border-top: 1px solid var(--border); }
+.plRag { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
 /* ── 375 px — iPhone SE / very small ────────────────────────────────────── */
 @media (max-width: 375px) {
   .shell {

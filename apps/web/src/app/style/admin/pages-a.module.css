@@ -6003,6 +6003,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-size: 0.85rem;
 }
 
+.ppcClientNameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .ppcProfitHead {
   display: flex;
   align-items: center;
@@ -6509,9 +6515,63 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .pppCard {
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 18px 20px;
+  padding: 0;
   background: var(--s1);
   border-left: 3px solid transparent;
+  overflow: hidden;
+}
+
+/* Card toggle button (makes the header row clickable) */
+.pppCardToggle {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 18px 20px;
+  text-align: left;
+  cursor: pointer;
+  display: block;
+}
+
+.pppCardToggle:hover {
+  background: var(--s2);
+}
+
+/* Name cell with RAG dot */
+.pppNameCell {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Drill-down header */
+.pppDrillHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px 6px;
+  border-top: 1px solid var(--border);
+}
+
+/* Drill-down staff row */
+.pppDrillRow {
+  display: grid;
+  grid-template-columns: 1fr 52px 1fr 72px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 20px;
+}
+
+.pppDrillRow:hover {
+  background: var(--s2);
+}
+
+.pppDrillName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* --- PPP: Tone border variants --- */

@@ -805,6 +805,26 @@ export class ClientsController {
     });
   }
 
+  // ── GET /portal/activity-feed — real-time project activity feed ──────────
+  @Roles("CLIENT")
+  @Get("portal/activity-feed")
+  async getPortalActivityFeed(
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/portal/activity-feed`, "GET", undefined, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
   // ── PATCH /appointments/:id — update appointment status ───────────────────
   @Roles("ADMIN", "STAFF", "CLIENT")
   @Patch("appointments/:id")
@@ -822,6 +842,61 @@ export class ClientsController {
       "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
       "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
       "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  // ── Comments: GET /comments ───────────────────────────────────────────────
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("comments")
+  async getComments(
+    @Query() query: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    if (query && typeof query === "object") {
+      Object.entries(query as Record<string, unknown>).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) params.set(k, String(v));
+      });
+    }
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(
+      `${baseUrl}/comments?${params.toString()}`,
+      "GET",
+      undefined,
+      {
+        "x-user-id": userId ?? "",
+        "x-user-role": role ?? "CLIENT",
+        "x-client-id": clientId ?? "",
+        "x-request-id": requestId ?? "",
+        "x-trace-id": traceId ?? requestId ?? "",
+      }
+    );
+  }
+
+  // ── Comments: POST /comments ──────────────────────────────────────────────
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Post("comments")
+  async postComment(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/comments`, "POST", body as Record<string, unknown>, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? "",
     });
   }
 }
