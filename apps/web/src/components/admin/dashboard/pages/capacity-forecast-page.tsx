@@ -13,6 +13,7 @@ import { saveSession } from "../../../../lib/auth/session";
 import type { CapacityForecast, ForecastPeriod, StaffForecast } from "../../../../lib/api/admin/capacity";
 import { loadCapacityForecastWithRefresh } from "../../../../lib/api/admin/capacity";
 import { SkeletonTable } from "@/components/shared/ui/page-skeleton";
+import { Alert } from "@/components/shared/ui/alert";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -61,6 +62,7 @@ interface Props {
 export function CapacityForecastPage({ session, onNotify }: Props) {
   const [forecast, setForecast] = useState<CapacityForecast | null>(null);
   const [loading, setLoading]   = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
@@ -69,7 +71,13 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
       const r = await loadCapacityForecastWithRefresh(session);
       if (cancelled) return;
       if (r.nextSession) saveSession(r.nextSession);
-      if (r.error) onNotify("error", r.error.message);
+      if (r.error || !r.data) {
+        setLoadError(r.error?.message ?? "Failed to load capacity forecast. Please try again.");
+        onNotify("error", r.error?.message ?? "Failed to load capacity forecast.");
+        setLoading(false);
+        return;
+      }
+      setLoadError(null);
       setForecast(r.data);
       setLoading(false);
     })();
@@ -132,6 +140,14 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
           <button type="button" className={cx("btnSm", "btnGhost")}>Export</button>
         </div>
       </div>
+
+      {loadError && (
+        <Alert
+          variant="error"
+          message={loadError}
+          onRetry={() => { setLoadError(null); }}
+        />
+      )}
 
       {/* ── 3-period summary cards ── */}
       <div className={styles.cfPeriodGrid}>

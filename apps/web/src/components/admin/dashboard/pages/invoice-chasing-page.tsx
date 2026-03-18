@@ -18,6 +18,7 @@ import {
 import { cx, styles } from "../style";
 import { ConfirmDialog } from "@/components/shared/ui/confirm-dialog";
 import { Tooltip } from "@/components/shared/ui/tooltip";
+import { Alert } from "@/components/shared/ui/alert";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -100,6 +101,7 @@ export function InvoiceChasingPage({
 }) {
   const [invoices, setInvoices] = useState<OverdueInvoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
   const [confirmChase, setConfirmChase] = useState<string | null>(null);
 
@@ -108,11 +110,15 @@ export function InvoiceChasingPage({
     setLoading(true);
     const r = await loadOverdueChaseStatusWithRefresh(session);
     if (r.nextSession) saveSession(r.nextSession);
-    if (r.error) {
-      onNotify("error", r.error.message);
-    } else if (r.data) {
-      setInvoices(r.data.invoices);
+    if (r.error || !r.data) {
+      const msg = r.error?.message ?? "Failed to load invoices. Please try again.";
+      setLoadError(msg);
+      onNotify("error", msg);
+      setLoading(false);
+      return;
     }
+    setLoadError(null);
+    setInvoices(r.data.invoices);
     setLoading(false);
   }, [session, onNotify]);
 
@@ -168,6 +174,14 @@ export function InvoiceChasingPage({
           {loading ? "Refreshing…" : "Refresh"}
         </button>
       </div>
+
+      {loadError && (
+        <Alert
+          variant="error"
+          message={loadError}
+          onRetry={() => { setLoadError(null); void load(); }}
+        />
+      )}
 
       {/* ── Summary row ────────────────────────────────────────────────────── */}
       <div className={styles.icSummaryRow}>

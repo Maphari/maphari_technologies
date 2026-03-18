@@ -15,6 +15,7 @@ import {
   loadActivityFeedWithRefresh,
   type ActivityItem,
 } from "../../../../lib/api/portal/activity";
+import { Alert } from "@/components/shared/ui/alert";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -101,6 +102,7 @@ export function ActivityFeedPage() {
   const { session } = useProjectLayer();
   const [items,     setItems]     = useState<ActivityItem[]>([]);
   const [loading,   setLoading]   = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [now, setNow] = useState(Date.now());
 
@@ -115,7 +117,13 @@ export function ActivityFeedPage() {
       if (!background) setLoading(true);
       const r = await loadActivityFeedWithRefresh(session);
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setItems(r.data);
+      if (r.error || !r.data) {
+        setLoadError(r.error?.message ?? "Failed to load activity feed. Please try again.");
+        setLoading(false);
+        return;
+      }
+      setLoadError(null);
+      setItems(r.data);
       setLoading(false);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -199,6 +207,14 @@ export function ActivityFeedPage() {
           </div>
         ))}
       </div>
+
+      {loadError && (
+        <Alert
+          variant="error"
+          message={loadError}
+          onRetry={() => { setLoadError(null); void fetchFeed(); }}
+        />
+      )}
 
       {/* ── Filter Tabs ───────────────────────────────────────────────── */}
       <div className={cx("ntfTabRow", "mb12")}>

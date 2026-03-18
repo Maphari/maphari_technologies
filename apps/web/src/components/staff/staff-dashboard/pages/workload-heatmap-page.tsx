@@ -9,6 +9,7 @@ import { cx } from "../style";
 import { getWorkloadHeatmap, type StaffWorkloadRow } from "../../../../lib/api/staff/workload";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { SkeletonTable } from "@/components/shared/ui/page-skeleton";
+import { Alert } from "@/components/shared/ui/alert";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,7 @@ function cellTone(pct: number): "wlhGreen" | "wlhAmber" | "wlhRed" {
 export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPageProps) {
   const [rows, setRows]       = useState<StaffWorkloadRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session || !isActive) return;
@@ -43,7 +45,13 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
     setLoading(true);
     void getWorkloadHeatmap(session, 4).then((result) => {
       if (cancelled) return;
-      if (result.data) setRows(result.data.staff);
+      if (result.error || !result.data) {
+        setLoadError(result.error?.message ?? "Failed to load workload data. Please try again.");
+        setLoading(false);
+        return;
+      }
+      setLoadError(null);
+      setRows(result.data.staff);
       setLoading(false);
     });
 
@@ -59,6 +67,14 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
         <h1 className={cx("pageTitleText")}>Workload Capacity Heatmap</h1>
         <p className={cx("pageSubtitleText", "mb20")}>Allocated vs. available hours per team member — next 4 weeks</p>
       </div>
+
+      {loadError && (
+        <Alert
+          variant="error"
+          message={loadError}
+          onRetry={() => { setLoadError(null); }}
+        />
+      )}
 
       {/* ── Legend ───────────────────────────────────────────────────────── */}
       <div className={cx("wlhLegend")}>

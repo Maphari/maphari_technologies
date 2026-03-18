@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
 import { SkeletonCard } from "@/components/shared/ui/page-skeleton";
+import { Alert } from "@/components/shared/ui/alert";
 import { saveSession } from "../../../../lib/auth/session";
 import type { AuthSession } from "../../../../lib/auth/session";
 import {
@@ -332,10 +333,11 @@ export function SprintBurndownPage({
         {loading && <SkeletonCard rows={4} />}
 
         {!loading && error && (
-          <div className={cx("emptyState")}>
-            <div className={cx("emptyStateTitle")}>Unable to load burn-down</div>
-            <div className={cx("emptyStateSub")}>{error}</div>
-          </div>
+          <Alert
+            variant="error"
+            message={error}
+            onRetry={() => { setError(null); }}
+          />
         )}
 
         {!loading && !error && !data && (

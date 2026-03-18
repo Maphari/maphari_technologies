@@ -14,6 +14,7 @@ import { saveSession } from "../../../../lib/auth/session";
 import { loadPipelineAnalyticsWithRefresh, type PipelineAnalytics, type FunnelStage } from "../../../../lib/api/admin/pipeline";
 import { SkeletonCard } from "@/components/shared/ui/page-skeleton";
 import { Tooltip } from "@/components/shared/ui/tooltip";
+import { Alert } from "@/components/shared/ui/alert";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -54,6 +55,7 @@ interface Props {
 export function PipelineAnalyticsPage({ session, onNotify }: Props) {
   const [data, setData] = useState<PipelineAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
@@ -62,7 +64,13 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
       const r = await loadPipelineAnalyticsWithRefresh(session);
       if (cancelled) return;
       if (r.nextSession) saveSession(r.nextSession);
-      if (r.error) onNotify("error", r.error.message);
+      if (r.error || !r.data) {
+        setLoadError(r.error?.message ?? "Failed to load pipeline analytics. Please try again.");
+        onNotify("error", r.error?.message ?? "Failed to load pipeline analytics.");
+        setLoading(false);
+        return;
+      }
+      setLoadError(null);
       setData(r.data);
       setLoading(false);
     })();
@@ -91,7 +99,13 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
             setLoading(true);
             void loadPipelineAnalyticsWithRefresh(session).then((r) => {
               if (r.nextSession) saveSession(r.nextSession);
-              if (r.error) onNotify("error", r.error.message);
+              if (r.error || !r.data) {
+                setLoadError(r.error?.message ?? "Failed to load pipeline analytics. Please try again.");
+                onNotify("error", r.error?.message ?? "Failed to load pipeline analytics.");
+                setLoading(false);
+                return;
+              }
+              setLoadError(null);
               setData(r.data);
               setLoading(false);
             });
@@ -100,6 +114,14 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
           </button>
         </div>
       </div>
+
+      {loadError && (
+        <Alert
+          variant="error"
+          message={loadError}
+          onRetry={() => { setLoadError(null); }}
+        />
+      )}
 
       {loading && <SkeletonCard rows={3} />}
 

@@ -12,6 +12,7 @@ import { useProjectLayer } from "../hooks/use-project-layer";
 import { loadProjectRoadmapWithRefresh, type RoadmapProject, type RoadmapMilestone } from "../../../../lib/api/portal/project-layer";
 import { saveSession } from "../../../../lib/auth/session";
 import { SkeletonCard } from "@/components/shared/ui/page-skeleton";
+import { Alert } from "@/components/shared/ui/alert";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -93,6 +94,7 @@ export function ProjectRoadmapPage() {
   const { session } = useProjectLayer();
   const [projects, setProjects] = useState<RoadmapProject[]>([]);
   const [loading, setLoading]   = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
@@ -100,7 +102,12 @@ export function ProjectRoadmapPage() {
     loadProjectRoadmapWithRefresh(session)
       .then((r) => {
         if (r.nextSession) saveSession(r.nextSession);
-        if (r.data) setProjects(r.data.projects);
+        if (r.error || !r.data) {
+          setLoadError(r.error?.message ?? "Failed to load project roadmap. Please try again.");
+          return;
+        }
+        setLoadError(null);
+        setProjects(r.data.projects);
       })
       .finally(() => setLoading(false));
   }, [session]);
@@ -138,6 +145,14 @@ export function ProjectRoadmapPage() {
           <p className={cx("pageSub")}>Your projects and milestones at a glance.</p>
         </div>
       </div>
+
+      {loadError && (
+        <Alert
+          variant="error"
+          message={loadError}
+          onRetry={() => { setLoadError(null); }}
+        />
+      )}
 
       {/* ── Loading ───────────────────────────────────────────────────────── */}
       {loading && (
