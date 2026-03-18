@@ -100,50 +100,10 @@ export function OnboardingPage() {
 
   return (
     <div className={cx("pageBody", styles.onboardFlowRoot)}>
-      <div className={styles.onboardFlowLayout}>
-        <aside className={styles.onboardFlowSidebar}>
-          <div className={styles.onboardFlowSection}>Onboarding</div>
-          {[
-            { label: "Welcome", tone: styles.onboardFlowToneAccent },
-            { label: "Onboarding Checklist", tone: styles.onboardFlowToneGreen },
-            { label: "How We Work", tone: styles.onboardFlowToneBlue },
-            { label: "Project Brief", tone: styles.onboardFlowTonePurple },
-          ].map((item) => (
-            <button key={item.label} type="button" className={cx(styles.onboardFlowSideItem, tab === item.label && styles.onboardFlowSideItemActive)} onClick={() => setTab(item.label as OnboardTab)}>
-              <span className={cx(styles.onboardFlowDot, item.tone)} />
-              <span>{item.label}</span>
-            </button>
-          ))}
-
-          <div className={styles.onboardFlowDivider} />
-          <div className={styles.onboardFlowSection}>Offboarding</div>
-          {[
-            { label: "Offboarding", tone: styles.onboardFlowToneAmber },
-            { label: "Testimonial", tone: styles.onboardFlowToneMuted },
-          ].map((item) => (
-            <button key={item.label} type="button" className={cx(styles.onboardFlowSideItem, tab === item.label && styles.onboardFlowSideItemActive)} onClick={() => setTab(item.label as OnboardTab)}>
-              <span className={cx(styles.onboardFlowDot, item.tone)} />
-              <span>{item.label}</span>
-            </button>
-          ))}
-
-          <div className={styles.onboardFlowDivider} />
-          <div className={styles.onboardFlowProgressCard}>
-            <div className={styles.onboardFlowProgressTitle}>Onboarding</div>
-            <div className={styles.onboardFlowProgressTrack}>
-              <div className={styles.onboardFlowProgressFill} style={{ width: `${donePct}%` }} />
-            </div>
-            <div className={styles.onboardFlowProgressMeta}>
-              <span>{checks.filter((c) => c.done).length}/{checks.length} complete</span>
-              <span>{donePct}%</span>
-            </div>
-          </div>
-        </aside>
-
-        <section className={styles.onboardFlowMain}>
+      <section className={styles.onboardFlowMain}>
           <div className={cx("pageHeader", "mb0")}>
             <div>
-              <div className={cx("pageEyebrow")}>Veldt Finance · Getting Started</div>
+              <div className={cx("pageEyebrow")}>Your Company · Getting Started</div>
               <h1 className={cx("pageTitle")}>Onboarding &amp; Offboarding</h1>
               <p className={cx("pageSub")}>Everything to get started now, and a smooth handover at project close.</p>
             </div>
@@ -165,18 +125,19 @@ export function OnboardingPage() {
             <div className={styles.onboardFlowContent}>
               <div className={styles.onboardFlowWelcomeCard}>
                 <div className={styles.onboardFlowWelcomeEyebrow}>Welcome to Maphari</div>
-                <div className={styles.onboardFlowWelcomeTitle}>Hello, Naledi. Let&apos;s build something great.</div>
+                <div className={styles.onboardFlowWelcomeTitle}>Hello, Client. Let&apos;s build something great.</div>
                 <div className={styles.onboardFlowWelcomeBody}>
-                  We are excited to work with Veldt Finance. This portal is your source of truth — project progress, approvals, files, and next actions all in one place.
+                  We are excited to work with you. This portal is your source of truth — project progress, approvals, files, and next actions all in one place.
                   <br /><br />
                   Your project kicked off on January 10, 2026. You are currently 54% through with 35 days to launch.
                 </div>
                 <div className={styles.onboardFlowTeamRow}>
+                  {/* TODO: Replace with real team member data once portal data API is wired */}
                   {[
-                    { name: "Sipho Ndlovu", role: "Project Lead", color: "#c8f135", initials: "SN" },
-                    { name: "Lerato Mokoena", role: "Brand Designer", color: "#8b6fff", initials: "LM" },
-                    { name: "James Mahlangu", role: "Frontend Dev", color: "#3dd9d6", initials: "JM" },
-                    { name: "Thabo Khumalo", role: "QA Engineer", color: "#f5a623", initials: "TK" },
+                    { name: "Project Lead", role: "Project Lead", color: "#c8f135", initials: "PL" },
+                    { name: "Designer", role: "Designer", color: "#8b6fff", initials: "DG" },
+                    { name: "Developer", role: "Developer", color: "#3dd9d6", initials: "DV" },
+                    { name: "Strategist", role: "Strategist", color: "#f5a623", initials: "ST" },
                   ].map((member) => (
                     <div key={member.name} className={styles.onboardFlowTeamCard}>
                       <div className={styles.onboardFlowAvatar} style={{ background: member.color, color: "#050508" }}>{member.initials}</div>
@@ -214,12 +175,13 @@ export function OnboardingPage() {
                 <div>
                   <div className={styles.onboardFlowSectionTitle}>Project at a Glance</div>
                   <div className={cx("card")}>
+                    {/* TODO: Replace with real project data once portal data API is wired */}
                     {[
-                      ["Project", "Veldt Finance Dashboard"],
+                      ["Project", "Your Project"],
                       ["Start date", "January 10, 2026"],
                       ["Launch date", "March 28, 2026"],
-                      ["Budget", "R 80,000"],
-                      ["Project Lead", "Sipho Ndlovu"],
+                      ["Budget", "—"],
+                      ["Project Lead", "Project Lead"],
                       ["Contract", "Fixed Price · 12 weeks"],
                       ["Phase", "UI/UX Design (Phase 3)"],
                       ["Portal access", "Since Jan 8, 2026"],
@@ -338,13 +300,14 @@ export function OnboardingPage() {
                     <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setBriefModal(true)}>Edit Brief</button>
                   </div>
 
+                  {/* TODO: Replace with real project brief data once portal data API is wired */}
                   {[
-                    ["Business Overview", "Veldt Finance is a fintech startup offering investment tracking and portfolio management tools for retail investors in South Africa."],
-                    ["Project Goals", "Build a client-facing dashboard for portfolio tracking, profile management, and real-time reporting."],
-                    ["Target Audience", "South African retail investors, age 25–55, mobile-first."],
-                    ["Design References", "Linear.app, Vercel Dashboard, Robinhood data patterns."],
-                    ["Success Metrics", "Activation >70%, dashboard load <1.5s, satisfaction >8.5."],
-                    ["Key Constraints", "WCAG AA, English + Zulu, mobile-first responsive design."],
+                    ["Business Overview", "—"],
+                    ["Project Goals", "—"],
+                    ["Target Audience", "—"],
+                    ["Design References", "—"],
+                    ["Success Metrics", "—"],
+                    ["Key Constraints", "—"],
                   ].map(([key, value]) => (
                     <div key={String(key)} className={styles.onboardFlowBriefRow}>
                       <div className={styles.onboardFlowBriefLabel}>{key}</div>
@@ -430,7 +393,6 @@ export function OnboardingPage() {
             </div>
           ) : null}
         </section>
-      </div>
 
       {briefModal ? (
         <div className={styles.onboardFlowModalBackdrop} onClick={() => setBriefModal(false)}>
