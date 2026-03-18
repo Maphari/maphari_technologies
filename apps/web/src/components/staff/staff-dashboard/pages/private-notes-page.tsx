@@ -19,6 +19,7 @@ import {
   type ClientNoteCategory,
 } from "../../../../lib/api/staff/client-notes";
 import { getStaffClients, type StaffClient } from "../../../../lib/api/staff/clients";
+import { ConfirmDialog } from "@/components/shared/ui/confirm-dialog";
 
 // ── Category meta ─────────────────────────────────────────────────────────────
 const CATEGORIES: { value: ClientNoteCategory; label: string }[] = [
@@ -28,13 +29,11 @@ const CATEGORIES: { value: ClientNoteCategory; label: string }[] = [
   { value: "general",     label: "General"     },
 ];
 
-function categoryTone(cat: ClientNoteCategory): string {
-  switch (cat) {
-    case "risk":        return "var(--red)";
-    case "opportunity": return "var(--green)";
-    case "preference":  return "var(--blue, #60a5fa)";
-    default:            return "var(--muted2)";
-  }
+function catClass(category: ClientNoteCategory): string {
+  if (category === "preference")  return "pnCatPreference";
+  if (category === "risk")        return "pnCatRisk";
+  if (category === "opportunity") return "pnCatOpportunity";
+  return "pnCatGeneral";
 }
 
 function formatDate(iso: string): string {
@@ -58,6 +57,7 @@ export function PrivateNotesPage({ isActive, session }: { isActive: boolean; ses
   const [newCategory, setNewCategory]     = useState<ClientNoteCategory>("general");
   const [saving, setSaving]               = useState(false);
   const [deletingId, setDeletingId]       = useState<string | null>(null);
+  const [noteDeleteTarget, setNoteDeleteTarget] = useState<string | null>(null);
 
   // Load client list once
   useEffect(() => {
@@ -163,8 +163,7 @@ export function PrivateNotesPage({ isActive, session }: { isActive: boolean; ses
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search notes…"
-          className={cx("inputBase", "text11")}
-          style={{ minWidth: 180, flex: 1, maxWidth: 280 }}
+          className={cx("inputBase", "text11", "pnSearchInput")}
         />
 
         {/* Compose button */}
@@ -256,13 +255,10 @@ export function PrivateNotesPage({ isActive, session }: { isActive: boolean; ses
       ) : (
         <div className={cx("flexCol", "gap8")}>
           {filtered.map((note) => (
-            <div key={note.id} className={cx("pnNoteCard")}>
+            <div key={note.id} className={cx("pnNoteCard", "staffTableRow")}>
               <div className={cx("flexBetween", "mb8")}>
                 <div className={cx("flexRow", "gap8", "alignCenter")}>
-                  <span
-                    className={cx("pnCategoryChip")}
-                    style={{ color: categoryTone(note.category), borderColor: categoryTone(note.category) }}
-                  >
+                  <span className={cx("pnCategoryChip", catClass(note.category))}>
                     {CATEGORIES.find((c) => c.value === note.category)?.label ?? note.category}
                   </span>
                   {note.authorName && (
@@ -275,7 +271,7 @@ export function PrivateNotesPage({ isActive, session }: { isActive: boolean; ses
                     type="button"
                     className={cx("iconBtnBase")}
                     aria-label="Delete note"
-                    onClick={() => handleDelete(note.id)}
+                    onClick={() => setNoteDeleteTarget(note.id)}
                     disabled={deletingId === note.id}
                   >
                     <Ic n="trash-2" sz={13} c="var(--red, #ef4444)" />
@@ -289,6 +285,15 @@ export function PrivateNotesPage({ isActive, session }: { isActive: boolean; ses
           ))}
         </div>
       )}
+      <ConfirmDialog
+        open={noteDeleteTarget !== null}
+        title="Delete note?"
+        body="This will permanently remove the private note. This action cannot be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => { if (noteDeleteTarget) void handleDelete(noteDeleteTarget); setNoteDeleteTarget(null); }}
+        onCancel={() => setNoteDeleteTarget(null)}
+      />
     </section>
   );
 }

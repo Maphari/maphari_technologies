@@ -16,6 +16,7 @@ import {
 } from "../../../../lib/api/staff/ai-drafts";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
+import { ConfirmDialog } from "@/components/shared/ui/confirm-dialog";
 
 // ── Derived report row ────────────────────────────────────────────────────────
 
@@ -173,6 +174,7 @@ export function MyReportsPage({
   // ── Scheduled reports ────────────────────────────────────────────────────
   const [scheduled, setScheduled] = useState<ScheduledReport[]>([]);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   // Schedule form state
   const [schedReportType, setSchedReportType] = useState<ScheduledReportType>("Weekly Progress");
@@ -400,7 +402,7 @@ export function MyReportsPage({
                     <button
                       type="button"
                       className={cx("rptRemoveBtn")}
-                      onClick={() => handleRemoveSchedule(item.id)}
+                      onClick={() => setDeleteTarget(item.id)}
                       aria-label="Remove scheduled report"
                     >
                       ×
@@ -593,7 +595,7 @@ export function MyReportsPage({
 
       {/* ── Generate Now Modal ─────────────────────────────────────────────── */}
       {showGenModal && (
-        <div className={cx("rptModalOverlay")} onClick={handleCloseGenModal}>
+        <div className={cx("rptModalOverlay")} onClick={handleCloseGenModal} aria-label="Close report modal">
           <div className={cx("rptModal", "rptModalWide")} onClick={(e) => e.stopPropagation()}>
             <div className={cx("rptModalHeader")}>
               <div className={cx("rptModalTitle")}>
@@ -618,7 +620,9 @@ export function MyReportsPage({
                   </span>
                 </div>
               ) : (
-                <pre className={cx("rptMarkdownPre")}>{genMarkdown}</pre>
+                <pre className={cx("rptMarkdownPre")} style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "inherit", fontSize: "inherit", margin: 0 }}>
+                  {genMarkdown}
+                </pre>
               )}
             </div>
 
@@ -647,6 +651,16 @@ export function MyReportsPage({
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete scheduled report?"
+        body="This will remove the report from your schedule. You can recreate it later."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => { if (deleteTarget) handleRemoveSchedule(deleteTarget); setDeleteTarget(null); }}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
     </section>
   );

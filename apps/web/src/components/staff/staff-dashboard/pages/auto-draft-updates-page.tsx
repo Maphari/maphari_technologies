@@ -605,6 +605,9 @@ export function AutoDraftUpdatesPage({ isActive, session, onNotify }: PageProps)
                   onChange={(e) => setDraft(e.target.value)}
                   className={cx("aduDraftTextarea")}
                 />
+                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", textAlign: "right", marginTop: 4 }}>
+                  {draft.length} chars
+                </div>
 
                 <div className={cx("flexBetween", "mt10")}>
                   <div className={cx("text10", "colorMuted2")}>

@@ -36058,4 +36058,15 @@
 /* ── Staff table row hover ───────────────────────────────────────────── */
 .staffTableRow { transition: background 0.12s; }
 .staffTableRow:hover { background: var(--s2); }
+
+/* Auto-draft updates */
+.aduSelected { background: color-mix(in srgb, var(--accent) 10%, transparent) !important; border-color: var(--accent) !important; }
+.aduItem { transition: background 0.12s, border-color 0.12s; cursor: pointer; }
+
+/* Private notes categories */
+.pnCatPreference   { color: var(--accent, #8b6fff); border-color: color-mix(in srgb, var(--accent, #8b6fff) 40%, transparent); }
+.pnCatRisk         { color: var(--red, #ef4444); border-color: color-mix(in srgb, var(--red, #ef4444) 40%, transparent); }
+.pnCatOpportunity  { color: var(--green, #24b8a8); border-color: color-mix(in srgb, var(--green, #24b8a8) 40%, transparent); }
+.pnCatGeneral      { color: var(--muted2); border-color: var(--b2); }
+.pnSearchInput { min-width: 180px; flex: 1; max-width: 280px; }
 .pnCategoryChip { font-size: 0.65rem; padding: 2px 7px; border-radius: 10px; background: var(--s3); color: var(--text-muted); margin-right: 6px; }
