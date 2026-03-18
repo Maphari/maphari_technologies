@@ -845,6 +845,47 @@ export class ClientsController {
     });
   }
 
+  // ── NPS: GET /portal/nps-pending — milestones awaiting NPS ──────────────
+  @Roles("CLIENT")
+  @Get("portal/nps-pending")
+  async getPortalNpsPending(
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/portal/nps-pending`, "GET", undefined, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  // ── NPS: POST /portal/nps-response — submit NPS score ────────────────────
+  @Roles("CLIENT")
+  @Post("portal/nps-response")
+  async submitPortalNpsResponse(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/portal/nps-response`, "POST", body as Record<string, unknown>, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
   // ── Comments: GET /comments ───────────────────────────────────────────────
 
   @Roles("ADMIN", "STAFF", "CLIENT")

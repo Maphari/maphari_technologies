@@ -1,454 +1,294 @@
 // ════════════════════════════════════════════════════════════════════════════
-// private-notes-page.tsx — Staff Private Notes
-// Storage  : localStorage (no backend route for private staff notes)
-//            Key: "maphari_staff_notes"
-//            Notes are encrypted at rest only to the staff member's browser.
+// private-notes-page.tsx — Staff Private CRM Notes
+// Storage  : Backend via /staff/client-notes (STAFF/ADMIN only)
+//            Notes are CommunicationLog records with type PRIVATE_NOTE and
+//            direction INTERNAL — never visible to CLIENT-role requests.
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import {
+  loadClientNotesWithRefresh,
+  addClientNoteWithRefresh,
+  deleteClientNoteWithRefresh,
+  type ClientNote,
+  type ClientNoteCategory,
+} from "../../../../lib/api/staff/client-notes";
+import { getStaffClients, type StaffClient } from "../../../../lib/api/staff/clients";
 
-type NoteTag =
-  | "preferences"
-  | "contact"
-  | "strategy"
-  | "sensitive"
-  | "finance"
-  | "process"
-  | "timeline"
-  | "personal"
-  | "growth";
-
-type NoteRow = {
-  id: number;
-  clientId: number;
-  title: string;
-  body: string;
-  tags: NoteTag[];
-  pinned: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
-// ── localStorage helpers ──────────────────────────────────────────────────────
-const NOTES_KEY = "maphari_staff_notes";
-
-function loadNotes(): NoteRow[] {
-  try { return JSON.parse(localStorage.getItem(NOTES_KEY) ?? "[]") as NoteRow[]; }
-  catch { return []; }
-}
-
-function saveNotes(notes: NoteRow[]): void {
-  localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
-}
-
-// ── Tag meta ──────────────────────────────────────────────────────────────────
-const tagColors: Record<NoteTag, string> = {
-  preferences: "var(--blue)",
-  contact:     "var(--purple)",
-  strategy:    "var(--amber)",
-  sensitive:   "var(--red)",
-  finance:     "var(--accent)",
-  process:     "var(--amber)",
-  timeline:    "var(--muted)",
-  personal:    "var(--blue)",
-  growth:      "var(--accent)",
-};
-
-// Client list for note categorisation (populated from API once wired)
-const CLIENTS: { id: number; name: string; avatar: string }[] = [
-  { id: 0, name: "Internal", avatar: "IN" },
+// ── Category meta ─────────────────────────────────────────────────────────────
+const CATEGORIES: { value: ClientNoteCategory; label: string }[] = [
+  { value: "preference",  label: "Preference"  },
+  { value: "risk",        label: "Risk"        },
+  { value: "opportunity", label: "Opportunity" },
+  { value: "general",     label: "General"     },
 ];
 
-// Format today's date as "DD MMM"
-function todayLabel(): string {
-  return new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "short" });
+function categoryTone(cat: ClientNoteCategory): string {
+  switch (cat) {
+    case "risk":        return "var(--red)";
+    case "opportunity": return "var(--green)";
+    case "preference":  return "var(--blue, #60a5fa)";
+    default:            return "var(--muted2)";
+  }
 }
 
-export function PrivateNotesPage({ isActive }: { isActive: boolean }) {
-  const [notes, setNotes]            = useState<NoteRow[]>([]);
-  const [hydrated, setHydrated]      = useState(false);
-  const [selected, setSelected]      = useState<NoteRow | null>(null);
-  const [editing, setEditing]        = useState(false);
-  const [draft, setDraft]            = useState<NoteRow | null>(null);
-  const [search, setSearch]          = useState("");
-  const [clientFilter, setClientFilter] = useState<string>("all");
-  const [tagFilter, setTagFilter]    = useState<"all" | NoteTag>("all");
-  const [adding, setAdding]          = useState(false);
-  const [newNote, setNewNote]        = useState({ clientId: "0", title: "", body: "", tags: "" });
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+  } catch {
+    return iso;
+  }
+}
 
-  // Hydrate from localStorage once on mount
+// ── Component ─────────────────────────────────────────────────────────────────
+export function PrivateNotesPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
+  const [clients, setClients]             = useState<StaffClient[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [notes, setNotes]                 = useState<ClientNote[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<"all" | ClientNoteCategory>("all");
+  const [search, setSearch]               = useState("");
+  const [loading, setLoading]             = useState(false);
+  const [composing, setComposing]         = useState(false);
+  const [newNote, setNewNote]             = useState("" );
+  const [newCategory, setNewCategory]     = useState<ClientNoteCategory>("general");
+  const [saving, setSaving]               = useState(false);
+  const [deletingId, setDeletingId]       = useState<string | null>(null);
+
+  // Load client list once
   useEffect(() => {
-    const stored = loadNotes();
-    setNotes(stored);
-    setSelected(stored[0] ?? null);
-    setHydrated(true);
-  }, []);
+    if (!session) return;
+    getStaffClients(session).then((result) => {
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.data && result.data.length > 0) {
+        setClients(result.data);
+        setSelectedClientId(result.data[0].id);
+      }
+    });
+  }, [session?.accessToken]);
 
-  const allTags = useMemo(
-    () => [...new Set(notes.flatMap((n) => n.tags))] as NoteTag[],
-    [notes]
-  );
+  // Load notes when client selection changes
+  const loadNotes = useCallback(async (clientId: string) => {
+    if (!session || !clientId) return;
+    setLoading(true);
+    const result = await loadClientNotesWithRefresh(session, clientId);
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.data) setNotes(result.data);
+    setLoading(false);
+  }, [session?.accessToken]);
+
+  useEffect(() => {
+    if (!selectedClientId) return;
+    void loadNotes(selectedClientId);
+  }, [selectedClientId, loadNotes]);
 
   const filtered = useMemo(() => {
     return notes
-      .filter((n) => clientFilter === "all" || n.clientId === Number(clientFilter))
-      .filter((n) => tagFilter === "all" || n.tags.includes(tagFilter))
+      .filter((n) => categoryFilter === "all" || n.category === categoryFilter)
       .filter((n) => {
         if (!search.trim()) return true;
-        const q = search.toLowerCase();
-        return n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q);
+        return n.note.toLowerCase().includes(search.toLowerCase());
       })
-      .sort((a, b) => {
-        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-        return b.id - a.id;
-      });
-  }, [clientFilter, notes, search, tagFilter]);
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [notes, categoryFilter, search]);
 
-  // Persist helper: update state and localStorage atomically
-  function applyNotes(next: NoteRow[]) {
-    setNotes(next);
-    saveNotes(next);
+  async function handleAdd() {
+    if (!session || !selectedClientId || !newNote.trim()) return;
+    setSaving(true);
+    const result = await addClientNoteWithRefresh(session, selectedClientId, newNote.trim(), newCategory);
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.data) {
+      setNotes((prev) => [result.data!, ...prev]);
+      setNewNote("");
+      setNewCategory("general");
+      setComposing(false);
+    }
+    setSaving(false);
   }
 
-  const startEdit = () => {
-    if (!selected) return;
-    setDraft({ ...selected });
-    setEditing(true);
-  };
+  async function handleDelete(noteId: string) {
+    if (!session) return;
+    setDeletingId(noteId);
+    const result = await deleteClientNoteWithRefresh(session, noteId);
+    if (result.nextSession) saveSession(result.nextSession);
+    if (!result.error) {
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    }
+    setDeletingId(null);
+  }
 
-  const saveEdit = () => {
-    if (!selected || !draft) return;
-    const updated: NoteRow = { ...draft, updatedAt: todayLabel() };
-    const next = notes.map((n) => (n.id === selected.id ? updated : n));
-    applyNotes(next);
-    setSelected(updated);
-    setEditing(false);
-    setDraft(null);
-  };
-
-  const cancelEdit = () => { setEditing(false); setDraft(null); };
-
-  const togglePin = (id: number) => {
-    const next = notes.map((n) => (n.id === id ? { ...n, pinned: !n.pinned } : n));
-    applyNotes(next);
-    setSelected((prev) => (prev && prev.id === id ? { ...prev, pinned: !prev.pinned } : prev));
-  };
-
-  const deleteNote = (id: number) => {
-    const next = notes.filter((n) => n.id !== id);
-    applyNotes(next);
-    setSelected((prev) => {
-      if (!prev || prev.id !== id) return prev;
-      return next.find((n) => n.id !== id) ?? null;
-    });
-  };
-
-  const addNote = () => {
-    const tags = newNote.tags
-      .split(",")
-      .map((t) => t.trim().toLowerCase())
-      .filter((t): t is NoteTag => Boolean(t) && Object.hasOwn(tagColors, t));
-    const today = todayLabel();
-    const created: NoteRow = {
-      id: Date.now(),
-      clientId: Number(newNote.clientId),
-      title: newNote.title.trim(),
-      body: newNote.body.trim(),
-      tags,
-      pinned: false,
-      createdAt: today,
-      updatedAt: today,
-    };
-    const next = [created, ...notes];
-    applyNotes(next);
-    setSelected(created);
-    setAdding(false);
-    setNewNote({ clientId: "0", title: "", body: "", tags: "" });
-  };
-
-  const selectedClient = selected ? CLIENTS.find((c) => c.id === selected.clientId) : null;
-
-  if (!hydrated) return null;
+  const selectedClient = clients.find((c) => c.id === selectedClientId);
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-private-notes">
-      <div className={cx("pnLayout")}>
-        <div className={cx("flexCol", "overflowHidden", "pnSidebar")}>
-          <div className={cx("pageHeaderBar", "noShrink", "pnSidebarHead")}>
-            <div className={cx("pageEyebrowText", "mb6")}>Staff Dashboard</div>
-            <div className={cx("flexBetween", "mb14")}>
-              <h1 className={cx("pnSidebarTitle")}>Private Notes</h1>
-              <div className={cx("privateBadge")}>
-                <span className={cx("colorRed", "pnPrivateDot")}>◉</span>
-                <span className={cx("colorRed", "pnPrivateText")}>PRIVATE</span>
-              </div>
-            </div>
+      {/* Private banner */}
+      <div className={cx("pnBanner")}>
+        <Ic n="lock" sz={13} c="var(--amber, #f59e0b)" />
+        <span>Private — these notes are never visible to clients. Staff and Admin only.</span>
+      </div>
 
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search notes..."
-              className={cx("inputBase", "wFull", "text11", "mb10", "pnSearchInput")}
-            />
-
-            <div className={cx("filterRow")}>
-              <select
-                className={cx("filterSelect")}
-                aria-label="Filter notes by client"
-                value={clientFilter}
-                onChange={(e) => setClientFilter(e.target.value)}
-              >
-                <option value="all">All clients</option>
-                {CLIENTS
-                  .filter((c) => notes.some((n) => n.clientId === c.id))
-                  .map((c) => (
-                    <option key={c.id} value={String(c.id)}>{c.name}</option>
-                  ))}
-              </select>
-            </div>
-          </div>
-
-          <div className={cx("flex1", "overflowAuto", "pnListPane")}>
-            <button
-              type="button"
-              onClick={() => { setAdding(true); setEditing(false); setSelected(null); }}
-              className={cx("pnNewNoteBtn", "pnNewNoteBtnSm")}
-            >
-              + New note
-            </button>
-
-            {filtered.length === 0 ? (
-              <div className={cx("emptyState")}>
-                <div className={cx("emptyStateIcon")}><Ic n="file-text" sz={22} c="var(--muted2)" /></div>
-                <div className={cx("emptyStateTitle")}>No notes found</div>
-                <div className={cx("emptyStateSub")}>Notes matching your search will appear here.</div>
-              </div>
-            ) : null}
-
-            {filtered.map((note) => {
-              const client = CLIENTS.find((c) => c.id === note.clientId);
-              const isSelected = selected?.id === note.id;
-              return (
-                <div
-                  key={note.id}
-                  className={cx("pnNoteCard", "pnNoteCardShell", isSelected && "pnNoteCardSelected")}
-                  onClick={() => { setSelected(note); setEditing(false); setAdding(false); }}
-                >
-                  <div className={cx("flexRow", "gap6", "mb4", "pnRowStart")}>
-                    <div className={cx("flex1", "minW0")}>
-                      <div className={cx("flexRow", "gap6")}>
-                        {note.pinned ? <span className={cx("pnPinnedGlyph")}>◈</span> : null}
-                        <span className={cx("text12", "truncate", "pnCardTitle", isSelected && "pnCardTitleSelected")}>{note.title}</span>
-                      </div>
-                      <span className={cx("text10", "pnClientText")} data-client-id={String(note.clientId)}>
-                        {client?.name}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      className={cx("pnPinBtn", "pnPinBtnCard", note.pinned && "pnPinBtnCardActive")}
-                      onClick={(e) => { e.stopPropagation(); togglePin(note.id); }}
-                    >
-                      {note.pinned ? "◈" : "◇"}
-                    </button>
-                  </div>
-                  <div className={cx("text10", "colorMuted2", "mb4", "pnBodyClamp")}>{note.body}</div>
-                  <div className={cx("flexRow", "gap4", "flexWrap")}>
-                    {note.tags.slice(0, 2).map((tag) => (
-                      <span key={tag} className={cx("pnTagChip", "pnTagChipSm")} data-tag={tag}>{tag}</span>
-                    ))}
-                    <span className={cx("pnUpdatedAt")}>{note.updatedAt}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className={cx("noShrink", "pnSidebarFoot")}>
-            <div className={cx("sectionLabel", "mb8", "pnTagFilterLabel")}>Filter by tag</div>
-            <div className={cx("filterRow")}>
-              <select
-                className={cx("filterSelect")}
-                aria-label="Filter notes by tag"
-                value={tagFilter}
-                onChange={(e) => setTagFilter(e.target.value as "all" | NoteTag)}
-              >
-                <option value="all">All tags</option>
-                {allTags.map((tag) => (
-                  <option key={tag} value={tag}>{tag}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div className={cx("flexCol", "overflowHidden", "pnMainPane")}>
-          {adding ? (
-            <div className={cx("flex1", "flexCol", "gap20", "overflowAuto", "pnPane")}>
-              <div className={cx("pnPaneTitleLg")}>New Private Note</div>
-
-              <div>
-                <label className={cx("labelUpper")}>Client</label>
-                <select
-                  aria-label="Client for private note"
-                  value={newNote.clientId}
-                  onChange={(e) => setNewNote((p) => ({ ...p, clientId: e.target.value }))}
-                  className={cx("selectBase", "text12", "pnClientSelect")}
-                  title="Client"
-                >
-                  {CLIENTS.map((c) => (
-                    <option key={c.id} value={String(c.id)}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className={cx("labelUpper")}>Title</label>
-                <input
-                  value={newNote.title}
-                  onChange={(e) => setNewNote((p) => ({ ...p, title: e.target.value }))}
-                  placeholder="Note title..."
-                  className={cx("inputBase", "wFull", "text13", "pnTitleInput")}
-                />
-              </div>
-
-              <div>
-                <label className={cx("labelUpper")}>Note</label>
-                <textarea
-                  value={newNote.body}
-                  onChange={(e) => setNewNote((p) => ({ ...p, body: e.target.value }))}
-                  placeholder="Write your private note here..."
-                  className={cx("inputBase", "wFull", "text13", "pnComposeBody")}
-                />
-              </div>
-
-              <div>
-                <label className={cx("labelUpper")}>Tags (comma separated)</label>
-                <input
-                  value={newNote.tags}
-                  onChange={(e) => setNewNote((p) => ({ ...p, tags: e.target.value }))}
-                  placeholder="e.g. preferences, contact, sensitive"
-                  className={cx("inputBase", "wFull", "text12", "pnTagsInput")}
-                />
-              </div>
-
-              <div className={cx("flexRow", "gap10")}>
-                <button
-                  type="button"
-                  className={cx("pnSaveBtn", "pnSaveBtnPrimary")}
-                  disabled={!newNote.title.trim() || !newNote.body.trim()}
-                  onClick={addNote}
-                >
-                  Save note
-                </button>
-                <button type="button" onClick={() => setAdding(false)} className={cx("cancelBtnBase")}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {!adding && selected ? (
-            <div className={cx("flex1", "flexCol", "overflowAuto", "pnPane")}>
-              {!editing ? (
-                <>
-                  <div className={cx("flexBetween", "mb16", "pnDetailHead")}>
-                    <div className={cx("flex1")}>
-                      <div className={cx("flexRow", "gap10", "mb8")}>
-                        <span className={cx("text11", "pnClientText")} data-client-id={String(selected.clientId)}>
-                          {selectedClient?.name}
-                        </span>
-                        <span className={cx("text10", "colorMuted2")}>Updated {selected.updatedAt}</span>
-                        {selected.pinned ? <span className={cx("text11", "pnPinnedLabel")}>◈ Pinned</span> : null}
-                      </div>
-                      <h2 className={cx("pnDetailTitle")}>{selected.title}</h2>
-                    </div>
-                    <div className={cx("flexRow", "gap8", "noShrink")}>
-                      <button
-                        type="button"
-                        className={cx("pnActionBtn", "ghostBtnBase", selected.pinned && "pnPinActionActive")}
-                        onClick={() => togglePin(selected.id)}
-                      >
-                        {selected.pinned ? "◈ Unpin" : "◇ Pin"}
-                      </button>
-                      <button type="button" className={cx("pnActionBtn", "accentBtnBase")} onClick={startEdit}>
-                        Edit
-                      </button>
-                      <button type="button" className={cx("pnActionBtn", "pnDeleteBtn")} onClick={() => deleteNote(selected.id)}>
-                        ×
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className={cx("flexRow", "gap6", "mb24")}>
-                    {selected.tags.map((tag) => (
-                      <span key={tag} className={cx("pnTagChip", "pnTagChipMd")} data-tag={tag}>{tag}</span>
-                    ))}
-                  </div>
-
-                  <div className={cx("text14", "colorMuted", "pnDetailBody")}>{selected.body}</div>
-                </>
-              ) : (
-                <div className={cx("flexCol", "gap20", "pnEditPane")}>
-                  <div className={cx("pnSidebarTitle")}>Editing note</div>
-
-                  <input
-                    value={draft?.title ?? ""}
-                    onChange={(e) => setDraft((p) => (p ? { ...p, title: e.target.value } : p))}
-                    placeholder="Note title"
-                    className={cx("inputBase", "wFull", "fontDisplay", "fw700", "colorText", "pnEditTitleInput")}
-                  />
-
-                  <textarea
-                    value={draft?.body ?? ""}
-                    onChange={(e) => setDraft((p) => (p ? { ...p, body: e.target.value } : p))}
-                    placeholder="Note body"
-                    className={cx("inputBase", "wFull", "text14", "colorMuted", "pnEditBodyInput")}
-                  />
-
-                  <div>
-                    <label className={cx("labelUpper")}>Tags</label>
-                    <input
-                      placeholder="e.g. preferences, contact"
-                      value={draft?.tags.join(", ") ?? ""}
-                      onChange={(e) =>
-                        setDraft((p) => {
-                          if (!p) return p;
-                          const nextTags = e.target.value
-                            .split(",")
-                            .map((t) => t.trim().toLowerCase())
-                            .filter((t): t is NoteTag => Boolean(t) && Object.hasOwn(tagColors, t));
-                          return { ...p, tags: nextTags };
-                        })
-                      }
-                      className={cx("inputBase", "wFull", "text12", "pnEditTagsInput")}
-                    />
-                  </div>
-
-                  <div className={cx("flexRow", "gap10")}>
-                    <button type="button" className={cx("pnSaveBtn", "pnSaveBtnPrimary")} onClick={saveEdit}>
-                      Save changes
-                    </button>
-                    <button type="button" onClick={cancelEdit} className={cx("cancelBtnBase")}>
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : null}
-
-          {!adding && !selected ? (
-            <div className={cx("flex1", "flexCenter", "flexCol", "gap12", "colorMuted2")}>
-              <div className={cx("pnEmptyIcon")}>◌</div>
-              <div className={cx("text13")}>Select a note or create one</div>
-            </div>
-          ) : null}
+      {/* Header */}
+      <div className={cx("pageHeader", "mb20")}>
+        <div>
+          <div className={cx("pageEyebrow")}>CRM · Staff</div>
+          <h1 className={cx("pageTitle")}>Private CRM Notes</h1>
         </div>
       </div>
+
+      {/* Controls */}
+      <div className={cx("flexRow", "gap12", "mb20", "flexWrap")}>
+        {/* Client selector */}
+        <select
+          className={cx("filterSelect")}
+          aria-label="Select client"
+          value={selectedClientId}
+          onChange={(e) => { setSelectedClientId(e.target.value); setSearch(""); setCategoryFilter("all"); }}
+          disabled={clients.length === 0}
+        >
+          {clients.length === 0 ? (
+            <option value="">Loading clients…</option>
+          ) : (
+            clients.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))
+          )}
+        </select>
+
+        {/* Search */}
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search notes…"
+          className={cx("inputBase", "text11")}
+          style={{ minWidth: 180, flex: 1, maxWidth: 280 }}
+        />
+
+        {/* Compose button */}
+        <button
+          type="button"
+          className={cx("accentBtnBase", "btnSm")}
+          onClick={() => setComposing((v) => !v)}
+          disabled={!selectedClientId}
+        >
+          <Ic n="plus" sz={12} c="var(--bg)" />
+          Add Note
+        </button>
+      </div>
+
+      {/* Category filter tabs */}
+      <div className={cx("filterRow", "mb20")}>
+        {(["all", ...CATEGORIES.map((c) => c.value)] as const).map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            className={cx("filterTab", categoryFilter === cat && "filterTabActive")}
+            onClick={() => setCategoryFilter(cat as "all" | ClientNoteCategory)}
+          >
+            {cat === "all" ? "All" : CATEGORIES.find((c) => c.value === cat)?.label ?? cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Composer */}
+      {composing && (
+        <div className={cx("pnNoteCard", "mb20")}>
+          <div className={cx("text11", "colorMuted", "mb10")}>
+            Adding note for <strong>{selectedClient?.name ?? "client"}</strong>
+          </div>
+          <textarea
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+            placeholder="Write your private CRM note…"
+            className={cx("inputBase", "wFull", "resizeV", "mb12")}
+            rows={4}
+            autoFocus
+          />
+          <div className={cx("flexRow", "gap12", "flexWrap")}>
+            <select
+              className={cx("filterSelect")}
+              aria-label="Note category"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value as ClientNoteCategory)}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className={cx("accentBtnBase", "btnSm")}
+              disabled={!newNote.trim() || saving}
+              onClick={handleAdd}
+            >
+              {saving ? "Saving…" : "Save Note"}
+            </button>
+            <button
+              type="button"
+              className={cx("cancelBtnBase", "btnSm")}
+              onClick={() => { setComposing(false); setNewNote(""); setNewCategory("general"); }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Notes list */}
+      {loading ? (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="loader" sz={20} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateSub")}>Loading notes…</div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="file-text" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>No notes found</div>
+          <div className={cx("emptyStateSub")}>
+            {!selectedClientId
+              ? "Select a client to view notes."
+              : "No private notes yet for this client."}
+          </div>
+        </div>
+      ) : (
+        <div className={cx("flexCol", "gap8")}>
+          {filtered.map((note) => (
+            <div key={note.id} className={cx("pnNoteCard")}>
+              <div className={cx("flexBetween", "mb8")}>
+                <div className={cx("flexRow", "gap8", "alignCenter")}>
+                  <span
+                    className={cx("pnCategoryChip")}
+                    style={{ color: categoryTone(note.category), borderColor: categoryTone(note.category) }}
+                  >
+                    {CATEGORIES.find((c) => c.value === note.category)?.label ?? note.category}
+                  </span>
+                  {note.authorName && (
+                    <span className={cx("text10", "colorMuted2")}>{note.authorName}</span>
+                  )}
+                </div>
+                <div className={cx("flexRow", "gap10", "alignCenter")}>
+                  <span className={cx("text10", "colorMuted2")}>{formatDate(note.createdAt)}</span>
+                  <button
+                    type="button"
+                    className={cx("iconBtnBase")}
+                    aria-label="Delete note"
+                    onClick={() => handleDelete(note.id)}
+                    disabled={deletingId === note.id}
+                  >
+                    <Ic n="trash-2" sz={13} c="var(--red, #ef4444)" />
+                  </button>
+                </div>
+              </div>
+              <p className={cx("text13", "colorMuted")} style={{ lineHeight: 1.6, margin: 0 }}>
+                {note.note}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

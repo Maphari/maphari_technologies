@@ -19,3 +19,5 @@ export * from "./feedback";
 export * from "./interventions";
 export * from "./performance";
 export * from "./auto-drafts";
+export * from "./ai-drafts";
+export * from "./client-notes";

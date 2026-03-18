@@ -94,6 +94,86 @@ export async function registerSatisfactionRoutes(app: FastifyInstance): Promise<
     return { success: true, data, meta: { requestId: scope.requestId } } as ApiResponse<typeof data>;
   });
 
+  // ── GET /portal/nps-pending — milestones completed in last 7d without NPS ──
+  app.get("/portal/nps-pending", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (!scope.clientId) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "clientId scope is required" } } as ApiResponse);
+    }
+
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    // Find milestones completed in last 7 days for this client's projects
+    const milestones = await prisma.projectMilestone.findMany({
+      where: {
+        status: "COMPLETED",
+        updatedAt: { gte: since },
+        project: { clientId: scope.clientId },
+      },
+      include: { project: { select: { name: true } } },
+      orderBy: { updatedAt: "desc" },
+      take: 10,
+    });
+
+    // Find milestones that already have an NPS comm log for this client
+    const answeredIds = await prisma.communicationLog.findMany({
+      where: {
+        clientId: scope.clientId,
+        type: "NPS_RESPONSE",
+      },
+      select: { subject: true },
+    }).then((rows) => new Set(rows.map((r) => r.subject)));
+
+    const pending = milestones
+      .filter((m) => !answeredIds.has(m.id))
+      .map((m) => ({
+        milestoneId:    m.id,
+        milestoneTitle: m.title,
+        projectName:    m.project.name,
+        completedAt:    m.updatedAt.toISOString(),
+      }));
+
+    return { success: true, data: pending, meta: { requestId: scope.requestId } } as ApiResponse<typeof pending>;
+  });
+
+  // ── POST /portal/nps-response — submit NPS score for a milestone ──────────
+  app.post("/portal/nps-response", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (!scope.clientId) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "clientId scope is required" } } as ApiResponse);
+    }
+
+    const body = request.body as {
+      milestoneId: string;
+      score: number;
+      comment?: string;
+    };
+
+    if (body.score === undefined || body.score < 0 || body.score > 10) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "score must be 0–10" } } as ApiResponse);
+    }
+    if (!body.milestoneId) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "milestoneId is required" } } as ApiResponse);
+    }
+
+    // Store as a CommunicationLog with type NPS_RESPONSE
+    const log = await prisma.communicationLog.create({
+      data: {
+        clientId:   scope.clientId,
+        type:       "NPS_RESPONSE",
+        subject:    body.milestoneId,
+        direction:  "INBOUND",
+        fromName:   scope.userId ?? null,
+        actionLabel: JSON.stringify({ score: body.score, comment: body.comment ?? null }),
+        occurredAt: new Date(),
+      },
+    });
+
+    await cache.delete(CacheKeys.commLogs(scope.clientId));
+
+    return reply.code(201).send({ success: true, data: { id: log.id, success: true } } as ApiResponse<{ id: string; success: boolean }>);
+  });
+
   // ── POST /clients/:clientId/surveys/:surveyId/responses ───────────────────
   app.post("/clients/:clientId/surveys/:surveyId/responses", async (request, reply) => {
     const scope = readScopeHeaders(request);

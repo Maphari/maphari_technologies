@@ -238,5 +238,8 @@ export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotifi
   contentApproval: "messages",
   meetingArchive: "messages",
   prospecting: "operations",
-  staffUtilisation: "operations"
+  staffUtilisation: "operations",
+  capacityForecast: "operations",
+  invoiceChasing: "invoices",
+  pipelineAnalytics: "operations"
 };

@@ -224,4 +224,105 @@ export async function registerCommunicationLogRoutes(app: FastifyInstance): Prom
 
     return reply.code(201).send({ success: true, data: log, meta: { requestId: scope.requestId } } as ApiResponse<typeof log>);
   });
+
+  // ── GET /staff/client-notes/:clientId — Private CRM notes for a client ─────
+  app.get("/staff/client-notes/:clientId", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
+    }
+
+    const { clientId } = request.params as { clientId: string };
+
+    const rows = await prisma.communicationLog.findMany({
+      where: { clientId, type: "PRIVATE_NOTE", direction: "INTERNAL" },
+      orderBy: { occurredAt: "desc" },
+      take: 100,
+    });
+
+    const data = rows.map((r) => {
+      let category = "general";
+      try {
+        const parsed = JSON.parse(r.subject);
+        if (parsed?.category) category = parsed.category;
+      } catch { /* subject may be plain text */ }
+      return {
+        id:          r.id,
+        clientId:    r.clientId,
+        note:        r.actionLabel ?? "",
+        category,
+        authorName:  r.fromName ?? null,
+        createdAt:   r.occurredAt.toISOString(),
+      };
+    });
+
+    return { success: true, data, meta: { requestId: scope.requestId } } as ApiResponse<typeof data>;
+  });
+
+  // ── POST /staff/client-notes — Create a private CRM note ──────────────────
+  app.post("/staff/client-notes", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
+    }
+
+    const body = request.body as {
+      clientId:  string;
+      note:      string;
+      category?: string;
+    };
+
+    if (!body.clientId || !body.note?.trim()) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "clientId and note are required." } } as ApiResponse);
+    }
+
+    const validCategories = ["preference", "risk", "opportunity", "general"];
+    const category = validCategories.includes(body.category ?? "") ? (body.category ?? "general") : "general";
+
+    const log = await prisma.communicationLog.create({
+      data: {
+        clientId:    body.clientId,
+        type:        "PRIVATE_NOTE",
+        subject:     JSON.stringify({ category }),
+        direction:   "INTERNAL",
+        fromName:    scope.userId ?? null,
+        actionLabel: body.note.trim(),
+        occurredAt:  new Date(),
+      },
+    });
+
+    await cache.delete(CacheKeys.commLogs(body.clientId));
+
+    const data = {
+      id:          log.id,
+      clientId:    log.clientId,
+      note:        log.actionLabel ?? "",
+      category,
+      authorName:  log.fromName ?? null,
+      createdAt:   log.occurredAt.toISOString(),
+    };
+
+    return reply.code(201).send({ success: true, data, meta: { requestId: scope.requestId } } as ApiResponse<typeof data>);
+  });
+
+  // ── DELETE /staff/client-notes/:id — Delete a private CRM note ────────────
+  app.delete("/staff/client-notes/:id", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
+    }
+
+    const { id } = request.params as { id: string };
+
+    const existing = await prisma.communicationLog.findUnique({ where: { id }, select: { clientId: true, type: true } });
+    if (!existing || existing.type !== "PRIVATE_NOTE") {
+      return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Note not found." } } as ApiResponse);
+    }
+
+    await prisma.communicationLog.delete({ where: { id } });
+    await cache.delete(CacheKeys.commLogs(existing.clientId));
+
+    reply.code(204);
+    return;
+  });
 }

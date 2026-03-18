@@ -16,6 +16,15 @@ import {
   type AuthorizedResult
 } from "./internal";
 
+// ── NPS Types ─────────────────────────────────────────────────────────────────
+
+export interface PendingNps {
+  milestoneId:    string;
+  milestoneTitle: string;
+  projectName:    string;
+  completedAt:    string;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface PortalFeedbackReaction {
@@ -35,6 +44,60 @@ export interface PortalFeedbackReply {
   body: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// ── NPS ───────────────────────────────────────────────────────────────────────
+
+/** Load milestones completed in last 7 days that don't yet have an NPS response */
+export async function loadPendingNpsWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<PendingNps[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PendingNps[]>(
+      "/portal/nps-pending",
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data:  [],
+        error: toGatewayError(
+          response.payload.error?.code    ?? "NPS_PENDING_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load pending NPS items."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+/** Submit an NPS score (0–10) and optional comment for a completed milestone */
+export async function submitNpsResponseWithRefresh(
+  session:     AuthSession,
+  milestoneId: string,
+  score:       number,
+  comment?:    string
+): Promise<AuthorizedResult<{ success: boolean }>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ success: boolean }>(
+      "/portal/nps-response",
+      accessToken,
+      { method: "POST", body: { milestoneId, score, comment } }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data:  null,
+        error: toGatewayError(
+          response.payload.error?.code    ?? "NPS_SUBMIT_FAILED",
+          response.payload.error?.message ?? "Unable to submit NPS response."
+        )
+      };
+    }
+    return { unauthorized: false, data: { success: true }, error: null };
+  });
 }
 
 // ── Reactions ─────────────────────────────────────────────────────────────────

@@ -362,6 +362,157 @@ export async function registerInvoiceRoutes(app: FastifyInstance): Promise<void>
     }
   });
 
+  // ── GET /invoices/overdue-chase-status ───────────────────────────────────
+  // Returns all overdue invoices with computed chase stage. ADMIN only.
+  app.get("/invoices/overdue-chase-status", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN" && scope.role !== "STAFF") {
+      reply.status(403);
+      return { success: false, error: { code: "FORBIDDEN", message: "Admin access required." } } as ApiResponse;
+    }
+
+    const now = new Date();
+
+    try {
+      const invoices = await prisma.invoice.findMany({
+        where: {
+          status: { not: "PAID" },
+          dueAt: { lt: now }
+        },
+        orderBy: { dueAt: "asc" }
+      });
+
+      const overdueItems = invoices.map((inv) => {
+        const dueDate = inv.dueAt ?? inv.createdAt;
+        const daysOverdue = Math.max(0, Math.floor((now.getTime() - dueDate.getTime()) / 86_400_000));
+
+        // Derive chase stage from days overdue. PAUSED is stored in the notes
+        // field as a "CHASE:PAUSED" prefix; lastChasedAt uses updatedAt as proxy.
+        const notes = (inv as unknown as { notes?: string }).notes ?? "";
+        let chaseStage: "CHASE_3D" | "CHASE_7D" | "CHASE_14D" | "PAUSED" | "NONE";
+        if (notes.includes("CHASE:PAUSED")) {
+          chaseStage = "PAUSED";
+        } else if (daysOverdue >= 14) {
+          chaseStage = "CHASE_14D";
+        } else if (daysOverdue >= 7) {
+          chaseStage = "CHASE_7D";
+        } else if (daysOverdue >= 3) {
+          chaseStage = "CHASE_3D";
+        } else {
+          chaseStage = "NONE";
+        }
+
+        // Compute next chase date based on current stage
+        let nextChaseAt: string | null = null;
+        if (chaseStage !== "PAUSED" && chaseStage !== "NONE") {
+          const nextStageDay = chaseStage === "CHASE_3D" ? 7 : chaseStage === "CHASE_7D" ? 14 : null;
+          if (nextStageDay !== null) {
+            const next = new Date(dueDate);
+            next.setDate(next.getDate() + nextStageDay);
+            nextChaseAt = next.toISOString();
+          }
+        }
+
+        return {
+          id: inv.id,
+          clientId: inv.clientId,
+          amountCents: Number(inv.amountCents),
+          dueDate: dueDate.toISOString(),
+          daysOverdue,
+          chaseStage,
+          lastChasedAt: notes.includes("CHASE:SENT:") ? notes.split("CHASE:SENT:")[1]?.split("|")[0] ?? null : null,
+          nextChaseAt
+        };
+      });
+
+      return {
+        success: true,
+        data: { invoices: overdueItems },
+        meta: { requestId: scope.requestId }
+      } as ApiResponse<{ invoices: typeof overdueItems }>;
+    } catch (error) {
+      request.log.error(error);
+      return { success: false, error: { code: "CHASE_STATUS_FAILED", message: "Unable to fetch overdue chase status." } } as ApiResponse;
+    }
+  });
+
+  // ── POST /invoices/:id/chase ──────────────────────────────────────────────
+  // Actions: "send" | "pause" | "resume". ADMIN only.
+  app.post("/invoices/:id/chase", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN" && scope.role !== "STAFF") {
+      reply.status(403);
+      return { success: false, error: { code: "FORBIDDEN", message: "Admin access required." } } as ApiResponse;
+    }
+
+    const { id } = request.params as { id: string };
+    const body = request.body as { action?: string };
+
+    if (!body.action || !["send", "pause", "resume"].includes(body.action)) {
+      reply.status(400);
+      return { success: false, error: { code: "VALIDATION_ERROR", message: "action must be send | pause | resume" } } as ApiResponse;
+    }
+
+    try {
+      const invoice = await prisma.invoice.findUnique({ where: { id } });
+      if (!invoice) {
+        reply.status(404);
+        return { success: false, error: { code: "NOT_FOUND", message: "Invoice not found" } } as ApiResponse;
+      }
+
+      const existingNotes = (invoice as unknown as { notes?: string }).notes ?? "";
+      let newNotes = existingNotes;
+      const now = new Date();
+
+      if (body.action === "send") {
+        // Record lastChasedAt timestamp and clear any PAUSED flag
+        newNotes = existingNotes
+          .replace(/CHASE:PAUSED\|?/g, "")
+          .replace(/CHASE:SENT:[^|]+\|?/g, "");
+        newNotes = `${newNotes}CHASE:SENT:${now.toISOString()}|`;
+      } else if (body.action === "pause") {
+        if (!newNotes.includes("CHASE:PAUSED")) {
+          newNotes = `${newNotes}CHASE:PAUSED|`;
+        }
+      } else if (body.action === "resume") {
+        newNotes = newNotes.replace(/CHASE:PAUSED\|?/g, "");
+      }
+
+      await prisma.invoice.update({
+        where: { id },
+        data: { updatedAt: now, ...(newNotes !== existingNotes ? { notes: newNotes } as Record<string, unknown> : {}) }
+      });
+
+      // Fire a notification event when chasing is sent
+      const traceId = (request.headers["x-trace-id"] as string | undefined) ?? undefined;
+      if (body.action === "send") {
+        await publishBillingEvent({
+          topic: EventTopics.invoiceOverdue,
+          clientId: invoice.clientId,
+          requestId: scope.requestId,
+          traceId,
+          payload: {
+            invoiceId: invoice.id,
+            number: invoice.number,
+            status: invoice.status,
+            amountCents: Number(invoice.amountCents),
+            dueAt: invoice.dueAt?.toISOString() ?? null,
+            chaseAction: "send"
+          }
+        });
+      }
+
+      return {
+        success: true,
+        data: { ok: true, action: body.action },
+        meta: { requestId: scope.requestId }
+      } as ApiResponse<{ ok: boolean; action: string }>;
+    } catch (error) {
+      request.log.error(error);
+      return { success: false, error: { code: "CHASE_ACTION_FAILED", message: "Unable to process chase action." } } as ApiResponse;
+    }
+  });
+
   // ── GET /admin/cash-flow-events ───────────────────────────────────────────
   // Returns invoices as structured cash-flow events for the 90-day calendar.
   // ADMIN / STAFF only.

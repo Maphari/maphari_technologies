@@ -168,6 +168,52 @@ export class AiController {
   }
 
   @Roles("ADMIN", "STAFF")
+  @Post("ai/draft-client-update")
+  async draftClientUpdate(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    if (!body || typeof body !== "object") {
+      throw new BadRequestException("Invalid draft-client-update payload");
+    }
+    const baseUrl = process.env.AI_SERVICE_URL ?? "http://localhost:4007";
+    return proxyRequest(`${baseUrl}/ai/draft-client-update`, "POST", body, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "STAFF",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF")
+  @Post("ai/generate-report")
+  async generateReport(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    if (!body || typeof body !== "object") {
+      throw new BadRequestException("Invalid generate-report payload");
+    }
+    const baseUrl = process.env.AI_SERVICE_URL ?? "http://localhost:4007";
+    return proxyRequest(`${baseUrl}/ai/generate-report`, "POST", body, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "STAFF",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF")
   @Post("ai/prospect")
   async runProspecting(
     @Body() body: unknown,

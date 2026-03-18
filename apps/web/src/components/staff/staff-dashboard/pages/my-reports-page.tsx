@@ -1,6 +1,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 // my-reports-page.tsx — Staff My Reports
 // Data : GET /staff/me/performance → derive report entries client-side
+//        POST /ai/generate-report  → on-demand AI report generation
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
@@ -9,10 +10,10 @@ import { cx } from "../style";
 import {
   getStaffMyPerformance,
   type StaffPerformance,
-  type StaffPerformanceWeek,
-  type StaffPerformanceClient,
-  type StaffPerformanceMilestone,
 } from "../../../../lib/api/staff/performance";
+import {
+  generateReportWithRefresh,
+} from "../../../../lib/api/staff/ai-drafts";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 
@@ -46,6 +47,61 @@ function fmtMonth(iso: string): string {
     return new Intl.DateTimeFormat("en-ZA", { month: "short", day: "numeric", year: "numeric" }).format(new Date(iso));
   } catch { return iso; }
 }
+
+// ── Scheduled report types ────────────────────────────────────────────────────
+
+type ScheduledReportType = "Weekly Progress" | "Monthly Summary" | "Sprint Review";
+type ScheduledFrequency  = "Weekly (Mon)" | "Monthly (1st)" | "After each sprint";
+
+interface ScheduledReport {
+  id: string;
+  reportType: ScheduledReportType;
+  frequency: ScheduledFrequency;
+  recipients: string;
+  projectId: string;
+  clientName: string;
+  createdAt: string;
+}
+
+const SCHEDULE_STORAGE_KEY = "maphari_staff_scheduled_reports";
+
+function loadScheduled(): ScheduledReport[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(SCHEDULE_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as ScheduledReport[]) : [];
+  } catch { return []; }
+}
+
+function saveScheduled(items: ScheduledReport[]): void {
+  try {
+    localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(items));
+  } catch { /* ignore quota errors */ }
+}
+
+function nextRunLabel(freq: ScheduledFrequency): string {
+  const now = new Date();
+  if (freq === "Weekly (Mon)") {
+    const day = now.getDay(); // 0 Sun … 6 Sat
+    const daysUntilMon = day === 1 ? 7 : (8 - day) % 7 || 7;
+    const next = new Date(now);
+    next.setDate(now.getDate() + daysUntilMon);
+    return next.toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" });
+  }
+  if (freq === "Monthly (1st)") {
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return next.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+  }
+  return "After next sprint closes";
+}
+
+// ── Section preview labels ────────────────────────────────────────────────────
+
+const REPORT_SECTIONS: Record<ScheduledReportType, string[]> = {
+  "Weekly Progress":  ["Executive Summary", "Progress This Period", "Milestones & Deliverables", "Risks & Blockers", "Next Steps"],
+  "Monthly Summary":  ["Month-in-Review", "KPIs & Metrics", "Budget vs Actuals", "Team Performance", "Next Month Goals"],
+  "Sprint Review":    ["Sprint Goal", "Completed Stories", "Incomplete Items", "Velocity", "Retrospective Notes"],
+};
 
 // ── Derive reports from performance data ──────────────────────────────────────
 
@@ -114,6 +170,25 @@ export function MyReportsPage({
   const [perf, setPerf]       = useState<StaffPerformance | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // ── Scheduled reports ────────────────────────────────────────────────────
+  const [scheduled, setScheduled] = useState<ScheduledReport[]>([]);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+
+  // Schedule form state
+  const [schedReportType, setSchedReportType] = useState<ScheduledReportType>("Weekly Progress");
+  const [schedFrequency,  setSchedFrequency]  = useState<ScheduledFrequency>("Weekly (Mon)");
+  const [schedRecipients, setSchedRecipients] = useState("");
+  const [schedClientName, setSchedClientName] = useState("");
+  const [schedProjectId,  setSchedProjectId]  = useState("");
+
+  // ── Generate-Now modal ───────────────────────────────────────────────────
+  const [showGenModal,   setShowGenModal]   = useState(false);
+  const [genLoading,     setGenLoading]     = useState(false);
+  const [genMarkdown,    setGenMarkdown]    = useState("");
+  const [genTitle,       setGenTitle]       = useState("");
+  const [genTarget,      setGenTarget]      = useState<ScheduledReport | null>(null);
+
+  // Load performance data
   useEffect(() => {
     if (!session || !isActive) return;
     let cancelled = false;
@@ -128,6 +203,12 @@ export function MyReportsPage({
 
     return () => { cancelled = true; };
   }, [session?.accessToken, isActive]);
+
+  // Load scheduled reports from localStorage
+  useEffect(() => {
+    if (!isActive) return;
+    setScheduled(loadScheduled());
+  }, [isActive]);
 
   const reports = useMemo(() => (perf ? deriveReports(perf) : []), [perf]);
 
@@ -144,6 +225,80 @@ export function MyReportsPage({
   const sorted = [...reports].sort(
     (a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime(),
   );
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  function handleAddSchedule() {
+    if (!schedClientName.trim()) return;
+    const newItem: ScheduledReport = {
+      id: `SCH-${Date.now()}`,
+      reportType: schedReportType,
+      frequency:  schedFrequency,
+      recipients: schedRecipients.trim(),
+      projectId:  schedProjectId.trim(),
+      clientName: schedClientName.trim(),
+      createdAt:  new Date().toISOString(),
+    };
+    const updated = [newItem, ...scheduled];
+    setScheduled(updated);
+    saveScheduled(updated);
+    setShowScheduleModal(false);
+    setSchedClientName("");
+    setSchedRecipients("");
+    setSchedProjectId("");
+  }
+
+  function handleRemoveSchedule(id: string) {
+    const updated = scheduled.filter((s) => s.id !== id);
+    setScheduled(updated);
+    saveScheduled(updated);
+  }
+
+  async function handleGenerateNow(item: ScheduledReport) {
+    setGenTarget(item);
+    setGenMarkdown("");
+    setGenTitle("");
+    setShowGenModal(true);
+    setGenLoading(true);
+
+    if (session) {
+      const result = await generateReportWithRefresh(session, {
+        reportType: item.reportType,
+        projectId:  item.projectId,
+        clientName: item.clientName,
+        period:     item.frequency === "Weekly (Mon)"
+          ? "this week"
+          : item.frequency === "Monthly (1st)"
+          ? "this month"
+          : "this sprint",
+      });
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.data) {
+        setGenMarkdown(result.data.markdown);
+        setGenTitle(result.data.title);
+        setGenLoading(false);
+        return;
+      }
+    }
+
+    // Fallback: local stub
+    const sections = REPORT_SECTIONS[item.reportType] ?? [];
+    setGenTitle(`${item.reportType} — ${item.clientName}`);
+    setGenMarkdown(
+      `# ${item.reportType} — ${item.clientName}\n\n` +
+      sections.map((s) => `## ${s}\n\n_AI-generated content will appear here once configured._`).join("\n\n")
+    );
+    setGenLoading(false);
+  }
+
+  function handleCloseGenModal() {
+    setShowGenModal(false);
+    setGenTarget(null);
+    setGenMarkdown("");
+    setGenTitle("");
+  }
+
+  if (!isActive) return null;
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-reports">
@@ -206,6 +361,67 @@ export function MyReportsPage({
 
       </div>
 
+      {/* ── Scheduled Reports ─────────────────────────────────────────────── */}
+      <div className={cx("rptSection")}>
+        <div className={cx("rptSectionHeader")}>
+          <div className={cx("rptSectionTitle")}>Scheduled Reports</div>
+          <button
+            type="button"
+            className={cx("rptScheduleBtn")}
+            onClick={() => setShowScheduleModal(true)}
+          >
+            + Schedule Report
+          </button>
+        </div>
+
+        {scheduled.length === 0 ? (
+          <div className={cx("rptScheduledEmpty")}>
+            No recurring reports configured. Click &ldquo;+ Schedule Report&rdquo; to set one up.
+          </div>
+        ) : (
+          <div className={cx("rptScheduledList")}>
+            {scheduled.map((item) => (
+              <div key={item.id} className={cx("rptScheduledCard")}>
+                <div className={cx("rptScheduledCardTop")}>
+                  <div>
+                    <div className={cx("rptScheduledTitle")}>{item.reportType}</div>
+                    <div className={cx("rptScheduledMeta")}>
+                      {item.clientName}{item.projectId ? ` · ${item.projectId}` : ""}
+                    </div>
+                  </div>
+                  <div className={cx("rptScheduledActions")}>
+                    <button
+                      type="button"
+                      className={cx("rptGenNowBtn")}
+                      onClick={() => void handleGenerateNow(item)}
+                    >
+                      Generate Now
+                    </button>
+                    <button
+                      type="button"
+                      className={cx("rptRemoveBtn")}
+                      onClick={() => handleRemoveSchedule(item.id)}
+                      aria-label="Remove scheduled report"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                <div className={cx("rptScheduledFooter")}>
+                  <span className={cx("rptFreqBadge")}>{item.frequency}</span>
+                  <span className={cx("rptNextRun")}>Next: {nextRunLabel(item.frequency)}</span>
+                  {item.recipients && (
+                    <span className={cx("rptRecipients")} title={item.recipients}>
+                      → {item.recipients.split(",").length} recipient{item.recipients.split(",").length !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* ── Report list ───────────────────────────────────────────────────── */}
       <div className={cx("rptSection")}>
 
@@ -252,6 +468,185 @@ export function MyReportsPage({
         </div>
 
       </div>
+
+      {/* ── Schedule Report Modal ──────────────────────────────────────────── */}
+      {showScheduleModal && (
+        <div className={cx("rptModalOverlay")} onClick={() => setShowScheduleModal(false)}>
+          <div className={cx("rptModal")} onClick={(e) => e.stopPropagation()}>
+            <div className={cx("rptModalHeader")}>
+              <div className={cx("rptModalTitle")}>Schedule Report</div>
+              <button
+                type="button"
+                className={cx("rptModalClose")}
+                onClick={() => setShowScheduleModal(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={cx("rptModalBody")}>
+              {/* Report Type */}
+              <div className={cx("rptModalField")}>
+                <label className={cx("rptModalLabel")}>Report Type</label>
+                <div className={cx("rptModalOptions")}>
+                  {(["Weekly Progress", "Monthly Summary", "Sprint Review"] as ScheduledReportType[]).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      className={cx("rptModalOptionBtn", schedReportType === t ? "rptModalOptionActive" : "rptModalOptionIdle")}
+                      onClick={() => setSchedReportType(t)}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Frequency */}
+              <div className={cx("rptModalField")}>
+                <label className={cx("rptModalLabel")}>Frequency</label>
+                <div className={cx("rptModalOptions")}>
+                  {(["Weekly (Mon)", "Monthly (1st)", "After each sprint"] as ScheduledFrequency[]).map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      className={cx("rptModalOptionBtn", schedFrequency === f ? "rptModalOptionActive" : "rptModalOptionIdle")}
+                      onClick={() => setSchedFrequency(f)}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Client Name */}
+              <div className={cx("rptModalField")}>
+                <label className={cx("rptModalLabel")}>Client Name</label>
+                <input
+                  type="text"
+                  value={schedClientName}
+                  onChange={(e) => setSchedClientName(e.target.value)}
+                  placeholder="e.g. Acme Corp"
+                  className={cx("rptModalInput")}
+                />
+              </div>
+
+              {/* Project ID (optional) */}
+              <div className={cx("rptModalField")}>
+                <label className={cx("rptModalLabel")}>Project ID <span className={cx("rptModalOptional")}>(optional)</span></label>
+                <input
+                  type="text"
+                  value={schedProjectId}
+                  onChange={(e) => setSchedProjectId(e.target.value)}
+                  placeholder="e.g. proj_abc123"
+                  className={cx("rptModalInput")}
+                />
+              </div>
+
+              {/* Recipients */}
+              <div className={cx("rptModalField")}>
+                <label className={cx("rptModalLabel")}>Recipients <span className={cx("rptModalOptional")}>(comma-separated emails)</span></label>
+                <input
+                  type="text"
+                  value={schedRecipients}
+                  onChange={(e) => setSchedRecipients(e.target.value)}
+                  placeholder="client@example.com, pm@yourteam.com"
+                  className={cx("rptModalInput")}
+                />
+              </div>
+
+              {/* Section preview */}
+              <div className={cx("rptModalField")}>
+                <label className={cx("rptModalLabel")}>Sections included</label>
+                <div className={cx("rptModalPreview")}>
+                  {REPORT_SECTIONS[schedReportType]?.map((s, i) => (
+                    <div key={s} className={cx("rptModalPreviewRow")}>
+                      <span className={cx("rptModalPreviewNum")}>{i + 1}</span>
+                      <span className={cx("rptModalPreviewLabel")}>{s}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className={cx("rptModalFooter")}>
+              <button
+                type="button"
+                className={cx("rptModalCancelBtn")}
+                onClick={() => setShowScheduleModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={cx("rptModalSaveBtn")}
+                onClick={handleAddSchedule}
+                disabled={!schedClientName.trim()}
+              >
+                Save Schedule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Generate Now Modal ─────────────────────────────────────────────── */}
+      {showGenModal && (
+        <div className={cx("rptModalOverlay")} onClick={handleCloseGenModal}>
+          <div className={cx("rptModal", "rptModalWide")} onClick={(e) => e.stopPropagation()}>
+            <div className={cx("rptModalHeader")}>
+              <div className={cx("rptModalTitle")}>
+                {genLoading ? "AI is generating report\u2026" : (genTitle || "Generated Report")}
+              </div>
+              <button
+                type="button"
+                className={cx("rptModalClose")}
+                onClick={handleCloseGenModal}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={cx("rptModalBody")}>
+              {genLoading ? (
+                <div className={cx("rptGenLoading")}>
+                  <div className={cx("rptGenSpinner")} />
+                  <span className={cx("rptGenLoadingText")}>
+                    AI is drafting your {genTarget?.reportType ?? "report"}\u2026
+                  </span>
+                </div>
+              ) : (
+                <pre className={cx("rptMarkdownPre")}>{genMarkdown}</pre>
+              )}
+            </div>
+
+            {!genLoading && (
+              <div className={cx("rptModalFooter")}>
+                <button
+                  type="button"
+                  className={cx("rptModalCancelBtn")}
+                  onClick={() => {
+                    if (genMarkdown) {
+                      void navigator.clipboard?.writeText(genMarkdown);
+                    }
+                  }}
+                >
+                  Copy Markdown
+                </button>
+                <button
+                  type="button"
+                  className={cx("rptModalSaveBtn")}
+                  onClick={handleCloseGenModal}
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
     </section>
   );

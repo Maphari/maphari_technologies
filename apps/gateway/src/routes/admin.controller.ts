@@ -690,6 +690,50 @@ export class AdminController {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
+  // PIPELINE CONVERSION ANALYTICS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /admin/pipeline/conversion-analytics ──────────────────────────────
+  @Roles("ADMIN")
+  @Get("admin/pipeline/conversion-analytics")
+  async getPipelineConversionAnalytics(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/pipeline/conversion-analytics`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CAPACITY FORECAST
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /admin/capacity-forecast ──────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("admin/capacity-forecast")
+  async getCapacityForecast(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/admin/capacity-forecast`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
   // STAFF UTILISATION
   // ══════════════════════════════════════════════════════════════════════════
 

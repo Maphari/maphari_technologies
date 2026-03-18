@@ -15,6 +15,11 @@ import {
   submitPortalSurveyResponsesWithRefresh,
   type PortalSurvey
 } from "../../../../lib/api/portal";
+import {
+  loadPendingNpsWithRefresh,
+  submitNpsResponseWithRefresh,
+  type PendingNps
+} from "../../../../lib/api/portal/feedback";
 import { saveSession } from "../../../../lib/auth/session";
 
 // ── Static config ─────────────────────────────────────────────────────────────
@@ -70,10 +75,99 @@ function Stars({ value, onChange }: { value: number; onChange: (n: number) => vo
   );
 }
 
+// ── NPS score colour helper ───────────────────────────────────────────────────
+function npsScoreClass(n: number): string {
+  return n >= 9 ? "npsScoreGreen" : n >= 7 ? "npsScoreAmber" : "npsScoreRed";
+}
+
+// ── NPS Quick Check sub-component ─────────────────────────────────────────────
+function NpsQuickCard({
+  item,
+  onDone,
+  session,
+}: {
+  item: PendingNps;
+  onDone: (milestoneId: string) => void;
+  session: ReturnType<typeof useProjectLayer>["session"];
+}) {
+  const [score,     setScore]     = useState<number | null>(null);
+  const [comment,   setComment]   = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [saving,    setSaving]    = useState(false);
+
+  async function handleSubmit() {
+    if (score === null || !session) return;
+    setSaving(true);
+    const result = await submitNpsResponseWithRefresh(session, item.milestoneId, score, comment.trim() || undefined);
+    if (result.nextSession) saveSession(result.nextSession);
+    setSaving(false);
+    setSubmitted(true);
+    setTimeout(() => onDone(item.milestoneId), 1600);
+  }
+
+  if (submitted) {
+    return (
+      <div className={cx("npsQuickCard", "npsThanks")}>
+        Thanks for your feedback on <em>{item.milestoneTitle}</em>!
+      </div>
+    );
+  }
+
+  return (
+    <div className={cx("npsQuickCard")}>
+      <div className={cx("flexBetween", "mb8")}>
+        <div>
+          <div className={cx("fw700", "text14")}>{item.milestoneTitle}</div>
+          <div className={cx("text11", "colorMuted")}>{item.projectName}</div>
+        </div>
+        <span className={cx("badge", "badgeMuted")}>Milestone complete</span>
+      </div>
+      <div className={cx("text12", "colorMuted", "mb4")}>
+        How likely are you to recommend us after this milestone? (0 = not at all · 10 = extremely likely)
+      </div>
+      <div className={cx("npsScoreRow")} onMouseLeave={() => {}}>
+        {[0,1,2,3,4,5,6,7,8,9,10].map((n) => (
+          <button
+            key={n}
+            type="button"
+            className={cx("npsScoreBtn", score === n && "npsScoreBtnSelected", score === null && npsScoreClass(n))}
+            onClick={() => setScore(n)}
+            aria-label={`NPS score ${n}`}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+      {score !== null && (
+        <>
+          <textarea
+            className={cx("input", "wFull", "resizeV", "mt12", "mb12")}
+            rows={2}
+            placeholder="Any comments? (optional)"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+          <button
+            type="button"
+            className={cx("btnSm", "btnAccent")}
+            disabled={saving}
+            onClick={handleSubmit}
+          >
+            {saving ? "Submitting…" : "Submit"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export function SatisfactionSurveyPage() {
   const { session } = useProjectLayer();
   const [surveys, setSurveys] = useState<PortalSurvey[]>([]);
+
+  // NPS Quick Check state
+  const [pendingNps, setPendingNps] = useState<PendingNps[]>([]);
 
   // Form state
   const [nps,       setNps]       = useState(-1);
@@ -88,6 +182,10 @@ export function SatisfactionSurveyPage() {
     loadPortalSurveysWithRefresh(session, session.user.clientId ?? "").then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
       if (result.data) setSurveys(result.data);
+    });
+    loadPendingNpsWithRefresh(session).then((result) => {
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.data) setPendingNps(result.data);
     });
   }, [session]);
 
@@ -158,6 +256,23 @@ export function SatisfactionSurveyPage() {
           <p className={cx("pageSub")}>Your monthly satisfaction survey. Takes under 2 minutes — your feedback directly shapes how we work.</p>
         </div>
       </div>
+
+      {/* Quick NPS Check — pending milestone pulses */}
+      {pendingNps.length > 0 && (
+        <div className={cx("mb24")}>
+          <div className={cx("text11", "colorMuted", "mb12", "fw700", "textUpper", "ls007")}>
+            Quick NPS Check
+          </div>
+          {pendingNps.map((item) => (
+            <NpsQuickCard
+              key={item.milestoneId}
+              item={item}
+              session={session}
+              onDone={(id) => setPendingNps((prev) => prev.filter((n) => n.milestoneId !== id))}
+            />
+          ))}
+        </div>
+      )}
 
       {!pendingSurvey ? (
         <div className={cx("card")}>

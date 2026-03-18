@@ -1079,6 +1079,18 @@
   }
 }
 
+/* ── Invoice Chasing ─────────────────────────────────────────────────────── */
+.icSequenceTrack { display: flex; align-items: center; gap: 0; margin: 16px 0 24px; }
+.icStageDot { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--b2); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; background: var(--s1); color: var(--text-muted); flex-shrink: 0; }
+.icStageDotActive { border-color: var(--accent, #8b6fff); background: color-mix(in srgb, var(--accent, #8b6fff) 15%, transparent); color: var(--accent, #8b6fff); }
+.icStageLine { flex: 1; height: 2px; background: var(--b1); }
+.icStageLineActive { background: var(--accent, #8b6fff); }
+.icSummaryRow { display: flex; gap: 24px; padding: 12px 0 20px; border-bottom: 1px solid var(--b1); margin-bottom: 20px; }
+.icSumStat { font-size: 0.8rem; color: var(--text-muted); }
+.icSumVal { font-size: 1.1rem; font-weight: 700; color: var(--text); display: block; }
+.icChaseGrid { display: grid; grid-template-columns: 1.4fr 1.2fr 1fr 0.7fr 0.8fr 0.9fr 1fr 1.2fr; gap: 12px; align-items: center; }
+.icChaseMinW { min-width: 860px; }
+
 /* ── Staff Utilisation ───────────────────────────────────────────────────── */
 
 .sutKpiRow {
@@ -1125,6 +1137,21 @@
 .sutBarRed {
   background: var(--red, #ef4444);
 }
+
+/* ── Capacity Forecast ───────────────────────────────────────────────────── */
+.cfPeriodGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+.cfPeriodCard { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 20px; border-left-width: 3px; }
+.cfPeriodCardGreen { border-left-color: var(--green, #24b8a8); }
+.cfPeriodCardAmber { border-left-color: var(--amber, #f59e0b); }
+.cfPeriodCardRed   { border-left-color: var(--red, #ef4444); }
+.cfUtil { font-size: 2rem; font-weight: 800; line-height: 1; margin: 8px 0 4px; }
+.cfSurplus { font-size: 0.75rem; margin-top: 6px; }
+.cfSurplusPos { color: var(--green, #24b8a8); }
+.cfSurplusNeg { color: var(--red, #ef4444); }
+.cfMiniBar { height: 6px; border-radius: 3px; background: var(--s3); overflow: hidden; margin: 3px 0; }
+.cfMiniBarFill { height: 100%; border-radius: 3px; }
+.cfRecommendBox { background: color-mix(in srgb, var(--accent, #8b6fff) 8%, transparent); border: 1px solid color-mix(in srgb, var(--accent, #8b6fff) 30%, transparent); border-radius: var(--r-md); padding: 16px 20px; margin-top: 24px; }
+@media (max-width: 900px) { .cfPeriodGrid { grid-template-columns: 1fr; } }
 
 /* ── Profitability P&L ───────────────────────────────────────────────────── */
 .plMarginBar { height: 6px; border-radius: 3px; background: var(--surface-2, #222); overflow: hidden; margin-top: 4px; }

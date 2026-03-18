@@ -94,6 +94,9 @@ import { ContentApprovalPage } from "./dashboard/pages/content-approval-page";
 import { MeetingArchivePage } from "./dashboard/pages/meeting-archive-page";
 import { ProspectingPage } from "./dashboard/pages/prospecting-page";
 import { StaffUtilisationPage } from "./dashboard/pages/staff-utilisation-page";
+import { CapacityForecastPage } from "./dashboard/pages/capacity-forecast-page";
+import { InvoiceChasingPage } from "./dashboard/pages/invoice-chasing-page";
+import { PipelineAnalyticsPage } from "./dashboard/pages/pipeline-analytics-page";
 import { createMaintenanceCheckWithRefresh, setNotificationReadStateWithRefresh } from "../../lib/api/admin";
 import { searchGlobal } from "../../lib/api/shared/search";
 import { DashboardLoadingFallback, DashboardToastStack, hasAnyDashboardData, useDashboardToasts } from "../shared/dashboard-core";
@@ -655,6 +658,9 @@ export function MaphariDashboard() {
             {page === "meetingArchive" ? <MeetingArchivePage session={session} /> : null}
             {page === "prospecting" ? <ProspectingPage /> : null}
             {page === "staffUtilisation" ? <StaffUtilisationPage session={session} /> : null}
+            {page === "capacityForecast" ? <CapacityForecastPage session={session} onNotify={pushToast} /> : null}
+            {page === "invoiceChasing" ? <InvoiceChasingPage session={session} onNotify={pushToast} /> : null}
+            {page === "pipelineAnalytics" ? <PipelineAnalyticsPage session={session} onNotify={pushToast} /> : null}
             </DashboardErrorBoundary>
           </section>
         </main>

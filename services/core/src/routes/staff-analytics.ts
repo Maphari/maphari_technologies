@@ -1915,4 +1915,199 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
       } as ApiResponse;
     }
   });
+
+  // ── GET /admin/capacity-forecast ────────────────────────────────────────
+  /** 30/60/90-day staffing capacity forecast for hiring decisions (ADMIN only). */
+  app.get("/admin/capacity-forecast", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      return reply.code(403).send({
+        success: false,
+        error: { code: "FORBIDDEN", message: "Capacity forecast is available to ADMIN only." }
+      } as ApiResponse);
+    }
+
+    try {
+      const cacheKey = `admin:capacity-forecast`;
+      const data = await withCache(cacheKey, 60, async () => {
+        const now = new Date();
+
+        // ── Count working days in a window ──────────────────────────────
+        function countWorkingDays(start: Date, end: Date): number {
+          let count = 0;
+          const cur = new Date(start);
+          while (cur <= end) {
+            const dow = cur.getDay();
+            if (dow !== 0 && dow !== 6) count++;
+            cur.setDate(cur.getDate() + 1);
+          }
+          return count;
+        }
+
+        // Build 3 windows
+        const windows = [
+          { label: "Next 30 days" as const,  from: new Date(now.getTime() + 1), to: new Date(now.getTime() + 30 * 86400000) },
+          { label: "31-60 days"  as const,   from: new Date(now.getTime() + 31 * 86400000), to: new Date(now.getTime() + 60 * 86400000) },
+          { label: "61-90 days"  as const,   from: new Date(now.getTime() + 61 * 86400000), to: new Date(now.getTime() + 90 * 86400000) },
+        ];
+
+        // ── Fetch staff profiles (active only) ──────────────────────────
+        const allStaff = await prisma.staffProfile.findMany({
+          where:  { isActive: true },
+          select: { id: true, name: true, role: true, userId: true }
+        });
+
+        const staffCount = allStaff.length;
+
+        // ── Fetch approved leave requests that overlap each window ───────
+        const leaveRequests = await prisma.leaveRequest.findMany({
+          where: {
+            status:    "APPROVED",
+            startDate: { lte: new Date(now.getTime() + 91 * 86400000) },
+            endDate:   { gte: now }
+          },
+          select: { staffId: true, startDate: true, endDate: true, days: true }
+        });
+
+        // ── Fetch active project remaining hours (from open tasks) ───────
+        const activeTasks = await prisma.projectTask.findMany({
+          where: {
+            status:          { notIn: ["DONE", "CANCELLED"] },
+            estimateMinutes: { gt: 0 }
+          },
+          select: { estimateMinutes: true, progressPercent: true }
+        });
+
+        const activeProjectRemainingHours = activeTasks.reduce((sum, t) => {
+          const totalH = (t.estimateMinutes ?? 0) / 60;
+          const doneFraction = (t.progressPercent ?? 0) / 100;
+          const remaining = Math.max(0, totalH * (1 - doneFraction));
+          return sum + remaining;
+        }, 0);
+
+        // ── Fetch pipeline leads count (no value field on Lead model) ────
+        const pipelineLeadCount = await prisma.lead.count({
+          where: { status: { in: ["PROPOSAL", "NEGOTIATION", "QUALIFIED"] } }
+        });
+
+        // Estimate pipeline hours: 80h per pipeline lead as a rough proxy
+        const pipelineHours = pipelineLeadCount * 80;
+
+        const totalDemandHours90d = activeProjectRemainingHours + pipelineHours;
+
+        // ── Build per-period metrics ─────────────────────────────────────
+        const periods = windows.map((w) => {
+          const workingDays = countWorkingDays(w.from, w.to);
+
+          // Leave reduction per period
+          const leaveHoursInPeriod = leaveRequests.reduce((sum, lr) => {
+            const lrStart = new Date(lr.startDate);
+            const lrEnd   = new Date(lr.endDate);
+            const overlapStart = lrStart < w.from ? w.from : lrStart;
+            const overlapEnd   = lrEnd   > w.to   ? w.to   : lrEnd;
+            if (overlapStart > overlapEnd) return sum;
+            const overlapDays = Math.max(0, Math.round((overlapEnd.getTime() - overlapStart.getTime()) / 86400000) + 1);
+            return sum + overlapDays * 8;
+          }, 0);
+
+          const totalCapacityHours = Math.max(0, staffCount * workingDays * 8 - leaveHoursInPeriod);
+
+          // Distribute 90d demand evenly across 3 windows weighted by capacity days
+          const periodWeight = workingDays / (22 + 22 + 22); // approx 66 working days in 90d
+          const projectedDemandHours = Math.round(totalDemandHours90d * periodWeight);
+
+          const utilizationRate = pct(projectedDemandHours, totalCapacityHours);
+          const surplus = totalCapacityHours - projectedDemandHours;
+
+          return {
+            label: w.label,
+            totalCapacityHours,
+            projectedDemandHours,
+            utilizationRate,
+            surplus
+          };
+        });
+
+        // ── Per-staff forecast ───────────────────────────────────────────
+        const staffForecast = allStaff.map((s) => {
+          // Leave days per window for this staff member
+          function leaveHoursForStaff(from: Date, to: Date): number {
+            return leaveRequests
+              .filter((lr) => lr.staffId === s.id)
+              .reduce((sum, lr) => {
+                const lrStart = new Date(lr.startDate);
+                const lrEnd   = new Date(lr.endDate);
+                const overlapStart = lrStart < from ? from : lrStart;
+                const overlapEnd   = lrEnd   > to   ? to   : lrEnd;
+                if (overlapStart > overlapEnd) return sum;
+                const overlapDays = Math.max(0, Math.round((overlapEnd.getTime() - overlapStart.getTime()) / 86400000) + 1);
+                return sum + overlapDays * 8;
+              }, 0);
+          }
+
+          const w0 = windows[0];
+          const w1 = windows[1];
+          const w2 = windows[2];
+
+          const wd0 = countWorkingDays(w0.from, w0.to);
+          const wd1 = countWorkingDays(w1.from, w1.to);
+          const wd2 = countWorkingDays(w2.from, w2.to);
+
+          const available0 = Math.max(0, wd0 * 8 - leaveHoursForStaff(w0.from, w0.to));
+          const available1 = Math.max(0, wd1 * 8 - leaveHoursForStaff(w1.from, w1.to));
+          const available2 = Math.max(0, wd2 * 8 - leaveHoursForStaff(w2.from, w2.to));
+
+          // Evenly distribute demand per staff (demand / staffCount)
+          const demandPerStaff0 = staffCount > 0 ? Math.round(periods[0].projectedDemandHours / staffCount) : 0;
+          const demandPerStaff1 = staffCount > 0 ? Math.round(periods[1].projectedDemandHours / staffCount) : 0;
+          const demandPerStaff2 = staffCount > 0 ? Math.round(periods[2].projectedDemandHours / staffCount) : 0;
+
+          function statusFor(allocated: number, available: number): "OVER" | "NEAR" | "OK" {
+            const util = available > 0 ? (allocated / available) * 100 : 0;
+            if (util > 100) return "OVER";
+            if (util > 80)  return "NEAR";
+            return "OK";
+          }
+
+          return {
+            staffId:          s.id,
+            name:             s.name,
+            role:             s.role,
+            allocatedHours30d: demandPerStaff0,
+            allocatedHours60d: demandPerStaff1,
+            allocatedHours90d: demandPerStaff2,
+            availableHours30d: available0,
+            status30d:         statusFor(demandPerStaff0, available0)
+          };
+        });
+
+        // ── Hiring signal from 90-day utilisation ────────────────────────
+        const util90 = periods[2].utilizationRate;
+        let hiringSignal: "OVERSTAFFED" | "BALANCED" | "UNDER_CAPACITY" | "CRITICAL";
+        if (util90 > 90)       hiringSignal = "CRITICAL";
+        else if (util90 > 75)  hiringSignal = "UNDER_CAPACITY";
+        else if (util90 < 40)  hiringSignal = "OVERSTAFFED";
+        else                   hiringSignal = "BALANCED";
+
+        // Recommended hires: how many staff needed to bring 90d util to 75%
+        const targetCapacity90 = Math.ceil(periods[2]!.projectedDemandHours / 0.75);
+        const currentCapacity90 = periods[2]!.totalCapacityHours;
+        const hoursGap = Math.max(0, targetCapacity90 - currentCapacity90);
+        const win2 = windows[2];
+        const hoursPerStaff90 = win2 ? countWorkingDays(win2.from, win2.to) * 8 : 176;
+        const recommendedHires = hoursPerStaff90 > 0 ? Math.ceil(hoursGap / hoursPerStaff90) : 0;
+
+        return { periods, staffForecast, hiringSignal, recommendedHires };
+      });
+
+      return { success: true, data, meta: { requestId: scope.requestId } } as ApiResponse<typeof data>;
+    } catch (error) {
+      request.log.error(error);
+      reply.code(500);
+      return {
+        success: false,
+        error: { code: "CAPACITY_FORECAST_FAILED", message: "Unable to compute capacity forecast." }
+      } as ApiResponse;
+    }
+  });
 }

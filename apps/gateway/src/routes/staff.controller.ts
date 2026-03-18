@@ -17,6 +17,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Param,
@@ -1046,6 +1047,63 @@ export class StaffController {
     return proxyRequest(
       `${CORE()}/staff/workload-heatmap`,
       "GET",
+      undefined,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── GET /staff/client-notes/:clientId — list private CRM notes ───────────
+  @Roles("ADMIN", "STAFF")
+  @Get("staff/client-notes/:clientId")
+  async listClientNotes(
+    @Param("clientId")        clientId: string,
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   xClientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/staff/client-notes/${clientId}`,
+      "GET",
+      undefined,
+      scopeHeaders(userId, role, xClientId, requestId, traceId)
+    );
+  }
+
+  // ── POST /staff/client-notes — create a private CRM note ─────────────────
+  @Roles("ADMIN", "STAFF")
+  @Post("staff/client-notes")
+  async createClientNote(
+    @Body()                   body: unknown,
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/staff/client-notes`,
+      "POST",
+      body,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── DELETE /staff/client-notes/:id — delete a private CRM note ───────────
+  @Roles("ADMIN", "STAFF")
+  @Delete("staff/client-notes/:id")
+  async deleteClientNote(
+    @Param("id")              id: string,
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/staff/client-notes/${id}`,
+      "DELETE",
       undefined,
       scopeHeaders(userId, role, clientId, requestId, traceId)
     );

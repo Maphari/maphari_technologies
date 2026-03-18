@@ -7640,3 +7640,42 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
     display: none;
   }
 }
+
+/* ─── Pipeline Analytics ──────────────────────────────────────────── */
+
+.paFunnel { display: flex; gap: 0; align-items: stretch; margin: 20px 0; overflow-x: auto; }
+.paFunnelStage { flex: 1; min-width: 80px; display: flex; flex-direction: column; align-items: center; padding: 16px 8px; position: relative; background: var(--s2); border-right: 1px solid var(--b1); }
+.paFunnelStage:last-child { border-right: none; }
+.paFunnelCount { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+.paFunnelLabel { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; text-align: center; }
+.paFunnelRate { font-size: 0.75rem; color: var(--accent, #8b6fff); margin-top: 6px; font-weight: 600; }
+.paFunnelArrow { position: absolute; right: -10px; top: 50%; transform: translateY(-50%); font-size: 1rem; color: var(--b3); z-index: 1; }
+.paKpiRow { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+.paKpiCard { flex: 1; min-width: 120px; background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 16px; }
+.paTrendBars { display: flex; align-items: flex-end; gap: 12px; height: 120px; margin-top: 12px; }
+.paTrendGroup { display: flex; gap: 3px; align-items: flex-end; flex: 1; }
+.paTrendWon { background: var(--green, #24b8a8); border-radius: 3px 3px 0 0; flex: 1; min-height: 4px; }
+.paTrendLost { background: var(--red, #ef4444); border-radius: 3px 3px 0 0; flex: 1; min-height: 4px; opacity: 0.7; }
+
+/* Pipeline Analytics: funnel tones */
+.paStageNew         { border-top: 3px solid var(--muted, rgba(255,255,255,0.2)); }
+.paStageContacted   { border-top: 3px solid var(--blue, #5b8df8); }
+.paStageQualified   { border-top: 3px solid var(--purple, #8b6fff); }
+.paStageProposal    { border-top: 3px solid var(--amber, #f59e0b); }
+.paStageWon         { border-top: 3px solid var(--green, #24b8a8); }
+.paStageLost        { border-top: 3px solid var(--red, #ef4444); }
+
+/* Pipeline Analytics: loss reason list */
+.paLossItem { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid var(--b1); border-radius: var(--r-sm); background: var(--s1); }
+.paLossReason { font-size: 0.82rem; color: var(--text); }
+.paLossBadge { font-size: 0.72rem; font-family: var(--font-dm-mono), monospace; font-weight: 700; background: color-mix(in srgb, var(--red) 12%, var(--s2)); color: var(--red, #ef4444); border-radius: var(--r-xs); padding: 3px 9px; }
+
+/* Pipeline Analytics: trend month label */
+.paTrendMonthRow { display: flex; gap: 12px; margin-top: 6px; }
+.paTrendMonthLabel { flex: 1; font-size: 0.62rem; font-family: var(--font-dm-mono), monospace; color: var(--muted); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .paKpiRow { gap: 10px; }
+  .paKpiCard { min-width: 100px; }
+  .paFunnelStage { min-width: 60px; padding: 12px 4px; }
+}

@@ -39,6 +39,7 @@ export const pageTitles: Record<PageId, [string, string]> = {
   crisis: ["Governance", "Crisis Command"],
   performance: ["Governance", "Performance Overview"],
   staffUtilisation: ["Governance", "Staff Utilisation Rate"],
+  capacityForecast: ["Governance", "Capacity Planning Forecast"],
   teamPerformanceReport: ["Governance", "Team Performance Report"],
   portfolioRiskRegister: ["Governance", "Portfolio Risk Register"],
   legal: ["Governance", "Legal Control Center"],
@@ -87,5 +88,7 @@ export const pageTitles: Record<PageId, [string, string]> = {
   contentApproval: ["Communication", "Content Approval"],
   meetingArchive: ["Communication", "Meeting Archive"],
   prospecting: ["Operations", "AI Prospecting"],
+  invoiceChasing: ["Finance", "Invoice Chasing"],
+  pipelineAnalytics: ["Finance", "Pipeline Analytics"],
   settings: ["Account", "Settings"]
 };

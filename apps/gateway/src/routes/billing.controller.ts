@@ -366,6 +366,48 @@ export class BillingController {
     });
   }
 
+  // ── GET /invoices/overdue-chase-status ───────────────────────────────────
+  @Roles("ADMIN")
+  @Get("invoices/overdue-chase-status")
+  async getOverdueChaseStatus(
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.BILLING_SERVICE_URL ?? "http://localhost:4006";
+    return proxyRequest(`${baseUrl}/invoices/overdue-chase-status`, "GET", undefined, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "ADMIN",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  // ── POST /invoices/:id/chase ──────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Post("invoices/:id/chase")
+  async chaseInvoice(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.BILLING_SERVICE_URL ?? "http://localhost:4006";
+    return proxyRequest(`${baseUrl}/invoices/${id}/chase`, "POST", body as Record<string, unknown>, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "ADMIN",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
   @Roles("ADMIN", "STAFF")
   @Get("admin/revenue-series")
   async revenueSeries(

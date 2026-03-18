@@ -663,6 +663,158 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
     }
   });
 
+  // ─── Pipeline Conversion Analytics ──────────────────────────────────────
+  app.get("/pipeline/conversion-analytics", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      reply.status(403);
+      return {
+        success: false,
+        error: { code: "FORBIDDEN", message: "CLIENT cannot access pipeline analytics" }
+      } as ApiResponse;
+    }
+
+    try {
+      const leads = await prisma.lead.findMany({
+        orderBy: { createdAt: "asc" }
+      });
+
+      // Stage order for funnel
+      const FUNNEL_STAGES = ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL", "WON", "LOST"] as const;
+      type LeadStatus = typeof FUNNEL_STAGES[number];
+
+      // Count and estimated value per stage
+      const stageCounts: Record<string, number> = {};
+      const stageValues: Record<string, number> = {};
+      for (const stage of FUNNEL_STAGES) {
+        stageCounts[stage] = 0;
+        stageValues[stage] = 0;
+      }
+      for (const lead of leads) {
+        const s = lead.status as string;
+        if (s in stageCounts) {
+          stageCounts[s]++;
+          // estimatedValue field may not exist on all leads — default 0
+          stageValues[s] += (lead as unknown as { estimatedValue?: number }).estimatedValue ?? 0;
+        }
+      }
+
+      // Build funnel stages with conversion rates
+      const funnel = FUNNEL_STAGES.map((stage, i) => {
+        const count = stageCounts[stage];
+        const value = stageValues[stage];
+        let conversionRate = 0;
+        if (i > 0) {
+          const prevCount = stageCounts[FUNNEL_STAGES[i - 1]];
+          conversionRate = prevCount > 0 ? Math.round((count / prevCount) * 100) : 0;
+        } else {
+          conversionRate = 100;
+        }
+        return { stage, count, value, conversionRate };
+      });
+
+      // Average deal size (won leads only)
+      const wonLeads = leads.filter((l) => l.status === "WON");
+      const wonValues = wonLeads.map((l) => (l as unknown as { estimatedValue?: number }).estimatedValue ?? 0);
+      const avgDealSizeZAR = wonLeads.length > 0
+        ? Math.round(wonValues.reduce((a, b) => a + b, 0) / wonLeads.length)
+        : 0;
+
+      // Average sales cycle (days from created to won)
+      const activities = leads.length
+        ? await prisma.leadActivity.findMany({
+            where: { leadId: { in: leads.map((l) => l.id) }, type: "STATUS_CHANGED" },
+            orderBy: { createdAt: "asc" }
+          })
+        : [];
+
+      // Build map: leadId → date when it reached WON
+      const wonDateMap = new Map<string, Date>();
+      for (const act of activities) {
+        if (act.details?.includes("→ WON")) {
+          wonDateMap.set(act.leadId, act.createdAt);
+        }
+      }
+      let avgSalesCycleDays = 0;
+      if (wonLeads.length > 0) {
+        const cycleDays = wonLeads.map((l) => {
+          const wonAt = wonDateMap.get(l.id) ?? l.updatedAt;
+          return Math.max(0, Math.round((wonAt.getTime() - l.createdAt.getTime()) / 86400000));
+        });
+        avgSalesCycleDays = Math.round(cycleDays.reduce((a, b) => a + b, 0) / cycleDays.length);
+      }
+
+      // Won / lost this month
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const wonThisMonth = leads.filter((l) => l.status === "WON" && l.updatedAt >= monthStart).length;
+      const lostThisMonth = leads.filter((l) => l.status === "LOST" && l.updatedAt >= monthStart).length;
+
+      // Forecast: PROPOSAL + QUALIFIED leads × avg deal size
+      const pipelineCount = stageCounts["PROPOSAL"] + stageCounts["QUALIFIED"];
+      const forecastNextMonth = pipelineCount * avgDealSizeZAR;
+
+      // Top loss reasons
+      const lostLeads = leads.filter((l) => l.status === "LOST" && l.lostReason);
+      const reasonCounts: Record<string, number> = {};
+      for (const lead of lostLeads) {
+        const r = lead.lostReason?.trim() ?? "Unknown";
+        reasonCounts[r] = (reasonCounts[r] ?? 0) + 1;
+      }
+      const topLossReasons = Object.entries(reasonCounts)
+        .map(([reason, count]) => ({ reason, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      // Monthly trend: last 6 months
+      const months: { month: string; won: number; lost: number; revenue: number }[] = [];
+      for (let offset = 5; offset >= 0; offset--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+        const mStart = new Date(d.getFullYear(), d.getMonth(), 1);
+        const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+        const label = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+        const mWon = leads.filter((l) => l.status === "WON" && l.updatedAt >= mStart && l.updatedAt < mEnd);
+        const mLost = leads.filter((l) => l.status === "LOST" && l.updatedAt >= mStart && l.updatedAt < mEnd);
+        const revenue = mWon.reduce((s, l) => s + ((l as unknown as { estimatedValue?: number }).estimatedValue ?? 0), 0);
+        months.push({ month: label, won: mWon.length, lost: mLost.length, revenue });
+      }
+
+      return {
+        success: true,
+        data: {
+          funnel,
+          avgDealSizeZAR,
+          avgSalesCycleDays,
+          wonThisMonth,
+          lostThisMonth,
+          forecastNextMonth,
+          topLossReasons,
+          monthlyTrend: months
+        },
+        meta: { requestId: scope.requestId }
+      } as ApiResponse<{
+        funnel: { stage: string; count: number; value: number; conversionRate: number }[];
+        avgDealSizeZAR: number;
+        avgSalesCycleDays: number;
+        wonThisMonth: number;
+        lostThisMonth: number;
+        forecastNextMonth: number;
+        topLossReasons: { reason: string; count: number }[];
+        monthlyTrend: { month: string; won: number; lost: number; revenue: number }[];
+      }>;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return {
+        success: false,
+        error: {
+          code: "PIPELINE_ANALYTICS_FETCH_FAILED",
+          message: "Unable to fetch pipeline analytics"
+        }
+      } as ApiResponse;
+    }
+  });
+
   app.get("/leads/preferences", async (request, reply) => {
     const scope = readScopeHeaders(request);
     const parsed = getLeadPreferencesQuerySchema.safeParse(request.query ?? {});

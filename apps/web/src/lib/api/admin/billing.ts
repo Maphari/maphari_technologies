@@ -100,6 +100,75 @@ export async function createPaymentWithRefresh(
   });
 }
 
+// ── Invoice Chasing ────────────────────────────────────────────────────────────
+
+export type ChaseStage = "CHASE_3D" | "CHASE_7D" | "CHASE_14D" | "PAUSED" | "NONE";
+
+export interface OverdueInvoice {
+  id: string;
+  clientId: string;
+  clientName?: string;
+  amountCents: number;
+  dueDate: string;
+  daysOverdue: number;
+  chaseStage: ChaseStage;
+  lastChasedAt: string | null;
+  nextChaseAt: string | null;
+}
+
+export interface OverdueChaseData {
+  invoices: OverdueInvoice[];
+}
+
+export async function loadOverdueChaseStatusWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<OverdueChaseData>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<OverdueChaseData>(
+      "/invoices/overdue-chase-status",
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "CHASE_STATUS_FAILED",
+          response.payload.error?.message ?? "Unable to load overdue chase status."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? null, error: null };
+  });
+}
+
+export async function triggerInvoiceChaseWithRefresh(
+  session: AuthSession,
+  invoiceId: string,
+  action: "send" | "pause" | "resume"
+): Promise<AuthorizedResult<void>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ ok: boolean }>(
+      `/invoices/${invoiceId}/chase`,
+      accessToken,
+      { method: "POST", body: { action } }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "CHASE_ACTION_FAILED",
+          response.payload.error?.message ?? "Unable to process chase action."
+        )
+      };
+    }
+    return { unauthorized: false, data: undefined, error: null };
+  });
+}
+
 // ── Revenue Series ─────────────────────────────────────────────────────────────
 
 export interface RevenueSeries {

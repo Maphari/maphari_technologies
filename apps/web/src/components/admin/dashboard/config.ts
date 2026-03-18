@@ -84,6 +84,9 @@ export type PageId =
   | "meetingArchive"
   | "prospecting"
   | "staffUtilisation"
+  | "capacityForecast"
+  | "invoiceChasing"
+  | "pipelineAnalytics"
   | "settings";
 
 // ─── Re-exports for backward compatibility ───
@@ -122,6 +125,7 @@ export const navItems: NavItem[] = [
   { id: "interventions", label: "Interventions", section: "Experience" },
   { id: "loyaltyCredits", label: "Loyalty", section: "Finance" },
   { id: "invoices", label: "Billing", section: "Finance" },
+  { id: "invoiceChasing", label: "Invoice Chasing", section: "Finance" },
   { id: "revops", label: "RevOps", section: "Finance" },
   { id: "revenueForecasting", label: "Rev. Forecast", section: "Finance" },
   { id: "profitability", label: "Prof. / Client", section: "Finance" },
@@ -155,6 +159,7 @@ export const navItems: NavItem[] = [
   { id: "platform", label: "Platform", section: "Governance" },
   { id: "performance", label: "Performance", section: "Governance" },
   { id: "staffUtilisation", label: "Utilisation", section: "Governance" },
+  { id: "capacityForecast", label: "Capacity Forecast", section: "Governance" },
   { id: "teamPerformanceReport", label: "Team Report", section: "Governance" },
   { id: "portfolioRiskRegister", label: "Risk Register", section: "Governance" },
   { id: "legal", label: "Legal", section: "Governance" },
@@ -182,6 +187,7 @@ export const navItems: NavItem[] = [
   { id: "automationAuditTrail", label: "Auto. Audit", section: "Governance" },
   { id: "projectBriefing", label: "Briefing", section: "Governance" },
   { id: "activeHealthMonitor", label: "Health Monitor", section: "Governance" },
+  { id: "pipelineAnalytics", label: "Pipeline Analytics", section: "Finance" },
   { id: "settings", label: "Settings", section: "Governance" }
 ];
 

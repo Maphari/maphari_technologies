@@ -1168,7 +1168,7 @@ export function MaphariStaffDashboard() {
 
             <TriggerLogPage isActive={activePage === "triggerlog"} session={session ?? null} />
 
-            <PrivateNotesPage isActive={activePage === "privatenotes"} />
+            <PrivateNotesPage isActive={activePage === "privatenotes"} session={session ?? null} />
 
             <KeyboardShortcutsPage isActive={activePage === "keyboardshortcuts"} session={session ?? null} />
 

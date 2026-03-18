@@ -495,6 +495,132 @@ export async function registerAiRoutes(app: FastifyInstance): Promise<void> {
     } as ApiResponse<{ draft: string; wordCount: number; jobId: string }>;
   });
 
+  // ── POST /ai/draft-client-update ─────────────────────────────────────────
+  // Generates a friendly client update email from completed task data.
+  // STAFF + ADMIN only — enforced at the gateway layer.
+
+  app.post("/ai/draft-client-update", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const body = request.body as {
+      projectId?: unknown;
+      clientName?: unknown;
+      completedTasks?: unknown;
+      period?: unknown;
+    } | null;
+
+    const projectId      = typeof body?.projectId   === "string" ? body.projectId.trim()   : "";
+    const clientName     = typeof body?.clientName  === "string" ? body.clientName.trim()  : "";
+    const period         = typeof body?.period       === "string" ? body.period.trim()       : "this week";
+    const completedTasks = Array.isArray(body?.completedTasks)
+      ? (body.completedTasks as unknown[]).filter((t): t is string => typeof t === "string")
+      : [];
+
+    if (!clientName) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "clientName is required." }
+      } as ApiResponse;
+    }
+
+    const taskBullets = completedTasks.length
+      ? completedTasks.map((t) => `• ${t}`).join("\n")
+      : "• (no specific tasks listed)";
+
+    const prompt = [
+      `Write a professional but friendly client update email for ${clientName}.`,
+      projectId ? `Project ID: ${projectId}.` : "",
+      `Period: ${period}.`,
+      ``,
+      `Completed this period:`,
+      taskBullets,
+      ``,
+      `Keep it under 200 words. Positive tone. No jargon. Use paragraph format.`,
+      `Return JSON with exactly two fields: "subject" (a concise email subject line) and "draft" (the email body only, no subject line repeated).`
+    ].filter(Boolean).join("\n");
+
+    const clientId = scope.clientId ?? "system";
+    const job = await createAiWorkflowJob("client-update", { clientId, prompt, model: "claude-sonnet-4-6" });
+    metrics?.inc("ai_jobs_total", { service: "ai", status: job.status });
+    metrics?.observe("ai_job_latency_ms", job.latencyMs, { service: "ai", model: job.model });
+
+    // Attempt to parse JSON from LLM response; fall back to raw text
+    let draft  = job.response;
+    let subject = `${period.charAt(0).toUpperCase() + period.slice(1)} update — ${clientName}`;
+    try {
+      const jsonMatch = job.response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]) as { subject?: string; draft?: string };
+        if (typeof parsed.draft === "string")   draft   = parsed.draft;
+        if (typeof parsed.subject === "string") subject = parsed.subject;
+      }
+    } catch { /* keep raw response */ }
+
+    return {
+      success: true,
+      data: { draft, subject, jobId: job.id },
+      meta: { requestId: scope.requestId }
+    } as ApiResponse<{ draft: string; subject: string; jobId: string }>;
+  });
+
+  // ── POST /ai/generate-report ──────────────────────────────────────────────
+  // Generates a markdown project report for staff recurring-report feature.
+  // STAFF + ADMIN only — enforced at the gateway layer.
+
+  app.post("/ai/generate-report", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const body = request.body as {
+      reportType?: unknown;
+      projectId?: unknown;
+      clientName?: unknown;
+      period?: unknown;
+    } | null;
+
+    const reportType = typeof body?.reportType === "string" ? body.reportType.trim() : "Weekly Progress";
+    const projectId  = typeof body?.projectId  === "string" ? body.projectId.trim()  : "";
+    const clientName = typeof body?.clientName === "string" ? body.clientName.trim() : "Client";
+    const period     = typeof body?.period      === "string" ? body.period.trim()      : "this week";
+
+    const prompt = [
+      `Generate a ${reportType} report for ${clientName}.`,
+      projectId ? `Project ID: ${projectId}.` : "",
+      `Period: ${period}.`,
+      ``,
+      `Create a well-structured markdown report with these sections:`,
+      `1. Executive Summary`,
+      `2. Progress This Period`,
+      `3. Milestones & Deliverables`,
+      `4. Risks & Blockers`,
+      `5. Next Steps`,
+      ``,
+      `Keep each section concise. Use markdown headers (##) and bullet points.`,
+      `Return JSON with exactly two fields: "title" (report title string) and "markdown" (the full markdown content).`
+    ].filter(Boolean).join("\n");
+
+    const clientId = scope.clientId ?? "system";
+    const job = await createAiWorkflowJob("report", { clientId, prompt, model: "claude-sonnet-4-6" });
+    metrics?.inc("ai_jobs_total", { service: "ai", status: job.status });
+    metrics?.observe("ai_job_latency_ms", job.latencyMs, { service: "ai", model: job.model });
+
+    // Attempt to parse JSON from LLM response; fall back to raw text
+    let markdown = job.response;
+    let title    = `${reportType} — ${clientName} (${period})`;
+    try {
+      const jsonMatch = job.response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]) as { title?: string; markdown?: string };
+        if (typeof parsed.markdown === "string") markdown = parsed.markdown;
+        if (typeof parsed.title    === "string") title    = parsed.title;
+      }
+    } catch { /* keep raw response */ }
+
+    return {
+      success: true,
+      data: { markdown, title, jobId: job.id },
+      meta: { requestId: scope.requestId }
+    } as ApiResponse<{ markdown: string; title: string; jobId: string }>;
+  });
+
   // ── POST /ai/prospect ─────────────────────────────────────────────────────
   // Searches for local businesses matching the given industry + location, then
   // uses Claude Sonnet 4.6 to draft a personalised pitch email per prospect.
