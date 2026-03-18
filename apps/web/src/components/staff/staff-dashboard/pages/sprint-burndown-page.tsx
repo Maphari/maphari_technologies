@@ -6,6 +6,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
+import { SkeletonCard } from "@/components/shared/ui/page-skeleton";
 import { saveSession } from "../../../../lib/auth/session";
 import type { AuthSession } from "../../../../lib/auth/session";
 import {
@@ -55,6 +56,12 @@ function healthCssClass(h: "green" | "amber" | "red"): string {
   if (h === "amber") return "sbdHealthAmber";
   return "sbdHealthRed";
 }
+
+const HEALTH_ICON: Record<string, string> = {
+  "On Track": "✓",
+  "At Risk":  "⚠",
+  "Behind":   "✕",
+};
 
 // ── Burn-Down SVG ─────────────────────────────────────────────────────────────
 
@@ -147,7 +154,7 @@ function BurnDownSvg({
           <g key={frac}>
             <line
               x1={PAD_L} y1={y} x2={SVG_W - PAD_R} y2={y}
-              stroke="rgba(255,255,255,0.04)" strokeWidth={1}
+              stroke="var(--b1)" strokeWidth={1}
             />
             <text x={PAD_L - 3} y={y + 3} textAnchor="end" className={cx("sbdAxisLabel")}>
               {Math.round(frac * totalPoints)}
@@ -322,11 +329,7 @@ export function SprintBurndownPage({
           </div>
         )}
 
-        {loading && (
-          <div className={cx("emptyState")}>
-            <div className={cx("text12", "colorMuted2")}>Loading sprint data…</div>
-          </div>
-        )}
+        {loading && <SkeletonCard rows={4} />}
 
         {!loading && error && (
           <div className={cx("emptyState")}>
@@ -361,6 +364,12 @@ export function SprintBurndownPage({
                 {new Date(data.endDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 {" · "}
                 {data.totalPoints} point{data.totalPoints !== 1 ? "s" : ""} total
+              </div>
+
+              <div className={cx("sbdLegend")}>
+                <span><span className={cx("sbdLegendDot", "sbdLegendIdeal")} />Ideal burn</span>
+                <span><span className={cx("sbdLegendDot", "sbdLegendActual")} />Actual</span>
+                <span><span className={cx("sbdLegendDot", "sbdLegendRisk")} />At Risk</span>
               </div>
 
               <BurnDownSvg
@@ -425,7 +434,7 @@ export function SprintBurndownPage({
                     <div className={cx("sbdStatLabel")}>Sprint Health</div>
                     <div className={cx("sbdStatValue")}>
                       <span className={cx("sbdHealthChip", healthCssClass(health))}>
-                        {healthLabel(health)}
+                        <span aria-hidden="true">{HEALTH_ICON[healthLabel(health)] ?? ""}</span>{" "}{healthLabel(health)}
                       </span>
                     </div>
                   </div>

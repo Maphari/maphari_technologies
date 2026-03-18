@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { cx } from "../style";
 import { getWorkloadHeatmap, type StaffWorkloadRow } from "../../../../lib/api/staff/workload";
 import type { AuthSession } from "../../../../lib/auth/session";
+import { SkeletonTable } from "@/components/shared/ui/page-skeleton";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -27,24 +28,6 @@ function cellTone(pct: number): "wlhGreen" | "wlhAmber" | "wlhRed" {
   if (pct > 90) return "wlhRed";
   if (pct > 70) return "wlhAmber";
   return "wlhGreen";
-}
-
-// ── Skeleton ──────────────────────────────────────────────────────────────────
-
-function SkeletonRow({ cols }: { cols: number }) {
-  return (
-    <tr className={cx("opacity50")}>
-      <td className={cx("wlhCell", "wlhNameCell")}>
-        <div className={cx("skeleBlock10x50p")} style={{ marginBottom: 4 }} />
-        <div className={cx("skeleBlock9x60p")} />
-      </td>
-      {Array.from({ length: cols }).map((_, i) => (
-        <td key={i} className={cx("wlhCell")}>
-          <div className={cx("skeleBlock22x35p")} style={{ margin: "0 auto" }} />
-        </td>
-      ))}
-    </tr>
-  );
 }
 
 // ── Page component ────────────────────────────────────────────────────────────
@@ -68,7 +51,6 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
   }, [session, isActive]);
 
   const weekLabels = rows[0]?.weeks.map((w) => w.weekLabel) ?? ["Week 1", "Week 2", "Week 3", "Week 4"];
-  const numCols    = weekLabels.length;
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-workload-heatmap">
@@ -102,25 +84,26 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
           <div className={cx("emptyStateSub")}>Workload heatmap will appear once staff profiles and tasks are configured.</div>
         </div>
       ) : (
-        <div className={cx("tableWrap")}>
-          <table className={cx("wlhTable")}>
-            <thead>
-              <tr>
-                <th scope="col" className={cx("wlhCell", "wlhNameCell", "wlhHeaderCell")}>
-                  Team Member
-                </th>
-                {weekLabels.map((label) => (
-                  <th key={label} scope="col" className={cx("wlhCell", "wlhHeaderCell")}>
-                    {label}
+        <div className={cx("tableWrap", "wlhTableWrap")}>
+          {loading ? (
+            <SkeletonTable rows={5} cols={5} />
+          ) : (
+            <table className={cx("wlhTable")}>
+              <thead>
+                <tr>
+                  <th scope="col" className={cx("wlhCell", "wlhNameCell", "wlhHeaderCell")}>
+                    Team Member
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading
-                ? [1, 2, 3, 4, 5].map((n) => <SkeletonRow key={n} cols={numCols} />)
-                : rows.map((row) => (
-                  <tr key={row.staffId}>
+                  {weekLabels.map((label) => (
+                    <th key={label} scope="col" className={cx("wlhCell", "wlhHeaderCell")}>
+                      {label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.staffId} className={cx("staffTableRow")}>
                     <td className={cx("wlhCell", "wlhNameCell")}>
                       <span className={cx("wlhStaffName")}>{row.name}</span>
                       <span className={cx("wlhStaffRole")}>{row.role}</span>
@@ -129,19 +112,24 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
                       const pct  = utilPct(week.allocatedHours, week.availableHours);
                       const tone = cellTone(pct);
                       return (
-                        <td key={week.weekLabel} className={cx("wlhCell", tone)}>
+                        <td
+                          key={week.weekLabel}
+                          className={cx("wlhCell", tone)}
+                          title={`${week.allocatedHours}h allocated of ${week.availableHours}h available`}
+                        >
                           <span className={cx("wlhHours")}>
                             {week.allocatedHours}h / {week.availableHours}h
                           </span>
                           <span className={cx("wlhPct")}>{pct}%</span>
+                          <span className={cx("wlhCellTip")}>{pct}% utilised</span>
                         </td>
                       );
                     })}
                   </tr>
-                ))
-              }
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
     </section>
