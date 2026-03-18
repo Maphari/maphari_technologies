@@ -21,6 +21,7 @@ import type { AdminExpense } from "../../../../lib/api/admin/expenses";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
 import { loadExpensesWithRefresh } from "../../../../lib/api/admin/expenses";
 import { loadTimeEntriesWithRefresh } from "../../../../lib/api/admin/tasks";
+import { Alert } from "@/components/shared/ui/alert";
 
 // Staff hourly cost in ZAR (cents). Override via NEXT_PUBLIC_STAFF_HOURLY_COST_ZAR.
 const STAFF_HOURLY_COST_CENTS = (() => {
@@ -57,6 +58,10 @@ function plRagClass(margin: number): string {
 
 function centsToK(cents: number): string {
   return `R${(cents / 100_000).toFixed(1)}k`;
+}
+
+function fmtZAR(value: number): string {
+  return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR", notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 function clientColor(_index: number): string {
@@ -129,30 +134,41 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
   const [expenses, setExpenses] = useState<AdminExpense[]>([]);
   const [timeEntries, setTimeEntries] = useState<ProjectTimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  function loadData() {
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setLoadError(null);
+    void (async () => {
+      try {
+        const [snapshotResult, expensesResult, timeResult] = await Promise.all([
+          loadAdminSnapshotWithRefresh(session),
+          loadExpensesWithRefresh(session),
+          loadTimeEntriesWithRefresh(session)
+        ]);
+        if (snapshotResult.nextSession) saveSession(snapshotResult.nextSession);
+        if (expensesResult.nextSession) saveSession(expensesResult.nextSession);
+        if (timeResult.nextSession) saveSession(timeResult.nextSession);
+        if (snapshotResult.error) { setLoadError("Failed to load profitability data. Please try again."); onNotify("error", snapshotResult.error.message); }
+        if (expensesResult.error) onNotify("error", expensesResult.error.message);
+        if (timeResult.error) onNotify("error", timeResult.error.message);
+        setClients(snapshotResult.data?.clients ?? []);
+        setInvoices(snapshotResult.data?.invoices ?? []);
+        setExpenses(expensesResult.data ?? []);
+        setTimeEntries(timeResult.data ?? []);
+      } catch {
+        setLoadError("Failed to load profitability data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
-    let cancelled = false;
-    void (async () => {
-      const [snapshotResult, expensesResult, timeResult] = await Promise.all([
-        loadAdminSnapshotWithRefresh(session),
-        loadExpensesWithRefresh(session),
-        loadTimeEntriesWithRefresh(session)
-      ]);
-      if (cancelled) return;
-      if (snapshotResult.nextSession) saveSession(snapshotResult.nextSession);
-      if (expensesResult.nextSession) saveSession(expensesResult.nextSession);
-      if (timeResult.nextSession) saveSession(timeResult.nextSession);
-      if (snapshotResult.error) onNotify("error", snapshotResult.error.message);
-      if (expensesResult.error) onNotify("error", expensesResult.error.message);
-      if (timeResult.error) onNotify("error", timeResult.error.message);
-      setClients(snapshotResult.data?.clients ?? []);
-      setInvoices(snapshotResult.data?.invoices ?? []);
-      setExpenses(expensesResult.data ?? []);
-      setTimeEntries(timeResult.data ?? []);
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, onNotify]);
 
   // ── Compute per-client profitability ─────────────────────────────────────
@@ -272,9 +288,9 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
       {/* ── KPI cards ── */}
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Total Revenue", value: centsToK(totalRevenue), color: "var(--accent)", sub: "Paid invoices" },
-          { label: "Total Costs", value: centsToK(totalCost), color: "var(--red)", sub: "Approved expenses" },
-          { label: "Net Profit", value: centsToK(totalProfit), color: "var(--accent)", sub: "Revenue minus costs" },
+          { label: "Total Revenue", value: fmtZAR(totalRevenue / 100), color: "var(--accent)", sub: "Paid invoices" },
+          { label: "Total Costs", value: fmtZAR(totalCost / 100), color: "var(--red)", sub: "Approved expenses" },
+          { label: "Net Profit", value: fmtZAR(totalProfit / 100), color: "var(--accent)", sub: "Revenue minus costs" },
           { label: "Avg Margin", value: `${avgMargin}%`, color: avgMargin >= 50 ? "var(--accent)" : "var(--amber)", sub: "Portfolio average" }
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
@@ -284,6 +300,10 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
           </div>
         ))}
       </div>
+
+      {loadError && (
+        <Alert variant="error" message={loadError} onRetry={() => { setLoadError(null); void loadData(); }} />
+      )}
 
       {loading && (
         <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading data…</div>
@@ -306,12 +326,12 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
           </AdminFilterBar>
 
           {activeTab === "profitability" && (
-            <div className={styles.ppcList12}>
+            <div className={cx(styles.ppcList12, "tabPane")}>
               {sorted.length === 0 && (
                 <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No client data available.</div>
               )}
               {sorted.map((c) => (
-                <div key={c.id} className={cx(styles.ppcClientCard, c.margin < 30 && styles.ppcClientCardRisk)}>
+                <div key={c.id} className={cx(styles.ppcClientCard, c.margin < 30 && styles.ppcClientCardRisk, "tableRow", "tableRowClickable")}>
                   <div className={styles.ppcMainGrid}>
                     <div>
                       <div className={styles.ppcClientNameRow}>
@@ -337,10 +357,10 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
                     <div className={styles.ppcNumCenter}>
                       <div className={styles.ppcMiniLabel}>Margin</div>
                       <div className={cx(styles.ppcMarginBig, marginClass(c.margin))}>{c.margin}%</div>
-                      <div className={styles.plMarginBar}>
+                      <div className={cx(styles.plMarginBar, styles.ppcMarginBarWrap)}>
                         <div
-                          className={cx(styles.plMarginFill, plFillClass(c.margin))}
-                          style={{ width: `${Math.min(Math.max(c.margin, 0), 100)}%` }}
+                          className={cx(styles.plMarginFill, plFillClass(c.margin), styles.ppcBarFill)}
+                          style={{ "--bar-w": `${Math.min(Math.max(c.margin, 0), 100)}%` } as React.CSSProperties}
                         />
                       </div>
                     </div>
@@ -367,7 +387,7 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
           )}
 
           {activeTab === "cost breakdown" && (
-            <div className={styles.ppcSplit2}>
+            <div className={cx(styles.ppcSplit2, "tabPane")}>
               <div className={styles.ppcCard24}>
                 <div className={styles.ppcSectionTitle}>Portfolio Cost Mix</div>
                 {(["staffTime", "tools", "freelancers", "overhead"] as const).map((key, i) => {
@@ -402,7 +422,7 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
           )}
 
           {activeTab === "ltv analysis" && (
-            <div className={styles.ppcLtvGrid}>
+            <div className={cx(styles.ppcLtvGrid, "tabPane")}>
               {withCalc.length === 0 && (
                 <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No data available.</div>
               )}
@@ -436,7 +456,7 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
           )}
 
           {activeTab === "margin trends" && (
-            <div className={styles.ppcTrendCard}>
+            <div className={cx(styles.ppcTrendCard, "tabPane")}>
               <div className={styles.ppcSectionTitle}>Margin by Client - Current Period</div>
               <div className={styles.ppcTrendList}>
                 {withCalc.length === 0 && (

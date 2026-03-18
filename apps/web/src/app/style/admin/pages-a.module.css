@@ -7679,3 +7679,15 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   .paKpiCard { min-width: 100px; }
   .paFunnelStage { min-width: 60px; padding: 12px 4px; }
 }
+
+/* ── Profitability polish ─────────────────────────────────────── */
+.ppcDrillRow { background: var(--s2); animation: ppcDrillFadeIn 0.15s ease; }
+@keyframes ppcDrillFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.ppcDrillRow:not(:last-child) { border-bottom: 1px solid var(--b1); }
+.ppcRowExpanded { background: color-mix(in srgb, var(--accent, #8b6fff) 5%, transparent); }
+.pppProgressLabel { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; }
+.pppVarianceOver { color: var(--red, #ef4444); font-size: 0.75rem; font-weight: 600; }
+.pppVarianceOk   { color: var(--green, #24b8a8); font-size: 0.75rem; }
+.ppcMarginBar { height: 6px; border-radius: 3px; background: var(--green, #24b8a8); transition: width 0.3s ease; }
+.ppcMarginBarWrap { background: var(--s3); border-radius: 3px; height: 6px; overflow: hidden; margin-top: 4px; width: 100%; }
+.ppcBarFill { width: var(--bar-w, 0%); height: 6px; border-radius: 3px; background: var(--green, #24b8a8); transition: width 0.3s ease; }

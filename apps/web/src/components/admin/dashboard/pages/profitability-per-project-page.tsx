@@ -22,6 +22,7 @@ import { saveSession } from "../../../../lib/auth/session";
 import type { AdminProject, AdminInvoice, ProjectTimeEntry } from "../../../../lib/api/admin/types";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
 import { loadTimeEntriesWithRefresh } from "../../../../lib/api/admin/tasks";
+import { SkeletonCard } from "@/components/shared/ui/page-skeleton";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const HOURLY_RATE_CENTS = 85000; // R850 per hour in cents (aligns with per-client page)
@@ -309,7 +310,7 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
                 const marginColor = p.margin >= 55 ? "var(--accent)" : p.margin >= 35 ? "var(--amber)" : "var(--red)";
                 const isExpanded = expandedProjectId === p.id;
                 return (
-                  <div key={p.id} className={cx(styles.pppCard, toneBorderClass(p.margin < 30))}>
+                  <div key={p.id} className={cx(styles.pppCard, toneBorderClass(p.margin < 30), "tableRow", "tableRowClickable")}>
                     {/* ── Clickable header row ── */}
                     <button
                       type="button"
@@ -319,6 +320,11 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
                     >
                       <div className={styles.pppMainGrid}>
                         <div className={styles.pppNameCell}>
+                          <span className={cx("expandChevron", isExpanded ? "expandChevronOpen" : "")}>
+                            <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true">
+                              <path d="M2 1l4 3-4 3V1z"/>
+                            </svg>
+                          </span>
                           <span className={cx(styles.plRag, ragFillClass(p.margin))} title={p.margin >= 30 ? "Healthy" : p.margin >= 10 ? "Watch" : "At risk"} />
                           <div>
                             <div className={styles.pppProjName}>{p.name}</div>
@@ -353,8 +359,11 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
                         <div className={styles.pppCenterCol}>
                           <div className={styles.pppMiniLabel}>Margin %</div>
                           <div className={cx(styles.pppMarginBig, colorClass(marginColor))}>{p.margin}%</div>
-                          <div className={styles.plMarginBar}>
-                            <div className={cx(styles.plMarginFill, ragFillClass(p.margin))} style={{ width: `${Math.min(Math.max(p.margin, 0), 100)}%` }} />
+                          <div className={cx(styles.plMarginBar, styles.ppcMarginBarWrap)}>
+                            <div
+                              className={cx(styles.plMarginFill, ragFillClass(p.margin), styles.ppcBarFill)}
+                              style={{ "--bar-w": `${Math.min(Math.max(p.margin, 0), 100)}%` } as React.CSSProperties}
+                            />
                           </div>
                         </div>
                       </div>
@@ -362,12 +371,14 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
 
                     {/* ── Drill-down: cost breakdown by staff member ── */}
                     {isExpanded && (
-                      <div className={styles.plDrillRow}>
+                      <div className={cx(styles.plDrillRow, styles.ppcDrillRow)}>
                         <div className={styles.pppDrillHeader}>
                           <span className={cx(styles.pppMiniLabel, "fw700")}>Cost Breakdown by Staff Member</span>
                           <span className={cx("text11", "colorMuted")}>{p.hoursSpent}h total · R{Math.round(HOURLY_RATE_CENTS / 100)}/h rate</span>
                         </div>
-                        {p.staffBreakdown.length === 0 ? (
+                        {loading ? (
+                          <SkeletonCard rows={2} />
+                        ) : p.staffBreakdown.length === 0 ? (
                           <div className={cx("text11", "colorMuted", "p12")}>No time entries recorded for this project.</div>
                         ) : (
                           p.staffBreakdown.map((s) => (
