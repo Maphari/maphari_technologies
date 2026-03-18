@@ -2478,3 +2478,41 @@
   gap: 14px;
   padding: 20px 22px 22px;
 }
+
+/* ─── Webhook Hub (wh) ────────────────────────────────────────────────────── */
+
+.whLayout { display: grid; grid-template-columns: 220px 1fr; gap: 24px; }
+.whEventPanel { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 16px; height: fit-content; }
+.whEventGroup { margin-bottom: 12px; }
+.whEventGroupTitle { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.whEventRow { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; font-size: 0.78rem; color: var(--text); }
+.whCard { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 18px 20px; margin-bottom: 12px; }
+.whCardHeader { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.whCardUrl { font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-dm-mono, monospace); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
+.whFailBadge { background: color-mix(in srgb, var(--red) 15%, transparent); color: var(--red); font-size: 0.65rem; padding: 2px 6px; border-radius: 8px; font-weight: 700; }
+.whTestResult { background: var(--s2); border-radius: var(--r-sm); padding: 8px 12px; font-size: 0.78rem; margin-top: 10px; font-family: var(--font-dm-mono, monospace); }
+.whToggle { position: relative; width: 36px; height: 20px; }
+.whToggleInput { opacity: 0; width: 0; height: 0; }
+.whToggleSlider { position: absolute; inset: 0; background: var(--s3); border-radius: 10px; cursor: pointer; transition: background 0.2s; }
+.whToggleInput:checked + .whToggleSlider { background: var(--accent, #8b6fff); }
+.whToggleSlider::before { content: ""; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
+.whToggleInput:checked + .whToggleSlider::before { transform: translateX(16px); }
+@media (max-width: 900px) { .whLayout { grid-template-columns: 1fr; } }
+
+/* ================================================================
+   CLIENT BRANDING SECTION (cb*)
+   File: brand-control-page.tsx  —  "white-label clients" tab
+   ================================================================ */
+
+.cbLayout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+.cbForm { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 24px; }
+.cbPreviewPanel { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 20px; height: fit-content; position: sticky; top: 80px; }
+.cbPreviewTitle { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+.cbPreviewTopbar { height: 48px; background: var(--s2); border-radius: var(--r-sm); display: flex; align-items: center; padding: 0 16px; gap: 10px; margin-bottom: 8px; }
+.cbPreviewLogo { width: 24px; height: 24px; border-radius: 4px; object-fit: contain; flex-shrink: 0; }
+.cbPreviewWordmark { font-size: 0.8rem; font-weight: 700; }
+.cbColorRow { display: flex; align-items: center; gap: 10px; }
+.cbColorSwatch { width: 36px; height: 36px; border-radius: var(--r-sm); border: 1px solid var(--b2); cursor: pointer; padding: 2px; background: transparent; flex-shrink: 0; }
+.cbColorInput { flex: 1; }
+.cbToggleRow { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--b1); margin-top: 4px; }
+@media (max-width: 900px) { .cbLayout { grid-template-columns: 1fr; } }

@@ -87,6 +87,7 @@ export type PageId =
   | "capacityForecast"
   | "invoiceChasing"
   | "pipelineAnalytics"
+  | "webhookHub"
   | "settings";
 
 // ─── Re-exports for backward compatibility ───
@@ -150,6 +151,7 @@ export const navItems: NavItem[] = [
   { id: "employmentRecords", label: "Employment", section: "Communication" },
   { id: "automation", label: "Workflows", section: "Automation" },
   { id: "integrations", label: "Integrations", section: "Automation" },
+  { id: "webhookHub", label: "Webhooks", section: "Automation" },
   { id: "owner", label: "Owner", section: "Governance" },
   { id: "team", label: "Team", section: "Governance" },
   { id: "brand", label: "Brand", section: "Governance" },

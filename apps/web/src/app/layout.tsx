@@ -14,11 +14,11 @@ export const metadata: Metadata = {
     ],
     apple: "/favicon/apple-touch-icon.png"
   },
-  manifest: "/favicon/site.webmanifest"
+  manifest: "/manifest.json"
 };
 
 export const viewport: Viewport = {
-  themeColor: "#050508",
+  themeColor: "#c8f135",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -60,6 +60,13 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('maphari:theme')||'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();` }} />
+        {/* PWA meta tags */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Maphari" />
+        <link rel="apple-touch-icon" href="/icons/icon.svg" />
+        {/* Service worker registration */}
+        <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(err){console.warn('SW registration failed:',err);});});}` }} />
       </head>
       <body className={`${syne.variable} ${dmSans.variable} ${dmMono.variable} ${instrumentSerif.variable}`}>{children}</body>
     </html>

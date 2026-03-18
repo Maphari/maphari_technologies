@@ -649,6 +649,64 @@ export async function setClientPreferenceWithRefresh(
   });
 }
 
+// ── Client Portal Branding ────────────────────────────────────────────────────
+
+export interface ClientBranding {
+  clientId: string;
+  logoUrl: string | null;
+  primaryColor: string | null;
+  companyDisplayName: string | null;
+  portalTitle: string | null;
+  accentColor: string | null;
+  enabled: boolean;
+}
+
+export async function loadClientBrandingWithRefresh(
+  session: AuthSession,
+  clientId: string
+): Promise<AuthorizedResult<ClientBranding>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<ClientBranding>(`/admin/clients/${clientId}/branding`, accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "BRANDING_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load client branding."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? null, error: null };
+  });
+}
+
+export async function updateClientBrandingWithRefresh(
+  session: AuthSession,
+  clientId: string,
+  patch: Partial<ClientBranding>
+): Promise<AuthorizedResult<ClientBranding>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<ClientBranding>(`/admin/clients/${clientId}/branding`, accessToken, {
+      method: "PATCH",
+      body: patch
+    });
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "BRANDING_UPDATE_FAILED",
+          response.payload.error?.message ?? "Unable to update client branding."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? null, error: null };
+  });
+}
+
 /**
  * Creates a new lead in the pipeline.
  * Used by the AI Prospecting page to bulk-insert discovered prospects.

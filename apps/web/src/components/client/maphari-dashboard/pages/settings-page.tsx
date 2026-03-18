@@ -245,6 +245,10 @@ export function SettingsPage({
   const [phoneOtpError, setPhoneOtpError] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
 
+  // PWA install prompt
+  const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
+  const [installed, setInstalled] = useState(false);
+
   const unreadPrefsCount = useMemo(
     () => notificationPrefs.filter((pref) => pref.inApp || pref.email || pref.push).length,
     [notificationPrefs],
@@ -295,6 +299,22 @@ export function SettingsPage({
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [inviteModalOpen, revokeSessionId, gdprTarget]);
+
+  // PWA install prompt listener
+  useEffect(() => {
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", () => setInstalled(true));
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    (installPrompt as any).prompt(); // eslint-disable-line @typescript-eslint/no-explicit-any
+    const { outcome } = await (installPrompt as any).userChoice; // eslint-disable-line @typescript-eslint/no-explicit-any
+    if (outcome === "accepted") setInstalled(true);
+    setInstallPrompt(null);
+  };
 
   // Load persisted workspace preferences
   useEffect(() => {
@@ -840,6 +860,21 @@ export function SettingsPage({
                     </div>
                     <button type="button" className={cx("btnSm")} onClick={onRestartTour}>
                       Restart Tour
+                    </button>
+                  </div>
+                </section>
+              )}
+
+              {/* ── Install App ── */}
+              {installPrompt && !installed && (
+                <section className={cx("card", "profCard", "profCardNarrow")}>
+                  <div className={cx("profCardHeader")}>
+                    <div>
+                      <div className={cx("profCardTitle")}>Install App</div>
+                      <div className={cx("profCardSub")}>Install the Maphari portal as an app on your device for faster access.</div>
+                    </div>
+                    <button type="button" className={cx("btnSm", "btnAccent")} onClick={handleInstall}>
+                      Install App
                     </button>
                   </div>
                 </section>

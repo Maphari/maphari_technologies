@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import { useAdminWorkspaceContext } from "../../admin-workspace-context";
+import { loadClientBrandingWithRefresh, updateClientBrandingWithRefresh, type ClientBranding } from "../../../../lib/api/admin/clients";
+import { saveSession } from "../../../../lib/auth/session";
 
 const brandTokens = {
   primary: "var(--accent)",
@@ -33,7 +36,265 @@ const whitelabelClients: { client: string; domain: string; logoApplied: boolean;
 const tabs = ["brand tokens", "email templates", "custom domains", "white-label clients"] as const;
 type Tab = (typeof tabs)[number];
 
+// ── White-label branding section ─────────────────────────────────────────────
+
+function ClientBrandingSection({ session }: { session: import("../../../../lib/auth/session").AuthSession }) {
+  const { snapshot } = useAdminWorkspaceContext();
+  const clients = snapshot.clients;
+
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [branding, setBranding] = useState<ClientBranding | null>(null);
+  const [loadingBranding, setLoadingBranding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+
+  // Form state
+  const [companyDisplayName, setCompanyDisplayName] = useState("");
+  const [portalTitle, setPortalTitle] = useState("");
+  const [primaryColor, setPrimaryColor] = useState("#c8f135");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [enabled, setEnabled] = useState(false);
+
+  const loadBranding = useCallback(async (clientId: string) => {
+    setLoadingBranding(true);
+    const r = await loadClientBrandingWithRefresh(session, clientId);
+    if (r.nextSession) saveSession(r.nextSession);
+    setLoadingBranding(false);
+    if (!r.error && r.data) {
+      setBranding(r.data);
+      setCompanyDisplayName(r.data.companyDisplayName ?? "");
+      setPortalTitle(r.data.portalTitle ?? "");
+      setPrimaryColor(r.data.primaryColor ?? "#c8f135");
+      setLogoUrl(r.data.logoUrl ?? "");
+      setEnabled(r.data.enabled);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (!selectedClientId) { setBranding(null); return; }
+    void loadBranding(selectedClientId);
+  }, [selectedClientId, loadBranding]);
+
+  const handleSave = async () => {
+    if (!selectedClientId) return;
+    setSaving(true);
+    setSaveMsg(null);
+    const r = await updateClientBrandingWithRefresh(session, selectedClientId, {
+      companyDisplayName: companyDisplayName || null,
+      portalTitle: portalTitle || null,
+      primaryColor: primaryColor || null,
+      logoUrl: logoUrl || null,
+      enabled,
+    });
+    if (r.nextSession) saveSession(r.nextSession);
+    setSaving(false);
+    if (!r.error && r.data) {
+      setBranding(r.data);
+      setSaveMsg("Branding saved.");
+    } else {
+      setSaveMsg("Save failed.");
+    }
+    setTimeout(() => setSaveMsg(null), 3000);
+  };
+
+  const handleReset = async () => {
+    if (!selectedClientId) return;
+    setSaving(true);
+    const r = await updateClientBrandingWithRefresh(session, selectedClientId, { enabled: false });
+    if (r.nextSession) saveSession(r.nextSession);
+    setSaving(false);
+    if (!r.error && r.data) {
+      setBranding(r.data);
+      setCompanyDisplayName("");
+      setPortalTitle("");
+      setPrimaryColor("#c8f135");
+      setLogoUrl("");
+      setEnabled(false);
+      setSaveMsg("Branding reset.");
+    }
+    setTimeout(() => setSaveMsg(null), 3000);
+  };
+
+  // Live preview topbar colour
+  const previewColor = enabled ? primaryColor : "var(--accent)";
+
+  return (
+    <div className={cx("flexCol", "gap20")}>
+      <div className={cx("card", "p20")}>
+        <div className={styles.brandSectionTitle}>Client Portal Branding</div>
+        <div className={cx("text12", "colorMuted", "mb16")}>
+          Configure per-client white-label branding. When enabled, the client portal reflects their brand colours and identity.
+        </div>
+        <div className={cx("flexRow", "gap12", "mb20")}>
+          <div className={cx("flexCol", "gap4")} style={{ flex: 1 }}>
+            <label className={cx("text11", "colorMuted")} htmlFor="cb-client-select">Select Client</label>
+            <select
+              id="cb-client-select"
+              title="Select client to configure branding"
+              className={styles.filterSelect}
+              value={selectedClientId}
+              onChange={e => setSelectedClientId(e.target.value)}
+            >
+              <option value="">— Choose a client —</option>
+              {clients.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {selectedClientId ? (
+          loadingBranding ? (
+            <div className={cx("text12", "colorMuted")}>Loading branding…</div>
+          ) : (
+            <div className={styles.cbLayout}>
+              {/* ── Form ── */}
+              <div className={styles.cbForm}>
+                <div className={cx("flexCol", "gap16")}>
+                  <div className={cx("flexCol", "gap6")}>
+                    <label className={cx("text11", "colorMuted")} htmlFor="cb-company-name">Company display name</label>
+                    <input
+                      id="cb-company-name"
+                      className={styles.input ?? ""}
+                      type="text"
+                      placeholder="e.g. Acme Corp"
+                      value={companyDisplayName}
+                      onChange={e => setCompanyDisplayName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className={cx("flexCol", "gap6")}>
+                    <label className={cx("text11", "colorMuted")} htmlFor="cb-portal-title">Portal tab title</label>
+                    <input
+                      id="cb-portal-title"
+                      className={styles.input ?? ""}
+                      type="text"
+                      placeholder="e.g. Acme Client Portal"
+                      value={portalTitle}
+                      onChange={e => setPortalTitle(e.target.value)}
+                    />
+                  </div>
+
+                  <div className={cx("flexCol", "gap6")}>
+                    <label className={cx("text11", "colorMuted")}>Primary colour</label>
+                    <div className={styles.cbColorRow}>
+                      <input
+                        type="color"
+                        className={styles.cbColorSwatch}
+                        value={primaryColor}
+                        onChange={e => setPrimaryColor(e.target.value)}
+                        title="Pick primary colour"
+                      />
+                      <input
+                        type="text"
+                        className={cx(styles.input ?? "", styles.cbColorInput)}
+                        value={primaryColor}
+                        onChange={e => setPrimaryColor(e.target.value)}
+                        placeholder="#c8f135"
+                        maxLength={7}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={cx("flexCol", "gap6")}>
+                    <label className={cx("text11", "colorMuted")} htmlFor="cb-logo-url">Logo URL</label>
+                    <input
+                      id="cb-logo-url"
+                      className={styles.input ?? ""}
+                      type="url"
+                      placeholder="https://cdn.example.com/logo.png"
+                      value={logoUrl}
+                      onChange={e => setLogoUrl(e.target.value)}
+                    />
+                    {logoUrl && (
+                      <img
+                        src={logoUrl}
+                        alt="Logo preview"
+                        style={{ height: 32, objectFit: "contain", marginTop: 6, borderRadius: 4 }}
+                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    )}
+                  </div>
+
+                  <div className={styles.cbToggleRow}>
+                    <span className={cx("text13", "fw600")}>Enable branding</span>
+                    <button
+                      type="button"
+                      className={cx("btnSm", enabled ? "btnAccent" : "btnGhost")}
+                      onClick={() => setEnabled(v => !v)}
+                    >
+                      {enabled ? "Enabled" : "Disabled"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className={cx("flexRow", "gap8", "mt16")}>
+                  <button
+                    type="button"
+                    className={cx("btnSm", "btnAccent")}
+                    onClick={handleSave}
+                    disabled={saving}
+                  >
+                    {saving ? "Saving…" : "Save Branding"}
+                  </button>
+                  <button
+                    type="button"
+                    className={cx("btnSm", "btnGhost")}
+                    onClick={handleReset}
+                    disabled={saving}
+                  >
+                    Reset to Default
+                  </button>
+                  {saveMsg ? <span className={cx("text12", "colorMuted")}>{saveMsg}</span> : null}
+                </div>
+              </div>
+
+              {/* ── Live preview ── */}
+              <div className={styles.cbPreviewPanel}>
+                <div className={styles.cbPreviewTitle}>Live Preview</div>
+                <div className={styles.cbPreviewTopbar} style={{ borderTop: `2px solid ${previewColor}` }}>
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="logo" className={styles.cbPreviewLogo} />
+                  ) : (
+                    <div
+                      className={styles.cbPreviewLogo}
+                      style={{ background: previewColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.55rem", fontWeight: 800, color: "#050508" }}
+                    >
+                      {(companyDisplayName || "Co").slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <span
+                    className={styles.cbPreviewWordmark}
+                    style={{ color: previewColor }}
+                  >
+                    {companyDisplayName || "Client Portal"}
+                  </span>
+                </div>
+                <div className={cx("text11", "colorMuted")}>
+                  {enabled
+                    ? "Branding active — clients see this portal identity"
+                    : "Branding inactive — clients see default Maphari branding"}
+                </div>
+                {branding ? (
+                  <div className={cx("text10", "colorMuted", "mt8")}>
+                    Last saved: {branding.enabled ? "Custom brand active" : "Default"}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )
+        ) : (
+          <div className={cx("text12", "colorMuted")}>Select a client above to configure their portal branding.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export function BrandControlPage() {
+  const { session } = useAdminWorkspaceContext();
   const [activeTab, setActiveTab] = useState<Tab>("brand tokens");
   const [primary, setPrimary] = useState(brandTokens.primary);
   const [accent, setAccent] = useState(brandTokens.accent);
@@ -211,28 +472,8 @@ export function BrandControlPage() {
         </div>
       ) : null}
 
-      {activeTab === "white-label clients" ? (
-        <div className={cx("grid2", "gap20")}>
-          {whitelabelClients.map((item) => (
-            <div key={item.client} className={styles.brandWhiteLabelCard}>
-              <div className={cx("flexBetween", "mb20")}>
-                <div>
-                  <div className={cx("fw700")}>{item.client}</div>
-                  <div className={cx("fontMono", "text11", "colorMuted", "mt4")}>{item.domain}</div>
-                </div>
-                <span className={cx("badge", item.status === "custom" ? "badgePurple" : "badgeMuted")}>{item.status}</span>
-              </div>
-              <div className={styles.brandWhiteChecks}>
-                <div className={cx("text12")}>{item.logoApplied ? "✓" : "✗"} Custom logo</div>
-                <div className={cx("text12")}>{item.colorOverride ? "✓" : "✗"} Color override</div>
-              </div>
-              <div className={cx("flexRow", "gap8")}>
-                <button type="button" className={cx("btnSm", "btnGhost")}>Configure</button>
-                <button type="button" className={cx("btnSm", "btnGhost")}>Preview</button>
-              </div>
-            </div>
-          ))}
-        </div>
+      {activeTab === "white-label clients" && session ? (
+        <ClientBrandingSection session={session} />
       ) : null}
     </div>
   );

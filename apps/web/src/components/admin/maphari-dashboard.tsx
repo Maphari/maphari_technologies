@@ -97,6 +97,7 @@ import { StaffUtilisationPage } from "./dashboard/pages/staff-utilisation-page";
 import { CapacityForecastPage } from "./dashboard/pages/capacity-forecast-page";
 import { InvoiceChasingPage } from "./dashboard/pages/invoice-chasing-page";
 import { PipelineAnalyticsPage } from "./dashboard/pages/pipeline-analytics-page";
+import { WebhookHubPage } from "./dashboard/pages/webhook-hub-page";
 import { createMaintenanceCheckWithRefresh, setNotificationReadStateWithRefresh } from "../../lib/api/admin";
 import { searchGlobal } from "../../lib/api/shared/search";
 import { DashboardLoadingFallback, DashboardToastStack, hasAnyDashboardData, useDashboardToasts } from "../shared/dashboard-core";
@@ -661,6 +662,7 @@ export function MaphariDashboard() {
             {page === "capacityForecast" ? <CapacityForecastPage session={session} onNotify={pushToast} /> : null}
             {page === "invoiceChasing" ? <InvoiceChasingPage session={session} onNotify={pushToast} /> : null}
             {page === "pipelineAnalytics" ? <PipelineAnalyticsPage session={session} onNotify={pushToast} /> : null}
+            {page === "webhookHub" ? <WebhookHubPage session={session} onNotify={pushToast} /> : null}
             </DashboardErrorBoundary>
           </section>
         </main>

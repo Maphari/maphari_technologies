@@ -22,6 +22,10 @@ type ClientTopbarProps = {
   onNavigateSettings?: () => void;
   onNavigateTeam?: () => void;
   onMenuToggle?: () => void;
+  /** White-label: if set, shown in the profile dropdown instead of email-derived name */
+  brandCompanyName?: string | null;
+  /** White-label: if set, shown as logo image instead of wordmark text */
+  brandLogoUrl?: string | null;
 };
 
 const PROFILE_LINKS = [
@@ -46,6 +50,8 @@ export function ClientTopbar({
   onNavigateSettings,
   onNavigateTeam,
   onMenuToggle,
+  brandCompanyName,
+  brandLogoUrl,
 }: ClientTopbarProps) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
@@ -74,8 +80,9 @@ export function ClientTopbar({
   const clientCompany = clientEmail.includes("@")
     ? clientEmail.split("@")[1]?.split(".")[0] ?? "Company"
     : "Company";
-  const clientName =
-    clientCompany.charAt(0).toUpperCase() + clientCompany.slice(1) + " Portal";
+  const clientName = brandCompanyName
+    ? brandCompanyName
+    : clientCompany.charAt(0).toUpperCase() + clientCompany.slice(1) + " Portal";
 
   function handleProfileLink(label: string): void {
     setProfileMenuOpen(false);

@@ -55,6 +55,127 @@ export async function registerClientProfileRoutes(app: FastifyInstance): Promise
     }
   });
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // Per-client portal branding configuration
+  // ────────────────────────────────────────────────────────────────────────────
+
+  /** GET /admin/clients/:id/branding — admin: fetch branding for a client */
+  app.get("/admin/clients/:id/branding", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const { id: clientId } = request.params as { id: string };
+
+    try {
+      const cacheKey = `core:client-branding:${clientId}`;
+      const profile = await withCache(cacheKey, 120, async () =>
+        prisma.clientProfile.findUnique({ where: { clientId } })
+      );
+
+      const branding = {
+        clientId,
+        logoUrl: profile?.logoUrl ?? null,
+        primaryColor: profile?.primaryColor ?? null,
+        companyDisplayName: profile?.companyName ?? null,
+        portalTitle: null as string | null,
+        accentColor: null as string | null,
+        enabled: !!(profile?.primaryColor || profile?.logoUrl || profile?.companyName),
+      };
+
+      return { success: true, data: branding, meta: { requestId: scope.requestId } } as ApiResponse<typeof branding>;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "BRANDING_FETCH_FAILED", message: "Unable to fetch client branding." } } as ApiResponse;
+    }
+  });
+
+  /** PATCH /admin/clients/:id/branding — admin: update branding for a client */
+  app.patch("/admin/clients/:id/branding", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const { id: clientId } = request.params as { id: string };
+
+    const body = request.body as {
+      logoUrl?: string | null;
+      primaryColor?: string | null;
+      companyDisplayName?: string | null;
+      portalTitle?: string | null;
+      accentColor?: string | null;
+      enabled?: boolean;
+    };
+
+    try {
+      // Map branding fields to ClientProfile columns
+      const updateData: Record<string, unknown> = {};
+      if ("logoUrl"             in body) updateData.logoUrl      = body.logoUrl;
+      if ("primaryColor"        in body) updateData.primaryColor = body.primaryColor;
+      if ("companyDisplayName"  in body) updateData.companyName  = body.companyDisplayName;
+      // If enabled is explicitly false, clear the colour
+      if (body.enabled === false) {
+        updateData.primaryColor = null;
+        updateData.logoUrl      = null;
+        updateData.companyName  = null;
+      }
+
+      const profile = await prisma.clientProfile.upsert({
+        where:  { clientId },
+        create: { clientId, ...updateData },
+        update: updateData,
+      });
+
+      await cache.delete(`core:client-branding:${clientId}`);
+      await cache.delete(`core:client-profile:${clientId}`);
+
+      const branding = {
+        clientId,
+        logoUrl: profile.logoUrl ?? null,
+        primaryColor: profile.primaryColor ?? null,
+        companyDisplayName: profile.companyName ?? null,
+        portalTitle: null as string | null,
+        accentColor: null as string | null,
+        enabled: !!(profile.primaryColor || profile.logoUrl || profile.companyName),
+      };
+
+      return { success: true, data: branding, meta: { requestId: scope.requestId } } as ApiResponse<typeof branding>;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "BRANDING_UPDATE_FAILED", message: "Unable to update client branding." } } as ApiResponse;
+    }
+  });
+
+  /** GET /portal/branding — CLIENT: returns their own portal branding config */
+  app.get("/portal/branding", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const scopedClientId = resolveClientFilter(scope.role, scope.clientId);
+
+    if (!scopedClientId) {
+      reply.status(400);
+      return { success: false, error: { code: "CLIENT_ID_REQUIRED", message: "Client ID is required." } } as ApiResponse;
+    }
+
+    try {
+      const cacheKey = `core:client-branding:${scopedClientId}`;
+      const profile = await withCache(cacheKey, 120, async () =>
+        prisma.clientProfile.findUnique({ where: { clientId: scopedClientId } })
+      );
+
+      const branding = {
+        clientId: scopedClientId,
+        logoUrl: profile?.logoUrl ?? null,
+        primaryColor: profile?.primaryColor ?? null,
+        companyDisplayName: profile?.companyName ?? null,
+        portalTitle: null as string | null,
+        accentColor: null as string | null,
+        enabled: !!(profile?.primaryColor || profile?.logoUrl || profile?.companyName),
+      };
+
+      return { success: true, data: branding, meta: { requestId: scope.requestId } } as ApiResponse<typeof branding>;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "BRANDING_FETCH_FAILED", message: "Unable to fetch portal branding." } } as ApiResponse;
+    }
+  });
+
   /** PATCH /portal/profile — upsert the client's company profile */
   app.patch("/portal/profile", async (request, reply) => {
     const scope = readScopeHeaders(request);

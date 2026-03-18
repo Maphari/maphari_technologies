@@ -112,6 +112,7 @@ const DEFAULT_NOTIFICATION_PREFS: NotificationPreference[] = [
 import { getPortalPreferenceWithRefresh, setPortalPreferenceWithRefresh } from "@/lib/api/portal/settings";
 import { inferCountryFromLocale, currencyFromCountry } from "@/lib/i18n/currency";
 import { loadPortalProfileWithRefresh, type PortalClientProfile } from "@/lib/api/portal/profile";
+import { loadPortalBrandingWithRefresh, type ClientBranding } from "@/lib/api/portal/brand";
 import { saveSession } from "@/lib/auth/session";
 
 // ── Command search constants ──────────────────────────────────────────────────
@@ -286,6 +287,32 @@ export function MaphariClientDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
 
+  // ── Portal branding (white-label colours / logo) ─────────────────────────
+  const [branding, setBranding] = useState<ClientBranding | null>(null);
+
+  useEffect(() => {
+    if (!session) return;
+    void loadPortalBrandingWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setBranding(r.data);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+
+  // Apply branding CSS variables to document root when branding is active
+  useEffect(() => {
+    if (!branding?.enabled) return;
+    const root = document.documentElement;
+    if (branding.primaryColor) {
+      root.style.setProperty("--lime", branding.primaryColor);
+      root.style.setProperty("--accent", branding.primaryColor);
+    }
+    return () => {
+      root.style.removeProperty("--lime");
+      root.style.removeProperty("--accent");
+    };
+  }, [branding]);
+
   // ── Currency preference ──────────────────────────────────────────────────
   const [currency, setCurrency] = useState<string>(() => {
     if (typeof navigator === "undefined") return "USD";
@@ -438,6 +465,8 @@ export function MaphariClientDashboard() {
             onNavigateSettings={() => handleNavigate("settings")}
             onNavigateTeam={() => handleNavigate("teamAccess")}
             onMenuToggle={() => setSidebarOpen((v) => !v)}
+            brandCompanyName={branding?.enabled ? branding.companyDisplayName : null}
+            brandLogoUrl={branding?.enabled ? branding.logoUrl : null}
           />
 
           <div className={styles.content} style={contentStyle}>

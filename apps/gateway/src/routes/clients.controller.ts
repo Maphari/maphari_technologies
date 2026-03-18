@@ -805,6 +805,72 @@ export class ClientsController {
     });
   }
 
+  // ── Branding: GET /admin/clients/:clientId/branding ──────────────────────
+
+  @Roles("ADMIN")
+  @Get("admin/clients/:clientId/branding")
+  async getClientBranding(
+    @Param("clientId") targetClientId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/admin/clients/${targetClientId}/branding`, "GET", undefined, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "ADMIN",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  // ── Branding: PATCH /admin/clients/:clientId/branding ─────────────────────
+
+  @Roles("ADMIN")
+  @Patch("admin/clients/:clientId/branding")
+  async updateClientBranding(
+    @Param("clientId") targetClientId: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/admin/clients/${targetClientId}/branding`, "PATCH", body as Record<string, unknown>, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "ADMIN",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  // ── Branding: GET /portal/branding — client's own branding ───────────────
+
+  @Roles("CLIENT", "ADMIN", "STAFF")
+  @Get("portal/branding")
+  async getPortalBranding(
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/portal/branding`, "GET", undefined, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
   // ── GET /portal/activity-feed — real-time project activity feed ──────────
   @Roles("CLIENT")
   @Get("portal/activity-feed")

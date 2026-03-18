@@ -87,6 +87,7 @@ import { registerServiceCatalogRoutes } from "./routes/service-catalog.js";
 import { registerNotificationPrefRoutes } from "./routes/notification-prefs.js";
 import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { registerDataPrivacyRoutes } from "./routes/data-privacy.js";
+import { registerWebhookRoutes } from "./routes/webhooks.js";
 
 export async function createCoreApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
@@ -218,6 +219,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Data Privacy ─────────────────────────────────────────────────────────
   await registerDataPrivacyRoutes(app);
+
+  // ── Webhooks ──────────────────────────────────────────────────────────────
+  await registerWebhookRoutes(app);
 
   return app;
 }

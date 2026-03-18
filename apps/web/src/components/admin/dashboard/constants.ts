@@ -90,5 +90,6 @@ export const pageTitles: Record<PageId, [string, string]> = {
   prospecting: ["Operations", "AI Prospecting"],
   invoiceChasing: ["Finance", "Invoice Chasing"],
   pipelineAnalytics: ["Finance", "Pipeline Analytics"],
+  webhookHub: ["Automation", "Webhook & Integration Hub"],
   settings: ["Account", "Settings"]
 };

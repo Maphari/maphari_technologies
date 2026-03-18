@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Offline — Maphari Portal</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0d0d0f; color: #f0f0f2; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 24px; }
+    .wrap { max-width: 360px; }
+    .logo { font-size: 3rem; font-weight: 900; color: #c8f135; margin-bottom: 24px; }
+    h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 12px; }
+    p { font-size: 0.9rem; color: #8888a0; line-height: 1.6; margin-bottom: 24px; }
+    button { background: #c8f135; color: #000; border: none; padding: 12px 28px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo">M</div>
+    <h1>You're offline</h1>
+    <p>No internet connection detected. Please check your connection and try again.</p>
+    <button onclick="window.location.reload()">Try again</button>
+  </div>
+</body>
+</html>

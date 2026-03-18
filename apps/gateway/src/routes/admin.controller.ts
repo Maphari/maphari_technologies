@@ -10,6 +10,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Param,
@@ -729,6 +730,105 @@ export class AdminController {
       `${CORE()}/admin/capacity-forecast`,
       "GET",
       undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // WEBHOOKS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /admin/webhooks ───────────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("admin/webhooks")
+  async listWebhooks(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/admin/webhooks`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── POST /admin/webhooks — create ─────────────────────────────────────────
+  @Roles("ADMIN")
+  @Post("admin/webhooks")
+  async createWebhook(
+    @Body()                   body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/admin/webhooks`,
+      "POST",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PATCH /admin/webhooks/:id ─────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Patch("admin/webhooks/:id")
+  async updateWebhook(
+    @Param("id")              id: string,
+    @Body()                   body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/admin/webhooks/${id}`,
+      "PATCH",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── DELETE /admin/webhooks/:id ────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Delete("admin/webhooks/:id")
+  async deleteWebhook(
+    @Param("id")              id: string,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/admin/webhooks/${id}`,
+      "DELETE",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── POST /admin/webhooks/:id/test ─────────────────────────────────────────
+  @Roles("ADMIN")
+  @Post("admin/webhooks/:id/test")
+  async testWebhook(
+    @Param("id")              id: string,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/admin/webhooks/${id}/test`,
+      "POST",
+      {},
       adminHeaders(userId, role, clientId, requestId, traceId)
     );
   }

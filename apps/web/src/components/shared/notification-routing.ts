@@ -241,5 +241,6 @@ export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotifi
   staffUtilisation: "operations",
   capacityForecast: "operations",
   invoiceChasing: "invoices",
-  pipelineAnalytics: "operations"
+  pipelineAnalytics: "operations",
+  webhookHub: "settings"
 };
