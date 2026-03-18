@@ -39,6 +39,11 @@ function avatarInitials(name: string): string {
     .toUpperCase() || "?";
 }
 
+const AVATAR_BG = ["ctAvatarA", "ctAvatarB", "ctAvatarC", "ctAvatarD"] as const;
+function avatarBgClass(name: string): string {
+  return AVATAR_BG[name.charCodeAt(0) % 4];
+}
+
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 export interface CommentThreadProps {
@@ -177,7 +182,7 @@ export function CommentThread({
         )}
         {comments.map((c) => (
           <div key={c.id} className={u.ctItem}>
-            <div className={u.ctAvatar}>{avatarInitials(c.authorName)}</div>
+            <div className={[u.ctAvatar, u[avatarBgClass(c.authorName)]].join(" ")}>{avatarInitials(c.authorName)}</div>
             <div className={u.ctBody}>
               <div>
                 <span className={u.ctAuthor}>{c.authorName}</span>

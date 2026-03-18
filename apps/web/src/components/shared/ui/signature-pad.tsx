@@ -11,6 +11,7 @@ interface SignaturePadProps {
 export function SignaturePad({ onSave, onClear, height = 160, className }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
+  const strokesRef = useRef<ImageData[]>([]);
   const [isEmpty, setIsEmpty] = useState(true);
 
   // Setup canvas context with device pixel ratio for crisp retina rendering
@@ -25,7 +26,10 @@ export function SignaturePad({ onSave, onClear, height = 160, className }: Signa
     canvas.width = cssWidth * dpr;
     canvas.height = cssHeight * dpr;
     ctx.scale(dpr, dpr);
-    ctx.strokeStyle = "#0d0d0f";
+    const bg = getComputedStyle(document.documentElement).getPropertyValue("--s1").trim() || "#ffffff";
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--text").trim() || "#0d0d0f";
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -53,8 +57,9 @@ export function SignaturePad({ onSave, onClear, height = 160, className }: Signa
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const pos = getPos(e, canvas);
+    strokesRef.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     ctx.beginPath();
+    const pos = getPos(e, canvas);
     ctx.moveTo(pos.x, pos.y);
   }, []);
 
@@ -101,8 +106,18 @@ export function SignaturePad({ onSave, onClear, height = 160, className }: Signa
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    strokesRef.current = [];
     setIsEmpty(true);
     onClear?.();
+  };
+
+  const handleUndo = () => {
+    const last = strokesRef.current.pop();
+    if (last && canvasRef.current) {
+      const c = canvasRef.current.getContext("2d");
+      c?.putImageData(last, 0, 0);
+    }
+    if (strokesRef.current.length === 0) setIsEmpty(true);
   };
 
   const handleSave = () => {
@@ -122,11 +137,28 @@ export function SignaturePad({ onSave, onClear, height = 160, className }: Signa
           borderRadius: "var(--r-sm)",
           cursor: "crosshair",
           touchAction: "none",
-          background: "#fff",
+          background: "var(--s1, #fff)",
           display: "block",
         }}
       />
       <div style={{ display: "flex", gap: 8, marginTop: 8, justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={handleUndo}
+          disabled={isEmpty}
+          style={{
+            padding: "6px 14px",
+            borderRadius: "var(--r-sm)",
+            border: "1px solid var(--b2)",
+            background: "transparent",
+            color: "var(--text-muted)",
+            cursor: isEmpty ? "not-allowed" : "pointer",
+            fontSize: "0.78rem",
+            opacity: isEmpty ? 0.5 : 1,
+          }}
+        >
+          Undo
+        </button>
         <button
           type="button"
           onClick={handleClear}
