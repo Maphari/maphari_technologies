@@ -150,32 +150,7 @@ export function FeedbackPage() {
 
   return (
     <div className={cx("pageBody", styles.fbCollabRoot)}>
-      <div className={styles.fbCollabLayout}>
-        <aside className={styles.fbCollabSidebar}>
-          <div className={styles.fbCollabSection}>Collaboration</div>
-          {[
-            { label: "Feedback Rounds", tone: styles.fbCollabToneAccent, badge: ROUNDS.filter((item) => item.status === "open").length },
-            { label: "Quick Reactions", tone: styles.fbCollabToneGreen },
-            { label: "Async Video", tone: styles.fbCollabTonePurple, badge: VIDEOS.filter((item) => item.isNew).length },
-            { label: "@Mentions", tone: styles.fbCollabToneBlue, badge: unreadCount },
-          ].map((item) => (
-            <button key={item.label} type="button" className={cx(styles.fbCollabSideItem, tab === item.label && styles.fbCollabSideItemActive)} onClick={() => setTab(item.label as FeedbackTab)}>
-              <span className={cx(styles.fbCollabDot, item.tone)} />
-              <span>{item.label}</span>
-              {item.badge && item.badge > 0 ? <span className={styles.fbCollabBadge}>{item.badge}</span> : null}
-            </button>
-          ))}
-
-          <div className={styles.fbCollabDivider} />
-          <div className={styles.fbCollabPolicyCard}>
-            <div className={styles.fbCollabPolicyTitle}>Feedback Policy</div>
-            <div className={styles.fbCollabPolicyText}>
-              Each deliverable gets <strong>3 review rounds</strong> included. Additional rounds are billed at R 1,200 each.
-            </div>
-          </div>
-        </aside>
-
-        <section className={styles.fbCollabMain}>
+      <section className={styles.fbCollabMain}>
           <div className={cx("pageHeader", "mb0")}>
             <div>
               <div className={cx("pageEyebrow")}>Veldt Finance · Feedback</div>
@@ -359,7 +334,6 @@ export function FeedbackPage() {
             </div>
           ) : null}
         </section>
-      </div>
 
       {feedbackModal ? (
         <div className={styles.fbCollabModalBackdrop} onClick={() => setFeedbackModal(null)}>
