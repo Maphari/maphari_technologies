@@ -11,6 +11,7 @@ import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import { loadProjectRoadmapWithRefresh, type RoadmapProject, type RoadmapMilestone } from "../../../../lib/api/portal/project-layer";
 import { saveSession } from "../../../../lib/auth/session";
+import { SkeletonCard } from "@/components/shared/ui/page-skeleton";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -140,9 +141,10 @@ export function ProjectRoadmapPage() {
 
       {/* ── Loading ───────────────────────────────────────────────────────── */}
       {loading && (
-        <div className={cx("emptyState")}>
-          <div className={cx("emptyStateSub")}>Loading roadmap…</div>
-        </div>
+        <>
+          <SkeletonCard rows={3} />
+          <SkeletonCard rows={3} />
+        </>
       )}
 
       {/* ── Empty state ───────────────────────────────────────────────────── */}
@@ -165,6 +167,7 @@ export function ProjectRoadmapPage() {
           {/* ── Per-project timeline blocks ─────────────────────────────── */}
           {projects.map((project) => {
             const todayPct = todayLeftPct(project.startAt, project.endAt);
+            const todayLeft = todayPct !== null ? Math.min(100, Math.max(0, todayPct)) : null;
 
             return (
               <div key={project.id} className={cx("rdmProjectBlock")}>
@@ -182,6 +185,7 @@ export function ProjectRoadmapPage() {
                 </div>
 
                 {/* Horizontal track */}
+                <div className={cx("rdmProjectWrap")}>
                 <div className={cx("rdmTrackOuter")}>
                   {/* Background span bar */}
                   <div
@@ -190,29 +194,32 @@ export function ProjectRoadmapPage() {
                   />
 
                   {/* Today line */}
-                  {todayPct !== null && (
+                  {todayLeft !== null && (
                     <div
                       className={cx("rdmTodayLine")}
-                      style={{ left: `${todayPct}%` }}
+                      style={{ left: `${todayLeft}%` }}
                       title="Today"
                     />
                   )}
 
                   {/* Milestone markers */}
                   {project.milestones.map((m) => {
-                    const leftPct = milestoneLeftPct(m.dueAt, project.startAt, project.endAt);
+                    const rawLeftPct = milestoneLeftPct(m.dueAt, project.startAt, project.endAt);
+                    const milestoneLeft = Math.min(96, Math.max(2, rawLeftPct));
                     const mStatus = resolveMStatus(m);
-                    const dotColor = M_DOT_COLOR[mStatus];
                     return (
                       <div
                         key={m.id}
-                        className={cx("rdmMilestone")}
-                        style={{ left: `${leftPct}%` }}
+                        className={cx(
+                          "rdmMilestone",
+                          mStatus === "completed" ? "rdmMilestoneCompleted" :
+                          mStatus === "in-progress" ? "rdmMilestoneInProgress" : ""
+                        )}
+                        style={{ left: `${milestoneLeft}%` }}
                         title={`${m.title} · ${fmtDate(m.dueAt)}`}
                       >
                         <div
                           className={cx("rdmMilestoneDot")}
-                          style={{ backgroundColor: dotColor, borderColor: dotColor }}
                         />
                         <div className={cx("rdmMilestoneLabel")}>
                           {m.title}
@@ -220,6 +227,7 @@ export function ProjectRoadmapPage() {
                       </div>
                     );
                   })}
+                </div>
                 </div>
 
                 {/* Legend row */}

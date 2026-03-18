@@ -37,8 +37,8 @@ function dayLabel(isoDate: string): string {
 }
 
 /** Relative time label: "just now", "2 hours ago", etc. */
-function relativeTime(isoDate: string): string {
-  const diffSecs = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1_000);
+function relativeTime(isoDate: string, nowMs: number): string {
+  const diffSecs = Math.floor((nowMs - new Date(isoDate).getTime()) / 1_000);
   if (diffSecs < 60) return "just now";
   const diffMins = Math.floor(diffSecs / 60);
   if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`;
@@ -48,20 +48,20 @@ function relativeTime(isoDate: string): string {
   return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
 }
 
-/** Dot colour by entity type. */
-const DOT_COLOR: Record<string, string> = {
-  milestone: "var(--lime)",
-  invoice:   "var(--amber)",
-  payment:   "var(--green)",
-  message:   "var(--muted2)",
-  project:   "var(--blue)",
-  task:      "var(--purple)",
-  sprint:    "var(--lime)",
-  file:      "var(--muted2)",
+/** CSS class for dot colour by entity type. */
+const DOT_CLASS: Record<string, string> = {
+  milestone: "dotLime",
+  invoice:   "dotAmber",
+  payment:   "dotGreen",
+  message:   "dotMuted",
+  project:   "dotAccent",
+  task:      "dotAccent",
+  sprint:    "dotLime",
+  file:      "dotMuted",
 };
 
-function dotColor(entityType: string): string {
-  return DOT_COLOR[entityType] ?? "var(--muted2)";
+function dotClass(entityType: string): string {
+  return DOT_CLASS[entityType] ?? "dotMuted";
 }
 
 /** Maps entityType to a FilterTab. */
@@ -102,6 +102,12 @@ export function ActivityFeedPage() {
   const [items,     setItems]     = useState<ActivityItem[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   const fetchFeed = useCallback(
     async (background = false) => {
@@ -237,8 +243,7 @@ export function ActivityFeedPage() {
                   <div key={item.id} className={cx("afItem")}>
                     {/* Coloured dot */}
                     <div
-                      className={cx("afDot")}
-                      style={{ background: dotColor(item.entityType) }}
+                      className={cx("afDot", dotClass(item.entityType))}
                     />
 
                     {/* Content */}
@@ -251,7 +256,7 @@ export function ActivityFeedPage() {
                             <span> · </span>
                           </>
                         )}
-                        <span>{relativeTime(item.createdAt)}</span>
+                        <span>{relativeTime(item.createdAt, now)}</span>
                       </div>
                     </div>
 

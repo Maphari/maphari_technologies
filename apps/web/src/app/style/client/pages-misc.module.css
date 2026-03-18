@@ -5515,3 +5515,19 @@
 .gcSyncBtn { font-size: 0.72rem; padding: 4px 10px; border-radius: 10px; border: 1px solid var(--b2); background: transparent; color: var(--text-muted); cursor: pointer; }
 .gcSyncedBadge { font-size: 0.7rem; color: var(--green, #24b8a8); display: flex; align-items: center; gap: 4px; }
 
+/* ── Activity feed live time ─────────────────────────────────── */
+.afTimeStale { color: var(--text-faint, var(--text-muted)); font-size: 0.7rem; }
+
+/* ── Activity dot colour classes ─────────────────────────────── */
+.dotLime    { background: var(--lime, #c8f135); }
+.dotAmber   { background: var(--amber, #f59e0b); }
+.dotGreen   { background: var(--green, #24b8a8); }
+.dotMuted   { background: var(--b3); }
+.dotAccent  { background: var(--accent, #8b6fff); }
+
+/* ── Roadmap polish ──────────────────────────────────────────── */
+.rdmEmptyState { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; color: var(--text-muted); text-align: center; gap: 8px; }
+.rdmEmptyIcon { font-size: 2rem; opacity: 0.4; }
+.rdmMilestoneCompleted .rdmMilestoneDot { background: var(--lime, #c8f135) !important; border-color: var(--lime, #c8f135) !important; }
+.rdmMilestoneInProgress .rdmMilestoneDot { background: var(--amber, #f59e0b) !important; border-color: var(--amber, #f59e0b) !important; }
+.rdmProjectWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
