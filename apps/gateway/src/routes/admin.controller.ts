@@ -688,4 +688,34 @@ export class AdminController {
       adminHeaders(userId, role, clientId, requestId, traceId)
     );
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // STAFF UTILISATION
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /admin/staff-utilisation ──────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("admin/staff-utilisation")
+  async getStaffUtilisation(
+    @Query() query: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    if (query && typeof query === "object") {
+      Object.entries(query as Record<string, unknown>).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) params.set(k, String(v));
+      });
+    }
+    const qs = params.size > 0 ? `?${params.toString()}` : "";
+    return proxyRequest(
+      `${CORE()}/staff-utilisation${qs}`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
 }

@@ -2470,4 +2470,41 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
       return { success: false, error: { code: "PROJECT_PREF_SAVE_FAILED", message: "Unable to save project preference" } } as ApiResponse;
     }
   });
+
+  // ── Portal Project Roadmap ─────────────────────────────────────────────────
+  app.get("/portal/project-roadmap", async (request) => {
+    const scope = readScopeHeaders(request);
+    const clientId = resolveClientFilter(scope.role, scope.clientId);
+    try {
+      const projects = await prisma.project.findMany({
+        where: {
+          ...(clientId ? { clientId } : {}),
+          status: { not: "ARCHIVED" },
+        },
+        include: { milestones: { orderBy: { dueAt: "asc" } } },
+        orderBy: { startAt: "asc" },
+      });
+
+      const data = projects.map((p) => ({
+        id: p.id,
+        name: p.name,
+        status: p.status,
+        startAt: p.startAt?.toISOString() ?? null,
+        endAt: p.dueAt?.toISOString() ?? null,
+        milestones: p.milestones.map((m) => ({
+          id: m.id,
+          title: m.title,
+          status: m.status,
+          dueAt: m.dueAt?.toISOString() ?? null,
+          completedAt: null as string | null,
+          paymentStage: null as string | null,
+        })),
+      }));
+
+      return { success: true, data: { projects: data }, meta: { requestId: scope.requestId } } as ApiResponse<{ projects: typeof data }>;
+    } catch (error) {
+      request.log.error(error);
+      return { success: false, error: { code: "ROADMAP_FETCH_FAILED", message: "Unable to load project roadmap." } } as ApiResponse;
+    }
+  });
 }

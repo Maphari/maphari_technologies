@@ -72,6 +72,7 @@ const PRIMARY_SIDEBAR_IDS = new Set<PageId>([
   "myanalytics",
   "myreports",
   "teamperformance",
+  "workloadheatmap",
   // Settings
   "myintegrations",
   // Account
@@ -410,9 +411,10 @@ export function useStaffNav({
       { id: "incidentalerts",label: "Incident Alerts",section: "Governance" },
 
       // ── Analytics ─────────────────────────────────────────────────────────
-      { id: "myanalytics",     label: "My Analytics",      section: "Analytics" },
-      { id: "myreports",       label: "My Reports",        section: "Analytics" },
-      { id: "teamperformance", label: "Team Performance",  section: "Analytics" },
+      { id: "myanalytics",      label: "My Analytics",        section: "Analytics" },
+      { id: "myreports",        label: "My Reports",          section: "Analytics" },
+      { id: "teamperformance",  label: "Team Performance",    section: "Analytics" },
+      { id: "workloadheatmap",  label: "Workload Heatmap",    section: "Analytics" },
 
       // ── Settings ──────────────────────────────────────────────────────────
       { id: "myintegrations", label: "My Integrations", section: "Settings" },

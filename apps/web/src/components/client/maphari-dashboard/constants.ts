@@ -10,6 +10,7 @@ export const pageTitles: Record<PageId, string> = {
   myProjects:           "Projects / My Projects",
   projectRequest:       "Projects / New Request",
   timeline:             "Projects / Project Timeline",
+  projectRoadmap:       "Projects / Project Roadmap",
   milestones:           "Projects / Milestones & Approvals",
   sprintBoard:          "Projects / Sprint Board",
   deliverables:         "Projects / Deliverables",

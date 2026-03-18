@@ -108,7 +108,9 @@ import { TasksPage } from "./staff-dashboard/pages/tasks-page";
 import { TimeLogPage } from "./staff-dashboard/pages/time-log-page";
 import { ChangeRequestsPage } from "./staff-dashboard/pages/change-requests-page";
 import { SlaTrackerPage } from "./staff-dashboard/pages/sla-tracker-page";
+import { WorkloadHeatmapPage } from "./staff-dashboard/pages/workload-heatmap-page";
 import { styles, cx } from "./staff-dashboard/style";
+import { Ic } from "./staff-dashboard/ui";
 import { inferCountryFromLocale, currencyFromCountry } from "../../lib/i18n/currency";
 import type { PageId } from "./staff-dashboard/types";
 import { formatDateLong, getInitials } from "./staff-dashboard/utils";
@@ -126,6 +128,37 @@ import { useStaffSla } from "./staff-dashboard/hooks/use-staff-sla";
 import { useStaffNav } from "./staff-dashboard/hooks/use-staff-nav";
 import { useStaffTour, STAFF_TOUR_STEPS } from "./staff-dashboard/hooks/use-staff-tour";
 import { DashboardTour } from "../shared/dashboard-tour";
+
+// ── CMD+K search type → icon name ────────────────────────────────────────────
+const STAFF_CMD_TYPE_ICON: Record<string, string> = {
+  Page:    "file",
+  Project: "briefcase",
+  Thread:  "message",
+  Client:  "users",
+  Task:    "check",
+  Ticket:  "receipt",
+  Lead:    "star",
+};
+
+const STAFF_CMD_TYPE_COLOR: Record<string, string> = {
+  Page:    "var(--blue, #5b8df8)",
+  Project: "var(--accent)",
+  Thread:  "var(--lime, var(--accent))",
+  Client:  "var(--purple, #8b6fff)",
+  Task:    "var(--green, #4ade80)",
+  Ticket:  "var(--amber, #f59e0b)",
+  Lead:    "var(--amber, #f59e0b)",
+};
+
+const STAFF_CMD_TYPE_BG: Record<string, string> = {
+  Page:    "color-mix(in oklab, var(--blue, #5b8df8)  10%, var(--s2))",
+  Project: "color-mix(in oklab, var(--accent)          10%, var(--s2))",
+  Thread:  "color-mix(in oklab, var(--lime, var(--accent)) 10%, var(--s2))",
+  Client:  "color-mix(in oklab, var(--purple, #8b6fff) 10%, var(--s2))",
+  Task:    "color-mix(in oklab, var(--green, #4ade80)  10%, var(--s2))",
+  Ticket:  "color-mix(in oklab, var(--amber, #f59e0b)  10%, var(--s2))",
+  Lead:    "color-mix(in oklab, var(--amber, #f59e0b)  10%, var(--s2))",
+};
 
 export function MaphariStaffDashboard() {
   // ─── Navigation + UI state kept in orchestrator ───
@@ -1252,6 +1285,8 @@ export function MaphariStaffDashboard() {
 
             <SlaTrackerPage isActive={activePage === "slaTracker"} session={session ?? null} />
 
+            <WorkloadHeatmapPage isActive={activePage === "workloadheatmap"} session={session ?? null} />
+
             <PersonalPerformancePage isActive={activePage === "performance"} session={session ?? null} />
 
             <EndOfDayWrapPage isActive={activePage === "eodwrap"} session={session ?? null} />
@@ -1427,10 +1462,23 @@ export function MaphariStaffDashboard() {
                     "cmdItem",
                     i === commandSearch.activeIndex && "cmdItemActive",
                   )}
-                  onClick={() => result.action()}
+                  onClick={() => { result.action(); commandSearch.close(); }}
                 >
+                  {/* Colored icon chip */}
+                  <span
+                    className={styles.cmdTypeIcon}
+                    style={{ "--cmd-ic-bg": STAFF_CMD_TYPE_BG[result.type] ?? "var(--s2)" } as React.CSSProperties}
+                  >
+                    <Ic
+                      n={STAFF_CMD_TYPE_ICON[result.type] ?? "file"}
+                      sz={14}
+                      c={STAFF_CMD_TYPE_COLOR[result.type] ?? "var(--muted2)"}
+                    />
+                  </span>
                   <span className={styles.cmdItemLabel}>{result.label}</span>
-                  <span className={styles.cmdItemMeta}>{result.meta}</span>
+                  {result.meta ? (
+                    <span className={styles.cmdItemMeta}>{result.meta}</span>
+                  ) : null}
                 </button>
               ))}
               {commandSearch.query && commandSearch.results.length === 0 && (

@@ -80,13 +80,18 @@ export function useCommandSearch({
   // Cancel-token ref so stale responses are discarded
   const cancelRef = useRef<{ cancelled: boolean }>({ cancelled: false });
 
-  // Debounced async fetch
+  // Store asyncSearch in a ref so the debounce effect doesn't re-register on every render
+  // when the caller's session/callback reference changes. See memory note: asyncSearchRef pattern.
+  const asyncSearchRef = useRef(asyncSearch);
+  useEffect(() => { asyncSearchRef.current = asyncSearch; }, [asyncSearch]);
+
+  // Debounced async fetch — only re-runs when query changes
   useEffect(() => {
     const q = query.trim();
 
-    if (!asyncSearch || q.length < ASYNC_MIN_CHARS) {
+    if (!asyncSearchRef.current || q.length < ASYNC_MIN_CHARS) {
       setAsyncResults((prev) => (prev.length === 0 ? prev : []));
-      setIsSearching(false);
+      setIsSearching((prev) => (prev ? false : prev));
       return;
     }
 
@@ -96,7 +101,7 @@ export function useCommandSearch({
 
     const timer = setTimeout(async () => {
       try {
-        const hits = await asyncSearch(q);
+        const hits = await asyncSearchRef.current!(q);
         if (!token.cancelled) {
           setAsyncResults(hits);
           setIsSearching(false);
@@ -113,7 +118,7 @@ export function useCommandSearch({
       token.cancelled = true;
       clearTimeout(timer);
     };
-  }, [query, asyncSearch]);
+  }, [query]);
 
   // Reset async results when search closes
   useEffect(() => {

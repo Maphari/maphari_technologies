@@ -63,6 +63,7 @@ export const CLIENT_PAGE_TO_NOTIFICATION_TAB: Record<ClientPageId, DashboardNoti
   knowledgeAccess:      "operations",
   communicationHistory: "messages",
   projectBrief:         "projects",
+  projectRoadmap:       "projects",
   offboarding:          "settings",
 };
 
@@ -146,7 +147,8 @@ export const STAFF_PAGE_TO_NOTIFICATION_TAB: Record<StaffPageId, DashboardNotifi
   settings: "settings",
   changeRequests: "projects",
   slaTracker: "projects",
-  appointments: "messages"
+  appointments: "messages",
+  workloadheatmap: "operations"
 };
 
 export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotificationTab> = {
@@ -234,5 +236,6 @@ export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotifi
   sprintBoardAdmin: "operations",
   contentApproval: "messages",
   meetingArchive: "messages",
-  prospecting: "operations"
+  prospecting: "operations",
+  staffUtilisation: "operations"
 };

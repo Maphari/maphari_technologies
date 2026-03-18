@@ -43,6 +43,7 @@ import { NotificationsPage } from "./maphari-dashboard/pages/notifications-page"
 import { MyProjectsPage } from "./maphari-dashboard/pages/my-projects-page";
 import { ProjectRequestPage } from "./maphari-dashboard/pages/project-request-page";
 import { TimelinePage } from "./maphari-dashboard/pages/timeline-page";
+import { ProjectRoadmapPage } from "./maphari-dashboard/pages/project-roadmap-page";
 import { MilestonesPage } from "./maphari-dashboard/pages/milestones-page";
 import { SprintBoardPage } from "./maphari-dashboard/pages/sprint-board-page";
 import { DeliverablesPage } from "./maphari-dashboard/pages/deliverables-page";
@@ -463,6 +464,7 @@ export function MaphariClientDashboard() {
             {nav.activePage === "myProjects" && <MyProjectsPage projects={clientData.projects} onNavigate={handleNavigate} />}
             {nav.activePage === "projectRequest" && <ProjectRequestPage />}
             {nav.activePage === "timeline" && <TimelinePage />}
+            {nav.activePage === "projectRoadmap" && <ProjectRoadmapPage />}
             {nav.activePage === "milestones" && <MilestonesPage />}
             {nav.activePage === "sprintBoard" && <SprintBoardPage />}
             {nav.activePage === "deliverables" && <DeliverablesPage />}

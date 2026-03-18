@@ -239,6 +239,39 @@ export async function loadPortalPhasesWithRefresh(
   });
 }
 
+// ── Project Roadmap ───────────────────────────────────────────────────────────
+
+export interface RoadmapMilestone {
+  id: string;
+  title: string;
+  status: string;
+  dueAt: string | null;
+  completedAt: string | null;
+  paymentStage: string | null;
+}
+
+export interface RoadmapProject {
+  id: string;
+  name: string;
+  status: string;
+  startAt: string | null;
+  endAt: string | null;
+  milestones: RoadmapMilestone[];
+}
+
+export async function loadProjectRoadmapWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<{ projects: RoadmapProject[] }>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ projects: RoadmapProject[] }>("/portal/project-roadmap", accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: { projects: [] }, error: toGatewayError(response.payload.error?.code ?? "ROADMAP_FETCH_FAILED", response.payload.error?.message ?? "Unable to load project roadmap.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
 // ── Brief ─────────────────────────────────────────────────────────────────────
 
 export async function loadPortalBriefWithRefresh(

@@ -20,3 +20,4 @@ export * from "./ai";
 export * from "./contracts";
 export * from "./closeout";
 export * from "./service-catalog";
+export * from "./utilisation";

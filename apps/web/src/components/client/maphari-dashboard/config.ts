@@ -8,6 +8,7 @@ export type PageId =
   | "myProjects"
   | "projectRequest"
   | "timeline"
+  | "projectRoadmap"
   | "milestones"
   | "sprintBoard"
   | "deliverables"
@@ -81,6 +82,7 @@ export const navSections: NavSection[] = [
       { id: "projectBrief", label: "Project Brief" },
       { id: "projectRequest", label: "Request a Project" },
       { id: "timeline", label: "Project Timeline" },
+      { id: "projectRoadmap", label: "Project Roadmap" },
       { id: "milestones", label: "Milestones & Approvals" },
       { id: "sprintBoard", label: "Sprint Board" },
       { id: "deliverables", label: "Deliverables" },

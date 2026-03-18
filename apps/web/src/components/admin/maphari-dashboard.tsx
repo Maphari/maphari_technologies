@@ -93,6 +93,7 @@ import { SprintBoardAdminPage } from "./dashboard/pages/sprint-board-admin-page"
 import { ContentApprovalPage } from "./dashboard/pages/content-approval-page";
 import { MeetingArchivePage } from "./dashboard/pages/meeting-archive-page";
 import { ProspectingPage } from "./dashboard/pages/prospecting-page";
+import { StaffUtilisationPage } from "./dashboard/pages/staff-utilisation-page";
 import { createMaintenanceCheckWithRefresh, setNotificationReadStateWithRefresh } from "../../lib/api/admin";
 import { searchGlobal } from "../../lib/api/shared/search";
 import { DashboardLoadingFallback, DashboardToastStack, hasAnyDashboardData, useDashboardToasts } from "../shared/dashboard-core";
@@ -121,6 +122,54 @@ function useClock(): number {
     return () => clearInterval(id);
   }, []);
   return now;
+}
+
+// ── CMD+K search: type → icon (SVG path) / color / bg ───────────────────────
+
+const ADMIN_CMD_IC_PATH: Record<string, string> = {
+  Page:    "M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z",
+  Client:  "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
+  Project: "M20 7h-4V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2H4a2 2 0 00-2 2v11a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM10 5h4v2h-4V5z",
+  Lead:    "M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z",
+  Task:    "M5 13l4 4L19 7",
+  Ticket:  "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
+};
+
+const ADMIN_CMD_TYPE_COLOR: Record<string, string> = {
+  Page:    "var(--blue, #5b8df8)",
+  Client:  "var(--purple, #8b6fff)",
+  Project: "var(--accent, #8b6fff)",
+  Lead:    "var(--amber, #f59e0b)",
+  Task:    "var(--green, #4ade80)",
+  Ticket:  "var(--red, #f87171)",
+};
+
+const ADMIN_CMD_TYPE_BG: Record<string, string> = {
+  Page:    "color-mix(in oklab, var(--blue,   #5b8df8) 10%, var(--s2))",
+  Client:  "color-mix(in oklab, var(--purple, #8b6fff) 10%, var(--s2))",
+  Project: "color-mix(in oklab, var(--accent, #8b6fff) 10%, var(--s2))",
+  Lead:    "color-mix(in oklab, var(--amber,  #f59e0b) 10%, var(--s2))",
+  Task:    "color-mix(in oklab, var(--green,  #4ade80) 10%, var(--s2))",
+  Ticket:  "color-mix(in oklab, var(--red,    #f87171) 10%, var(--s2))",
+};
+
+/** Minimal inline SVG icon used only in the admin CMD+K overlay. */
+function CmdIc({ path, size = 14, color = "currentColor" }: { path: string; size?: number; color?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={path} />
+    </svg>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -605,6 +654,7 @@ export function MaphariDashboard() {
             {page === "contentApproval" ? <ContentApprovalPage session={session} /> : null}
             {page === "meetingArchive" ? <MeetingArchivePage session={session} /> : null}
             {page === "prospecting" ? <ProspectingPage /> : null}
+            {page === "staffUtilisation" ? <StaffUtilisationPage session={session} /> : null}
             </DashboardErrorBoundary>
           </section>
         </main>
@@ -651,10 +701,23 @@ export function MaphariDashboard() {
                     "cmdItem",
                     i === commandSearch.activeIndex && "cmdItemActive",
                   )}
-                  onClick={() => result.action()}
+                  onClick={() => { result.action(); commandSearch.close(); }}
                 >
+                  {/* Colored icon chip */}
+                  <span
+                    className={styles.cmdTypeIcon}
+                    style={{ "--cmd-ic-bg": ADMIN_CMD_TYPE_BG[result.type] ?? "var(--s2)" } as React.CSSProperties}
+                  >
+                    <CmdIc
+                      path={ADMIN_CMD_IC_PATH[result.type] ?? ADMIN_CMD_IC_PATH.Page}
+                      size={14}
+                      color={ADMIN_CMD_TYPE_COLOR[result.type] ?? "var(--muted2)"}
+                    />
+                  </span>
                   <span className={styles.cmdItemLabel}>{result.label}</span>
-                  <span className={styles.cmdItemMeta}>{result.meta}</span>
+                  {result.meta ? (
+                    <span className={styles.cmdItemMeta}>{result.meta}</span>
+                  ) : null}
                 </button>
               ))}
               {commandSearch.query && commandSearch.results.length === 0 && (

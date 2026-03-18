@@ -35367,3 +35367,98 @@
 .skeleBlock9x50p  { height:  9px; width: 50%; }
 .skeleBlock9x60p  { height:  9px; width: 60%; }
 .skeleBlock11x30p { height: 11px; width: 30%; }
+
+/* Workload Heatmap */
+
+.wlhTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.wlhCell {
+  padding: 12px 16px;
+  text-align: center;
+  border: 1px solid var(--b1);
+  vertical-align: middle;
+}
+
+.wlhHeaderCell {
+  background: var(--s2);
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.wlhNameCell {
+  text-align: left;
+  min-width: 180px;
+}
+
+.wlhGreen {
+  background: var(--green-d, rgba(52, 217, 139, 0.08));
+}
+
+.wlhAmber {
+  background: var(--amber-d, rgba(245, 166, 35, 0.10));
+}
+
+.wlhRed {
+  background: var(--red-d, rgba(255, 95, 95, 0.10));
+}
+
+.wlhStaffName {
+  display: block;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.8125rem;
+}
+
+.wlhStaffRole {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--muted2);
+  margin-top: 2px;
+}
+
+.wlhHours {
+  display: block;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.wlhPct {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  display: block;
+  margin-top: 2px;
+}
+
+.wlhLegend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.wlhLegendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.wlhLegendGreen  { background: var(--green); }
+.wlhLegendAmber  { background: var(--amber); }
+.wlhLegendRed    { background: var(--red); }
+
+.wlhLegendLabel {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-right: 8px;
+}

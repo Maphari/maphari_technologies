@@ -38,6 +38,7 @@ export const pageTitles: Record<PageId, [string, string]> = {
   market: ["Governance", "Competitor & Market Intel"],
   crisis: ["Governance", "Crisis Command"],
   performance: ["Governance", "Performance Overview"],
+  staffUtilisation: ["Governance", "Staff Utilisation Rate"],
   teamPerformanceReport: ["Governance", "Team Performance Report"],
   portfolioRiskRegister: ["Governance", "Portfolio Risk Register"],
   legal: ["Governance", "Legal Control Center"],

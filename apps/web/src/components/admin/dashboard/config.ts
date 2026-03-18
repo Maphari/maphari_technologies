@@ -83,6 +83,7 @@ export type PageId =
   | "contentApproval"
   | "meetingArchive"
   | "prospecting"
+  | "staffUtilisation"
   | "settings";
 
 // ─── Re-exports for backward compatibility ───
@@ -153,6 +154,7 @@ export const navItems: NavItem[] = [
   { id: "healthScorecard", label: "Health Score", section: "Governance" },
   { id: "platform", label: "Platform", section: "Governance" },
   { id: "performance", label: "Performance", section: "Governance" },
+  { id: "staffUtilisation", label: "Utilisation", section: "Governance" },
   { id: "teamPerformanceReport", label: "Team Report", section: "Governance" },
   { id: "portfolioRiskRegister", label: "Risk Register", section: "Governance" },
   { id: "legal", label: "Legal", section: "Governance" },

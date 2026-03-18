@@ -1079,6 +1079,53 @@
   }
 }
 
+/* ── Staff Utilisation ───────────────────────────────────────────────────── */
+
+.sutKpiRow {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.sutTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sutCell {
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+}
+
+.sutBar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.08));
+  overflow: hidden;
+  min-width: 80px;
+}
+
+.sutBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.sutBarGreen {
+  background: var(--green, #24b8a8);
+}
+
+.sutBarAmber {
+  background: var(--amber, #f59e0b);
+}
+
+.sutBarRed {
+  background: var(--red, #ef4444);
+}
+
 /* ── 375 px — iPhone SE / very small ────────────────────────────────────── */
 @media (max-width: 375px) {
   .shell {

@@ -1643,4 +1643,276 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
       } as ApiResponse;
     }
   });
+
+  // ── GET /staff-utilisation?period=30d|90d|month ──────────────────────────
+  /**
+   * Returns billable vs available hours per staff member for the given period.
+   * Logic: sum TimeEntry.minutes grouped by userId for entries on client projects
+   * (billable). Available = workdays-in-period × 8h. Target utilisation = 75%.
+   */
+  app.get("/staff-utilisation", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      return reply.code(403).send({
+        success: false,
+        error: { code: "FORBIDDEN", message: "Only admins can view utilisation data." }
+      } as ApiResponse);
+    }
+
+    try {
+      const query = (request.query as Record<string, string | undefined>);
+      const period = query.period ?? "30d";
+
+      const now = new Date();
+      let periodStart: Date;
+      let workdays: number;
+
+      if (period === "month") {
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        // count workdays from start of month to now
+        workdays = 0;
+        const cur = new Date(periodStart);
+        while (cur <= now) {
+          const dow = cur.getDay();
+          if (dow !== 0 && dow !== 6) workdays++;
+          cur.setDate(cur.getDate() + 1);
+        }
+      } else if (period === "90d") {
+        periodStart = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        workdays = 64; // approx 90d × (5/7)
+      } else {
+        // default: 30d
+        periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        workdays = 22; // approx 30d × (5/7)
+      }
+
+      const availableMinutes = workdays * 8 * 60; // per person
+      const TARGET_UTILISATION = 75;
+
+      const cacheKey = `admin:utilisation:${period}`;
+      const data = await withCache(cacheKey, 60, async () => {
+
+        // Fetch active staff profiles
+        const staffList = await prisma.staffProfile.findMany({
+          where: { isActive: true },
+          select: {
+            id:             true,
+            userId:         true,
+            name:           true,
+            role:           true,
+            avatarInitials: true,
+            avatarColor:    true,
+          }
+        });
+
+        if (staffList.length === 0) {
+          return {
+            staff: [],
+            summary: { avgBillableRate: 0, totalBillableHours: 0, teamSize: 0 }
+          };
+        }
+
+        const staffUserIds = staffList
+          .map((s) => s.userId)
+          .filter((id): id is string => id !== null && id !== undefined);
+
+        // Fetch all time entries in the period for active staff on client projects
+        const entries = await prisma.timeEntry.findMany({
+          where: {
+            userId:    { in: staffUserIds },
+            createdAt: { gte: periodStart, lte: now },
+            project: {
+              clientId: { not: null },
+              status:   { not: "ARCHIVED" }
+            }
+          },
+          select: {
+            userId:  true,
+            minutes: true,
+          }
+        });
+
+        // Group billable minutes by userId
+        const billableMap = new Map<string, number>();
+        for (const entry of entries) {
+          const prev = billableMap.get(entry.userId) ?? 0;
+          billableMap.set(entry.userId, prev + entry.minutes);
+        }
+
+        // Build rows
+        const rows = staffList.map((staff) => {
+          const uid            = staff.userId ?? "";
+          const billableMins   = billableMap.get(uid) ?? 0;
+          const billableHours  = Math.round((billableMins / 60) * 10) / 10;
+          const totalHours     = Math.round((availableMinutes / 60) * 10) / 10;
+          const utilisationRate = availableMinutes > 0
+            ? Math.min(100, Math.round((billableMins / availableMinutes) * 100))
+            : 0;
+
+          return {
+            staffId:          staff.id,
+            name:             staff.name,
+            role:             staff.role,
+            avatarInitials:   staff.avatarInitials ?? staff.name.slice(0, 2).toUpperCase(),
+            avatarColor:      staff.avatarColor ?? null,
+            billableHours,
+            totalHours,
+            utilisationRate,
+            target:           TARGET_UTILISATION,
+          };
+        });
+
+        const totalBillableHours = rows.reduce((s, r) => s + r.billableHours, 0);
+        const avgBillableRate = rows.length > 0
+          ? Math.round(rows.reduce((s, r) => s + r.utilisationRate, 0) / rows.length)
+          : 0;
+
+        return {
+          staff: rows,
+          summary: {
+            avgBillableRate,
+            totalBillableHours: Math.round(totalBillableHours * 10) / 10,
+            teamSize: rows.length,
+          }
+        };
+      });
+
+      cache.del(`admin:utilisation:${period}`); // always fresh on next load
+      return { success: true, data } as ApiResponse<typeof data>;
+    } catch (error) {
+      request.log.error(error);
+      reply.code(500);
+      return {
+        success: false,
+        error: { code: "UTILISATION_FETCH_FAILED", message: "Unable to compute staff utilisation." }
+      } as ApiResponse;
+    }
+  });
+
+  // ── GET /staff/workload-heatmap ───────────────────────────────────────────
+  /** 4-week workload capacity heatmap: allocated vs available hours per staff */
+  app.get("/staff/workload-heatmap", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
+    }
+
+    const { weeks: weeksParam } = request.query as { weeks?: string };
+    const numWeeks = Math.min(12, Math.max(1, parseInt(weeksParam ?? "4", 10) || 4));
+
+    try {
+      const cacheKey = `staff:workload-heatmap:${numWeeks}`;
+      const data = await withCache(cacheKey, 60, async () => {
+        const now = new Date();
+
+        // Build week windows: Mon–Sun starting from current week
+        const weekWindows: Array<{ label: string; start: Date; end: Date }> = [];
+        for (let i = 0; i < numWeeks; i++) {
+          const monday = startOfWeek(new Date(now.getFullYear(), now.getMonth(), now.getDate() + i * 7));
+          const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6, 23, 59, 59, 999);
+          const label = `${monday.toLocaleDateString("en-ZA", { month: "short", day: "numeric" })}–${sunday.toLocaleDateString("en-ZA", { month: "short", day: "numeric" })}`;
+          weekWindows.push({ label, start: monday, end: sunday });
+        }
+
+        // Load all active staff profiles
+        const staffList = await prisma.staffProfile.findMany({
+          where: { isActive: true },
+          select: { id: true, name: true, role: true, userId: true },
+          orderBy: { name: "asc" },
+        });
+
+        // Load approved leave requests overlapping any week window
+        const windowStart = weekWindows[0].start;
+        const windowEnd   = weekWindows[weekWindows.length - 1].end;
+
+        const leaveRequests = await prisma.leaveRequest.findMany({
+          where: {
+            status: "APPROVED",
+            startDate: { lte: windowEnd },
+            endDate:   { gte: windowStart },
+          },
+          select: { staffId: true, startDate: true, endDate: true, days: true },
+        });
+
+        // Load project tasks with collaborator assignments and due dates
+        const taskCollaborators = await prisma.projectTaskCollaborator.findMany({
+          where: {
+            staffUserId: { not: null },
+          },
+          select: {
+            staffUserId: true,
+            task: {
+              select: {
+                dueAt:           true,
+                estimateMinutes: true,
+                status:          true,
+              },
+            },
+          },
+        });
+
+        // Build staff rows
+        const staffRows = staffList.map((staff) => {
+          const weekData = weekWindows.map((win) => {
+            // Compute leave hours for this window
+            const staffLeave = leaveRequests.filter((lr) => lr.staffId === staff.id);
+            let leaveHours = 0;
+            for (const lr of staffLeave) {
+              const leaveStart = new Date(lr.startDate);
+              const leaveEnd   = new Date(lr.endDate);
+              const overlapStart = leaveStart < win.start ? win.start : leaveStart;
+              const overlapEnd   = leaveEnd   > win.end   ? win.end   : leaveEnd;
+              if (overlapStart <= overlapEnd) {
+                const days = Math.round((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                leaveHours += days * 8;
+              }
+            }
+            const availableHours = Math.max(0, 40 - leaveHours);
+
+            // Compute allocated hours from tasks due in this window
+            const staffTasks = taskCollaborators.filter((tc) =>
+              tc.staffUserId === staff.userId &&
+              tc.task.status !== "DONE" &&
+              tc.task.dueAt !== null &&
+              tc.task.dueAt >= win.start &&
+              tc.task.dueAt <= win.end
+            );
+            let allocatedHours = 0;
+            for (const tc of staffTasks) {
+              if (tc.task.estimateMinutes != null && tc.task.estimateMinutes > 0) {
+                allocatedHours += tc.task.estimateMinutes / 60;
+              } else {
+                allocatedHours += 8; // default 8h per task
+              }
+            }
+            allocatedHours = Math.round(allocatedHours * 10) / 10;
+
+            return {
+              weekLabel:      win.label,
+              allocatedHours,
+              availableHours,
+            };
+          });
+
+          return {
+            staffId: staff.id,
+            name:    staff.name,
+            role:    staff.role,
+            weeks:   weekData,
+          };
+        });
+
+        return { staff: staffRows };
+      });
+
+      return { success: true, data } as ApiResponse<typeof data>;
+    } catch (error) {
+      request.log.error(error);
+      reply.code(500);
+      return {
+        success: false,
+        error: { code: "WORKLOAD_HEATMAP_FAILED", message: "Unable to compute workload heatmap." }
+      } as ApiResponse;
+    }
+  });
 }

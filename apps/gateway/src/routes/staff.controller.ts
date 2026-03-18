@@ -1033,6 +1033,24 @@ export class StaffController {
     );
   }
 
+  // ── GET /staff/workload-heatmap — 4-week capacity heatmap ────────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("staff/workload-heatmap")
+  async getWorkloadHeatmap(
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/staff/workload-heatmap`,
+      "GET",
+      undefined,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
   // ── GET /standup/feed — admin view of all standup entries ─────────────────
   @Roles("ADMIN", "STAFF")
   @Get("standup/feed")
