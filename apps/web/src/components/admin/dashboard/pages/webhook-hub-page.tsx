@@ -21,6 +21,7 @@ import {
   type WebhookTestResult,
 } from "../../../../lib/api/admin/webhooks";
 import { cx, styles } from "../style";
+import { ConfirmDialog } from "@/components/shared/ui/confirm-dialog";
 
 // ── Event topic grouping ───────────────────────────────────────────────────
 // Topic string values mirror packages/platform/src/events/topics.ts exactly.
@@ -136,6 +137,7 @@ export function WebhookHubPage({
   const [modal, setModal] = useState<ModalState>(emptyModal());
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, WebhookTestResult>>({});
 
@@ -290,7 +292,7 @@ export function WebhookHubPage({
       </div>
 
       {/* Zapier/Make hint */}
-      <div className={cx(styles.infoCard, "mb20")} style={{ fontSize: "0.8rem" }}>
+      <div className={cx(styles.infoCard, "mb20", styles.whInfoCard)}>
         <strong>Quick start:</strong> In Zapier, choose <em>Webhooks by Zapier</em> → <em>Catch Hook</em>, copy the URL, and paste it here. For Make, use an <em>HTTP → Webhook</em> module. Subscribe to any events below and we will POST signed JSON payloads to your URL.
       </div>
 
@@ -307,23 +309,16 @@ export function WebhookHubPage({
                 const count = webhooks.filter((w) => w.events.includes(t.value)).length;
                 return (
                   <div key={t.key} className={styles.whEventRow}>
-                    <span style={{ fontFamily: "var(--font-dm-mono, monospace)", fontSize: "0.72rem" }}>
+                    <span className={styles.whEventTopicMono}>
                       {t.value}
                     </span>
                     {count > 0 && (
-                      <span style={{
-                        background: "color-mix(in srgb, var(--accent, #8b6fff) 15%, transparent)",
-                        color: "var(--accent, #8b6fff)",
-                        fontSize: "0.62rem",
-                        padding: "1px 5px",
-                        borderRadius: "6px",
-                        fontWeight: 700,
-                      }}>
+                      <span className={styles.whEventTopicCount}>
                         {count}
                       </span>
                     )}
                     {!subscribedTopics.has(t.value) && (
-                      <span style={{ fontSize: "0.62rem", color: "var(--text-muted, #666)" }}>—</span>
+                      <span className={styles.whEventTopicDash}>—</span>
                     )}
                   </div>
                 );
@@ -363,8 +358,8 @@ export function WebhookHubPage({
                     <span className={styles.whToggleSlider} />
                   </label>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: "0.88rem", marginBottom: 2 }}>{wh.name}</div>
+                  <div className={styles.whCardBodyInner}>
+                    <div className={styles.whCardName}>{wh.name}</div>
                     <div className={styles.whCardUrl}>{wh.url}</div>
                   </div>
 
@@ -394,31 +389,19 @@ export function WebhookHubPage({
                   </button>
                   <button
                     type="button"
-                    className={cx("btnSm", "btnGhost")}
+                    className={cx("btnSm", "btnGhost", styles.whDeleteBtn)}
                     disabled={deletingId === wh.id}
-                    onClick={() => void handleDelete(wh.id)}
+                    onClick={() => setDeleteTarget(wh.id)}
                     title="Delete webhook"
-                    style={{ color: "var(--red, #f87171)" }}
                   >
                     {deletingId === wh.id ? "…" : "Delete"}
                   </button>
                 </div>
 
                 {/* Event badges */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: wh.lastFiredAt ? 8 : 0 }}>
+                <div className={styles.whEventsWrap}>
                   {wh.events.map((ev) => (
-                    <span
-                      key={ev}
-                      style={{
-                        background: "var(--s2)",
-                        border: "1px solid var(--b2)",
-                        borderRadius: "var(--r-xs, 6px)",
-                        fontSize: "0.68rem",
-                        padding: "2px 7px",
-                        fontFamily: "var(--font-dm-mono, monospace)",
-                        color: "var(--text-muted)",
-                      }}
-                    >
+                    <span key={ev} className={styles.whEventBadge}>
                       {ev}
                     </span>
                   ))}
@@ -426,17 +409,14 @@ export function WebhookHubPage({
 
                 {/* Meta row */}
                 {wh.lastFiredAt && (
-                  <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: 6 }}>
+                  <div className={styles.whLastFired}>
                     Last fired: {new Date(wh.lastFiredAt).toLocaleString()}
                   </div>
                 )}
 
                 {/* Test result */}
                 {testResult && (
-                  <div
-                    className={styles.whTestResult}
-                    style={{ color: testResult.ok ? "var(--accent, #8b6fff)" : "var(--red, #f87171)" }}
-                  >
+                  <div className={cx(styles.whTestResult, testResult.ok ? styles.whTestResultOk : styles.whTestResultFail)}>
                     {testResult.ok ? "OK" : "FAIL"} — HTTP {testResult.statusCode} — {testResult.latencyMs}ms
                   </div>
                 )}
@@ -445,6 +425,20 @@ export function WebhookHubPage({
           })}
         </div>
       </div>
+
+      {/* ── Confirm delete dialog ──────────────────────────────────────────── */}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete webhook?"
+        body="This will permanently remove the webhook and stop all event deliveries to it."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => {
+          if (deleteTarget) void handleDelete(deleteTarget);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* ── Add / Edit modal ────────────────────────────────────────────── */}
       {modalOpen && (
@@ -456,9 +450,8 @@ export function WebhookHubPage({
           aria-label={modal.mode === "add" ? "Add webhook" : "Edit webhook"}
         >
           <div
-            className={styles.modalBox}
+            className={cx(styles.modalBox, styles.whModalBoxWide)}
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: 560, width: "100%" }}
           >
             <div className={styles.modalHeader}>
               <div className={styles.modalTitle}>
@@ -503,7 +496,7 @@ export function WebhookHubPage({
               {/* Secret */}
               <div>
                 <label className={cx(styles.filterLabel, "mb4")} htmlFor="wh-secret">
-                  Signing Secret <span style={{ fontWeight: 400, color: "var(--text-muted)" }}>(optional)</span>
+                  Signing Secret <span className={styles.whSecretOptional}>(optional)</span>
                 </label>
                 <input
                   id="wh-secret"
@@ -517,7 +510,7 @@ export function WebhookHubPage({
               </div>
 
               {/* Active toggle */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div className={styles.whActiveRow}>
                 <label className={styles.whToggle} htmlFor="wh-active" title="Active">
                   <input
                     id="wh-active"
@@ -528,54 +521,36 @@ export function WebhookHubPage({
                   />
                   <span className={styles.whToggleSlider} />
                 </label>
-                <span style={{ fontSize: "0.82rem" }}>
+                <span className={styles.whActiveLabel}>
                   {modal.active ? "Active" : "Inactive"}
                 </span>
               </div>
 
               {/* Events multi-select */}
               <div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <div className={styles.whEventsHeader}>
                   <label className={styles.filterLabel}>Events</label>
                   <button
                     type="button"
-                    className={cx("btnSm", "btnGhost")}
+                    className={cx("btnSm", "btnGhost", styles.whSelectAllBtn)}
                     onClick={toggleAllEvents}
-                    style={{ fontSize: "0.7rem" }}
                   >
                     {modal.selectedEvents.length === ALL_TOPIC_VALUES.length ? "Deselect All" : "Select All"}
                   </button>
                 </div>
-                <div style={{
-                  maxHeight: 260,
-                  overflowY: "auto",
-                  border: "1px solid var(--b2)",
-                  borderRadius: "var(--r-sm)",
-                  padding: "10px 12px",
-                  background: "var(--s1)",
-                }}>
+                <div className={styles.whEventsScrollBox}>
                   {EVENT_GROUPS.map((group) => (
-                    <div key={group.label} style={{ marginBottom: 12 }}>
+                    <div key={group.label} className={styles.whEventsModalGroup}>
                       <div className={styles.whEventGroupTitle}>{group.label}</div>
                       {group.topics.map((t) => (
-                        <label
-                          key={t.key}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            padding: "3px 0",
-                            cursor: "pointer",
-                            fontSize: "0.78rem",
-                          }}
-                        >
+                        <label key={t.key} className={styles.whEventCheckLabel}>
                           <input
                             type="checkbox"
+                            className={styles.whEventCheckbox}
                             checked={modal.selectedEvents.includes(t.value)}
                             onChange={() => toggleModalEvent(t.value)}
-                            style={{ accentColor: "var(--accent, #8b6fff)" }}
                           />
-                          <span style={{ fontFamily: "var(--font-dm-mono, monospace)", fontSize: "0.72rem" }}>
+                          <span className={styles.whEventTopicMono}>
                             {t.value}
                           </span>
                         </label>
@@ -584,14 +559,14 @@ export function WebhookHubPage({
                   ))}
                 </div>
                 {modal.selectedEvents.length > 0 && (
-                  <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: 4 }}>
+                  <div className={styles.whSelectedCount}>
                     {modal.selectedEvents.length} event{modal.selectedEvents.length !== 1 ? "s" : ""} selected
                   </div>
                 )}
               </div>
 
               {/* Footer actions */}
-              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4 }}>
+              <div className={styles.whModalFooter}>
                 <button
                   type="button"
                   className={cx("btnSm", "btnGhost")}

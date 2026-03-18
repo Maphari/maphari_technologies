@@ -2499,6 +2499,32 @@
 .whToggleInput:checked + .whToggleSlider::before { transform: translateX(16px); }
 @media (max-width: 900px) { .whLayout { grid-template-columns: 1fr; } }
 
+/* ── Webhook Hub — additional classes ────────────────────────────────────── */
+.whInfoCard { font-size: 0.8rem; }
+.whEventTopicMono { font-family: var(--font-dm-mono, monospace); font-size: 0.72rem; }
+.whEventTopicCount { background: color-mix(in srgb, var(--accent, #8b6fff) 15%, transparent); color: var(--accent, #8b6fff); font-size: 0.62rem; padding: 1px 5px; border-radius: 6px; font-weight: 700; }
+.whEventTopicDash { font-size: 0.62rem; color: var(--text-muted, #666); }
+.whCardBodyInner { flex: 1; min-width: 0; }
+.whCardName { font-weight: 700; font-size: 0.88rem; margin-bottom: 2px; }
+.whDeleteBtn { color: var(--red, #f87171); }
+.whEventsWrap { display: flex; flex-wrap: wrap; gap: 6px; }
+.whEventBadge { background: var(--s2); border: 1px solid var(--b2); border-radius: var(--r-xs, 6px); font-size: 0.68rem; padding: 2px 7px; font-family: var(--font-dm-mono, monospace); color: var(--text-muted); }
+.whLastFired { font-size: 0.72rem; color: var(--text-muted); margin-top: 6px; }
+.whTestResultOk { color: var(--accent, #8b6fff); }
+.whTestResultFail { color: var(--red, #f87171); }
+.whModalBoxWide { max-width: 560px; width: 100%; }
+.whSecretOptional { font-weight: 400; color: var(--text-muted); }
+.whActiveRow { display: flex; align-items: center; gap: 10px; }
+.whActiveLabel { font-size: 0.82rem; }
+.whEventsHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.whSelectAllBtn { font-size: 0.7rem; }
+.whEventsScrollBox { max-height: 260px; overflow-y: auto; border: 1px solid var(--b2); border-radius: var(--r-sm); padding: 10px 12px; background: var(--s1); }
+.whEventsModalGroup { margin-bottom: 12px; }
+.whEventCheckLabel { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; font-size: 0.78rem; }
+.whEventCheckbox { accent-color: var(--accent, #8b6fff); }
+.whSelectedCount { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+.whModalFooter { display: flex; gap: 10px; justify-content: flex-end; padding-top: 4px; }
+
 /* ================================================================
    CLIENT BRANDING SECTION (cb*)
    File: brand-control-page.tsx  —  "white-label clients" tab
