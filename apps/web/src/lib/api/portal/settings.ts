@@ -23,6 +23,10 @@ export async function getPortalPreferenceWithRefresh(
     | "kanbanBoardPrefs"
     | "documentCenterAdminTemplates"
     | "documentCenterClientAgreements"
+    | "privacyConsents"
+    | "settingsCurrency"
+    | "readAnnouncements"
+    | "notificationMutes"
 ): Promise<AuthorizedResult<PortalPreference | null>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const response = await callGateway<PortalPreference | null>(`/project-preferences?key=${key}`, accessToken);
@@ -56,7 +60,12 @@ export async function setPortalPreferenceWithRefresh(
       | "dashboardLastSeenAt"
       | "kanbanBoardPrefs"
       | "documentCenterAdminTemplates"
-      | "documentCenterClientAgreements";
+      | "documentCenterClientAgreements"
+      | "privacyConsents"
+      | "settingsCurrency"
+      | "readAnnouncements"
+      | "weeklyPulse"
+      | "notificationMutes";
     value: string;
   }
 ): Promise<AuthorizedResult<PortalPreference>> {

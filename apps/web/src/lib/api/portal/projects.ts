@@ -1,3 +1,6 @@
+// ════════════════════════════════════════════════════════════════════════════
+// projects.ts — Portal API client: project + invoice standalone loaders
+// ════════════════════════════════════════════════════════════════════════════
 import type { AuthSession } from "../../auth/session";
 import {
   callGateway,
@@ -555,7 +558,8 @@ export async function updatePortalChangeRequestWithRefresh(
       | "ADMIN_APPROVED"
       | "ADMIN_REJECTED"
       | "CLIENT_APPROVED"
-      | "CLIENT_REJECTED";
+      | "CLIENT_REJECTED"
+      | "DEFERRED";
     estimatedHours?: number;
     estimatedCostCents?: number;
     staffAssessment?: string;
@@ -781,5 +785,49 @@ export async function uploadPortalFileWithRefresh(
       data: confirmUpload.payload.data,
       error: null
     };
+  });
+}
+
+// ── Standalone project list loader ────────────────────────────────────────────
+
+export async function loadPortalProjectsWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<PortalProject[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalProject[]>("/projects", accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: [],
+        error: toGatewayError(
+          response.payload.error?.code ?? "PROJECTS_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load projects."
+        ),
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+// ── Standalone invoice list loader ────────────────────────────────────────────
+
+export async function loadPortalInvoicesWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<PortalInvoice[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalInvoice[]>("/invoices", accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: [],
+        error: toGatewayError(
+          response.payload.error?.code ?? "INVOICES_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load invoices."
+        ),
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
   });
 }

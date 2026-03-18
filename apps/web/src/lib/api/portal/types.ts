@@ -43,6 +43,7 @@ export interface PortalPayment {
   provider: string | null;
   transactionRef: string | null;
   paidAt: string | null;
+  receiptFileId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -57,6 +58,7 @@ export interface PortalInvoice {
   issuedAt: string | null;
   dueAt: string | null;
   paidAt: string | null;
+  pdfFileId: string | null;
   createdAt: string;
   updatedAt: string;
   payments: PortalPayment[];
@@ -235,7 +237,8 @@ export interface PortalProjectChangeRequest {
     | "ADMIN_APPROVED"
     | "ADMIN_REJECTED"
     | "CLIENT_APPROVED"
-    | "CLIENT_REJECTED";
+    | "CLIENT_REJECTED"
+    | "DEFERRED";
   requestedByRole: "ADMIN" | "STAFF" | "CLIENT" | null;
   requestedByName: string | null;
   requestedAt: string;
