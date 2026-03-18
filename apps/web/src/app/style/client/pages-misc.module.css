@@ -2030,12 +2030,9 @@
 .p16x18x14 { padding: 16px 18px 14px; }
 .p16x18x18 { padding: 16px 18px 18px; }
 .p16x20  { padding: 16px 20px; }
-.cardBodyPad { padding: 16px 20px; }
 .p16x20x12 { padding: 16px 20px 12px; }
 .p16x20x16x16 { padding: 16px 20px 16px 16px; }
 .p16x20x20 { padding: 16px 20px 20px; }
-.pt16 { padding-top: 16px; }
-.gridColSpanAll { grid-column: 1 / -1; }
 .p16x24  { padding: 16px 24px; }
 .p18x20x18 { padding: 18px 20px 18px; }
 .p18x20x22 { padding: 18px 20px 22px; }
@@ -2926,11 +2923,6 @@
 
 /* Dynamic 3px left border — use style={{ '--color': someColor }} */
 .dynBorderLeft3 { border-left: 3px solid var(--color, var(--b2)); }
-.invLineCard {
-  padding: 14px 16px;
-  border-radius: var(--r-sm);
-  background: var(--s1);
-}
 .dynBorderLeftThin { border-left: 1px solid var(--color, var(--b2)); }
 
 /* Dynamic background with s2 fallback (for cards/pills) */
