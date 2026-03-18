@@ -19,7 +19,7 @@ function formatDate(iso: string): string {
 function priorityBadge(status: StaffChangeRequest["status"]): string {
   if (status === "ADMIN_REJECTED" || status === "CLIENT_REJECTED") return "badgeRed";
   if (status === "SUBMITTED") return "badgeAmber";
-  if (status === "ESTIMATED" || status === "ADMIN_APPROVED") return "badgeBlue";
+  if (status === "ESTIMATED" || status === "ADMIN_APPROVED") return "badgeMuted";
   if (status === "CLIENT_APPROVED") return "badgeGreen";
   return "badgeMuted";
 }

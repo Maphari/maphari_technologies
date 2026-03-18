@@ -256,7 +256,11 @@ export function RecurringTasksPage({
     [filtered]
   );
 
-  if (loading) return <div className={cx("page", "pageBody")}>Loading...</div>;
+  if (loading) return (
+    <div className={cx("page", "pageBody")}>
+      <div className={cx("skeletonLine")} style={{ width: "60%", height: 18, borderRadius: 6 }} />
+    </div>
+  );
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-recurring-tasks">

@@ -305,6 +305,10 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
       e.preventDefault();
       void handleSend();
     }
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      void handleSend();
+    }
   }
 
   async function handleCreateThread() {
@@ -559,7 +563,7 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                       </button>
                     </div>
                     <div className={cx("msguComposeHint")}>
-                      <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for newline
+                      <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line · <kbd>Cmd+Enter</kbd> to send
                     </div>
                   </div>
                 </>

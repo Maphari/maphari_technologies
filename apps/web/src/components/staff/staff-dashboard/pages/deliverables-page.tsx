@@ -482,7 +482,7 @@ export function DeliverablesPage({
       <div className={cx("card", "mt20")}>
         <div className={styles.cardHeader}>
           <span className={styles.cardHeaderTitle}>Change Request Queue</span>
-          <span className={cx("badge", pendingRequests.length ? "badgeAmber" : "badgeBlue")}>
+          <span className={cx("badge", pendingRequests.length ? "badgeAmber" : "badgeMuted")}>
             {pendingRequests.length} pending
           </span>
         </div>

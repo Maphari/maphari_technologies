@@ -16,7 +16,7 @@ function badgeToneClass(tone: TaskContext["statusTone"] | TaskContext["badgeTone
   if (tone === "red") return "badgeRed";
   if (tone === "amber") return "badgeAmber";
   if (tone === "green") return "badgeGreen";
-  if (tone === "blue") return "badgeBlue";
+  if (tone === "blue") return "badgeMuted";
   if (tone === "purple") return "badgePurple";
   return "badgeMuted";
 }

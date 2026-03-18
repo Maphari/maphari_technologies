@@ -282,6 +282,20 @@ export function SettingsPage({
     setActiveTab(initialTab);
   }, [initialTab]);
 
+  // ── Escape key to close open modals ─────────────────────────────────────────
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (inviteModalOpen) setInviteModalOpen(false);
+        else if (revokeSessionId !== null) setRevokeSessionId(null);
+        else if (gdprTarget !== null) setGdprTarget(null);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [inviteModalOpen, revokeSessionId, gdprTarget]);
+
   // Load persisted workspace preferences
   useEffect(() => {
     if (!session) return;

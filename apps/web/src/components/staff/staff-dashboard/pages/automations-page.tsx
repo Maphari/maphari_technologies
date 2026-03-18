@@ -323,7 +323,7 @@ export function AutomationsPage({
       <div className={styles.card}>
         <div className={styles.cardHeader}>
           <span className={styles.cardHeaderTitle}>Staff Automation Board</span>
-          <span className={cx("badge", workflowRows.length ? "badgeBlue" : "badgeMuted")}>
+          <span className={cx("badge", workflowRows.length ? "badgeGreen" : "badgeMuted")}>
             {loading ? "\u2026" : `${workflowRows.length} workflow${workflowRows.length !== 1 ? "s" : ""}`}
           </span>
         </div>

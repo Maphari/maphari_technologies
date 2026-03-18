@@ -1910,7 +1910,7 @@
 }
 
 .edwSection {
-  padding: 14px;
+  padding: 20px;
   border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
   border-radius: var(--r-xxs);
   background: color-mix(in srgb, var(--accent) 4%, transparent);
@@ -2420,7 +2420,7 @@
 
 .fmTipsCard {
   margin-top: auto;
-  padding: 14px;
+  padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: var(--r-xxs);
   background: rgba(255, 255, 255, 0.01);
@@ -2808,7 +2808,7 @@
 }
 
 .tlPayloadBox {
-  padding: 14px;
+  padding: 20px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--r-xxs);
@@ -8448,6 +8448,40 @@
 .buttonDisabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Button aliases — match admin naming convention */
+.btnSm {
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--r-sm, 8px);
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btnDanger {
+  background: var(--red-dim, rgba(248, 113, 113, 0.15));
+  color: var(--red, #fca5a5);
+  border: 1px solid color-mix(in oklab, var(--red, #fca5a5) 20%, transparent);
+  border-radius: var(--r-sm, 8px);
+  padding: 7px 14px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btnDanger:hover {
+  background: color-mix(in oklab, var(--red, #fca5a5) 24%, transparent);
+  border-color: color-mix(in oklab, var(--red, #fca5a5) 35%, transparent);
 }
 
 .staffRoot button:disabled {

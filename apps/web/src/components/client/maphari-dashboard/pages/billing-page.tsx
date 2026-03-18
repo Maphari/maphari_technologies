@@ -405,6 +405,16 @@ export function BillingPage({ currency = "ZAR" }: { currency?: string }) {
   // Project schedules state: list of { project, milestones, loading }
   const [projectSchedules,  setProjectSchedules]  = useState<ProjectSchedule[]>([]);
 
+  // ── Escape key to close pay modal ───────────────────────────────────────────
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPayModal(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   // ── Load data ───────────────────────────────────────────────────────────────
 
   useEffect(() => {

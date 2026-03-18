@@ -283,6 +283,7 @@
 /* Typography */
 .fontMono {
   font-family: var(--font-dm-mono), monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 .fontDisplay {

@@ -130,6 +130,14 @@ function ContractViewer({ doc, html, loading, onClose, onSigned }: ContractViewe
   const [signing,        setSigning]        = useState(false);
   const [signedAt,       setSignedAt]       = useState<string | null>(null);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   const handleScroll = useCallback(() => {
     const el = contentRef.current;
     if (!el) return;
