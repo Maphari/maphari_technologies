@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import type { PageId } from "../config";
 import type { NavItem, Thread, InvoiceSummaryRow, ProjectCard } from "../types";
 import type { PortalNotificationJob } from "../../../../lib/api/portal/types";
@@ -14,6 +14,12 @@ interface SearchResult {
   meta: string;
   action: () => void;
 }
+
+/** Optional async backend search provider.  Return SearchResult[] for the given query string. */
+export type AsyncSearchFn = (query: string) => Promise<SearchResult[]>;
+
+const ASYNC_DEBOUNCE_MS = 300;
+const ASYNC_MIN_CHARS   = 2;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -38,6 +44,7 @@ export function useCommandSearch({
   notifications,
   onNavigate,
   onSelectThread,
+  asyncSearch,
 }: {
   threads: Thread[];
   projects: ProjectCard[];
@@ -46,10 +53,45 @@ export function useCommandSearch({
   notifications: PortalNotificationJob[];
   onNavigate: (page: PageId) => void;
   onSelectThread: (threadId: string) => void;
+  asyncSearch?: AsyncSearchFn;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [asyncResults, setAsyncResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching]   = useState(false);
+  const cancelRef = useRef<{ cancelled: boolean }>({ cancelled: false });
+
+  // Store asyncSearch in a ref so the debounce effect doesn't re-register on every render
+  const asyncSearchRef = useRef(asyncSearch);
+  useEffect(() => { asyncSearchRef.current = asyncSearch; }, [asyncSearch]);
+
+  // Debounced async backend search — only re-runs when query changes
+  useEffect(() => {
+    const q = query.trim();
+    if (!asyncSearchRef.current || q.length < ASYNC_MIN_CHARS) {
+      setAsyncResults((prev) => (prev.length === 0 ? prev : []));
+      setIsSearching((prev) => (prev ? false : prev));
+      return;
+    }
+    setIsSearching(true);
+    const token = { cancelled: false };
+    cancelRef.current = token;
+    const timer = setTimeout(async () => {
+      try {
+        const hits = await asyncSearchRef.current!(q);
+        if (!token.cancelled) { setAsyncResults(hits); setIsSearching(false); }
+      } catch {
+        if (!token.cancelled) { setAsyncResults([]); setIsSearching(false); }
+      }
+    }, ASYNC_DEBOUNCE_MS);
+    return () => { token.cancelled = true; clearTimeout(timer); };
+  }, [query]);
+
+  // Reset async results when closed
+  useEffect(() => {
+    if (!isOpen) { setAsyncResults([]); setIsSearching(false); }
+  }, [isOpen]);
 
   // ── Search results ───────────────────────────────────────────────────────
 
@@ -83,7 +125,7 @@ export function useCommandSearch({
           type: "Project",
           label: project.name,
           meta: project.status,
-          action: () => onNavigate("projects"),
+          action: () => onNavigate("myProjects"),
           score,
         });
       }
@@ -116,22 +158,29 @@ export function useCommandSearch({
           type: "Invoice",
           label: `Invoice #${invoice.number}`,
           meta: invoice.status,
-          action: () => onNavigate("billing"),
+          action: () => onNavigate("invoices"),
           score,
         });
       }
     }
 
-    // Search notifications
+    // Search notifications — prefer subject (clean headline); fall back to message
     for (const notif of notifications) {
-      const text = notif.message ?? notif.subject ?? "";
-      if (!text) continue;
-      const score = relevanceScore(text, q);
+      const raw = notif.subject ?? notif.message ?? "";
+      if (!raw) continue;
+      const clean = raw
+        .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "")
+        .replace(/\(\s*\)/g, "")   // drop empty parentheses left after UUID removal
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      if (!clean) continue;
+      const label = clean.length > 72 ? clean.slice(0, 72) + "…" : clean;
+      const score = relevanceScore(clean, q);
       if (score > 0) {
         scored.push({
           id: `notif-${notif.id}`,
           type: "Notification",
-          label: text,
+          label,
           meta: notif.tab,
           action: () => onNavigate("notifications"),
           score,
@@ -145,9 +194,17 @@ export function useCommandSearch({
       return a.label.localeCompare(b.label);
     });
 
-    // Strip the score and limit results
-    return scored.slice(0, MAX_RESULTS).map(({ score: _s, ...rest }) => rest);
-  }, [query, navItems, projects, threads, invoices, notifications, onNavigate, onSelectThread]);
+    const seen = new Set<string>(scored.map((r) => r.id));
+    const local = scored.slice(0, MAX_RESULTS).map(({ score: _s, ...rest }) => rest);
+
+    // Merge async remote results (deduped, appended after local)
+    const remote: SearchResult[] = [];
+    for (const hit of asyncResults) {
+      if (!seen.has(hit.id)) { seen.add(hit.id); remote.push(hit); }
+    }
+
+    return [...local, ...remote].slice(0, MAX_RESULTS);
+  }, [query, navItems, projects, threads, invoices, notifications, onNavigate, onSelectThread, asyncResults]);
 
   // ── Controls ─────────────────────────────────────────────────────────────
 
@@ -189,6 +246,7 @@ export function useCommandSearch({
     query,
     results,
     activeIndex,
+    isSearching,
     open,
     close,
     setQuery: setQueryWrapped,

@@ -36,10 +36,10 @@ export class RealtimeEventsService implements OnModuleInit, OnModuleDestroy {
         const subscription = await this.eventBus.subscribe(topic, async (event) => {
           const normalized = this.normalizeEvent(event);
           if (!normalized) {
-            this.metricsService.incRealtimeEventDropped("invalid_event", topic);
+            this.metricsService?.incRealtimeEventDropped("invalid_event", topic);
             return;
           }
-          this.metricsService.incRealtimeEventReceived(normalized.topic);
+          this.metricsService?.incRealtimeEventReceived(normalized.topic);
           this.stream.next(normalized);
         });
         if (subscription && typeof subscription.unsubscribe === "function") {

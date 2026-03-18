@@ -2,9 +2,12 @@ import jwt from "jsonwebtoken";
 import type { Role } from "@maphari/contracts";
 
 export interface JwtScope {
+  /** User ID (JWT `sub` claim) */
   userId: string;
   role: Role;
   clientId?: string;
+  /** JWT ID — unique per-token, used for blacklist-based revocation */
+  jti?: string;
 }
 
 export function readBearerToken(authHeader?: string): string | undefined {
@@ -23,6 +26,7 @@ export function verifyAccessToken(token: string, secret: string): JwtScope | nul
       sub?: string;
       role?: Role;
       clientId?: string | null;
+      jti?: string;
     };
 
     if (!payload.sub || !payload.role) {
@@ -30,9 +34,10 @@ export function verifyAccessToken(token: string, secret: string): JwtScope | nul
     }
 
     return {
-      userId: payload.sub,
-      role: payload.role,
-      clientId: payload.clientId ?? undefined
+      userId:   payload.sub,
+      role:     payload.role,
+      clientId: payload.clientId ?? undefined,
+      jti:      payload.jti      ?? undefined
     };
   } catch {
     return null;

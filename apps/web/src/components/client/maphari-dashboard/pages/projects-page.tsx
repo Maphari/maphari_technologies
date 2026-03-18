@@ -1,7 +1,43 @@
+// ════════════════════════════════════════════════════════════════════════════
+// projects-page.tsx — Client Portal Project Overview (9 tabs)
+// Data: deliverables, risks, sign-offs, sprints, change-requests → API
+//       decisions → /projects/:id/decisions (governance)
+//       phases    → /projects/:id/phases    (project-layer)
+//       milestones tab → reuses sign-offs data
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { cx, styles } from "../style";
+import { Ic } from "../ui";
+import { usePageToast } from "../hooks/use-page-toast";
+import { useProjectLayer } from "../hooks/use-project-layer";
+import { saveSession } from "../../../../lib/auth/session";
+import {
+  loadPortalDeliverablesWithRefresh,
+  loadPortalRisksWithRefresh,
+  loadPortalSignOffsWithRefresh,
+  signPortalSignOffWithRefresh,
+  loadPortalSprintsWithRefresh,
+  loadPortalSprintTasksWithRefresh,
+  loadPortalChangeRequestsWithRefresh,
+  createPortalChangeRequestWithRefresh,
+  updatePortalChangeRequestWithRefresh,
+  loadPortalDecisionsWithRefresh,
+  loadPortalPhasesWithRefresh,
+  updatePortalNotificationPrefsWithRefresh,
+  createPortalSupportTicketWithRefresh,
+  type PortalDeliverable,
+  type PortalRisk,
+  type PortalSignOff,
+  type PortalSprint,
+  type PortalSprintTask,
+  type PortalProjectChangeRequest,
+  type PortalDecision,
+  type PortalPhase,
+} from "../../../../lib/api/portal";
+
+// ── Tab types ─────────────────────────────────────────────────────────────────
 
 type OverviewTab =
   | "Project Pulse"
@@ -11,664 +47,916 @@ type OverviewTab =
   | "Decisions"
   | "Scope Changes"
   | "Risks"
-  | "Sign-off";
+  | "Sign-off"
+  | "Sprint";
 
-type ScopeStatus = "pending" | "approved" | "declined";
-type DeliverableStatus = "delivered" | "approved" | "review" | "inprogress" | "notstarted";
-type MilestoneStatus = "done" | "active" | "pending" | "blocked";
-type RiskLevel = "High" | "Medium" | "Low";
 type Mood = "😄" | "😊" | "😐" | "😟" | "😡";
 
-type ScopeItem = {
-  id: number;
-  title: string;
-  body: string;
-  status: ScopeStatus;
+const MOOD_LABELS: Record<Mood, string> = {
+  "😄": "Very happy", "😊": "Happy", "😐": "Neutral", "😟": "Worried", "😡": "Very concerned",
 };
-
-type SignoffItem = {
-  name: string;
-  meta: string;
-  status: "signed" | "pending" | "notready";
-  icon: string;
-};
-
-const MILESTONES: Array<{ title: string; meta: string; pct: number; status: MilestoneStatus; tags: string[]; deliverables: number }> = [
-  { title: "Discovery & Strategy", meta: "Completed Feb 3 · 100% done", pct: 100, status: "done", tags: ["strategy", "research"], deliverables: 3 },
-  { title: "Brand Identity System", meta: "Completed Feb 12 · 100% done", pct: 100, status: "done", tags: ["branding", "design"], deliverables: 5 },
-  { title: "UI/UX Design", meta: "In progress · Due Feb 28 · 72% done", pct: 72, status: "active", tags: ["design", "ux"], deliverables: 8 },
-  { title: "Frontend Development", meta: "Not started · Due Mar 21", pct: 0, status: "pending", tags: ["dev", "react"], deliverables: 12 },
-  { title: "QA & Testing", meta: "Not started · Due Apr 4", pct: 0, status: "pending", tags: ["qa"], deliverables: 6 },
-  { title: "Launch & Handover", meta: "Blocked — awaiting design sign-off", pct: 0, status: "blocked", tags: ["launch"], deliverables: 4 },
-];
-
-const DELIVERABLES: Array<{ name: string; project: string; owner: string; date: string; status: DeliverableStatus }> = [
-  { name: "Brand Guidelines Document", project: "Brand Identity", owner: "Lerato M.", date: "Feb 12", status: "delivered" },
-  { name: "Logo Suite (All formats)", project: "Brand Identity", owner: "Lerato M.", date: "Feb 12", status: "delivered" },
-  { name: "Homepage Design", project: "UI/UX Design", owner: "Sipho N.", date: "Feb 20", status: "approved" },
-  { name: "Dashboard UI Design", project: "UI/UX Design", owner: "Sipho N.", date: "Feb 25", status: "review" },
-  { name: "Mobile Responsive Screens", project: "UI/UX Design", owner: "Sipho N.", date: "Feb 28", status: "inprogress" },
-  { name: "Component Library", project: "UI/UX Design", owner: "Thabo K.", date: "Mar 3", status: "inprogress" },
-  { name: "Authentication Flows", project: "Frontend Dev", owner: "James M.", date: "Mar 14", status: "notstarted" },
-  { name: "API Integration", project: "Frontend Dev", owner: "James M.", date: "Mar 21", status: "notstarted" },
-];
-
-const DECISIONS: Array<{ title: string; meta: string; by: string }> = [
-  { title: "Switched from purple to lime accent colour", meta: "Approved by client · Feb 14 · Brand Identity", by: "Naledi D. + Lerato M." },
-  { title: "Reduced homepage sections from 8 to 5 for clarity", meta: "Agreed in call · Feb 17 · UI/UX Design", by: "Sipho N. + Naledi D." },
-  { title: "Added mobile-first approach to all screens", meta: "Client request · Feb 19 · UI/UX Design", by: "Naledi D." },
-  { title: "Deferred dark mode to Phase 2", meta: "Scope decision · Feb 21 · Frontend Dev", by: "Thabo K. + Naledi D." },
-];
-
-const RISKS: Array<{ name: string; detail: string; likelihood: RiskLevel; impact: RiskLevel; mitigation: string }> = [
-  { name: "Content not delivered on time", detail: "Client has not submitted copy for 3 pages", likelihood: "High", impact: "High", mitigation: "Chase weekly · Flag in digest" },
-  { name: "Third-party API instability", detail: "Payment gateway had 2 outages this month", likelihood: "Medium", impact: "High", mitigation: "Build fallback flow" },
-  { name: "Scope creep", detail: "2 scope changes pending approval", likelihood: "High", impact: "Medium", mitigation: "Formal approval required" },
-  { name: "Design revision cycles", detail: "Client requested 2 rounds of revisions already", likelihood: "Medium", impact: "Low", mitigation: "Cap at 3 rounds per contract" },
-];
-
-const SIGNOFFS: SignoffItem[] = [
-  { name: "Brand Guidelines v1.0", meta: "Signed off Feb 12 · Naledi Dlamini", status: "signed", icon: "📄" },
-  { name: "Homepage Design", meta: "Signed off Feb 20 · Naledi Dlamini", status: "signed", icon: "🖥" },
-  { name: "Dashboard UI Design", meta: "Awaiting your review and approval", status: "pending", icon: "📊" },
-  { name: "Mobile Screens", meta: "Not yet ready for review", status: "notready", icon: "📱" },
-];
 
 const TABS: OverviewTab[] = [
-  "Project Pulse",
-  "Milestones",
-  "Deliverables",
-  "Timeline",
-  "Decisions",
-  "Scope Changes",
-  "Risks",
-  "Sign-off",
+  "Project Pulse", "Milestones", "Deliverables", "Timeline",
+  "Decisions", "Scope Changes", "Risks", "Sign-off", "Sprint",
 ];
 
+// ── Mapping helpers ───────────────────────────────────────────────────────────
+
+function mapDeliverableStatus(raw: string): string {
+  const s = raw.toUpperCase();
+  if (s === "DELIVERED" || s === "APPROVED" || s === "COMPLETED") return "delivered";
+  if (s === "IN_REVIEW" || s === "REVIEW")                        return "review";
+  if (s === "IN_PROGRESS" || s === "ACTIVE")                      return "inprogress";
+  return "notstarted";
+}
+
+type DeliverableStatus = "delivered" | "approved" | "review" | "inprogress" | "notstarted";
 const STATUS_LABELS: Record<DeliverableStatus, string> = {
-  delivered: "Delivered",
-  approved: "Approved",
-  review: "In Review",
-  inprogress: "In Progress",
-  notstarted: "Not Started",
+  delivered: "Delivered", approved: "Approved", review: "In Review", inprogress: "In Progress", notstarted: "Not Started",
+};
+const STATUS_BADGE: Record<DeliverableStatus, string> = {
+  delivered: "badgeGreen", approved: "badgeAccent", review: "badgePurple", inprogress: "badgeAmber", notstarted: "badgeMuted",
 };
 
-const STATUS_BADGE: Record<DeliverableStatus, string> = {
-  delivered: "badgeGreen",
-  approved: "badgeAccent",
-  review: "badgePurple",
-  inprogress: "badgeAmber",
-  notstarted: "badgeMuted",
-};
+function mapRiskLevel(raw: string | null): "High" | "Medium" | "Low" {
+  const r = (raw ?? "").toUpperCase();
+  if (r === "HIGH" || r === "CRITICAL")   return "High";
+  if (r === "MEDIUM" || r === "MODERATE") return "Medium";
+  return "Low";
+}
+
+function riskPillCls(lvl: "High" | "Medium" | "Low"): string {
+  if (lvl === "High")   return styles.projOverviewRiskHigh;
+  if (lvl === "Medium") return styles.projOverviewRiskMedium;
+  return styles.projOverviewRiskLow;
+}
+
+function mapSignOffStatus(raw: string): "signed" | "pending" | "notready" {
+  const s = raw.toUpperCase();
+  if (s === "SIGNED" || s === "APPROVED") return "signed";
+  if (s === "PENDING" || s === "READY")   return "pending";
+  return "notready";
+}
+
+function signOffIcon(name: string): string {
+  const n = name.toLowerCase();
+  if (/mobile|phone|app/.test(n))      return "📱";
+  if (/dashboard|data|analytic/.test(n)) return "📊";
+  if (/screen|ui|design/.test(n))       return "🖥";
+  return "📄";
+}
+
+function mapCRStatus(status: PortalProjectChangeRequest["status"]): "pending" | "approved" | "declined" {
+  if (status === "CLIENT_APPROVED") return "approved";
+  if (status === "CLIENT_REJECTED") return "declined";
+  return "pending";
+}
+
+function fmtDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function sprintTaskStatusBadge(raw: string): string {
+  const s = raw.toUpperCase();
+  if (s === "DONE" || s === "COMPLETED") return "badgeGreen";
+  if (s === "IN_PROGRESS" || s === "ACTIVE") return "badgeAccent";
+  if (s === "BLOCKED") return "badgeRed";
+  if (s === "IN_REVIEW") return "badgeAmber";
+  return "badgeMuted";
+}
+
+function sprintTaskStatusLabel(raw: string): string {
+  const s = raw.toUpperCase();
+  if (s === "DONE" || s === "COMPLETED") return "Done";
+  if (s === "IN_PROGRESS" || s === "ACTIVE") return "In Progress";
+  if (s === "BLOCKED") return "Blocked";
+  if (s === "IN_REVIEW") return "In Review";
+  return "To Do";
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export function ProjectsPage() {
-  const [tab, setTab] = useState<OverviewTab>("Project Pulse");
-  const [scopeModal, setScopeModal] = useState(false);
-  const [signoffModal, setSignoffModal] = useState<SignoffItem | null>(null);
-  const [toast, setToast] = useState<{ title: string; subtitle: string } | null>(null);
-  const [moods, setMoods] = useState<Record<string, Mood>>({
-    "This week": "😊",
-    "Last week": "😐",
-    "Week of Feb 7": "😊",
+  const { session, projectId } = useProjectLayer();
+  const notify = usePageToast();
+
+  // ── UI state ───────────────────────────────────────────────────────────────
+  const [tab,          setTab]          = useState<OverviewTab>("Project Pulse");
+  const [scopeModal,   setScopeModal]   = useState(false);
+  const [signoffModal, setSignoffModal] = useState<PortalSignOff | null>(null);
+  const [moods,        setMoods]        = useState<Record<string, Mood>>({
+    "This week": "😊", "Last week": "😐", "Week of Feb 7": "😊",
   });
-  const [scopes, setScopes] = useState<ScopeItem[]>([
-    {
-      id: 1,
-      title: "Add e-commerce checkout flow",
-      body: "Client requesting a 3-step checkout with Stripe. Not in original brief. Est. cost: R 18,000. Timeline: +2 weeks.",
-      status: "pending",
-    },
-    {
-      id: 2,
-      title: "Add Zulu language translation",
-      body: "Full Zulu translation across all pages. Est. cost: R 5,500. No timeline impact if approved before Mar 1.",
-      status: "pending",
-    },
-    {
-      id: 3,
-      title: "Replace static hero with video background",
-      body: "Swap hero image for looping video. Client to supply assets. Dev cost: R 3,200. Already approved.",
-      status: "approved",
-    },
-  ]);
 
+  // ── Scope change modal fields ─────────────────────────────────────────────
+  const [scopeTitle,      setScopeTitle]      = useState("");
+  const [scopeBody,       setScopeBody]       = useState("");
+  const [scopePriority,   setScopePriority]   = useState("Important");
+  const [scopeSubmitting, setScopeSubmitting] = useState(false);
+
+  // ── Sign-off modal fields ─────────────────────────────────────────────────
+  const [signoffNotes, setSignoffNotes] = useState("");
+  const [signing,      setSigning]      = useState(false);
+
+  // ── Email Digest state ────────────────────────────────────────────────────
+  const [digestBusy, setDigestBusy] = useState(false);
+
+  // ── Ask Question modal state ──────────────────────────────────────────────
+  const [questionModal, setQuestionModal] = useState(false);
+  const [questionText,  setQuestionText]  = useState("");
+  const [questionBusy,  setQuestionBusy]  = useState(false);
+
+  // ── API data state ────────────────────────────────────────────────────────
+  const [apiDeliverables, setApiDeliverables] = useState<PortalDeliverable[]>([]);
+  const [apiRisks,        setApiRisks]        = useState<PortalRisk[]>([]);
+  const [apiSignOffs,     setApiSignOffs]     = useState<PortalSignOff[]>([]);
+  const [apiChangeReqs,   setApiChangeReqs]   = useState<PortalProjectChangeRequest[]>([]);
+  const [activeSprint,    setActiveSprint]    = useState<PortalSprint | null>(null);
+  const [sprintTasks,     setSprintTasks]     = useState<PortalSprintTask[]>([]);
+  const [apiDecisions,    setApiDecisions]    = useState<PortalDecision[]>([]);
+  const [apiPhases,       setApiPhases]       = useState<PortalPhase[]>([]);
+
+  // ── Load all domain data on mount ─────────────────────────────────────────
   useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 3200);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
+    if (!session || !projectId) return;
 
-  const pendingScopeCount = useMemo(() => scopes.filter((item) => item.status === "pending").length, [scopes]);
+    void loadPortalDeliverablesWithRefresh(session, projectId).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setApiDeliverables(r.data);
+    });
+    void loadPortalRisksWithRefresh(session, projectId).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setApiRisks(r.data);
+    });
+    void loadPortalSignOffsWithRefresh(session, projectId).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setApiSignOffs(r.data);
+    });
+    void loadPortalChangeRequestsWithRefresh(session, { projectId }).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setApiChangeReqs(r.data);
+    });
+    void loadPortalSprintsWithRefresh(session, projectId).then(async (r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      const list   = r.data ?? [];
+      const active = list.find((s) => s.status.toUpperCase() === "ACTIVE") ?? list[0] ?? null;
+      setActiveSprint(active);
+      if (!active) return;
+      const tr = await loadPortalSprintTasksWithRefresh(session, projectId, active.id);
+      if (tr.nextSession) saveSession(tr.nextSession);
+      if (!tr.error && tr.data) setSprintTasks(tr.data);
+    });
+    void loadPortalDecisionsWithRefresh(session, projectId).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setApiDecisions(r.data);
+    });
+    void loadPortalPhasesWithRefresh(session, projectId).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setApiPhases(r.data);
+    });
+  }, [session, projectId]);
 
-  function notify(title: string, subtitle: string): void {
-    setToast({ title, subtitle });
+  // ── Derived state ─────────────────────────────────────────────────────────
+  const pendingScopeCount = useMemo(
+    () => apiChangeReqs.filter((cr) => mapCRStatus(cr.status) === "pending").length,
+    [apiChangeReqs],
+  );
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  async function handleScope(id: string, next: "approved" | "declined"): Promise<void> {
+    if (!session) return;
+    // Optimistic update
+    setApiChangeReqs((prev) => prev.map((cr) =>
+      cr.id === id ? { ...cr, status: next === "approved" ? "CLIENT_APPROVED" : "CLIENT_REJECTED" } : cr
+    ));
+    try {
+      const r = await updatePortalChangeRequestWithRefresh(session, id, {
+        status: next === "approved" ? "CLIENT_APPROVED" : "CLIENT_REJECTED",
+      });
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) {
+        // Revert on failure
+        setApiChangeReqs((prev) => prev.map((cr) =>
+          cr.id === id ? { ...cr, status: "SUBMITTED" } : cr
+        ));
+        notify("error", "Action failed", "Could not process your request. Please try again.");
+      } else {
+        notify("success", next === "approved" ? "Scope change approved" : "Scope change declined", "Team has been notified");
+      }
+    } catch {
+      setApiChangeReqs((prev) => prev.map((cr) =>
+        cr.id === id ? { ...cr, status: "SUBMITTED" } : cr
+      ));
+      notify("error", "Action failed", "Could not process your request. Please try again.");
+    }
   }
 
-  function handleScope(id: number, next: ScopeStatus): void {
-    setScopes((prev) => prev.map((item) => (item.id === id ? { ...item, status: next } : item)));
-    notify(next === "approved" ? "Scope change approved" : "Scope change declined", "Team has been notified");
+  async function handleScopeSubmit(): Promise<void> {
+    if (!session || !projectId || scopeSubmitting || !scopeTitle.trim()) return;
+    setScopeSubmitting(true);
+    try {
+      const r = await createPortalChangeRequestWithRefresh(session, {
+        projectId,
+        title:       scopeTitle.trim(),
+        description: scopeBody.trim() || undefined,
+        reason:      scopePriority,
+      });
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) {
+        notify("error", "Submission failed", "Could not submit your request. Please try again.");
+      } else {
+        if (r.data) setApiChangeReqs((prev) => [...prev, r.data!]);
+        setScopeModal(false);
+        setScopeTitle(""); setScopeBody(""); setScopePriority("Important");
+        notify("success", "Request submitted", "Team will respond within 24 hours");
+      }
+    } catch {
+      notify("error", "Submission failed", "Could not submit your request. Please try again.");
+    } finally {
+      setScopeSubmitting(false);
+    }
   }
 
+  async function handleSignOff(): Promise<void> {
+    if (!session || !projectId || !signoffModal || signing) return;
+    setSigning(true);
+    const targetId   = signoffModal.id;
+    const targetName = signoffModal.name;
+    try {
+      const r = await signPortalSignOffWithRefresh(session, projectId, targetId);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) {
+        notify("error", "Sign-off failed", "Could not record your signature. Please try again.");
+      } else {
+        setApiSignOffs((prev) => prev.map((s) =>
+          s.id === targetId ? { ...s, status: "SIGNED", signedAt: new Date().toISOString() } : s
+        ));
+        setSignoffModal(null);
+        setSignoffNotes("");
+        notify("success", "Signed off", `${targetName} approved and recorded`);
+      }
+    } catch {
+      notify("error", "Sign-off failed", "Could not record your signature. Please try again.");
+    } finally {
+      setSigning(false);
+    }
+  }
+
+  // ── Email Digest handler ──────────────────────────────────────────────────
+  const handleEmailDigest = useCallback(async () => {
+    if (!session) return;
+    setDigestBusy(true);
+    const result = await updatePortalNotificationPrefsWithRefresh(session, { weeklyDigest: true });
+    if (result.nextSession) saveSession(result.nextSession);
+    if (!result.error) {
+      notify("success", "Digest requested", "Your project summary will be sent to your email shortly.");
+    } else {
+      notify("error", "Failed", "Could not request digest. Please try again.");
+    }
+    setDigestBusy(false);
+  }, [session, notify]);
+
+  // ── Ask Question handler ──────────────────────────────────────────────────
+  const handleAskQuestion = useCallback(async () => {
+    if (!session || !session.user.clientId || !questionText.trim()) return;
+    setQuestionBusy(true);
+    const result = await createPortalSupportTicketWithRefresh(session, {
+      clientId: session.user.clientId,
+      title: questionText.trim().slice(0, 100),
+      description: projectId ? `Project: ${projectId}\n\n${questionText.trim()}` : questionText.trim(),
+      category: "QUESTION",
+      priority: "MEDIUM",
+    });
+    if (result.nextSession) saveSession(result.nextSession);
+    if (!result.error) {
+      notify("success", "Question sent", "Your team will respond within 24 hours.");
+      setQuestionModal(false);
+      setQuestionText("");
+    } else {
+      notify("error", "Failed", "Could not send question. Please try again.");
+    }
+    setQuestionBusy(false);
+  }, [session, projectId, questionText, notify]);
+
+  // ── Sprint derived values ─────────────────────────────────────────────────
+  const sprintDone    = sprintTasks.filter((t) => t.status.toUpperCase() === "DONE" || t.status.toUpperCase() === "COMPLETED").length;
+  const sprintPct     = sprintTasks.length > 0 ? Math.round((sprintDone / sprintTasks.length) * 100) : 0;
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className={cx("pageBody", styles.projOverviewRoot)}>
-      <div className={styles.projOverviewLayout}>
-        <aside className={styles.projOverviewSidebar}>
-          <div className={styles.projOverviewSideSection}>Project</div>
-          {[
-            { label: "Project Pulse", tone: styles.projOverviewToneAccent },
-            { label: "Milestones", tone: styles.projOverviewToneGreen },
-            { label: "Deliverables", tone: styles.projOverviewTonePurple },
-            { label: "Timeline", tone: styles.projOverviewToneBlue },
-            { label: "Decisions", tone: styles.projOverviewToneMuted },
-            { label: "Scope Changes", tone: styles.projOverviewToneAmber, badge: pendingScopeCount },
-            { label: "Risks", tone: styles.projOverviewToneRed },
-            { label: "Sign-off", tone: styles.projOverviewToneMuted },
-          ].map((item) => (
-            <button key={item.label} type="button" className={cx(styles.projOverviewSideItem, tab === item.label && styles.projOverviewSideItemActive)} onClick={() => setTab(item.label as OverviewTab)}>
-              <span className={cx(styles.projOverviewSideDot, item.tone)} />
-              <span>{item.label}</span>
-              {item.badge && item.badge > 0 ? <span className={styles.projOverviewSideBadge}>{item.badge}</span> : null}
-            </button>
-          ))}
+    <div className={cx("pageBody")}>
+      <div className={cx("pageHeader", "mb0")}>
+        <div>
+          <div className={cx("pageEyebrow")}>Projects · Overview</div>
+          <h1 className={cx("pageTitle")}>Project Overview</h1>
+          <p className={cx("pageSub")}>Everything happening on your project, in one place.</p>
+        </div>
+        <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} disabled={digestBusy} onClick={() => void handleEmailDigest()}>
+            {digestBusy ? "Sending…" : "Email Digest"}
+          </button>
+          <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setScopeModal(true)}>Request Change</button>
+        </div>
+      </div>
 
-          <div className={styles.projOverviewSideDivider} />
-          <div className={styles.projOverviewProgressCard}>
-            <div className={styles.projOverviewProgressTitle}>Progress</div>
+      <div className={cx("pillTabs", "mb16")}>
+        {TABS.map((item) => (
+          <button key={item} type="button" className={cx("pillTab", tab === item && "pillTabActive")} onClick={() => setTab(item)}>
+            {item}
+            {item === "Scope Changes" && pendingScopeCount > 0 ? (
+              <span className={cx("badge", "badgeAmber", "ml6")}>{pendingScopeCount}</span>
+            ) : null}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Project Pulse tab ──────────────────────────────────────────────── */}
+      {tab === "Project Pulse" ? (
+        <>
+          <div className={cx("topCardsStack", "mb16")}>
             {[
-              { label: "Overall", pct: 54, tone: "var(--accent)" },
-              { label: "Budget", pct: 41, tone: "var(--green)" },
-              { label: "Timeline", pct: 58, tone: "var(--amber)" },
-            ].map((row) => (
-              <div key={row.label} className={styles.projOverviewProgressRow}>
-                <div className={styles.projOverviewProgressMeta}>
-                  <span>{row.label}</span>
-                  <span style={{ color: row.tone }}>{row.pct}%</span>
-                </div>
-                <div className={styles.projOverviewProgressTrack}>
-                  <div className={styles.projOverviewProgressFill} style={{ width: `${row.pct}%`, background: row.tone }} />
-                </div>
+              { label: "Overall Progress", value: "54%",    sub: "On track for Mar 28 launch", barClass: "statBarAccent"  },
+              { label: "Days Remaining",   value: "35",     sub: "Launch: Mar 28, 2026",         barClass: null             },
+              { label: "Milestones Done",  value: "2/6",    sub: "Next: UI/UX (72% done)",       barClass: "statBarGreen"   },
+              { label: "Pending Actions",  value: String(pendingScopeCount + apiSignOffs.filter((s) => mapSignOffStatus(s.status) === "pending").length), sub: "Need your response", barClass: "statBarAmber" },
+              { label: "Budget Used",      value: "41%",    sub: "R 32,800 of R 80,000",         barClass: "statBarPurple"  },
+            ].map((item) => (
+              <div key={item.label} className={styles.projOverviewStat}>
+                <div className={cx(styles.projOverviewStatBar, item.barClass ?? "")} />
+                <div className={styles.projOverviewStatLabel}>{item.label}</div>
+                <div className={styles.projOverviewStatValue}>{item.value}</div>
+                <div className={styles.projOverviewStatSub}>{item.sub}</div>
               </div>
             ))}
           </div>
-        </aside>
 
-        <section className={styles.projOverviewMain}>
-          <div className={cx("pageHeader", "mb0")}> 
+          <div className={styles.projOverviewContent}>
             <div>
-              <div className={cx("pageEyebrow")}>Veldt Finance · Dashboard Rebuild</div>
-              <h1 className={cx("pageTitle")}>Project Overview</h1>
-              <p className={cx("pageSub")}>Everything happening on your project, in one place.</p>
+              <div className={styles.projOverviewSectionTitle}>This Week&apos;s Project Pulse</div>
+              <div className={styles.projOverviewPulseCard}>
+                <div className={styles.projOverviewPulseEyebrow}><span className={styles.projOverviewPulseDot} /> Weekly Summary</div>
+                <div className={styles.projOverviewPulseText}>
+                  <strong>Good progress this week.</strong> Check the Deliverables and Sign-off tabs for items that need your attention.
+                  {pendingScopeCount > 0 && <><br /><br /><strong>{pendingScopeCount} scope change{pendingScopeCount > 1 ? "s" : ""} await your decision</strong> — head to the Scope Changes tab to review them.</>}
+                </div>
+                <div className={styles.projOverviewPulseMeta}>
+                  <div className={styles.projOverviewPulseMetaItem}>Health <strong className={cx("colorGreen")}>On Track</strong></div>
+                </div>
+              </div>
             </div>
-            <div className={cx("pageActions")}>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => notify("Digest sent", "Summary emailed to naledi@veldt.co.za")}>Email Digest</button>
-              <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setScopeModal(true)}>Request Change</button>
-            </div>
-          </div>
 
-          <div className={styles.projOverviewTabs}>
-            {TABS.map((item) => (
-              <button key={item} type="button" className={cx(styles.projOverviewTab, tab === item && styles.projOverviewTabActive)} onClick={() => setTab(item)}>
-                {item}
-              </button>
-            ))}
-          </div>
-
-          {tab === "Project Pulse" ? (
-            <>
-              <div className={styles.projOverviewStats}>
-                {[
-                  { label: "Overall Progress", value: "54%", sub: "On track for Mar 28 launch", bar: "var(--accent)" },
-                  { label: "Days Remaining", value: "35", sub: "Launch: Mar 28, 2026", bar: "var(--blue)" },
-                  { label: "Milestones Done", value: "2/6", sub: "Next: UI/UX (72% done)", bar: "var(--green)" },
-                  { label: "Pending Actions", value: "3", sub: "Need your response", bar: "var(--amber)" },
-                  { label: "Budget Used", value: "41%", sub: "R 32,800 of R 80,000", bar: "var(--purple)" },
-                ].map((item) => (
-                  <div key={item.label} className={styles.projOverviewStat}>
-                    <div className={styles.projOverviewStatBar} style={{ background: item.bar }} />
-                    <div className={styles.projOverviewStatLabel}>{item.label}</div>
-                    <div className={styles.projOverviewStatValue}>{item.value}</div>
-                    <div className={styles.projOverviewStatSub}>{item.sub}</div>
+            <div>
+              <div className={styles.projOverviewSectionTitle}>Project Mood</div>
+              <div className={cx("card")}>
+                <div className={cx("cardHeader")}>
+                  <div>
+                    <div className={cx("cardTitle")}>How are you feeling?</div>
+                    <div className={cx("cardMeta")}>Weekly confidence check-in</div>
+                  </div>
+                </div>
+                {(["This week", "Last week", "Week of Feb 7"] as const).map((week) => (
+                  <div key={week} className={styles.projOverviewMoodRow}>
+                    <span className={styles.projOverviewMoodWeek}>{week}</span>
+                    <div className={styles.projOverviewMoodEmojiRow}>
+                      {(["😄", "😊", "😐", "😟", "😡"] as Mood[]).map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          className={cx(styles.projOverviewMoodEmoji, moods[week] === emoji && styles.projOverviewMoodEmojiActive)}
+                          aria-label={MOOD_LABELS[emoji]}
+                          aria-pressed={moods[week] === emoji}
+                          onClick={() => { setMoods((prev) => ({ ...prev, [week]: emoji })); notify("success", "Mood recorded", "Thanks for the check-in"); }}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                    <span className={styles.projOverviewMoodCopy}>
+                      {moods[week] === "😄" ? "Feeling great!" : moods[week] === "😊" ? "Going well" : moods[week] === "😐" ? "It is okay" : moods[week] === "😟" ? "A bit concerned" : "Very concerned"}
+                    </span>
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </>
+      ) : null}
 
-              <div className={styles.projOverviewContent}>
-                <div>
-                  <div className={styles.projOverviewSectionTitle}>This Week&apos;s Project Pulse</div>
-                  <div className={styles.projOverviewPulseCard}>
-                    <div className={styles.projOverviewPulseEyebrow}><span className={styles.projOverviewPulseDot} /> AI-Generated Summary · Feb 21, 2026</div>
-                    <div className={styles.projOverviewPulseText}>
-                      <strong>Good progress this week.</strong> The UI/UX design phase is 72% complete — Sipho has finished the homepage and onboarding flows, ready for your review. <em>Dashboard designs are in progress, ready by Wednesday.</em>
-                      <br /><br />
-                      <strong>What&apos;s coming next week:</strong> Mobile responsive screens go into design. Once you approve the dashboard UI, frontend development kicks off.
-                      <br /><br />
-                      <strong>We need something from you:</strong> Dashboard design awaits your sign-off, and 2 scope change requests need a decision before we can proceed.
-                    </div>
-                    <div className={styles.projOverviewPulseMeta}>
-                      <div className={styles.projOverviewPulseMetaItem}>Updated <strong>2 hours ago</strong></div>
-                      <div className={styles.projOverviewPulseMetaItem}>Next digest <strong>Monday 07:00</strong></div>
-                      <div className={styles.projOverviewPulseMetaItem}>Health <strong style={{ color: "var(--green)" }}>On Track</strong></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className={styles.projOverviewSectionTitle}>What We Need From You</div>
-                  <div className={cx("card", styles.projOverviewNeedsCard)}>
-                    {[
-                      {
-                        icon: "✍️",
-                        bg: "var(--accent-dim)",
-                        title: "Sign off on Dashboard UI Design",
-                        desc: "Ready for review since Feb 19 · Sipho Ndlovu",
-                        due: "Overdue",
-                        dueClass: styles.projOverviewDueOver,
-                      },
-                      {
-                        icon: "📋",
-                        bg: "var(--amber-dim)",
-                        title: "Approve scope change: E-commerce checkout",
-                        desc: "R 18,000 · +2 weeks impact · Decision needed before dev starts",
-                        due: "Due today",
-                        dueClass: styles.projOverviewDueToday,
-                      },
-                      {
-                        icon: "📝",
-                        bg: "var(--purple-dim)",
-                        title: "Submit homepage copy",
-                        desc: "3 pages still need content from your team",
-                        due: "Due Mar 1",
-                        dueClass: styles.projOverviewDueSoon,
-                      },
-                    ].map((item) => (
-                      <div key={item.title} className={styles.projOverviewNeedRow}>
-                        <div className={styles.projOverviewNeedIcon} style={{ background: item.bg }}>{item.icon}</div>
-                        <div className={styles.projOverviewGrow}>
-                          <div className={styles.projOverviewNeedTitle}>{item.title}</div>
-                          <div className={styles.projOverviewNeedDesc}>{item.desc}</div>
-                        </div>
-                        <span className={cx(styles.projOverviewNeedDue, item.dueClass)}>{item.due}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className={styles.projOverviewGrid2}>
-                  <div>
-                    <div className={styles.projOverviewSectionTitle}>Project Mood</div>
-                    <div className={cx("card")}>
-                      <div className={cx("cardHeader")}>
-                        <div>
-                          <div className={cx("cardTitle")}>How are you feeling?</div>
-                          <div className={cx("cardMeta")}>Weekly confidence check-in</div>
-                        </div>
-                      </div>
-                      {(["This week", "Last week", "Week of Feb 7"] as const).map((week) => (
-                        <div key={week} className={styles.projOverviewMoodRow}>
-                          <span className={styles.projOverviewMoodWeek}>{week}</span>
-                          <div className={styles.projOverviewMoodEmojiRow}>
-                            {(["😄", "😊", "😐", "😟", "😡"] as Mood[]).map((emoji) => (
-                              <button
-                                key={emoji}
-                                type="button"
-                                className={cx(styles.projOverviewMoodEmoji, moods[week] === emoji && styles.projOverviewMoodEmojiActive)}
-                                onClick={() => {
-                                  setMoods((prev) => ({ ...prev, [week]: emoji }));
-                                  notify("Mood recorded", "Thanks for the check-in");
-                                }}
-                              >
-                                {emoji}
-                              </button>
-                            ))}
-                          </div>
-                          <span className={styles.projOverviewMoodCopy}>
-                            {moods[week] === "😄"
-                              ? "Feeling great!"
-                              : moods[week] === "😊"
-                                ? "Going well"
-                                : moods[week] === "😐"
-                                  ? "It is okay"
-                                  : moods[week] === "😟"
-                                    ? "A bit concerned"
-                                    : "Very concerned"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className={styles.projOverviewSectionTitle}>Celebration</div>
-                    <div className={cx("card", styles.projOverviewCelebrateCard)}>
-                      <div className={styles.projOverviewCelebrateIcon}>🎉</div>
-                      <div className={styles.projOverviewCelebrateTitle}>Brand Identity Complete!</div>
-                      <div className={styles.projOverviewCelebrateText}>
-                        Your brand guidelines and logo suite were delivered and approved on Feb 12. That is 2 milestones down — the foundation is locked in.
-                      </div>
-                      <div className={styles.projOverviewCelebrateNext}>Next: UI/UX Design (72% done)</div>
-                    </div>
-                  </div>
+      {/* ── Milestones tab (API — sign-offs) ───────────────────────────────── */}
+      {tab === "Milestones" ? (
+        <div className={styles.projOverviewContent}>
+          <div>
+            <div className={styles.projOverviewSectionTitle}>Project Milestones</div>
+            {apiSignOffs.length === 0 ? (
+              <div className={cx("card")}>
+                <div className={cx("emptyState")}>
+                  <div className={cx("emptyStateIcon")}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg></div>
+                  <div className={cx("emptyStateTitle")}>No milestones yet</div>
+                  <div className={cx("emptyStateSub")}>Milestone sign-offs will appear here once the team has added them.</div>
                 </div>
               </div>
-            </>
-          ) : null}
-
-          {tab === "Milestones" ? (
-            <div className={styles.projOverviewContent}>
-              <div>
-                <div className={styles.projOverviewSectionTitle}>Project Milestones</div>
-                <div className={cx("card")}> 
-                  {MILESTONES.map((item, index) => (
-                    <div key={item.title} className={styles.projOverviewMilestoneRow}>
+            ) : (
+              <div className={cx("card")}>
+                {apiSignOffs.map((item, index) => {
+                  const soStatus = mapSignOffStatus(item.status);
+                  return (
+                    <div key={item.id} className={styles.projOverviewMilestoneRow}>
                       <div className={styles.projOverviewMilestoneLine}>
                         <div className={cx(
                           styles.projOverviewMilestoneCircle,
-                          item.status === "done"
-                            ? styles.projOverviewMilestoneDone
-                            : item.status === "active"
-                              ? styles.projOverviewMilestoneActive
-                              : item.status === "blocked"
-                                ? styles.projOverviewMilestoneBlocked
-                                : styles.projOverviewMilestonePending,
+                          soStatus === "signed" ? styles.projOverviewMilestoneDone :
+                          soStatus === "pending" ? styles.projOverviewMilestoneActive :
+                          styles.projOverviewMilestonePending,
                         )}>
-                          {item.status === "done" ? "✓" : item.status === "active" ? "●" : item.status === "blocked" ? "!" : String(index + 1)}
+                          {soStatus === "signed" ? "✓" : soStatus === "pending" ? "●" : String(index + 1)}
                         </div>
-                        {index < MILESTONES.length - 1 ? <div className={styles.projOverviewMilestoneConnector} /> : null}
+                        {index < apiSignOffs.length - 1 ? <div className={styles.projOverviewMilestoneConnector} /> : null}
                       </div>
-
                       <div className={styles.projOverviewGrow}>
-                        <div className={styles.projOverviewMilestoneTitle}>{item.title}</div>
-                        <div className={styles.projOverviewMilestoneMeta}>{item.meta} · {item.deliverables} deliverables</div>
-                        {item.pct > 0 ? (
-                          <div className={styles.projOverviewMilestoneTrack}>
-                            <div className={styles.projOverviewMilestoneFill} style={{ width: `${item.pct}%`, background: item.status === "done" ? "var(--green)" : "var(--accent)" }} />
-                          </div>
-                        ) : null}
+                        <div className={styles.projOverviewMilestoneTitle}>{item.name}</div>
+                        <div className={styles.projOverviewMilestoneMeta}>
+                          {soStatus === "signed" && item.signedAt
+                            ? `Signed ${fmtDate(item.signedAt)}`
+                            : soStatus === "pending"
+                              ? "Awaiting your approval"
+                              : "Not yet ready for review"}
+                        </div>
                         <div className={styles.projOverviewTagRow}>
-                          {item.tags.map((tag) => <span key={tag} className={cx("badge", "badgeMuted")}>{tag}</span>)}
-                          <span className={cx("badge", item.status === "done" ? "badgeGreen" : item.status === "active" ? "badgeAccent" : item.status === "blocked" ? "badgeRed" : "badgeMuted")}>
-                            {item.status === "done" ? "Complete" : item.status === "active" ? "In Progress" : item.status === "blocked" ? "Blocked" : "Upcoming"}
+                          <span className={cx("badge", soStatus === "signed" ? "badgeGreen" : soStatus === "pending" ? "badgeAmber" : "badgeMuted")}>
+                            {soStatus === "signed" ? "Signed" : soStatus === "pending" ? "Pending" : "Not Ready"}
                           </span>
                         </div>
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Deliverables tab (API) ──────────────────────────────────────────── */}
+      {tab === "Deliverables" ? (
+        <div className={styles.projOverviewContent}>
+          <div>
+            <div className={styles.projOverviewSectionTitle}>All Deliverables</div>
+            {apiDeliverables.length === 0 ? (
+              <div className={cx("card")}>
+                <div className={cx("emptyState")}>
+                  <div className={cx("emptyStateIcon")}><Ic n="layers" sz={22} c="var(--muted2)" /></div>
+                  <div className={cx("emptyStateTitle")}>No deliverables yet</div>
+                  <div className={cx("emptyStateSub")}>Deliverables will appear here as work is scoped.</div>
                 </div>
               </div>
-            </div>
-          ) : null}
-
-          {tab === "Deliverables" ? (
-            <div className={styles.projOverviewContent}>
-              <div>
-                <div className={styles.projOverviewSectionTitle}>All Deliverables</div>
-                <div className={cx("card", styles.projOverviewTableCard)}>
-                  <div className={styles.projOverviewDeliverableHead}>
-                    <span>Deliverable</span>
-                    <span>Project</span>
-                    <span>Owner</span>
-                    <span>Status</span>
-                  </div>
-                  {DELIVERABLES.map((item) => (
-                    <div key={`${item.name}-${item.date}`} className={styles.projOverviewDeliverableRow}>
+            ) : (
+              <div className={cx("card", styles.projOverviewTableCard)}>
+                <div className={styles.projOverviewDeliverableHead}>
+                  <span>Deliverable</span><span>Owner</span><span>Due</span><span>Status</span>
+                </div>
+                {apiDeliverables.map((item) => {
+                  const ds = mapDeliverableStatus(item.status) as DeliverableStatus;
+                  return (
+                    <div key={item.id} className={styles.projOverviewDeliverableRow}>
                       <div>
                         <div className={styles.projOverviewDeliverableName}>{item.name}</div>
-                        <div className={styles.projOverviewDeliverableProjectSub}>{item.project}</div>
                       </div>
-                      <div className={styles.projOverviewDeliverableOwner}>{item.owner}</div>
-                      <div className={styles.projOverviewDeliverableDate}>{item.date}</div>
-                      <div className={styles.projOverviewDeliverableStatus}><span className={cx("badge", STATUS_BADGE[item.status])}>{STATUS_LABELS[item.status]}</span></div>
+                      <div className={styles.projOverviewDeliverableOwner}>{item.ownerName ?? "—"}</div>
+                      <div className={styles.projOverviewDeliverableDate}>{fmtDate(item.dueAt)}</div>
+                      <div className={styles.projOverviewDeliverableStatus}>
+                        <span className={cx("badge", STATUS_BADGE[ds])}>{STATUS_LABELS[ds]}</span>
+                      </div>
                     </div>
-                  ))}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Timeline tab (API — phases) ─────────────────────────────────────── */}
+      {tab === "Timeline" ? (
+        <div className={styles.projOverviewContent}>
+          <div>
+            <div className={styles.projOverviewSectionTitle}>Project Timeline</div>
+            {apiPhases.length === 0 ? (
+              <div className={cx("card")}>
+                <div className={cx("emptyState")}>
+                  <div className={cx("emptyStateIcon")}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                  <div className={cx("emptyStateTitle")}>No phases yet</div>
+                  <div className={cx("emptyStateSub")}>Project phases will appear here once the team has set them up.</div>
                 </div>
               </div>
-            </div>
-          ) : null}
-
-          {tab === "Timeline" ? (
-            <div className={styles.projOverviewContent}>
-              <div>
-                <div className={styles.projOverviewSectionTitle}>Project Timeline</div>
-                <div className={cx("card")}> 
-                  <div className={styles.projOverviewTimelineLegend}>
-                    <span><i className={styles.projOverviewLegendPlanned} />Planned</span>
-                    <span><i className={styles.projOverviewLegendActual} />Actual</span>
-                    <span><i className={styles.projOverviewLegendLate} />Running Late</span>
-                  </div>
-
-                  <div className={styles.projOverviewTimelineWrap}>
-                    <div className={styles.projOverviewTimelineHead}>
-                      <div className={styles.projOverviewTimelineLeft}>Phase</div>
-                      {["Jan", "Feb", "Mar", "Apr"].map((month) => <div key={month} className={styles.projOverviewTimelineMonth}>{month}</div>)}
-                    </div>
-
-                    {[
-                      { name: "Discovery", planned: [0, 25], actual: [0, 25], type: "actual" as const },
-                      { name: "Brand Identity", planned: [20, 50], actual: [20, 55], type: "actual" as const },
-                      { name: "UI/UX Design", planned: [45, 70], actual: [48, 78], type: "late" as const },
-                      { name: "Frontend Dev", planned: [65, 85], actual: null, type: "planned" as const },
-                      { name: "QA & Testing", planned: [80, 93], actual: null, type: "planned" as const },
-                      { name: "Launch", planned: [90, 100], actual: null, type: "planned" as const },
-                    ].map((row) => (
-                      <div key={row.name} className={styles.projOverviewTimelineRow}>
-                        <div className={styles.projOverviewTimelineName}>{row.name}</div>
-                        <div className={styles.projOverviewTimelineTrack}>
-                          <div className={cx(styles.projOverviewTimelineBar, styles.projOverviewTimelinePlanned)} style={{ left: `${row.planned[0]}%`, width: `${row.planned[1] - row.planned[0]}%` }}>Planned</div>
-                          {row.actual ? (
-                            <div className={cx(styles.projOverviewTimelineBar, row.type === "late" ? styles.projOverviewTimelineLate : styles.projOverviewTimelineActual)} style={{ left: `${row.actual[0]}%`, width: `${row.actual[1] - row.actual[0]}%` }}>
-                              {row.type === "late" ? "Running late" : "Done"}
-                            </div>
-                          ) : null}
-                          <div className={styles.projOverviewTimelineToday} style={{ left: "62%" }} />
+            ) : (
+              <div className={cx("card")}>
+                {[...apiPhases].sort((a, b) => a.sortOrder - b.sortOrder).map((phase, index) => {
+                  const pct = phase.budgetedHours > 0
+                    ? Math.min(100, Math.round((phase.loggedHours / phase.budgetedHours) * 100))
+                    : 0;
+                  const isOver = phase.loggedHours > phase.budgetedHours;
+                  return (
+                    <div key={phase.id} className={styles.projOverviewMilestoneRow}>
+                      <div className={styles.projOverviewMilestoneLine}>
+                        <div
+                          className={cx(
+                            styles.projOverviewMilestoneCircle,
+                            pct >= 100 ? styles.projOverviewMilestoneDone : styles.projOverviewMilestoneActive,
+                          )}
+                          style={phase.color ? { '--bg-color': phase.color, '--border-color': phase.color } as React.CSSProperties : undefined}
+                        >
+                          {pct >= 100 ? "✓" : String(index + 1)}
+                        </div>
+                        {index < apiPhases.length - 1 ? <div className={styles.projOverviewMilestoneConnector} /> : null}
+                      </div>
+                      <div className={styles.projOverviewGrow}>
+                        <div className={styles.projOverviewMilestoneTitle}>{phase.name}</div>
+                        <div className={styles.projOverviewMilestoneMeta}>
+                          {phase.loggedHours}h logged of {phase.budgetedHours}h budgeted
+                          {isOver ? " · over budget" : ""}
+                        </div>
+                        {phase.budgetedHours > 0 ? (
+                          <div className={styles.projOverviewMilestoneTrack}>
+                            <div
+                              className={cx(styles.projOverviewMilestoneFill, isOver ? "pfAmber" : pct >= 100 ? "pfGreen" : "pfAccent")} style={{ '--pct': `${pct}%` } as React.CSSProperties}
+                            />
+                          </div>
+                        ) : null}
+                        <div className={styles.projOverviewTagRow}>
+                          <span className={cx("badge", isOver ? "badgeAmber" : pct >= 100 ? "badgeGreen" : "badgeMuted")}>
+                            {isOver ? "Over Budget" : pct >= 100 ? "Complete" : `${pct}%`}
+                          </span>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Decisions tab (API) ─────────────────────────────────────────────── */}
+      {tab === "Decisions" ? (
+        <div className={styles.projOverviewContent}>
+          <div>
+            <div className={styles.projOverviewSectionTitle}>Decision Log</div>
+            <div className={styles.projOverviewInfoStrip}>Every decision made on your project is logged here.</div>
+            {apiDecisions.length === 0 ? (
+              <div className={cx("card")}>
+                <div className={cx("emptyState")}>
+                  <div className={cx("emptyStateIcon")}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
+                  <div className={cx("emptyStateTitle")}>No decisions logged</div>
+                  <div className={cx("emptyStateSub")}>Project decisions will appear here once the team records them.</div>
                 </div>
               </div>
-            </div>
-          ) : null}
-
-          {tab === "Decisions" ? (
-            <div className={styles.projOverviewContent}>
-              <div>
-                <div className={styles.projOverviewSectionTitle}>Decision Log</div>
-                <div className={styles.projOverviewInfoStrip}>Every decision made on your project is logged here.</div>
-                {DECISIONS.map((item) => (
-                  <div key={item.title} className={styles.projOverviewDecisionRow}>
-                    <div className={styles.projOverviewDecisionHead}>
-                      <div className={styles.projOverviewDecisionTitle}>{item.title}</div>
-                      <span className={cx("badge", "badgeAccent")}>Decision</span>
-                    </div>
-                    <div className={styles.projOverviewDecisionMeta}>{item.meta}</div>
-                    <div className={styles.projOverviewDecisionBy}>By: {item.by}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {tab === "Scope Changes" ? (
-            <div className={styles.projOverviewContent}>
-              <div>
-                <div className={styles.projOverviewHeadInline}>
-                  <div className={styles.projOverviewHeadLineWrap}>
-                    <span className={styles.projOverviewSectionTitlePlain}>Scope Change Requests</span>
-                    <div className={styles.projOverviewHeadLine} />
-                  </div>
-                  <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setScopeModal(true)}>Request Change</button>
+            ) : apiDecisions.map((item) => (
+              <div key={item.id} className={styles.projOverviewDecisionRow}>
+                <div className={styles.projOverviewDecisionHead}>
+                  <div className={styles.projOverviewDecisionTitle}>{item.title}</div>
+                  <span className={cx("badge", "badgeAccent")}>{item.category ?? "Decision"}</span>
                 </div>
-
-                {scopes.map((item) => (
-                  <div key={item.id} className={cx(styles.projOverviewScopeRow, item.status === "pending" && styles.projOverviewScopePending)}>
-                    <div className={styles.projOverviewScopeHead}>
-                      <div className={styles.projOverviewScopeTitle}>{item.title}</div>
-                      <span className={cx("badge", item.status === "pending" ? "badgeAmber" : item.status === "approved" ? "badgeGreen" : "badgeRed")}>
-                        {item.status}
-                      </span>
-                    </div>
-                    <div className={styles.projOverviewScopeBody}>{item.body}</div>
-                    {item.status === "pending" ? (
-                      <div className={styles.projOverviewScopeActions}>
-                        <button type="button" className={styles.projOverviewApproveBtn} onClick={() => handleScope(item.id, "approved")}>Approve</button>
-                        <button type="button" className={styles.projOverviewDeclineBtn} onClick={() => handleScope(item.id, "declined")}>Decline</button>
-                        <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => notify("Query sent", "Team will respond within 24 hours")}>Ask Question</button>
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
+                {item.rationale && (
+                  <div className={styles.projOverviewDecisionMeta}>{item.rationale}</div>
+                )}
+                {item.detail && !item.rationale && (
+                  <div className={styles.projOverviewDecisionMeta}>{item.detail}</div>
+                )}
+                <div className={styles.projOverviewDecisionBy}>
+                  {item.decidedAt ? fmtDate(item.decidedAt) : "Date pending"}
+                </div>
               </div>
-            </div>
-          ) : null}
+            ))}
+          </div>
+        </div>
+      ) : null}
 
-          {tab === "Risks" ? (
-            <div className={styles.projOverviewContent}>
-              <div>
-                <div className={styles.projOverviewSectionTitle}>Risk Register</div>
-                <div className={styles.projOverviewInfoStrip}>Potential issues we are tracking and actively managing.</div>
-                <div className={cx("card", styles.projOverviewTableCard)}>
-                  <div className={styles.projOverviewRiskHead}>
-                    <span>Risk</span>
-                    <span>Likelihood</span>
-                    <span>Impact</span>
-                    <span>Mitigation</span>
+      {/* ── Scope Changes tab (API) ─────────────────────────────────────────── */}
+      {tab === "Scope Changes" ? (
+        <div className={styles.projOverviewContent}>
+          <div>
+            <div className={styles.projOverviewHeadInline}>
+              <div className={styles.projOverviewHeadLineWrap}>
+                <span className={styles.projOverviewSectionTitlePlain}>Scope Change Requests</span>
+                <div className={styles.projOverviewHeadLine} />
+              </div>
+              <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setScopeModal(true)}>Request Change</button>
+            </div>
+            {apiChangeReqs.length === 0 ? (
+              <div className={cx("card")}>
+                <div className={cx("emptyState")}>
+                  <div className={cx("emptyStateIcon")}><Ic n="edit" sz={22} c="var(--muted2)" /></div>
+                  <div className={cx("emptyStateTitle")}>No change requests</div>
+                  <div className={cx("emptyStateSub")}>Scope change requests submitted here will appear for review.</div>
+                </div>
+              </div>
+            ) : apiChangeReqs.map((item) => {
+              const displayStatus = mapCRStatus(item.status);
+              return (
+                <div key={item.id} className={cx(styles.projOverviewScopeRow, displayStatus === "pending" && styles.projOverviewScopePending)}>
+                  <div className={styles.projOverviewScopeHead}>
+                    <div className={styles.projOverviewScopeTitle}>{item.title}</div>
+                    <span className={cx("badge", displayStatus === "pending" ? "badgeAmber" : displayStatus === "approved" ? "badgeGreen" : "badgeRed")}>
+                      {displayStatus}
+                    </span>
                   </div>
-                  {RISKS.map((item) => (
-                    <div key={item.name} className={styles.projOverviewRiskRow}>
+                  <div className={styles.projOverviewScopeBody}>{item.description ?? item.reason ?? "No description provided."}</div>
+                  {item.estimatedCostCents != null && (
+                    <div className={cx("text11", "colorMuted", "mt4")}>
+                      Estimated cost: R {(item.estimatedCostCents / 100).toLocaleString("en-ZA")}
+                      {item.estimatedHours != null && ` · ${item.estimatedHours}h estimated`}
+                    </div>
+                  )}
+                  {displayStatus === "pending" ? (
+                    <div className={styles.projOverviewScopeActions}>
+                      <button type="button" className={styles.projOverviewApproveBtn} onClick={() => void handleScope(item.id, "approved")}>Approve</button>
+                      <button type="button" className={styles.projOverviewDeclineBtn} onClick={() => void handleScope(item.id, "declined")}>Decline</button>
+                      <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setQuestionModal(true)}>Ask Question</button>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Risks tab (API) ────────────────────────────────────────────────── */}
+      {tab === "Risks" ? (
+        <div className={styles.projOverviewContent}>
+          <div>
+            <div className={styles.projOverviewSectionTitle}>Risk Register</div>
+            <div className={styles.projOverviewInfoStrip}>Potential issues we are tracking and actively managing.</div>
+            {apiRisks.length === 0 ? (
+              <div className={cx("card")}>
+                <div className={cx("emptyState")}>
+                  <div className={cx("emptyStateIcon")}><Ic n="alertTriangle" sz={22} c="var(--muted2)" /></div>
+                  <div className={cx("emptyStateTitle")}>No risks logged</div>
+                  <div className={cx("emptyStateSub")}>Risks identified during the project will be tracked here.</div>
+                </div>
+              </div>
+            ) : (
+              <div className={cx("card", styles.projOverviewTableCard)}>
+                <div className={styles.projOverviewRiskHead}>
+                  <span>Risk</span><span>Likelihood</span><span>Impact</span><span>Mitigation</span>
+                </div>
+                {apiRisks.map((item) => {
+                  const lh = mapRiskLevel(item.likelihood);
+                  const im = mapRiskLevel(item.impact);
+                  return (
+                    <div key={item.id} className={styles.projOverviewRiskRow}>
                       <div>
                         <div className={styles.projOverviewRiskName}>{item.name}</div>
-                        <div className={styles.projOverviewRiskDetail}>{item.detail}</div>
+                        {item.detail && <div className={styles.projOverviewRiskDetail}>{item.detail}</div>}
                       </div>
-                      <div>
-                        <span className={cx(styles.projOverviewRiskPill, item.likelihood === "High" ? styles.projOverviewRiskHigh : item.likelihood === "Medium" ? styles.projOverviewRiskMedium : styles.projOverviewRiskLow)}>{item.likelihood}</span>
-                      </div>
-                      <div>
-                        <span className={cx(styles.projOverviewRiskPill, item.impact === "High" ? styles.projOverviewRiskHigh : item.impact === "Medium" ? styles.projOverviewRiskMedium : styles.projOverviewRiskLow)}>{item.impact}</span>
-                      </div>
-                      <div className={styles.projOverviewRiskMitigation}>{item.mitigation}</div>
+                      <div><span className={cx(styles.projOverviewRiskPill, riskPillCls(lh))}>{lh}</span></div>
+                      <div><span className={cx(styles.projOverviewRiskPill, riskPillCls(im))}>{im}</span></div>
+                      <div className={styles.projOverviewRiskMitigation}>{item.mitigation ?? "—"}</div>
                     </div>
-                  ))}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Sign-off tab (API) ──────────────────────────────────────────────── */}
+      {tab === "Sign-off" ? (
+        <div className={styles.projOverviewContent}>
+          <div>
+            <div className={styles.projOverviewSectionTitle}>Client Sign-off Portal</div>
+            <div className={cx("card")}>
+              <div className={cx("cardHeader")}>
+                <div>
+                  <div className={cx("cardTitle")}>Deliverable Approvals</div>
+                  <div className={cx("cardMeta")}>Formal approvals are timestamped in the project log.</div>
                 </div>
               </div>
-            </div>
-          ) : null}
-
-          {tab === "Sign-off" ? (
-            <div className={styles.projOverviewContent}>
-              <div>
-                <div className={styles.projOverviewSectionTitle}>Client Sign-off Portal</div>
-                <div className={cx("card")}> 
-                  <div className={cx("cardHeader")}>
-                    <div>
-                      <div className={cx("cardTitle")}>Deliverable Approvals</div>
-                      <div className={cx("cardMeta")}>Formal approvals are timestamped in the project log.</div>
+              {apiSignOffs.length === 0 ? (
+                <div className={cx("emptyState")}>
+                  <div className={cx("emptyStateIcon")}><Ic n="checkCircle" sz={22} c="var(--muted2)" /></div>
+                  <div className={cx("emptyStateTitle")}>No sign-offs required</div>
+                  <div className={cx("emptyStateSub")}>Deliverable approvals will appear here when ready for your review.</div>
+                </div>
+              ) : apiSignOffs.map((item) => {
+                const soStatus = mapSignOffStatus(item.status);
+                const icon     = signOffIcon(item.name);
+                const meta     = soStatus === "signed"
+                  ? `Signed off ${item.signedAt ? fmtDate(item.signedAt) : ""} · ${item.signedByName ?? "Client"}`
+                  : soStatus === "pending"
+                    ? "Awaiting your review and approval"
+                    : "Not yet ready for review";
+                return (
+                  <div key={item.id} className={styles.projOverviewSignoffRow}>
+                    <div className={styles.projOverviewSignoffIcon}>{icon}</div>
+                    <div className={styles.projOverviewGrow}>
+                      <div className={styles.projOverviewSignoffName}>{item.name}</div>
+                      <div className={styles.projOverviewSignoffMeta}>{meta}</div>
+                    </div>
+                    <div className={styles.projOverviewSignoffActions}>
+                      {soStatus === "signed"   && <span className={cx("badge", "badgeGreen")}>Signed</span>}
+                      {soStatus === "notready" && <span className={cx("badge", "badgeMuted")}>Not Ready</span>}
+                      {soStatus === "pending"  && (
+                        <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setSignoffModal(item)}>Review & Sign</button>
+                      )}
                     </div>
                   </div>
-                  {SIGNOFFS.map((item) => (
-                    <div key={item.name} className={styles.projOverviewSignoffRow}>
-                      <div className={styles.projOverviewSignoffIcon}>{item.icon}</div>
-                      <div className={styles.projOverviewGrow}>
-                        <div className={styles.projOverviewSignoffName}>{item.name}</div>
-                        <div className={styles.projOverviewSignoffMeta}>{item.meta}</div>
-                      </div>
-                      <div className={styles.projOverviewSignoffActions}>
-                        {item.status === "signed" ? <span className={cx("badge", "badgeGreen")}>Signed</span> : null}
-                        {item.status === "notready" ? <span className={cx("badge", "badgeMuted")}>Not Ready</span> : null}
-                        {item.status === "pending" ? (
-                          <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setSignoffModal(item)}>Review & Sign</button>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                );
+              })}
             </div>
-          ) : null}
-        </section>
-      </div>
+          </div>
+        </div>
+      ) : null}
 
+      {/* ── Sprint tab (API) ────────────────────────────────────────────────── */}
+      {tab === "Sprint" ? (
+        <div>
+          {!activeSprint ? (
+            <div className={cx("card", "emptyPad32x20", "textCenter")}>
+              <div className={cx("text12", "colorMuted")}>No active sprint found for this project.</div>
+            </div>
+          ) : (
+            <>
+              <div className={cx("topCardsStack", "mb16")}>
+                {[
+                  { label: "Current Sprint", value: activeSprint.name,                         sub: `${fmtDate(activeSprint.startAt)} – ${fmtDate(activeSprint.endAt)}` },
+                  { label: "Progress",       value: `${sprintPct}%`,                           sub: `${sprintDone} of ${sprintTasks.length} tasks complete`             },
+                  { label: "Story Points",   value: `${activeSprint.completedTasks}/${activeSprint.totalTasks}`, sub: "Tasks completed"                               },
+                  { label: "Overdue",        value: String(activeSprint.overdueTasks),          sub: activeSprint.overdueTasks > 0 ? "Needs attention" : "All on track" },
+                ].map((s) => (
+                  <div key={s.label} className={styles.projOverviewStat}>
+                    <div className={styles.projOverviewStatLabel}>{s.label}</div>
+                    <div className={styles.projOverviewStatValue}>{s.value}</div>
+                    <div className={styles.projOverviewStatSub}>{s.sub}</div>
+                  </div>
+                ))}
+              </div>
+              <div className={cx("card")}>
+                <div className={cx("cardHd")}><span className={cx("cardHdTitle")}>Sprint Tasks</span></div>
+                {sprintTasks.length === 0 ? (
+                  <div className={cx("emptyState")}>
+                    <div className={cx("emptyStateIcon")}><Ic n="checkSquare" sz={22} c="var(--muted2)" /></div>
+                    <div className={cx("emptyStateTitle")}>No sprint tasks</div>
+                    <div className={cx("emptyStateSub")}>Tasks assigned to this sprint will appear here.</div>
+                  </div>
+                ) : (
+                  <table className={cx("projTable")}>
+                    <thead>
+                      <tr>
+                        <th scope="col">Task</th>
+                        <th scope="col">Assignee</th>
+                        <th scope="col">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sprintTasks.map((t) => (
+                        <tr key={t.id}>
+                          <td className={cx("fw600")}>{t.name}</td>
+                          <td className={cx("text12", "colorMuted")}>{t.assigneeName ?? "—"}</td>
+                          <td><span className={cx("badge", sprintTaskStatusBadge(t.status))}>{sprintTaskStatusLabel(t.status)}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      ) : null}
+
+      {/* ── Scope change modal ─────────────────────────────────────────────── */}
       {scopeModal ? (
         <div className={styles.projOverviewModalBackdrop} onClick={() => setScopeModal(false)}>
-          <div className={styles.projOverviewModal} onClick={(event) => event.stopPropagation()}>
+          <div className={styles.projOverviewModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.projOverviewModalHeader}>
               <span className={styles.projOverviewModalTitle}>Request Scope Change</span>
-              <button type="button" className={styles.projOverviewModalClose} onClick={() => setScopeModal(false)}>✕</button>
+              <button type="button" className={styles.projOverviewModalClose} aria-label="Close" onClick={() => setScopeModal(false)}>✕</button>
             </div>
             <div className={styles.projOverviewModalBody}>
               <label className={styles.projOverviewFieldLabel}>What would you like to change?</label>
-              <input className={styles.projOverviewFieldInput} placeholder="Brief title for the change" />
+              <input
+                className={styles.projOverviewFieldInput}
+                placeholder="Brief title for the change"
+                value={scopeTitle}
+                onChange={(e) => setScopeTitle(e.target.value)}
+                disabled={scopeSubmitting}
+              />
               <label className={styles.projOverviewFieldLabel}>Describe in detail</label>
-              <textarea className={styles.projOverviewFieldArea} placeholder="The more detail, the faster we can assess it." />
+              <textarea
+                className={styles.projOverviewFieldArea}
+                placeholder="The more detail, the faster we can assess it."
+                value={scopeBody}
+                onChange={(e) => setScopeBody(e.target.value)}
+                disabled={scopeSubmitting}
+              />
               <label className={styles.projOverviewFieldLabel}>Priority</label>
               <div className={styles.projOverviewPriorityGrid}>
-                {[
-                  "Nice to Have",
-                  "Important",
-                  "Urgent",
-                ].map((option) => <button key={option} type="button" className={styles.projOverviewPriorityButton}>{option}</button>)}
+                {["Nice to Have", "Important", "Urgent"].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    className={styles.projOverviewPriorityButton}
+                    style={{ '--op': scopePriority === option ? 1 : 0.55, '--outline': scopePriority === option ? "2px solid var(--lime)" : "none" } as React.CSSProperties}
+                    onClick={() => setScopePriority(option)}
+                    disabled={scopeSubmitting}
+                  >
+                    {option}
+                  </button>
+                ))}
               </div>
             </div>
             <div className={styles.projOverviewModalFooter}>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setScopeModal(false)}>Cancel</button>
+              <button type="button" className={cx("btnSm", "btnGhost")} disabled={scopeSubmitting} onClick={() => setScopeModal(false)}>Cancel</button>
               <button
                 type="button"
                 className={cx("btnSm", "btnAccent")}
-                onClick={() => {
-                  setScopeModal(false);
-                  notify("Request submitted", "Team will respond within 24 hours");
-                }}
+                disabled={scopeSubmitting || !scopeTitle.trim()}
+                onClick={() => void handleScopeSubmit()}
               >
-                Submit Request
+                {scopeSubmitting ? "Submitting…" : "Submit Request"}
               </button>
             </div>
           </div>
         </div>
       ) : null}
 
+      {/* ── Sign-off modal ─────────────────────────────────────────────────── */}
       {signoffModal ? (
-        <div className={styles.projOverviewModalBackdrop} onClick={() => setSignoffModal(null)}>
-          <div className={styles.projOverviewModal} onClick={(event) => event.stopPropagation()}>
+        <div className={styles.projOverviewModalBackdrop} onClick={() => !signing && setSignoffModal(null)}>
+          <div className={styles.projOverviewModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.projOverviewModalHeader}>
               <span className={styles.projOverviewModalTitle}>Review & Sign Off</span>
-              <button type="button" className={styles.projOverviewModalClose} onClick={() => setSignoffModal(null)}>✕</button>
+              <button type="button" className={styles.projOverviewModalClose} aria-label="Close" disabled={signing} onClick={() => setSignoffModal(null)}>✕</button>
             </div>
             <div className={styles.projOverviewModalBody}>
               <div className={styles.projOverviewSignoffCard}>
                 <div className={styles.projOverviewSignoffCardLabel}>Deliverable</div>
                 <div className={styles.projOverviewSignoffCardName}>{signoffModal.name}</div>
+                {signoffModal.description && <div className={cx("text11", "colorMuted", "mt6")}>{signoffModal.description}</div>}
               </div>
               <p className={styles.projOverviewSignoffCopy}>
                 By signing off, you confirm this deliverable meets the agreed requirements. This creates a timestamped record in the project log.
               </p>
               <label className={styles.projOverviewFieldLabel}>Comments or notes?</label>
-              <textarea className={styles.projOverviewFieldArea} placeholder="Optional notes before signing off..." />
+              <textarea
+                className={styles.projOverviewFieldArea}
+                placeholder="Optional notes before signing off..."
+                value={signoffNotes}
+                onChange={(e) => setSignoffNotes(e.target.value)}
+                disabled={signing}
+              />
             </div>
             <div className={styles.projOverviewModalFooter}>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setSignoffModal(null)}>Request Changes</button>
+              <button type="button" className={cx("btnSm", "btnGhost")} disabled={signing} onClick={() => setSignoffModal(null)}>Request Changes</button>
               <button
                 type="button"
                 className={cx("btnSm", "btnAccent")}
-                onClick={() => {
-                  const deliverableName = signoffModal.name;
-                  setSignoffModal(null);
-                  notify("Signed off", `${deliverableName} approved and recorded`);
-                }}
+                disabled={signing}
+                onClick={() => void handleSignOff()}
               >
-                Sign Off
+                {signing ? "Signing…" : "Sign Off"}
               </button>
             </div>
           </div>
         </div>
       ) : null}
 
-      {toast ? (
-        <div className={cx("toastStack")}>
-          <div className={cx("toast", "toastSuccess")}>
-            <strong>{toast.title}</strong>
-            <div>{toast.subtitle}</div>
+      {/* ── Ask Question modal ──────────────────────────────────────────────── */}
+      {questionModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={() => setQuestionModal(false)}>
+          <div className={cx("card")} style={{ width: "100%", maxWidth: 480, margin: 0 }} onClick={(e) => e.stopPropagation()}>
+            <div className={cx("cardHd")}>
+              <span className={cx("cardHdTitle")}>Ask a Question</span>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setQuestionModal(false)}>✕</button>
+            </div>
+            <div style={{ padding: "12px 16px 16px" }}>
+              <div className={cx("text12", "colorMuted", "mb8")}>Send a question to your project team. We respond within 24 hours.</div>
+              <textarea
+                className={cx("profInput")}
+                placeholder="What would you like to know?"
+                rows={4}
+                style={{ width: "100%", resize: "vertical" }}
+                value={questionText}
+                onChange={(e) => setQuestionText(e.target.value)}
+                autoFocus
+              />
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 12 }}>
+                <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setQuestionModal(false)}>Cancel</button>
+                <button type="button" className={cx("btnSm", "btnAccent")} disabled={questionBusy || !questionText.trim()} onClick={() => void handleAskQuestion()}>
+                  {questionBusy ? "Sending…" : "Send Question"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      ) : null}
+      )}
+
     </div>
   );
 }

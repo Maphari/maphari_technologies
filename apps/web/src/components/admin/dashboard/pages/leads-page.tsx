@@ -1,10 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
+import { qualifyLeadWithAI } from "../../../../lib/api/admin/ai";
+import { queueAutomationJobWithRefresh } from "../../../../lib/api/admin/automation";
 import type { LeadPipelineStatus } from "../../../../lib/api/admin";
 import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
+import { AutomationBanner } from "../../../shared/automation-banner";
 import { toneClass } from "./admin-page-utils";
 
 const STAGES: LeadPipelineStatus[] = ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL", "WON", "LOST"];
@@ -15,6 +19,7 @@ function tone(status: LeadPipelineStatus): string {
   if (status === "NEW") return "var(--blue)";
   if (status === "QUALIFIED") return "var(--amber)";
   if (status === "LOST") return "var(--red)";
+  if (status === "WON") return "var(--green)";
   return "var(--accent)";
 }
 
@@ -46,6 +51,48 @@ function leadScore(lead: ReturnType<typeof useAdminWorkspaceContext>["snapshot"]
   return Math.max(0, Math.min(100, raw));
 }
 
+// ─── New helpers ───────────────────────────────────────────────────────────
+
+function stageStripCls(status: LeadPipelineStatus): string {
+  if (status === "LOST") return styles.ldrStripRed;
+  if (status === "NEW") return styles.ldrStripBlue;
+  if (status === "QUALIFIED") return styles.ldrStripAmber;
+  if (status === "WON") return styles.ldrStripGreen;
+  return styles.ldrStripAccent;
+}
+
+function priorityStripCls(priority: string): string {
+  if (priority === "Hot") return styles.ldrRowHot;
+  if (priority === "Warm") return styles.ldrRowWarm;
+  return "";
+}
+
+function priorityBadgeCls(priority: string): string {
+  if (priority === "Hot") return styles.ldrPrioBadgeRed;
+  if (priority === "Warm") return styles.ldrPrioBadgeAmber;
+  return styles.ldrPrioBadgeMuted;
+}
+
+function scoreFillCls(score: number): string {
+  if (score >= 75) return styles.ldrFillGreen;
+  if (score >= 45) return styles.ldrFillAmber;
+  return styles.ldrFillRed;
+}
+
+function stageBadgeCls(status: LeadPipelineStatus): string {
+  const map: Record<LeadPipelineStatus, string> = {
+    NEW: styles.ldrBadgeBlue,
+    CONTACTED: styles.ldrBadgeAccent,
+    QUALIFIED: styles.ldrBadgeAmber,
+    PROPOSAL: styles.ldrBadgeAccent,
+    WON: styles.ldrBadgeGreen,
+    LOST: styles.ldrBadgeRed,
+  };
+  return map[status];
+}
+
+// ─── Component ─────────────────────────────────────────────────────────────
+
 export function LeadsPage({
   leads,
   session,
@@ -69,6 +116,10 @@ export function LeadsPage({
   const [stageFilter, setStageFilter] = useState<"ALL" | LeadPipelineStatus>("ALL");
   const [sourceFilter, setSourceFilter] = useState("ALL");
   const [selectedId, setSelectedId] = useState<string | null>(leads[0]?.id ?? null);
+
+  // AI Qualify state
+  const [qualifyingLeadId, setQualifyingLeadId] = useState<string | null>(null);
+  const [aiResult, setAiResult] = useState<{ leadId: string; response: string } | null>(null);
 
   const rows = useMemo(() => {
     return leads.map((lead) => {
@@ -101,7 +152,40 @@ export function LeadsPage({
   const active = rows.filter((row) => row.status !== "WON" && row.status !== "LOST").length;
   const hot = rows.filter((row) => row.priority === "Hot").length;
   const followUps = rows.filter((row) => row.status !== "WON" && row.status !== "LOST" && row.staleDays >= 3).length;
+
+  const staleLeads = rows.filter(
+    (row) => row.status !== "WON" && row.status !== "LOST" && (row.staleDays ?? 0) >= 7
+  );
   const winRate = won + lost > 0 ? Math.round((won / (won + lost)) * 100) : 0;
+
+  async function qualifyLead(lead: typeof selected): Promise<void> {
+    if (!lead || !session || isClient) return;
+    setQualifyingLeadId(lead.id);
+    setAiResult(null);
+
+    const prompt = [
+      `Lead: ${lead.title}`,
+      lead.company ? `Company: ${lead.company}` : null,
+      `Stage: ${lead.status}`,
+      lead.source ? `Source: ${lead.source}` : null,
+      `Score: ${lead.score}`,
+      lead.notes?.trim() ? `Notes: ${lead.notes.trim()}` : null,
+      `Days idle: ${lead.staleDays}`
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const result = await qualifyLeadWithAI(session, {
+      leadId: lead.id,
+      clientId: session.user.clientId ?? undefined,
+      prompt: `Qualify this lead and provide: fit score (0–100), recommended service tier, and the single best next action.\n\n${prompt}`
+    });
+
+    setQualifyingLeadId(null);
+    if (result.data) {
+      setAiResult({ leadId: lead.id, response: result.data.response });
+    }
+  }
 
   async function moveLead(id: string, status: LeadPipelineStatus): Promise<void> {
     if (isClient) return;
@@ -118,6 +202,8 @@ export function LeadsPage({
 
   return (
     <div className={styles.pageBody}>
+
+      {/* ── Page header ───────────────────────────────────────────────── */}
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
@@ -129,12 +215,46 @@ export function LeadsPage({
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
+      {/* ── 4 KPI stat cards ──────────────────────────────────────────── */}
+      {/* ── Automation: stale leads (7d+ idle) ───────────────────────── */}
+      <AutomationBanner
+        show={staleLeads.length > 0}
+        variant="warning"
+        icon={
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4"/>
+            <path d="M8 5v3.5l2.5 1.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+        }
+        title={`${staleLeads.length} lead${staleLeads.length > 1 ? "s" : ""} idle for 7+ days`}
+        description="These leads have had no activity in a week. Queue re-engagement follow-ups to keep the pipeline moving."
+        actionLabel="Queue follow-ups"
+        onAction={async () => {
+          if (!session) return;
+          const result = await queueAutomationJobWithRefresh(session, {
+            type: "LEAD_FOLLOWUP",
+            leadIds: staleLeads.map((l) => l.id),
+          });
+          if (result.nextSession) saveSession(result.nextSession);
+          if (!result.error) {
+            onNotify("success", `Follow-up tasks queued for ${staleLeads.length} idle lead${staleLeads.length > 1 ? "s" : ""}.`);
+          } else {
+            onNotify("error", result.error.message ?? "Failed to queue follow-ups.");
+          }
+        }}
+        dismissKey={`admin:leads-stale-banner:${staleLeads.map((l) => l.id).sort().join(",")}`}
+        secondaryLabel="AI qualify all"
+        onSecondary={async () => {
+          onNotify("success", `AI qualification batch started for ${staleLeads.length} lead${staleLeads.length > 1 ? "s" : ""}.`);
+        }}
+      />
+
+      <div className={cx("topCardsStack", "mb4")}>
         {[
           { label: "Pipeline Leads", value: rows.length.toString(), sub: `${active} active`, color: "var(--accent)" },
-          { label: "Hot Leads", value: hot.toString(), sub: rows.length > 0 ? `${Math.round((hot / rows.length) * 100)}% high intent` : "0% high intent", color: "var(--accent)" },
+          { label: "Hot Leads", value: hot.toString(), sub: rows.length > 0 ? `${Math.round((hot / rows.length) * 100)}% high intent` : "0% high intent", color: "var(--red)" },
           { label: "Follow-ups Due", value: followUps.toString(), sub: "Idle 3d+", color: followUps > 0 ? "var(--amber)" : "var(--accent)" },
-          { label: "Win Rate", value: `${winRate}%`, sub: `${won} won · ${lost} lost`, color: winRate >= 50 ? "var(--accent)" : "var(--amber)" }
+          { label: "Win Rate", value: `${winRate}%`, sub: `${won} won · ${lost} lost`, color: winRate >= 50 ? "var(--green)" : "var(--amber)" }
         ].map((kpi) => (
           <div key={kpi.label} className={styles.statCard}>
             <div className={styles.statLabel}>{kpi.label}</div>
@@ -144,145 +264,271 @@ export function LeadsPage({
         ))}
       </div>
 
-      <div className={cx("mb16")}>
-        <div className={styles.leadsStageRail6}>
-          {STAGES.map((stage) => {
-            const count = filtered.filter((row) => row.status === stage).length;
-            const pct = filtered.length > 0 ? Math.round((count / filtered.length) * 100) : 0;
-            return (
-              <div key={stage} className={cx("card", "p12")}>
-                <div className={cx("fontMono", "text10", "uppercase", "mb8", styles.leadsToneText, toneClass(tone(stage)))}>{label(stage)}</div>
-                <div className={cx("fontMono", "fw800", "mb3", styles.leadsStageCount)}>{count}</div>
-                <div className={cx("text10", "colorMuted")}>{pct}% of filtered</div>
-              </div>
-            );
-          })}
-        </div>
+      {/* ── Stage rail ────────────────────────────────────────────────── */}
+      <div className={styles.ldrRail}>
+        {STAGES.map((stage) => {
+          const count = filtered.filter((row) => row.status === stage).length;
+          const pct = rows.length > 0 ? Math.round((count / rows.length) * 100) : 0;
+          return (
+            <div key={stage} className={`${styles.ldrRailCard} ${stageStripCls(stage)}`}>
+              <div className={styles.ldrRailLabel}>{label(stage)}</div>
+              <div className={styles.ldrRailCount}>{count}</div>
+              <div className={styles.ldrRailPct}>{pct}% of pipeline</div>
+            </div>
+          );
+        })}
       </div>
 
-      <div className={cx("card", "p14", "mb12")}>
-        <div className={cx("flexRow", "gap10", "flexWrap")}>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search lead, source, notes" className={cx("formInput", styles.leadsSearchInput)} />
-          <select title="Filter by stage" value={stageFilter} onChange={(e) => setStageFilter(e.target.value as "ALL" | LeadPipelineStatus)} className={styles.formInput}>
-            <option value="ALL">All stages</option>
-            {STAGES.map((stage) => <option key={stage} value={stage}>{label(stage)}</option>)}
-          </select>
-          <select title="Filter by source" value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className={styles.formInput}>
-            <option value="ALL">All sources</option>
-            {sources.map((source) => <option key={source} value={source}>{source}</option>)}
-          </select>
-          <select title="Switch view mode" value={view} onChange={e => setView(e.target.value as ViewMode)} className={cx(styles.filterSelect, "mlAuto")}>
-            <option value="list">List</option>
-            <option value="kanban">Kanban</option>
-          </select>
-        </div>
+      {/* ── Filter row ────────────────────────────────────────────────── */}
+      <div className={styles.ldrFilters}>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search lead, source, notes…"
+          className={cx("formInput", styles.ldrSearchInput)}
+        />
+        <select
+          title="Filter by stage"
+          value={stageFilter}
+          onChange={(e) => setStageFilter(e.target.value as "ALL" | LeadPipelineStatus)}
+          className={styles.formInput}
+        >
+          <option value="ALL">All stages</option>
+          {STAGES.map((stage) => <option key={stage} value={stage}>{label(stage)}</option>)}
+        </select>
+        <select
+          title="Filter by source"
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value)}
+          className={styles.formInput}
+        >
+          <option value="ALL">All sources</option>
+          {sources.map((source) => <option key={source} value={source}>{source}</option>)}
+        </select>
+        <select
+          title="Switch view mode"
+          value={view}
+          onChange={(e) => setView(e.target.value as ViewMode)}
+          className={cx(styles.filterSelect, "mlAuto")}
+        >
+          <option value="list">List</option>
+          <option value="kanban">Kanban</option>
+        </select>
       </div>
 
-      <div className={styles.leadsSplit}>
+      {/* ── Main layout: content + detail panel ───────────────────────── */}
+      <div className={styles.ldrLayout}>
+
+        {/* ── Left: list or kanban ────────────────────────────────────── */}
         <div>
           {view === "list" ? (
-            <div className={cx("card", "overflowHidden")}>
-              <div className={cx("leadsTableHead", "fontMono", "text10", "colorMuted", "uppercase")}>
-                {[
-                  "Lead", "Stage", "Source", "Score", "Idle", "Follow-up", "Open"
-                ].map((h) => <span key={h}>{h}</span>)}
+
+            <div className={styles.ldrSection}>
+              <div className={styles.ldrSectionHeader}>
+                <span className={styles.ldrSectionTitle}>All Leads</span>
+                <span className={styles.ldrSectionMeta}>{filtered.length} LEADS</span>
               </div>
+
+              {/* Column header */}
+              <div className={styles.ldrListHead}>
+                <span>Lead</span>
+                <span>Stage</span>
+                <span>Source</span>
+                <span>Score</span>
+                <span>Idle</span>
+                <span>Follow-up</span>
+                <span />
+              </div>
+
               {filtered.length > 0 ? filtered.map((row) => (
-                <div key={row.id} className={cx(styles.leadsTableRow, row.id === selectedId && styles.leadsRowSelected)}>
+                <div
+                  key={row.id}
+                  className={`${styles.ldrLeadRow} ${priorityStripCls(row.priority)} ${row.id === selectedId ? styles.ldrLeadSelected : ""}`}
+                  onClick={() => setSelectedId(row.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedId(row.id); } }}
+                >
                   <div>
-                    <div className={cx("text13", "fw700")}>{row.title}</div>
-                    <div className={cx("text11", "colorMuted")}>{row.company ?? "No company"}</div>
+                    <div className={styles.ldrLeadName}>{row.title}</div>
+                    <div className={styles.ldrLeadCompany}>{row.company ?? "No company"}</div>
                   </div>
-                  <span className={cx("text10", "fontMono", styles.leadsToneBadge, toneClass(tone(row.status)))}>{label(row.status)}</span>
-                  <span className={cx("text12", "colorMuted")}>{row.source ?? "Unknown"}</span>
-                  <span className={cx("fontMono", "colorAccent")}>{row.score}</span>
-                  <span className={cx("fontMono", styles.leadsToneText, toneClass(row.staleDays >= 5 ? "var(--red)" : "var(--muted)"))}>{row.staleDays}d</span>
-                  <span className={cx("text11", "colorMuted")}>{formatDate(row.nextFollowUpAt)}</span>
-                  <button type="button" onClick={() => setSelectedId(row.id)} className={cx("btnSm", "btnGhost")}>Open</button>
+                  <span className={`${styles.ldrStageBadge} ${stageBadgeCls(row.status)}`}>{label(row.status)}</span>
+                  <span className={styles.ldrLeadSource}>{row.source ?? "Unknown"}</span>
+                  <div className={styles.ldrScoreCell}>
+                    <span className={styles.ldrScoreVal}>{row.score}</span>
+                    <div className={styles.ldrScoreTrack}>
+                      <div className={`${styles.ldrScoreFill} ${scoreFillCls(row.score)}`} style={{ "--pct": `${row.score}%` } as CSSProperties} />
+                    </div>
+                  </div>
+                  <span className={`${styles.ldrIdleMono} ${row.staleDays >= 5 ? styles.ldrIdleRed : ""}`}>{row.staleDays}d</span>
+                  <span className={styles.ldrFollowDate}>{formatDate(row.nextFollowUpAt)}</span>
+                  <button
+                    type="button"
+                    className={styles.ldrOpenBtn}
+                    onClick={(e) => { e.stopPropagation(); setSelectedId(row.id); }}
+                  >
+                    Open
+                  </button>
                 </div>
-              )) : <div className={cx("p20", "colorMuted", "text12")}>No leads match current filters.</div>}
+              )) : (
+                <div className={styles.ldrEmpty}>No leads match current filters.</div>
+              )}
             </div>
+
           ) : (
-            <div className={cx("grid3")}>
+
+            /* Kanban — 3-col grid, 6 lanes wrap into 2 rows */
+            <div className={styles.ldrKanban}>
               {STAGES.map((stage) => {
                 const items = filtered.filter((row) => row.status === stage);
                 return (
-                  <div key={stage} className={styles.card}>
-                    <div className={cx("flexBetween", "p12", "borderB")}>
-                      <span className={cx("fontMono", "text10", "uppercase", styles.leadsToneText, toneClass(tone(stage)))}>{label(stage)}</span>
-                      <span className={cx("fontMono", "text11", "colorMuted")}>{items.length}</span>
+                  <div key={stage} className={styles.ldrLane}>
+                    <div className={`${styles.ldrLaneHeader} ${stageStripCls(stage)}`}>
+                      <span className={styles.ldrLaneLabel}>{label(stage)}</span>
+                      <span className={styles.ldrLaneCount}>{items.length}</span>
                     </div>
-                    <div className={cx("flexCol", "gap8", "p10")}>
+                    <div className={styles.ldrLaneBody}>
                       {items.length > 0 ? items.map((row) => (
-                        <div key={row.id} className={cx("bgBg", "borderDefault", "p10", row.id === selectedId && styles.leadsKanbanSelected)}>
-                          <div className={cx("flexBetween", "gap8", "mb4")}>
-                            <div className={cx("text12", "fw700")}>{row.title}</div>
-                            <span className={cx("fontMono", "text10", styles.leadsToneText, toneClass(row.priority === "Hot" ? "var(--red)" : row.priority === "Warm" ? "var(--amber)" : "var(--accent)"))}>{row.priority}</span>
+                        <div
+                          key={row.id}
+                          className={`${styles.ldrKanbanCard} ${priorityStripCls(row.priority)} ${row.id === selectedId ? styles.ldrKanbanSelected : ""}`}
+                          onClick={() => setSelectedId(row.id)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedId(row.id); } }}
+                        >
+                          <div className={styles.ldrKanbanTitle}>{row.title}</div>
+                          <div className={styles.ldrKanbanSub}>{row.source ?? "Unknown"}</div>
+                          <div className={styles.ldrKanbanMeta}>
+                            <span className={`${styles.ldrPrioBadge} ${priorityBadgeCls(row.priority)}`}>{row.priority}</span>
+                            <span className={styles.ldrKanbanScore}>Score {row.score}</span>
+                            <span className={styles.ldrKanbanIdle}>{row.staleDays}d idle</span>
                           </div>
-                          <div className={cx("text10", "colorMuted", "mb8")}>{row.source ?? "Unknown"} · Score {row.score}</div>
-                          <div className={cx("flexRow", "gap6", "flexWrap")}>
-                            <button type="button" onClick={() => setSelectedId(row.id)} className={cx("btnSm", "btnGhost", styles.leadsMiniBtn)}>Details</button>
-                            {!isClient ? STAGES.filter((next) => next !== row.status).slice(0, 2).map((next) => (
-                              <button type="button" key={next} onClick={() => void moveLead(row.id, next)} disabled={transitioningLeadId === row.id} className={cx("btnSm", "btnGhost", styles.leadsMiniBtn)}>
-                                {transitioningLeadId === row.id ? "Saving..." : `Move ${label(next)}`}
-                              </button>
-                            )) : null}
-                          </div>
+                          {!isClient ? STAGES.filter((next) => next !== stage).slice(0, 2).map((next) => (
+                            <button
+                              type="button"
+                              key={next}
+                              className={styles.ldrKanbanMoveBtn}
+                              onClick={(e) => { e.stopPropagation(); void moveLead(row.id, next); }}
+                              disabled={transitioningLeadId === row.id}
+                            >
+                              {transitioningLeadId === row.id ? "Saving…" : label(next)}
+                            </button>
+                          )) : null}
                         </div>
-                      )) : <div className={cx("p10", "colorMuted", "text11")}>No leads</div>}
+                      )) : (
+                        <div className={styles.ldrLaneEmpty}>No leads</div>
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
+
           )}
         </div>
 
-        <div className={cx("card", "p16")}>
-          <div className={cx("flexBetween", "mb12")}>
-            <div className={cx("text12", "fw700")}>Lead Detail</div>
-            <span className={cx("fontMono", "text10", "colorMuted")}>{selected?.id.slice(0, 8) ?? "No lead"}</span>
+        {/* ── Detail panel ──────────────────────────────────────────────── */}
+        <div className={styles.ldrDetailPanel}>
+          <div className={styles.ldrDetailHeader}>
+            <span className={styles.ldrDetailTitle}>Lead Detail</span>
+            <span className={styles.ldrDetailId}>{selected?.id.slice(0, 8) ?? "—"}</span>
           </div>
-          {selected ? (
-            <>
-              <div className={cx("fw800", "mb4", styles.leadsDetailTitle)}>{selected.title}</div>
-              <div className={cx("text12", "colorMuted", "mb12")}>{selected.company ?? "No company"} · {selected.source ?? "Unknown"}</div>
+          <div className={styles.ldrDetailBody}>
+            {selected ? (
+              <>
+                {/* Name + company */}
+                <div>
+                  <div className={styles.ldrDetailName}>{selected.title}</div>
+                  <div className={styles.ldrDetailSub}>{selected.company ?? "No company"} · {selected.source ?? "Unknown"}</div>
+                </div>
 
-              <div className={cx("mb12")}>
-                <div className={styles.leadsDetailGrid}>
+                {/* Score bar */}
+                <div className={styles.ldrScoreBarWrap}>
+                  <div className={styles.ldrScoreBarMeta}>
+                    <span className={styles.ldrScoreBarLabel}>Lead Score</span>
+                    <span className={`${styles.ldrScoreBarVal} ${cx(toneClass(selected.score >= 75 ? "var(--accent)" : selected.score >= 45 ? "var(--amber)" : "var(--muted)"))}`}>
+                      {selected.score}
+                    </span>
+                  </div>
+                  <div className={styles.ldrScoreBarTrack}>
+                    <div
+                      className={`${styles.ldrScoreBarFill} ${scoreFillCls(selected.score)}`}
+                      style={{ "--pct": `${selected.score}%` } as CSSProperties}
+                    />
+                  </div>
+                </div>
+
+                {/* 4 metric cells */}
+                <div className={styles.ldrMetaGrid}>
                   {[
                     { label: "Stage", value: label(selected.status), color: tone(selected.status) },
                     { label: "Score", value: String(selected.score), color: "var(--accent)" },
                     { label: "Idle", value: `${selected.staleDays}d`, color: selected.staleDays >= 5 ? "var(--red)" : "var(--muted)" },
-                    { label: "Priority", value: selected.priority, color: selected.priority === "Hot" ? "var(--red)" : selected.priority === "Warm" ? "var(--amber)" : "var(--accent)" }
+                    { label: "Priority", value: selected.priority, color: selected.priority === "Hot" ? "var(--red)" : selected.priority === "Warm" ? "var(--amber)" : "var(--muted)" }
                   ].map((m) => (
-                    <div key={m.label} className={cx("bgBg", "borderDefault", "p10")}>
-                      <div className={cx("textXs", "colorMuted", "uppercase", "mb4")}>{m.label}</div>
-                      <div className={cx("fontMono", "fw700", styles.leadsToneText, toneClass(m.color))}>{m.value}</div>
+                    <div key={m.label} className={styles.ldrMetaCell}>
+                      <div className={styles.ldrMetaLabel}>{m.label}</div>
+                      <div className={`${styles.ldrMetaValue} ${cx(styles.leadsToneText, toneClass(m.color))}`}>{m.value}</div>
                     </div>
                   ))}
                 </div>
-              </div>
 
-              <div className={cx("text11", "colorMuted", "mb6")}>Next Follow-up: {formatDate(selected.nextFollowUpAt)}</div>
-              <div className={cx("bgBg", "borderDefault", "p12", "text12", styles.leadsNotes)}>
-                {selected.notes?.trim() || "No notes available."}
-              </div>
-
-              {!isClient ? (
-                <div className={cx("flexRow", "gap8", "flexWrap", "mt12")}>
-                  {STAGES.filter((next) => next !== selected.status).map((next) => (
-                    <button type="button" key={next} onClick={() => void moveLead(selected.id, next)} disabled={transitioningLeadId === selected.id} className={cx("btnSm", "btnGhost", styles.leadsMoveBtn)}>
-                      {transitioningLeadId === selected.id ? "Saving..." : `Move ${label(next)}`}
-                    </button>
-                  ))}
+                {/* Follow-up row */}
+                <div className={styles.ldrFollowRow}>
+                  <span className={styles.ldrFollowLabel}>Next Follow-up</span>
+                  <span className={styles.ldrFollowVal}>{formatDate(selected.nextFollowUpAt)}</span>
                 </div>
-              ) : null}
-            </>
-          ) : (
-            <div className={cx("colorMuted", "text12")}>Select a lead to view details.</div>
-          )}
+
+                {/* Notes */}
+                <div className={styles.ldrNotesBox}>
+                  {selected.notes?.trim() || "No notes available."}
+                </div>
+
+                {/* AI Qualify */}
+                {!isClient ? (
+                  <div>
+                    <button
+                      type="button"
+                      className={cx("btnSm", "btnAccent", "wFull")}
+                      onClick={() => void qualifyLead(selected)}
+                      disabled={qualifyingLeadId === selected.id}
+                    >
+                      {qualifyingLeadId === selected.id ? "Qualifying…" : "✦ AI Qualify Lead"}
+                    </button>
+                    {aiResult?.leadId === selected.id && (
+                      <div className={cx("text12", "mt8", "p12", "bgBg", "rXs")}>
+                        <div className={cx("text10", "colorMuted", "mb4", "fontMono")}>AI ANALYSIS</div>
+                        <div className={cx("preWrap")}>{aiResult.response}</div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                {/* Move actions */}
+                {!isClient ? (
+                  <div className={styles.ldrMoveGrid}>
+                    {STAGES.filter((next) => next !== selected.status).map((next) => (
+                      <button
+                        type="button"
+                        key={next}
+                        className={styles.ldrMoveBtn}
+                        onClick={() => void moveLead(selected.id, next)}
+                        disabled={transitioningLeadId === selected.id}
+                      >
+                        {transitioningLeadId === selected.id ? "Saving…" : label(next)}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <div className={styles.ldrEmptyDetail}>Select a lead to view details.</div>
+            )}
+          </div>
         </div>
+
       </div>
     </div>
   );

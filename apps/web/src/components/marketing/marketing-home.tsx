@@ -4,11 +4,12 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import styles from "../../app/style/landing-reference.module.css";
 import { submitPublicContactRequest } from "../../lib/api/public-contact";
 import { ContactSection } from "./landing/contact-section";
-import { CtaSection } from "./landing/cta-section";
 import { CursorLayer } from "./landing/cursor-layer";
 import { navItems, tickerItems } from "./landing/data";
 import { FaqSection } from "./landing/faq-section";
 import { HeroSection } from "./landing/hero-section";
+import { IcpSection } from "./landing/icp-section";
+import { IdentitySection } from "./landing/identity-section";
 import { NavBar } from "./landing/nav-bar";
 import { PageFooter } from "./landing/page-footer";
 import { PricingSection } from "./landing/pricing-section";
@@ -23,6 +24,7 @@ export function MarketingHomeContent() {
   const [sent, setSent] = useState(false);
   const [submittingContact, setSubmittingContact] = useState(false);
   const [contactError, setContactError] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<string>("");
   const [contactStartedAtIso] = useState(() => new Date().toISOString());
   const cursorRef = useRef<HTMLDivElement | null>(null);
   const ringRef = useRef<HTMLDivElement | null>(null);
@@ -127,6 +129,8 @@ export function MarketingHomeContent() {
     const service = String(formData.get("service") ?? "").trim();
     const message = String(formData.get("message") ?? "").trim();
     const company = String(formData.get("company") ?? "").trim();
+    const companyName = String(formData.get("companyName") ?? "").trim();
+    const budgetRange = String(formData.get("budgetRange") ?? "").trim();
     const startedAt = String(formData.get("startedAt") ?? "").trim();
 
     setSubmittingContact(true);
@@ -139,6 +143,8 @@ export function MarketingHomeContent() {
       service,
       message,
       company,
+      companyName: companyName || undefined,
+      budgetRange: budgetRange || undefined,
       startedAt,
       pagePath: "/#contact"
     });
@@ -162,18 +168,20 @@ export function MarketingHomeContent() {
         <HeroSection />
         <TickerStrip items={tickerLoop} />
         <ServicesSection />
+        <IcpSection />
         <ProcessSection />
         <ProofSection />
-        <PricingSection />
+        <IdentitySection />
+        <PricingSection onTierSelect={setSelectedService} />
         <FaqSection openFaq={openFaq} setOpenFaq={setOpenFaq} />
         <ContactSection
           sent={sent}
           loading={submittingContact}
           error={contactError}
           startedAtIso={contactStartedAtIso}
+          initialService={selectedService}
           onSubmit={onSubmit}
         />
-        <CtaSection />
       </main>
 
       <PageFooter />

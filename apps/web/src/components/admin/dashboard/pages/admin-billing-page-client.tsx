@@ -4,14 +4,7 @@ import { AdminPageHeader, AdminSectionCard, AdminEmptyState } from "../../admin-
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import styles from "@/app/style/admin.module.css";
 import { styles as dashboardStyles } from "../style";
-
-function amountToCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2
-  }).format(value / 100);
-}
+import { formatMoneyCents } from "@/lib/i18n/currency";
 
 export function AdminBillingPageClient() {
   const { snapshot, loading } = useAdminWorkspaceContext();
@@ -35,7 +28,7 @@ export function AdminBillingPageClient() {
                   <div key={invoice.id} className={styles.tableRow}>
                     <span>{invoice.number}</span>
                     <span>{invoice.status}</span>
-                    <span>{amountToCurrency(invoice.amountCents)}</span>
+                    <span>{formatMoneyCents(invoice.amountCents, { currency: invoice.currency, maximumFractionDigits: 0 })}</span>
                   </div>
                 ))}
               </div>
@@ -56,7 +49,7 @@ export function AdminBillingPageClient() {
                   <div key={payment.id} className={styles.tableRow}>
                     <span className={styles.mono}>{payment.id.slice(0, 8)}</span>
                     <span>{payment.status}</span>
-                    <span>{amountToCurrency(payment.amountCents)}</span>
+                    <span>{formatMoneyCents(payment.amountCents, { maximumFractionDigits: 0 })}</span>
                   </div>
                 ))}
               </div>

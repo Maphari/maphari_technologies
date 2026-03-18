@@ -81,4 +81,44 @@ export async function registerTimeEntryRoutes(app: FastifyInstance): Promise<voi
       return { success: false, error: { code: "TIME_ENTRY_CREATE_FAILED", message: "Unable to create time entry" } } as ApiResponse;
     }
   });
+
+  // ── PATCH /time-entries/:id/stop ─────────────────────────────────────────────
+  app.patch<{ Params: { id: string } }>("/time-entries/:id/stop", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const { id } = request.params;
+    const body = (request.body ?? {}) as { taskLabel?: string };
+
+    try {
+      const existing = await prisma.projectTimeEntry.findUnique({ where: { id } });
+      if (!existing) {
+        reply.status(404);
+        return { success: false, error: { code: "NOT_FOUND", message: "Time entry not found" } } as ApiResponse;
+      }
+
+      const scopedClientId = resolveClientFilter(scope.role, scope.clientId);
+      if (scopedClientId && existing.clientId !== scopedClientId) {
+        reply.status(403);
+        return { success: false, error: { code: "FORBIDDEN", message: "Access denied" } } as ApiResponse;
+      }
+
+      const now = new Date();
+      const startedAt = existing.startedAt ?? existing.createdAt;
+      const elapsedMinutes = Math.max(1, Math.round((now.getTime() - startedAt.getTime()) / 60_000));
+
+      const updated = await prisma.projectTimeEntry.update({
+        where: { id },
+        data: {
+          endedAt: now,
+          minutes: elapsedMinutes,
+          ...(body.taskLabel ? { taskLabel: body.taskLabel } : {})
+        }
+      });
+
+      return { success: true, data: updated, meta: { requestId: scope.requestId } } as ApiResponse<typeof updated>;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "TIME_ENTRY_STOP_FAILED", message: "Unable to stop time entry" } } as ApiResponse;
+    }
+  });
 }

@@ -49,6 +49,9 @@ export function HeroSection() {
           <a href="#contact" className={styles.btnPrimary}>Get Your Roadmap</a>
           <a href="#proof" className={styles.btnGhost}>View Outcomes</a>
         </div>
+        <p className={styles.heroTrustStrip}>
+          40+ Projects <span className={styles.heroTrustSep}>·</span> 98% Retention <span className={styles.heroTrustSep}>·</span> 10wk Avg Launch
+        </p>
       </div>
     </section>
   );

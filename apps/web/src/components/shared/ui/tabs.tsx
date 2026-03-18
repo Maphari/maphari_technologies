@@ -68,7 +68,7 @@ export function DashboardTabs<T extends string>({
           background:
             "var(--surface) url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(240,237,232,0.45)' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\") no-repeat right 12px center",
           color: "var(--text)",
-          fontFamily: "var(--font-jetbrains-mono), monospace",
+          fontFamily: "var(--font-dm-mono), monospace",
           fontSize: "0.72rem",
           fontWeight: 700,
           letterSpacing: "0.06em",

@@ -27,7 +27,9 @@ export const EventTopics = {
   fileUploaded: "files.file.uploaded",
   invoiceIssued: "billing.invoice.issued",
   invoicePaid: "billing.invoice.paid",
-  invoiceOverdue: "billing.invoice.overdue"
+  invoiceOverdue: "billing.invoice.overdue",
+  taskAssigned: "core.task.assigned",
+  appointmentCreated: "core.appointment.created"
 } as const;
 
 export type EventTopic = (typeof EventTopics)[keyof typeof EventTopics];

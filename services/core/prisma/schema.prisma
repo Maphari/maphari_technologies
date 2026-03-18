@@ -36,6 +36,20 @@ model Client {
   collaborators    ProjectTaskCollaborator[]
   collaborationNotes ProjectCollaborationNote[]
   workSessions     ProjectWorkSession[]
+  healthScores     ClientHealthScore[]
+  healthSignals    ClientHealthSignal[]
+  interventions    ClientIntervention[]
+  satisfactionSurveys SatisfactionSurvey[]
+  onboardingRecords ClientOnboardingRecord[]
+  offboardingTasks OffboardingTask[]
+  communicationLogs CommunicationLog[]
+  slaRecords       SLARecord[]
+  appointments     Appointment[]
+  supportTickets   SupportTicket[]
+  profile          ClientProfile?
+  brandAssets      BrandAsset[]
+  contracts        ClientContract[]
+  proposals        Proposal[]
 
   @@index([status])
   @@index([priority])
@@ -116,11 +130,21 @@ model Project {
   activities      ProjectActivity[]
   milestoneApprovals MilestoneApproval[]
   timeEntries     ProjectTimeEntry[]
-  blockers       ProjectBlocker[]
-  changeRequests ProjectChangeRequest[]
-  collaborators  ProjectTaskCollaborator[]
+  blockers        ProjectBlocker[]
+  changeRequests  ProjectChangeRequest[]
+  collaborators   ProjectTaskCollaborator[]
   collaborationNotes ProjectCollaborationNote[]
-  workSessions   ProjectWorkSession[]
+  workSessions    ProjectWorkSession[]
+  deliverables    ProjectDeliverable[]
+  risks           ProjectRisk[]
+  decisions       ProjectDecision[]
+  sprints         ProjectSprint[]
+  signOffs        ProjectSignOff[]
+  phases          ProjectPhase[]
+  brief           ProjectBrief?
+  designReviews     DesignReview[]
+  handoverRecords   HandoverRecord[]
+  closeoutReports   ProjectCloseoutReport[]
 
   @@index([clientId, createdAt])
   @@index([status])
@@ -131,16 +155,19 @@ model Project {
 }
 
 model ProjectMilestone {
-  id        String   @id @default(uuid())
-  projectId String
-  title     String
-  status    String   @default("PENDING")
-  dueAt     DateTime?
-  fileId    String?  @db.Uuid
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  approval  MilestoneApproval?
+  id              String   @id @default(uuid())
+  projectId       String
+  title           String
+  status          String   @default("PENDING")
+  dueAt           DateTime?
+  fileId          String?  @db.Uuid
+  progressPercent Int      @default(0)
+  tags            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  approval        MilestoneApproval?
+  deliverables    ProjectDeliverable[]
 
   @@index([projectId, createdAt])
   @@index([status])
@@ -149,7 +176,7 @@ model ProjectMilestone {
 
 model MilestoneApproval {
   id          String   @id @default(uuid())
-  milestoneId String   @db.Uuid
+  milestoneId String
   projectId   String
   clientId    String
   status      String   @default("PENDING")
@@ -199,20 +226,28 @@ model ConversationEscalation {
 }
 
 model ProjectTask {
-  id           String   @id @default(uuid())
-  projectId    String
-  title        String
-  assigneeName String?
-  status       String   @default("TODO")
-  dueAt        DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  collaborators ProjectTaskCollaborator[]
-  workSessions ProjectWorkSession[]
+  id              String   @id @default(uuid())
+  projectId       String
+  title           String
+  assigneeName    String?
+  status          String   @default("TODO")
+  priority        String   @default("MEDIUM")
+  estimateMinutes Int?
+  storyPoints     Int?
+  blockedAt       DateTime?
+  progressPercent Int      @default(0)
+  sprintId        String?
+  dueAt           DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sprint          ProjectSprint? @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  collaborators   ProjectTaskCollaborator[]
+  workSessions    ProjectWorkSession[]
 
   @@index([projectId, createdAt])
   @@index([status])
+  @@index([sprintId])
   @@map("project_tasks")
 }
 
@@ -284,23 +319,26 @@ model ProjectWorkSession {
 }
 
 model ProjectTimeEntry {
-  id         String   @id @default(uuid())
-  projectId  String
-  clientId   String
-  staffUserId String? @db.Uuid
-  staffName  String?
-  taskLabel  String
-  minutes    Int
-  startedAt  DateTime?
-  endedAt    DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String   @id @default(uuid())
+  projectId   String
+  clientId    String
+  phaseId     String?
+  staffUserId String?  @db.Uuid
+  staffName   String?
+  taskLabel   String
+  minutes     Int
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client  Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  phase   ProjectPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
 
   @@index([clientId, createdAt])
   @@index([projectId, createdAt])
+  @@index([phaseId])
   @@map("project_time_entries")
 }
 
@@ -444,4 +482,1059 @@ model UserPreference {
   @@unique([userId, key])
   @@index([userId])
   @@map("user_preferences")
+}
+
+// ─── Batch A: Project Layer Extensions ───────────────────────────────────────
+
+model ProjectDeliverable {
+  id          String   @id @default(uuid())
+  projectId   String
+  milestoneId String?
+  name        String
+  ownerName   String?
+  status      String   @default("NOT_STARTED")
+  dueAt       DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone   ProjectMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@index([status])
+  @@map("project_deliverables")
+}
+
+model ProjectRisk {
+  id          String   @id @default(uuid())
+  projectId   String
+  clientId    String
+  name        String
+  detail      String?
+  likelihood  String   @default("MEDIUM")
+  impact      String   @default("MEDIUM")
+  mitigation  String?
+  status      String   @default("OPEN")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@index([status])
+  @@map("project_risks")
+}
+
+model ProjectDecision {
+  id            String   @id @default(uuid())
+  projectId     String
+  clientId      String
+  title         String
+  context       String?
+  decidedByName String?
+  decidedByRole String?
+  decidedAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("project_decisions")
+}
+
+model ProjectSprint {
+  id              String   @id @default(uuid())
+  projectId       String
+  clientId        String
+  name            String
+  ownerName       String?
+  startAt         DateTime?
+  endAt           DateTime?
+  progressPercent Int      @default(0)
+  totalTasks      Int      @default(0)
+  completedTasks  Int      @default(0)
+  overdueTasks    Int      @default(0)
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks           ProjectTask[]
+
+  @@index([projectId, createdAt])
+  @@index([status])
+  @@map("project_sprints")
+}
+
+model ProjectSignOff {
+  id           String   @id @default(uuid())
+  projectId    String
+  clientId     String
+  name         String
+  description  String?
+  status       String   @default("NOT_READY")
+  signedAt     DateTime?
+  signedByName String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@index([status])
+  @@map("project_sign_offs")
+}
+
+model ProjectPhase {
+  id            String   @id @default(uuid())
+  projectId     String
+  clientId      String
+  name          String
+  budgetedHours Float    @default(0)
+  loggedHours   Float    @default(0)
+  color         String?
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  project       Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  timeEntries   ProjectTimeEntry[]
+
+  @@index([projectId, sortOrder])
+  @@map("project_phases")
+}
+
+model ProjectBrief {
+  id         String   @id @default(uuid())
+  projectId  String   @unique
+  clientId   String
+  objectives String
+  inScope    String
+  outOfScope String
+  contacts   String
+  status     String   @default("ACTIVE")
+  version    Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("project_briefs")
+}
+
+// ─── Batch B: Client CX Models ───────────────────────────────────────────────
+
+model ClientHealthScore {
+  id                  String   @id @default(uuid())
+  clientId            String
+  score               Int
+  trend               String   @default("STABLE")
+  trendValue          Int      @default(0)
+  sentiment           String   @default("NEUTRAL")
+  lastTouched         DateTime?
+  overdueTasks        Int      @default(0)
+  unreadMessages      Int      @default(0)
+  milestoneDelayDays  Int      @default(0)
+  retainerBurnPct     Int      @default(0)
+  invoiceStatus       String   @default("PENDING")
+  recordedAt          DateTime @default(now())
+  client              Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, recordedAt])
+  @@map("client_health_scores")
+}
+
+model ClientHealthSignal {
+  id        String   @id @default(uuid())
+  clientId  String
+  type      String
+  text      String
+  createdAt DateTime @default(now())
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, createdAt])
+  @@map("client_health_signals")
+}
+
+model ClientIntervention {
+  id          String    @id @default(uuid())
+  clientId    String
+  type        String
+  description String?
+  status      String    @default("OPEN")
+  assignedTo  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, status])
+  @@map("client_interventions")
+}
+
+model SatisfactionSurvey {
+  id          String                 @id @default(uuid())
+  clientId    String
+  periodStart DateTime
+  periodEnd   DateTime
+  npsScore    Int?
+  csatScore   Int?
+  status      String                 @default("PENDING")
+  completedAt DateTime?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  client      Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  responses   SatisfactionResponse[]
+
+  @@index([clientId, periodStart])
+  @@map("satisfaction_surveys")
+}
+
+model SatisfactionResponse {
+  id        String             @id @default(uuid())
+  surveyId  String
+  question  String
+  answer    String
+  createdAt DateTime           @default(now())
+  survey    SatisfactionSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  @@index([surveyId])
+  @@map("satisfaction_responses")
+}
+
+model ClientOnboardingRecord {
+  id           String    @id @default(uuid())
+  clientId     String
+  stageLabel   String
+  status       String    @default("PENDING")
+  sortOrder    Int       @default(0)
+  estimatedAt  DateTime?
+  completedAt  DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, sortOrder])
+  @@map("client_onboarding_records")
+}
+
+model OffboardingTask {
+  id           String    @id @default(uuid())
+  clientId     String
+  groupName    String
+  label        String
+  status       String    @default("PENDING")
+  actionLabel  String?
+  sortOrder    Int       @default(0)
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, groupName])
+  @@map("offboarding_tasks")
+}
+
+model CommunicationLog {
+  id            String   @id @default(uuid())
+  clientId      String
+  type          String
+  subject       String
+  fromName      String?
+  direction     String   @default("OUTBOUND")
+  relatedFileId String?
+  actionLabel   String?
+  occurredAt    DateTime
+  createdAt     DateTime @default(now())
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, occurredAt])
+  @@map("communication_logs")
+}
+
+model SLARecord {
+  id          String    @id @default(uuid())
+  clientId    String
+  tier        String    @default("STARTER")
+  metric      String
+  target      String
+  targetHrs   Float?
+  actual      String
+  actualHrs   Float?
+  variance    String?
+  status      String    @default("MET")
+  periodStart DateTime
+  periodEnd   DateTime?
+  createdAt   DateTime  @default(now())
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, periodStart])
+  @@map("sla_records")
+}
+
+model Appointment {
+  id              String    @id @default(uuid())
+  clientId        String
+  type            String    @default("CHECK_IN")
+  scheduledAt     DateTime
+  durationMins    Int       @default(60)
+  ownerName       String?
+  status          String    @default("PENDING")
+  notes           String?
+  videoRoomUrl    String?
+  videoProvider   String?   // "daily" | null
+  videoCallStatus String?   @default("NONE")  // NONE | SCHEDULED | ACTIVE | ENDED
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  client          Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, scheduledAt])
+  @@map("appointments")
+}
+
+model Referral {
+  id                 String    @id @default(uuid())
+  referredByName     String
+  referredByEmail    String?
+  referredClientId   String?
+  status             String    @default("PENDING")
+  rewardAmountCents  Int?
+  rewardedAt         DateTime?
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([status])
+  @@map("referrals")
+}
+
+model SupportTicket {
+  id          String    @id @default(uuid())
+  clientId    String
+  title       String
+  description String?
+  category    String?
+  priority    String    @default("MEDIUM")
+  status      String    @default("OPEN")
+  assignedTo  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, status])
+  @@index([status, priority])
+  @@map("support_tickets")
+}
+
+// ─── Batch C: Staff & HR Models ──────────────────────────────────────────────
+
+model StaffProfile {
+  id              String         @id @default(uuid())
+  userId          String?
+  name            String
+  role            String
+  department      String?
+  avatarInitials  String?
+  avatarColor     String?
+  hireDate        DateTime?
+  contractType    String         @default("PERMANENT")
+  grossSalaryCents BigInt        @default(0)
+  taxRatePct      Float          @default(0)
+  uifRatePct      Float          @default(0)
+  bankLast4       String?
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  payslips        StaffPayslip[]
+  leaveRequests   LeaveRequest[]
+  onboardingRecords StaffOnboardingRecord[]
+  trainingRecords TrainingRecord[]
+  standupEntries  StandupEntry[]
+  givenReviews    PeerReview[]   @relation("reviewer")
+  receivedReviews PeerReview[]   @relation("reviewee")
+  recurringTasks  RecurringTask[]
+
+  @@index([isActive])
+  @@index([department])
+  @@map("staff_profiles")
+}
+
+model StaffPayslip {
+  id                   String       @id @default(uuid())
+  staffId              String
+  period               String
+  periodStart          DateTime
+  periodEnd            DateTime
+  grossPayCents        BigInt
+  taxCents             BigInt
+  uifCents             BigInt
+  medicalCents         BigInt       @default(0)
+  totalDeductionsCents BigInt
+  netPayCents          BigInt
+  status               String       @default("PENDING")
+  paidAt               DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  staff                StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, periodStart])
+  @@index([status])
+  @@map("staff_payslips")
+}
+
+model LeaveRequest {
+  id          String       @id @default(uuid())
+  staffId     String
+  type        String       @default("ANNUAL")
+  startDate   DateTime
+  endDate     DateTime
+  days        Float
+  status      String       @default("PENDING")
+  approverId  String?
+  approvedAt  DateTime?
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  staff       StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, startDate])
+  @@index([status])
+  @@map("leave_requests")
+}
+
+model StaffOnboardingRecord {
+  id          String       @id @default(uuid())
+  staffId     String
+  stageLabel  String
+  status      String       @default("PENDING")
+  sortOrder   Int          @default(0)
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  staff       StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, sortOrder])
+  @@map("staff_onboarding_records")
+}
+
+model JobPosting {
+  id             String           @id @default(uuid())
+  title          String
+  department     String?
+  priority       String           @default("MEDIUM")
+  status         String           @default("ACTIVE")
+  hiringManager  String?
+  salaryBand     String?
+  postedAt       DateTime         @default(now())
+  targetDate     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  applications   JobApplication[]
+
+  @@index([status])
+  @@index([priority])
+  @@map("job_postings")
+}
+
+model JobApplication {
+  id            String     @id @default(uuid())
+  jobPostingId  String
+  candidateName String
+  stage         String     @default("APPLIED")
+  score         Int?
+  source        String?
+  flag          String?
+  appliedAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  jobPosting    JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+
+  @@index([jobPostingId, appliedAt])
+  @@index([stage])
+  @@map("job_applications")
+}
+
+model TrainingRecord {
+  id          String       @id @default(uuid())
+  staffId     String
+  courseName  String
+  category    String?
+  provider    String?
+  status      String       @default("ENROLLED")
+  score       Int?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  staff       StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, status])
+  @@map("training_records")
+}
+
+model StandupEntry {
+  id        String       @id @default(uuid())
+  staffId   String
+  date      DateTime
+  yesterday String?
+  today     String?
+  blockers  String?
+  projectId String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  staff     StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, date])
+  @@index([date])
+  @@map("standup_entries")
+}
+
+model PeerReview {
+  id          String       @id @default(uuid())
+  reviewerId  String
+  revieweeId  String
+  projectId   String?
+  status      String       @default("PENDING")
+  score       Int?
+  feedback    String?
+  dueAt       DateTime?
+  submittedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  reviewer    StaffProfile @relation("reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewee    StaffProfile @relation("reviewee", fields: [revieweeId], references: [id], onDelete: Cascade)
+
+  @@index([reviewerId])
+  @@index([revieweeId])
+  @@index([status])
+  @@map("peer_reviews")
+}
+
+// ─── Batch D: Operations, Content & Governance ───────────────────────────────
+
+model Announcement {
+  id          String    @id @default(uuid())
+  title       String
+  type        String    @default("INFO")
+  target      String    @default("ALL")
+  reach       Int       @default(0)
+  status      String    @default("DRAFT")
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  authorId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([target, status])
+  @@map("announcements")
+}
+
+model ContentSubmission {
+  id              String    @id @default(uuid())
+  clientId        String
+  title           String
+  type            String    @default("SOCIAL_POST")
+  submittedById   String?
+  submittedByName String?
+  status          String    @default("AWAITING")
+  approvedById    String?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([clientId, status])
+  @@index([status])
+  @@map("content_submissions")
+}
+
+model DesignReview {
+  id           String    @id @default(uuid())
+  projectId    String
+  clientId     String
+  round        Int       @default(1)
+  reviewerName String?
+  status       String    @default("PENDING")
+  submittedAt  DateTime
+  resolvedAt   DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, submittedAt])
+  @@index([clientId, status])
+  @@map("design_reviews")
+}
+
+model MeetingRecord {
+  id               String    @id @default(uuid())
+  clientId         String
+  title            String
+  meetingAt        DateTime
+  durationMins     Int       @default(60)
+  attendeeCount    Int       @default(0)
+  hasRecording     Boolean   @default(false)
+  recordingFileId  String?
+  actionItemStatus String    @default("NONE")
+  notes            String?
+  clientMoodRating Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([clientId, meetingAt])
+  @@map("meeting_records")
+}
+
+model KnowledgeArticle {
+  id          String    @id @default(uuid())
+  title       String
+  category    String?
+  content     String
+  authorId    String?
+  authorName  String?
+  status      String    @default("DRAFT")
+  publishedAt DateTime?
+  tags        String?
+  viewCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([category, status])
+  @@map("knowledge_articles")
+}
+
+model DecisionRecord {
+  id            String    @id @default(uuid())
+  title         String
+  context       String?
+  outcome       String?
+  decidedByName String?
+  decidedAt     DateTime?
+  tags          String?
+  projectId     String?
+  clientId      String?
+  status        String    @default("ACTIVE")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status])
+  @@index([projectId])
+  @@index([clientId])
+  @@map("decision_records")
+}
+
+model HandoverRecord {
+  id            String    @id @default(uuid())
+  fromStaffName String?
+  toStaffName   String?
+  projectId     String?
+  clientId      String?
+  status        String    @default("PENDING")
+  notes         String?
+  transferDate  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  project       Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([clientId])
+  @@index([status])
+  @@map("handover_records")
+}
+
+model AuditEvent {
+  id           String   @id @default(uuid())
+  actorId      String?
+  actorRole    String?
+  actorName    String?
+  action       String
+  resourceType String
+  resourceId   String?
+  details      String?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+  @@map("audit_events")
+}
+
+model MarketIntelEntry {
+  id            String   @id @default(uuid())
+  type          String   @default("TREND")
+  title         String
+  source        String?
+  summary       String?
+  relevance     String   @default("MEDIUM")
+  tags          String?
+  enteredByName String?
+  enteredAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([type, relevance])
+  @@index([enteredAt])
+  @@map("market_intel_entries")
+}
+
+// ─── Recurring Tasks ──────────────────────────────────────────────────────────
+
+model RecurringTask {
+  id            String       @id @default(uuid())
+  staffId       String
+  clientId      String?
+  title         String
+  frequency     String       @default("Weekly")   // Daily | Weekly | Bi-weekly | Monthly
+  dayOfWeek     String?                            // Mon | Tue | ... for Weekly/Bi-weekly
+  estimateHours Float        @default(0.5)
+  category      String       @default("Admin")
+  isActive      Boolean      @default(true)
+  lastDoneAt    DateTime?
+  nextDueAt     DateTime?
+  streak        Int          @default(0)
+  totalDone     Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  staff         StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, isActive])
+  @@index([nextDueAt])
+  @@map("recurring_tasks")
+}
+
+// ─── Client Profile ────────────────────────────────────────────────────────────
+
+model ClientProfile {
+  id             String   @id @default(uuid())
+  clientId       String   @unique
+  companyName    String?
+  tagline        String?
+  mission        String?
+  vision         String?
+  description    String?
+  industry       String?
+  website        String?
+  logoUrl        String?
+  primaryColor   String?
+  socialLinks    Json?    // { linkedin, twitter, instagram, github }
+  yearFounded    Int?
+  teamSize       String?  // e.g. "1-10", "11-50", "51-200"
+  hqLocation     String?
+  coverImageUrl  String?
+  updatedAt      DateTime @updatedAt
+  client         Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("client_profiles")
+}
+
+// ─── Feedback Extensions ──────────────────────────────────────────────────────
+
+model FeedbackReaction {
+  id          String   @id @default(uuid())
+  ticketId    String
+  clientId    String
+  emoji       String   // e.g. "👍" | "❤️" | "🙏"
+  createdAt   DateTime @default(now())
+
+  @@unique([ticketId, clientId, emoji])
+  @@index([ticketId])
+  @@map("feedback_reactions")
+}
+
+model FeedbackReply {
+  id          String   @id @default(uuid())
+  ticketId    String
+  authorId    String?
+  authorRole  String   @default("CLIENT")  // CLIENT | STAFF | ADMIN
+  authorName  String?
+  body        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ticketId, createdAt])
+  @@map("feedback_replies")
+}
+
+// ─── Brand Assets ───────────────────────────────────────────────────────────
+
+model BrandAsset {
+  id          String   @id @default(uuid())
+  clientId    String
+  type        String   // LOGO | COLOR | FONT | GUIDELINE
+  name        String
+  fileId      String?
+  storageKey  String?
+  mimeType    String?
+  sizeBytes   Int?
+  value       String?  // hex for colors, family name for fonts, URL for logos
+  variant     String?  // PRIMARY | SECONDARY | DARK | LIGHT
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, type])
+  @@map("brand_assets")
+}
+
+// ─── Client Contracts ─────────────────────────────────────────────────────────
+
+model ClientContract {
+  id          String    @id @default(uuid())
+  clientId    String
+  title       String
+  type        String    @default("CONTRACT") // NDA | SOW | DPA | MSA | CONTRACT
+  ref         String?
+  status      String    @default("PENDING")  // PENDING | SIGNED | VOID
+  signed      Boolean   @default(false)
+  signedAt    DateTime?
+  signedByName String?
+  fileId      String?   // links to the file service record
+  storageKey  String?
+  mimeType    String?
+  sizeBytes   Int?
+  notes       String?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, type])
+  @@index([clientId, status])
+  @@map("client_contracts")
+}
+
+// ─── Project Closeout Reports ──────────────────────────────────────────────────
+// Submitted at project completion to capture budget variance and lessons learned.
+// Admin can approve or request changes before archiving.
+
+model ProjectCloseoutReport {
+  id                 String    @id @default(uuid())
+  projectId          String
+  projectName        String
+  clientName         String
+  submittedBy        String    // staff display name
+  status             String    @default("PENDING_REVIEW") // PENDING_REVIEW | APPROVED | CHANGES_REQUESTED
+  budgetVarianceCents BigInt   @default(0)   // positive = over budget, negative = under
+  lessonsLearned     String?   // JSON array of lesson strings
+  lessonsCount       Int       @default(0)
+  notes              String?
+  approvedBy         String?
+  approvedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  project            Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([projectId])
+  @@map("project_closeout_reports")
+}
+
+// ─── Feature Flags ────────────────────────────────────────────────────────────
+// Admin-managed feature toggles.  key is the unique machine identifier.
+
+model FeatureFlag {
+  key         String    @id             // e.g. "ai_auto_draft"
+  name        String                    // display name
+  description String?
+  enabled     Boolean   @default(false)
+  scope       String    @default("All users") // "All users" | "All staff" | "Disabled" | custom
+  updatedBy   String?                   // user-id of last editor
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("feature_flags")
+}
+
+// ─── Proposals (client-facing quotes) ────────────────────────────────────────
+// Admin creates proposals for clients. Clients can accept or decline.
+// Items are the line-item breakdown rendered in the portal.
+
+model Proposal {
+  id            String         @id @default(uuid())
+  clientId      String
+  title         String
+  summary       String?
+  status        String         @default("PENDING")   // PENDING | ACCEPTED | DECLINED | EXPIRED
+  amountCents   Int            @default(0)
+  currency      String         @default("ZAR")
+  preparedBy    String?        // display name of staff who prepared it
+  preparedByInitials String?   // 1-2 char initials for avatar
+  validUntil    DateTime?
+  declinedAt    DateTime?
+  declineReason String?
+  acceptedAt    DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  items         ProposalItem[]
+
+  @@index([clientId, status])
+  @@index([clientId, createdAt])
+  @@map("proposals")
+}
+
+model ProposalItem {
+  id          String   @id @default(uuid())
+  proposalId  String
+  description String
+  icon        String   @default("star")   // Lucide icon name shown in portal
+  amountCents Int      @default(0)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@index([proposalId])
+  @@map("proposal_items")
+}
+
+// ─── Service Catalog ──────────────────────────────────────────────────────────
+// Database-driven pricing: replaces hardcoded service arrays in the frontend.
+// Packages are once-off projects; retainers are monthly plans; addons are extras.
+// Bundles group packages together with an optional discount.
+
+model ServicePackage {
+  id            String                 @id @default(uuid())
+  name          String
+  slug          String                 @unique
+  tagline       String?
+  priceMinCents Int                    @default(0)
+  priceMaxCents Int                    @default(0)
+  isCustomQuote Boolean                @default(false)
+  deliveryDays  String?
+  paymentTerms  String?
+  idealFor      String[]               @default([])
+  features      Json                   @default("[]")
+  billingType   String                 @default("ONCE_OFF")
+  sortOrder     Int                    @default(0)
+  isActive      Boolean                @default(true)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  bundlePackages ServiceBundlePackage[]
+
+  @@index([isActive, sortOrder])
+  @@map("service_packages")
+}
+
+model ServiceAddon {
+  id            String   @id @default(uuid())
+  category      String
+  name          String
+  description   String?
+  priceMinCents Int      @default(0)
+  priceMaxCents Int      @default(0)
+  priceLabel    String?
+  billingType   String   @default("ONCE_OFF")
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category, isActive])
+  @@index([isActive, sortOrder])
+  @@map("service_addons")
+}
+
+model RetainerPlan {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  priceMinCents Int      @default(0)
+  priceMaxCents Int      @default(0)
+  features      Json     @default("[]")
+  sortOrder     Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("retainer_plans")
+}
+
+model ServiceBundle {
+  id          String               @id @default(uuid())
+  name        String
+  description String?
+  discountPct Float                @default(0)
+  isActive    Boolean              @default(true)
+  sortOrder   Int                  @default(0)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  packages    ServiceBundlePackage[]
+
+  @@index([isActive, sortOrder])
+  @@map("service_bundles")
+}
+
+model ServiceBundlePackage {
+  bundleId  String
+  packageId String
+  bundle    ServiceBundle  @relation(fields: [bundleId],  references: [id], onDelete: Cascade)
+  package   ServicePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@id([bundleId, packageId])
+  @@map("service_bundle_packages")
+}
+
+// ── Competitor Intelligence ───────────────────────────────────────────────────
+
+model Competitor {
+  id           String         @id @default(uuid())
+  name         String
+  type         String         @default("Direct")   // Direct | Adjacent | Indirect
+  tier         String         @default("Same tier") // Same tier | Below us | Above us
+  color        String         @default("var(--red)")
+  services     String         @default("[]")        // JSON string array
+  strengths    String         @default("[]")        // JSON string array
+  weaknesses   String         @default("[]")        // JSON string array
+  pricing      String?
+  positioning  String?
+  beatStrategy String?
+  avgRetainer  Int            @default(0)
+  winsCount    Int            @default(0)
+  lossesCount  Int            @default(0)
+  lastUpdated  String?
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  winLossEntries WinLossEntry[]
+
+  @@index([isActive])
+  @@map("competitors")
+}
+
+model WinLossEntry {
+  id           String      @id @default(uuid())
+  date         String
+  prospect     String
+  outcome      String      @default("pending")  // won | lost | pending
+  competitorId String?
+  competitor   Competitor? @relation(fields: [competitorId], references: [id], onDelete: SetNull)
+  reason       String?
+  notes        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([outcome])
+  @@index([competitorId])
+  @@map("win_loss_entries")
+}
+
+model MarketRate {
+  id         String   @id @default(uuid())
+  service    String
+  maphari    Int      @default(0)
+  marketLow  Int      @default(0)
+  marketMid  Int      @default(0)
+  marketHigh Int      @default(0)
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("market_rates")
 }

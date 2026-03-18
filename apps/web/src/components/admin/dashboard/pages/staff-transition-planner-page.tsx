@@ -2,11 +2,7 @@
 
 import { cx, styles } from "../style";
 
-const transitions = [
-  { id: "TRN-001", staff: "Fatima Al-Rashid", from: "Project Manager", to: "Senior PM", type: "Promotion", status: "In Progress" as const, effectiveDate: "Mar 1, 2026", handovers: 2, knowledgeTransfer: 75 },
-  { id: "TRN-002", staff: "Kira Bosman", from: "Junior Designer", to: "Designer", type: "Promotion", status: "Complete" as const, effectiveDate: "Feb 1, 2026", handovers: 1, knowledgeTransfer: 100 },
-  { id: "TRN-003", staff: "Marcus Venter", from: "Developer", to: "—", type: "Departure", status: "Planning" as const, effectiveDate: "Apr 15, 2026", handovers: 3, knowledgeTransfer: 10 },
-];
+const transitions: Array<{ id: string; staff: string; from: string; to: string; type: string; status: "In Progress" | "Complete" | "Planning"; effectiveDate: string; handovers: number; knowledgeTransfer: number }> = [];
 
 export function StaffTransitionPlannerPage() {
   return (
@@ -23,7 +19,7 @@ export function StaffTransitionPlannerPage() {
         <div className={styles.cardHd}><span className={styles.cardHdTitle}>Active Transitions</span></div>
         <div className={styles.cardInner}>
           <table className={styles.table}>
-            <thead><tr><th>Staff</th><th>From</th><th>To</th><th>Type</th><th>Effective</th><th>Handovers</th><th>Knowledge %</th><th>Status</th></tr></thead>
+            <thead><tr><th scope="col">Staff</th><th scope="col">From</th><th scope="col">To</th><th scope="col">Type</th><th scope="col">Effective</th><th scope="col">Handovers</th><th scope="col">Knowledge %</th><th scope="col">Status</th></tr></thead>
             <tbody>
               {transitions.map((t) => (
                 <tr key={t.id}>

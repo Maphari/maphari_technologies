@@ -13,9 +13,16 @@ import {
   verifyStaffPinSchema
 } from "@maphari/contracts";
 import { EventTopics, type NatsEventBus } from "@maphari/platform";
-import { randomBytes, randomInt, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, randomInt, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
+import {
+  buildTotpUri,
+  generateBackupCodes,
+  generateQrDataUrl,
+  generateTotpSecret,
+  verifyTotpCode,
+} from "../lib/totp.js";
 import { prisma } from "../lib/prisma.js";
-import { buildRefreshToken, buildRefreshTokenWithHours, hashRefreshToken, signAccessToken } from "../lib/tokens.js";
+import { buildRefreshToken, buildRefreshTokenWithHours, hashRefreshToken, signAccessToken, signTempToken, verifyTempToken } from "../lib/tokens.js";
 import type { AuthConfig } from "../lib/config.js";
 
 interface AuthRouteDependencies {
@@ -45,9 +52,13 @@ function verifyPassword(password: string, hash: string, salt: string): boolean {
   return timingSafeEqual(computed, stored);
 }
 
-function shouldExposeDebugOtp(): boolean {
-  if (process.env.AUTH_EXPOSE_DEBUG_OTP === "true") return true;
-  return process.env.NODE_ENV !== "production";
+// ── OTP comparison using constant-time equality to prevent timing attacks ─────
+function otpMatches(stored: string, input: string): boolean {
+  const storedBuf = Buffer.from(stored);
+  const inputBuf  = Buffer.from(input);
+  // Lengths must match; timingSafeEqual requires equal-length buffers.
+  if (storedBuf.length !== inputBuf.length) return false;
+  return timingSafeEqual(storedBuf, inputBuf);
 }
 
 async function publishOtpNotification(
@@ -98,11 +109,107 @@ function ensureAdmin(request: { headers: Record<string, unknown> }, reply: { sta
   return true;
 }
 
+// ── Phone OTP store ───────────────────────────────────────────────────────────
+// In-memory map keyed by userId.  Expires after 10 minutes.
+// Swap for Redis on multi-instance deployments.
+const pendingPhoneOtps = new Map<string, { phone: string; code: string; expiresAt: number }>();
+
+// ── TOTP brute-force guard ────────────────────────────────────────────────────
+// Per-userId in-memory attempt counter.  5 failures → 5 min lockout.
+// On single-instance deployments this is sufficient; swap for Redis if needed.
+const TOTP_MAX_ATTEMPTS = 5;
+const TOTP_WINDOW_MS    = 5 * 60 * 1000; // 5 minutes
+interface TotpAttemptBucket { count: number; resetAt: number }
+const totpAttempts = new Map<string, TotpAttemptBucket>();
+
+function checkTotpRateLimit(userId: string): { allowed: boolean; resetAt: number } {
+  const now = Date.now();
+  const bucket = totpAttempts.get(userId);
+  if (!bucket || bucket.resetAt <= now) {
+    // First attempt or window has expired → fresh bucket
+    totpAttempts.set(userId, { count: 1, resetAt: now + TOTP_WINDOW_MS });
+    return { allowed: true, resetAt: now + TOTP_WINDOW_MS };
+  }
+  if (bucket.count >= TOTP_MAX_ATTEMPTS) {
+    return { allowed: false, resetAt: bucket.resetAt };
+  }
+  bucket.count += 1;
+  return { allowed: true, resetAt: bucket.resetAt };
+}
+
+function resetTotpRateLimit(userId: string): void {
+  totpAttempts.delete(userId);
+}
+
+// ── Login brute-force guard ────────────────────────────────────────────────
+// Per email:ip in-memory attempt counter.  5 failures → 15 min lockout.
+// On single-instance deployments this is sufficient; swap for Redis if needed.
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS    = 15 * 60 * 1000; // 15 minutes
+interface LoginAttemptBucket { count: number; resetAt: number }
+const loginAttempts = new Map<string, LoginAttemptBucket>();
+
+function checkLoginRateLimit(key: string): { allowed: boolean; resetAt: number } {
+  const now = Date.now();
+  const bucket = loginAttempts.get(key);
+  if (!bucket || bucket.resetAt <= now) return { allowed: true, resetAt: now + LOGIN_WINDOW_MS };
+  if (bucket.count >= LOGIN_MAX_ATTEMPTS) return { allowed: false, resetAt: bucket.resetAt };
+  return { allowed: true, resetAt: bucket.resetAt };
+}
+
+function recordLoginFailure(key: string): void {
+  const now = Date.now();
+  const bucket = loginAttempts.get(key);
+  if (!bucket || bucket.resetAt <= now) {
+    loginAttempts.set(key, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+  } else {
+    bucket.count += 1;
+  }
+}
+
+function resetLoginRateLimit(key: string): void {
+  loginAttempts.delete(key);
+}
+
 export async function registerAuthRoutes(
   app: FastifyInstance,
   config: AuthConfig,
   deps: AuthRouteDependencies
 ): Promise<void> {
+
+  // ── POST /auth/logout ─────────────────────────────────────────────────────
+  // Revokes the supplied refresh token in the database so it cannot be used
+  // to obtain a new access token.  The gateway reads the token from the
+  // HTTP-only cookie and forwards it here in the request body.
+  app.post("/auth/logout", async (request, reply) => {
+    const body = request.body as Record<string, unknown> | null;
+    const refreshToken =
+      typeof body?.refreshToken === "string" ? body.refreshToken.trim() : "";
+
+    if (!refreshToken) {
+      // Nothing to revoke — still return 200 (idempotent logout)
+      return { success: true, data: { revoked: false } } as ApiResponse;
+    }
+
+    try {
+      const tokenHash = hashRefreshToken(refreshToken);
+      await prisma.refreshToken.updateMany({
+        where: {
+          tokenHash,
+          revokedAt: null
+        },
+        data: { revokedAt: new Date() }
+      });
+      return { success: true, data: { revoked: true } } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return {
+        success: false,
+        error: { code: "LOGOUT_FAILED", message: "Unable to revoke session" }
+      } as ApiResponse;
+    }
+  });
   app.post("/auth/admin/register", async (request, reply) => {
     const parsed = registerAdminSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -158,6 +265,9 @@ export async function registerAuthRoutes(
       });
 
       await publishOtpNotification(deps, request.headers, email, otp);
+      // DEV ONLY — remove before production
+      console.log(`\n[DEV] Admin OTP for ${email}: ${otp}\n`);
+      request.log.debug({ userId: user.id }, "Admin OTP issued (check email)");
 
       return {
         success: true,
@@ -166,8 +276,7 @@ export async function registerAuthRoutes(
           email: user.email,
           role: user.role,
           otpRequired: true,
-          otpExpiresAt: otpExpiresAt.toISOString(),
-          ...(shouldExposeDebugOtp() ? { debugOtp: otp } : {})
+          otpExpiresAt: otpExpiresAt.toISOString()
         }
       } as ApiResponse;
     } catch (error) {
@@ -235,7 +344,7 @@ export async function registerAuthRoutes(
         } as ApiResponse;
       }
 
-      if (existing.otpCode !== parsed.data.otp) {
+      if (!otpMatches(existing.otpCode, parsed.data.otp)) {
         reply.status(401);
         return {
           success: false,
@@ -341,14 +450,14 @@ export async function registerAuthRoutes(
       });
 
       await publishOtpNotification(deps, request.headers, email, otp);
+      request.log.debug({ email }, "Admin OTP resent (check email)");
 
       return {
         success: true,
         data: {
           email,
           otpRequired: true,
-          otpExpiresAt: otpExpiresAt.toISOString(),
-          ...(shouldExposeDebugOtp() ? { debugOtp: otp } : {})
+          otpExpiresAt: otpExpiresAt.toISOString()
         }
       } as ApiResponse;
     } catch (error) {
@@ -381,7 +490,14 @@ export async function registerAuthRoutes(
     const email = parsed.data.email;
     const passwordCredentials = hashPassword(parsed.data.password);
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
-    const pin = generatePin();
+    const plainPin = generatePin();
+    const pinCredentials = hashPassword(plainPin);
+    const pin = `${pinCredentials.hash}:${pinCredentials.salt}`;
+
+    // DEV ONLY — remove before going to production
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[DEV] Staff register OTP/PIN for ${email}: ${plainPin}`);
+    }
 
     try {
       const requestRecord = await prisma.staffAccessRequest.upsert({
@@ -418,7 +534,7 @@ export async function registerAuthRoutes(
         payload: {
           channel: "IN_APP",
           recipientRole: "ADMIN",
-          message: `Staff registration request: ${email}. Verification PIN: ${pin}`
+          message: `New staff registration request from ${email} is pending your approval. Review it in the admin dashboard.`
         }
       });
 
@@ -499,7 +615,10 @@ export async function registerAuthRoutes(
         } as ApiResponse;
       }
 
-      if (requestRecord.pin !== parsed.data.pin) {
+      // Verify hashed PIN
+      const [pinHash, pinSalt] = requestRecord.pin ? requestRecord.pin.split(":") : ["", ""];
+      const pinValid = pinHash && pinSalt ? verifyPassword(parsed.data.pin, pinHash, pinSalt) : false;
+      if (!pinValid) {
         reply.status(401);
         return {
           success: false,
@@ -578,7 +697,7 @@ export async function registerAuthRoutes(
       data: rows.map((row) => ({
         id: row.id,
         email: row.email,
-        pin: row.pin,
+        pin: null,
         status: row.status,
         requestedAt: row.requestedAt.toISOString(),
         approvedAt: row.approvedAt ? row.approvedAt.toISOString() : null,
@@ -861,18 +980,39 @@ export async function registerAuthRoutes(
       const email = parsedBody.data.email;
       const requestedRole = normalizeRequestedRole(parsedBody.data.role);
       const password = parsedBody.data.password ?? "";
+
+      // S10 — Server-side login rate limiting keyed to email:ip.
+      const loginKey = `${email.toLowerCase()}:${request.ip ?? "unknown"}`;
+      const loginRateCheck = checkLoginRateLimit(loginKey);
+      if (!loginRateCheck.allowed) {
+        const retryAfterSec = Math.ceil((loginRateCheck.resetAt - Date.now()) / 1000);
+        reply.status(429).header("Retry-After", String(retryAfterSec));
+        return {
+          success: false,
+          error: {
+            code: "LOGIN_RATE_LIMITED",
+            message: "Too many failed login attempts. Please try again later."
+          }
+        } as ApiResponse;
+      }
+
       const existingUser = await prisma.user.findUnique({
         where: { email }
       });
 
+      // S11 — Email enumeration defence: always return the same error code and
+      // message whether the email doesn't exist OR the password is wrong so
+      // attackers cannot enumerate which emails are registered.
       let user;
       if (!existingUser) {
-        reply.status(404);
+        request.log.warn({ ip: request.ip }, "Login attempt for unknown email (hidden from caller)");
+        recordLoginFailure(loginKey);
+        reply.status(401);
         return {
           success: false,
           error: {
-            code: "ACCOUNT_NOT_REGISTERED",
-            message: "Account is not registered yet. Ask your admin for an invite."
+            code: "INVALID_CREDENTIALS",
+            message: "Invalid credentials. Please check your email and password."
           }
         } as ApiResponse;
       } else {
@@ -904,6 +1044,8 @@ export async function registerAuthRoutes(
       if (user.role === "ADMIN") {
         if (user.passwordHash && user.passwordSalt) {
           if (!password || !verifyPassword(password, user.passwordHash, user.passwordSalt)) {
+            request.log.warn({ email: parsedBody.data.email, ip: request.ip }, "Failed login attempt");
+            recordLoginFailure(loginKey);
             reply.status(401);
             return {
               success: false,
@@ -924,7 +1066,15 @@ export async function registerAuthRoutes(
               }
             } as ApiResponse;
           }
+          if (config.adminPassword && config.adminPassword.length < 16) {
+            return reply.code(500).send({
+              success: false,
+              error: { code: "INSECURE_CONFIG", message: "ADMIN_LOGIN_PASSWORD must be at least 16 characters." }
+            });
+          }
           if (!password || password !== config.adminPassword) {
+            request.log.warn({ email: parsedBody.data.email, ip: request.ip }, "Failed login attempt");
+            recordLoginFailure(loginKey);
             reply.status(401);
             return {
               success: false,
@@ -940,6 +1090,8 @@ export async function registerAuthRoutes(
       if (user.role === "STAFF") {
         if (user.passwordHash && user.passwordSalt) {
           if (!password || !verifyPassword(password, user.passwordHash, user.passwordSalt)) {
+            request.log.warn({ email: parsedBody.data.email, ip: request.ip }, "Failed login attempt");
+            recordLoginFailure(loginKey);
             reply.status(401);
             return {
               success: false,
@@ -960,7 +1112,15 @@ export async function registerAuthRoutes(
               }
             } as ApiResponse;
           }
+          if (config.staffPassword && config.staffPassword.length < 16) {
+            return reply.code(500).send({
+              success: false,
+              error: { code: "INSECURE_CONFIG", message: "ADMIN_LOGIN_PASSWORD must be at least 16 characters." }
+            });
+          }
           if (!password || password !== config.staffPassword) {
+            request.log.warn({ email: parsedBody.data.email, ip: request.ip }, "Failed login attempt");
+            recordLoginFailure(loginKey);
             reply.status(401);
             return {
               success: false,
@@ -992,6 +1152,20 @@ export async function registerAuthRoutes(
             code: "CLIENT_NOT_PROVISIONED",
             message: "Client account is not linked yet. Ask your admin to provision access."
           }
+        } as ApiResponse;
+      }
+
+      // ── 2FA gate ──────────────────────────────────────────────────────────────
+      // If the user has TOTP enabled, do NOT issue a full session yet.
+      // Instead return a short-lived temp token that the frontend exchanges for
+      // a full session once the user proves their TOTP code.
+      if (user.totpEnabledAt && user.totpSecret) {
+        const tempToken = signTempToken(user.id, config);
+        reply.status(200);
+        return {
+          success: true,
+          data: { requiresTwoFactor: true, tempToken },
+          meta: { requestId: request.headers["x-request-id"] ?? undefined }
         } as ApiResponse;
       }
 
@@ -1033,6 +1207,9 @@ export async function registerAuthRoutes(
         }
       });
 
+      // Clear login failure counter on success.
+      resetLoginRateLimit(loginKey);
+
       return {
         success: true,
         data: {
@@ -1059,6 +1236,105 @@ export async function registerAuthRoutes(
           code: "AUTH_LOGIN_FAILED",
           message: "Unable to process login request"
         }
+      } as ApiResponse;
+    }
+  });
+
+  // ── POST /auth/2fa/login ──────────────────────────────────────────────────────
+  // Completes the 2FA login flow. Accepts the short-lived temp token issued by
+  // POST /auth/login (when user.totpEnabledAt is set) together with the 6-digit
+  // TOTP code from the user's authenticator app. On success, returns a full
+  // session (accessToken + refreshToken) identical to a normal login response.
+  app.post("/auth/2fa/login", async (request, reply) => {
+    const body = request.body as { tempToken?: string; totpCode?: string };
+    const { tempToken, totpCode } = body ?? {};
+
+    if (!tempToken || !totpCode) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "tempToken and totpCode are required" }
+      } as ApiResponse;
+    }
+
+    let userId: string;
+    try {
+      const decoded = verifyTempToken(tempToken, config);
+      if (decoded.purpose !== "2fa_challenge") throw new Error("wrong purpose");
+      userId = decoded.sub;
+    } catch {
+      reply.status(401);
+      return {
+        success: false,
+        error: { code: "INVALID_TEMP_TOKEN", message: "Invalid or expired 2FA challenge token" }
+      } as ApiResponse;
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          clientId: true,
+          totpSecret: true,
+          totpEnabledAt: true,
+          isActive: true
+        }
+      });
+
+      if (!user || !user.isActive || !user.totpEnabledAt || !user.totpSecret) {
+        reply.status(401);
+        return {
+          success: false,
+          error: { code: "INVALID_CREDENTIALS", message: "Invalid 2FA challenge" }
+        } as ApiResponse;
+      }
+
+      const isValid = verifyTotpCode(totpCode.trim(), user.totpSecret);
+      if (!isValid) {
+        reply.status(401);
+        return {
+          success: false,
+          error: { code: "INVALID_TOTP_CODE", message: "Incorrect authenticator code. Please try again." }
+        } as ApiResponse;
+      }
+
+      // Issue full session
+      const refreshTokenPayload = buildRefreshToken(config.refreshTokenTtlDays);
+      const { token: refreshToken, tokenHash: refreshTokenHash, expiresAt } = refreshTokenPayload;
+      const accessToken = signAccessToken(user, config);
+
+      await prisma.refreshToken.create({
+        data: { tokenHash: refreshTokenHash, userId: user.id, expiresAt }
+      });
+
+      await prisma.loginEvent.create({
+        data: {
+          userId: user.id,
+          requestId: (request.headers["x-request-id"] as string | undefined) ?? null,
+          ipAddress: request.ip ?? null,
+          userAgent: (request.headers["user-agent"] as string | undefined) ?? null
+        }
+      });
+
+      return {
+        success: true,
+        data: {
+          accessToken,
+          refreshToken,
+          expiresInSeconds: config.accessTokenTtlSeconds,
+          user: { id: user.id, email: user.email, role: user.role, clientId: user.clientId }
+        },
+        meta: { requestId: request.headers["x-request-id"] ?? undefined }
+      } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return {
+        success: false,
+        error: { code: "AUTH_2FA_LOGIN_FAILED", message: "Unable to complete 2FA login" }
       } as ApiResponse;
     }
   });
@@ -1163,6 +1439,805 @@ export async function registerAuthRoutes(
           code: "TOKEN_REFRESH_FAILED",
           message: "Unable to refresh access token"
         }
+      } as ApiResponse;
+    }
+  });
+
+  // ── GET /auth/admin/2fa/status ─────────────────────────────────────────────
+  // Returns the current TOTP 2FA status for the authenticated admin.
+  app.get("/auth/admin/2fa/status", async (request, reply) => {
+    if (!ensureAdmin(request, reply)) return;
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "User ID missing" } } as ApiResponse;
+    }
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { totpEnabledAt: true }
+      });
+      if (!user) {
+        reply.status(404);
+        return { success: false, error: { code: "USER_NOT_FOUND", message: "User not found" } } as ApiResponse;
+      }
+      return {
+        success: true,
+        data: {
+          enabled: user.totpEnabledAt !== null,
+          enabledAt: user.totpEnabledAt?.toISOString() ?? null
+        }
+      } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "TOTP_STATUS_FAILED", message: "Unable to fetch 2FA status" } } as ApiResponse;
+    }
+  });
+
+  // ── POST /auth/admin/2fa/setup ─────────────────────────────────────────────
+  // Generates a TOTP secret + QR code for the admin to scan with their
+  // authenticator app. The setup is NOT activated until /2fa/verify is called.
+  app.post("/auth/admin/2fa/setup", async (request, reply) => {
+    if (!ensureAdmin(request, reply)) return;
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "User ID missing" } } as ApiResponse;
+    }
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, totpEnabledAt: true }
+      });
+      if (!user) {
+        reply.status(404);
+        return { success: false, error: { code: "USER_NOT_FOUND", message: "User not found" } } as ApiResponse;
+      }
+
+      const secret = generateTotpSecret();
+      const backupCodes = generateBackupCodes();
+      const totpUri = buildTotpUri(user.email, secret);
+      const qrCodeDataUrl = await generateQrDataUrl(totpUri);
+
+      // S13 — Hash backup codes before storage so plaintext never sits in DB.
+      // We still return the raw codes once to the user for safe-keeping.
+      const hashedBackupCodes = backupCodes.map((code) =>
+        createHash("sha256").update(code).digest("hex")
+      );
+
+      // Store the pending secret (not yet active — verified in /2fa/verify)
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          totpSecret: secret,
+          totpBackupCodes: JSON.stringify(hashedBackupCodes),
+          totpEnabledAt: null  // remains null until verified
+        }
+      });
+
+      return {
+        success: true,
+        data: { secret, qrCodeDataUrl, backupCodes }
+      } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "TOTP_SETUP_FAILED", message: "Unable to initiate 2FA setup" } } as ApiResponse;
+    }
+  });
+
+  // ── POST /auth/admin/2fa/verify ────────────────────────────────────────────
+  // Verifies the 6-digit TOTP code from the authenticator app to confirm
+  // the setup was successful, then activates 2FA for this account.
+  app.post("/auth/admin/2fa/verify", async (request, reply) => {
+    if (!ensureAdmin(request, reply)) return;
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "User ID missing" } } as ApiResponse;
+    }
+
+    // ── Rate limit: 5 attempts per 5 minutes per userId ────────────────────
+    const rateCheck = checkTotpRateLimit(userId);
+    if (!rateCheck.allowed) {
+      reply.status(429);
+      reply.header("retry-after", String(Math.ceil((rateCheck.resetAt - Date.now()) / 1000)));
+      return {
+        success: false,
+        error: {
+          code: "TOTP_RATE_LIMITED",
+          message: "Too many 2FA attempts. Please wait before trying again."
+        }
+      } as ApiResponse;
+    }
+
+    const body = request.body as Record<string, unknown> | null;
+    const code = typeof body?.code === "string" ? body.code.trim() : "";
+    if (!code) {
+      reply.status(400);
+      return { success: false, error: { code: "VALIDATION_ERROR", message: "code is required" } } as ApiResponse;
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { totpSecret: true, totpEnabledAt: true }
+      });
+      if (!user) {
+        reply.status(404);
+        return { success: false, error: { code: "USER_NOT_FOUND", message: "User not found" } } as ApiResponse;
+      }
+      if (!user.totpSecret) {
+        reply.status(409);
+        return { success: false, error: { code: "TOTP_NOT_INITIATED", message: "2FA setup has not been initiated. Call /2fa/setup first." } } as ApiResponse;
+      }
+
+      const isValid = verifyTotpCode(code, user.totpSecret);
+      if (!isValid) {
+        reply.status(401);
+        return { success: false, error: { code: "INVALID_TOTP_CODE", message: "Invalid or expired 2FA code" } } as ApiResponse;
+      }
+
+      // Successful verification — clear the attempt counter
+      resetTotpRateLimit(userId);
+
+      // Activate 2FA
+      await prisma.user.update({
+        where: { id: userId },
+        data: { totpEnabledAt: new Date() }
+      });
+
+      // S14 — Audit trail: notify ops when 2FA is enabled
+      await deps.eventBus.publish({
+        eventId: randomUUID(),
+        occurredAt: new Date().toISOString(),
+        requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined,
+        traceId: (request.headers["x-trace-id"] as string | undefined) ?? undefined,
+        topic: EventTopics.notificationRequested,
+        payload: {
+          channel: "EMAIL",
+          recipientEmail: process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@maphari.com",
+          subject: "Security: 2FA Enabled",
+          message: `Admin user (ID: ${userId}) has successfully enabled Two-Factor Authentication. This was completed at ${new Date().toISOString()}.`
+        }
+      });
+
+      return { success: true, data: { enabled: true } } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "TOTP_VERIFY_FAILED", message: "Unable to verify 2FA code" } } as ApiResponse;
+    }
+  });
+
+  // ── POST /auth/admin/2fa/disable ───────────────────────────────────────────
+  // Disables TOTP 2FA for this account. Requires the current password as
+  // a second confirmation to prevent unauthorised disabling of 2FA.
+  app.post("/auth/admin/2fa/disable", async (request, reply) => {
+    if (!ensureAdmin(request, reply)) return;
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "User ID missing" } } as ApiResponse;
+    }
+
+    const body = request.body as Record<string, unknown> | null;
+    const password = typeof body?.password === "string" ? body.password : "";
+    if (!password) {
+      reply.status(400);
+      return { success: false, error: { code: "VALIDATION_ERROR", message: "password is required to disable 2FA" } } as ApiResponse;
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { passwordHash: true, passwordSalt: true, totpEnabledAt: true }
+      });
+      if (!user) {
+        reply.status(404);
+        return { success: false, error: { code: "USER_NOT_FOUND", message: "User not found" } } as ApiResponse;
+      }
+      if (!user.totpEnabledAt) {
+        reply.status(409);
+        return { success: false, error: { code: "TOTP_NOT_ENABLED", message: "2FA is not currently enabled" } } as ApiResponse;
+      }
+      if (!user.passwordHash || !user.passwordSalt || !verifyPassword(password, user.passwordHash, user.passwordSalt)) {
+        reply.status(401);
+        return { success: false, error: { code: "INVALID_PASSWORD", message: "Incorrect password" } } as ApiResponse;
+      }
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: { totpSecret: null, totpBackupCodes: null, totpEnabledAt: null }
+      });
+
+      // S14 — Audit trail: notify ops when 2FA is disabled
+      await deps.eventBus.publish({
+        eventId: randomUUID(),
+        occurredAt: new Date().toISOString(),
+        requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined,
+        traceId: (request.headers["x-trace-id"] as string | undefined) ?? undefined,
+        topic: EventTopics.notificationRequested,
+        payload: {
+          channel: "EMAIL",
+          recipientEmail: process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@maphari.com",
+          subject: "Security Alert: 2FA Disabled",
+          message: `Admin user (ID: ${userId}) has disabled Two-Factor Authentication at ${new Date().toISOString()}. If this was not you, revoke all sessions immediately via the admin dashboard.`
+        }
+      });
+
+      return { success: true, data: { disabled: true } } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "TOTP_DISABLE_FAILED", message: "Unable to disable 2FA" } } as ApiResponse;
+    }
+  });
+
+  // ── GET /auth/me/sessions ──────────────────────────────────────────────────
+  // Returns the 10 most recent login events for the authenticated user.
+  app.get("/auth/me/sessions", async (request, reply) => {
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } } as ApiResponse;
+    }
+
+    try {
+      const events = await prisma.loginEvent.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: { id: true, ipAddress: true, userAgent: true, createdAt: true }
+      });
+
+      return {
+        success: true,
+        data: events,
+        meta: { requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined }
+      } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "SESSIONS_FETCH_FAILED", message: "Unable to retrieve session history" } } as ApiResponse;
+    }
+  });
+
+  // ── DELETE /auth/me/sessions ───────────────────────────────────────────────
+  // Revokes all active refresh tokens for the current user (signs out all devices).
+  app.delete("/auth/me/sessions", async (request, reply) => {
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } } as ApiResponse;
+    }
+
+    try {
+      const result = await prisma.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() }
+      });
+
+      return {
+        success: true,
+        data: { revokedCount: result.count },
+        meta: { requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined }
+      } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "SESSIONS_REVOKE_FAILED", message: "Unable to revoke sessions" } } as ApiResponse;
+    }
+  });
+
+  // ── POST /auth/password-change ────────────────────────────────────────────
+  // Authenticated: verifies the current password then replaces it.
+  // Revokes all refresh tokens so existing sessions are terminated.
+  app.post("/auth/password-change", async (request, reply) => {
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } } as ApiResponse;
+    }
+
+    const body = request.body as Record<string, unknown> | null;
+    const currentPassword = typeof body?.currentPassword === "string" ? body.currentPassword : "";
+    const newPassword = typeof body?.newPassword === "string" ? body.newPassword : "";
+
+    if (!newPassword || newPassword.length < 8) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "New password must be at least 8 characters." }
+      } as ApiResponse;
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, passwordHash: true, passwordSalt: true, role: true }
+      });
+
+      if (!user) {
+        reply.status(404);
+        return { success: false, error: { code: "USER_NOT_FOUND", message: "User not found" } } as ApiResponse;
+      }
+
+      // If the user has a password hash, verify the current password.
+      // OAuth-only users (no hash/salt) may set a password without providing current.
+      if (user.passwordHash && user.passwordSalt) {
+        if (!currentPassword) {
+          reply.status(400);
+          return {
+            success: false,
+            error: { code: "VALIDATION_ERROR", message: "Current password is required." }
+          } as ApiResponse;
+        }
+        const valid = verifyPassword(currentPassword, user.passwordHash, user.passwordSalt);
+        if (!valid) {
+          reply.status(401);
+          return {
+            success: false,
+            error: { code: "INVALID_CURRENT_PASSWORD", message: "Current password is incorrect." }
+          } as ApiResponse;
+        }
+      }
+
+      const { hash, salt } = hashPassword(newPassword);
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash: hash, passwordSalt: salt }
+      });
+
+      // Revoke all existing refresh tokens so the user must log in again.
+      await prisma.refreshToken.updateMany({
+        where: { userId },
+        data: { revokedAt: new Date() }
+      });
+
+      return {
+        success: true,
+        data: { message: "Password updated. Please log in again." },
+        meta: { requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined }
+      } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "PASSWORD_CHANGE_FAILED", message: "Unable to update password" } } as ApiResponse;
+    }
+  });
+
+  // ── POST /auth/phone/send-otp ──────────────────────────────────────────────
+  // Authenticated: generates and stores a 6-digit OTP for phone verification.
+  app.post("/auth/phone/send-otp", async (request, reply) => {
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } } as ApiResponse;
+    }
+
+    const body = request.body as Record<string, unknown> | null;
+    const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
+
+    if (!phone || !/^\+?[0-9]{7,15}$/.test(phone)) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "A valid phone number is required (7-15 digits, optional leading +)." }
+      } as ApiResponse;
+    }
+
+    const code = generatePin();
+    pendingPhoneOtps.set(userId, { phone, code, expiresAt: Date.now() + 10 * 60 * 1000 });
+
+    // In production, send the OTP via SMS here.
+    return {
+      success: true,
+      data: {
+        message: "OTP sent to your phone",
+        ...(process.env.NODE_ENV !== "production" && { devCode: code })
+      },
+      meta: { requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined }
+    } as ApiResponse;
+  });
+
+  // ── POST /auth/phone/verify-otp ────────────────────────────────────────────
+  // Authenticated: validates the OTP and marks the phone number as verified.
+  app.post("/auth/phone/verify-otp", async (request, reply) => {
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } } as ApiResponse;
+    }
+
+    const body = request.body as Record<string, unknown> | null;
+    const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
+    const code = typeof body?.code === "string" ? body.code.trim() : "";
+
+    const entry = pendingPhoneOtps.get(userId);
+
+    if (!entry || entry.expiresAt < Date.now()) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "INVALID_OTP", message: "OTP has expired or was not requested. Please send a new OTP." }
+      } as ApiResponse;
+    }
+
+    if (entry.phone !== phone) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "PHONE_MISMATCH", message: "Phone number does not match the OTP request." }
+      } as ApiResponse;
+    }
+
+    if (!otpMatches(entry.code, code)) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "INVALID_OTP", message: "Incorrect OTP code." }
+      } as ApiResponse;
+    }
+
+    pendingPhoneOtps.delete(userId);
+
+    return {
+      success: true,
+      data: { message: "Phone number verified successfully" },
+      meta: { requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined }
+    } as ApiResponse;
+  });
+
+  // ── POST /auth/password-reset/request ─────────────────────────────────────
+  // Accepts an email, generates a secure short-lived token, stores a hash in the
+  // DB, and publishes an email notification with the reset link.
+  // Always returns success=true so callers cannot enumerate registered accounts.
+  app.post("/auth/password-reset/request", async (request, reply) => {
+    const body = request.body as Record<string, unknown> | null;
+    const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "A valid email address is required." }
+      } as ApiResponse;
+    }
+
+    // Always respond success to prevent email enumeration
+    const genericSuccess: ApiResponse = { success: true, data: { sent: true } };
+
+    try {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || !user.isActive) {
+        // Silently succeed — don't reveal if the account exists
+        return genericSuccess;
+      }
+
+      // Generate a cryptographically secure token and store its hash
+      const rawToken = randomBytes(32).toString("hex");
+      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordResetTokenHash: tokenHash, passwordResetExpiresAt: expiresAt }
+      });
+
+      // Publish email notification with the reset link
+      const resetUrl = `${process.env.APP_URL ?? "http://localhost:3000"}/reset-password?token=${rawToken}`;
+      await deps.eventBus.publish({
+        eventId: randomUUID(),
+        occurredAt: new Date().toISOString(),
+        topic: EventTopics.notificationRequested,
+        payload: {
+          channel: "EMAIL",
+          recipientEmail: email,
+          message: `Reset your Maphari password: ${resetUrl}\n\nThis link expires in 15 minutes. If you did not request this, please ignore this email.`
+        }
+      });
+
+      request.log.info({ userId: user.id }, "Password reset token issued");
+      return genericSuccess;
+    } catch (error) {
+      request.log.error(error);
+      // Still return generic success to prevent timing side-channels
+      return genericSuccess;
+    }
+  });
+
+  // ── POST /auth/admin/lockdown ──────────────────────────────────────────────
+  // Emergency lockdown: revokes ALL active refresh tokens across the platform.
+  // Instantly ends every active session. Admin must re-authenticate after this.
+  app.post("/auth/admin/lockdown", async (request, reply) => {
+    if (!ensureAdmin(request, reply)) return;
+
+    try {
+      const result = await prisma.refreshToken.updateMany({
+        where: { revokedAt: null },
+        data: { revokedAt: new Date() }
+      });
+
+      request.log.warn(
+        { revokedCount: result.count, actor: currentActor(request).userId },
+        "EMERGENCY LOCKDOWN — all active sessions terminated"
+      );
+
+      await deps.eventBus.publish({
+        eventId: randomUUID(),
+        occurredAt: new Date().toISOString(),
+        requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined,
+        traceId: (request.headers["x-trace-id"] as string | undefined) ?? undefined,
+        topic: EventTopics.notificationRequested,
+        payload: {
+          channel: "EMAIL",
+          recipientEmail: "admin@maphari.co.za",
+          message: `SECURITY ALERT: Emergency platform lockdown was triggered. ${result.count} sessions were terminated. If this was not you, investigate immediately.`
+        }
+      });
+
+      return {
+        success: true,
+        data: { revokedSessions: result.count, lockedAt: new Date().toISOString() }
+      } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return {
+        success: false,
+        error: { code: "LOCKDOWN_FAILED", message: "Unable to complete emergency lockdown." }
+      } as ApiResponse;
+    }
+  });
+
+  // ── POST /auth/password-reset/confirm ─────────────────────────────────────
+  // Validates the reset token and updates the user's password.
+  app.post("/auth/password-reset/confirm", async (request, reply) => {
+    const body = request.body as Record<string, unknown> | null;
+    const token = typeof body?.token === "string" ? body.token.trim() : "";
+    const newPassword = typeof body?.newPassword === "string" ? body.newPassword : "";
+
+    if (!token || !newPassword) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "token and newPassword are required." }
+      } as ApiResponse;
+    }
+
+    if (newPassword.length < 8) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "Password must be at least 8 characters." }
+      } as ApiResponse;
+    }
+
+    try {
+      const tokenHash = createHash("sha256").update(token).digest("hex");
+      const user = await prisma.user.findFirst({
+        where: { passwordResetTokenHash: tokenHash }
+      });
+
+      if (!user || !user.passwordResetExpiresAt) {
+        reply.status(400);
+        return {
+          success: false,
+          error: { code: "INVALID_TOKEN", message: "Reset link is invalid or has already been used." }
+        } as ApiResponse;
+      }
+
+      if (user.passwordResetExpiresAt.getTime() < Date.now()) {
+        reply.status(410);
+        return {
+          success: false,
+          error: { code: "TOKEN_EXPIRED", message: "Reset link has expired. Please request a new one." }
+        } as ApiResponse;
+      }
+
+      const { hash, salt } = hashPassword(newPassword);
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: hash,
+          passwordSalt: salt,
+          passwordResetTokenHash: null,
+          passwordResetExpiresAt: null
+        }
+      });
+
+      request.log.info({ userId: user.id }, "Password reset completed successfully");
+      return { success: true, data: { reset: true } } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return {
+        success: false,
+        error: { code: "PASSWORD_RESET_FAILED", message: "Unable to reset password. Please try again." }
+      } as ApiResponse;
+    }
+  });
+
+  // ── POST /auth/google/exchange ─────────────────────────────────────────────
+  // Exchanges a Google OAuth authorization code for an internal session.
+  // The frontend callback page sends the code here after Google redirects back.
+  app.post("/auth/google/exchange", async (request, reply) => {
+    const body = request.body as { code?: unknown; redirectUri?: unknown } | null;
+    const code = typeof body?.code === "string" ? body.code.trim() : "";
+    const redirectUri =
+      typeof body?.redirectUri === "string"
+        ? body.redirectUri.trim()
+        : process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:3000/auth/google/callback";
+
+    if (!code) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "Google authorization code is required." }
+      } as ApiResponse;
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET ?? "";
+
+    if (!clientId || !clientSecret) {
+      reply.status(503);
+      return {
+        success: false,
+        error: { code: "OAUTH_NOT_CONFIGURED", message: "Google OAuth is not configured on this server." }
+      } as ApiResponse;
+    }
+
+    try {
+      // ── 1. Exchange code for Google tokens ──────────────────────────────────
+      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code"
+        }).toString()
+      });
+
+      if (!tokenRes.ok) {
+        const errBody = await tokenRes.text().catch(() => "");
+        request.log.warn({ status: tokenRes.status, body: errBody }, "Google token exchange failed");
+        reply.status(401);
+        return {
+          success: false,
+          error: { code: "GOOGLE_TOKEN_EXCHANGE_FAILED", message: "Failed to exchange Google authorization code." }
+        } as ApiResponse;
+      }
+
+      const tokenData = (await tokenRes.json()) as { access_token?: string };
+      const googleAccessToken = tokenData.access_token;
+      if (!googleAccessToken) {
+        reply.status(401);
+        return {
+          success: false,
+          error: { code: "GOOGLE_TOKEN_MISSING", message: "Google did not return an access token." }
+        } as ApiResponse;
+      }
+
+      // ── 2. Fetch Google userinfo ────────────────────────────────────────────
+      const userinfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: { authorization: `Bearer ${googleAccessToken}` }
+      });
+
+      if (!userinfoRes.ok) {
+        reply.status(401);
+        return {
+          success: false,
+          error: { code: "GOOGLE_USERINFO_FAILED", message: "Failed to retrieve user information from Google." }
+        } as ApiResponse;
+      }
+
+      const userinfo = (await userinfoRes.json()) as {
+        sub?: string;
+        email?: string;
+        email_verified?: boolean;
+        name?: string;
+      };
+
+      if (!userinfo.sub || !userinfo.email) {
+        reply.status(401);
+        return {
+          success: false,
+          error: { code: "GOOGLE_USERINFO_INCOMPLETE", message: "Google account did not provide an email address." }
+        } as ApiResponse;
+      }
+
+      const googleId = userinfo.sub;
+      const email = userinfo.email.toLowerCase().trim();
+
+      // ── 3. Upsert user — find by googleId, fall back to email ──────────────
+      let user = await prisma.user.findFirst({ where: { googleId } });
+
+      if (!user) {
+        // Try to link to an existing account with the same email
+        const byEmail = await prisma.user.findUnique({ where: { email } });
+        if (byEmail) {
+          user = await prisma.user.update({
+            where: { id: byEmail.id },
+            data: { googleId, isActive: true }
+          });
+        } else {
+          // No existing account — Google OAuth is only for staff/admin who already
+          // have an account. Reject unknown emails.
+          reply.status(403);
+          return {
+            success: false,
+            error: {
+              code: "GOOGLE_ACCOUNT_NOT_FOUND",
+              message: "No Maphari account is linked to this Google account. Please register first."
+            }
+          } as ApiResponse;
+        }
+      }
+
+      if (!user.isActive) {
+        reply.status(401);
+        return {
+          success: false,
+          error: { code: "USER_INACTIVE", message: "User account is not active." }
+        } as ApiResponse;
+      }
+
+      // ── 4. Issue internal JWT + refresh token ───────────────────────────────
+      const { token: refreshToken, tokenHash: refreshTokenHash, expiresAt } = buildRefreshToken(config.refreshTokenTtlDays);
+      const accessToken = signAccessToken(user, config);
+
+      await prisma.refreshToken.create({
+        data: { tokenHash: refreshTokenHash, userId: user.id, expiresAt }
+      });
+
+      await prisma.loginEvent.create({
+        data: {
+          userId: user.id,
+          requestId: (request.headers["x-request-id"] as string | undefined) ?? null,
+          ipAddress: request.ip ?? null,
+          userAgent: (request.headers["user-agent"] as string | undefined) ?? null
+        }
+      });
+
+      await deps.eventBus.publish({
+        eventId: randomUUID(),
+        occurredAt: new Date().toISOString(),
+        requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined,
+        traceId: (request.headers["x-trace-id"] as string | undefined) ?? undefined,
+        topic: EventTopics.userLoggedIn,
+        payload: { userId: user.id, email: user.email, role: user.role, clientId: user.clientId }
+      });
+
+      request.log.info({ userId: user.id, email: user.email }, "Google OAuth login successful");
+
+      return {
+        success: true,
+        data: {
+          accessToken,
+          refreshToken,
+          expiresInSeconds: config.accessTokenTtlSeconds,
+          user: {
+            id: user.id,
+            email: user.email,
+            role: user.role as import("@maphari/contracts").Role,
+            clientId: user.clientId
+          }
+        }
+      } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return {
+        success: false,
+        error: { code: "GOOGLE_OAUTH_FAILED", message: "Google sign-in failed. Please try again." }
       } as ApiResponse;
     }
   });

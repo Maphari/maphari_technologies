@@ -20,10 +20,10 @@ export interface AuthorizedResult<T> {
   error: GatewayError | null;
 }
 
-export async function callGateway<T>(
+async function attemptGateway<T>(
   path: string,
   accessToken: string,
-  options: { method?: "GET" | "POST" | "PATCH"; body?: unknown } = {}
+  options: { method?: "GET" | "POST" | "PATCH" | "DELETE"; body?: unknown }
 ): Promise<RawGatewayResponse<T>> {
   try {
     const response = await fetch(`${gatewayBaseUrl}${path}`, {
@@ -62,6 +62,28 @@ export async function callGateway<T>(
       }
     };
   }
+}
+
+function isTransient<T>(res: RawGatewayResponse<T>): boolean {
+  return res.status === 0 || res.status === 502 || res.status === 503 || res.status === 504;
+}
+
+export async function callGateway<T>(
+  path: string,
+  accessToken: string,
+  options: { method?: "GET" | "POST" | "PATCH" | "DELETE"; body?: unknown } = {}
+): Promise<RawGatewayResponse<T>> {
+  const result = await attemptGateway<T>(path, accessToken, options);
+  if (!isTransient(result)) return result;
+
+  // First retry after 250 ms
+  await new Promise<void>((resolve) => setTimeout(resolve, 250));
+  const retry1 = await attemptGateway<T>(path, accessToken, options);
+  if (!isTransient(retry1)) return retry1;
+
+  // Second retry after 500 ms
+  await new Promise<void>((resolve) => setTimeout(resolve, 500));
+  return attemptGateway<T>(path, accessToken, options);
 }
 
 export function isUnauthorized<T>(response: RawGatewayResponse<T>): boolean {

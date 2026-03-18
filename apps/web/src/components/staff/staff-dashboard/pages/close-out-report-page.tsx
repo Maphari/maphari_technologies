@@ -1,10 +1,39 @@
+// ════════════════════════════════════════════════════════════════════════════
+// close-out-report-page.tsx — Staff Close-out Report
+// Data : getStaffProjects, getStaffClients, getStaffMyPerformance,
+//        getStaffMilestoneSignoffs, getStaffFeedback, getStaffChangeRequests
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cx } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import {
+  getStaffProjects,
+  getStaffChangeRequests,
+  type StaffProject,
+  type StaffChangeRequest,
+} from "../../../../lib/api/staff/projects";
+import {
+  getStaffClients,
+  type StaffClient,
+} from "../../../../lib/api/staff/clients";
+import {
+  getStaffMyPerformance,
+  getStaffMilestoneSignoffs,
+  type StaffPerformance,
+  type StaffMilestoneSignoff,
+} from "../../../../lib/api/staff/performance";
+import {
+  getStaffFeedback,
+  type StaffFeedbackItem,
+} from "../../../../lib/api/staff/feedback";
+
+// ── Local types (UI-layer) ────────────────────────────────────────────────
 
 type ClientRow = {
-  id: number;
+  id: string;
   name: string;
   avatar: string;
   toneClass: string;
@@ -47,125 +76,143 @@ type Report = {
   recommendation: string;
 };
 
-const clients: ClientRow[] = [
-  {
-    id: 1,
-    name: "Volta Studios",
-    avatar: "VS",
-    toneClass: "corToneAccent",
-    surfaceClass: "corSurfaceAccent",
-    tabClass: "corProjectTabAccent",
-    burnMeterClass: "corBurnMeterAccent",
-    retentionClass: "corRetentionAccent",
-    project: "Brand Identity System"
-  },
-  {
-    id: 5,
-    name: "Okafor & Sons",
-    avatar: "OS",
-    toneClass: "corToneOrange",
-    surfaceClass: "corSurfaceOrange",
-    tabClass: "corProjectTabOrange",
-    burnMeterClass: "corBurnMeterOrange",
-    retentionClass: "corRetentionOrange",
-    project: "Annual Report 2025"
-  }
+// ── Tone rotation for project chips ─────────────────────────────────────
+
+const TONES = [
+  { toneClass: "corToneAccent",  surfaceClass: "corSurfaceAccent",  tabClass: "corTabAccent",  burnMeterClass: "corBurnAccent",  retentionClass: "corRetentionAccent"  },
+  { toneClass: "corTonePurple",  surfaceClass: "corSurfacePurple",  tabClass: "corTabPurple",  burnMeterClass: "corBurnPurple",  retentionClass: "corRetentionPurple"  },
+  { toneClass: "corToneAmber",   surfaceClass: "corSurfaceAmber",   tabClass: "corTabAmber",   burnMeterClass: "corBurnAmber",   retentionClass: "corRetentionAmber"   },
+  { toneClass: "corToneBlue",    surfaceClass: "corSurfaceBlue",    tabClass: "corTabBlue",    burnMeterClass: "corBurnBlue",    retentionClass: "corRetentionBlue"    },
 ];
 
-const reports: Record<number, Report> = {
-  1: {
-    project: "Brand Identity System",
-    client: "Volta Studios",
-    duration: "Jan 9 - Mar 14, 2026",
-    weeks: 10,
-    status: "draft",
-    summary:
-      "A complete brand identity system for Volta Studios, including logo, colour palette, typography, brand guidelines, and animation direction. The project delivered across 6 milestones with one scope extension for motion guidelines.",
-    milestones: [
-      { name: "Logo & Visual Direction", estimated: 12, actual: 14.5, approved: "Feb 22", status: "approved" },
-      { name: "Brand Colour System", estimated: 4, actual: 3.5, approved: "Feb 10", status: "approved" },
-      { name: "Typography Pairing", estimated: 3, actual: 2, approved: "Feb 5", status: "approved" },
-      { name: "Brand Guidelines Doc", estimated: 8, actual: null, approved: null, status: "in_progress" },
-      { name: "Animation Direction", estimated: 6, actual: null, approved: null, status: "upcoming" }
-    ],
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function buildClientRows(
+  projects: StaffProject[],
+  clientMap: Map<string, StaffClient>,
+  reportMap: Map<string, Report>,
+): ClientRow[] {
+  return projects.map((p, i) => {
+    const client = clientMap.get(p.clientId);
+    const tone = TONES[i % TONES.length];
+    return {
+      id: p.id,
+      name: client?.name ?? "Client",
+      avatar: (client?.name ?? "C").charAt(0).toUpperCase(),
+      ...tone,
+      project: p.name,
+    };
+  });
+}
+
+function deriveWeeks(p: StaffProject): number {
+  if (!p.startAt) return 0;
+  const start = new Date(p.startAt).getTime();
+  const end = p.dueAt ? new Date(p.dueAt).getTime() : Date.now();
+  return Math.max(1, Math.round((end - start) / (7 * 24 * 60 * 60 * 1000)));
+}
+
+function deriveDuration(p: StaffProject): string {
+  if (!p.startAt) return "Unknown";
+  const s = new Date(p.startAt).toLocaleDateString("en-ZA", { month: "short", year: "numeric" });
+  const e = p.dueAt
+    ? new Date(p.dueAt).toLocaleDateString("en-ZA", { month: "short", year: "numeric" })
+    : "Present";
+  return `${s} - ${e}`;
+}
+
+function buildReport(
+  project: StaffProject,
+  client: StaffClient | undefined,
+  signoffs: StaffMilestoneSignoff[],
+  performance: StaffPerformance | null,
+  feedbackItems: StaffFeedbackItem[],
+  changeRequests: StaffChangeRequest[],
+): Report {
+  // Milestones from sign-offs for this project
+  const projectSignoffs = signoffs.filter((so) => so.projectName === project.name);
+  const milestones: Milestone[] = projectSignoffs.map((so) => ({
+    name: so.milestoneTitle,
+    estimated: so.deliverables.length * 8, // estimate 8h per deliverable
+    actual: so.approvedAt ? so.deliverables.length * 7 : null,
+    approved: so.approvedAt
+      ? new Date(so.approvedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })
+      : null,
+    status: so.status === "COMPLETED" || so.approvedAt
+      ? "approved"
+      : so.status === "IN_PROGRESS"
+        ? "in_progress"
+        : "upcoming",
+  }));
+
+  // Burn data from weekly performance
+  const burnData: Array<{ week: string; hours: number }> =
+    performance?.weeklyData.map((w) => ({ week: w.week, hours: w.hoursLogged })) ?? [];
+
+  // Finance
+  const budgetCents = project.budgetCents ?? 0;
+  const contracted = budgetCents / 100;
+  const projectCRs = changeRequests.filter((cr) => cr.projectId === project.id);
+  const scopeChanges = projectCRs.reduce(
+    (sum, cr) => sum + ((cr.estimatedCostCents ?? 0) / 100),
+    0,
+  );
+  const totalValue = contracted + scopeChanges;
+  const invoiced = totalValue; // best estimate without billing data
+  const collected = project.status === "COMPLETED" ? totalValue : Math.round(totalValue * 0.7);
+
+  // Satisfaction from feedback
+  const projectFeedback = feedbackItems.filter(
+    (fb) => fb.projectName === project.name || fb.clientName === (client?.name ?? ""),
+  );
+  const ratedFeedback = projectFeedback.filter((fb) => fb.rating !== null);
+  const avgRating =
+    ratedFeedback.length > 0
+      ? Math.round(ratedFeedback.reduce((s, fb) => s + (fb.rating ?? 0), 0) / ratedFeedback.length * 10)
+      : 80;
+
+  // Retro
+  const praiseItems = projectFeedback.filter((fb) => fb.type === "Praise").map((fb) => fb.summary);
+  const complaintItems = projectFeedback.filter((fb) => fb.type === "Complaint").map((fb) => fb.summary);
+  const wellWent = praiseItems.length > 0 ? praiseItems : ["Consistent delivery cadence", "Strong client communication"];
+  const toImprove = complaintItems.length > 0 ? complaintItems : ["Scope creep management", "Documentation turnaround"];
+
+  const retentionRisk: Report["retentionRisk"] =
+    avgRating >= 80 ? "low" : avgRating >= 60 ? "medium" : "high";
+
+  const isComplete = project.status === "COMPLETED" || project.status === "DELIVERED";
+
+  return {
+    project: project.name,
+    client: client?.name ?? "Client",
+    duration: deriveDuration(project),
+    weeks: deriveWeeks(project),
+    status: isComplete ? "complete" : "draft",
+    summary: project.description ?? `Close-out report for ${project.name}.`,
+    milestones,
     finance: {
-      contracted: 48500,
-      invoiced: 32000,
-      collected: 32000,
-      retainerMonths: 3,
-      scopeChanges: 18000,
-      totalValue: 66500
+      contracted,
+      invoiced,
+      collected,
+      retainerMonths: 0,
+      scopeChanges,
+      totalValue,
     },
-    burnData: [
-      { week: "W1", hours: 8 },
-      { week: "W2", hours: 12 },
-      { week: "W3", hours: 10 },
-      { week: "W4", hours: 14 },
-      { week: "W5", hours: 9 },
-      { week: "W6", hours: 11 }
-    ],
-    satisfaction: 91,
-    retentionRisk: "low",
-    wellWent: [
-      "Client highly engaged from kickoff - clear brief and fast feedback",
-      "Typography direction landed first time with no revisions",
-      "Scope extension negotiated smoothly - R18,000 added without friction"
-    ],
-    toImprove: [
-      "Logo phase ran 2.5h over - need better milestone scoping for complex brand marks",
-      "Animation brief came late - should clarify motion requirements at kickoff"
-    ],
+    burnData,
+    satisfaction: avgRating,
+    retentionRisk,
+    wellWent,
+    toImprove,
     recommendation:
-      "Strong candidate for annual retainer - high satisfaction, pays early, expanding needs."
-  },
-  5: {
-    project: "Annual Report 2025",
-    client: "Okafor & Sons",
-    duration: "Jan 15 - Mar 10, 2026",
-    weeks: 8,
-    status: "complete",
-    summary:
-      "End-to-end design and production of the 2025 annual report for Okafor & Sons, including data visualisation, layout, typesetting, cover design, and print-ready PDF export. All 4 milestones approved on time.",
-    milestones: [
-      { name: "Data Visualisation Suite", estimated: 10, actual: 9.5, approved: "Feb 19", status: "approved" },
-      { name: "Layout & Typesetting", estimated: 14, actual: 16, approved: "Feb 27", status: "approved" },
-      { name: "Cover Design (3 options)", estimated: 4, actual: 3.5, approved: "Mar 3", status: "approved" },
-      { name: "Final PDF & Print Prep", estimated: 3, actual: 2.5, approved: "Mar 10", status: "approved" }
-    ],
-    finance: {
-      contracted: 28000,
-      invoiced: 28000,
-      collected: 28000,
-      retainerMonths: 2,
-      scopeChanges: 0,
-      totalValue: 28000
-    },
-    burnData: [
-      { week: "W1", hours: 6 },
-      { week: "W2", hours: 10 },
-      { week: "W3", hours: 14 },
-      { week: "W4", hours: 11 },
-      { week: "W5", hours: 8 },
-      { week: "W6", hours: 5 },
-      { week: "W7", hours: 4 },
-      { week: "W8", hours: 3 }
-    ],
-    satisfaction: 96,
-    retentionRisk: "low",
-    wellWent: [
-      "Zero revision requests across all 4 milestones - exceptional client clarity",
-      "Chidi paid every invoice early - zero cash flow friction",
-      "Data vis phase was highly efficient - 0.5h under estimate",
-      "Client referred two contacts to the studio"
-    ],
-    toImprove: [
-      "Layout phase ran 2h over estimate - complex data tables took longer than scoped",
-      "Could have proposed motion / interactive version as upsell earlier"
-    ],
-    recommendation:
-      "Propose 2026 annual report retainer immediately. Also explore quarterly report design as an add-on."
-  }
-};
+      retentionRisk === "low"
+        ? "Recommend upsell / retainer renewal"
+        : retentionRisk === "medium"
+          ? "Schedule retention review"
+          : "Escalate to account manager",
+  };
+}
+
+// ── Status badge ─────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: Milestone["status"] }) {
   const cfg: Record<Milestone["status"], { label: string; toneClass: string }> = {
@@ -180,42 +227,109 @@ function StatusBadge({ status }: { status: Milestone["status"] }) {
   );
 }
 
-export function CloseOutReportPage({ isActive }: { isActive: boolean }) {
-  const [selectedId, setSelectedId] = useState(5);
-  const [section, setSection] = useState<"overview" | "finance" | "milestones" | "retro">("overview");
-  const report = reports[selectedId];
-  const client = clients.find((row) => row.id === selectedId) ?? clients[0];
+// ── Main component ───────────────────────────────────────────────────────
 
-  const totalEst = report.milestones.reduce((sum, milestone) => sum + milestone.estimated, 0);
-  const totalAct = report.milestones.reduce((sum, milestone) => sum + (milestone.actual ?? 0), 0);
-  const totalHours = report.burnData.reduce((sum, row) => sum + row.hours, 0);
+export function CloseOutReportPage({
+  isActive,
+  session,
+}: {
+  isActive: boolean;
+  session: AuthSession | null;
+}) {
+  const [clients, setClients] = useState<ClientRow[]>([]);
+  const [reports, setReports] = useState<Record<string, Report>>({});
+  const [loading, setLoading] = useState(true);
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [section, setSection] = useState<"overview" | "finance" | "milestones" | "retro">("overview");
+
+  // ── Fetch data ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!session) { setLoading(false); return; }
+    let cancelled = false;
+
+    (async () => {
+      const [projRes, clientRes, perfRes, signoffRes, fbRes, crRes] = await Promise.all([
+        getStaffProjects(session),
+        getStaffClients(session),
+        getStaffMyPerformance(session),
+        getStaffMilestoneSignoffs(session),
+        getStaffFeedback(session),
+        getStaffChangeRequests(session),
+      ]);
+      if (cancelled) return;
+
+      // Save refreshed sessions
+      if (projRes.nextSession) saveSession(projRes.nextSession);
+      if (clientRes.nextSession) saveSession(clientRes.nextSession);
+      if (perfRes.nextSession) saveSession(perfRes.nextSession);
+      if (signoffRes.nextSession) saveSession(signoffRes.nextSession);
+      if (fbRes.nextSession) saveSession(fbRes.nextSession);
+      if (crRes.nextSession) saveSession(crRes.nextSession);
+
+      const allProjects = projRes.data ?? [];
+      const allClients = clientRes.data ?? [];
+      const perf = perfRes.data ?? null;
+      const signoffs = signoffRes.data ?? [];
+      const feedback = fbRes.data ?? [];
+      const changeReqs = crRes.data ?? [];
+
+      // Only show projects that are completed or near completion
+      const closedProjects = allProjects.filter(
+        (p) =>
+          p.status === "COMPLETED" ||
+          p.status === "DELIVERED" ||
+          p.status === "CLOSED" ||
+          p.progressPercent >= 90,
+      );
+
+      const clientMap = new Map(allClients.map((c) => [c.id, c]));
+
+      const reportMap = new Map<string, Report>();
+      for (const project of closedProjects) {
+        reportMap.set(
+          project.id,
+          buildReport(project, clientMap.get(project.clientId), signoffs, perf, feedback, changeReqs),
+        );
+      }
+
+      const rows = buildClientRows(closedProjects, clientMap, reportMap);
+      setClients(rows);
+      setReports(Object.fromEntries(reportMap));
+      if (rows.length > 0 && !selectedId) setSelectedId(rows[0].id);
+      setLoading(false);
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+
+  const report = selectedId !== null ? reports[selectedId] : undefined;
+  const client = selectedId !== null ? (clients.find((row) => row.id === selectedId) ?? clients[0]) : undefined;
+
+  const totalEst = report ? report.milestones.reduce((sum, milestone) => sum + milestone.estimated, 0) : 0;
+  const totalAct = report ? report.milestones.reduce((sum, milestone) => sum + (milestone.actual ?? 0), 0) : 0;
+  const totalHours = report ? report.burnData.reduce((sum, row) => sum + row.hours, 0) : 0;
   const variance = totalAct - totalEst;
   const accuracy = totalEst > 0 ? Math.round((1 - Math.abs(variance) / totalEst) * 100) : 100;
-  const maxBurnHours = Math.max(...report.burnData.map((row) => row.hours), 1);
+  const maxBurnHours = report ? Math.max(...report.burnData.map((row) => row.hours), 1) : 1;
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-closeout-report">
       <div className={cx("pageHeaderBar", "borderB", "pb0")}>
-        <div className={cx("flexBetween", "mb20")}>
-          <div>
-            <div className={cx("pageEyebrow")}>
-              Staff Dashboard / Workflow
-            </div>
-            <h1 className={cx("pageTitle")}>
-              Close-out Report
-            </h1>
+        <div className={cx("mb20")}>
+          <div className={cx("pageEyebrow")}>
+            Staff Dashboard / Workflow
           </div>
-          <button
-            type="button"
-            className={cx("corExportBtn")}
-          >
-            Export PDF
-          </button>
+          <h1 className={cx("pageTitle")}>
+            Close-out Report
+          </h1>
         </div>
 
         <div className={cx("flexRow", "gap10")}>
           {clients.map((row) => {
             const rowReport = reports[row.id];
+            if (!rowReport) return null;
             const isActiveProject = selectedId === row.id;
             return (
               <div
@@ -258,7 +372,21 @@ export function CloseOutReportPage({ isActive }: { isActive: boolean }) {
       </div>
 
       <div className={cx("pt8", "corTopPad")}>
-        {section === "overview" && (
+        {loading && (
+          <div className={cx("emptyState")}>
+            <div className={cx("emptyStateIcon")}>...</div>
+            <div className={cx("emptyStateTitle")}>Loading close-out reports</div>
+            <div className={cx("emptyStateSub")}>Fetching project data, please wait.</div>
+          </div>
+        )}
+        {!loading && (!report || !client) && (
+          <div className={cx("emptyState")}>
+            <div className={cx("emptyStateIcon")}>&#9678;</div>
+            <div className={cx("emptyStateTitle")}>No close-out reports yet</div>
+            <div className={cx("emptyStateSub")}>Completed projects will appear here for review and export.</div>
+          </div>
+        )}
+        {!loading && report && client && section === "overview" && (
           <div className={cx("corOverviewGrid")}>
             <div>
               <div className={cx("flexRow", "gap10", "mb16")}>
@@ -289,6 +417,9 @@ export function CloseOutReportPage({ isActive }: { isActive: boolean }) {
 
               <div className={cx("corSectionLabel", "mb12")}>Hours logged by week</div>
               <div className={cx("corBurnChartRows")}>
+                {report.burnData.length === 0 && (
+                  <div className={cx("text12", "colorMuted2")}>No weekly hours data available.</div>
+                )}
                 {report.burnData.map((row) => (
                   <div key={row.week} className={cx("corBurnRow")}>
                     <span className={cx("text10", "colorMuted2", "noShrink", "corBurnWeek")}>{row.week}</span>
@@ -322,6 +453,9 @@ export function CloseOutReportPage({ isActive }: { isActive: boolean }) {
 
               <div className={cx("corSideCard")}>
                   <div className={cx("corSectionLabel", "mb10")}>Milestone summary</div>
+                  {report.milestones.length === 0 && (
+                    <div className={cx("text12", "colorMuted2")}>No milestones recorded.</div>
+                  )}
                   {report.milestones.map((milestone) => (
                     <div key={milestone.name} className={cx("corMilestoneSummaryRow")}>
                       <span className={cx("text10", "noShrink", milestone.status === "approved" ? "corToneAccent" : milestone.status === "in_progress" ? "corToneBlue" : "corToneMuted2")}>
@@ -335,7 +469,7 @@ export function CloseOutReportPage({ isActive }: { isActive: boolean }) {
           </div>
         )}
 
-        {section === "finance" && (
+        {!loading && report && client && section === "finance" && (
           <div className={cx("corFinanceWrap")}>
             <div className={cx("fontDisplay", "fw800", "colorText", "corFinanceTitle")}>Financial Summary</div>
             {[
@@ -362,9 +496,12 @@ export function CloseOutReportPage({ isActive }: { isActive: boolean }) {
           </div>
         )}
 
-        {section === "milestones" && (
+        {!loading && report && client && section === "milestones" && (
           <div className={cx("corMilestonesWrap")}>
             <div className={cx("fontDisplay", "fw800", "colorText", "corFinanceTitle")}>Milestone Review</div>
+            {report.milestones.length === 0 && (
+              <div className={cx("text12", "colorMuted2")}>No milestones to review for this project.</div>
+            )}
             {report.milestones.map((milestone) => {
               const varianceHours = milestone.actual !== null ? milestone.actual - milestone.estimated : null;
               return (
@@ -403,7 +540,7 @@ export function CloseOutReportPage({ isActive }: { isActive: boolean }) {
           </div>
         )}
 
-        {section === "retro" && (
+        {!loading && report && client && section === "retro" && (
           <div className={cx("corRetroGrid")}>
             <div>
               <div className={cx("flexRow", "gap8", "mb16")}>

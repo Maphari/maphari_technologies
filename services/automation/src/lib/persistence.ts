@@ -14,6 +14,8 @@ export interface AutomationPersistence {
   getJob(jobId: string): Promise<AutomationJobRecord | null>;
   listJobs(): Promise<AutomationJobRecord[]>;
   listDeadLetters(): Promise<AutomationJobRecord[]>;
+  acknowledgeDeadLetters(): Promise<number>;
+  requeueFailed(): Promise<number>;
   enqueueScheduledNotification(record: ScheduledNotificationRecord): Promise<void>;
   claimDueScheduledNotifications(nowIso: string, limit: number): Promise<ScheduledNotificationRecord[]>;
   markScheduledNotificationSent(id: string): Promise<void>;
@@ -89,6 +91,30 @@ class RedisAutomationPersistence implements AutomationPersistence {
   async listDeadLetters(): Promise<AutomationJobRecord[]> {
     const records = await this.listByIndex(this.key("deadletters", "index"));
     return records.filter((record) => record.status === "dead-lettered");
+  }
+
+  async acknowledgeDeadLetters(): Promise<number> {
+    const records = await this.listDeadLetters();
+    await Promise.all(
+      records.map(async (record) => {
+        const updated: AutomationJobRecord = { ...record, status: "acknowledged", updatedAt: new Date().toISOString() };
+        await this.cache.setJson(this.key("job", record.jobId), updated, this.options.jobTtlSeconds);
+      })
+    );
+    await this.cache.setJson(this.key("deadletters", "index"), [], this.options.jobTtlSeconds);
+    return records.length;
+  }
+
+  async requeueFailed(): Promise<number> {
+    const allJobs = await this.listJobs();
+    const failing = allJobs.filter((j) => j.status === "failed" || j.status === "dead-lettered");
+    await Promise.all(
+      failing.map(async (record) => {
+        const updated: AutomationJobRecord = { ...record, status: "acknowledged", updatedAt: new Date().toISOString() };
+        await this.cache.setJson(this.key("job", record.jobId), updated, this.options.jobTtlSeconds);
+      })
+    );
+    return failing.length;
   }
 
   async enqueueScheduledNotification(record: ScheduledNotificationRecord): Promise<void> {
@@ -214,6 +240,30 @@ class MemoryAutomationPersistence implements AutomationPersistence {
 
   async listDeadLetters(): Promise<AutomationJobRecord[]> {
     return (await this.listJobs()).filter((record) => record.status === "dead-lettered");
+  }
+
+  async acknowledgeDeadLetters(): Promise<number> {
+    const now = new Date().toISOString();
+    let count = 0;
+    for (const [jobId, record] of this.jobs.entries()) {
+      if (record.status === "dead-lettered") {
+        this.jobs.set(jobId, { ...record, status: "acknowledged", updatedAt: now });
+        count++;
+      }
+    }
+    return count;
+  }
+
+  async requeueFailed(): Promise<number> {
+    const now = new Date().toISOString();
+    let count = 0;
+    for (const [jobId, record] of this.jobs.entries()) {
+      if (record.status === "failed" || record.status === "dead-lettered") {
+        this.jobs.set(jobId, { ...record, status: "acknowledged", updatedAt: now });
+        count++;
+      }
+    }
+    return count;
   }
 
   async enqueueScheduledNotification(record: ScheduledNotificationRecord): Promise<void> {

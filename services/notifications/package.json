@@ -14,10 +14,11 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@prisma/client": "^6.16.3",
     "@maphari/contracts": "workspace:*",
     "@maphari/platform": "workspace:*",
-    "fastify": "^5.6.2"
+    "@prisma/client": "^6.16.3",
+    "fastify": "^5.6.2",
+    "resend": "^6.9.3"
   },
   "devDependencies": {
     "prisma": "^6.16.3",

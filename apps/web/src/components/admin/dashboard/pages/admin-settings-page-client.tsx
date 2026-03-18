@@ -1,11 +1,22 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { useAdminSettings } from "../hooks/use-admin-settings";
 import { cx, styles } from "../style";
 import type { DashboardToast } from "../../../shared/dashboard-core";
 import type { PageId } from "../config";
 import type { NotificationJob, PartnerApiKey } from "../../../../lib/api/admin";
+import type { TotpSetupData, LoginSessionEvent } from "../../../../lib/api/admin/auth-2fa";
+import {
+  get2faStatusWithRefresh,
+  setup2faWithRefresh,
+  verify2faWithRefresh,
+  disable2faWithRefresh,
+  getMySessionsWithRefresh,
+  signOutAllSessionsWithRefresh,
+} from "../../../../lib/api/admin/auth-2fa";
+import { saveSession } from "../../../../lib/auth/session";
 import { formatDate, formatDateTime } from "./admin-page-utils";
 
 export function AdminSettingsPageClient({
@@ -16,6 +27,7 @@ export function AdminSettingsPageClient({
   onNotify,
   currencyValue,
   onCurrencySaved,
+  onRestartTour,
 }: {
   jobs: NotificationJob[];
   publicApiKeys: PartnerApiKey[];
@@ -24,6 +36,7 @@ export function AdminSettingsPageClient({
   onNotify: (tone: DashboardToast["tone"], message: string) => void;
   currencyValue: string;
   onCurrencySaved: (currency: string) => void;
+  onRestartTour?: () => void;
 }) {
   const { snapshot, session } = useAdminWorkspaceContext();
 
@@ -86,6 +99,120 @@ export function AdminSettingsPageClient({
     setAdminDisplayCurrency: onCurrencySaved,
     currencyValue,
   });
+
+  // ── 2FA / TOTP state ──────────────────────────────────────────────────────
+  const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
+  const [totpEnabledAt, setTotpEnabledAt] = useState<string | null>(null);
+  const [totpSetupData, setTotpSetupData] = useState<TotpSetupData | null>(null);
+  const [totpModalOpen, setTotpModalOpen] = useState(false);
+  const [totpCode, setTotpCode] = useState("");
+  const [totpCodeError, setTotpCodeError] = useState("");
+  const [totpVerifying, setTotpVerifying] = useState(false);
+  const [totpSettingUp, setTotpSettingUp] = useState(false);
+  const [disableModalOpen, setDisableModalOpen] = useState(false);
+  const [disablePassword, setDisablePassword] = useState("");
+  const [disableError, setDisableError] = useState("");
+  const [disabling, setDisabling] = useState(false);
+
+  // ── Active Sessions state ─────────────────────────────────────────────────
+  const [sessions, setSessions] = useState<LoginSessionEvent[]>([]);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
+  const [signOutAllBusy, setSignOutAllBusy] = useState(false);
+
+  // Load 2FA status + sessions when security tab is active
+  const didLoad2fa = useRef(false);
+  useEffect(() => {
+    if (activeTab !== "security") return;
+    if (didLoad2fa.current) return;
+    if (!session) return;
+    didLoad2fa.current = true;
+    void (async () => {
+      const [statusResult, sessionsResult] = await Promise.all([
+        get2faStatusWithRefresh(session),
+        getMySessionsWithRefresh(session),
+      ]);
+      if (statusResult.nextSession) saveSession(statusResult.nextSession);
+      if (statusResult.data) {
+        setTotpEnabled(statusResult.data.enabled);
+        setTotpEnabledAt(statusResult.data.enabledAt);
+      }
+      if (sessionsResult.nextSession) saveSession(sessionsResult.nextSession);
+      if (!sessionsResult.error && sessionsResult.data) setSessions(sessionsResult.data);
+      setSessionsLoaded(true);
+    })();
+  }, [activeTab, session]);
+
+  const handleSetup2fa = useCallback(async () => {
+    if (!session) return;
+    setTotpSettingUp(true);
+    setTotpCode("");
+    setTotpCodeError("");
+    const result = await setup2faWithRefresh(session);
+    setTotpSettingUp(false);
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.error || !result.data) {
+      onNotify("error", result.error?.message ?? "Failed to initiate 2FA setup.");
+      return;
+    }
+    setTotpSetupData(result.data);
+    setTotpModalOpen(true);
+  }, [session, onNotify]);
+
+  const handleVerify2fa = useCallback(async () => {
+    if (!session) return;
+    if (!/^\d{6}$/.test(totpCode.replace(/\s/g, ""))) {
+      setTotpCodeError("Enter the 6-digit code from your authenticator app.");
+      return;
+    }
+    setTotpVerifying(true);
+    setTotpCodeError("");
+    const result = await verify2faWithRefresh(session, totpCode.trim());
+    setTotpVerifying(false);
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.error || !result.data) {
+      setTotpCodeError(result.error?.message ?? "Invalid code. Please try again.");
+      return;
+    }
+    setTotpEnabled(true);
+    setTotpEnabledAt(new Date().toISOString());
+    setTotpModalOpen(false);
+    setTotpSetupData(null);
+    setTotpCode("");
+    onNotify("success", "Two-factor authentication is now active on your account.");
+  }, [session, totpCode, onNotify]);
+
+  const handleDisable2fa = useCallback(async () => {
+    if (!session) return;
+    if (!disablePassword) { setDisableError("Password is required."); return; }
+    setDisabling(true);
+    setDisableError("");
+    const result = await disable2faWithRefresh(session, disablePassword);
+    setDisabling(false);
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.error || !result.data) {
+      setDisableError(result.error?.message ?? "Failed to disable 2FA.");
+      return;
+    }
+    setTotpEnabled(false);
+    setTotpEnabledAt(null);
+    setDisableModalOpen(false);
+    setDisablePassword("");
+    onNotify("warning", "Two-factor authentication has been disabled.");
+  }, [session, disablePassword, onNotify]);
+
+  const handleSignOutAll = useCallback(async () => {
+    if (!session) return;
+    setSignOutAllBusy(true);
+    const result = await signOutAllSessionsWithRefresh(session);
+    if (result.nextSession) saveSession(result.nextSession);
+    if (!result.error) {
+      setSessions([]);
+      onNotify("success", "All other devices have been signed out.");
+    } else {
+      onNotify("error", "Failed to sign out devices.");
+    }
+    setSignOutAllBusy(false);
+  }, [session, onNotify]);
 
   const queuedJobs = jobs.filter((j) => j.status === "QUEUED").length;
   const failedJobs = jobs.filter((j) => j.status === "FAILED").length;
@@ -202,7 +329,7 @@ export function AdminSettingsPageClient({
               <input
                 id="admin-settings-email"
                 className={styles.msgInput}
-                value={session?.user.email ?? "admin@maphari"}
+                value={session?.user.email ?? ""}
                 readOnly
               />
             </div>
@@ -233,13 +360,18 @@ export function AdminSettingsPageClient({
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
               >
-                <option value="AUTO">Auto</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-                <option value="ZAR">ZAR</option>
-                <option value="NGN">NGN</option>
-                <option value="KES">KES</option>
+                <option value="AUTO">Auto-detect from browser locale</option>
+                <option value="ZAR">ZAR — South African Rand</option>
+                <option value="USD">USD — US Dollar</option>
+                <option value="GBP">GBP — British Pound</option>
+                <option value="EUR">EUR — Euro</option>
+                <option value="NGN">NGN — Nigerian Naira</option>
+                <option value="KES">KES — Kenyan Shilling</option>
+                <option value="AED">AED — UAE Dirham</option>
+                <option value="CAD">CAD — Canadian Dollar</option>
+                <option value="AUD">AUD — Australian Dollar</option>
+                <option value="INR">INR — Indian Rupee</option>
+                <option value="SGD">SGD — Singapore Dollar</option>
               </select>
             </div>
             <button
@@ -254,6 +386,7 @@ export function AdminSettingsPageClient({
       ) : null}
 
       {activeTab === "workspace" ? (
+        <>
         <article className={styles.card}>
           <div className={styles.cardHd}>
             <span className={styles.cardHdTitle}>Workspace Preferences</span>
@@ -383,9 +516,31 @@ export function AdminSettingsPageClient({
             </button>
           </div>
         </article>
+
+        {onRestartTour && (
+          <article className={styles.card}>
+            <div className={styles.cardHd}>
+              <span className={styles.cardHdTitle}>Onboarding Tour</span>
+            </div>
+            <div className={styles.cardInner}>
+              <div className={styles.emptySub}>Re-run the admin dashboard walkthrough to refresh your orientation.</div>
+              <div className={`${styles.toolbarRow} ${styles.toolbarRowTop12}`}>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnAccent")}
+                  onClick={onRestartTour}
+                >
+                  Restart Tour
+                </button>
+              </div>
+            </div>
+          </article>
+        )}
+        </>
       ) : null}
 
       {activeTab === "security" ? (
+        <>
         <div className={styles.twoCol}>
           <article className={styles.card}>
             <div className={styles.cardHd}>
@@ -465,9 +620,9 @@ export function AdminSettingsPageClient({
               <table className={styles.projTable}>
                 <thead>
                   <tr>
-                    <th>Role</th>
-                    <th>Seats</th>
-                    <th>Permissions</th>
+                    <th scope="col">Role</th>
+                    <th scope="col">Seats</th>
+                    <th scope="col">Permissions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -502,6 +657,248 @@ export function AdminSettingsPageClient({
             </div>
           </article>
         </div>
+
+        {/* ── Two-Factor Authentication card (full-width below the two-col) ── */}
+        <article className={cx(styles.card, "mt16")}>
+          <div className={styles.cardHd}>
+            <span className={styles.cardHdTitle}>Two-Factor Authentication (TOTP)</span>
+            <span className={styles.metaMono}>
+              {totpEnabled === null
+                ? "Checking status…"
+                : totpEnabled
+                ? `Enabled${totpEnabledAt ? ` · ${formatDate(totpEnabledAt)}` : ""}`
+                : "Not enabled"}
+            </span>
+          </div>
+          <div className={styles.cardInner}>
+            <div className={cx(styles.pageSub, "mb16")}>
+              Protect your admin account with a time-based one-time password (TOTP).
+              Works with Google Authenticator, Authy, 1Password, and any RFC 6238-compatible app.
+            </div>
+
+            {totpEnabled === false && (
+              <button
+                type="button"
+                className={cx("btnSm", "btnAccent")}
+                onClick={() => void handleSetup2fa()}
+                disabled={totpSettingUp}
+              >
+                {totpSettingUp ? "Generating…" : "Set Up 2FA"}
+              </button>
+            )}
+            {totpEnabled === true && (
+              <div className={cx(styles.totpBtnRow)}>
+                <span className={cx(styles.totpStatusActive)}>
+                  ✓ Active
+                </span>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnGhost")}
+                  onClick={() => { setDisableModalOpen(true); setDisablePassword(""); setDisableError(""); }}
+                >
+                  Disable 2FA
+                </button>
+              </div>
+            )}
+          </div>
+        </article>
+
+        {/* ── Active Sessions card ── */}
+        <article className={cx(styles.card, "mt16")}>
+          <div className={styles.cardHd}>
+            <span className={styles.cardHdTitle}>Active Sessions</span>
+            <button
+              type="button"
+              className={cx("btnSm", "btnDanger")}
+              onClick={() => void handleSignOutAll()}
+              disabled={signOutAllBusy || sessions.length === 0}
+            >
+              {signOutAllBusy ? "Signing out…" : "Sign out all devices"}
+            </button>
+          </div>
+          <div className={styles.cardInner}>
+            {!sessionsLoaded ? (
+              <div className={cx("colorMuted2", "text12")}>Loading sessions…</div>
+            ) : sessions.length === 0 ? (
+              <div className={cx("colorMuted", "text12")}>No recent login sessions found.</div>
+            ) : (
+              <table className={styles.projTable}>
+                <thead>
+                  <tr>
+                    <th scope="col">IP Address</th>
+                    <th scope="col">Device / Browser</th>
+                    <th scope="col">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sessions.map((s) => (
+                    <tr key={s.id}>
+                      <td className={cx("fontMono", "text12")}>{s.ipAddress ?? "Unknown"}</td>
+                      <td className={cx("colorMuted", "text12")}>{s.userAgent ? s.userAgent.slice(0, 60) : "Unknown"}</td>
+                      <td className={cx("fontMono", "text12")}>{formatDateTime(s.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </article>
+
+        {/* ── Setup Modal: QR code + backup codes + code input ── */}
+        {totpModalOpen && totpSetupData && (
+          <div className={styles.totpModalOverlay}>
+            <div className={styles.totpModalBox}>
+              <div>
+                <div className={styles.totpModalTitle}>
+                  Scan QR Code
+                </div>
+                <div className={styles.pageSub}>
+                  Open your authenticator app and scan the code below, then enter the
+                  6-digit verification code to activate 2FA.
+                </div>
+              </div>
+
+              {/* QR code */}
+              <div className={styles.totpQrCenter}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={totpSetupData.qrCodeDataUrl}
+                  alt="TOTP QR code"
+                  width={200}
+                  height={200}
+                  className={styles.totpQrImg}
+                />
+              </div>
+
+              {/* Manual entry key */}
+              <div>
+                <div className={styles.totpManualKeyLabel}>
+                  Or enter this key manually in your app:
+                </div>
+                <div className={styles.totpManualKeyVal}>
+                  {totpSetupData.secret}
+                </div>
+              </div>
+
+              {/* Backup codes */}
+              <div>
+                <div className={styles.totpBackupTitle}>
+                  Backup Codes — save these somewhere safe
+                </div>
+                <div className={styles.totpBackupGrid}>
+                  {totpSetupData.backupCodes.map((c) => (
+                    <span key={c} className={styles.totpBackupCode}>
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* 6-digit code input */}
+              <div>
+                <label
+                  htmlFor="totp-code-input"
+                  className={styles.totpInputLabel}
+                >
+                  Enter the 6-digit code from your authenticator app:
+                </label>
+                <input
+                  id="totp-code-input"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  autoFocus
+                  className={styles.msgInput}
+                  placeholder="123456"
+                  value={totpCode}
+                  onChange={(e) => { setTotpCode(e.target.value.replace(/\D/g, "")); setTotpCodeError(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") void handleVerify2fa(); }}
+                />
+                {totpCodeError && (
+                  <div className={styles.totpErrorText}>
+                    {totpCodeError}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.totpBtnRow}>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnAccent")}
+                  onClick={() => void handleVerify2fa()}
+                  disabled={totpVerifying || totpCode.length < 6}
+                >
+                  {totpVerifying ? "Verifying…" : "Activate 2FA"}
+                </button>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnGhost")}
+                  onClick={() => { setTotpModalOpen(false); setTotpSetupData(null); setTotpCode(""); setTotpCodeError(""); }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Disable 2FA Modal ── */}
+        {disableModalOpen && (
+          <div className={styles.totpModalOverlay}>
+            <div className={styles.totpModalBoxSm}>
+              <div>
+                <div className={styles.totpModalTitle}>
+                  Disable Two-Factor Authentication
+                </div>
+                <div className={styles.pageSub}>
+                  Enter your account password to confirm removing 2FA from your account.
+                </div>
+              </div>
+              <div>
+                <label
+                  htmlFor="disable-2fa-password"
+                  className={styles.totpInputLabel}
+                >
+                  Current password:
+                </label>
+                <input
+                  id="disable-2fa-password"
+                  type="password"
+                  autoFocus
+                  autoComplete="current-password"
+                  className={styles.msgInput}
+                  placeholder="Enter your password"
+                  value={disablePassword}
+                  onChange={(e) => { setDisablePassword(e.target.value); setDisableError(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") void handleDisable2fa(); }}
+                />
+                {disableError && (
+                  <div className={styles.totpErrorText}>
+                    {disableError}
+                  </div>
+                )}
+              </div>
+              <div className={styles.totpBtnRow}>
+                <button
+                  type="button"
+                  className={cx("btnSm", styles.btnDanger2fa)}
+                  onClick={() => void handleDisable2fa()}
+                  disabled={disabling}
+                >
+                  {disabling ? "Disabling…" : "Disable 2FA"}
+                </button>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnGhost")}
+                  onClick={() => { setDisableModalOpen(false); setDisablePassword(""); setDisableError(""); }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        </>
       ) : null}
 
       {activeTab === "notifications" ? (
@@ -624,8 +1021,8 @@ export function AdminSettingsPageClient({
             <table className={styles.projTable}>
               <thead>
                 <tr>
-                  <th>Metric</th>
-                  <th>Value</th>
+                  <th scope="col">Metric</th>
+                  <th scope="col">Value</th>
                 </tr>
               </thead>
               <tbody>
@@ -675,9 +1072,9 @@ export function AdminSettingsPageClient({
           <table className={styles.projTable}>
             <thead>
               <tr>
-                <th>Subsystem</th>
-                <th>Status</th>
-                <th>Signal</th>
+                <th scope="col">Subsystem</th>
+                <th scope="col">Status</th>
+                <th scope="col">Signal</th>
               </tr>
             </thead>
             <tbody>

@@ -86,4 +86,46 @@ export class PublicApiController {
       "x-api-signature": apiSignature ?? ""
     });
   }
+
+  // ── GET /public-api/client/status ─────────────────────────────────────────
+  @Public()
+  @Get("public-api/client/status")
+  async getClientStatus(
+    @Headers("x-api-key-id") apiKeyId?: string,
+    @Headers("x-api-signature") apiSignature?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.PUBLIC_API_SERVICE_URL ?? "http://localhost:4010";
+    return proxyRequest(`${baseUrl}/public-api/client/status`, "GET", undefined, {
+      "x-api-key-id": apiKeyId ?? "",
+      "x-api-signature": apiSignature ?? ""
+    });
+  }
+
+  // ── GET /public-api/invoices ──────────────────────────────────────────────
+  @Public()
+  @Get("public-api/invoices")
+  async listPartnerInvoices(
+    @Headers("x-api-key-id") apiKeyId?: string,
+    @Headers("x-api-signature") apiSignature?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.PUBLIC_API_SERVICE_URL ?? "http://localhost:4010";
+    return proxyRequest(`${baseUrl}/public-api/invoices`, "GET", undefined, {
+      "x-api-key-id": apiKeyId ?? "",
+      "x-api-signature": apiSignature ?? ""
+    });
+  }
+
+  // ── GET /public-api/projects/live ─────────────────────────────────────────
+  @Public()
+  @Get("public-api/projects/live")
+  async listLiveProjects(
+    @Headers("x-api-key-id") apiKeyId?: string,
+    @Headers("x-api-signature") apiSignature?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.PUBLIC_API_SERVICE_URL ?? "http://localhost:4010";
+    return proxyRequest(`${baseUrl}/public-api/projects/live`, "GET", undefined, {
+      "x-api-key-id": apiKeyId ?? "",
+      "x-api-signature": apiSignature ?? ""
+    });
+  }
 }

@@ -1,76 +1,36 @@
+// ════════════════════════════════════════════════════════════════════════════
+// team-structure-page.tsx — Admin team structure wired to real API
+// Data   : loadAllStaffWithRefresh → staff list with department/role info
+//          Grouped by department; org chart built from real staff data.
+// ════════════════════════════════════════════════════════════════════════════
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import type { AdminStaffProfile } from "../../../../lib/api/admin/hr";
+import { loadAllStaffWithRefresh } from "../../../../lib/api/admin/hr";
 
-type OrgPerson = {
-  id: string;
-  name: string;
-  role: string;
-  avatar: string;
-  color: string;
-  department: string;
-  reports: OrgPerson[];
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const DEPT_COLORS: Record<string, string> = {
+  Leadership:      "var(--accent)",
+  Operations:      "var(--blue)",
+  Design:          "var(--amber)",
+  "Client Success":"var(--purple)",
+  Content:         "var(--amber)",
+  Engineering:     "var(--blue)",
+  Marketing:       "var(--purple)",
+  Finance:         "var(--accent)",
 };
 
-const org: OrgPerson = {
-  id: "sipho",
-  name: "Sipho Nkosi",
-  role: "Founder & CEO",
-  avatar: "SN",
-  color: "var(--accent)",
-  department: "Leadership",
-  reports: [
-    {
-      id: "leilani",
-      name: "Leilani Fotu",
-      role: "Head of Operations",
-      avatar: "LF",
-      color: "var(--blue)",
-      department: "Operations",
-      reports: [
-        { id: "nomsa", name: "Nomsa Dlamini", role: "Account Manager", avatar: "ND", color: "var(--purple)", department: "Client Success", reports: [] },
-        { id: "tapiwa", name: "Tapiwa Moyo", role: "Copywriter", avatar: "TM", color: "var(--amber)", department: "Content", reports: [] }
-      ]
-    },
-    {
-      id: "renzo",
-      name: "Renzo Fabbri",
-      role: "Creative Director",
-      avatar: "RF",
-      color: "var(--amber)",
-      department: "Design",
-      reports: [{ id: "kira", name: "Kira Bosman", role: "UX Designer", avatar: "KB", color: "var(--red)", department: "Design", reports: [] }]
-    }
-  ]
-};
-
-const departments = [
-  { name: "Leadership", headcount: 1, color: "var(--accent)", budget: 60000 },
-  { name: "Operations", headcount: 1, color: "var(--blue)", budget: 44000 },
-  { name: "Design", headcount: 2, color: "var(--amber)", budget: 73500 },
-  { name: "Client Success", headcount: 1, color: "var(--purple)", budget: 42000 },
-  { name: "Content", headcount: 1, color: "var(--amber)", budget: 31000 }
-] as const;
-
-const roles = [
-  { title: "Founder & CEO", department: "Leadership", level: "C-Suite", permissions: ["all"], reportCount: 2 },
-  { title: "Head of Operations", department: "Operations", level: "Head", permissions: ["staff", "clients", "reports", "scheduling"], reportCount: 2 },
-  { title: "Creative Director", department: "Design", level: "Head", permissions: ["clients", "reports"], reportCount: 1 },
-  { title: "Account Manager", department: "Client Success", level: "Senior", permissions: ["clients", "invoices"], reportCount: 0 },
-  { title: "UX Designer", department: "Design", level: "Mid", permissions: ["clients"], reportCount: 0 },
-  { title: "Copywriter", department: "Content", level: "Mid", permissions: ["clients"], reportCount: 0 }
-] as const;
-
-const headcountPlan = [
-  { role: "Senior Designer", department: "Design", priority: "critical", targetDate: "Apr 2026", status: "interviewing", budget: 45000 },
-  { role: "Marketing Manager", department: "Marketing", priority: "high", targetDate: "Jun 2026", status: "approved", budget: 38000 },
-  { role: "Junior Copywriter", department: "Content", priority: "medium", targetDate: "Jul 2026", status: "planned", budget: 22000 }
-] as const;
-
-const tabs = ["org chart", "departments", "roles & permissions", "headcount plan"] as const;
-type Tab = (typeof tabs)[number];
+function deptColor(dept: string | null): string {
+  if (!dept) return "var(--muted)";
+  return DEPT_COLORS[dept] ?? "var(--accent)";
+}
 
 function Avatar({ initials, color, size = 40 }: { initials: string; color: string; size?: number }) {
   return (
@@ -80,101 +40,160 @@ function Avatar({ initials, color, size = 40 }: { initials: string; color: strin
   );
 }
 
-function OrgNode({ person, depth = 0 }: { person: OrgPerson; depth?: number }) {
-  const [collapsed, setCollapsed] = useState(false);
-  return (
-    <div className={cx("flexCol", styles.teamCenterCol)}>
-      <div
-        className={cx(styles.card, styles.teamOrgCard, toneClass(person.color))}
-        role={person.reports.length > 0 ? "button" : undefined}
-        tabIndex={person.reports.length > 0 ? 0 : undefined}
-        onClick={() => person.reports.length > 0 && setCollapsed(!collapsed)}
-        onKeyDown={(event) => {
-          if (person.reports.length === 0) return;
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            setCollapsed((value) => !value);
-          }
-        }}
-      >
-        <Avatar initials={person.avatar} color={person.color} size={36} />
-        <div className={cx("fw700", "text13", "mt8")}>{person.name}</div>
-        <div className={cx("text11", "colorMuted", "mt4")}>{person.role}</div>
-        <div className={cx("text10", "fontMono", "mt4", styles.teamToneText, toneClass(person.color))}>{person.department}</div>
-        {person.reports.length > 0 ? (
-          <div className={cx("colorMuted", "text12", styles.teamCollapseIcon)}>{collapsed ? "+" : "\u2212"}</div>
-        ) : null}
-      </div>
+// ── Props ─────────────────────────────────────────────────────────────────────
 
-      {!collapsed && person.reports.length > 0 ? (
-        <div className={cx("flexCol", styles.teamCenterCol)}>
-          <div className={styles.teamConnV24} />
-          {person.reports.length > 1 ? (
-            <div className={styles.teamBranchWrap}>
-              <div className={cx(styles.teamBranchLine, styles.teamBranchLine220)} />
-            </div>
-          ) : null}
-          <div className={cx("flexRow", "gap20", styles.teamAlignStart)}>
-            {person.reports.map((report) => (
-              <div key={report.id} className={cx("flexCol", styles.teamCenterCol)}>
-                <div className={styles.teamConnV24} />
-                <OrgNode person={report} depth={depth + 1} />
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
+interface Props {
+  session: AuthSession | null;
+  onNotify: (tone: "success" | "error" | "warning" | "info", msg: string) => void;
+  onNavigate?: (page: string) => void;
 }
 
-export function TeamStructurePage() {
-  const [activeTab, setActiveTab] = useState<Tab>("org chart");
+const tabs = ["org chart", "departments", "roles & permissions"] as const;
+type Tab = (typeof tabs)[number];
 
-  const totalHeadcount = departments.reduce((s, d) => s + d.headcount, 0);
-  const totalPayroll = departments.reduce((s, d) => s + d.budget, 0);
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function TeamStructurePage({ session, onNotify, onNavigate }: Props) {
+  const [activeTab, setActiveTab] = useState<Tab>("org chart");
+  const [staff, setStaff] = useState<AdminStaffProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!session) { setLoading(false); return; }
+    let cancelled = false;
+    void (async () => {
+      const r = await loadAllStaffWithRefresh(session);
+      if (cancelled) return;
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) onNotify("error", r.error.message);
+      setStaff((r.data ?? []).filter((s) => s.isActive));
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [session, onNotify]);
+
+  // Group staff by department
+  const departments = useMemo(() => {
+    const map: Record<string, AdminStaffProfile[]> = {};
+    for (const s of staff) {
+      const dept = s.department ?? "Unassigned";
+      if (!map[dept]) map[dept] = [];
+      map[dept].push(s);
+    }
+    return Object.entries(map).map(([name, members]) => ({
+      name,
+      members,
+      headcount: members.length,
+      color: deptColor(name),
+      monthlyCents: members.reduce((s, m) => s + (m.grossSalaryCents ?? 0), 0),
+    }));
+  }, [staff]);
+
+  // Unique roles
+  const roles = useMemo(() => {
+    const map: Record<string, { role: string; department: string; count: number }> = {};
+    for (const s of staff) {
+      const key = s.role;
+      if (!map[key]) map[key] = { role: s.role, department: s.department ?? "Unassigned", count: 0 };
+      map[key].count++;
+    }
+    return Object.values(map);
+  }, [staff]);
+
+  const totalHeadcount = staff.length;
+  const totalPayrollCents = useMemo(() => staff.reduce((s, m) => s + (m.grossSalaryCents ?? 0), 0), [staff]);
+
+  if (loading) {
+    return (
+      <div className={cx(styles.pageBody, styles.teamRoot)}>
+        <div className={styles.pageHeader}>
+          <div>
+            <div className={styles.pageEyebrow}>ADMIN / ORGANIZATIONAL STRUCTURE</div>
+            <h1 className={styles.pageTitle}>Team Structure</h1>
+          </div>
+        </div>
+        <div className={cx("colorMuted", "text13")}>Loading team data…</div>
+      </div>
+    );
+  }
 
   return (
-    <div className={styles.pageBody}>
+    <div className={cx(styles.pageBody, styles.teamRoot)}>
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>ADMIN / ORGANIZATIONAL STRUCTURE</div>
           <h1 className={styles.pageTitle}>Team Structure</h1>
-          <div className={styles.pageSub}>Org chart &middot; Departments &middot; Roles &middot; Headcount planning</div>
+          <div className={styles.pageSub}>Org chart &middot; Departments &middot; Roles</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnGhost")}>Export Org Chart</button>
-          <button type="button" className={cx("btnSm", "btnAccent")}>+ Add Staff</button>
+          <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => onNavigate?.("recruitmentPipeline")}>+ Add Staff</button>
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb28")}>
+      {/* ── KPI grid ── */}
+      <div className={styles.teamKpiGrid}>
         {[
-          { label: "Total Headcount", value: totalHeadcount.toString(), color: "var(--accent)", sub: "Full-time staff" },
-          { label: "Departments", value: departments.length.toString(), color: "var(--blue)", sub: "Active teams" },
-          { label: "Monthly Payroll", value: `R${(totalPayroll / 1000).toFixed(0)}k`, color: "var(--red)", sub: "Salaries only" },
-          { label: "Open Positions", value: headcountPlan.length.toString(), color: "var(--amber)", sub: "Planned hires" }
+          { label: "Total Headcount",  value: String(totalHeadcount),             color: "var(--accent)", sub: "Active staff" },
+          { label: "Departments",      value: String(departments.length),          color: "var(--blue)",   sub: "Active teams" },
+          { label: "Monthly Payroll",  value: `R${(totalPayrollCents / 100_000).toFixed(0)}k`, color: "var(--red)", sub: "Salaries only" },
+          { label: "Unique Roles",     value: String(roles.length),               color: "var(--amber)",  sub: "Across all depts" }
         ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, "mb4", styles.teamToneText, toneClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
+          <div key={s.label} className={cx(styles.teamKpiCard, toneClass(s.color))}>
+            <div className={styles.teamKpiLabel}>{s.label}</div>
+            <div className={cx(styles.teamKpiValue, toneClass(s.color))}>{s.value}</div>
+            <div className={styles.teamKpiMeta}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div className={styles.filterRow}>
+      {/* ── Filter toolbar ── */}
+      <div className={styles.teamFilters}>
         <select title="View" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
           {tabs.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
 
+      {/* ── Org chart tab ── */}
       {activeTab === "org chart" ? (
-        <div className={cx(styles.card, styles.teamOrgWrap)}>
-          <div className={cx("flexCenter", styles.teamOrgMin)}>
-            <OrgNode person={org} />
+        <div className={styles.teamSection}>
+          <div className={styles.teamSectionHeader}>
+            <span className={styles.teamSectionTitle}>All Staff</span>
+            <span className={styles.teamSectionMeta}>{totalHeadcount} PEOPLE</span>
           </div>
-          <div className={cx("flexRow", "gap20", "flexWrap", "mt32", styles.teamDeptLegend)}>
+          {staff.length === 0 && (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.5"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className={styles.emptyTitle}>No active staff yet</div>
+              <div className={styles.emptySub}>Add team members via the Recruitment Pipeline to populate the org chart and department structure.</div>
+            </div>
+          )}
+          <div className={cx("flexRow", "flexWrap", "gap16", "p20")}>
+            {staff.map((s) => {
+              const color = deptColor(s.department);
+              const initials = s.avatarInitials ?? s.name.slice(0, 2).toUpperCase();
+              return (
+                <div key={s.id} className={cx(styles.card, styles.teamOrgCard, toneClass(color))}>
+                  <div className={styles.cardInner}>
+                    <Avatar initials={initials} color={color} size={36} />
+                    <div className={cx("fw700", "text13", "mt8")}>{s.name}</div>
+                    <div className={cx("text11", "colorMuted", "mt4")}>{s.role}</div>
+                    <div className={cx("text10", "fontMono", "mt4", styles.teamToneText, toneClass(color))}>{s.department ?? "—"}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Department legend */}
+          <div className={cx("flexRow", "gap20", "flexWrap", "mt32", "px20", styles.teamDeptLegend)}>
             {departments.map((d) => (
               <div key={d.name} className={cx("flexRow", "gap6", "text12")}>
                 <div className={cx(styles.teamDot, toneClass(d.color))} />
@@ -186,98 +205,104 @@ export function TeamStructurePage() {
         </div>
       ) : null}
 
+      {/* ── Departments tab ── */}
       {activeTab === "departments" ? (
         <div className={cx("grid3")}>
           {departments.map((d) => (
             <div key={d.name} className={cx(styles.card, styles.teamDeptCard, toneClass(d.color))}>
-              <div className={cx("flexBetween", "mb20")}>
-                <div>
-                  <div className={cx("fw700", "mb4", styles.teamTitle16)}>{d.name}</div>
-                  <div className={cx("text12", "colorMuted")}>
-                    {d.headcount} staff member{d.headcount !== 1 ? "s" : ""}
+              <div className={styles.cardInner}>
+                <div className={cx("flexBetween", "mb16")}>
+                  <div>
+                    <div className={cx("fw700", "mb4", styles.teamTitle16, styles.teamToneText, toneClass(d.color))}>{d.name}</div>
+                    <div className={cx("text12", "colorMuted")}>
+                      {d.headcount} staff member{d.headcount !== 1 ? "s" : ""}
+                    </div>
                   </div>
                 </div>
-                <div className={cx(styles.teamDotLg, toneClass(d.color))} />
-              </div>
-              <div className={cx("grid2", "gap12")}>
-                <div className={cx("bgBg", "p12", styles.teamRounded8)}>
-                  <div className={cx("text10", "colorMuted", "mb4")}>Monthly Budget</div>
-                  <div className={cx("fontMono", "fw700", "colorRed")}>R{d.budget.toLocaleString()}</div>
+                <div className={cx("grid2", "gap12")}>
+                  <div className={cx("bgBg", "p12", styles.teamRounded8)}>
+                    <div className={cx("text10", "colorMuted", "mb4")}>Monthly Budget</div>
+                    <div className={cx("fontMono", "fw700", "colorRed")}>
+                      {d.monthlyCents > 0 ? `R${(d.monthlyCents / 100).toLocaleString()}` : "—"}
+                    </div>
+                  </div>
+                  <div className={cx("bgBg", "p12", styles.teamRounded8)}>
+                    <div className={cx("text10", "colorMuted", "mb4")}>Cost per Head</div>
+                    <div className={cx("fontMono", "fw700")}>
+                      {d.headcount > 0 && d.monthlyCents > 0 ? `R${Math.round(d.monthlyCents / d.headcount / 100).toLocaleString()}` : "—"}
+                    </div>
+                  </div>
                 </div>
-                <div className={cx("bgBg", "p12", styles.teamRounded8)}>
-                  <div className={cx("text10", "colorMuted", "mb4")}>Cost per Head</div>
-                  <div className={cx("fontMono", "fw700")}>R{Math.round(d.budget / d.headcount).toLocaleString()}</div>
+                {/* Staff list */}
+                <div className={cx("flexCol", "gap8", "mt16")}>
+                  {d.members.map((m) => (
+                    <div key={m.id} className={cx("flexRow", "gap8", "text12")}>
+                      <div className={cx(styles.teamDot, toneClass(d.color))} />
+                      <span className={cx("fw600")}>{m.name}</span>
+                      <span className={cx("colorMuted")}>{m.role}</span>
+                    </div>
+                  ))}
                 </div>
-              </div>
-              <div className={cx("flexRow", "gap8", "mt16")}>
-                <button type="button" className={cx("btnSm", "btnGhost", styles.teamFlex1)}>View Team</button>
-                <button type="button" className={cx("btnSm", styles.teamToneBtn, styles.teamFlex1, toneClass(d.color))}>Edit</button>
+                <div className={cx("flexRow", "gap8", "mt16")}>
+                  <button type="button" className={cx("btnSm", "btnGhost", styles.teamFlex1)}>View Team</button>
+                </div>
               </div>
             </div>
           ))}
+          {departments.length === 0 && (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className={styles.emptyTitle}>No departments found</div>
+              <div className={styles.emptySub}>Departments are created automatically as staff members are added with department assignments.</div>
+            </div>
+          )}
           <div className={cx("flexCenter", "colorMuted", "text13", "pointerCursor", styles.teamAddCard)}>
             + Add Department
           </div>
         </div>
       ) : null}
 
+      {/* ── Roles & permissions tab ── */}
       {activeTab === "roles & permissions" ? (
-        <div className={cx("card", "overflowHidden")}>
+        <div className={styles.teamSection}>
+          <div className={styles.teamSectionHeader}>
+            <span className={styles.teamSectionTitle}>Roles</span>
+            <span className={styles.teamSectionMeta}>{roles.length} ROLES</span>
+          </div>
           <div className={styles.teamRolesHead}>
-            {["Role Title", "Department", "Level", "Reports", "Dashboard Permissions"].map((h) => <span key={h}>{h}</span>)}
+            {["Role Title", "Department", "Headcount", "Contract"].map((h) => <span key={h}>{h}</span>)}
           </div>
-          {roles.map((r) => (
-            <div key={r.title} className={cx(styles.teamRolesRow, styles.teamRolesRowPad)}>
-              <span className={cx("fw600", "text13")}>{r.title}</span>
-              <span className={cx("text12", "colorMuted")}>{r.department}</span>
-              <span className={cx("badge", r.level === "C-Suite" ? "badgeGreen" : r.level === "Head" ? "badgeBlue" : "badgeMuted")}>{r.level}</span>
-              <span className={cx("fontMono", "colorMuted")}>{r.reportCount}</span>
-              <div className={cx("flexRow", "flexWrap", "gap4")}>
-                {r.permissions.some((p) => p === "all") ? (
-                  <span className={cx("badge", "badgeGreen")}>&#9733; Full Access</span>
-                ) : (
-                  r.permissions.map((p) => (
-                    <span key={p} className={cx("badge", "badgeBlue")}>
-                      {p}
-                    </span>
-                  ))
-                )}
+          {roles.map((r) => {
+            const members = staff.filter((s) => s.role === r.role);
+            const contractType = members[0]?.contractType ?? "—";
+            return (
+              <div key={r.role} className={cx(styles.teamRolesRow, styles.teamRolesRowPad)}>
+                <span className={cx("fw600", "text13")}>{r.role}</span>
+                <span className={cx("text12", "colorMuted")}>{r.department}</span>
+                <span className={cx("fontMono", "colorMuted")}>{r.count}</span>
+                <span className={cx("badge", "badgeMuted")}>{contractType}</span>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {activeTab === "headcount plan" ? (
-        <div className={cx("flexCol", "gap16")}>
-          <div className={cx(styles.card, styles.teamInfoCard)}>
-            <span className={cx("text12", "colorMuted")}>Planned hires for 2026. Approved positions have budget allocated. Planned positions require finance sign-off before posting.</span>
-          </div>
-          {headcountPlan.map((h) => (
-            <div key={h.role} className={cx(styles.card, styles.teamHireCard)}>
-              <div className={styles.teamHeadcountRow}>
-                <div>
-                  <div className={cx("fw700", "mb4")}>{h.role}</div>
-                  <div className={cx("text12", "colorMuted")}>{h.department}</div>
-                </div>
-                <span className={cx("badge", h.priority === "critical" ? "badgeRed" : h.priority === "high" ? "badgeAmber" : "badgeAmber")}>{h.priority}</span>
-                <div>
-                  <div className={cx("text10", "colorMuted", "mb3")}>Target</div>
-                  <div className={cx("text12", "fontMono")}>{h.targetDate}</div>
-                </div>
-                <div>
-                  <div className={cx("text10", "colorMuted", "mb3")}>Monthly Budget</div>
-                  <div className={cx("fontMono", "colorAccent", "fw700")}>R{h.budget.toLocaleString()}</div>
-                </div>
-                <span className={cx("badge", h.status === "interviewing" ? "badgeBlue" : h.status === "approved" ? "badgeGreen" : "badgeMuted")}>{h.status}</span>
-                <div className={cx("flexRow", "gap8")}>
-                  <button type="button" className={cx("btnSm", "btnGhost")}>Edit</button>
-                  {h.status === "planned" ? <button type="button" className={cx("btnSm", "btnAccent")}>Approve</button> : null}
-                </div>
+            );
+          })}
+          {roles.length === 0 && (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.5"/>
+                </svg>
               </div>
+              <div className={styles.emptyTitle}>No roles found</div>
+              <div className={styles.emptySub}>Roles are derived from active staff profiles. Add team members with assigned roles to populate this list.</div>
             </div>
-          ))}
-          <button type="button" className={cx("btnSm", "btnGhost", "textCenter", styles.teamAddHireBtn)}>+ Add Planned Hire</button>
+          )}
         </div>
       ) : null}
     </div>

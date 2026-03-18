@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -20,9 +20,14 @@ export interface CommandSearchSource {
   action: () => void;
 }
 
+/** Optional async backend search. Return CommandSearchSource[] for the given query. */
+export type AsyncSearchFn = (query: string) => Promise<CommandSearchSource[]>;
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const MAX_RESULTS = 14;
+const ASYNC_DEBOUNCE_MS = 300;
+const ASYNC_MIN_CHARS = 2;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -42,32 +47,94 @@ function relevanceScore(text: string, query: string): number {
  * Each dashboard provides its own `sources` — an array of searchable items
  * with labels, metadata, and actions.
  *
+ * Optionally pass `asyncSearch` to augment local results with live backend
+ * results. The async function is debounced (300 ms) and fires when the query
+ * is at least 2 characters. Its results are merged after local results so
+ * instant local matches always appear first.
+ *
  * @example
  * const search = useCommandSearch({
  *   sources: [
  *     ...navItems.map(n => ({ id: n.id, type: "Page", label: n.label, meta: n.section, action: () => setPage(n.id) })),
  *     ...projects.map(p => ({ id: p.id, type: "Project", label: p.name, meta: p.status, action: () => setPage("projects") })),
  *   ],
+ *   asyncSearch: async (q) => {
+ *     const res = await searchGlobal(q, session);
+ *     return (res.data?.results ?? []).map(hit => ({ ... }));
+ *   },
  * });
  */
 export function useCommandSearch({
   sources,
+  asyncSearch,
 }: {
   sources: CommandSearchSource[];
+  asyncSearch?: AsyncSearchFn;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [asyncResults, setAsyncResults] = useState<CommandSearchSource[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Cancel-token ref so stale responses are discarded
+  const cancelRef = useRef<{ cancelled: boolean }>({ cancelled: false });
+
+  // Debounced async fetch
+  useEffect(() => {
+    const q = query.trim();
+
+    if (!asyncSearch || q.length < ASYNC_MIN_CHARS) {
+      setAsyncResults((prev) => (prev.length === 0 ? prev : []));
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const token = { cancelled: false };
+    cancelRef.current = token;
+
+    const timer = setTimeout(async () => {
+      try {
+        const hits = await asyncSearch(q);
+        if (!token.cancelled) {
+          setAsyncResults(hits);
+          setIsSearching(false);
+        }
+      } catch {
+        if (!token.cancelled) {
+          setAsyncResults([]);
+          setIsSearching(false);
+        }
+      }
+    }, ASYNC_DEBOUNCE_MS);
+
+    return () => {
+      token.cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query, asyncSearch]);
+
+  // Reset async results when search closes
+  useEffect(() => {
+    if (!isOpen) {
+      setAsyncResults([]);
+      setIsSearching(false);
+    }
+  }, [isOpen]);
 
   const results = useMemo<CommandSearchResult[]>(() => {
     const q = query.trim();
     if (!q) return [];
 
+    // ── Local results (instant) ──────────────────────────────────────────────
+    const seen = new Set<string>();
     const scored: Array<CommandSearchResult & { score: number }> = [];
 
     for (const source of sources) {
       const score = relevanceScore(source.label, q);
       if (score > 0) {
+        seen.add(source.id);
         scored.push({ ...source, score });
       }
     }
@@ -77,8 +144,19 @@ export function useCommandSearch({
       return a.label.localeCompare(b.label);
     });
 
-    return scored.slice(0, MAX_RESULTS).map(({ score: _s, ...rest }) => rest);
-  }, [query, sources]);
+    const local = scored.slice(0, MAX_RESULTS).map(({ score: _s, ...rest }) => rest);
+
+    // ── Async results (backend, deduped) ─────────────────────────────────────
+    const remote: CommandSearchResult[] = [];
+    for (const source of asyncResults) {
+      if (!seen.has(source.id)) {
+        seen.add(source.id);
+        remote.push(source);
+      }
+    }
+
+    return [...local, ...remote].slice(0, MAX_RESULTS);
+  }, [query, sources, asyncResults]);
 
   const open = useCallback(() => {
     setIsOpen(true);
@@ -118,6 +196,7 @@ export function useCommandSearch({
     query,
     results,
     activeIndex,
+    isSearching,
     open,
     close,
     setQuery: setQueryWrapped,

@@ -1203,6 +1203,12 @@ export namespace Prisma {
     otpCode: string | null
     otpExpiresAt: Date | null
     otpVerifiedAt: Date | null
+    totpSecret: string | null
+    totpBackupCodes: string | null
+    totpEnabledAt: Date | null
+    googleId: string | null
+    passwordResetTokenHash: string | null
+    passwordResetExpiresAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -1218,6 +1224,12 @@ export namespace Prisma {
     otpCode: string | null
     otpExpiresAt: Date | null
     otpVerifiedAt: Date | null
+    totpSecret: string | null
+    totpBackupCodes: string | null
+    totpEnabledAt: Date | null
+    googleId: string | null
+    passwordResetTokenHash: string | null
+    passwordResetExpiresAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -1233,6 +1245,12 @@ export namespace Prisma {
     otpCode: number
     otpExpiresAt: number
     otpVerifiedAt: number
+    totpSecret: number
+    totpBackupCodes: number
+    totpEnabledAt: number
+    googleId: number
+    passwordResetTokenHash: number
+    passwordResetExpiresAt: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -1250,6 +1268,12 @@ export namespace Prisma {
     otpCode?: true
     otpExpiresAt?: true
     otpVerifiedAt?: true
+    totpSecret?: true
+    totpBackupCodes?: true
+    totpEnabledAt?: true
+    googleId?: true
+    passwordResetTokenHash?: true
+    passwordResetExpiresAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1265,6 +1289,12 @@ export namespace Prisma {
     otpCode?: true
     otpExpiresAt?: true
     otpVerifiedAt?: true
+    totpSecret?: true
+    totpBackupCodes?: true
+    totpEnabledAt?: true
+    googleId?: true
+    passwordResetTokenHash?: true
+    passwordResetExpiresAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1280,6 +1310,12 @@ export namespace Prisma {
     otpCode?: true
     otpExpiresAt?: true
     otpVerifiedAt?: true
+    totpSecret?: true
+    totpBackupCodes?: true
+    totpEnabledAt?: true
+    googleId?: true
+    passwordResetTokenHash?: true
+    passwordResetExpiresAt?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -1368,6 +1404,12 @@ export namespace Prisma {
     otpCode: string | null
     otpExpiresAt: Date | null
     otpVerifiedAt: Date | null
+    totpSecret: string | null
+    totpBackupCodes: string | null
+    totpEnabledAt: Date | null
+    googleId: string | null
+    passwordResetTokenHash: string | null
+    passwordResetExpiresAt: Date | null
     createdAt: Date
     updatedAt: Date
     _count: UserCountAggregateOutputType | null
@@ -1400,6 +1442,12 @@ export namespace Prisma {
     otpCode?: boolean
     otpExpiresAt?: boolean
     otpVerifiedAt?: boolean
+    totpSecret?: boolean
+    totpBackupCodes?: boolean
+    totpEnabledAt?: boolean
+    googleId?: boolean
+    passwordResetTokenHash?: boolean
+    passwordResetExpiresAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     refreshTokens?: boolean | User$refreshTokensArgs<ExtArgs>
@@ -1419,6 +1467,12 @@ export namespace Prisma {
     otpCode?: boolean
     otpExpiresAt?: boolean
     otpVerifiedAt?: boolean
+    totpSecret?: boolean
+    totpBackupCodes?: boolean
+    totpEnabledAt?: boolean
+    googleId?: boolean
+    passwordResetTokenHash?: boolean
+    passwordResetExpiresAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
@@ -1434,6 +1488,12 @@ export namespace Prisma {
     otpCode?: boolean
     otpExpiresAt?: boolean
     otpVerifiedAt?: boolean
+    totpSecret?: boolean
+    totpBackupCodes?: boolean
+    totpEnabledAt?: boolean
+    googleId?: boolean
+    passwordResetTokenHash?: boolean
+    passwordResetExpiresAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
@@ -1449,11 +1509,17 @@ export namespace Prisma {
     otpCode?: boolean
     otpExpiresAt?: boolean
     otpVerifiedAt?: boolean
+    totpSecret?: boolean
+    totpBackupCodes?: boolean
+    totpEnabledAt?: boolean
+    googleId?: boolean
+    passwordResetTokenHash?: boolean
+    passwordResetExpiresAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "role" | "clientId" | "isActive" | "passwordHash" | "passwordSalt" | "otpCode" | "otpExpiresAt" | "otpVerifiedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "role" | "clientId" | "isActive" | "passwordHash" | "passwordSalt" | "otpCode" | "otpExpiresAt" | "otpVerifiedAt" | "totpSecret" | "totpBackupCodes" | "totpEnabledAt" | "googleId" | "passwordResetTokenHash" | "passwordResetExpiresAt" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     refreshTokens?: boolean | User$refreshTokensArgs<ExtArgs>
     loginEvents?: boolean | User$loginEventsArgs<ExtArgs>
@@ -1481,6 +1547,12 @@ export namespace Prisma {
       otpCode: string | null
       otpExpiresAt: Date | null
       otpVerifiedAt: Date | null
+      totpSecret: string | null
+      totpBackupCodes: string | null
+      totpEnabledAt: Date | null
+      googleId: string | null
+      passwordResetTokenHash: string | null
+      passwordResetExpiresAt: Date | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["user"]>
@@ -1919,6 +1991,12 @@ export namespace Prisma {
     readonly otpCode: FieldRef<"User", 'String'>
     readonly otpExpiresAt: FieldRef<"User", 'DateTime'>
     readonly otpVerifiedAt: FieldRef<"User", 'DateTime'>
+    readonly totpSecret: FieldRef<"User", 'String'>
+    readonly totpBackupCodes: FieldRef<"User", 'String'>
+    readonly totpEnabledAt: FieldRef<"User", 'DateTime'>
+    readonly googleId: FieldRef<"User", 'String'>
+    readonly passwordResetTokenHash: FieldRef<"User", 'String'>
+    readonly passwordResetExpiresAt: FieldRef<"User", 'DateTime'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
   }
@@ -5786,6 +5864,12 @@ export namespace Prisma {
     otpCode: 'otpCode',
     otpExpiresAt: 'otpExpiresAt',
     otpVerifiedAt: 'otpVerifiedAt',
+    totpSecret: 'totpSecret',
+    totpBackupCodes: 'totpBackupCodes',
+    totpEnabledAt: 'totpEnabledAt',
+    googleId: 'googleId',
+    passwordResetTokenHash: 'passwordResetTokenHash',
+    passwordResetExpiresAt: 'passwordResetExpiresAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -5934,6 +6018,12 @@ export namespace Prisma {
     otpCode?: StringNullableFilter<"User"> | string | null
     otpExpiresAt?: DateTimeNullableFilter<"User"> | Date | string | null
     otpVerifiedAt?: DateTimeNullableFilter<"User"> | Date | string | null
+    totpSecret?: StringNullableFilter<"User"> | string | null
+    totpBackupCodes?: StringNullableFilter<"User"> | string | null
+    totpEnabledAt?: DateTimeNullableFilter<"User"> | Date | string | null
+    googleId?: StringNullableFilter<"User"> | string | null
+    passwordResetTokenHash?: StringNullableFilter<"User"> | string | null
+    passwordResetExpiresAt?: DateTimeNullableFilter<"User"> | Date | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     refreshTokens?: RefreshTokenListRelationFilter
@@ -5952,6 +6042,12 @@ export namespace Prisma {
     otpCode?: SortOrderInput | SortOrder
     otpExpiresAt?: SortOrderInput | SortOrder
     otpVerifiedAt?: SortOrderInput | SortOrder
+    totpSecret?: SortOrderInput | SortOrder
+    totpBackupCodes?: SortOrderInput | SortOrder
+    totpEnabledAt?: SortOrderInput | SortOrder
+    googleId?: SortOrderInput | SortOrder
+    passwordResetTokenHash?: SortOrderInput | SortOrder
+    passwordResetExpiresAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     refreshTokens?: RefreshTokenOrderByRelationAggregateInput
@@ -5962,6 +6058,7 @@ export namespace Prisma {
   export type UserWhereUniqueInput = Prisma.AtLeast<{
     id?: string
     email?: string
+    googleId?: string
     AND?: UserWhereInput | UserWhereInput[]
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
@@ -5973,12 +6070,17 @@ export namespace Prisma {
     otpCode?: StringNullableFilter<"User"> | string | null
     otpExpiresAt?: DateTimeNullableFilter<"User"> | Date | string | null
     otpVerifiedAt?: DateTimeNullableFilter<"User"> | Date | string | null
+    totpSecret?: StringNullableFilter<"User"> | string | null
+    totpBackupCodes?: StringNullableFilter<"User"> | string | null
+    totpEnabledAt?: DateTimeNullableFilter<"User"> | Date | string | null
+    passwordResetTokenHash?: StringNullableFilter<"User"> | string | null
+    passwordResetExpiresAt?: DateTimeNullableFilter<"User"> | Date | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     refreshTokens?: RefreshTokenListRelationFilter
     loginEvents?: LoginEventListRelationFilter
     staffAccessRequests?: StaffAccessRequestListRelationFilter
-  }, "id" | "email">
+  }, "id" | "email" | "googleId">
 
   export type UserOrderByWithAggregationInput = {
     id?: SortOrder
@@ -5991,6 +6093,12 @@ export namespace Prisma {
     otpCode?: SortOrderInput | SortOrder
     otpExpiresAt?: SortOrderInput | SortOrder
     otpVerifiedAt?: SortOrderInput | SortOrder
+    totpSecret?: SortOrderInput | SortOrder
+    totpBackupCodes?: SortOrderInput | SortOrder
+    totpEnabledAt?: SortOrderInput | SortOrder
+    googleId?: SortOrderInput | SortOrder
+    passwordResetTokenHash?: SortOrderInput | SortOrder
+    passwordResetExpiresAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
@@ -6012,6 +6120,12 @@ export namespace Prisma {
     otpCode?: StringNullableWithAggregatesFilter<"User"> | string | null
     otpExpiresAt?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
     otpVerifiedAt?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
+    totpSecret?: StringNullableWithAggregatesFilter<"User"> | string | null
+    totpBackupCodes?: StringNullableWithAggregatesFilter<"User"> | string | null
+    totpEnabledAt?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
+    googleId?: StringNullableWithAggregatesFilter<"User"> | string | null
+    passwordResetTokenHash?: StringNullableWithAggregatesFilter<"User"> | string | null
+    passwordResetExpiresAt?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
   }
@@ -6257,6 +6371,12 @@ export namespace Prisma {
     otpCode?: string | null
     otpExpiresAt?: Date | string | null
     otpVerifiedAt?: Date | string | null
+    totpSecret?: string | null
+    totpBackupCodes?: string | null
+    totpEnabledAt?: Date | string | null
+    googleId?: string | null
+    passwordResetTokenHash?: string | null
+    passwordResetExpiresAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
@@ -6275,6 +6395,12 @@ export namespace Prisma {
     otpCode?: string | null
     otpExpiresAt?: Date | string | null
     otpVerifiedAt?: Date | string | null
+    totpSecret?: string | null
+    totpBackupCodes?: string | null
+    totpEnabledAt?: Date | string | null
+    googleId?: string | null
+    passwordResetTokenHash?: string | null
+    passwordResetExpiresAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
@@ -6293,6 +6419,12 @@ export namespace Prisma {
     otpCode?: NullableStringFieldUpdateOperationsInput | string | null
     otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     otpVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totpSecret?: NullableStringFieldUpdateOperationsInput | string | null
+    totpBackupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    totpEnabledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetTokenHash?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
@@ -6311,6 +6443,12 @@ export namespace Prisma {
     otpCode?: NullableStringFieldUpdateOperationsInput | string | null
     otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     otpVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totpSecret?: NullableStringFieldUpdateOperationsInput | string | null
+    totpBackupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    totpEnabledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetTokenHash?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
@@ -6329,6 +6467,12 @@ export namespace Prisma {
     otpCode?: string | null
     otpExpiresAt?: Date | string | null
     otpVerifiedAt?: Date | string | null
+    totpSecret?: string | null
+    totpBackupCodes?: string | null
+    totpEnabledAt?: Date | string | null
+    googleId?: string | null
+    passwordResetTokenHash?: string | null
+    passwordResetExpiresAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -6344,6 +6488,12 @@ export namespace Prisma {
     otpCode?: NullableStringFieldUpdateOperationsInput | string | null
     otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     otpVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totpSecret?: NullableStringFieldUpdateOperationsInput | string | null
+    totpBackupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    totpEnabledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetTokenHash?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -6359,6 +6509,12 @@ export namespace Prisma {
     otpCode?: NullableStringFieldUpdateOperationsInput | string | null
     otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     otpVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totpSecret?: NullableStringFieldUpdateOperationsInput | string | null
+    totpBackupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    totpEnabledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetTokenHash?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -6722,6 +6878,12 @@ export namespace Prisma {
     otpCode?: SortOrder
     otpExpiresAt?: SortOrder
     otpVerifiedAt?: SortOrder
+    totpSecret?: SortOrder
+    totpBackupCodes?: SortOrder
+    totpEnabledAt?: SortOrder
+    googleId?: SortOrder
+    passwordResetTokenHash?: SortOrder
+    passwordResetExpiresAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -6737,6 +6899,12 @@ export namespace Prisma {
     otpCode?: SortOrder
     otpExpiresAt?: SortOrder
     otpVerifiedAt?: SortOrder
+    totpSecret?: SortOrder
+    totpBackupCodes?: SortOrder
+    totpEnabledAt?: SortOrder
+    googleId?: SortOrder
+    passwordResetTokenHash?: SortOrder
+    passwordResetExpiresAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -6752,6 +6920,12 @@ export namespace Prisma {
     otpCode?: SortOrder
     otpExpiresAt?: SortOrder
     otpVerifiedAt?: SortOrder
+    totpSecret?: SortOrder
+    totpBackupCodes?: SortOrder
+    totpEnabledAt?: SortOrder
+    googleId?: SortOrder
+    passwordResetTokenHash?: SortOrder
+    passwordResetExpiresAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -7489,6 +7663,12 @@ export namespace Prisma {
     otpCode?: string | null
     otpExpiresAt?: Date | string | null
     otpVerifiedAt?: Date | string | null
+    totpSecret?: string | null
+    totpBackupCodes?: string | null
+    totpEnabledAt?: Date | string | null
+    googleId?: string | null
+    passwordResetTokenHash?: string | null
+    passwordResetExpiresAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     loginEvents?: LoginEventCreateNestedManyWithoutUserInput
@@ -7506,6 +7686,12 @@ export namespace Prisma {
     otpCode?: string | null
     otpExpiresAt?: Date | string | null
     otpVerifiedAt?: Date | string | null
+    totpSecret?: string | null
+    totpBackupCodes?: string | null
+    totpEnabledAt?: Date | string | null
+    googleId?: string | null
+    passwordResetTokenHash?: string | null
+    passwordResetExpiresAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     loginEvents?: LoginEventUncheckedCreateNestedManyWithoutUserInput
@@ -7539,6 +7725,12 @@ export namespace Prisma {
     otpCode?: NullableStringFieldUpdateOperationsInput | string | null
     otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     otpVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totpSecret?: NullableStringFieldUpdateOperationsInput | string | null
+    totpBackupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    totpEnabledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetTokenHash?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     loginEvents?: LoginEventUpdateManyWithoutUserNestedInput
@@ -7556,6 +7748,12 @@ export namespace Prisma {
     otpCode?: NullableStringFieldUpdateOperationsInput | string | null
     otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     otpVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totpSecret?: NullableStringFieldUpdateOperationsInput | string | null
+    totpBackupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    totpEnabledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetTokenHash?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     loginEvents?: LoginEventUncheckedUpdateManyWithoutUserNestedInput
@@ -7573,6 +7771,12 @@ export namespace Prisma {
     otpCode?: string | null
     otpExpiresAt?: Date | string | null
     otpVerifiedAt?: Date | string | null
+    totpSecret?: string | null
+    totpBackupCodes?: string | null
+    totpEnabledAt?: Date | string | null
+    googleId?: string | null
+    passwordResetTokenHash?: string | null
+    passwordResetExpiresAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
@@ -7590,6 +7794,12 @@ export namespace Prisma {
     otpCode?: string | null
     otpExpiresAt?: Date | string | null
     otpVerifiedAt?: Date | string | null
+    totpSecret?: string | null
+    totpBackupCodes?: string | null
+    totpEnabledAt?: Date | string | null
+    googleId?: string | null
+    passwordResetTokenHash?: string | null
+    passwordResetExpiresAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
@@ -7623,6 +7833,12 @@ export namespace Prisma {
     otpCode?: NullableStringFieldUpdateOperationsInput | string | null
     otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     otpVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totpSecret?: NullableStringFieldUpdateOperationsInput | string | null
+    totpBackupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    totpEnabledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetTokenHash?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
@@ -7640,6 +7856,12 @@ export namespace Prisma {
     otpCode?: NullableStringFieldUpdateOperationsInput | string | null
     otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     otpVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totpSecret?: NullableStringFieldUpdateOperationsInput | string | null
+    totpBackupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    totpEnabledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetTokenHash?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
@@ -7657,6 +7879,12 @@ export namespace Prisma {
     otpCode?: string | null
     otpExpiresAt?: Date | string | null
     otpVerifiedAt?: Date | string | null
+    totpSecret?: string | null
+    totpBackupCodes?: string | null
+    totpEnabledAt?: Date | string | null
+    googleId?: string | null
+    passwordResetTokenHash?: string | null
+    passwordResetExpiresAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
@@ -7674,6 +7902,12 @@ export namespace Prisma {
     otpCode?: string | null
     otpExpiresAt?: Date | string | null
     otpVerifiedAt?: Date | string | null
+    totpSecret?: string | null
+    totpBackupCodes?: string | null
+    totpEnabledAt?: Date | string | null
+    googleId?: string | null
+    passwordResetTokenHash?: string | null
+    passwordResetExpiresAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
@@ -7707,6 +7941,12 @@ export namespace Prisma {
     otpCode?: NullableStringFieldUpdateOperationsInput | string | null
     otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     otpVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totpSecret?: NullableStringFieldUpdateOperationsInput | string | null
+    totpBackupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    totpEnabledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetTokenHash?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
@@ -7724,6 +7964,12 @@ export namespace Prisma {
     otpCode?: NullableStringFieldUpdateOperationsInput | string | null
     otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     otpVerifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totpSecret?: NullableStringFieldUpdateOperationsInput | string | null
+    totpBackupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    totpEnabledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetTokenHash?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordResetExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput

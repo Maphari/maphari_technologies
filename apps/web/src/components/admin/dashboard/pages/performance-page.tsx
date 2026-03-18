@@ -1,37 +1,32 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminFilterBar } from "./shared";
 import { cx, styles } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import { loadAdminStaffPerformanceWithRefresh, type AdminStaffPerformance } from "../../../../lib/api/admin";
 
-type StaffMember = {
-  id: number;
-  name: string;
-  role: string;
-  avatar: string;
-  color: string;
-  deliveryScore: number;
-  onTimeRate: number;
-  clientSat: number;
-  billableHours: number;
-  totalHours: number;
-  billablePct: number;
-  retainersManaged: number;
-  tasksCompleted: number;
-  tasksMissed: number;
-  bonusEligible: boolean;
-  bonusAmount: number;
-  salary: number;
-  notes: string;
-};
+type StaffMember = AdminStaffPerformance & { id: number; avatar: string; color: string; notes: string };
 
-const staff: StaffMember[] = [
-  { id: 1, name: "Nomsa Dlamini", role: "Account Manager", avatar: "ND", color: "var(--accent)", deliveryScore: 91, onTimeRate: 88, clientSat: 9.1, billableHours: 142, totalHours: 168, billablePct: 84.5, retainersManaged: 8, tasksCompleted: 47, tasksMissed: 2, bonusEligible: true, bonusAmount: 8500, salary: 42000, notes: "Exceptional retainer health. Minor delay on Kestrel campaign." },
-  { id: 2, name: "Renzo Fabbri", role: "Senior Designer", avatar: "RF", color: "var(--blue)", deliveryScore: 86, onTimeRate: 94, clientSat: 8.7, billableHours: 158, totalHours: 168, billablePct: 94.0, retainersManaged: 5, tasksCompleted: 63, tasksMissed: 1, bonusEligible: true, bonusAmount: 6200, salary: 38500, notes: "High output. Slightly below CSAT target due to Dune revisions." },
-  { id: 3, name: "Kira Bosman", role: "UX Designer", avatar: "KB", color: "var(--amber)", deliveryScore: 74, onTimeRate: 71, clientSat: 7.8, billableHours: 110, totalHours: 168, billablePct: 65.5, retainersManaged: 3, tasksCompleted: 38, tasksMissed: 7, bonusEligible: false, bonusAmount: 0, salary: 35000, notes: "Missed milestones on Mira Health. Needs performance check-in." },
-  { id: 4, name: "Tapiwa Moyo", role: "Copywriter", avatar: "TM", color: "var(--blue)", deliveryScore: 89, onTimeRate: 91, clientSat: 8.9, billableHours: 136, totalHours: 160, billablePct: 85.0, retainersManaged: 4, tasksCompleted: 52, tasksMissed: 3, bonusEligible: true, bonusAmount: 5000, salary: 31000, notes: "Consistent output across all clients. Strong CSAT score." },
-  { id: 5, name: "Leilani Fotu", role: "Project Manager", avatar: "LF", color: "var(--accent)", deliveryScore: 95, onTimeRate: 96, clientSat: 9.4, billableHours: 148, totalHours: 168, billablePct: 88.1, retainersManaged: 9, tasksCompleted: 71, tasksMissed: 0, bonusEligible: true, bonusAmount: 10000, salary: 44000, notes: "Top performer. Zero missed tasks. Leads cross-team coordination." }
+const AVATAR_COLORS = [
+  "var(--accent)", "var(--blue)", "var(--purple)", "var(--amber)", "var(--red)"
 ];
+function pickColor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0xffffffff;
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+}
+
+function noteForMember(m: AdminStaffPerformance): string {
+  if (m.deliveryScore === 0 && m.billableHours === 0) {
+    return "No time entries or task activity recorded yet for this period.";
+  }
+  if (m.tasksMissed > 3) return `${m.tasksMissed} overdue tasks — review workload and capacity.`;
+  if (m.billablePct < 50) return "Low utilization this month — check availability and task assignment.";
+  if (m.bonusEligible) return "All thresholds met — bonus eligible this period.";
+  return `Delivery ${m.deliveryScore}/100 · On-time ${m.onTimeRate}% · Util ${m.billablePct}%`;
+}
 
 const tabs = ["scoreboard", "delivery & quality", "utilization", "incentive planner"] as const;
 type Tab = (typeof tabs)[number];
@@ -62,25 +57,48 @@ function barColor(value: number, good = 85, warn = 70): string {
   return "var(--red)";
 }
 
-export function PerformancePage() {
+export function PerformancePage({ session }: { session: AuthSession | null }) {
   const [activeTab, setActiveTab] = useState<Tab>("scoreboard");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [bandFilter, setBandFilter] = useState<BandFilter>("all");
   const [query, setQuery] = useState("");
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadStaff = useCallback(async () => {
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    const r = await loadAdminStaffPerformanceWithRefresh(session);
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.data && r.data.length > 0) {
+      setStaff(
+        r.data.map((m, idx) => ({
+          ...m,
+          id:     idx + 1,
+          avatar: m.avatarInitials,
+          color:  m.avatarColor ?? pickColor(m.userId),
+          notes:  noteForMember(m),
+        }))
+      );
+    }
+    setLoading(false);
+  }, [session]);
+
+  useEffect(() => { void loadStaff(); }, [loadStaff]);
 
   const totalBillable = staff.reduce((s, m) => s + m.billableHours, 0);
-  const avgDelivery = Math.round(staff.reduce((s, m) => s + m.deliveryScore, 0) / staff.length);
-  const avgOnTime = Math.round(staff.reduce((s, m) => s + m.onTimeRate, 0) / staff.length);
-  const totalBonus = staff.reduce((s, m) => s + m.bonusAmount, 0);
+  const avgDelivery   = staff.length > 0 ? Math.round(staff.reduce((s, m) => s + m.deliveryScore, 0) / staff.length) : 0;
+  const avgOnTime     = staff.length > 0 ? Math.round(staff.reduce((s, m) => s + m.onTimeRate,    0) / staff.length) : 0;
+  const totalBonus    = staff.reduce((s, m) => s + m.bonusAmount, 0);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return staff
       .filter((m) => {
         if (roleFilter === "all") return true;
-        if (roleFilter === "account") return m.role.includes("Account");
-        if (roleFilter === "creative") return m.role.includes("Designer") || m.role.includes("Copywriter");
-        if (roleFilter === "ops") return m.role.includes("Manager");
+        if (roleFilter === "account") return m.role.toLowerCase().includes("account");
+        if (roleFilter === "creative") return m.role.toLowerCase().includes("design") || m.role.toLowerCase().includes("copy");
+        if (roleFilter === "ops") return m.role.toLowerCase().includes("manager") || m.role.toLowerCase().includes("ops");
         return true;
       })
       .filter((m) => {
@@ -89,7 +107,15 @@ export function PerformancePage() {
         return bandFilter === "top" ? isTop : !isTop;
       })
       .filter((m) => (q ? m.name.toLowerCase().includes(q) || m.role.toLowerCase().includes(q) : true));
-  }, [bandFilter, query, roleFilter]);
+  }, [bandFilter, query, roleFilter, staff]);
+
+  if (loading) {
+    return (
+      <div className={cx(styles.pageBody, styles.perfRoot)}>
+        <div className={cx("text13", "colorMuted", "p24")}>Loading staff performance…</div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx(styles.pageBody, styles.perfRoot)}>
@@ -108,7 +134,7 @@ export function PerformancePage() {
         {[
           { label: "Avg Delivery Score", value: `${avgDelivery}/100`, color: barColor(avgDelivery), sub: "Current month" },
           { label: "Avg On-Time Rate", value: `${avgOnTime}%`, color: barColor(avgOnTime, 90, 75), sub: "Across active staff" },
-          { label: "Team Billable Hours", value: `${totalBillable}h`, color: "var(--blue)", sub: "Target: 800h" },
+          { label: "Team Billable Hours", value: `${Math.round(totalBillable)}h`, color: "var(--blue)", sub: "Target: 800h" },
           { label: "Bonus Pool", value: `R${(totalBonus / 1000).toFixed(1)}k`, color: "var(--accent)", sub: `${staff.filter((s) => s.bonusEligible).length} eligible staff` }
         ].map((kpi) => (
           <div key={kpi.label} className={styles.statCard}>
@@ -153,6 +179,12 @@ export function PerformancePage() {
                 "Bonus"
               ].map((h) => <span key={h}>{h}</span>)}
             </div>
+            {filtered.length === 0 && (
+              <div className={cx("p24", "textCenter", "colorMuted", "text13")}>
+                <div className={cx("fw700", "text14", "mb8")}>No performance data yet</div>
+                <div>Performance metrics will populate here as staff complete tasks and time entries are recorded. Staff are managed in Team Structure.</div>
+              </div>
+            )}
             {filtered.map((m) => (
               <div key={m.id} className={cx(styles.perfScoreRow, (m.deliveryScore < 80 || m.onTimeRate < 75) && styles.perfScoreWarn)}>
                 <div className={cx("flexRow", "gap10")}>
@@ -177,6 +209,7 @@ export function PerformancePage() {
           <div className={cx("grid2")}>
             <div className={cx("card", "p20")}>
               <div className={cx("text12", "fw700", "mb12", "uppercase")}>Delivery Ranking</div>
+              {filtered.length === 0 && <div className={cx("text12", "colorMuted", "p12")}>No data yet — delivery scores will appear as tasks are completed.</div>}
               {filtered.slice().sort((a, b) => b.deliveryScore - a.deliveryScore).map((m) => (
                 <div key={m.id} className={cx("mb12")}>
                   <div className={cx("flexBetween", "mb4")}>
@@ -210,8 +243,9 @@ export function PerformancePage() {
             <div className={cx("perfUtilHead", "text10", "colorMuted", "uppercase", "fontMono")}>
               {["Staff", "Billable", "Non-bill", "Total", "Util %", "Revenue gen"].map((h) => <span key={h}>{h}</span>)}
             </div>
+            {filtered.length === 0 && <div className={cx("p20", "text12", "colorMuted")}>No utilization data yet — time tracking will populate this view.</div>}
             {filtered.map((m) => {
-              const nonBill = m.totalHours - m.billableHours;
+              const nonBill = Math.max(0, m.totalHours - m.billableHours);
               const revenue = Math.round(m.billableHours * (m.salary / 168) * 2.8);
               return (
                 <div key={m.id} className={styles.perfUtilRow}>

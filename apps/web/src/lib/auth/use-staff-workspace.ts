@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createConversationEscalationWithRefresh,
   createConversationNoteWithRefresh,
@@ -85,11 +85,20 @@ export function useStaffWorkspace() {
     });
   }, []);
 
+  // Keep a ref so callbacks can read the latest session without being in deps
+  const sessionRef = useRef(state.session);
+  useEffect(() => { sessionRef.current = state.session; }, [state.session]);
+
+  // Guard initial data loads — fire once per userId / conversationId
+  const lastWorkspaceUserRef = useRef<string | null>(null);
+  const lastMessagesKeyRef = useRef<string | null>(null);
+  const lastContextKeyRef = useRef<string | null>(null);
+
   const refreshWorkspace = useCallback(async (
     sessionOverride?: AuthSession,
     options: { background?: boolean } = {}
   ) => {
-    const currentSession = sessionOverride ?? state.session;
+    const currentSession = sessionOverride ?? sessionRef.current;
     if (!currentSession) return;
 
     if (!options.background) {
@@ -154,14 +163,14 @@ export function useStaffWorkspace() {
         timeEntriesResult.error?.message ??
         null
     }));
-  }, [applySignedOutState, state.session]);
+  }, [applySignedOutState]);
 
   const refreshConversationMessages = useCallback(async (
     conversationId: string,
     sessionOverride?: AuthSession,
     options: { background?: boolean } = {}
   ) => {
-    const currentSession = sessionOverride ?? state.session;
+    const currentSession = sessionOverride ?? sessionRef.current;
     if (!currentSession) return;
 
     if (!options.background) {
@@ -184,14 +193,14 @@ export function useStaffWorkspace() {
       messagesLoading: options.background ? previous.messagesLoading : false,
       error: result.error?.message ?? null
     }));
-  }, [applySignedOutState, state.session]);
+  }, [applySignedOutState]);
 
   const refreshConversationContext = useCallback(async (
     conversationId: string,
     sessionOverride?: AuthSession,
     options: { background?: boolean } = {}
   ) => {
-    const currentSession = sessionOverride ?? state.session;
+    const currentSession = sessionOverride ?? sessionRef.current;
     if (!currentSession) return;
     if (!options.background) {
       setState((previous) => ({ ...previous, error: null }));
@@ -213,7 +222,7 @@ export function useStaffWorkspace() {
       conversationEscalations: escalationsResult.data ?? [],
       error: notesResult.error?.message ?? escalationsResult.error?.message ?? null
     }));
-  }, [applySignedOutState, state.session]);
+  }, [applySignedOutState]);
 
   useEffect(() => {
     if (state.session || bootstrapAttempted) return;
@@ -239,42 +248,26 @@ export function useStaffWorkspace() {
 
   useEffect(() => {
     if (!state.session) return;
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      void refreshWorkspace(state.session ?? undefined);
-    });
-    return () => {
-      cancelled = true;
-    };
+    const userId = state.session.user.id;
+    if (lastWorkspaceUserRef.current === userId) return;
+    lastWorkspaceUserRef.current = userId;
+    void refreshWorkspace(state.session);
   }, [refreshWorkspace, state.session]);
 
   useEffect(() => {
     if (!state.session || !state.selectedConversationId) return;
-    const conversationId = state.selectedConversationId;
-    const currentSession = state.session;
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      void refreshConversationMessages(conversationId, currentSession);
-    });
-    return () => {
-      cancelled = true;
-    };
+    const key = `${state.session.user.id}:${state.selectedConversationId}`;
+    if (lastMessagesKeyRef.current === key) return;
+    lastMessagesKeyRef.current = key;
+    void refreshConversationMessages(state.selectedConversationId, state.session);
   }, [refreshConversationMessages, state.selectedConversationId, state.session]);
 
   useEffect(() => {
     if (!state.session || !state.selectedConversationId) return;
-    const conversationId = state.selectedConversationId;
-    const currentSession = state.session;
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      void refreshConversationContext(conversationId, currentSession);
-    });
-    return () => {
-      cancelled = true;
-    };
+    const key = `${state.session.user.id}:${state.selectedConversationId}`;
+    if (lastContextKeyRef.current === key) return;
+    lastContextKeyRef.current = key;
+    void refreshConversationContext(state.selectedConversationId, state.session);
   }, [refreshConversationContext, state.selectedConversationId, state.session]);
 
   const signIn = useCallback(async (email: string) => {
@@ -317,7 +310,7 @@ export function useStaffWorkspace() {
   }, []);
 
   const sendMessage = useCallback(async (conversationId: string, content: string) => {
-    const currentSession = state.session;
+    const currentSession = sessionRef.current;
     if (!currentSession) return null;
 
     const result = await createMessageWithRefresh(currentSession, { conversationId, content });
@@ -344,7 +337,7 @@ export function useStaffWorkspace() {
     }));
 
     return message;
-  }, [applySignedOutState, state.session]);
+  }, [applySignedOutState]);
 
   const addTimeEntry = useCallback(async (input: {
     projectId: string;
@@ -354,7 +347,7 @@ export function useStaffWorkspace() {
     endedAt?: string;
     staffName?: string;
   }) => {
-    const currentSession = state.session;
+    const currentSession = sessionRef.current;
     if (!currentSession) return null;
 
     const result = await createTimeEntryWithRefresh(currentSession, input);
@@ -381,10 +374,10 @@ export function useStaffWorkspace() {
     }));
 
     return createdEntry;
-  }, [applySignedOutState, state.session]);
+  }, [applySignedOutState]);
 
   const addConversationNote = useCallback(async (conversationId: string, content: string) => {
-    const currentSession = state.session;
+    const currentSession = sessionRef.current;
     if (!currentSession) return null;
 
     const result = await createConversationNoteWithRefresh(currentSession, { conversationId, content });
@@ -404,7 +397,7 @@ export function useStaffWorkspace() {
       conversationNotes: [...previous.conversationNotes, note]
     }));
     return note;
-  }, [applySignedOutState, state.session]);
+  }, [applySignedOutState]);
 
   const escalateConversation = useCallback(async (input: {
     conversationId: string;
@@ -412,7 +405,7 @@ export function useStaffWorkspace() {
     severity?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
     reason: string;
   }) => {
-    const currentSession = state.session;
+    const currentSession = sessionRef.current;
     if (!currentSession) return null;
 
     const result = await createConversationEscalationWithRefresh(currentSession, input);
@@ -432,10 +425,10 @@ export function useStaffWorkspace() {
       conversationEscalations: [escalation, ...previous.conversationEscalations]
     }));
     return escalation;
-  }, [applySignedOutState, state.session]);
+  }, [applySignedOutState]);
 
   const updateConversationAssignee = useCallback(async (conversationId: string, assigneeUserId: string | null) => {
-    const currentSession = state.session;
+    const currentSession = sessionRef.current;
     if (!currentSession) return null;
     const result = await updateConversationAssigneeWithRefresh(currentSession, conversationId, { assigneeUserId });
     if (!result.nextSession) {
@@ -460,21 +453,21 @@ export function useStaffWorkspace() {
       )
     }));
     return updatedConversation;
-  }, [applySignedOutState, state.session]);
+  }, [applySignedOutState]);
 
   const handleRealtimeRefresh = useCallback(() => {
-    if (!state.session) return;
-    void refreshWorkspace(state.session, { background: true });
+    const currentSession = sessionRef.current;
+    if (!currentSession) return;
+    void refreshWorkspace(currentSession, { background: true });
     if (state.selectedConversationId) {
-      void refreshConversationMessages(state.selectedConversationId, state.session, { background: true });
-      void refreshConversationContext(state.selectedConversationId, state.session, { background: true });
+      void refreshConversationMessages(state.selectedConversationId, currentSession, { background: true });
+      void refreshConversationContext(state.selectedConversationId, currentSession, { background: true });
     }
   }, [
     refreshConversationContext,
     refreshConversationMessages,
     refreshWorkspace,
-    state.selectedConversationId,
-    state.session
+    state.selectedConversationId
   ]);
 
   useRealtimeRefresh(state.session, handleRealtimeRefresh);

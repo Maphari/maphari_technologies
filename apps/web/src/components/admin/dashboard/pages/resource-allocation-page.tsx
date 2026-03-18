@@ -1,83 +1,48 @@
+// ════════════════════════════════════════════════════════════════════════════
+// resource-allocation-page.tsx — Admin resource allocation wired to real API
+// Data   : loadAllStaffWithRefresh     → staff list with department/role
+//          loadTimeEntriesWithRefresh  → time entries to compute utilisation
+// ════════════════════════════════════════════════════════════════════════════
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import type { AdminStaffProfile } from "../../../../lib/api/admin/hr";
+import { loadAllStaffWithRefresh } from "../../../../lib/api/admin/hr";
+import type { ProjectTimeEntry } from "../../../../lib/api/admin/types";
+import { loadTimeEntriesWithRefresh } from "../../../../lib/api/admin/tasks";
 
-const weeks = ["Feb 24", "Mar 3", "Mar 10", "Mar 17", "Mar 24"] as const;
-const CAPACITY = 40;
+// ── Constants ─────────────────────────────────────────────────────────────────
 
-const staff = [
-  {
-    id: "RF",
-    name: "Renzo Fabbri",
-    role: "Creative Director",
-    color: "var(--amber)",
-    avatar: "RF",
-    allocations: [
-      { project: "Volta Brand", client: "Volta Studios", clientColor: "var(--accent)", hours: [16, 12, 8, 8, 4] },
-      { project: "Dune Editorial", client: "Dune Collective", clientColor: "var(--amber)", hours: [14, 18, 20, 12, 8] },
-      { project: "Internal", client: "Internal", clientColor: "var(--muted)", hours: [4, 4, 4, 4, 4] },
-    ],
-  },
-  {
-    id: "KB",
-    name: "Kira Bosman",
-    role: "UX Designer",
-    color: "var(--accent)",
-    avatar: "KB",
-    allocations: [
-      { project: "Mira Website", client: "Mira Health", clientColor: "var(--blue)", hours: [24, 28, 32, 20, 16] },
-      { project: "Internal", client: "Internal", clientColor: "var(--muted)", hours: [4, 4, 4, 4, 4] },
-    ],
-  },
-  {
-    id: "ND",
-    name: "Nomsa Dlamini",
-    role: "Account Manager",
-    color: "var(--accent)",
-    avatar: "ND",
-    allocations: [
-      { project: "Kestrel Campaign", client: "Kestrel Capital", clientColor: "var(--accent)", hours: [12, 10, 8, 6, 4] },
-      { project: "Volta AM", client: "Volta Studios", clientColor: "var(--accent)", hours: [10, 10, 10, 10, 10] },
-      { project: "Mira AM", client: "Mira Health", clientColor: "var(--blue)", hours: [8, 8, 8, 8, 8] },
-      { project: "Internal", client: "Internal", clientColor: "var(--muted)", hours: [4, 4, 4, 4, 4] },
-    ],
-  },
-  {
-    id: "TM",
-    name: "Tapiwa Moyo",
-    role: "Copywriter",
-    color: "var(--amber)",
-    avatar: "TM",
-    allocations: [
-      { project: "Okafor Annual Report", client: "Okafor & Sons", clientColor: "var(--amber)", hours: [16, 12, 8, 4, 0] },
-      { project: "Kestrel Copy", client: "Kestrel Capital", clientColor: "var(--accent)", hours: [10, 10, 8, 6, 4] },
-      { project: "Internal", client: "Internal", clientColor: "var(--muted)", hours: [4, 4, 4, 4, 4] },
-    ],
-  },
-  {
-    id: "LF",
-    name: "Leilani Fotu",
-    role: "Project Manager",
-    color: "var(--blue)",
-    avatar: "LF",
-    allocations: [
-      { project: "Portfolio PM", client: "All Clients", clientColor: "var(--accent)", hours: [24, 24, 24, 24, 24] },
-      { project: "Admin Ops", client: "Internal", clientColor: "var(--muted)", hours: [8, 8, 8, 8, 8] },
-    ],
-  },
-] as const;
+const CAPACITY = 40; // hours per week
 
-const projectColors: Record<string, string> = {
-  "Volta Studios": "var(--accent)",
-  "Kestrel Capital": "var(--accent)",
-  "Mira Health": "var(--blue)",
-  "Dune Collective": "var(--amber)",
-  "Okafor & Sons": "var(--amber)",
-  "All Clients": "var(--accent)",
-  Internal: "var(--muted)",
-};
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function weekStart(offset = 0): string {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1) + offset * 7;
+  const monday = new Date(d.setDate(diff));
+  return monday.toISOString().slice(0, 10);
+}
+
+function weekLabel(offset = 0): string {
+  const d = new Date(weekStart(offset));
+  return d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
+}
+
+function minutesToHours(minutes: number): number {
+  return Math.round(minutes / 60);
+}
+
+function staffColor(idx: number): string {
+  const colors = ["var(--accent)", "var(--blue)", "var(--amber)", "var(--purple)", "var(--red)"];
+  return colors[idx % colors.length];
+}
 
 function allocWidthClass(hours: number): string {
   if (hours >= 32) return styles.resAllocW80;
@@ -89,8 +54,8 @@ function allocWidthClass(hours: number): string {
   if (hours >= 14) return styles.resAllocW35;
   if (hours >= 12) return styles.resAllocW30;
   if (hours >= 10) return styles.resAllocW25;
-  if (hours >= 8) return styles.resAllocW20;
-  if (hours >= 6) return styles.resAllocW15;
+  if (hours >= 8)  return styles.resAllocW20;
+  if (hours >= 6)  return styles.resAllocW15;
   return styles.resAllocW10;
 }
 
@@ -103,12 +68,101 @@ function Avatar({ initials, color, size = 36 }: { initials: string; color: strin
   );
 }
 
+// ── Props ─────────────────────────────────────────────────────────────────────
+
+interface Props {
+  session: AuthSession | null;
+  onNotify: (tone: "success" | "error" | "warning" | "info", msg: string) => void;
+}
+
 type Tab = "weekly grid" | "capacity overview" | "by project";
 const tabs: Tab[] = ["weekly grid", "capacity overview", "by project"];
 
-export function ResourceAllocationPage() {
+const WEEK_OFFSETS = [0, 1, 2, 3, 4];
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function ResourceAllocationPage({ session, onNotify }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("weekly grid");
   const [selectedWeek, setSelectedWeek] = useState(0);
+  const [staff, setStaff] = useState<AdminStaffProfile[]>([]);
+  const [timeEntries, setTimeEntries] = useState<ProjectTimeEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const weeks = useMemo(() => WEEK_OFFSETS.map((o) => weekLabel(o)), []);
+
+  useEffect(() => {
+    if (!session) { setLoading(false); return; }
+    let cancelled = false;
+    void (async () => {
+      const from = weekStart(0);
+      const [staffRes, timeRes] = await Promise.all([
+        loadAllStaffWithRefresh(session),
+        loadTimeEntriesWithRefresh(session, { from, limit: 500 })
+      ]);
+      if (cancelled) return;
+      if (staffRes.nextSession) saveSession(staffRes.nextSession);
+      if (timeRes.nextSession) saveSession(timeRes.nextSession);
+      if (staffRes.error) onNotify("error", staffRes.error.message);
+      if (timeRes.error) onNotify("warning", "Could not load time entries.");
+      setStaff((staffRes.data ?? []).filter((s) => s.isActive));
+      setTimeEntries(timeRes.data ?? []);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [session, onNotify]);
+
+  // Compute hours logged per staff member (this week = offset 0)
+  const hoursPerStaff = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const entry of timeEntries) {
+      const uid = entry.staffUserId ?? entry.staffName ?? "unknown";
+      map[uid] = (map[uid] ?? 0) + minutesToHours(entry.minutes);
+    }
+    return map;
+  }, [timeEntries]);
+
+  // Build a per-staff allocation row for the weekly grid
+  const staffRows = useMemo(() => staff.map((s, idx) => {
+    const uid = s.userId;
+    const loggedHours = hoursPerStaff[uid] ?? 0;
+    const color = staffColor(idx);
+    return {
+      id: s.id,
+      name: s.name,
+      role: s.role,
+      avatar: s.avatarInitials ?? s.name.slice(0, 2).toUpperCase(),
+      color,
+      loggedHours,
+    };
+  }), [staff, hoursPerStaff]);
+
+  // Summary stats for the selected week
+  const weekStats = useMemo(() => {
+    const totalLogged = selectedWeek === 0
+      ? staffRows.reduce((s, m) => s + m.loggedHours, 0)
+      : 0; // no historical data for future weeks
+    const overallocated = staffRows.filter((m) => m.loggedHours > CAPACITY).length;
+    const underutilised = staffRows.filter((m) => m.loggedHours < CAPACITY * 0.7).length;
+    const teamUtil = staff.length > 0
+      ? Math.round((staffRows.reduce((s, m) => s + Math.min(m.loggedHours, CAPACITY), 0) / (staff.length * CAPACITY)) * 100)
+      : 0;
+    return { totalLogged, overallocated, underutilised, teamUtil };
+  }, [staffRows, selectedWeek, staff.length]);
+
+  if (loading) {
+    return (
+      <div className={styles.pageBody}>
+        <div className={styles.pageHeader}>
+          <div>
+            <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+            <h1 className={styles.pageTitle}>Resource Allocation</h1>
+          </div>
+        </div>
+        <div className={cx("colorMuted", "text13")}>Loading resource data…</div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.pageBody}>
@@ -125,22 +179,12 @@ export function ResourceAllocationPage() {
       </div>
 
       <div className={cx("topCardsStack", "mb28")}>
-        {(() => {
-          const weekTotals = staff.map((s) => ({
-            name: s.name,
-            color: s.color,
-            total: s.allocations.reduce((sum, a) => sum + a.hours[selectedWeek], 0),
-          }));
-          const overallocated = weekTotals.filter((w) => w.total > CAPACITY).length;
-          const underutilised = weekTotals.filter((w) => w.total < CAPACITY * 0.7).length;
-          const teamUtil = Math.round((weekTotals.reduce((s, w) => s + w.total, 0) / (staff.length * CAPACITY)) * 100);
-          return [
-            { label: "Team Utilisation", value: `${teamUtil}%`, color: teamUtil >= 80 ? "var(--accent)" : "var(--amber)", sub: `Week of ${weeks[selectedWeek]}` },
-            { label: "Overallocated", value: overallocated.toString(), color: overallocated > 0 ? "var(--red)" : "var(--accent)", sub: `> ${CAPACITY}h capacity` },
-            { label: "Underutilised", value: underutilised.toString(), color: underutilised > 0 ? "var(--amber)" : "var(--accent)", sub: `< ${Math.round(CAPACITY * 0.7)}h this week` },
-            { label: "Total Staff Hours", value: `${weekTotals.reduce((s, w) => s + w.total, 0)}h`, color: "var(--blue)", sub: `Cap: ${staff.length * CAPACITY}h` },
-          ];
-        })().map((s) => (
+        {[
+          { label: "Team Utilisation",  value: `${weekStats.teamUtil}%`,    color: weekStats.teamUtil >= 80 ? "var(--accent)" : "var(--amber)", sub: `Week of ${weeks[selectedWeek]}` },
+          { label: "Overallocated",     value: String(weekStats.overallocated), color: weekStats.overallocated > 0 ? "var(--red)" : "var(--accent)", sub: `> ${CAPACITY}h capacity` },
+          { label: "Underutilised",     value: String(weekStats.underutilised), color: weekStats.underutilised > 0 ? "var(--amber)" : "var(--accent)", sub: `< ${Math.round(CAPACITY * 0.7)}h this week` },
+          { label: "Total Staff Hours", value: `${weekStats.totalLogged}h`, color: "var(--blue)",   sub: `Cap: ${staff.length * CAPACITY}h` },
+        ].map((s) => (
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}>{s.label}</div>
             <div className={cx(styles.statValue, "resAllocToneText", toneClass(s.color))}>{s.value}</div>
@@ -162,11 +206,12 @@ export function ResourceAllocationPage() {
 
       {activeTab === "weekly grid" && (
         <div>
+          {staff.length === 0 && <div className={cx("text13", "colorMuted")}>No active staff members found.</div>}
           <div className={cx("flexCol", "gap16")}>
-            {staff.map((member) => {
-              const weekTotal = member.allocations.reduce((s, a) => s + a.hours[selectedWeek], 0);
-              const isOver = weekTotal > CAPACITY;
-              const util = Math.round((weekTotal / CAPACITY) * 100);
+            {staffRows.map((member) => {
+              const hours = selectedWeek === 0 ? member.loggedHours : 0;
+              const isOver = hours > CAPACITY;
+              const util = Math.round((hours / CAPACITY) * 100);
               const utilColor = isOver ? "var(--red)" : util >= 80 ? "var(--accent)" : "var(--amber)";
               return (
                 <div key={member.id} className={cx("card", "p24", isOver && styles.resAllocOverCard)}>
@@ -177,44 +222,32 @@ export function ResourceAllocationPage() {
                       <div className={cx("text12", "colorMuted")}>{member.role}</div>
                     </div>
                     <div className={cx("textRight")}>
-                      <div className={cx("fontMono", "fw800", styles.resAllocHourTotal, toneClass(utilColor))}>{weekTotal}h</div>
-                      <div className={cx("text11", "colorMuted")}>
-                        of {CAPACITY}h - {util}%
-                      </div>
+                      <div className={cx("fontMono", "fw800", styles.resAllocHourTotal, toneClass(utilColor))}>{hours}h</div>
+                      <div className={cx("text11", "colorMuted")}>of {CAPACITY}h - {util}%</div>
                     </div>
                   </div>
 
                   <div className={cx("flexRow", "overflowHidden", "mb12", styles.resAllocBar)}>
-                    {member.allocations.map((alloc, i) => {
-                      const hours = alloc.hours[selectedWeek];
-                      if (hours === 0) return null;
-                      return (
-                        <div
-                          key={i}
-                          title={`${alloc.project}: ${hours}h`}
-                          className={cx("flexCenter", "fw700", styles.resAllocBarSeg, allocWidthClass(hours), toneClass(projectColors[alloc.client] || "var(--muted)"))}
-                        >
-                          {hours >= 6 ? `${hours}h` : ""}
-                        </div>
-                      );
-                    })}
-                    {isOver ? <div className={cx("flexCenter", styles.resAllocBarOver, styles.resAllocWAuto)}>+{weekTotal - CAPACITY}h</div> : null}
+                    {hours > 0 && (
+                      <div
+                        title={`${member.name}: ${hours}h`}
+                        className={cx("flexCenter", "fw700", styles.resAllocBarSeg, allocWidthClass(hours), toneClass(member.color))}
+                      >
+                        {hours >= 6 ? `${hours}h` : ""}
+                      </div>
+                    )}
+                    {isOver && <div className={cx("flexCenter", styles.resAllocBarOver, styles.resAllocWAuto)}>+{hours - CAPACITY}h</div>}
                   </div>
 
                   <div className={cx("flexRow", "flexWrap", "gap10")}>
-                    {member.allocations.map(
-                      (alloc, i) =>
-                        alloc.hours[selectedWeek] > 0 && (
-                          <div key={i} className={cx("flexRow", "gap6", "text11")}>
-                            <div className={cx(styles.resAllocLegendDot, toneClass(projectColors[alloc.client] || "var(--muted)"))} />
-                            <span className={cx("colorMuted")}>{alloc.project}</span>
-                            <span className={cx("fontMono", styles.resAllocToneText, toneClass(projectColors[alloc.client] || "var(--muted)"))}>{alloc.hours[selectedWeek]}h</span>
-                          </div>
-                        )
-                    )}
+                    <div className={cx("flexRow", "gap6", "text11")}>
+                      <div className={cx(styles.resAllocLegendDot, toneClass(member.color))} />
+                      <span className={cx("colorMuted")}>{member.role}</span>
+                      <span className={cx("fontMono", styles.resAllocToneText, toneClass(member.color))}>{hours}h logged</span>
+                    </div>
                   </div>
 
-                  {isOver ? <div className={styles.resAllocWarn}>&#x26A0; Overallocated by {weekTotal - CAPACITY}h - review assignments</div> : null}
+                  {isOver ? <div className={styles.resAllocWarn}>&#x26A0; Overallocated by {hours - CAPACITY}h - review assignments</div> : null}
                 </div>
               );
             })}
@@ -227,13 +260,11 @@ export function ResourceAllocationPage() {
           <div className={cx("resAllocCapGrid", "px20", "borderB", "text10", "colorMuted", "uppercase", "gap12", styles.resAllocCapHead)}>
             <span>Staff Member</span>
             {weeks.map((w) => (
-              <span key={w} className={cx("textCenter")}>
-                w/c {w}
-              </span>
+              <span key={w} className={cx("textCenter")}>w/c {w}</span>
             ))}
           </div>
-          {staff.map((member, ri) => (
-            <div key={member.id} className={cx("resAllocCapGrid", "gap12", styles.resAllocCapRow, ri < staff.length - 1 && "borderB")}>
+          {staffRows.map((member, ri) => (
+            <div key={member.id} className={cx("resAllocCapGrid", "gap12", styles.resAllocCapRow, ri < staffRows.length - 1 && "borderB")}>
               <div className={cx("flexRow", "gap10")}>
                 <Avatar initials={member.avatar} color={member.color} size={28} />
                 <div>
@@ -242,7 +273,7 @@ export function ResourceAllocationPage() {
                 </div>
               </div>
               {weeks.map((w, wi) => {
-                const total = member.allocations.reduce((s, a) => s + a.hours[wi], 0);
+                const total = wi === 0 ? member.loggedHours : 0;
                 const pct = Math.round((total / CAPACITY) * 100);
                 const color = total > CAPACITY ? "var(--red)" : pct >= 80 ? "var(--accent)" : pct >= 60 ? "var(--amber)" : "var(--muted)";
                 return (
@@ -257,18 +288,19 @@ export function ResourceAllocationPage() {
               })}
             </div>
           ))}
+          {staffRows.length === 0 && (
+            <div className={cx("p20", "text13", "colorMuted")}>No active staff found.</div>
+          )}
           <div className={cx("resAllocCapGrid", "gap12", "bgSurface", styles.resAllocCapFoot)}>
             <span className={cx("text12", "fw700", "colorAccent")}>Team Total</span>
             {weeks.map((w, wi) => {
-              const total = staff.reduce((s, m) => s + m.allocations.reduce((s2, a) => s2 + a.hours[wi], 0), 0);
+              const total = wi === 0 ? staffRows.reduce((s, m) => s + m.loggedHours, 0) : 0;
               const cap = staff.length * CAPACITY;
-              const pct = Math.round((total / cap) * 100);
+              const pct = cap > 0 ? Math.round((total / cap) * 100) : 0;
               return (
                 <div key={w} className={cx("textCenter")}>
                   <div className={cx("fontMono", "fw800", styles.resAllocCapValue, pct >= 80 ? "toneAccent" : "toneAmber")}>{total}h</div>
-                  <div className={cx("text10", "colorMuted")}>
-                    {pct}% of {cap}h cap
-                  </div>
+                  <div className={cx("text10", "colorMuted")}>{pct}% of {cap}h cap</div>
                 </div>
               );
             })}
@@ -278,31 +310,28 @@ export function ResourceAllocationPage() {
 
       {activeTab === "by project" && (
         <div className={cx("flexCol", "gap16")}>
-          {[
-            { name: "Brand Identity System", client: "Volta Studios", color: "var(--accent)" },
-            { name: "Q1 Campaign Strategy", client: "Kestrel Capital", color: "var(--accent)" },
-            { name: "Website Redesign", client: "Mira Health", color: "var(--blue)" },
-            { name: "Editorial Design System", client: "Dune Collective", color: "var(--amber)" },
-            { name: "Annual Report 2025", client: "Okafor & Sons", color: "var(--amber)" },
-          ].map((project) => {
-            const assignedStaff = staff.filter((m) => m.allocations.some((a) => a.client === project.client));
-            const weeklyHours = weeks.map((_, wi) => assignedStaff.reduce((s, m) => s + m.allocations.filter((a) => a.client === project.client).reduce((s2, a) => s2 + a.hours[wi], 0), 0));
+          {staff.length === 0 && <div className={cx("text13", "colorMuted")}>No active staff found.</div>}
+          {staffRows.map((member, idx) => {
+            const color = staffColor(idx);
             return (
-              <div key={project.name} className={cx("card", "p24", styles.resAllocProjectCard, toneClass(project.color))}>
+              <div key={member.id} className={cx("card", "p24", styles.resAllocProjectCard, toneClass(color))}>
                 <div className={cx("flexBetween", "mb16")}>
                   <div>
-                    <div className={cx("fw700", styles.resAllocProjectName)}>{project.name}</div>
-                    <div className={cx("text12", styles.resAllocToneText, toneClass(project.color))}>{project.client}</div>
+                    <div className={cx("fw700", styles.resAllocProjectName)}>{member.name}</div>
+                    <div className={cx("text12", styles.resAllocToneText, toneClass(color))}>{member.role}</div>
                   </div>
-                  <div className={cx("flexRow", "gap8")}>{assignedStaff.map((m) => <Avatar key={m.id} initials={m.avatar} color={m.color} size={28} />)}</div>
+                  <Avatar initials={member.avatar} color={color} size={28} />
                 </div>
                 <div className={cx("resAllocWeekGrid", "gap8")}>
-                  {weeks.map((w, wi) => (
-                    <div key={w} className={cx("bgBg", "textCenter", "p12", styles.resAllocWeekCell)}>
-                      <div className={cx("fontMono", "fw700", styles.resAllocWeekHours, styles.resAllocToneText, toneClass(project.color))}>{weeklyHours[wi]}h</div>
-                      <div className={cx("colorMuted", "mt4", styles.resAllocWeekLabel)}>w/c {w}</div>
-                    </div>
-                  ))}
+                  {weeks.map((w, wi) => {
+                    const hrs = wi === 0 ? member.loggedHours : 0;
+                    return (
+                      <div key={w} className={cx("bgBg", "textCenter", "p12", styles.resAllocWeekCell)}>
+                        <div className={cx("fontMono", "fw700", styles.resAllocWeekHours, styles.resAllocToneText, toneClass(color))}>{hrs}h</div>
+                        <div className={cx("colorMuted", "mt4", styles.resAllocWeekLabel)}>w/c {w}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );

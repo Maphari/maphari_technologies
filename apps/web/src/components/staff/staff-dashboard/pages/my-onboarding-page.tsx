@@ -1,25 +1,71 @@
+// ════════════════════════════════════════════════════════════════════════════
+// my-onboarding-page.tsx — Staff My Onboarding
+// Data     : loadMyStaffOnboardingWithRefresh → GET /staff/:id/onboarding
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { loadMyStaffOnboardingWithRefresh, type StaffOnboardingRecord, getMyProfile } from "../../../../lib/api/staff";
+import { saveSession } from "../../../../lib/auth/session";
 
-const checklistItems = [
-  { id: 1, title: "Sign employment contract", category: "Legal", completed: true, dueAt: "Day 1" },
-  { id: 2, title: "Set up company email & Slack", category: "IT Setup", completed: true, dueAt: "Day 1" },
-  { id: 3, title: "Complete security awareness training", category: "Compliance", completed: true, dueAt: "Week 1" },
-  { id: 4, title: "Review brand guidelines", category: "Knowledge", completed: true, dueAt: "Week 1" },
-  { id: 5, title: "Set up Figma & Adobe accounts", category: "IT Setup", completed: true, dueAt: "Week 1" },
-  { id: 6, title: "Meet team leads (1:1 introductions)", category: "Culture", completed: true, dueAt: "Week 1" },
-  { id: 7, title: "Complete design system walkthrough", category: "Knowledge", completed: false, dueAt: "Week 2" },
-  { id: 8, title: "Shadow 3 client calls", category: "Training", completed: false, dueAt: "Week 2" },
-  { id: 9, title: "Submit first peer review request", category: "Training", completed: false, dueAt: "Week 3" },
-  { id: 10, title: "Complete time tracking setup", category: "Operations", completed: false, dueAt: "Week 2" },
-  { id: 11, title: "Read knowledge base essentials", category: "Knowledge", completed: false, dueAt: "Week 3" },
-  { id: 12, title: "30-day check-in with manager", category: "Culture", completed: false, dueAt: "Month 1" },
-];
+// Phase labels derived from sortOrder buckets
+function phaseFromOrder(order: number): string {
+  if (order <= 2) return "Day 1";
+  if (order <= 5) return "Week 1";
+  if (order <= 8) return "Week 2";
+  if (order <= 11) return "Week 3";
+  return "Month 1";
+}
 
-export function MyOnboardingPage({ isActive }: { isActive: boolean }) {
-  const completed = checklistItems.filter((i) => i.completed).length;
-  const progress = Math.round((completed / checklistItems.length) * 100);
+const PHASES = ["Day 1", "Week 1", "Week 2", "Week 3", "Month 1"] as const;
+
+function categoryCls(c: string) {
+  if (c === "Legal")      return "mobCatLegal";
+  if (c === "IT Setup")   return "mobCatItSetup";
+  if (c === "Compliance") return "mobCatCompliance";
+  if (c === "Knowledge")  return "mobCatKnowledge";
+  if (c === "Culture")    return "mobCatCulture";
+  if (c === "Training")   return "mobCatTraining";
+  return "mobCatOps";
+}
+
+export function MyOnboardingPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
+  const [apiOnboarding, setApiOnboarding] = useState<StaffOnboardingRecord[]>([]);
+
+  useEffect(() => {
+    if (!session) return;
+    // The onboarding endpoint needs the StaffProfile.id (not userId), so resolve it first
+    void getMyProfile(session).then(async (pr) => {
+      if (pr.nextSession) saveSession(pr.nextSession);
+      if (pr.error || !pr.data) return;
+      const r = await loadMyStaffOnboardingWithRefresh(session, pr.data.id);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setApiOnboarding(r.data);
+    });
+  }, [session]);
+
+  const checklistItems = useMemo(() =>
+    [...apiOnboarding].sort((a, b) => a.sortOrder - b.sortOrder).map((o) => ({
+      id:        o.sortOrder,
+      title:     o.stageLabel,
+      category:  "Operations",
+      completed: o.status.toUpperCase() === "COMPLETED",
+      dueAt:     phaseFromOrder(o.sortOrder),
+    })),
+  [apiOnboarding]);
+
+  const completed  = checklistItems.filter((i) => i.completed).length;
+  const remaining  = checklistItems.length - completed;
+  const progress   = checklistItems.length > 0 ? Math.round((completed / checklistItems.length) * 100) : 0;
+  const dueSoon    = checklistItems.filter((i) => i.dueAt === "Week 2" && !i.completed).length;
+
+  const grouped = PHASES.reduce<Record<string, typeof checklistItems>>((acc, phase) => {
+    const items = checklistItems.filter((i) => i.dueAt === phase);
+    if (items.length > 0) acc[phase] = items;
+    return acc;
+  }, {});
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-onboarding">
@@ -29,40 +75,123 @@ export function MyOnboardingPage({ isActive }: { isActive: boolean }) {
         <p className={cx("pageSubtitleText", "mb20")}>Personal onboarding checklist and progress</p>
       </div>
 
-      <div className={cx("stats", "stats3", "mb28")}>
-        {[
-          { label: "Progress", value: `${progress}%`, tone: "colorAccent" },
-          { label: "Completed", value: `${completed}/${checklistItems.length}`, tone: "colorGreen" },
-          { label: "Remaining", value: String(checklistItems.length - completed), tone: "colorAmber" },
-        ].map((s) => (
-          <div key={s.label} className={cx("card")}>
-            <div className={cx("text10", "colorMuted2", "uppercase", "tracking", "mb6")}>{s.label}</div>
-            <div className={cx("fontDisplay", "fw800", "text20", s.tone)}>{s.value}</div>
+      {/* ── Summary stats ────────────────────────────────────────────────── */}
+      <div className={cx("mobStatGrid")}>
+
+        <div className={cx("mobStatCard")}>
+          <div className={cx("mobStatCardTop")}>
+            <div className={cx("mobStatLabel")}>Progress</div>
+            <div className={cx("mobStatValue", "colorAccent")}>{progress}%</div>
           </div>
-        ))}
+          <div className={cx("mobStatCardDivider")} />
+          <div className={cx("mobStatCardBottom")}>
+            <span className={cx("mobStatDot", "dotBgAccent")} />
+            <span className={cx("mobStatMeta")}>overall completion</span>
+          </div>
+        </div>
+
+        <div className={cx("mobStatCard")}>
+          <div className={cx("mobStatCardTop")}>
+            <div className={cx("mobStatLabel")}>Completed</div>
+            <div className={cx("mobStatValue", "colorGreen")}>
+              {completed}<span className={cx("mobStatSuffix")}>/{checklistItems.length}</span>
+            </div>
+          </div>
+          <div className={cx("mobStatCardDivider")} />
+          <div className={cx("mobStatCardBottom")}>
+            <span className={cx("mobStatDot", "dotBgGreen")} />
+            <span className={cx("mobStatMeta")}>tasks done</span>
+          </div>
+        </div>
+
+        <div className={cx("mobStatCard")}>
+          <div className={cx("mobStatCardTop")}>
+            <div className={cx("mobStatLabel")}>Remaining</div>
+            <div className={cx("mobStatValue", remaining > 0 ? "colorAmber" : "colorGreen")}>{remaining}</div>
+          </div>
+          <div className={cx("mobStatCardDivider")} />
+          <div className={cx("mobStatCardBottom")}>
+            <span className={cx("mobStatDot", "dynBgColor")} style={{ "--bg-color": remaining > 0 ? "var(--amber)" : "var(--green)" } as React.CSSProperties} />
+            <span className={cx("mobStatMeta")}>{remaining > 0 ? "still to complete" : "all done"}</span>
+          </div>
+        </div>
+
+        <div className={cx("mobStatCard")}>
+          <div className={cx("mobStatCardTop")}>
+            <div className={cx("mobStatLabel")}>Due This Week</div>
+            <div className={cx("mobStatValue", dueSoon > 0 ? "colorRed" : "colorGreen")}>{dueSoon}</div>
+          </div>
+          <div className={cx("mobStatCardDivider")} />
+          <div className={cx("mobStatCardBottom")}>
+            <span className={cx("mobStatDot", "dynBgColor")} style={{ "--bg-color": dueSoon > 0 ? "var(--red)" : "var(--muted2)" } as React.CSSProperties} />
+            <span className={cx("mobStatMeta")}>{dueSoon > 0 ? "needs attention" : "on track"}</span>
+          </div>
+        </div>
+
       </div>
 
-      <div className={cx("card", "cardBody")}>
-        <div className={cx("mb12")}>
-          <div className={cx("progressTrack")}>
-            <div className={cx("progressFill", "progressFillGreen")} style={{ width: `${progress}%` }} />
+      {/* ── Checklist ────────────────────────────────────────────────────── */}
+      <div className={cx("mobSection")}>
+
+        {/* Section header */}
+        <div className={cx("mobSectionHeader")}>
+          <div className={cx("mobSectionTitle")}>Onboarding Checklist</div>
+          <span className={cx("mobSectionMeta")}>{checklistItems.length} TASKS</span>
+        </div>
+
+        {/* Overall progress bar */}
+        <div className={cx("mobProgressWrap")}>
+          <div className={cx("mobProgressMeta")}>
+            <span className={cx("mobProgressLabel")}>Overall Progress</span>
+            <span className={cx("mobProgressPct", "colorAccent")}>{progress}%</span>
+          </div>
+          <div className={cx("mobProgressTrack")}>
+            <div className={cx("mobProgressFill")} style={{ '--pct': `${progress}%` } as React.CSSProperties} />
           </div>
         </div>
-        <div className={cx("flexCol", "gap8")}>
-          {checklistItems.map((item) => (
-            <div key={item.id} className={cx("flexBetween")} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-              <div className={cx("flex", "gap12", "alignCenter")}>
-                <input type="checkbox" checked={item.completed} readOnly style={{ accentColor: "var(--accent)" }} />
-                <div>
-                  <div className={cx("text12", item.completed ? "colorMuted" : "fw600")} style={item.completed ? { textDecoration: "line-through" } : {}}>{item.title}</div>
-                  <div className={cx("text10", "colorMuted2")}>{item.category}</div>
+
+        {/* Phase groups */}
+        {PHASES.filter((p) => grouped[p]).map((phase) => {
+          const items    = grouped[phase];
+          const phaseDone = items.filter((i) => i.completed).length;
+          const allDone   = phaseDone === items.length;
+
+          return (
+            <div key={phase} className={cx("mobPhase", allDone && "mobPhaseDone")}>
+
+              {/* Phase header */}
+              <div className={cx("mobPhaseHeader")}>
+                <div className={cx("mobPhaseLeft")}>
+                  <span className={cx("mobPhaseName")}>{phase}</span>
+                  {allDone && <span className={cx("mobPhaseBadge")}>Complete</span>}
                 </div>
+                <span className={cx("mobPhaseCount")}>{phaseDone} / {items.length}</span>
               </div>
-              <span className={cx("badge", item.completed ? "badgeGreen" : "badge")}>{item.dueAt}</span>
+
+              {/* Items */}
+              <div className={cx("mobCheckList")}>
+                {items.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    className={cx(
+                      "mobCheckItem",
+                      item.completed && "mobCheckItemDone",
+                      idx === items.length - 1 && "mobCheckItemLast",
+                    )}
+                  >
+                    <span className={cx("mobCheckbox", item.completed && "mobCheckboxDone")} />
+                    <span className={cx("mobItemTitle")}>{item.title}</span>
+                    <span className={cx("mobItemCategory", categoryCls(item.category))}>{item.category}</span>
+                  </div>
+                ))}
+              </div>
+
             </div>
-          ))}
-        </div>
+          );
+        })}
+
       </div>
+
     </section>
   );
 }

@@ -299,7 +299,7 @@ export function StaffSatisfactionPage() {
                 { label: "Anonymity", value: "Full - responses not attributable" },
                 { label: "Reminder", value: "3 days before close" },
                 { label: "Next Survey", value: "1 Mar 2026" },
-                { label: "Report Recipients", value: "Sipho Nkosi, Leilani Fotu" }
+                { label: "Report Recipients", value: "Admin & Owner" }
               ].map((s) => (
                 <div key={s.label} className={styles.sstSettingRow}>
                   <span className={styles.colorMuted}>{s.label}</span>

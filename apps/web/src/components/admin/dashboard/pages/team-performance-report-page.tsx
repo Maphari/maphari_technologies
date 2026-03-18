@@ -1,53 +1,44 @@
+// ════════════════════════════════════════════════════════════════════════════
+// team-performance-report-page.tsx — Admin Team Performance Report
+// Data     : loadAllStaffWithRefresh      → GET /staff
+//            loadStandupFeedWithRefresh   → GET /standup/feed
+//            loadAdminPeerReviewsWithRefresh → GET /peer-reviews
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import { AdminTabs } from "./shared";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import {
+  loadAllStaffWithRefresh,
+  loadStandupFeedWithRefresh,
+  loadAdminPeerReviewsWithRefresh,
+  type AdminStaffProfile,
+  type AdminStandupEntry,
+  type AdminPeerReview,
+} from "../../../../lib/api/admin";
 
-const months = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb"];
-
+// ── Types ─────────────────────────────────────────────────────────────────────
 type StaffMember = {
   id: string;
   name: string;
   role: string;
   avatar: string;
   color: string;
-  utilisation: number;
-  billableHours: number;
-  targetHours: number;
-  performanceScore: number | null;
-  tasksCompleted: number;
-  tasksOverdue: number;
-  clientSatisfaction: number | null;
-  revContribution: number | null;
-  ldHours: number;
-  sickDays: number;
-  utilisationHistory: number[];
-  strengths: string[];
-  devAreas: string[];
+  department: string;
+  isActive: boolean;
+  standupCount: number;
+  reviewScore: number | null;
+  reviewCount: number;
 };
-
-const staff: StaffMember[] = [
-  { id: "EMP-001", name: "Sipho Nkosi", role: "Founder & CEO", avatar: "SN", color: "var(--accent)", utilisation: 72, billableHours: 86, targetHours: 120, performanceScore: null, tasksCompleted: 24, tasksOverdue: 1, clientSatisfaction: 9.2, revContribution: 380600, ldHours: 20, sickDays: 0, utilisationHistory: [68, 70, 72, 74, 71, 72], strengths: ["Strategic vision", "Client relationships", "Revenue growth"], devAreas: ["Delegation", "Process documentation"] },
-  { id: "EMP-002", name: "Leilani Fotu", role: "Head of Operations", avatar: "LF", color: "var(--blue)", utilisation: 89, billableHours: 148, targetHours: 168, performanceScore: 4.2, tasksCompleted: 62, tasksOverdue: 3, clientSatisfaction: null, revContribution: null, ldHours: 46, sickDays: 2, utilisationHistory: [82, 85, 87, 90, 88, 89], strengths: ["Process management", "Asana discipline", "Communication"], devAreas: ["Financial reporting ownership", "Hiring experience"] },
-  { id: "EMP-003", name: "Renzo Fabbri", role: "Creative Director", avatar: "RF", color: "var(--amber)", utilisation: 94, billableHours: 158, targetHours: 168, performanceScore: 4.6, tasksCompleted: 78, tasksOverdue: 2, clientSatisfaction: 8.4, revContribution: 65600, ldHours: 42, sickDays: 4, utilisationHistory: [88, 90, 92, 96, 93, 94], strengths: ["Creative quality", "Client trust", "Team mentoring"], devAreas: ["Scope management", "Freelancer briefing quality"] },
-  { id: "EMP-004", name: "Nomsa Dlamini", role: "Account Manager", avatar: "ND", color: "var(--purple)", utilisation: 78, billableHours: 131, targetHours: 168, performanceScore: 3.9, tasksCompleted: 44, tasksOverdue: 6, clientSatisfaction: 7.1, revContribution: 286600, ldHours: 0, sickDays: 0, utilisationHistory: [74, 75, 77, 80, 76, 78], strengths: ["Client responsiveness", "Relationship warmth"], devAreas: ["Escalation handling", "Communication clarity", "L&D engagement"] },
-  { id: "EMP-005", name: "Kira Bosman", role: "UX Designer", avatar: "KB", color: "var(--amber)", utilisation: 88, billableHours: 148, targetHours: 168, performanceScore: 4.4, tasksCompleted: 56, tasksOverdue: 1, clientSatisfaction: 8.1, revContribution: 43200, ldHours: 14, sickDays: 1, utilisationHistory: [80, 83, 86, 89, 87, 88], strengths: ["Figma craft", "Research quality", "Iteration speed"], devAreas: ["UX writing", "Stakeholder presentation skills"] },
-  { id: "EMP-006", name: "Tapiwa Moyo", role: "Copywriter", avatar: "TM", color: "var(--blue)", utilisation: 64, billableHours: 107, targetHours: 168, performanceScore: 3.7, tasksCompleted: 38, tasksOverdue: 4, clientSatisfaction: 7.8, revContribution: 28000, ldHours: 0, sickDays: 0, utilisationHistory: [58, 60, 62, 66, 63, 64], strengths: ["Brand voice", "Speed of first drafts"], devAreas: ["Output volume", "Brief interpretation", "L&D investment"] }
-];
-
-function Avatar({ initials, color, size = 32 }: { initials: string; color: string; size?: number }) {
-  const sizeClass = size === 24 ? "tprAvatar24" : size === 26 ? "tprAvatar26" : size === 30 ? "tprAvatar30" : size === 52 ? "tprAvatar52" : "tprAvatar32";
-  return (
-    <div className={cx(styles.tprAvatar, toneVarClass(color), sizeClass)}>
-      {initials}
-    </div>
-  );
-}
 
 const tabs = ["team overview", "individual profiles", "utilisation", "tasks & output"] as const;
 type Tab = (typeof tabs)[number];
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function toneVarClass(value: string): string {
   if (value === "var(--red)") return styles.tprToneRed;
   if (value === "var(--blue)") return styles.tprToneBlue;
@@ -67,23 +58,113 @@ function fillClass(value: string): string {
   return styles.tprFillAccent;
 }
 
-function trendFillColor(value: string, isLast: boolean): string {
-  if (value === "var(--blue)") return isLast ? "var(--blue)" : "color-mix(in srgb, var(--blue) 45%, transparent)";
-  if (value === "var(--amber)") return isLast ? "var(--amber)" : "color-mix(in srgb, var(--amber) 45%, transparent)";
-  return isLast ? "var(--accent)" : "color-mix(in srgb, var(--accent) 45%, transparent)";
+function mapStaff(
+  profile: AdminStaffProfile,
+  standups: AdminStandupEntry[],
+  reviews: AdminPeerReview[]
+): StaffMember {
+  const initials =
+    profile.avatarInitials ??
+    profile.name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+  const color = profile.avatarColor ?? "var(--accent)";
+  const memberStandups = standups.filter((s) => s.staffId === profile.id);
+  const memberReviews = reviews.filter(
+    (r) => r.revieweeId === profile.userId && r.status === "SUBMITTED" && r.score !== null
+  );
+  const avgReviewScore =
+    memberReviews.length > 0
+      ? memberReviews.reduce((sum, r) => sum + (r.score ?? 0), 0) / memberReviews.length
+      : null;
+  return {
+    id: profile.id.slice(0, 8).toUpperCase(),
+    name: profile.name,
+    role: profile.role,
+    avatar: initials,
+    color,
+    department: profile.department ?? "—",
+    isActive: profile.isActive,
+    standupCount: memberStandups.length,
+    reviewScore: avgReviewScore !== null ? Math.round(avgReviewScore * 10) / 10 : null,
+    reviewCount: memberReviews.length,
+  };
 }
 
-export function TeamPerformanceReportPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("team overview");
-  const [selected, setSelected] = useState<StaffMember>(staff[2]);
+// ── Sub-components ────────────────────────────────────────────────────────────
+function Avatar({ initials, color, size = 32 }: { initials: string; color: string; size?: number }) {
+  const sizeClass =
+    size === 24
+      ? "tprAvatar24"
+      : size === 26
+        ? "tprAvatar26"
+        : size === 30
+          ? "tprAvatar30"
+          : size === 52
+            ? "tprAvatar52"
+            : "tprAvatar32";
+  return (
+    <div className={cx(styles.tprAvatar, toneVarClass(color), sizeClass)}>
+      {initials}
+    </div>
+  );
+}
 
-  const avgUtil = Math.round(staff.reduce((s, m) => s + m.utilisation, 0) / staff.length);
-  const totalOverdue = staff.reduce((s, m) => s + m.tasksOverdue, 0);
-  const avgPerf = (
-    staff.filter((m) => m.performanceScore !== null).reduce((s, m) => s + (m.performanceScore ?? 0), 0) /
-    staff.filter((m) => m.performanceScore !== null).length
-  ).toFixed(1);
-  const lowUtil = staff.filter((m) => m.utilisation < 70).length;
+// ── Component ─────────────────────────────────────────────────────────────────
+export function TeamPerformanceReportPage({
+  session,
+  onNotify,
+}: {
+  session: AuthSession | null;
+  onNotify: (tone: "success" | "error", msg: string) => void;
+}) {
+  const [activeTab, setActiveTab] = useState<Tab>("team overview");
+  const [apiStaff, setApiStaff] = useState<AdminStaffProfile[]>([]);
+  const [apiStandups, setApiStandups] = useState<AdminStandupEntry[]>([]);
+  const [apiReviews, setApiReviews] = useState<AdminPeerReview[]>([]);
+  const [selected, setSelected] = useState<StaffMember | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!session) return;
+    setLoading(true);
+    Promise.all([
+      loadAllStaffWithRefresh(session),
+      loadStandupFeedWithRefresh(session),
+      loadAdminPeerReviewsWithRefresh(session),
+    ]).then(([sr, standup, reviews]) => {
+      if (sr.nextSession) saveSession(sr.nextSession);
+      if (standup.nextSession) saveSession(standup.nextSession);
+      if (reviews.nextSession) saveSession(reviews.nextSession);
+      if (sr.error) onNotify("error", sr.error.message);
+      if (!sr.error && sr.data) setApiStaff(sr.data);
+      if (!standup.error && standup.data) setApiStandups(standup.data);
+      if (!reviews.error && reviews.data) setApiReviews(reviews.data);
+      setLoading(false);
+    });
+  }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const staff = useMemo<StaffMember[]>(
+    () => apiStaff.filter((s) => s.isActive).map((s) => mapStaff(s, apiStandups, apiReviews)),
+    [apiStaff, apiStandups, apiReviews]
+  );
+
+  useEffect(() => {
+    if (staff.length > 0 && selected === null) setSelected(staff[0]);
+  }, [staff, selected]);
+
+  const activeCount = staff.length;
+  const deptSet = new Set(apiStaff.map((s) => s.department ?? "Unknown"));
+  const deptCount = deptSet.size;
+  const avgReview = useMemo(() => {
+    const scored = staff.filter((m) => m.reviewScore !== null);
+    if (scored.length === 0) return null;
+    return (scored.reduce((s, m) => s + (m.reviewScore ?? 0), 0) / scored.length).toFixed(1);
+  }, [staff]);
+  const lowEngagement = staff.filter((m) => m.standupCount === 0).length;
 
   return (
     <div className={styles.pageBody}>
@@ -91,7 +172,7 @@ export function TeamPerformanceReportPage() {
         <div>
           <div className={styles.pageEyebrow}>ADMIN / REPORTING & INTELLIGENCE</div>
           <h1 className={styles.pageTitle}>Team Performance Report</h1>
-          <div className={styles.pageSub}>Utilisation · Output · Scores · Development · Feb 2026</div>
+          <div className={styles.pageSub}>Active Staff · Departments · Peer Reviews · Standup Activity</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnAccent")}>Export Report</button>
@@ -100,10 +181,10 @@ export function TeamPerformanceReportPage() {
 
       <div className={cx("topCardsStack", "gap16", "mb28")}>
         {[
-          { label: "Avg Utilisation", value: `${avgUtil}%`, color: avgUtil >= 80 ? "var(--accent)" : "var(--amber)", sub: "Target: 80%" },
-          { label: "Avg Performance Score", value: `${avgPerf}/5`, color: Number.parseFloat(avgPerf) >= 4 ? "var(--accent)" : "var(--amber)", sub: "Scored staff only" },
-          { label: "Overdue Tasks (Feb)", value: totalOverdue.toString(), color: totalOverdue > 5 ? "var(--red)" : "var(--amber)", sub: "Across all staff" },
-          { label: "Low Utilisation Staff", value: lowUtil.toString(), color: lowUtil > 0 ? "var(--amber)" : "var(--accent)", sub: "Below 70%" }
+          { label: "Active Staff", value: activeCount.toString(), color: "var(--accent)", sub: "Currently active" },
+          { label: "Avg Peer Score", value: avgReview ? `${avgReview}/5` : "—", color: avgReview && Number.parseFloat(avgReview) >= 4 ? "var(--accent)" : "var(--amber)", sub: "From submitted reviews" },
+          { label: "Departments", value: deptCount.toString(), color: "var(--blue)", sub: "Distinct departments" },
+          { label: "Low Engagement", value: lowEngagement.toString(), color: lowEngagement > 0 ? "var(--amber)" : "var(--accent)", sub: "No standup activity" },
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}>{s.label}</div>
@@ -113,210 +194,193 @@ export function TeamPerformanceReportPage() {
         ))}
       </div>
 
-      <div className={styles.filterRow}>
-        <select title="View" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
-          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
+      <AdminTabs
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        primaryColor="var(--accent)"
+        mutedColor="var(--muted)"
+        panelColor="var(--surface)"
+        borderColor="var(--border)"
+      />
 
-      {activeTab === "team overview" ? (
-        <div className={styles.tprList10}>
-          {[...staff].sort((a, b) => b.utilisation - a.utilisation).map((member) => {
-            const utilColor = member.utilisation >= 85 ? "var(--accent)" : member.utilisation >= 70 ? "var(--blue)" : member.utilisation >= 60 ? "var(--amber)" : "var(--red)";
-            const perfColor = member.performanceScore ? (member.performanceScore >= 4.5 ? "var(--accent)" : member.performanceScore >= 3.5 ? "var(--blue)" : "var(--amber)") : "var(--muted)";
-            return (
-              <div
-                key={member.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => {
-                  setSelected(member);
-                  setActiveTab("individual profiles");
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setSelected(member);
-                    setActiveTab("individual profiles");
-                  }
-                }}
-                className={cx(styles.tprOverviewRow, member.utilisation < 70 ? styles.tprToneAmber : styles.tprToneBorder)}
-              >
-                <div className={styles.tprNameCol}>
-                  <Avatar initials={member.avatar} color={member.color} size={30} />
-                  <div>
-                    <div className={styles.tprName}>{member.name.split(" ")[0]}</div>
-                    <div className={styles.tprRole}>{member.role}</div>
-                  </div>
-                </div>
-                <div>
-                  <div className={styles.tprBarHead}>
-                    <span className={styles.tprMini}>{member.billableHours}h / {member.targetHours}h</span>
-                    <span className={cx(styles.tprMono11, colorClass(utilColor))}>{member.utilisation}%</span>
-                  </div>
-                  <progress className={cx(styles.tprTrack6, fillClass(utilColor))} max={100} value={member.utilisation} aria-label={`${member.name} utilisation ${member.utilisation}%`} />
-                </div>
-                <div className={styles.tprKpiCol}><div className={styles.tprMini}>Score</div><div className={cx(styles.tprMono700, colorClass(perfColor))}>{member.performanceScore ? `${member.performanceScore}` : "—"}</div></div>
-                <div className={styles.tprKpiCol}><div className={styles.tprMini}>Done</div><div className={cx("fontMono", "colorAccent")}>{member.tasksCompleted}</div></div>
-                <div className={styles.tprKpiCol}><div className={styles.tprMini}>Overdue</div><div className={cx("fontMono", member.tasksOverdue > 3 ? "colorRed" : member.tasksOverdue > 0 ? "colorAmber" : "colorAccent")}>{member.tasksOverdue}</div></div>
-                <div className={styles.tprKpiCol}><div className={styles.tprMini}>L&D Hrs</div><div className={cx("fontMono", member.ldHours === 0 ? "colorRed" : "colorBlue")}>{member.ldHours}h</div></div>
-                <div className={styles.tprKpiCol}><div className={styles.tprMini}>Sick Days</div><div className={cx("fontMono", "colorMuted")}>{member.sickDays}</div></div>
-                <span className={styles.tprChevron}>▶</span>
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
-
-      {activeTab === "individual profiles" ? (
-        <div className={styles.tprProfileSplit}>
-          <div className={styles.tprProfileNav}>
-            {staff.map((m) => (
-              <div
-                key={m.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => setSelected(m)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setSelected(m);
-                  }
-                }}
-                className={cx(styles.tprProfileNavItem, toneVarClass(m.color), selected.id === m.id && styles.tprProfileNavItemActive)}
-              >
-                <Avatar initials={m.avatar} color={m.color} size={24} />
-                <div>
-                  <div className={styles.tprProfileNavName}>{m.name.split(" ")[0]}</div>
-                  <div className={cx("fontMono", "text11", m.utilisation >= 80 ? "colorAccent" : "colorAmber")}>{m.utilisation}%</div>
-                </div>
-              </div>
-            ))}
+      <div className={cx("overflowAuto", "minH0")}>
+        {loading ? (
+          <div className={cx("colorMuted", "text13", "py32", "textCenter")}>
+            Loading team data…
           </div>
+        ) : null}
 
-          <div className={cx(styles.tprProfileCard, toneVarClass(selected.color))}>
-            <div className={styles.tprProfileHead}>
-              <Avatar initials={selected.avatar} color={selected.color} size={52} />
-              <div>
-                <div className={styles.tprProfileName}>{selected.name}</div>
-                <div className={styles.tprProfileRole}>{selected.role}</div>
-              </div>
-              {selected.performanceScore ? (
-                <div className={styles.tprPerfBox}>
-                  <div className={cx(styles.tprPerfValue, selected.performanceScore >= 4 ? "colorAccent" : "colorAmber")}>{selected.performanceScore}</div>
-                  <div className={styles.tprMini}>Performance / 5</div>
+        {!loading && activeTab === "team overview" ? (
+          <div className={styles.tprList10}>
+            {staff.length === 0 ? (
+              <div className={cx("colorMuted", "text13", "py24", "textCenter")}>No active staff found.</div>
+            ) : null}
+            {[...staff].sort((a, b) => b.standupCount - a.standupCount).map((member) => {
+              const scoreColor = member.reviewScore
+                ? member.reviewScore >= 4.5 ? "var(--accent)" : member.reviewScore >= 3.5 ? "var(--blue)" : "var(--amber)"
+                : "var(--muted)";
+              const engagementColor = member.standupCount > 10 ? "var(--accent)" : member.standupCount > 4 ? "var(--blue)" : member.standupCount > 0 ? "var(--amber)" : "var(--red)";
+              const engagementPct = Math.min((member.standupCount / 20) * 100, 100);
+              return (
+                <div
+                  key={member.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { setSelected(member); setActiveTab("individual profiles"); }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelected(member);
+                      setActiveTab("individual profiles");
+                    }
+                  }}
+                  className={cx(styles.tprOverviewRow, member.standupCount === 0 ? styles.tprToneAmber : styles.tprToneBorder)}
+                >
+                  <div className={styles.tprNameCol}>
+                    <Avatar initials={member.avatar} color={member.color} size={30} />
+                    <div>
+                      <div className={styles.tprName}>{member.name.split(" ")[0]}</div>
+                      <div className={styles.tprRole}>{member.role}</div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className={styles.tprBarHead}>
+                      <span className={styles.tprMini}>{member.standupCount} standups logged</span>
+                      <span className={cx(styles.tprMono11, colorClass(engagementColor))}>{Math.round(engagementPct)}%</span>
+                    </div>
+                    <progress className={cx(styles.tprTrack6, fillClass(engagementColor))} max={100} value={engagementPct} aria-label={`${member.name} standup engagement`} />
+                  </div>
+                  <div className={styles.tprKpiCol}><div className={styles.tprMini}>Score</div><div className={cx(styles.tprMono700, colorClass(scoreColor))}>{member.reviewScore ?? "—"}</div></div>
+                  <div className={styles.tprKpiCol}><div className={styles.tprMini}>Reviews</div><div className={cx("fontMono", "colorBlue")}>{member.reviewCount}</div></div>
+                  <div className={styles.tprKpiCol}><div className={styles.tprMini}>Dept</div><div className={cx("text11", "colorMuted")}>{member.department.split(" ")[0]}</div></div>
+                  <span className={styles.tprChevron}>▶</span>
                 </div>
-              ) : null}
-            </div>
+              );
+            })}
+          </div>
+        ) : null}
 
-            <div className={styles.tprMetricGrid}>
-              {[
-                { label: "Utilisation", value: `${selected.utilisation}%`, color: selected.utilisation >= 80 ? "var(--accent)" : "var(--amber)" },
-                { label: "Billable Hours", value: `${selected.billableHours}h`, color: "var(--blue)" },
-                { label: "Tasks Completed", value: selected.tasksCompleted.toString(), color: "var(--accent)" },
-                { label: "Tasks Overdue", value: selected.tasksOverdue.toString(), color: selected.tasksOverdue > 0 ? "var(--red)" : "var(--accent)" },
-                { label: "L&D Hours", value: `${selected.ldHours}h`, color: selected.ldHours === 0 ? "var(--red)" : "var(--blue)" },
-                { label: "Client Satisfaction", value: selected.clientSatisfaction ? `${selected.clientSatisfaction}/10` : "N/A", color: selected.clientSatisfaction ? (selected.clientSatisfaction >= 8 ? "var(--accent)" : "var(--amber)") : "var(--muted)" }
-              ].map((m) => (
-                <div key={m.label} className={styles.tprMetricTile}>
-                  <div className={cx(styles.tprMetricValue, colorClass(m.color))}>{m.value}</div>
-                  <div className={styles.tprMetricLabel}>{m.label}</div>
+        {!loading && activeTab === "individual profiles" && selected ? (
+          <div className={styles.tprProfileSplit}>
+            <div className={styles.tprProfileNav}>
+              {staff.map((m) => (
+                <div
+                  key={m.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelected(m)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelected(m);
+                    }
+                  }}
+                  className={cx(styles.tprProfileNavItem, toneVarClass(m.color), selected.id === m.id && styles.tprProfileNavItemActive)}
+                >
+                  <Avatar initials={m.avatar} color={m.color} size={24} />
+                  <div>
+                    <div className={styles.tprProfileNavName}>{m.name.split(" ")[0]}</div>
+                    <div className={cx("fontMono", "text11", m.standupCount > 0 ? "colorAccent" : "colorAmber")}>{m.standupCount}s</div>
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div className={styles.tprTrendBlock}>
-              <div className={styles.tprTrendTitle}>Utilisation Trend (6mo)</div>
-              <div className={styles.tprTrendBars}>
-                {selected.utilisationHistory.map((v, i) => {
-                  const isLast = i === selected.utilisationHistory.length - 1;
-                  const color = v >= 85 ? "var(--accent)" : v >= 70 ? "var(--blue)" : "var(--amber)";
-                  return (
-                    <div key={i} className={styles.tprTrendBarCol}>
-                      <svg className={styles.tprTrendBar} viewBox="0 0 10 60" preserveAspectRatio="none" aria-hidden="true">
-                        <rect x="0" y={60 - (v / 100) * 60} width="10" height={(v / 100) * 60} fill={trendFillColor(color, isLast)} />
-                      </svg>
-                      <span className={styles.tprMiniMonth}>{months[i]}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className={styles.tprStrengthSplit}>
-              <div className={styles.tprStrengthCard}>
-                <div className={styles.tprStrengthHd}>✦ Strengths</div>
-                {selected.strengths.map((s, i) => (
-                  <div key={i} className={styles.tprBulletRow}><span className={styles.tprDotAccent}>·</span><span>{s}</span></div>
-                ))}
-              </div>
-              <div className={styles.tprDevCard}>
-                <div className={styles.tprDevHd}>↑ Development Areas</div>
-                {selected.devAreas.map((d, i) => (
-                  <div key={i} className={styles.tprBulletRow}><span className={styles.tprDotAmber}>·</span><span>{d}</span></div>
-                ))}
-              </div>
-            </div>
-            <div className={styles.tprActionRow}>
-              <button type="button" className={cx("btnSm", "btnAccent")}>View Full Record</button>
-              <button type="button" className={cx("btnSm", "btnGhost")}>Schedule Review</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {activeTab === "utilisation" ? (
-        <div className={styles.tprList14}>
-          <div className={styles.tprUtilCard}>
-            <div className={styles.tprSecTitle}>Team Utilisation — Feb 2026</div>
-            {[...staff].sort((a, b) => b.utilisation - a.utilisation).map((m) => {
-              const color = m.utilisation >= 85 ? "var(--accent)" : m.utilisation >= 70 ? "var(--blue)" : m.utilisation >= 60 ? "var(--amber)" : "var(--red)";
-              return (
-                <div key={m.id} className={styles.tprUtilRow}>
-                  <Avatar initials={m.avatar} color={m.color} size={26} />
-                  <span className={styles.tprUtilName}>{m.name.split(" ")[0]}</span>
-                  <div className={styles.tprUtilTrackWrap}>
-                    <progress className={cx(styles.tprUtilFill, fillClass(color))} max={100} value={m.utilisation} aria-label={`${m.name} utilisation ${m.utilisation}%`} />
-                    <span className={styles.tprUtilFillLabel}>{m.billableHours}h billable</span>
-                    <div className={styles.tprTargetLine} />
-                  </div>
-                  <span className={cx(styles.tprUtilPct, colorClass(color))}>{m.utilisation}%</span>
-                  {m.utilisation < 70 ? <span className={styles.tprLowTag}>Low</span> : null}
+            <div className={cx(styles.tprProfileCard, toneVarClass(selected.color))}>
+              <div className={styles.tprProfileHead}>
+                <Avatar initials={selected.avatar} color={selected.color} size={52} />
+                <div>
+                  <div className={styles.tprProfileName}>{selected.name}</div>
+                  <div className={styles.tprProfileRole}>{selected.role}</div>
                 </div>
-              );
-            })}
-            <div className={styles.tprUtilFoot}>Vertical line = 80% target. Total team: {Math.round(staff.reduce((s, m) => s + m.billableHours, 0))}h billable of {staff.reduce((s, m) => s + m.targetHours, 0)}h capacity.</div>
+                {selected.reviewScore !== null ? (
+                  <div className={styles.tprPerfBox}>
+                    <div className={cx(styles.tprPerfValue, selected.reviewScore >= 4 ? "colorAccent" : "colorAmber")}>{selected.reviewScore}</div>
+                    <div className={styles.tprMini}>Avg Peer Score / 5</div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className={styles.tprMetricGrid}>
+                {[
+                  { label: "Department", value: selected.department, color: "var(--blue)" },
+                  { label: "Standup Count", value: `${selected.standupCount}`, color: selected.standupCount > 0 ? "var(--accent)" : "var(--amber)" },
+                  { label: "Peer Reviews", value: `${selected.reviewCount}`, color: "var(--blue)" },
+                  { label: "Avg Peer Score", value: selected.reviewScore !== null ? `${selected.reviewScore}/5` : "N/A", color: selected.reviewScore !== null ? (selected.reviewScore >= 4 ? "var(--accent)" : "var(--amber)") : "var(--muted)" },
+                  { label: "Status", value: selected.isActive ? "Active" : "Inactive", color: selected.isActive ? "var(--accent)" : "var(--red)" },
+                  { label: "Staff ID", value: selected.id, color: "var(--muted)" },
+                ].map((m) => (
+                  <div key={m.label} className={styles.tprMetricTile}>
+                    <div className={cx(styles.tprMetricValue, colorClass(m.color))}>{m.value}</div>
+                    <div className={styles.tprMetricLabel}>{m.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className={styles.tprActionRow}>
+                <button type="button" className={cx("btnSm", "btnAccent")}>View Full Record</button>
+                <button type="button" className={cx("btnSm", "btnGhost")}>Schedule Review</button>
+              </div>
+            </div>
           </div>
-          <div className={styles.tprUtilCard}>
-            <div className={styles.tprSecTitle}>Utilisation Trend — All Staff (6mo)</div>
-            <div className={styles.tprBigTrendBars}>
-              {months.map((month, mi) => {
-                const avgU = Math.round(staff.reduce((s, m) => s + m.utilisationHistory[mi], 0) / staff.length);
-                const h = (avgU / 100) * 80;
-                const isLast = mi === months.length - 1;
+        ) : null}
+
+        {!loading && activeTab === "utilisation" ? (
+          <div className={styles.tprList14}>
+            <div className={styles.tprUtilCard}>
+              <div className={styles.tprSecTitle}>Team Standup Engagement</div>
+              {[...staff].sort((a, b) => b.standupCount - a.standupCount).map((m) => {
+                const pct = Math.min((m.standupCount / 20) * 100, 100);
+                const color = pct >= 75 ? "var(--accent)" : pct >= 40 ? "var(--blue)" : pct > 0 ? "var(--amber)" : "var(--red)";
                 return (
-                  <div key={month} className={styles.tprBigTrendCol}>
-                    <span className={cx("text10", isLast ? "colorAccent" : "colorMuted")}>{avgU}%</span>
-                    <svg className={styles.tprBigTrendBar} viewBox="0 0 10 80" preserveAspectRatio="none" aria-hidden="true">
-                      <rect x="0" y={80 - h} width="10" height={h} fill={isLast ? "var(--accent)" : "var(--accent-d)"} />
-                    </svg>
-                    <span className={styles.tprMiniMonth}>{month}</span>
+                  <div key={m.id} className={styles.tprUtilRow}>
+                    <Avatar initials={m.avatar} color={m.color} size={26} />
+                    <span className={styles.tprUtilName}>{m.name.split(" ")[0]}</span>
+                    <div className={styles.tprUtilTrackWrap}>
+                      <progress className={cx(styles.tprUtilFill, fillClass(color))} max={100} value={pct} aria-label={`${m.name} standup engagement`} />
+                      <span className={styles.tprUtilFillLabel}>{m.standupCount} standups</span>
+                    </div>
+                    <span className={cx(styles.tprUtilPct, colorClass(color))}>{Math.round(pct)}%</span>
+                    {m.standupCount === 0 ? <span className={styles.tprLowTag}>Low</span> : null}
+                  </div>
+                );
+              })}
+              <div className={styles.tprUtilFoot}>
+                Active staff: {activeCount} | Depts: {deptCount}
+              </div>
+            </div>
+
+            <div className={styles.tprUtilCard}>
+              <div className={styles.tprSecTitle}>Department Breakdown</div>
+              {Array.from(deptSet).map((dept) => {
+                const count = apiStaff.filter((s) => (s.department ?? "Unknown") === dept && s.isActive).length;
+                const pct = Math.round((count / Math.max(activeCount, 1)) * 100);
+                return (
+                  <div key={dept} className={styles.tprUtilRow}>
+                    <span className={styles.tprUtilName}>{dept}</span>
+                    <div className={styles.tprUtilTrackWrap}>
+                      <progress className={cx(styles.tprUtilFill, fillClass("var(--blue)"))} max={100} value={pct} aria-label={`${dept} headcount`} />
+                    </div>
+                    <span className={cx(styles.tprUtilPct, "colorBlue")}>{count}</span>
                   </div>
                 );
               })}
             </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {activeTab === "tasks & output" ? (
-        <div className={styles.tprTableCard}>
-          <div className={styles.tprOutputHead}>
-            {["Employee", "Completed", "Overdue", "Completion %", "L&D Hrs", "Sick Days"].map((h) => <span key={h}>{h}</span>)}
-          </div>
-          {[...staff].sort((a, b) => b.tasksCompleted - a.tasksCompleted).map((m, i) => {
-            const completionRate = Math.round((m.tasksCompleted / (m.tasksCompleted + m.tasksOverdue)) * 100);
-            return (
+        {!loading && activeTab === "tasks & output" ? (
+          <div className={styles.tprTableCard}>
+            <div className={styles.tprOutputHead}>
+              {["Employee", "Department", "Standups", "Peer Reviews", "Avg Score", "Status"].map((h) => (
+                <span key={h}>{h}</span>
+              ))}
+            </div>
+            {staff.length === 0 ? (
+              <div className={cx("colorMuted", "text13", "py24", "textCenter")}>No active staff found.</div>
+            ) : null}
+            {[...staff].sort((a, b) => b.standupCount - a.standupCount).map((m, i) => (
               <div key={m.id} className={cx(styles.tprOutputRow, i < staff.length - 1 && "borderB")}>
                 <div className={styles.tprEmpCell}>
                   <Avatar initials={m.avatar} color={m.color} size={26} />
@@ -325,19 +389,18 @@ export function TeamPerformanceReportPage() {
                     <div className={styles.tprEmpRole}>{m.role}</div>
                   </div>
                 </div>
-                <span className={styles.tprOutputDone}>{m.tasksCompleted}</span>
-                <span className={cx(styles.tprOutputOverdue, m.tasksOverdue > 3 ? "colorRed" : m.tasksOverdue > 0 ? "colorAmber" : "colorAccent")}>{m.tasksOverdue}</span>
-                <div>
-                  <progress className={cx(styles.tprTrack6Mb, completionRate >= 90 ? styles.tprFillAccent : styles.tprFillAmber)} max={100} value={completionRate} aria-label={`${m.name} completion ${completionRate}%`} />
-                  <span className={cx(styles.tprOutputPct, completionRate >= 90 ? "colorAccent" : "colorAmber")}>{completionRate}%</span>
-                </div>
-                <span className={cx(styles.tprOutputLd, m.ldHours === 0 ? "colorRed" : "colorBlue")}>{m.ldHours}h</span>
-                <span className={styles.tprOutputSick}>{m.sickDays}d</span>
+                <span className={cx("text12", "colorMuted")}>{m.department}</span>
+                <span className={cx(styles.tprOutputDone, m.standupCount === 0 ? "colorRed" : "colorAccent")}>{m.standupCount}</span>
+                <span className={cx(styles.tprOutputOverdue, "colorBlue")}>{m.reviewCount}</span>
+                <span className={cx(styles.tprOutputPct, m.reviewScore !== null ? (m.reviewScore >= 4 ? "colorAccent" : "colorAmber") : "colorMuted")}>
+                  {m.reviewScore !== null ? `${m.reviewScore}/5` : "—"}
+                </span>
+                <span className={cx("text11", m.isActive ? "colorAccent" : "colorRed")}>{m.isActive ? "Active" : "Inactive"}</span>
               </div>
-            );
-          })}
-        </div>
-      ) : null}
+            ))}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

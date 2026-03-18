@@ -1,62 +1,131 @@
+// ════════════════════════════════════════════════════════════════════════════
+// end-of-day-wrap-page.tsx — Staff End-of-Day Wrap
+// Data : getMyTasks → derives suggestedTasks, completedToday, urgentItems
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cx } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import { getMyTasks, type StaffTask } from "../../../../lib/api/staff/tasks";
 
-const today = "Monday, Feb 23";
-const currentTime = "17:02";
+// ── Derived types ─────────────────────────────────────────────────────────────
 
-const suggestedTasks = [
-  { id: 1, text: "Chase Volta Studios approval on logo suite", client: "Volta Studios", urgent: true, done: false },
-  { id: 2, text: "Complete Kestrel KPI framework doc", client: "Kestrel Capital", urgent: true, done: false },
-  { id: 3, text: "Revise Mira Health booking flow wireframes", client: "Mira Health", urgent: false, done: false },
-  { id: 4, text: "Send weekly update to Okafor & Sons", client: "Okafor & Sons", urgent: false, done: false },
-  { id: 5, text: "Review Dune Collective type system docs", client: "Dune Collective", urgent: false, done: false }
-];
+type SuggestedTask = { id: string; text: string; client: string; urgent: boolean; done: boolean };
+type CompletedTask = { text: string; hours: number; client: string };
+type UrgentItem    = { type: "approval" | "overdue" | "invoice"; text: string };
 
-const completedToday = [
-  { text: "Updated Volta brand colour palette - warmer amber", hours: 2.5, client: "Volta Studios" },
-  { text: "Drafted Kestrel audience segmentation analysis", hours: 3, client: "Kestrel Capital" },
-  { text: "Internal review call with design team", hours: 1, client: "Internal" },
-  { text: "Sent follow-up to Dune Collective (no response)", hours: 0.5, client: "Dune Collective" }
-];
+// ── Derivation helper ─────────────────────────────────────────────────────────
 
-const urgentItems = [
-  { type: "approval", text: "Volta Studios logo suite - awaiting sign-off 2 days" },
-  { type: "overdue", text: "Dune Collective - 6 days without client contact" },
-  { type: "invoice", text: "Kestrel Capital invoice overdue 7 days" }
-] as const;
+function deriveFromTasks(tasks: StaffTask[]): {
+  suggested: SuggestedTask[];
+  completed: CompletedTask[];
+  urgent:    UrgentItem[];
+} {
+  const todayStr = new Date().toDateString();
+  const now      = new Date();
 
-const steps = ["wrap_up", "top_three", "flag", "done"];
+  const suggested: SuggestedTask[] = tasks
+    .filter((t) => t.status !== "DONE")
+    .sort((a, b) => {
+      const pri: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+      return (pri[a.priority] ?? 2) - (pri[b.priority] ?? 2);
+    })
+    .map((t) => ({
+      id:     t.id,
+      text:   t.title,
+      client: "",
+      urgent: t.priority === "HIGH",
+      done:   false,
+    }));
+
+  const completed: CompletedTask[] = tasks
+    .filter(
+      (t) =>
+        t.status === "DONE" &&
+        t.completedAt !== null &&
+        new Date(t.completedAt).toDateString() === todayStr
+    )
+    .map((t) => ({
+      text:   t.title,
+      hours:  t.estimateMinutes ? Math.round((t.estimateMinutes / 60) * 10) / 10 : 0,
+      client: "",
+    }));
+
+  const urgent: UrgentItem[] = tasks
+    .filter(
+      (t) =>
+        t.status === "BLOCKED" ||
+        (t.status !== "DONE" && t.dueAt !== null && new Date(t.dueAt) < now)
+    )
+    .map((t) => ({ type: "overdue" as const, text: t.title }));
+
+  return { suggested, completed, urgent };
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const _now        = new Date();
+const todayLabel  = _now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
+const currentTime = _now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+const steps      = ["wrap_up", "top_three", "flag", "done"];
 const stepLabels = ["Log your day", "Set tomorrow's top 3", "Flag anything urgent", "Done"];
 
-export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
-  const [step, setStep] = useState(0);
-  const [hoursLogged, setHoursLogged] = useState("");
-  const [wrapNote, setWrapNote] = useState("");
-  const [mood, setMood] = useState(0);
-  const [tomorrowTasks, setTomorrowTasks] = useState(suggestedTasks.slice(0, 3).map((task) => ({ ...task })));
-  const [customTask, setCustomTask] = useState("");
-  const [flaggedItems, setFlaggedItems] = useState<number[]>([]);
-  const [additionalFlag, setAdditionalFlag] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function EndOfDayWrapPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
+  const [step,          setStep]          = useState(0);
+  const [hoursLogged,   setHoursLogged]   = useState("");
+  const [wrapNote,      setWrapNote]      = useState("");
+  const [mood,          setMood]          = useState(0);
+  const [tomorrowTasks, setTomorrowTasks] = useState<SuggestedTask[]>([]);
+  const [customTask,    setCustomTask]    = useState("");
+  const [flaggedItems,  setFlaggedItems]  = useState<number[]>([]);
+  const [additionalFlag,setAdditionalFlag]= useState("");
+  const [submitted,     setSubmitted]     = useState(false);
+  const [completedToday,setCompletedToday]= useState<CompletedTask[]>([]);
+  const [urgentItems,   setUrgentItems]   = useState<UrgentItem[]>([]);
+
+  useEffect(() => {
+    if (!session || !isActive) return;
+    let cancelled = false;
+    void getMyTasks(session).then((r) => {
+      if (cancelled) return;
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) {
+        const { suggested, completed, urgent } = deriveFromTasks(r.data);
+        setTomorrowTasks(suggested.slice(0, 3));
+        setCompletedToday(completed);
+        setUrgentItems(urgent);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [session, isActive]);
 
   const moodEmojis = ["", "😔", "😐", "🙂", "😄", "🔥"];
   const moodLabels = ["", "Rough", "Slow", "Okay", "Good", "Fired up"];
 
   const totalHoursToday = completedToday.reduce((sum, task) => sum + task.hours, 0);
-  const canProceed = step === 0 ? hoursLogged !== "" && mood > 0 : true;
+  const canProceed      = step === 0 ? hoursLogged !== "" && mood > 0 : true;
 
   const toggleFlag = (index: number) =>
-    setFlaggedItems((previous) => (previous.includes(index) ? previous.filter((item) => item !== index) : [...previous, index]));
+    setFlaggedItems((previous) =>
+      previous.includes(index) ? previous.filter((item) => item !== index) : [...previous, index]
+    );
 
   const addCustomTask = () => {
     if (!customTask.trim() || tomorrowTasks.length >= 5) return;
-    setTomorrowTasks((previous) => [...previous, { id: Date.now(), text: customTask.trim(), client: "", urgent: false, done: false }]);
+    setTomorrowTasks((previous) => [
+      ...previous,
+      { id: String(Date.now()), text: customTask.trim(), client: "", urgent: false, done: false },
+    ]);
     setCustomTask("");
   };
 
-  const removeTask = (id: number) => setTomorrowTasks((previous) => previous.filter((task) => task.id !== id));
+  const removeTask = (id: string) =>
+    setTomorrowTasks((previous) => previous.filter((task) => task.id !== id));
 
   if (submitted) {
     return (
@@ -76,14 +145,14 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-eod-wrap">
-      <div className={cx("pageHeaderBar", "flexBetween", "borderB", "edwHeaderBar")}> 
+      <div className={cx("pageHeaderBar", "flexBetween", "borderB", "edwHeaderBar")}>
         <div>
           <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Daily Rhythm</div>
           <h1 className={cx("pageTitleText")}>End-of-day Wrap</h1>
-          <div className={cx("text12", "colorMuted2", "mt6")}>{today} · {currentTime}</div>
+          <div className={cx("text12", "colorMuted2", "mt6")}>{todayLabel} · {currentTime}</div>
         </div>
 
-        <div className={cx("flexRow")}> 
+        <div className={cx("flexRow")}>
           {steps.map((item, index) => (
             <div key={item} className={cx("flexRow")}>
               <button
@@ -93,9 +162,7 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
                   index < step ? "edwStepDotDone" : index === step ? "edwStepDotCurrent" : "edwStepDotIdle",
                   index < step && "edwStepDotClickable"
                 )}
-                onClick={() => {
-                  if (index < step) setStep(index);
-                }}
+                onClick={() => { if (index < step) setStep(index); }}
                 disabled={index >= step}
               >
                 {index < step ? "✓" : index + 1}
@@ -109,15 +176,16 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
       </div>
 
       <div className={cx("edwLayout")}>
-        <div className={cx("edwMainPane")}> 
+        <div className={cx("edwMainPane")}>
           <div className={cx("sectionLabel", "mb6")}>Step {step + 1} of {steps.length}</div>
           <div className={cx("fontDisplay", "fw800", "colorText", "mb28", "edwStepTitle")}>{stepLabels[step]}</div>
 
+          {/* ── Step 0: Log your day ── */}
           {step === 0 ? (
-            <div className={cx("flexCol", "gap24", "edwBlockWidth")}> 
+            <div className={cx("flexCol", "gap24", "edwBlockWidth")}>
               <div>
                 <div className={cx("sectionLabel", "mb10")}>Hours logged today</div>
-                <div className={cx("flexRow", "gap10", "flexWrap", "mb10")}> 
+                <div className={cx("flexRow", "gap10", "flexWrap", "mb10")}>
                   {[6, 6.5, 7, 7.5, 8, 8.5, 9].map((hour) => (
                     <button
                       key={hour}
@@ -128,7 +196,6 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
                       {hour}h
                     </button>
                   ))}
-
                   <input
                     type="number"
                     min="0"
@@ -140,11 +207,15 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
                     className={cx("inputBase", "text12", "edwHourInput")}
                   />
                 </div>
-                <div className={cx("text10", "colorMuted2")}>Time-tracked today: {totalHoursToday}h across {completedToday.length} tasks</div>
+                <div className={cx("text10", "colorMuted2")}>
+                  Time-tracked today: {totalHoursToday}h across {completedToday.length} tasks
+                </div>
               </div>
 
               <div>
-                <div className={cx("sectionLabel", "mb10")}>Quick reflection <span className={cx("edwOptionalText")}>Optional</span></div>
+                <div className={cx("sectionLabel", "mb10")}>
+                  Quick reflection <span className={cx("edwOptionalText")}>Optional</span>
+                </div>
                 <textarea
                   value={wrapNote}
                   onChange={(event) => setWrapNote(event.target.value)}
@@ -155,7 +226,7 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
 
               <div>
                 <div className={cx("sectionLabel", "mb14")}>How did today feel?</div>
-                <div className={cx("flexRow", "gap12")}> 
+                <div className={cx("flexRow", "gap12")}>
                   {[1, 2, 3, 4, 5].map((value) => (
                     <button
                       key={value}
@@ -165,7 +236,12 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
                       onClick={() => setMood(value)}
                     >
                       <span className={cx("edwMoodEmoji")}>{moodEmojis[value]}</span>
-                      <span className={cx("tracking", "edwMoodLabel", mood === value && "edwMoodLabelActive")} data-mood={String(value)}>{moodLabels[value]}</span>
+                      <span
+                        className={cx("tracking", "edwMoodLabel", mood === value && "edwMoodLabelActive")}
+                        data-mood={String(value)}
+                      >
+                        {moodLabels[value]}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -173,22 +249,29 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
             </div>
           ) : null}
 
+          {/* ── Step 1: Set tomorrow's top 3 ── */}
           {step === 1 ? (
-            <div className={cx("edwBlockWide")}> 
+            <div className={cx("edwBlockWide")}>
               <div className={cx("text12", "colorMuted2", "mb20", "edwLeadText")}>
                 These are pulled from your open tasks and overdue items. Edit, reorder, or add your own.
               </div>
 
-              <div className={cx("flexCol", "gap8", "mb16")}> 
+              <div className={cx("flexCol", "gap8", "mb16")}>
                 {tomorrowTasks.map((task, index) => (
-                  <div key={task.id} className={cx("edwTaskItem", "edwTaskRow")}> 
-                    <div className={cx("flexCenter", "noShrink", "fontDisplay", "fw700", "text11", "colorMuted2", "edwTaskOrder")}>{index + 1}</div>
-                    <div className={cx("flex1")}> 
+                  <div key={task.id} className={cx("edwTaskItem", "edwTaskRow")}>
+                    <div className={cx("flexCenter", "noShrink", "fontDisplay", "fw700", "text11", "colorMuted2", "edwTaskOrder")}>
+                      {index + 1}
+                    </div>
+                    <div className={cx("flex1")}>
                       <div className={cx("text12", "colorText", "edwTaskText")}>{task.text}</div>
                       {task.client ? <div className={cx("text10", "colorMuted2", "mt4", "edwTaskClient")}>{task.client}</div> : null}
                       {task.urgent ? <div className={cx("colorAmber", "tracking", "mt4", "edwUrgentTag")}>URGENT</div> : null}
                     </div>
-                    <button type="button" className={cx("edwRemoveBtn", "edwRemoveBtnVisible")} onClick={() => removeTask(task.id)}>
+                    <button
+                      type="button"
+                      className={cx("edwRemoveBtn", "edwRemoveBtnVisible")}
+                      onClick={() => removeTask(task.id)}
+                    >
                       ×
                     </button>
                   </div>
@@ -196,17 +279,19 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
               </div>
 
               {tomorrowTasks.length < 5 ? (
-                <div className={cx("flexRow", "gap8")}> 
+                <div className={cx("flexRow", "gap8")}>
                   <input
                     value={customTask}
                     onChange={(event) => setCustomTask(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") addCustomTask();
-                    }}
+                    onKeyDown={(event) => { if (event.key === "Enter") addCustomTask(); }}
                     placeholder="Add another task..."
                     className={cx("inputBase", "flex1", "text12", "edwTaskInput")}
                   />
-                  <button type="button" onClick={addCustomTask} className={cx("fontMono", "text12", "colorAccent", "edwTaskAddBtn")}>
+                  <button
+                    type="button"
+                    onClick={addCustomTask}
+                    className={cx("fontMono", "text12", "colorAccent", "edwTaskAddBtn")}
+                  >
                     + Add
                   </button>
                 </div>
@@ -214,13 +299,14 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
             </div>
           ) : null}
 
+          {/* ── Step 2: Flag urgent items ── */}
           {step === 2 ? (
-            <div className={cx("edwBlockWidth")}> 
+            <div className={cx("edwBlockWidth")}>
               <div className={cx("text12", "colorMuted2", "mb20", "edwLeadText")}>
                 These items surfaced from your clients today. Flag anything that needs admin attention.
               </div>
 
-              <div className={cx("flexCol", "gap8", "mb20")}> 
+              <div className={cx("flexCol", "gap8", "mb20")}>
                 {urgentItems.map((item, index) => {
                   const isFlagged = flaggedItems.includes(index);
                   return (
@@ -230,18 +316,25 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
                       className={cx("edwFlagItem", "edwFlagRow", isFlagged && "edwFlagRowActive")}
                       onClick={() => toggleFlag(index)}
                     >
-                      <div className={cx("flexCenter", "noShrink", "edwFlagCheck", isFlagged && "edwFlagCheckActive")}>{isFlagged ? "✓" : ""}</div>
-                      <div className={cx("flex1")}> 
+                      <div className={cx("flexCenter", "noShrink", "edwFlagCheck", isFlagged && "edwFlagCheckActive")}>
+                        {isFlagged ? "✓" : ""}
+                      </div>
+                      <div className={cx("flex1")}>
                         <div className={cx("text12", isFlagged ? "colorText" : "colorMuted")}>{item.text}</div>
                         <div className={cx("uppercase", "mt4", "edwFlagType")} data-type={item.type}>{item.type}</div>
                       </div>
                     </button>
                   );
                 })}
+                {urgentItems.length === 0 ? (
+                  <div className={cx("text12", "colorMuted2")}>No blocked or overdue tasks — you're on track.</div>
+                ) : null}
               </div>
 
               <div>
-                <div className={cx("sectionLabel", "mb10")}>Anything else to flag? <span className={cx("edwOptionalText")}>Optional</span></div>
+                <div className={cx("sectionLabel", "mb10")}>
+                  Anything else to flag? <span className={cx("edwOptionalText")}>Optional</span>
+                </div>
                 <textarea
                   value={additionalFlag}
                   onChange={(event) => setAdditionalFlag(event.target.value)}
@@ -254,7 +347,11 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
 
           <div className={cx("flexRow", "gap12", "edwNavRow")}>
             {step > 0 ? (
-              <button type="button" className={cx("edwBackBtn", "edwBackBtnShell")} onClick={() => setStep((previous) => previous - 1)}>
+              <button
+                type="button"
+                className={cx("edwBackBtn", "edwBackBtnShell")}
+                onClick={() => setStep((previous) => previous - 1)}
+              >
                 ← Back
               </button>
             ) : null}
@@ -276,10 +373,11 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
           </div>
         </div>
 
-        <div className={cx("flexCol", "gap20", "edwSidePane")}> 
+        {/* ── Side panel ── */}
+        <div className={cx("flexCol", "gap20", "edwSidePane")}>
           <div>
             <div className={cx("sectionLabel", "mb12")}>Completed Today</div>
-            <div className={cx("flexCol", "gap6")}> 
+            <div className={cx("flexCol", "gap6")}>
               {completedToday.map((task, index) => (
                 <div key={index} className={cx("cardSurfaceSm")}>
                   <div className={cx("text11", "colorMuted", "mb4", "edwDoneTaskText")}>{task.text}</div>
@@ -289,6 +387,9 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
                   </div>
                 </div>
               ))}
+              {completedToday.length === 0 ? (
+                <div className={cx("text11", "colorMuted2")}>No tasks completed today yet.</div>
+              ) : null}
             </div>
 
             <div className={cx("flexBetween", "mt10", "edwTrackedRow")}>
@@ -302,7 +403,9 @@ export function EndOfDayWrapPage({ isActive }: { isActive: boolean }) {
               <div className={cx("sectionLabel", "colorAccent", "mb10")}>Wrap summary so far</div>
               {hoursLogged ? <div className={cx("text11", "colorMuted", "mb4")}>Hours: {hoursLogged}h</div> : null}
               {mood > 0 ? <div className={cx("text11", "colorMuted", "mb4")}>Mood: {moodLabels[mood]}</div> : null}
-              {tomorrowTasks.length > 0 && step > 1 ? <div className={cx("text11", "colorMuted", "mb4")}>Tomorrow: {tomorrowTasks.length} tasks queued</div> : null}
+              {tomorrowTasks.length > 0 && step > 1 ? (
+                <div className={cx("text11", "colorMuted", "mb4")}>Tomorrow: {tomorrowTasks.length} tasks queued</div>
+              ) : null}
               {flaggedItems.length > 0 ? (
                 <div className={cx("text11", "colorRed")}>
                   ⚑ {flaggedItems.length} item{flaggedItems.length > 1 ? "s" : ""} flagged for admin

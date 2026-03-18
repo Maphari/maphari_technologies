@@ -810,6 +810,34 @@ export async function loadPortalProjectsWithRefresh(
   });
 }
 
+export interface PayfastInitiateResult {
+  redirectUrl: string;
+}
+
+export async function initiatePortalPayfastWithRefresh(
+  session: AuthSession,
+  input: { invoiceId: string; returnUrl: string; cancelUrl: string }
+): Promise<AuthorizedResult<PayfastInitiateResult>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PayfastInitiateResult>("/payfast/initiate", accessToken, {
+      method: "POST",
+      body: input,
+    });
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "PAYFAST_INITIATE_FAILED",
+          response.payload.error?.message ?? "Unable to initiate PayFast payment."
+        ),
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
 // ── Standalone invoice list loader ────────────────────────────────────────────
 
 export async function loadPortalInvoicesWithRefresh(

@@ -24,60 +24,14 @@ type Crisis = {
   timeline: Array<{ date: string; event: string; who: string }>;
 };
 
-const activeCrises: Crisis[] = [
-  {
-    id: "CRS-003",
-    client: "Kestrel Capital",
-    color: "var(--purple)",
-    severity: "critical",
-    title: "Invoice dispute + communication breakdown",
-    opened: "2026-02-17",
-    daysOpen: 6,
-    owner: "Nomsa Dlamini",
-    stage: "Escalated to Admin",
-    lastAction: "Admin called CEO Feb 22",
-    nextAction: "Follow-up call Feb 24 @ 10:00",
-    health: 34,
-    revenue: 21000,
-    timeline: [
-      { date: "Feb 17", event: "Client flagged invoice as disputed", who: "Kestrel Capital" },
-      { date: "Feb 18", event: "Nomsa sent payment breakdown", who: "Nomsa Dlamini" },
-      { date: "Feb 19", event: "No response - 2nd reminder sent", who: "Nomsa Dlamini" },
-      { date: "Feb 21", event: "Escalated to Admin", who: "Nomsa Dlamini" },
-      { date: "Feb 22", event: "Admin called client CEO", who: "Sipho Nkosi" }
-    ]
-  },
-  {
-    id: "CRS-004",
-    client: "Dune Collective",
-    color: "var(--amber)",
-    severity: "high",
-    title: "Project delay + scope creep complaint",
-    opened: "2026-02-19",
-    daysOpen: 4,
-    owner: "Renzo Fabbri",
-    stage: "Account Manager handling",
-    lastAction: "Scope review sent Feb 21",
-    nextAction: "Await client response by Feb 25",
-    health: 43,
-    revenue: 16000,
-    timeline: [
-      { date: "Feb 19", event: "Client emailed re: missed milestone", who: "Dune Collective" },
-      { date: "Feb 20", event: "Renzo reviewed with Kira", who: "Renzo Fabbri" },
-      { date: "Feb 21", event: "Scope change doc sent to client", who: "Renzo Fabbri" }
-    ]
-  }
-];
+const activeCrises: Crisis[] = [];
 
-const resolved = [
-  { id: "CRS-001", client: "Luma Events", severity: "medium" as Severity, title: "Payment dispute - settled at 80%", resolved: "Jan 2026", daysToResolve: 12, outcome: "Write-off R3,200" },
-  { id: "CRS-002", client: "Helios Digital", severity: "high" as Severity, title: "Project scope breakdown - client exited", resolved: "Jan 2026", daysToResolve: 21, outcome: "Client churned" }
-] as const;
+const resolved: readonly { id: string; client: string; severity: Severity; title: string; resolved: string; daysToResolve: number; outcome: string }[] = [];
 
 const escalationChain = [
-  { level: 1, role: "Account Manager", person: "Nomsa Dlamini", trigger: "Client unresponsive 3+ days", color: "var(--accent)" },
-  { level: 2, role: "Operations Admin", person: "Leilani Fotu", trigger: "AM escalation or invoice 7+ days overdue", color: "var(--blue)" },
-  { level: 3, role: "Super Admin / Owner", person: "Sipho Nkosi", trigger: "Churn risk confirmed or legal threat", color: "var(--red)" }
+  { level: 1, role: "Account Manager", person: "Assigned AM", trigger: "Client unresponsive 3+ days", color: "var(--accent)" },
+  { level: 2, role: "Operations Admin", person: "Operations Admin", trigger: "AM escalation or invoice 7+ days overdue", color: "var(--blue)" },
+  { level: 3, role: "Super Admin / Owner", person: "Owner / Founder", trigger: "Churn risk confirmed or legal threat", color: "var(--red)" }
 ] as const;
 
 const recoveryPlaybooks = [
@@ -125,7 +79,7 @@ function levelToneClass(level: number): string {
 
 export function CrisisCommandPage() {
   const [activeTab, setActiveTab] = useState<CrisisTab>("active crises");
-  const [expanded, setExpanded] = useState<string | null>("CRS-003");
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
     <div className={cx(styles.pageBody, styles.crisRoot)}>
@@ -144,8 +98,8 @@ export function CrisisCommandPage() {
         {[
           { label: "Active Crises", value: activeCrises.length.toString(), color: "var(--red)", sub: `${activeCrises.filter((c) => c.severity === "critical").length} critical` },
           { label: "Revenue at Risk", value: `R${(activeCrises.reduce((s, c) => s + c.revenue, 0) / 1000).toFixed(0)}k`, color: "var(--amber)", sub: "Monthly retainer value" },
-          { label: "Avg Days Open", value: `${Math.round(activeCrises.reduce((s, c) => s + c.daysOpen, 0) / activeCrises.length)}d`, color: "var(--amber)", sub: "Active cases only" },
-          { label: "Resolved (90d)", value: resolved.length.toString(), color: "var(--accent)", sub: `Avg ${Math.round(resolved.reduce((s, c) => s + c.daysToResolve, 0) / resolved.length)}d to resolve` }
+          { label: "Avg Days Open", value: `${activeCrises.length > 0 ? Math.round(activeCrises.reduce((s, c) => s + c.daysOpen, 0) / activeCrises.length) : 0}d`, color: "var(--amber)", sub: "Active cases only" },
+          { label: "Resolved (90d)", value: resolved.length.toString(), color: "var(--accent)", sub: `Avg ${resolved.length > 0 ? Math.round(resolved.reduce((s, c) => s + c.daysToResolve, 0) / resolved.length) : 0}d to resolve` }
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.label === "Active Crises" && styles.crisRiskStat)}>
             <div className={styles.statLabel}>{s.label}</div>
@@ -163,6 +117,14 @@ export function CrisisCommandPage() {
 
       {activeTab === "active crises" ? (
         <div className={styles.crisList16}>
+          {activeCrises.length === 0 ? (
+            <div className={cx(styles.card, "textCenter", "colorMuted", "text13")}>
+              <div className={styles.cardInner}>
+                <div className={cx("fw700", "text15", "mb8")}>No active crises</div>
+                <div>All client accounts are running smoothly. If a crisis is identified, use "+ Log New Crisis" to open a case.</div>
+              </div>
+            </div>
+          ) : null}
           {activeCrises.map((crisis) => (
             <div key={crisis.id} className={cx(styles.crisCard, severityCardClass(crisis.severity))}>
               <div
@@ -311,6 +273,13 @@ export function CrisisCommandPage() {
 
       {activeTab === "resolved" ? (
         <div className={styles.crisResolvedList}>
+          {resolved.length === 0 ? (
+            <div className={cx(styles.card, "textCenter", "colorMuted", "text13")}>
+              <div className={styles.cardInner}>
+                No resolved crises in the last 90 days. Resolved cases will appear here for post-mortem review.
+              </div>
+            </div>
+          ) : null}
           {resolved.map((r) => (
             <div key={r.id} className={styles.crisResolvedRow}>
               <span className={styles.crisId}>{r.id}</span>

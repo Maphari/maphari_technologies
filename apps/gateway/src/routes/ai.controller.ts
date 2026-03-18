@@ -102,6 +102,48 @@ export class AiController {
     });
   }
 
+  @Roles("ADMIN")
+  @Get("ai/recommendations")
+  async recommendations(
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.AI_SERVICE_URL ?? "http://localhost:4007";
+    return proxyRequest(`${baseUrl}/ai/recommendations`, "GET", undefined, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "ADMIN",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF")
+  @Post("ai/auto-draft")
+  async autoDraft(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    if (!body || typeof body !== "object") {
+      throw new BadRequestException("Invalid auto-draft payload");
+    }
+    const baseUrl = process.env.AI_SERVICE_URL ?? "http://localhost:4007";
+    return proxyRequest(`${baseUrl}/ai/auto-draft`, "POST", body, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "STAFF",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
   @Roles("ADMIN", "STAFF", "CLIENT")
   @Post("ai/estimate")
   async estimate(
@@ -120,6 +162,56 @@ export class AiController {
       "x-user-id": userId ?? "",
       "x-user-role": role ?? "CLIENT",
       "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF")
+  @Post("ai/prospect")
+  async runProspecting(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    if (!body || typeof body !== "object") {
+      throw new BadRequestException("Invalid prospect payload");
+    }
+    const baseUrl = process.env.AI_SERVICE_URL ?? "http://localhost:4007";
+    return proxyRequest(`${baseUrl}/ai/prospect`, "POST", body, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "ADMIN",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF")
+  @Post("ai/prospect/send-pitch")
+  async sendPitch(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    if (
+      !body ||
+      typeof body !== "object" ||
+      !("to" in body) ||
+      !("subject" in body) ||
+      !("body" in body)
+    ) {
+      throw new BadRequestException("to, subject, and body are required");
+    }
+    const baseUrl = process.env.AI_SERVICE_URL ?? "http://localhost:4007";
+    return proxyRequest(`${baseUrl}/ai/prospect/send-pitch`, "POST", body, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "ADMIN",
       "x-request-id": requestId ?? "",
       "x-trace-id": traceId ?? requestId ?? ""
     });

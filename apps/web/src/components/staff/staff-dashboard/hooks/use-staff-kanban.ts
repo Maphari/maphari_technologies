@@ -81,6 +81,10 @@ export function useStaffKanban({
   refreshWorkspace,
   staffName
 }: Params): UseStaffKanbanReturn {
+  const AGING_THRESHOLD_DAYS = 5;
+  const BACKLOG_WIP_LIMIT = 12;
+  const BLOCKED_WIP_LIMIT = 6;
+
   const [kanbanViewMode, setKanbanViewMode] = useState<"all" | "my_work" | "urgent" | "client_waiting" | "blocked">("all");
   const [kanbanSwimlane, setKanbanSwimlane] = useState<"status" | "project" | "client">("status");
   const [kanbanAnnouncement, setKanbanAnnouncement] = useState("");
@@ -157,15 +161,33 @@ export function useStaffKanban({
 
   const kanbanColumns = useMemo<KanbanColumn[]>(() => {
     const nowTsCurrent = nowTs;
+    const dayMs = 1000 * 60 * 60 * 24;
+    const getAgeDays = (task: TaskContext) =>
+      Math.max(0, Math.floor((nowTsCurrent - new Date(task.createdAt).getTime()) / dayMs));
+    const getAgingCount = (items: typeof taskContexts) =>
+      items.filter((task) => task.status !== "DONE" && getAgeDays(task) >= AGING_THRESHOLD_DAYS).length;
+
     const toKanbanTasks = (
       items: typeof taskContexts,
       variant: "progress" | "blocked" | "done" | "default",
       tagResolver?: (task: TaskContext) => string
     ): KanbanColumn["tasks"] =>
       items.map((task) => {
-        const ageDays = Math.max(0, Math.floor((nowTsCurrent - new Date(task.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
+        const ageDays = getAgeDays(task);
         const ageTone: "muted" | "amber" | "red" =
           ageDays >= 7 ? "red" : ageDays >= 3 ? "amber" : "muted";
+        const serviceClass: "expedite" | "standard" =
+          task.priority === "high" || task.dueTone === "var(--red)"
+            ? "expedite"
+            : "standard";
+        const needsAssignee = !task.assigneeInitials?.trim();
+        const needsDue = !task.dueAt;
+        const needsPrep = task.status === "TODO" && (needsAssignee || needsDue);
+        const needsPrepReason = needsPrep
+          ? [needsAssignee ? "Missing assignee" : null, needsDue ? "Missing due date" : null]
+            .filter((value): value is string => Boolean(value))
+            .join(" · ")
+          : undefined;
         return {
           id: task.id,
           projectId: task.projectId,
@@ -183,7 +205,10 @@ export function useStaffKanban({
           progress: variant === "progress" ? { value: task.progress ?? 0, tone: "blue" } : undefined,
           meta: { avatar: task.assigneeInitials },
           faded: variant === "done",
-          blocked: variant === "blocked"
+          blocked: variant === "blocked",
+          serviceClass,
+          needsPrep,
+          needsPrepReason
         };
       });
 
@@ -233,6 +258,9 @@ export function useStaffKanban({
         id: "todo",
         title: "Backlog",
         count: String(backlog.length),
+        wipLimit: BACKLOG_WIP_LIMIT,
+        wipCount: backlog.length,
+        agingCount: getAgingCount(backlog),
         policyHint: "Ready: clear title, assignee, and due date",
         tasks: toKanbanTasks(backlog, "default")
       },
@@ -244,6 +272,9 @@ export function useStaffKanban({
         countTone: "var(--accent)",
         countBg: "var(--accent-d)",
         border: "var(--accent)",
+        wipLimit: inProgressLimit,
+        wipCount: inProgress.length,
+        agingCount: getAgingCount(inProgress),
         policyHint: "Limit WIP and keep client-visible updates frequent",
         tasks: toKanbanTasks(inProgress, "progress")
       },
@@ -255,6 +286,9 @@ export function useStaffKanban({
         countTone: "var(--amber)",
         countBg: "var(--amber-d)",
         border: "var(--amber)",
+        wipLimit: BLOCKED_WIP_LIMIT,
+        wipCount: blocked.length,
+        agingCount: getAgingCount(blocked),
         policyHint: "Blocked work must include owner, reason, and ETA",
         tasks: toKanbanTasks(blocked, "blocked")
       },

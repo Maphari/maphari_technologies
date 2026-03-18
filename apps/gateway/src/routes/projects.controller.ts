@@ -863,4 +863,243 @@ export class ProjectsController {
       "x-trace-id": traceId ?? requestId ?? ""
     });
   }
+
+  // ── Project-layer read endpoints (CLIENT-accessible) ─────────────────────
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("projects/:projectId/deliverables")
+  async listProjectDeliverables(
+    @Param("projectId") projectId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/projects/${projectId}/deliverables`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("projects/:projectId/risks")
+  async listProjectRisks(
+    @Param("projectId") projectId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/projects/${projectId}/risks`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("projects/:projectId/sprints")
+  async listProjectSprints(
+    @Param("projectId") projectId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/projects/${projectId}/sprints`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("projects/:projectId/sprints/:sprintId/tasks")
+  async listSprintTasks(
+    @Param("projectId") projectId: string,
+    @Param("sprintId") sprintId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(
+      `${baseUrl}/projects/${projectId}/sprints/${sprintId}/tasks`,
+      "GET", undefined, {
+        "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+        "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+        "x-trace-id": traceId ?? requestId ?? ""
+      }
+    );
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("projects/:projectId/phases")
+  async listProjectPhases(
+    @Param("projectId") projectId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/projects/${projectId}/phases`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("projects/:projectId/sign-offs")
+  async listProjectSignOffs(
+    @Param("projectId") projectId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/projects/${projectId}/sign-offs`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Patch("projects/:projectId/sign-offs/:signOffId/sign")
+  async signProjectSignOff(
+    @Param("projectId") projectId: string,
+    @Param("signOffId") signOffId: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(
+      `${baseUrl}/projects/${projectId}/sign-offs/${signOffId}/sign`,
+      "PATCH", body as Record<string, unknown>, {
+        "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+        "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+        "x-trace-id": traceId ?? requestId ?? ""
+      }
+    );
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("projects/:projectId/brief")
+  async getProjectBrief(
+    @Param("projectId") projectId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/projects/${projectId}/brief`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  // ── Design Reviews ─────────────────────────────────────────────────────────
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("projects/:projectId/design-reviews")
+  async listProjectDesignReviews(
+    @Param("projectId") projectId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/projects/${projectId}/design-reviews`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Patch("design-reviews/:reviewId/resolve")
+  async resolveDesignReview(
+    @Param("reviewId") reviewId: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/design-reviews/${reviewId}/resolve`, "PATCH", body as Record<string, unknown>, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("projects/:projectId/decisions")
+  async listProjectDecisions(
+    @Param("projectId") projectId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/projects/${projectId}/decisions`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("decisions")
+  async listDecisions(
+    @Query() query: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    if (query && typeof query === "object") {
+      Object.entries(query as Record<string, unknown>).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) params.set(k, String(v));
+      });
+    }
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(
+      `${baseUrl}/decisions${params.size > 0 ? `?${params.toString()}` : ""}`,
+      "GET", undefined, {
+        "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+        "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+        "x-trace-id": traceId ?? requestId ?? ""
+      }
+    );
+  }
 }

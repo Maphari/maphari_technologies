@@ -25,7 +25,7 @@ export const pageTitles: Record<PageId, [string, string]> = {
   privatenotes: ["Knowledge", "Private Notes"],
   keyboardshortcuts: ["Help", "Keyboard Shortcuts"],
   estimatesactuals: ["Performance", "Estimates vs Actuals"],
-  satisfactionscores: ["Client Intelligence", "Satisfaction Scores"],
+  satisfactionscores: ["Client Intelligence", "Client Health"],
   knowledge: ["Operations", "Knowledge Base"],
   decisionlog: ["Knowledge", "Decision Log"],
   handoverchecklist: ["Workflow", "Handover Checklist"],
@@ -77,5 +77,8 @@ export const pageTitles: Record<PageId, [string, string]> = {
   myanalytics: ["Analytics", "My Analytics"],
   myreports: ["Analytics", "My Reports"],
   teamperformance: ["Analytics", "Team Performance"],
-  myintegrations: ["Settings", "My Integrations"]
+  myintegrations: ["Settings", "My Integrations"],
+  changeRequests: ["Client Lifecycle", "Change Requests"],
+  slaTracker: ["Client Lifecycle", "SLA Tracker"],
+  appointments: ["Client Work", "Appointments"]
 };

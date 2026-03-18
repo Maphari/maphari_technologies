@@ -1,0 +1,2641 @@
+
+.clientDashRowMetaCompact {
+  font-size: 0.62rem;
+  padding: 2px 6px;
+}
+
+.contractsBadgeMini {
+  font-size: 0.54rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1.3;
+}
+
+.settingsNoPad {
+  padding: 0;
+}
+
+.threadRowActive {
+  background: var(--accent-d, rgba(255, 255, 255, 0.04));
+  border-left: 2px solid var(--accent);
+}
+
+.onboardingCheckIcon {
+  background: var(--green-d, rgba(52, 217, 139, 0.12));
+  border-color: color-mix(in oklab, var(--green) 25%, transparent);
+  color: var(--green);
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+  padding: 0;
+  color: var(--text);
+}
+
+.checkbox:hover {
+  border-color: var(--accent);
+}
+
+.feedbackMono {
+  font-family: var(--font-dm-mono), monospace;
+}
+
+.approvalsClamp2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.billingW75 {
+  width: 75%;
+}
+
+/* ─── Messages & Updates Page ──────────────────────────────────── */
+
+.msguPageRoot {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 0;
+}
+
+.msguPage {
+  display: block;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.msguSidebar {
+  padding: 12px 0;
+}
+
+.msguSideSection {
+  padding: 10px 16px 8px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+
+.msguSideItem {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin: 2px 0;
+  border-radius: var(--r-xs);
+  font-size: 0.74rem;
+  font-weight: 600;
+  transition: color 0.14s ease, background 0.14s ease;
+}
+
+.msguSideItem:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.msguSideItemActive {
+  color: var(--accent);
+  background: var(--accent-g);
+}
+
+.msguSideItemSmall {
+  font-size: 0.72rem;
+}
+
+.msguSideDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.msguDotAccent {
+  background: var(--accent);
+}
+
+.msguDotGreen {
+  background: var(--green);
+}
+
+.msguDotAmber {
+  background: var(--amber);
+}
+
+.msguDotRed {
+  background: var(--red);
+}
+
+.msguDotPurple {
+  background: var(--purple);
+}
+
+.msguDotMuted {
+  background: var(--muted2);
+}
+
+.msguSideBadge {
+  margin-left: auto;
+  border-radius: 99px;
+  padding: 1px 6px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  font-weight: 700;
+  background: var(--accent);
+  color: #050508;
+}
+
+.msguSideDivider {
+  height: 1px;
+  margin: 8px 0;
+  background: var(--border);
+}
+
+.msguMain {
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+}
+
+.msguUnreadPill {
+  border: 1px solid color-mix(in oklab, var(--accent) 40%, transparent);
+  border-radius: 99px;
+  padding: 4px 10px;
+  background: var(--accent-d);
+  color: var(--accent);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+}
+
+.msguCommLayout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.msguFeedCol {
+  border-right: 1px solid var(--border);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--surface) 94%, var(--accent) 6%),
+      var(--surface));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  gap: 0;
+}
+
+.msguThreadSearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+  background: var(--s3);
+  transition: border-color 0.14s ease;
+}
+
+.msguThreadSearch:focus-within {
+  border-color: var(--b3);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--lime) 10%, transparent);
+}
+
+.msguThreadSearch input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.74rem;
+}
+
+.msguThreadSearch input::placeholder {
+  color: var(--muted2);
+}
+
+.msguThreadList {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 0;
+  flex: 1;
+  padding: 6px 8px 12px;
+}
+
+.msguThreadItem {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--b1);
+  border-left: 3px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  text-align: left;
+  padding: 9px 10px 8px;
+  cursor: pointer;
+  transition: background 0.13s ease, border-color 0.13s ease;
+}
+
+.msguThreadItem:hover {
+  background: var(--s2);
+  border-color: var(--b2);
+}
+
+.msguThreadItemActive {
+  background: color-mix(in oklab, var(--lime) 5%, var(--s2));
+  border-color: var(--b2);
+}
+
+.msguThreadItemUnread .msguThreadName {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.msguThreadBody {
+  min-width: 0;
+  flex: 1;
+}
+
+/* Row 1: name + unread dot (left) | time (right) */
+.msguThreadTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+/* Row 2: title (clipped, flex: 1) + project chip (right, flex-shrink: 0) */
+.msguThreadTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  margin-bottom: 2px;
+  overflow: hidden;
+}
+
+.msguThreadTitle {
+  min-width: 0;
+  flex: 1;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msguThreadItemUnread .msguThreadTitle {
+  color: color-mix(in oklab, var(--text) 80%, var(--muted));
+}
+
+.msguThreadTime {
+  flex-shrink: 0;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  color: var(--muted2);
+  letter-spacing: 0.04em;
+}
+
+/* Row 3: preview text (1 line) */
+.msguThreadPreview {
+  font-size: 0.71rem;
+  line-height: 1.4;
+  color: var(--muted2);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.msguThreadEmpty {
+  border: 1px dashed var(--border2);
+  border-radius: var(--r-sm);
+  padding: 20px 14px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  text-align: center;
+}
+
+.msguThreadTags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.msguTag {
+  border-radius: 99px;
+  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.msguTag::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+.msguTagGreen {
+  background: var(--accent-d);
+  color: var(--accent);
+}
+
+.msguTagGreen::before {
+  background: var(--accent);
+}
+
+.msguTagPurple {
+  background: var(--purple-d);
+  color: var(--purple);
+}
+
+.msguTagPurple::before {
+  background: var(--purple);
+}
+
+.msguTagAmber {
+  background: var(--amber-d);
+  color: var(--amber);
+}
+
+.msguTagAmber::before {
+  background: var(--amber);
+}
+
+.msguTagRed {
+  background: var(--red-d);
+  color: var(--red);
+}
+
+.msguTagRed::before {
+  background: var(--red);
+}
+
+.msguTagMuted {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+}
+
+.msguTagMuted::before {
+  background: var(--muted2);
+}
+
+.msguThreadProject {
+  margin-left: auto;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  color: color-mix(in oklab, var(--muted) 92%, var(--muted2));
+  letter-spacing: 0.03em;
+  min-width: 0;
+  max-width: 118px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+
+.msguThreadItem:hover .msguThreadName,
+.msguThreadItemActive .msguThreadName {
+  color: var(--text);
+}
+
+.msguThreadPulse {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: msguPulse 2s ease-in-out infinite;
+}
+
+@keyframes msguPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.msguThreadCol {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.msguThreadHeader {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.msguThreadHeaderTitle {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.msguThreadHeaderSub {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+.msguThreadHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.msguIconBtn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--b2) !important;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.14s ease, color 0.14s ease, background 0.14s;
+}
+
+.msguIconBtn:hover {
+  border-color: var(--b3) !important;
+  color: var(--text);
+  background: var(--s2);
+}
+
+.msguMsgBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.msguBubbleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.msguBubbleRowMine {
+  flex-direction: row-reverse;
+}
+
+.msguBubbleContent {
+  max-width: 72%;
+}
+
+.msguBubbleName {
+  margin-bottom: 4px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  color: var(--muted2);
+}
+
+.msguBubbleNameRight {
+  text-align: right;
+}
+
+.msguBubble {
+  border-radius: 4px 16px 16px 16px;
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  line-height: 1.52;
+  border: 1px solid var(--b1);
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.msguBubbleTheirs {
+  background: var(--s3);
+  color: var(--text);
+}
+
+.msguBubbleMine {
+  border-radius: 16px 4px 16px 16px;
+  background: var(--lime);
+  color: #0d0d14;
+  border-color: transparent;
+}
+
+.msguBubbleTime {
+  margin-top: 4px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.52rem;
+  color: var(--muted2);
+}
+
+.msguBubbleTimeRight {
+  text-align: right;
+}
+
+.msguFileBubble {
+  margin-top: 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--s2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+}
+
+.msguFileIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-xs);
+  background: var(--accent-d);
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.msguFileName {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.msguFileSize {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  color: var(--muted);
+}
+
+.msguFileDownload {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  text-decoration: underline;
+}
+
+.msguReactions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+}
+
+.msguReaction {
+  border: 1px solid var(--b2) !important;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 9px;
+  font-size: 0.7rem;
+  line-height: 1.6;
+  transition: border-color 0.14s ease, background 0.14s ease;
+  cursor: pointer;
+}
+
+.msguReaction:hover {
+  border-color: var(--b3) !important;
+  background: var(--s2);
+}
+
+.msguReactionMine {
+  border-color: color-mix(in oklab, var(--lime) 35%, transparent) !important;
+  background: var(--lime-d);
+}
+
+.msguComposeWrap {
+  flex-shrink: 0;
+  border-top: 1px solid var(--b1);
+  background: var(--s1);
+  padding: 10px 16px 12px;
+}
+
+.msguMentionRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.msguMentionLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  color: var(--muted2);
+}
+
+.msguMentionBtn {
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  padding: 3px 8px;
+}
+
+.msguMentionBtn:hover {
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.msguComposeInputWrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.msguComposeInput {
+  flex: 1;
+  min-height: 36px;
+  max-height: 120px;
+  resize: none;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 9px 12px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.msguComposeInput:focus {
+  border-color: var(--accent);
+}
+
+.msguComposeActions {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.msguComposeBtn {
+  width: 30px;
+  height: 30px;
+  border: none !important;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--muted2);
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.14s, background 0.14s;
+}
+
+.msguComposeBtn:hover {
+  color: var(--text);
+  background: var(--s2);
+}
+
+.msguSendBtn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--lime);
+  color: #0d0d14;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.12s, opacity 0.12s;
+}
+
+.msguSendBtn:hover {
+  background: var(--lime2);
+}
+
+.msguSendBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.msguRightCol {
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.msguNudgeCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--s2);
+  padding: 14px;
+  margin: 16px;
+}
+
+.msguNudgeTitle {
+  font-size: 0.76rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.msguNudgeSub {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.msguNudgeBtn {
+  width: 100%;
+  border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent);
+  border-radius: var(--r-xs);
+  background: var(--accent-d);
+  color: var(--accent);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 8px;
+}
+
+.msguNudgeBtn:hover {
+  background: var(--accent);
+  color: #050508;
+}
+
+.msguSideSectionWrap {
+  padding: 0 16px 12px;
+  min-height: 0;
+}
+
+.msguSideSectionTitle {
+  margin-bottom: 8px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+
+.msguActivityItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.msguActivityItem:last-child {
+  border-bottom: none;
+}
+
+.msguActivityDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.msguActivityText {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.msguActivityTime {
+  margin-top: 2px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  color: var(--muted2);
+}
+
+.msguActivityPage {
+  margin-top: 0;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.msguActivityRow {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.msguGrow {
+  min-width: 0;
+  flex: 1;
+}
+
+.msguTicketPage {
+  margin-top: 0;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.msguTicketIntro {
+  margin-bottom: 14px;
+  border-left: 2px solid var(--accent);
+}
+
+.msguTicketIntroTitle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.msguTicketIntroSub {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.msguTicketForm {
+  padding: 16px 18px 18px;
+}
+
+.msguFieldLabel {
+  display: block;
+  margin: 12px 0 7px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.msguFieldInput,
+.msguFieldTextarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  background: var(--bg);
+  color: var(--text);
+  padding: 9px 12px;
+  font-size: 0.78rem;
+  font-family: var(--font-syne), sans-serif;
+}
+
+.msguFieldTextarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.msguFieldInput:focus,
+.msguFieldTextarea:focus {
+  border-color: var(--accent);
+}
+
+.msguPriorityGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.msguPriorityBtn {
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  background: var(--bg);
+  color: var(--muted);
+  padding: 8px;
+  text-align: center;
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.msguPriorityLow {
+  background: var(--green-d);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.msguPriorityMed {
+  background: var(--amber-d);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.msguPriorityHigh {
+  background: var(--red-d);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.msguUploadBox {
+  border: 1px dashed var(--border2);
+  border-radius: var(--r-xs);
+  text-align: center;
+  padding: 16px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--muted2);
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+
+.msguSubmitBtn {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--lime);
+  color: #0d0d14;
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.msguSubmitBtn:hover {
+  opacity: 0.88;
+}
+
+.msguSubmitBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.msguPriorityBtnActive {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+  font-weight: 800;
+  box-shadow: 0 0 0 4px color-mix(in oklab, currentColor 12%, transparent);
+}
+
+.msguThreadItem:focus-visible,
+.msguIconBtn:focus-visible,
+.msguComposeBtn:focus-visible,
+.msguSendBtn:focus-visible,
+.msguReaction:focus-visible,
+.msguFileDownload:focus-visible,
+.msguMentionBtn:focus-visible,
+.msguNudgeBtn:focus-visible,
+.msguPriorityBtn:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 78%, white 22%);
+  outline-offset: 2px;
+}
+
+.msguToast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 130;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow-card);
+}
+
+.msguToastIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 99px;
+  background: var(--accent);
+  color: #050508;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.msguToastText {
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.msguToastSub {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+/* ─── Messages: new layout classes ───────────────────────────────────────── */
+
+/* Root container — fills the pageBody column */
+.msguPageRoot {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  height: 100%;
+}
+
+/* Top header bar / tab strip */
+.msguTopBar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+  padding: 10px 16px 10px;
+  border-bottom: 1px solid var(--b1);
+}
+
+/* Override pillTabs inside the tab bar — no bottom margin, gap tighter */
+.msguTopBar .pillTabs {
+  margin-bottom: 0;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+/* Inside tab bar, pills sit flush on the bottom border */
+.msguTopBar .pillTab {
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  border-bottom: none;
+  padding: 7px 14px;
+}
+
+.msguTopBar .pillTabActive {
+  border-color: var(--b2);
+  border-bottom: 2px solid var(--lime);
+  background: color-mix(in oklab, var(--lime) 6%, var(--s1));
+}
+
+/* Outer split pane container */
+.msguSplit {
+  display: grid;
+  grid-template-columns: 296px minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+/* ── Left pane ── */
+.msguLeftPane {
+  border-right: 1px solid var(--b1);
+  background: var(--s1);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Vertical tab nav */
+.msguTabNav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 8px 10px;
+  border-bottom: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+
+.msguTabBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-sm);
+  border: none !important;
+  border-left: 2px solid transparent !important;
+  background: transparent;
+  color: var(--muted2);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.77rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  transition: background 0.12s, color 0.12s, border-left-color 0.12s;
+  width: 100%;
+}
+
+.msguTabBtn:hover {
+  color: var(--text);
+  background: var(--s2);
+}
+
+.msguTabBtnActive {
+  background: color-mix(in oklab, var(--lime) 5%, var(--s2));
+  color: var(--text);
+  font-weight: 600;
+  border-left-color: var(--lime) !important;
+}
+
+.msguTabLabel {
+  flex: 1;
+}
+
+.msguTabBadge {
+  margin-left: auto;
+  background: var(--amber);
+  color: #0d0d14;
+  border-radius: 99px;
+  padding: 1px 7px;
+  font-size: 9px;
+  font-weight: 800;
+  flex-shrink: 0;
+  line-height: 1.5;
+  font-family: var(--font-dm-mono), monospace;
+}
+
+/* Search zone */
+.msguSearchZone {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 10px 6px;
+  flex-shrink: 0;
+}
+
+.msguSearchZone .msguThreadSearch {
+  flex: 1;
+}
+
+/* List section header */
+.msguListHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+
+.msguListHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.msguListTitle {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  font-weight: 600;
+}
+
+.msguListUnreadChip {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: color-mix(in oklab, var(--amber) 12%, transparent);
+  color: var(--amber);
+  border: 1px solid color-mix(in oklab, var(--amber) 28%, transparent);
+}
+
+.msguListCount {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  color: var(--muted2);
+  background: var(--s3);
+  border: 1px solid var(--b1);
+  border-radius: 99px;
+  padding: 1px 7px;
+  font-weight: 600;
+}
+
+/* Left pane empty info state (non-inbox tabs) */
+.msguLeftInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.msguLeftInfoTitle {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted2);
+}
+
+.msguLeftInfoSub {
+  font-size: 0.68rem;
+  color: var(--muted2);
+  line-height: 1.55;
+  max-width: 160px;
+}
+
+/* Right pane empty state (no active thread) */
+.msguRightEmpty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--muted2);
+}
+
+/* ── Right pane ── */
+.msguRightPane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--s1);
+}
+
+/* Chat layout: header + log + compose */
+.msguChatLayout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Scrollable message log — must flex-grow to fill between header and compose */
+.msguMsgBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--b2) transparent;
+}
+
+/* Compose area — fixed to bottom */
+.msguComposeWrap {
+  flex-shrink: 0;
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--b1);
+  background: var(--s1);
+}
+
+/* Compose bar (wraps input + buttons) */
+.msguComposeBar {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  background: var(--s3);
+  padding: 6px 6px 6px 8px;
+  transition: border-color 0.14s;
+}
+
+.msguComposeBar:focus-within {
+  border-color: var(--b3);
+}
+
+.msguComposeHint {
+  font-size: 0.58rem;
+  color: var(--muted2);
+  margin-top: 6px;
+  font-family: var(--font-dm-mono), monospace;
+  letter-spacing: 0.03em;
+}
+
+.msguComposeHint kbd {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  color: var(--muted2);
+}
+
+/* ── Activity tab ── */
+.msguActivityPage {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.msguActivityHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+
+.msguActivityHeader .pillTabs {
+  margin-bottom: 0;
+}
+
+.msguActivityFeed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 20px 20px;
+}
+
+.msguActivityGroup {
+  margin-top: 8px;
+}
+
+/* Day separator */
+.msguDaySep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0 8px;
+  color: var(--muted2);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.msguDaySepLine {
+  flex: 1;
+  height: 1px;
+  background: var(--b1);
+}
+
+.msguDaySepLabel {
+  white-space: nowrap;
+  padding: 0 4px;
+}
+
+/* Timeline */
+.msguTimeline {
+  position: relative;
+  padding-left: 22px;
+}
+
+.msguTimelineRail {
+  position: absolute;
+  left: 7px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--b2);
+  border-radius: 2px;
+}
+
+.msguTimelineItem {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  position: relative;
+}
+
+.msguTimelineDot {
+  position: absolute;
+  left: -17px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--s1);
+  flex-shrink: 0;
+}
+
+.msguTimelineBody {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── AI Assistant tab ── */
+.msguAiPage {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.msguAiHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+
+.msguAiAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--lime-d);
+  border: 2px solid var(--lime);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--lime);
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+.msguAiFeed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+
+.msguAiBubbleRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.msguAiBubbleRowUser {
+  flex-direction: row-reverse;
+}
+
+.msguAiBubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.msguAiBubbleAi {
+  border-radius: 4px 16px 16px 16px;
+  background: var(--s3);
+  border: 1px solid var(--b1);
+  color: var(--text);
+}
+
+.msguAiBubbleUser {
+  border-radius: 16px 4px 16px 16px;
+  background: var(--lime);
+  color: #0d0d14;
+}
+
+.msguAiPrompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+
+/* ── Support ticket tab ── */
+.msguSupportPage {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.msguSupportHeader {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+
+.msguSupportForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 24px;
+}
+
+.msguSupportRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.msguFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1360px) {
+  .msguSplit {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 980px) {
+  .msguSplit {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .msguLeftPane {
+    border-right: none;
+    border-bottom: 1px solid var(--b1);
+    max-height: 300px;
+  }
+
+  .msguThreadHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .msguBubbleContent {
+    max-width: 92%;
+  }
+
+  .msguPriorityGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .msguSupportRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.msguAvatarWrap {
+  position: relative;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.msguOnlineDot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lime);
+  border: 2px solid var(--s1);
+}
+
+.msguThreadItemActive .msguOnlineDot,
+.msguThreadItem:hover .msguOnlineDot {
+  border-color: var(--s2);
+}
+
+.msguThreadName {
+  font-weight: 600;
+  font-size: 0.76rem;
+  color: var(--text);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msguThreadNameGroup {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Project chip — inline with title row, right-aligned */
+.msguProjectTag {
+  flex-shrink: 0;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--muted2);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--s3);
+  border: 1px solid var(--b1);
+  border-radius: 3px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msguUnreadDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+  flex-shrink: 0;
+}
+
+.msguDateSep {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 8px;
+  color: var(--muted2);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.msguDateSep::before,
+.msguDateSep::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--b1);
+}
+
+.msguThreadHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 1360px) {
+  .msguCommLayout {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 980px) {
+  .msguCommLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .msguFeedCol {
+    padding: 8px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    max-height: 280px;
+  }
+
+  .msguThreadHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .msguBubbleContent {
+    max-width: 100%;
+  }
+
+  .msguPriorityGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .msguActivityPage,
+  .msguTicketPage {
+    max-width: 100%;
+  }
+}
+
+/* ─── Milestones Page ─────────────────────────────────────────────── */
+
+.milePageRoot {
+  min-width: 0;
+}
+
+.mileLayout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.mileSidebar {
+  padding: 14px;
+  position: sticky;
+  top: 0;
+}
+
+.mileSideSection {
+  padding: 9px 10px 7px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mileSideItem {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: color-mix(in oklab, var(--text) 78%, var(--muted));
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  transition: border-color 0.14s ease, color 0.14s ease, background 0.14s ease;
+}
+
+.mileSideItem:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--border);
+}
+
+.mileSideItemActive {
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+  background: var(--accent-g);
+}
+
+.mileSideDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.mileSideBadge {
+  margin-left: auto;
+  border-radius: 99px;
+  padding: 1px 6px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  font-weight: 700;
+  background: var(--accent);
+  color: #050508;
+}
+
+.mileSideDivider {
+  height: 1px;
+  margin: 8px 0;
+  background: var(--border);
+}
+
+.mileMain {
+  min-width: 0;
+  padding: 2px 2px 4px;
+}
+
+.mileHealth {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 99px;
+  padding: 4px 10px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mileHealth::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.mileHealthAmber {
+  color: var(--amber);
+  background: var(--amber-d);
+}
+
+.mileHealthAmber::before {
+  background: var(--amber);
+}
+
+.mileProjectBar {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0 16px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.mileProjectChip {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  white-space: nowrap;
+}
+
+.mileProjectChip:hover {
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.mileProjectChipActive {
+  background: var(--accent-d);
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+}
+
+.mileStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.mileStatCard {
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.mileStatBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+
+.mileStatLabel {
+  margin-bottom: 6px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--text) 68%, var(--muted));
+}
+
+.mileStatValue {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.mileStatSub {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  color: color-mix(in oklab, var(--text) 62%, var(--muted));
+}
+
+.mileList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mileCard {
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color 0.16s ease, transform 0.16s ease;
+}
+
+.mileCard:hover {
+  border-color: var(--border2);
+  transform: translateY(-1px);
+}
+
+.mileCardDone {
+  border-left-color: var(--green);
+}
+
+.mileCardReview {
+  border-left-color: var(--accent);
+}
+
+.mileCardProgress {
+  border-left-color: var(--amber);
+}
+
+.mileCardBlocked {
+  border-left-color: var(--red);
+}
+
+.mileCardPending {
+  border-left-color: var(--muted2);
+}
+
+.mileCardHeader {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.mileIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.86rem;
+}
+
+.mileIconAccent {
+  background: var(--accent-d);
+  color: var(--accent);
+}
+
+.mileIconPurple {
+  background: var(--purple-d);
+  color: var(--purple);
+}
+
+.mileIconAmber {
+  background: var(--amber-d);
+  color: var(--amber);
+}
+
+.mileIconGreen {
+  background: var(--green-d);
+  color: var(--green);
+}
+
+.mileIconRed {
+  background: var(--red-d);
+  color: var(--red);
+}
+
+.mileIconMuted {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+}
+
+.mileCardInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.mileCardTitle {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.mileCardMeta {
+  display: block;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  color: color-mix(in oklab, var(--text) 64%, var(--muted));
+}
+
+.mileCardRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.mileStatus {
+  border-radius: 99px;
+  padding: 3px 9px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.mileStatusDone {
+  background: var(--green-d);
+  color: var(--green);
+}
+
+.mileStatusReview {
+  background: var(--accent-d);
+  color: var(--accent);
+}
+
+.mileStatusProgress {
+  background: var(--amber-d);
+  color: var(--amber);
+}
+
+.mileStatusBlocked {
+  background: var(--red-d);
+  color: var(--red);
+}
+
+.mileStatusPending {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+}
+
+.milePct {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.72rem;
+  color: var(--text);
+}
+
+.mileChevron {
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
+.mileChevronOpen {
+  transform: rotate(180deg);
+}
+
+.mileProgress {
+  margin: 0 16px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.mileProgressFill {
+  height: 100%;
+  transition: width 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.mileBarAccent {
+  background: var(--accent);
+}
+
+.mileBarPurple {
+  background: var(--purple);
+}
+
+.mileBarAmber {
+  background: var(--amber);
+}
+
+.mileBarGreen {
+  background: var(--green);
+}
+
+.mileBarRed {
+  background: var(--red);
+}
+
+.mileBarMuted {
+  background: var(--muted2);
+}
+
+.mileCardBody {
+  border-top: 1px solid var(--border);
+  padding: 14px 16px;
+}
+
+.mileDesc {
+  margin-bottom: 14px;
+  font-size: 0.76rem;
+  color: color-mix(in oklab, var(--text) 76%, var(--muted));
+  line-height: 1.55;
+}
+
+.mileChangelog {
+  margin-bottom: 14px;
+}
+
+.mileChangelogTitle {
+  margin-bottom: 8px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--text) 64%, var(--muted));
+}
+
+.mileLogItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mileLogItem:last-child {
+  border-bottom: none;
+}
+
+.mileLogDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.mileDotAccent {
+  background: var(--accent);
+}
+
+.mileDotPurple {
+  background: var(--purple);
+}
+
+.mileDotAmber {
+  background: var(--amber);
+}
+
+.mileDotGreen {
+  background: var(--green);
+}
+
+.mileDotRed {
+  background: var(--red);
+}
+
+.mileDotMuted {
+  background: var(--muted2);
+}
+
+.mileLogText {
+  flex: 1;
+  font-size: 0.72rem;
+  color: color-mix(in oklab, var(--text) 72%, var(--muted));
+}
+
+.mileLogTime {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  color: color-mix(in oklab, var(--text) 58%, var(--muted2));
+}
+
+.mileActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mileActionBtn {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 7px 12px;
+}
+
+.mileActionBtn:hover {
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.mileActionBtnPrimary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #050508;
+  font-weight: 700;
+}
+
+.mileActionBtnPrimary:hover {
+  filter: brightness(1.06);
+}
+
+.mileActionBtnDanger {
+  border-color: color-mix(in oklab, var(--red) 36%, transparent);
+  color: var(--red);
+}
+
+.mileActionBtnDanger:hover {
+  background: var(--red-d);
+}
+
+.mileGanttWrap {
+  overflow-x: auto;
+}
+
+.mileGanttHead,
+.mileGanttRow {
+  display: grid;
+  grid-template-columns: 200px repeat(8, minmax(90px, 1fr));
+}
+
+.mileGanttHead {
+  margin-bottom: 4px;
+}
+
+.mileGanttHeadLabel {
+  padding: 4px 8px;
+  text-align: center;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--text) 60%, var(--muted));
+}
+
+.mileGanttHeadFirst {
+  text-align: left;
+  padding-left: 12px;
+}
+
+.mileGanttRow {
+  min-height: 44px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mileGanttRow:hover {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.mileGanttName {
+  border-right: 1px solid var(--border);
+  padding: 8px 12px;
+}
+
+.mileGanttNameTitle {
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.mileGanttCell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.mileGanttCellAlt {
+  background: rgba(255, 255, 255, 0.012);
+}
+
+.mileGanttBar {
+  height: 18px;
+  border-radius: 2px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  color: #050508;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.52rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mileBlockers {
+  padding: 4px 0 14px;
+}
+
+.mileBlockersTitle {
+  margin-bottom: 14px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--text) 64%, var(--muted));
+}
+
+.mileBlockerCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+  border: 1px solid color-mix(in oklab, var(--red) 26%, transparent);
+  border-radius: var(--r-sm);
+  background: var(--red-d);
+  padding: 14px;
+}
+
+.mileBlockerIcon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.mileGrow {
+  min-width: 0;
+  flex: 1;
+}
+
+.mileBlockerHeading {
+  color: var(--red);
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-bottom: 3px;
+}
+
+.mileBlockerDesc {
+  color: color-mix(in oklab, var(--text) 76%, var(--muted));
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.mileBlockerOwner {
+  margin-top: 5px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  color: color-mix(in oklab, var(--text) 62%, var(--muted));
+}
+
+.mileModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(5, 5, 8, 0.85);
+  backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+}
+
+.mileModal {
+  width: min(560px, calc(100vw - 32px));
+  max-height: 90vh;
+  overflow: auto;
+  border: 1px solid var(--border2);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.mileModalHeader {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mileModalTitle {
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.mileModalClose {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mileModalClose:hover {
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.mileModalBody {
+  padding: 20px;
+}
+
+.mileFieldLabel {
+  display: block;
+  margin: 12px 0 7px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--text) 66%, var(--muted));
+}
+
+.mileFieldLabel:first-child {
+  margin-top: 0;
+}
+
+.mileFieldInput,
+.mileFieldTextarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  background: var(--bg);
+  color: var(--text);
+  padding: 9px 12px;
+  font-size: 0.78rem;
+  font-family: var(--font-syne), sans-serif;
+}
+
+.mileFieldInput:focus,
+.mileFieldTextarea:focus {
+  border-color: var(--accent);
+}
+
+.mileFieldTextarea {
+  resize: vertical;
+  min-height: 86px;
+}
+
+.mileChoiceGrid {
+  display: grid;
+  gap: 8px;
+}
+
+.mileChoiceGridThree {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mileChoiceBtn {
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 600;
+  padding: 8px;
+}
+
+.mileChoiceBtn:hover {
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.mileChoiceBtnActive {
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+  color: var(--accent);
+  background: var(--accent-d);
+}
+
+.mileChoiceGreen {
+  color: var(--green);
+  border-color: color-mix(in oklab, var(--green) 35%, transparent);
+  background: var(--green-d);
+}
+
+.mileChoiceAmber {
+  color: var(--amber);
+  border-color: color-mix(in oklab, var(--amber) 35%, transparent);
+  background: var(--amber-d);
+}
+
+.mileChoiceRed {
+  color: var(--red);
+  border-color: color-mix(in oklab, var(--red) 35%, transparent);
+  background: var(--red-d);
+}
+
+.mileModalFooter {
+  border-top: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.mileToast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 130;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mileToastIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 99px;
+  background: var(--accent);
+  color: #050508;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mileToastText {
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.mileToastSub {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+@media (max-width: 1200px) {
+  .mileLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .mileSidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 980px) {
+  .mileStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mileGanttHead,
+  .mileGanttRow {
+    grid-template-columns: 170px repeat(8, minmax(80px, 1fr));
+  }
+
+  .mileChoiceGridThree {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .mileStats {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Settings: Security & Access ─────────────────────────────────── */
+
+.secxPage {
+
+/* ── Responsive: KPI grids ──────────────────────────────────────── */
+@media (max-width: 900px) {
+  .mileStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .mileStats {
+    grid-template-columns: 1fr;
+  }
+}

@@ -31,6 +31,15 @@ function canManageInternalCollaboration(role: string): boolean {
   return role === "ADMIN" || role === "STAFF";
 }
 
+/**
+ * Converts BigInt fields returned by Prisma to JSON-serializable numbers.
+ * Prisma maps `budgetCents BigInt` to a JS BigInt — JSON.stringify throws on
+ * BigInt, which would break both cache writes and HTTP response serialization.
+ */
+function toProjectDto<T extends { budgetCents: bigint }>(p: T): Omit<T, "budgetCents"> & { budgetCents: number } {
+  return { ...p, budgetCents: Number(p.budgetCents) };
+}
+
 const INTERNAL_NOTIFICATION_RECIPIENT = process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@maphari.com";
 
 async function publishProjectRequestNotification(input: {
@@ -378,12 +387,13 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
         orderBy: { createdAt: "desc" }
       });
 
-      await cache.setJson(cacheKey, projects, 30);
+      const dtos = projects.map(toProjectDto);
+      await cache.setJson(cacheKey, dtos, 30);
       return {
         success: true,
-        data: projects,
+        data: dtos,
         meta: { requestId: scope.requestId, cache: "miss" }
-      } as ApiResponse<typeof projects>;
+      } as ApiResponse<typeof dtos>;
     } catch (error) {
       request.log.error(error);
       return {
@@ -441,7 +451,7 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
       ]);
       return {
         success: true,
-        data: { items, total, page, pageSize },
+        data: { items: items.map(toProjectDto), total, page, pageSize },
         meta: { requestId: scope.requestId }
       } as ApiResponse;
     } catch (error) {
@@ -556,7 +566,7 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
         reply.status(404);
         return { success: false, error: { code: "PROJECT_NOT_FOUND", message: "Project not found in current scope" } } as ApiResponse;
       }
-      return { success: true, data: project, meta: { requestId: scope.requestId } } as ApiResponse<typeof project>;
+      return { success: true, data: toProjectDto(project), meta: { requestId: scope.requestId } } as ApiResponse;
     } catch (error) {
       request.log.error(error);
       reply.status(500);
@@ -640,9 +650,9 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
 
       return {
         success: true,
-        data: project,
+        data: toProjectDto(project),
         meta: { requestId: scope.requestId }
-      } as ApiResponse<typeof project>;
+      } as ApiResponse;
     } catch (error) {
       request.log.error(error);
       reply.status(500);
@@ -855,9 +865,9 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
 
       return {
         success: true,
-        data: project,
+        data: toProjectDto(project),
         meta: { requestId: scope.requestId }
-      } as ApiResponse<typeof project>;
+      } as ApiResponse;
     } catch (error) {
       request.log.error(error);
       reply.status(500);
@@ -941,6 +951,103 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
         })
       ]);
 
+      if (parsedBody.data.decision === "APPROVED") {
+        // Auto-generate 30% milestone invoice
+        const milestoneAmountCents = Math.round(Number(project.budgetCents) * 0.30);
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 30); // 30 days from approval
+        const decisionTraceId = (request.headers["x-trace-id"] as string | undefined) ?? undefined;
+        try {
+          await callBillingService("/invoices", "POST", {
+            userId: scope.userId,
+            role: scope.role,
+            clientId: project.clientId,
+            requestId: scope.requestId ?? randomUUID(),
+            traceId: decisionTraceId
+          }, {
+            clientId: project.clientId,
+            number: `INV-${project.id.slice(0, 6).toUpperCase()}-MILESTONE-30`,
+            amountCents: milestoneAmountCents,
+            status: "ISSUED",
+            dueAt: dueDate.toISOString()
+          });
+        } catch (invoiceError) {
+          request.log.warn({ error: invoiceError, projectId: project.id }, "30% milestone invoice creation failed — non-fatal");
+        }
+
+        // Auto-generate NDA + SOW for new project approval
+        try {
+          const effectiveDate = new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
+          const startDate = project.startAt ? project.startAt.toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }) : "To be confirmed";
+          const dueDate = project.dueAt ? project.dueAt.toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }) : "To be confirmed";
+          const budgetFormatted = `R ${(Number(project.budgetCents) / 100).toLocaleString("en-ZA")}`;
+
+          // Check if NDA already exists for this client
+          const existingNda = await prisma.clientContract.findFirst({
+            where: { clientId: project.clientId, type: "NDA", status: { not: "VOID" } },
+          });
+
+          const contractsToCreate: Array<{
+            clientId: string;
+            title: string;
+            type: string;
+            status: string;
+            signed: boolean;
+            notes: string;
+          }> = [];
+
+          if (!existingNda) {
+            contractsToCreate.push({
+              clientId: project.clientId,
+              title: "Non-Disclosure Agreement",
+              type: "NDA",
+              status: "PENDING",
+              signed: false,
+              notes: JSON.stringify({
+                templateId: "nda-standard-za",
+                projectId: project.id,
+                variables: {
+                  PROJECT_NAME: project.name,
+                  EFFECTIVE_DATE: effectiveDate,
+                },
+              }),
+            });
+          }
+
+          // Always create a fresh SOW per project
+          contractsToCreate.push({
+            clientId: project.clientId,
+            title: `Statement of Work — ${project.name}`,
+            type: "SOW",
+            status: "PENDING",
+            signed: false,
+            notes: JSON.stringify({
+              templateId: "sow-standard",
+              projectId: project.id,
+              variables: {
+                PROJECT_NAME: project.name,
+                PROJECT_DESCRIPTION: project.description ?? "As discussed and agreed between the parties.",
+                BUDGET_TOTAL: budgetFormatted,
+                START_DATE: startDate,
+                DUE_DATE: dueDate,
+                EFFECTIVE_DATE: effectiveDate,
+              },
+            }),
+          });
+
+          if (contractsToCreate.length > 0) {
+            await prisma.clientContract.createMany({ data: contractsToCreate });
+            await cache.delete(CacheKeys.contracts(project.clientId));
+            request.log.info(
+              { projectId: project.id, contractCount: contractsToCreate.length },
+              "Auto-generated contracts for project approval"
+            );
+          }
+        } catch (contractError) {
+          request.log.warn({ error: contractError, projectId: project.id }, "Auto-contract generation failed — non-fatal");
+        }
+      }
+
       return {
         success: true,
         data: updated,
@@ -1017,7 +1124,7 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
         })
       ]);
 
-      return { success: true, data: project, meta: { requestId: scope.requestId } } as ApiResponse<typeof project>;
+      return { success: true, data: toProjectDto(project), meta: { requestId: scope.requestId } } as ApiResponse;
     } catch (error) {
       request.log.error(error);
       reply.status(500);
@@ -1128,13 +1235,35 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
             completedAt: project.updatedAt.toISOString()
           }
         });
+
+        // Auto-generate 20% final invoice when project is marked complete
+        const finalAmountCents = Math.round(Number(existingProject.budgetCents) * 0.20);
+        const finalDueDate = new Date();
+        finalDueDate.setDate(finalDueDate.getDate() + 14); // 14 days to pay final invoice
+        try {
+          await callBillingService("/invoices", "POST", {
+            userId: scope.userId,
+            role: scope.role,
+            clientId: existingProject.clientId,
+            requestId: scope.requestId ?? randomUUID(),
+            traceId
+          }, {
+            clientId: existingProject.clientId,
+            number: `INV-${existingProject.id.slice(0, 6).toUpperCase()}-FINAL-20`,
+            amountCents: finalAmountCents,
+            status: "ISSUED",
+            dueAt: finalDueDate.toISOString()
+          });
+        } catch (invoiceError) {
+          request.log.warn({ error: invoiceError, projectId: existingProject.id }, "20% final invoice creation failed — non-fatal");
+        }
       }
 
       return {
         success: true,
-        data: project,
+        data: toProjectDto(project),
         meta: { requestId: scope.requestId }
-      } as ApiResponse<typeof project>;
+      } as ApiResponse;
     } catch (error) {
       request.log.error(error);
       reply.status(500);
@@ -1548,6 +1677,25 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
         type: "TASK_COLLABORATOR_ADDED",
         details: `${collaborator.staffName} assigned to ${task.title}`
       });
+      // Notify staff of their new task assignment (best-effort)
+      try {
+        await eventBus.publish({
+          eventId: randomUUID(),
+          occurredAt: new Date().toISOString(),
+          requestId: scope.requestId,
+          topic: EventTopics.taskAssigned,
+          payload: {
+            collaboratorId: collaborator.id,
+            projectId: project.id,
+            taskId: task.id,
+            taskTitle: task.title,
+            clientId: project.clientId,
+            staffUserId: collaborator.staffUserId ?? null,
+            staffName: collaborator.staffName,
+            role: collaborator.role,
+          },
+        });
+      } catch (_) { /* best-effort */ }
       return { success: true, data: collaborator, meta: { requestId: scope.requestId } } as ApiResponse<typeof collaborator>;
     } catch (error) {
       request.log.error(error);

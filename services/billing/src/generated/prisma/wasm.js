@@ -96,13 +96,19 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
 exports.Prisma.InvoiceScalarFieldEnum = {
   id: 'id',
   clientId: 'clientId',
+  projectId: 'projectId',
   number: 'number',
+  description: 'description',
+  lineItems: 'lineItems',
+  billingPeriod: 'billingPeriod',
+  costCenter: 'costCenter',
   amountCents: 'amountCents',
   currency: 'currency',
   status: 'status',
   issuedAt: 'issuedAt',
   dueAt: 'dueAt',
   paidAt: 'paidAt',
+  pdfFileId: 'pdfFileId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -110,12 +116,102 @@ exports.Prisma.InvoiceScalarFieldEnum = {
 exports.Prisma.PaymentScalarFieldEnum = {
   id: 'id',
   clientId: 'clientId',
+  projectId: 'projectId',
   invoiceId: 'invoiceId',
+  source: 'source',
   amountCents: 'amountCents',
   status: 'status',
   provider: 'provider',
   transactionRef: 'transactionRef',
   paidAt: 'paidAt',
+  receiptFileId: 'receiptFileId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.InvoiceInstallmentScalarFieldEnum = {
+  id: 'id',
+  invoiceId: 'invoiceId',
+  clientId: 'clientId',
+  projectId: 'projectId',
+  number: 'number',
+  name: 'name',
+  amountCents: 'amountCents',
+  dueAt: 'dueAt',
+  paidAt: 'paidAt',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ExpenseScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  category: 'category',
+  subcategory: 'subcategory',
+  description: 'description',
+  amountCents: 'amountCents',
+  submittedBy: 'submittedBy',
+  status: 'status',
+  hasReceipt: 'hasReceipt',
+  isBillable: 'isBillable',
+  expenseDate: 'expenseDate',
+  approvedAt: 'approvedAt',
+  rejectedAt: 'rejectedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ExpenseBudgetScalarFieldEnum = {
+  id: 'id',
+  category: 'category',
+  budgetCents: 'budgetCents',
+  spentCents: 'spentCents',
+  fiscalYear: 'fiscalYear',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LoyaltyAccountScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  tier: 'tier',
+  balancePoints: 'balancePoints',
+  totalEarned: 'totalEarned',
+  lastActivityAt: 'lastActivityAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CreditTransactionScalarFieldEnum = {
+  id: 'id',
+  loyaltyAccountId: 'loyaltyAccountId',
+  type: 'type',
+  points: 'points',
+  description: 'description',
+  referenceId: 'referenceId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.VendorScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  category: 'category',
+  contactName: 'contactName',
+  contactEmail: 'contactEmail',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VendorContractScalarFieldEnum = {
+  id: 'id',
+  vendorId: 'vendorId',
+  startAt: 'startAt',
+  endAt: 'endAt',
+  valueCents: 'valueCents',
+  status: 'status',
+  notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -151,7 +247,14 @@ exports.PaymentStatus = exports.$Enums.PaymentStatus = {
 
 exports.Prisma.ModelName = {
   Invoice: 'Invoice',
-  Payment: 'Payment'
+  Payment: 'Payment',
+  InvoiceInstallment: 'InvoiceInstallment',
+  Expense: 'Expense',
+  ExpenseBudget: 'ExpenseBudget',
+  LoyaltyAccount: 'LoyaltyAccount',
+  CreditTransaction: 'CreditTransaction',
+  Vendor: 'Vendor',
+  VendorContract: 'VendorContract'
 };
 /**
  * Create the Client
@@ -201,13 +304,13 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nenum InvoiceStatus {\n  DRAFT\n  ISSUED\n  PAID\n  OVERDUE\n  VOID\n}\n\nenum PaymentStatus {\n  PENDING\n  COMPLETED\n  FAILED\n  REFUNDED\n}\n\nmodel Invoice {\n  id          String        @id @default(uuid())\n  clientId    String\n  number      String\n  amountCents BigInt\n  currency    String        @default(\"USD\")\n  status      InvoiceStatus @default(DRAFT)\n  issuedAt    DateTime?\n  dueAt       DateTime?\n  paidAt      DateTime?\n  createdAt   DateTime      @default(now())\n  updatedAt   DateTime      @updatedAt\n\n  payments Payment[]\n\n  @@unique([clientId, number])\n  @@index([clientId, status, createdAt])\n  @@map(\"invoices\")\n}\n\nmodel Payment {\n  id             String        @id @default(uuid())\n  clientId       String\n  invoiceId      String\n  amountCents    BigInt\n  status         PaymentStatus @default(PENDING)\n  provider       String?\n  transactionRef String?\n  paidAt         DateTime?\n  createdAt      DateTime      @default(now())\n  updatedAt      DateTime      @updatedAt\n\n  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)\n\n  @@index([clientId, invoiceId, createdAt])\n  @@map(\"payments\")\n}\n",
-  "inlineSchemaHash": "44471ffbefa033424089b3152f4f06715fc5c1f4c8497d688d2afb06bfab2f0a",
+  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nenum InvoiceStatus {\n  DRAFT\n  ISSUED\n  PAID\n  OVERDUE\n  VOID\n}\n\nenum PaymentStatus {\n  PENDING\n  COMPLETED\n  FAILED\n  REFUNDED\n}\n\nmodel Invoice {\n  id            String        @id @default(uuid())\n  clientId      String\n  projectId     String?\n  number        String\n  description   String?\n  lineItems     String?\n  billingPeriod String?\n  costCenter    String?\n  amountCents   BigInt\n  currency      String        @default(\"USD\")\n  status        InvoiceStatus @default(DRAFT)\n  issuedAt      DateTime?\n  dueAt         DateTime?\n  paidAt        DateTime?\n  pdfFileId     String?\n  createdAt     DateTime      @default(now())\n  updatedAt     DateTime      @updatedAt\n\n  payments     Payment[]\n  installments InvoiceInstallment[]\n\n  @@unique([clientId, number])\n  @@index([clientId, projectId, status, issuedAt])\n  @@index([clientId, status, createdAt])\n  @@map(\"invoices\")\n}\n\nmodel Payment {\n  id             String        @id @default(uuid())\n  clientId       String\n  projectId      String?\n  invoiceId      String\n  source         String?\n  amountCents    BigInt\n  status         PaymentStatus @default(PENDING)\n  provider       String?\n  transactionRef String?\n  paidAt         DateTime?\n  receiptFileId  String?\n  createdAt      DateTime      @default(now())\n  updatedAt      DateTime      @updatedAt\n\n  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)\n\n  @@index([clientId, projectId, paidAt])\n  @@index([clientId, invoiceId, createdAt])\n  @@map(\"payments\")\n}\n\n// ─── Batch E: Finance Extensions ─────────────────────────────────────────────\n\nmodel InvoiceInstallment {\n  id          String    @id @default(uuid())\n  invoiceId   String\n  clientId    String\n  projectId   String?\n  number      Int\n  name        String\n  amountCents BigInt\n  dueAt       DateTime?\n  paidAt      DateTime?\n  status      String    @default(\"PENDING\")\n  createdAt   DateTime  @default(now())\n  updatedAt   DateTime  @updatedAt\n  invoice     Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)\n\n  @@index([invoiceId])\n  @@index([clientId, status])\n  @@map(\"invoice_installments\")\n}\n\nmodel Expense {\n  id          String    @id @default(uuid())\n  clientId    String?\n  category    String\n  subcategory String?\n  description String\n  amountCents BigInt\n  submittedBy String?\n  status      String    @default(\"PENDING\")\n  hasReceipt  Boolean   @default(false)\n  isBillable  Boolean   @default(false)\n  expenseDate DateTime\n  approvedAt  DateTime?\n  rejectedAt  DateTime?\n  createdAt   DateTime  @default(now())\n  updatedAt   DateTime  @updatedAt\n\n  @@index([clientId, expenseDate])\n  @@index([status])\n  @@index([category])\n  @@map(\"expenses\")\n}\n\nmodel ExpenseBudget {\n  id          String   @id @default(uuid())\n  category    String\n  budgetCents BigInt\n  spentCents  BigInt   @default(0)\n  fiscalYear  Int\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  @@unique([category, fiscalYear])\n  @@map(\"expense_budgets\")\n}\n\nmodel LoyaltyAccount {\n  id             String              @id @default(uuid())\n  clientId       String              @unique\n  tier           String              @default(\"BRONZE\")\n  balancePoints  Int                 @default(0)\n  totalEarned    Int                 @default(0)\n  lastActivityAt DateTime?\n  createdAt      DateTime            @default(now())\n  updatedAt      DateTime            @updatedAt\n  transactions   CreditTransaction[]\n\n  @@map(\"loyalty_accounts\")\n}\n\nmodel CreditTransaction {\n  id               String         @id @default(uuid())\n  loyaltyAccountId String\n  type             String         @default(\"EARNED\")\n  points           Int\n  description      String?\n  referenceId      String?\n  createdAt        DateTime       @default(now())\n  account          LoyaltyAccount @relation(fields: [loyaltyAccountId], references: [id], onDelete: Cascade)\n\n  @@index([loyaltyAccountId, createdAt])\n  @@map(\"credit_transactions\")\n}\n\nmodel Vendor {\n  id           String           @id @default(uuid())\n  name         String\n  category     String?\n  contactName  String?\n  contactEmail String?\n  status       String           @default(\"ACTIVE\")\n  createdAt    DateTime         @default(now())\n  updatedAt    DateTime         @updatedAt\n  contracts    VendorContract[]\n\n  @@index([status])\n  @@map(\"vendors\")\n}\n\nmodel VendorContract {\n  id         String    @id @default(uuid())\n  vendorId   String\n  startAt    DateTime\n  endAt      DateTime?\n  valueCents BigInt\n  status     String    @default(\"ACTIVE\")\n  notes      String?\n  createdAt  DateTime  @default(now())\n  updatedAt  DateTime  @updatedAt\n  vendor     Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)\n\n  @@index([vendorId, status])\n  @@index([status])\n  @@map(\"vendor_contracts\")\n}\n",
+  "inlineSchemaHash": "1fb806dc93be8a1c6d235d531d2527e8d58c4b6c926c84e70e0afdbe2d2c37e7",
   "copyEngine": true
 }
 config.dirname = '/'
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"Invoice\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clientId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"number\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"amountCents\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"currency\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"InvoiceStatus\"},{\"name\":\"issuedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"dueAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"paidAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"payments\",\"kind\":\"object\",\"type\":\"Payment\",\"relationName\":\"InvoiceToPayment\"}],\"dbName\":\"invoices\"},\"Payment\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clientId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"invoiceId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"amountCents\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"PaymentStatus\"},{\"name\":\"provider\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"transactionRef\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"paidAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"invoice\",\"kind\":\"object\",\"type\":\"Invoice\",\"relationName\":\"InvoiceToPayment\"}],\"dbName\":\"payments\"}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"Invoice\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clientId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"projectId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"number\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"lineItems\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"billingPeriod\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"costCenter\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"amountCents\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"currency\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"InvoiceStatus\"},{\"name\":\"issuedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"dueAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"paidAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"pdfFileId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"payments\",\"kind\":\"object\",\"type\":\"Payment\",\"relationName\":\"InvoiceToPayment\"},{\"name\":\"installments\",\"kind\":\"object\",\"type\":\"InvoiceInstallment\",\"relationName\":\"InvoiceToInvoiceInstallment\"}],\"dbName\":\"invoices\"},\"Payment\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clientId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"projectId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"invoiceId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"source\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"amountCents\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"PaymentStatus\"},{\"name\":\"provider\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"transactionRef\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"paidAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"receiptFileId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"invoice\",\"kind\":\"object\",\"type\":\"Invoice\",\"relationName\":\"InvoiceToPayment\"}],\"dbName\":\"payments\"},\"InvoiceInstallment\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"invoiceId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clientId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"projectId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"number\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"amountCents\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"dueAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"paidAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"status\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"invoice\",\"kind\":\"object\",\"type\":\"Invoice\",\"relationName\":\"InvoiceToInvoiceInstallment\"}],\"dbName\":\"invoice_installments\"},\"Expense\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clientId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"category\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"subcategory\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"amountCents\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"submittedBy\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"hasReceipt\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"isBillable\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"expenseDate\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"approvedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"rejectedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":\"expenses\"},\"ExpenseBudget\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"category\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"budgetCents\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"spentCents\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"fiscalYear\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":\"expense_budgets\"},\"LoyaltyAccount\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clientId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"tier\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"balancePoints\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"totalEarned\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"lastActivityAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"transactions\",\"kind\":\"object\",\"type\":\"CreditTransaction\",\"relationName\":\"CreditTransactionToLoyaltyAccount\"}],\"dbName\":\"loyalty_accounts\"},\"CreditTransaction\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"loyaltyAccountId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"type\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"points\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"referenceId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"account\",\"kind\":\"object\",\"type\":\"LoyaltyAccount\",\"relationName\":\"CreditTransactionToLoyaltyAccount\"}],\"dbName\":\"credit_transactions\"},\"Vendor\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"category\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"contactName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"contactEmail\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"contracts\",\"kind\":\"object\",\"type\":\"VendorContract\",\"relationName\":\"VendorToVendorContract\"}],\"dbName\":\"vendors\"},\"VendorContract\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"vendorId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"startAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"endAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"valueCents\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"status\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"notes\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"vendor\",\"kind\":\"object\",\"type\":\"Vendor\",\"relationName\":\"VendorToVendorContract\"}],\"dbName\":\"vendor_contracts\"}},\"enums\":{},\"types\":{}}")
 defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.engineWasm = {
   getRuntime: async () => require('./query_engine_bg.js'),

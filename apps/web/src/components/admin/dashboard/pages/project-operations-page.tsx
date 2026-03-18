@@ -1,10 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { formatMoneyCents } from "@/lib/i18n/currency";
 import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import { updateProjectWithRefresh } from "../../../../lib/api/admin/projects";
+import { queueAutomationJobWithRefresh } from "../../../../lib/api/admin/automation";
 
 type ViewMode = "execution board" | "ops queue" | "checkpoint tracker";
 
@@ -30,20 +34,8 @@ function daysSince(value?: string | null): number | null {
 }
 
 function money(amountCents: number, currency?: string): string {
-  const code = currency && currency !== "AUTO" ? currency : "ZAR";
-  try {
-    return new Intl.NumberFormat("en-ZA", {
-      style: "currency",
-      currency: code,
-      maximumFractionDigits: 0
-    }).format(amountCents / 100);
-  } catch {
-    return new Intl.NumberFormat("en-ZA", {
-      style: "currency",
-      currency: "ZAR",
-      maximumFractionDigits: 0
-    }).format(amountCents / 100);
-  }
+  const code = currency && currency !== "AUTO" ? currency : undefined;
+  return formatMoneyCents(amountCents, { currency: code, maximumFractionDigits: 0 });
 }
 
 function statusTone(status: string): string {
@@ -187,6 +179,61 @@ export function ProjectOperationsPage({
   const avgHealth = filtered.length > 0 ? Math.round(filtered.reduce((sum, p) => sum + p.health, 0) / filtered.length) : 0;
 
   const canOperate = session?.user.role === "ADMIN" || session?.user.role === "STAFF";
+
+  const handleQueueJob = useCallback(async (type: string, projectId?: string) => {
+    if (!session) return;
+    const result = await queueAutomationJobWithRefresh(session, { type, ...(projectId && { projectId }) });
+    if (result.nextSession) saveSession(result.nextSession);
+    if (!result.error) {
+      const msgs: Record<string, string> = {
+        OWNER_FOLLOWUP: "Owner follow-up queued.",
+        CHECKPOINT_REMINDER: "Checkpoint reminder scheduled.",
+        CHECKPOINT_DIGEST: "Weekly checkpoint digest queued.",
+      };
+      onNotify("success", msgs[type] ?? "Job queued.");
+    } else {
+      onNotify("error", result.error.message ?? "Failed to queue job.");
+    }
+  }, [session, onNotify]);
+
+  // ── Edit project state ────────────────────────────────────────────────────
+  const [showEditProject, setShowEditProject] = useState(false);
+  const [editProjName, setEditProjName] = useState("");
+  const [editProjStatus, setEditProjStatus] = useState<"PLANNING" | "IN_PROGRESS" | "REVIEW" | "COMPLETED" | "ON_HOLD" | "CANCELLED">("IN_PROGRESS");
+  const [editProjPriority, setEditProjPriority] = useState<"LOW" | "MEDIUM" | "HIGH">("MEDIUM");
+  const [editProjOwner, setEditProjOwner] = useState("");
+  const [editProjDueAt, setEditProjDueAt] = useState("");
+  const [editProjBudget, setEditProjBudget] = useState("");
+  const [editProjSaving, setEditProjSaving] = useState(false);
+
+  function openEditProject() {
+    if (!selected) return;
+    setEditProjName(selected.name);
+    setEditProjStatus(selected.status as typeof editProjStatus);
+    setEditProjPriority((selected.priority ?? "MEDIUM") as typeof editProjPriority);
+    setEditProjOwner(selected.ownerName ?? "");
+    setEditProjDueAt(selected.dueAt ? selected.dueAt.slice(0, 10) : "");
+    setEditProjBudget(selected.budgetCents ? String(Math.round(selected.budgetCents / 100)) : "");
+    setShowEditProject(true);
+  }
+
+  async function handleEditProject() {
+    if (!session || !selected) return;
+    setEditProjSaving(true);
+    const r = await updateProjectWithRefresh(session, selected.id, {
+      name: editProjName.trim() || undefined,
+      status: editProjStatus,
+      priority: editProjPriority,
+      ownerName: editProjOwner.trim() || undefined,
+      dueAt: editProjDueAt ? new Date(editProjDueAt).toISOString() : null,
+      budgetCents: editProjBudget ? Math.round(parseFloat(editProjBudget) * 100) : undefined,
+    });
+    setEditProjSaving(false);
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.error) { onNotify("error", r.error.message); return; }
+    setShowEditProject(false);
+    onNotify("success", `Project "${editProjName}" updated successfully.`);
+  }
 
   const lanes: Array<{ key: string; label: string; color: string }> = [
     { key: "PLANNING", label: "Planning", color: "var(--amber)" },
@@ -376,16 +423,25 @@ export function ProjectOperationsPage({
                 <div className={styles.projOpsActionRow}>
                   <button
                     type="button"
-                    onClick={() => onNotify("success", "Escalation logged for Project Operations.")}
+                    onClick={openEditProject}
                     disabled={!canOperate}
                     className={cx("btnSm", "btnAccent", !canOperate && "opacity60")}
+                    aria-disabled={!canOperate}
+                  >
+                    Edit Project
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleQueueJob("CHECKPOINT_REMINDER", selected?.id)}
+                    disabled={!canOperate}
+                    className={cx("btnSm", "btnGhost", !canOperate && "opacity60")}
                     aria-disabled={!canOperate}
                   >
                     Log Escalation
                   </button>
                   <button
                     type="button"
-                    onClick={() => onNotify("success", "Owner follow-up queued.")}
+                    onClick={() => void handleQueueJob("OWNER_FOLLOWUP", selected?.id)}
                     disabled={!canOperate}
                     className={cx("btnSm", "btnGhost", !canOperate && "opacity60")}
                     aria-disabled={!canOperate}
@@ -394,7 +450,7 @@ export function ProjectOperationsPage({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onNotify("success", "Checkpoint reminder scheduled.")}
+                    onClick={() => void handleQueueJob("CHECKPOINT_REMINDER", selected?.id)}
                     disabled={!canOperate}
                     className={cx("btnSm", "btnGhost", !canOperate && "opacity60")}
                     aria-disabled={!canOperate}
@@ -493,7 +549,7 @@ export function ProjectOperationsPage({
             </div>
             <button
               type="button"
-              onClick={() => onNotify("success", "Weekly checkpoint digest queued.")}
+              onClick={() => void handleQueueJob("CHECKPOINT_DIGEST")}
               disabled={!canOperate}
               className={cx("btnSm", "btnAccent", "wFull", !canOperate && "opacity60")}
             >
@@ -502,6 +558,88 @@ export function ProjectOperationsPage({
           </div>
         </div>
       ) : null}
+
+      {/* ── Edit Project Modal ─────────────────────────────────────────────── */}
+      {showEditProject && selected && (
+        <div className={styles.modalOverlay} onClick={() => setShowEditProject(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHd}>
+              <span className={cx("fw700", "text14")}>Edit Project</span>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setShowEditProject(false)}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.fieldLabel}>Project Name</div>
+              <input
+                className={styles.fieldInput}
+                value={editProjName}
+                onChange={(e) => setEditProjName(e.target.value)}
+                placeholder="Project name"
+              />
+              <div className={styles.fieldLabel}>Status</div>
+              <select
+                title="Project status"
+                className={styles.fieldInput}
+                value={editProjStatus}
+                onChange={(e) => setEditProjStatus(e.target.value as typeof editProjStatus)}
+              >
+                <option value="PLANNING">Planning</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="REVIEW">Review</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="ON_HOLD">On Hold</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+              <div className={styles.fieldLabel}>Priority</div>
+              <select
+                title="Project priority"
+                className={styles.fieldInput}
+                value={editProjPriority}
+                onChange={(e) => setEditProjPriority(e.target.value as typeof editProjPriority)}
+              >
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+              </select>
+              <div className={styles.fieldLabel}>Owner Name</div>
+              <input
+                className={styles.fieldInput}
+                value={editProjOwner}
+                onChange={(e) => setEditProjOwner(e.target.value)}
+                placeholder="Assigned owner"
+              />
+              <div className={styles.fieldLabel}>Due Date</div>
+              <input
+                type="date"
+                className={styles.fieldInput}
+                value={editProjDueAt}
+                onChange={(e) => setEditProjDueAt(e.target.value)}
+              />
+              <div className={styles.fieldLabel}>Budget</div>
+              <input
+                type="number"
+                className={styles.fieldInput}
+                value={editProjBudget}
+                onChange={(e) => setEditProjBudget(e.target.value)}
+                placeholder="e.g. 50000"
+                min={0}
+              />
+              <div className={cx("flexRow", "gap8", "mt8")}>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnAccent", "flex1")}
+                  onClick={handleEditProject}
+                  disabled={editProjSaving || !editProjName.trim()}
+                >
+                  {editProjSaving ? "Saving…" : "Save Changes"}
+                </button>
+                <button type="button" className={cx("btnSm", "btnGhost", "flex1")} onClick={() => setShowEditProject(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

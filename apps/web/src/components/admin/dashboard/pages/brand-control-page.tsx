@@ -28,10 +28,7 @@ const customDomains = [
   { domain: "app.maphari.co.za", type: "Staff Dashboard", status: "pending", ssl: false, verified: false },
 ];
 
-const whitelabelClients = [
-  { client: "Volta Studios", domain: "portal.voltastudios.co.za", logoApplied: false, colorOverride: false, status: "default" },
-  { client: "Mira Health", domain: "portal.mirahealth.co.za", logoApplied: true, colorOverride: true, status: "custom" },
-];
+const whitelabelClients: { client: string; domain: string; logoApplied: boolean; colorOverride: boolean; status: string }[] = [];
 
 const tabs = ["brand tokens", "email templates", "custom domains", "white-label clients"] as const;
 type Tab = (typeof tabs)[number];
@@ -182,7 +179,7 @@ export function BrandControlPage() {
                 </div>
               <div className={styles.brandEmailMockBody}>
                 <div className={styles.brandEmailMockTitle}>Your invoice is ready</div>
-                <div className={styles.brandEmailMockText}>Hi Volta Studios, your invoice INV-0041 for R34,800 is now available.</div>
+                <div className={styles.brandEmailMockText}>Hi [Client Name], your latest invoice is now available in your portal.</div>
                 <div className={cx(styles.brandEmailMockBtn, styles.brandTonePrimary)}>View Invoice -&gt;</div>
                 <div className={styles.brandEmailMockFoot}>Maphari Creative Agency - maphari.co.za</div>
               </div>

@@ -1,0 +1,2480 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Missing CSS class definitions for admin dashboard pages
+   Generated for: maphari-dashboard.module.css (admin-specific module)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* ─── Admin Leads Page (ldr) ──────────────────────────────────────────────── */
+
+/* Preserved for shared KPI card colour text (statValue tone) */
+.leadsToneText { transition: color 0.1s ease; }
+.leadsToneText.toneAccent  { color: var(--accent); }
+.leadsToneText.toneRed     { color: var(--red); }
+.leadsToneText.toneAmber   { color: var(--amber); }
+.leadsToneText.toneBlue    { color: var(--blue); }
+.leadsToneText.toneGreen   { color: var(--green); }
+.leadsToneText.tonePurple  { color: var(--purple); }
+.leadsToneText.toneMuted   { color: var(--muted); }
+.leadsToneText.toneText    { color: var(--text); }
+
+/* ── Layout ── */
+.ldrLayout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+}
+
+/* ── Stage Rail ── */
+.ldrRail {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.ldrRailCard {
+  position: relative;
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 14px 16px;
+  overflow: hidden;
+}
+
+.ldrRailCard::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+}
+
+.ldrRailLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.ldrRailCount {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.ldrRailPct {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.55rem;
+  color: var(--muted);
+}
+
+/* ── Stage / priority colour strips ── */
+.ldrStripAccent::before { background: var(--accent); }
+.ldrStripBlue::before   { background: var(--blue); }
+.ldrStripAmber::before  { background: var(--amber); }
+.ldrStripGreen::before  { background: var(--green); }
+.ldrStripRed::before    { background: var(--red); }
+.ldrStripMuted::before  { background: rgba(255, 255, 255, 0.15); }
+
+/* ── Filter row ── */
+.ldrFilters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+}
+
+.ldrSearchInput {
+  flex: 1;
+  min-width: 180px;
+}
+
+/* ── Section wrapper (list view) ── */
+.ldrSection {
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.ldrSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ldrSectionTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ldrSectionMeta {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* Column header */
+.ldrListHead {
+  display: grid;
+  grid-template-columns: 1.6fr 0.9fr 0.8fr 1fr 0.5fr 0.8fr 56px;
+  gap: 10px;
+  padding: 9px 20px 9px 23px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* Lead rows */
+.ldrLeadRow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.6fr 0.9fr 0.8fr 1fr 0.5fr 0.8fr 56px;
+  gap: 10px;
+  padding: 13px 20px 13px 23px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+  cursor: pointer;
+}
+
+.ldrLeadRow::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
+
+.ldrLeadRow:hover { background: rgba(255, 255, 255, 0.02); }
+.ldrLeadRow:last-child { border-bottom: none; }
+
+/* Priority strip colours on rows */
+.ldrRowHot::before  { background: var(--red); }
+.ldrRowWarm::before { background: var(--amber); }
+
+/* Selected row */
+.ldrLeadSelected { background: var(--accent-d) !important; }
+.ldrLeadSelected::before { background: var(--accent) !important; }
+
+.ldrLeadName {
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.ldrLeadCompany {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  color: var(--muted);
+}
+
+.ldrLeadSource {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.64rem;
+  color: var(--muted);
+}
+
+/* Stage badge (rect) */
+.ldrStageBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ldrBadgeAccent { background: var(--accent-d); color: var(--accent); }
+.ldrBadgeBlue   { background: var(--blue-d);   color: var(--blue); }
+.ldrBadgeAmber  { background: var(--amber-d);  color: var(--amber); }
+.ldrBadgeGreen  { background: var(--green-d);  color: var(--green); }
+.ldrBadgeRed    { background: var(--red-d);    color: var(--red); }
+.ldrBadgeMuted  { background: rgba(255, 255, 255, 0.05); color: var(--muted); }
+
+/* Inline score cell */
+.ldrScoreCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ldrScoreVal {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.ldrScoreTrack {
+  height: 3px;
+  background: var(--border2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ldrScoreFill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  width: var(--pct, 0%);
+}
+
+.ldrFillGreen { background: var(--green); }
+.ldrFillAmber { background: var(--amber); }
+.ldrFillRed   { background: var(--red); }
+
+.ldrIdleMono {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.64rem;
+  color: var(--muted);
+}
+
+.ldrIdleRed { color: var(--red); }
+
+.ldrFollowDate {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+.ldrOpenBtn {
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  padding: 4px 10px;
+  border-radius: var(--r-xs);
+  font-size: 0.58rem;
+  font-family: var(--font-dm-mono), monospace;
+  transition: all 0.12s ease;
+}
+
+.ldrOpenBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ldrEmpty {
+  padding: 20px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ── Kanban ── */
+.ldrKanban {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ldrLane {
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.ldrLaneHeader {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px 11px 17px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ldrLaneHeader::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
+
+.ldrLaneLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ldrLaneCount {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+.ldrLaneBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+}
+
+.ldrKanbanCard {
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  padding: 10px 12px 10px 15px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.ldrKanbanCard::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 2px 0 0 2px;
+}
+
+.ldrKanbanCard:hover { background: rgba(255, 255, 255, 0.035); }
+
+.ldrKanbanSelected {
+  background: var(--accent-d) !important;
+  border-color: var(--accent) !important;
+}
+
+.ldrKanbanSelected::before { background: var(--accent); }
+
+.ldrKanbanTitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.ldrKanbanSub {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.ldrKanbanMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.ldrKanbanScore {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  color: var(--muted);
+}
+
+.ldrKanbanIdle {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  color: var(--muted);
+}
+
+/* Priority badge (pill) */
+.ldrPrioBadge {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+
+.ldrPrioBadgeRed   { background: var(--red-d);   color: var(--red); }
+.ldrPrioBadgeAmber { background: var(--amber-d); color: var(--amber); }
+.ldrPrioBadgeMuted { background: rgba(255, 255, 255, 0.05); color: var(--muted); }
+
+.ldrKanbanMoveBtn {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  padding: 3px 9px;
+  border-radius: var(--r-xs);
+  font-size: 0.54rem;
+  font-family: var(--font-dm-mono), monospace;
+  margin-right: 4px;
+  margin-top: 2px;
+  transition: all 0.12s ease;
+}
+
+.ldrKanbanMoveBtn:hover {
+  border-color: var(--accent-d);
+  color: var(--accent);
+}
+
+.ldrLaneEmpty {
+  font-size: 0.65rem;
+  color: var(--muted);
+  padding: 8px 4px;
+}
+
+/* ── Detail Panel ── */
+.ldrDetailPanel {
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  align-self: start;
+  position: sticky;
+  top: 20px;
+}
+
+.ldrDetailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ldrDetailTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ldrDetailId {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  color: var(--muted);
+}
+
+.ldrDetailBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 20px;
+}
+
+.ldrDetailName {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin-bottom: 3px;
+}
+
+.ldrDetailSub {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+/* Score bar in detail panel */
+.ldrScoreBarWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ldrScoreBarMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ldrScoreBarLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.ldrScoreBarVal {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.ldrScoreBarTrack {
+  height: 5px;
+  background: var(--border2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ldrScoreBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  width: var(--pct, 0%);
+}
+
+/* 4-cell metric grid */
+.ldrMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.ldrMetaCell {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  padding: 10px 12px;
+}
+
+.ldrMetaLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+
+.ldrMetaValue {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* Follow-up row */
+.ldrFollowRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  padding: 10px 14px;
+}
+
+.ldrFollowLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  color: var(--muted);
+}
+
+.ldrFollowVal {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.64rem;
+  font-weight: 600;
+}
+
+/* Notes */
+.ldrNotesBox {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  padding: 12px 14px;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+
+/* Move buttons grid */
+.ldrMoveGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.ldrMoveBtn {
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  padding: 7px 10px;
+  border-radius: var(--r-xs);
+  font-size: 0.58rem;
+  font-family: var(--font-dm-mono), monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: all 0.12s ease;
+  text-align: center;
+}
+
+.ldrMoveBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-d);
+}
+
+.ldrMoveBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ldrEmptyDetail {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* ── Responsive ── */
+@media (max-width: 1200px) {
+  .ldrLayout { grid-template-columns: 1fr; }
+  .ldrDetailPanel { position: static; }
+}
+
+@media (max-width: 900px) {
+  .ldrRail   { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ldrKanban { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ldrListHead { display: none; }
+  .ldrLeadRow {
+    grid-template-columns: 1fr 0.9fr 56px;
+    padding-left: 23px;
+  }
+  .ldrLeadRow > :nth-child(3),
+  .ldrLeadRow > :nth-child(4),
+  .ldrLeadRow > :nth-child(5),
+  .ldrLeadRow > :nth-child(6) { display: none; }
+}
+
+@media (max-width: 600px) {
+  .ldrRail   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ldrKanban { grid-template-columns: 1fr; }
+}
+
+.p10 {
+  padding: 10px;
+}
+
+
+/* ─── Cash Flow Calendar Page ─────────────────────────────────────────────── */
+
+.cashFlowEventGrid {
+  display: grid;
+  grid-template-columns: 80px 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+}
+
+
+/* ─── Client Health Scorecard Page ────────────────────────────────────────── */
+
+.healthGridHead {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(7, 0.6fr) 0.6fr 0.6fr 0.5fr;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.healthGridRow {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(7, 0.6fr) 0.6fr 0.6fr 0.5fr;
+  gap: 10px;
+  padding: 12px 16px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+
+.healthGridRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+
+/* ─── Client Journey Page ─────────────────────────────────────────────────── */
+
+.journeyMapHead {
+  display: grid;
+  grid-template-columns: 1.3fr 0.8fr 0.6fr 0.7fr 0.7fr 0.8fr 1.2fr;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.journeyAgingHead {
+  display: grid;
+  grid-template-columns: 1.3fr 0.8fr 0.7fr 0.6fr 1.5fr;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+
+/* ─── Client Satisfaction Page ────────────────────────────────────────────── */
+
+.csatScoreCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--s1);
+  padding: 20px;
+  border-left: 3px solid var(--csat-tone, var(--border));
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.csatScoreCardDanger {
+  border-left-color: var(--red);
+  background: color-mix(in srgb, var(--red) 3%, var(--s1));
+}
+
+.csatSurveyRow {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.8fr auto auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--s1);
+  padding: 14px 20px;
+  border-left: 3px solid var(--csat-tone, var(--border));
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+
+/* ─── Invoices Page ───────────────────────────────────────────────────────── */
+
+.invcInvGrid {
+  display: grid;
+  grid-template-columns: 0.7fr 1.2fr 1.1fr 0.8fr 0.8fr 0.8fr 0.7fr 100px;
+  gap: 10px;
+  align-items: center;
+}
+
+.invcPayGrid {
+  display: grid;
+  grid-template-columns: 0.7fr 1.2fr 0.7fr 0.8fr 0.8fr 0.7fr 120px;
+  gap: 10px;
+  align-items: center;
+}
+
+
+/* ─── Messages Page ───────────────────────────────────────────────────────── */
+
+.msgEscHead {
+  display: grid;
+  grid-template-columns: 1.2fr 80px 90px 120px 1fr 140px;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+
+/* ─── Notifications Page ──────────────────────────────────────────────────── */
+
+.notifTableHead {
+  display: grid;
+  grid-template-columns: 0.7fr 1fr 1.2fr 0.7fr 0.6fr 1fr;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.notifTableRow {
+  display: grid;
+  grid-template-columns: 0.7fr 1fr 1.2fr 0.7fr 0.6fr 1fr;
+  gap: 10px;
+  padding: 12px 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+
+.notifTableRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+/* ================================================================
+   MISSING CSS CLASS DEFINITIONS — Admin Dashboard Pages
+   Generated from JSX analysis of page components.
+   These classes should be added to:
+     apps/web/src/app/style/components/maphari-dashboard.module.css
+   ================================================================ */
+
+
+/* ────────────────────────────────────────────────────────────────
+   barFill — Generic progress bar fill
+   Used across 8+ files on <progress> elements inside .progressBar
+   wrappers. Typically combined with "uiProgress" utility and a
+   tone class for coloring. Also used as styles.barFill (div) in
+   legal-page for a static filled bar.
+   ──────────────────────────────────────────────────────────────── */
+
+.barFill {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border: none;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.barFill::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+}
+
+.barFill::-webkit-progress-value {
+  border-radius: 3px;
+  background: var(--muted);
+}
+
+.barFill.toneAccent::-webkit-progress-value { background: var(--accent); }
+
+.barFill.toneRed::-webkit-progress-value { background: var(--red); }
+
+.barFill.toneAmber::-webkit-progress-value { background: var(--amber); }
+
+.barFill.toneBlue::-webkit-progress-value { background: var(--blue); }
+
+.barFill.tonePurple::-webkit-progress-value { background: var(--purple); }
+
+.barFill.toneMuted::-webkit-progress-value { background: var(--muted); }
+
+.barFill::-moz-progress-bar {
+  border-radius: 3px;
+  background: var(--muted);
+}
+
+
+/* ================================================================
+   PAYROLL LEDGER PAGE
+   File: payroll-ledger-page.tsx
+   ================================================================ */
+
+/* payTableHead — Column header row for the main payroll table.
+   Sits inside a .card with overflowHidden. Contains 7 <span>
+   children: Employee, Role, Gross, PAYE, UIF, Net Pay, (action).
+   Grid must match payHistRow template (same 7 columns). */
+
+.payTableHead {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.8fr 0.8fr 0.8fr 0.8fr 60px;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* payTableRow — Data row in the main payroll table.
+   Contains employee name+avatar, role, gross, paye, uif, net, button.
+   Clickable (role="button") with pointer cursor. Same 7-col grid. */
+
+.payTableRow {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.8fr 0.8fr 0.8fr 0.8fr 60px;
+  gap: 10px;
+  padding: 12px 16px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+
+.payTableRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* payHistHead — Column header row for the payroll history table.
+   Contains 7 <span> children: Month, Gross, PAYE, UIF, Net, Status, (action).
+   Grid matches payHistRow. */
+
+.payHistHead {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 60px;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+
+/* ================================================================
+   PERFORMANCE PAGE
+   File: performance-page.tsx
+   ================================================================ */
+
+/* perfScoreHead — Column header for the scoreboard table.
+   7 <span> children: Staff, Delivery, On-time, CSAT, Utilization,
+   Tasks (done/missed), Bonus.
+   Grid matches perfScoreRow. */
+
+.perfScoreHead {
+  display: grid;
+  grid-template-columns: 1.6fr 70px 70px 70px 80px 100px 1fr;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* perfUtilHead — Column header for the utilization table.
+   6 <span> children: Staff, Billable, Non-bill, Total, Util %, Revenue gen.
+   Grid matches perfUtilRow. */
+
+.perfUtilHead {
+  display: grid;
+  grid-template-columns: 1.6fr 80px 80px 80px 80px 90px;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* perfIncentiveHead — Column header for the incentive planner table.
+   5 <span> children: Staff, Delivery, Util %, CSAT, Current bonus.
+   Grid matches perfIncentiveRow. */
+
+.perfIncentiveHead {
+  display: grid;
+  grid-template-columns: 1.6fr 70px 70px 70px 1fr;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+
+/* ================================================================
+   QUALITY ASSURANCE PAGE
+   File: quality-assurance-page.tsx
+   ================================================================ */
+
+/* qaRevisionHead — Column header for the revision history table.
+   6 <span> children: DLV ID, Date, Revision Note, Deliverable,
+   Requested By, Round.
+   Grid matches qaRevisionRow. */
+
+.qaRevisionHead {
+  display: grid;
+  grid-template-columns: 70px 80px 1fr 1fr 90px 60px;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+
+/* ================================================================
+   SLA TRACKER PAGE
+   File: sla-tracker-page.tsx
+   ================================================================ */
+
+/* slaScoreGrid — Grid inside each client SLA score card.
+   5 logical sections: client info, progress bar area, breaches,
+   trend indicator, action button.
+   Used with: cx("slaScoreGrid", "slaScoreAligned", "gap20") */
+
+.slaScoreGrid {
+  display: grid;
+  grid-template-columns: 1.4fr 2fr 80px 100px auto;
+  gap: 20px;
+  align-items: center;
+}
+
+/* slaMetricGrid — Grid for the SLA metric cells row beneath each
+   client score card. Holds 5 metric cells (First Response,
+   Substantive, Milestone, Deliverable Review, Invoice Ack).
+   Used with: cx("slaMetricGrid", "gap10", "mt16") */
+
+.slaMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* slaMatrixGrid — Grid for SLA matrix tab.
+   First column is the metric name, followed by one column per client (5).
+   Used for both head row and data rows.
+   Used with: cx("slaMatrixGrid", "px20", "borderB", ...) */
+
+.slaMatrixGrid {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px 20px;
+  align-items: center;
+}
+
+/* slaBreachGrid — Grid for each breach log card.
+   6 sections: client name, metric + AM, avg time, target,
+   last breach date, breach count badge.
+   Used with: cx("slaBreachGrid", "card", "p20", "gap16", ...) */
+
+.slaBreachGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 1.4fr 0.8fr 0.8fr 0.8fr 80px;
+  gap: 16px;
+  align-items: center;
+}
+
+/* slaDefGrid — Grid for each SLA definition row.
+   5 sections: SLA ID, name + description, tier badge, target value,
+   edit button.
+   Used with: cx("slaDefGrid", "card", "p20", "gap20", ...) */
+
+.slaDefGrid {
+  display: grid;
+  grid-template-columns: 70px 2fr auto 1fr auto;
+  gap: 20px;
+  align-items: center;
+}
+
+/* ── slaToneText — colored text via tone modifier ── */
+.slaToneText.toneAccent { color: var(--accent); }
+.slaToneText.toneBlue   { color: var(--blue);   }
+.slaToneText.toneAmber  { color: var(--amber);  }
+.slaToneText.toneRed    { color: var(--red);    }
+.slaToneText.toneMuted  { color: var(--muted);  }
+
+/* ── slaRiskCard — at-risk client card (score < 70) ── */
+.slaRiskCard {
+  border-left: 3px solid var(--red);
+}
+
+/* ── slaMatrixCellOk / slaMatrixCellFail — pass/fail cells ── */
+.slaMatrixCellOk {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-radius: var(--r-xs);
+}
+.slaMatrixCellFail {
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+  border-radius: var(--r-xs);
+}
+
+/* ── slaActionBtn — "Action Required" button on at-risk clients ── */
+.slaActionBtn {
+  background: color-mix(in srgb, var(--red) 15%, transparent);
+  color: var(--red);
+  border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ── Layout / typography helpers ── */
+.slaScoreAligned { align-items: center; }
+.slaClientName   { font-size: 0.875rem; }
+.slaBreachCount  { font-size: 1.1rem; line-height: 1; }
+.slaMetricValue  { font-size: 0.85rem; }
+.slaMetricName   { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.slaMetricBreach { font-size: 0.58rem; }
+.slaCellRadius   { border-radius: var(--r-xs); }
+.slaTiny9        { font-size: 0.56rem; }
+.slaMatrixHead   { min-height: 38px; }
+.slaMatrixRow    { min-height: 56px; }
+.slaBreachBadge  { background: color-mix(in srgb, var(--red) 10%, transparent); border-radius: var(--r-xs); }
+.slaBreachCard   { transition: background 120ms ease; }
+.slaBreachCard:hover { background: rgba(255, 255, 255, 0.02); }
+.slaAddDefBtn    {
+  border: 1px dashed var(--border);
+  border-radius: var(--r-sm);
+  background: transparent;
+  width: 100%;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+.slaAddDefBtn:hover { border-color: var(--accent); color: var(--accent); }
+.slaDefRow       { transition: background 120ms ease; }
+.slaDefRow:hover { background: rgba(255, 255, 255, 0.02); }
+
+
+/* ================================================================
+   STAFF ACCESS PAGE
+   File: staff-access-page.tsx
+   ================================================================ */
+
+/* staffReqHead — Column header for the request queue table.
+   5 <span> children: Staff Email, Status, PIN, Requested, Action.
+   Grid matches staffReqRow. */
+
+.staffReqHead {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.6fr 1fr auto;
+  gap: 12px;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* staffAcctRow — Data row in the staff accounts table.
+   Contains email + id, status badge, created date, action button.
+   Grid matches staffAcctHead (2fr 1fr 1fr auto). */
+
+.staffAcctRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 12px;
+  padding: 14px 18px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+
+.staffAcctRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+
+/* ================================================================
+   TIMELINE & GANTT PAGE
+   File: timeline-gantt-page.tsx
+   ================================================================ */
+
+/* timelineLegendSwatch — Small colored rectangle in the legend row.
+   Sits inside a flex row with gap-8, sibling to a text label.
+   Gets a modifier class (timelineLegendCompleted, timelineLegendActive,
+   timelineLegendUpcoming, timelineLegendOverdue) for color. */
+
+.timelineLegendSwatch {
+  width: 18px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+
+/* ================================================================
+   VENDOR & COST CONTROL PAGE
+   File: vendor-cost-control-page.tsx
+   ================================================================ */
+
+/* vendorRegRow — Data row in the vendor registry table.
+   8 cells: Vendor name/seats, Category tag, Monthly cost, Annual cost,
+   Renewal date, Status tag, Priority, Action buttons.
+   Grid matches vendorRegHead. */
+
+.vendorRegRow {
+  display: grid;
+  grid-template-columns: 1.6fr 0.7fr 0.8fr 0.7fr 0.8fr 0.6fr 0.6fr auto;
+  gap: 12px;
+  padding: 14px 18px;
+  align-items: center;
+  transition: background 120ms ease;
+}
+
+.vendorRegRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* vendorSoftwareSplit — Two-column layout for software spend tab.
+   Left: spend-by-tool chart card. Right: optimisation + cost-per-head.
+   Used with: cx("vendorSoftwareSplit", "gap20") */
+
+.vendorSoftwareSplit {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+}
+
+/* vendorProjectRow — Data row in the cost-per-project table.
+   5 cells: Project name, Tool Costs, Freelancer Costs, Supplier Costs, Total.
+   Grid matches vendorProjectHead. */
+
+.vendorProjectRow {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 1fr 1fr 1fr;
+  gap: 12px;
+  padding: 14px 18px;
+  align-items: center;
+  transition: background 120ms ease;
+}
+
+.vendorProjectRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* vendorBarFillRound — Progress bar fill for vendor software spend bars.
+   Used as <progress> inside a .progressBar .vendorBarSm wrapper.
+   Rounded variant with a blue fill (software tool cost bars). */
+
+.vendorBarFillRound {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border: none;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.vendorBarFillRound::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+}
+
+.vendorBarFillRound::-webkit-progress-value {
+  border-radius: 3px;
+  background: var(--blue);
+}
+
+.vendorBarFillRound::-moz-progress-bar {
+  border-radius: 3px;
+  background: var(--blue);
+}
+
+
+/* ================================================================
+   CLIENT JOURNEY PAGE — cj* (redesigned)
+   File: client-journey-page.tsx
+   ================================================================ */
+
+/* ── KPI grid ── */
+.cjKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+.cjKpiCard {
+  position: relative;
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  border-left: 3px solid transparent;
+  overflow: hidden;
+}
+.cjKpiCard.toneAccent { border-left-color: var(--accent); }
+.cjKpiCard.toneBlue   { border-left-color: var(--blue);   }
+.cjKpiCard.toneAmber  { border-left-color: var(--amber);  }
+.cjKpiCard.toneRed    { border-left-color: var(--red);    }
+
+.cjKpiLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.cjKpiValue {
+  font-family: var(--font-syne), sans-serif;
+  font-weight: 800;
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.cjKpiValue.toneAccent { color: var(--accent); }
+.cjKpiValue.toneBlue   { color: var(--blue);   }
+.cjKpiValue.toneAmber  { color: var(--amber);  }
+.cjKpiValue.toneRed    { color: var(--red);    }
+
+.cjKpiMeta {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  color: var(--muted2);
+}
+
+/* ── Stage distribution rail ── */
+.cjStageRail {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.cjStageTile {
+  position: relative;
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  overflow: hidden;
+}
+.cjStageTile::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+}
+
+.cjStageTileLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.52rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.cjStageTileCount {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.cjStageTilePct {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.52rem;
+  color: var(--muted);
+}
+
+/* ── Strip colours — shared by rail tiles AND row ::before ── */
+.cjStripAccent::before { background: var(--accent); }
+.cjStripBlue::before   { background: var(--blue);   }
+.cjStripAmber::before  { background: var(--amber);  }
+.cjStripRed::before    { background: var(--red);    }
+.cjStripMuted::before  { background: rgba(255, 255, 255, 0.12); }
+
+/* ── Filter bar ── */
+.cjFilters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  margin-bottom: 4px;
+}
+
+/* ── Section wrapper (Journey Map + Stage Aging tabs) ── */
+.cjSection {
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.cjSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cjSectionTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.cjSectionMeta {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* ── Journey Map table ── */
+.cjMapHead {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr 1.2fr 0.8fr 1fr 1.8fr;
+  gap: 12px;
+  padding: 9px 20px 9px 23px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.cjMapRow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr 1.2fr 0.8fr 1fr 1.8fr;
+  gap: 12px;
+  padding: 12px 20px 12px 23px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+.cjMapRow::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.cjMapRow:hover { background: rgba(255, 255, 255, 0.02); }
+.cjMapRow:last-child { border-bottom: none; }
+
+/* ── Stage Aging table ── */
+.cjAgingHead {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1.2fr 0.8fr 1.6fr;
+  gap: 12px;
+  padding: 9px 20px 9px 23px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.cjAgingRow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1.2fr 0.8fr 1.6fr;
+  gap: 12px;
+  padding: 12px 20px 12px 23px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+.cjAgingRow::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.cjAgingRow:hover { background: rgba(255, 255, 255, 0.02); }
+.cjAgingRow:last-child { border-bottom: none; }
+
+/* ── Inline age bar ── */
+.cjAgeCell  { display: flex; flex-direction: column; gap: 4px; }
+.cjAgeTrack { height: 3px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+.cjAgeFill  { height: 100%; border-radius: 2px; transition: width 0.3s ease; width: var(--pct, 0%); }
+
+.cjFillAccent { background: var(--accent); }
+.cjFillBlue   { background: var(--blue);   }
+.cjFillAmber  { background: var(--amber);  }
+.cjFillRed    { background: var(--red);    }
+.cjFillMuted  { background: rgba(255, 255, 255, 0.2); }
+
+/* ── Client row typography ── */
+.cjClientName { font-size: 0.8rem; font-weight: 700; margin-bottom: 2px; }
+.cjClientSub  { font-family: var(--font-dm-mono), monospace; font-size: 0.58rem; color: var(--muted); }
+
+/* ── Shared card sub-sections (Handoff Health + Moments) ── */
+.cjCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cjCardTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.cjCardBody {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0 4px;
+}
+
+/* ── Handoff rows ── */
+.cjHandoffRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.cjHandoffRow:last-child { border-bottom: none; }
+
+.cjHandoffClient { font-size: 0.8rem; font-weight: 700; margin-bottom: 3px; }
+.cjHandoffLag    { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+
+/* ── Lifecycle check rows ── */
+.cjCheckRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.cjCheckRow:last-child { border-bottom: none; }
+
+.cjCheckLabel { font-size: 0.8rem; font-weight: 600; margin-bottom: 3px; }
+
+.cjCheckBadge {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--r-xs);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+.cjCheckBadge.toneAccent { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.cjCheckBadge.toneRed    { background: color-mix(in srgb, var(--red)    12%, transparent); color: var(--red);    }
+
+/* ── Moments split layout ── */
+.cjMomentsSplit { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.cjMomentRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+.cjMomentRow:last-child { border-bottom: none; }
+
+.cjMomentHigh {
+  border-bottom-color: color-mix(in srgb, var(--red) 20%, transparent);
+  background: color-mix(in srgb, var(--red) 5%, transparent);
+}
+
+.cjMomentClient { font-size: 0.8rem; font-weight: 700; margin-bottom: 3px; }
+
+.cjMomentWhen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.cjMomentWhen.toneRed   { color: var(--red);   }
+.cjMomentWhen.toneAmber { color: var(--amber); }
+
+/* ── Empty state ── */
+.cjEmptyState {
+  padding: 20px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+  .cjKpiGrid   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cjStageRail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .cjMomentsSplit { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .cjKpiGrid   { grid-template-columns: 1fr; }
+  .cjStageRail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ─── Sprint Board Admin ──────────────────────────────────────────────────── */
+.statBarBg   { height: 5px; background: var(--border2); border-radius: 3px; overflow: hidden; }
+.statBarFill { height: 100%; border-radius: 3px; transition: width 0.3s ease; width: var(--pct, 0%); }
+
+/* ─── Booking / Call ──────────────────────────────────────────────────────── */
+.btnJoinCall {
+  background: #16a34a;
+  color: #050508;
+  border: none;
+}
+
+/* ─── Admin Settings — 2FA Modals ────────────────────────────────────────── */
+.totpModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.totpModalBox {
+  background: var(--surface-2, #141414);
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 12px;
+  padding: 2rem;
+  width: min(540px, 95vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.totpModalBoxSm {
+  background: var(--surface-2, #141414);
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 12px;
+  padding: 2rem;
+  width: min(420px, 95vw);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.totpModalTitle {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.totpStatusActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--green);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.75rem;
+}
+
+.totpQrCenter {
+  display: flex;
+  justify-content: center;
+}
+
+.totpQrImg {
+  border-radius: 8px;
+  border: 3px solid #fff;
+}
+
+.totpManualKeyLabel {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.totpManualKeyVal {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.85rem;
+  background: var(--surface-3, #1a1a1a);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  letter-spacing: 0.1em;
+  word-break: break-all;
+  color: var(--accent);
+}
+
+.totpBackupTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.totpBackupGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.78rem;
+}
+
+.totpBackupCode {
+  background: var(--surface-3, #1a1a1a);
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+  color: var(--muted);
+}
+
+.totpInputLabel {
+  font-size: 0.75rem;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.totpErrorText {
+  color: var(--red);
+  font-size: 0.72rem;
+  margin-top: 0.25rem;
+}
+
+.totpBtnRow {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btnDanger2fa {
+  background: var(--red);
+  color: #fff;
+  border: none;
+}
+
+
+/* ================================================================
+   CLIENT JOURNEY PAGE — journey* (legacy placeholders, retained for
+   journeyToneText + journeyStageTag compound selectors)
+   ================================================================ */
+
+/* journeyMapHead — Column header row for the Journey Map tab.
+   7 columns: Client, Stage, Risk, Journey Age, Renewal, Outstanding,
+   Next Milestone.
+   Used with: cx("journeyMapHead", "fontMono", "text10", "colorMuted", "uppercase") */
+
+.journeyMapHead {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr 0.8fr 0.8fr 1fr 1.8fr;
+  gap: 12px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+/* journeyMapRow — Data row in the Journey Map tab. Mirrors journeyMapHead grid.
+   Referenced as styles.journeyMapRow. */
+
+.journeyMapRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr 0.8fr 0.8fr 1fr 1.8fr;
+  gap: 12px;
+  padding: 12px 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+
+.journeyMapRow:hover { background: rgba(255, 255, 255, 0.02); }
+.journeyMapRow:last-child { border-bottom: none; }
+
+/* journeyAgingHead — Column header row for the Stage Aging tab.
+   5 columns: Client, Stage, Age, Risk, Primary Friction.
+   Used with: cx("journeyAgingHead", "fontMono", "text10", "colorMuted", "uppercase") */
+
+.journeyAgingHead {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 0.7fr 0.7fr 1.6fr;
+  gap: 12px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+/* journeyAgingRow — Data row in the Stage Aging tab. Mirrors journeyAgingHead grid.
+   Referenced as styles.journeyAgingRow. */
+
+.journeyAgingRow {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 0.7fr 0.7fr 1.6fr;
+  gap: 12px;
+  padding: 12px 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+
+.journeyAgingRow:hover { background: rgba(255, 255, 255, 0.02); }
+.journeyAgingRow:last-child { border-bottom: none; }
+
+/* journeyMomentsSplit — Two-column layout for the Moments tab.
+   Left: upcoming moments list. Right: lifecycle actions.
+   Referenced as styles.journeyMomentsSplit. */
+
+.journeyMomentsSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .journeyMomentsSplit { grid-template-columns: 1fr; }
+}
+
+/* journeyMomentHigh — Highlight modifier for high-severity moments.
+   Applied alongside bgBg + borderDefault on the moment card. */
+
+.journeyMomentHigh {
+  border-color: color-mix(in srgb, var(--red) 30%, transparent) !important;
+  background: color-mix(in srgb, var(--red) 6%, transparent) !important;
+}
+
+/* journeyToneText — Colored text via tone modifier.
+   Used with toneClass() throughout journey map, handoff health,
+   stage aging, and moments tabs. */
+
+.journeyToneText.toneAccent { color: var(--accent); }
+.journeyToneText.toneBlue   { color: var(--blue);   }
+.journeyToneText.toneAmber  { color: var(--amber);  }
+.journeyToneText.toneRed    { color: var(--red);    }
+.journeyToneText.toneMuted  { color: var(--muted);  }
+
+/* journeyStageTag — Stage chip in the Journey Map table.
+   Used with toneClass(stageColor(row.stage)) → toneBlue/toneAmber/toneAccent.
+   Also carries text10 + fontMono from cx(). */
+
+.journeyStageTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.journeyStageTag.toneAccent { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.journeyStageTag.toneBlue   { background: color-mix(in srgb, var(--blue)   12%, transparent); color: var(--blue);   }
+.journeyStageTag.toneAmber  { background: color-mix(in srgb, var(--amber)  12%, transparent); color: var(--amber);  }
+
+/* journeyActionBtn — Full-width button modifier for the moments action panel. */
+
+.journeyActionBtn {
+  justify-content: center;
+  text-align: center;
+}
+
+/* journeyLine16 — Line-height utility for the moments info paragraph. */
+
+.journeyLine16 { line-height: 1.6; }
+
+
+/* ================================================================
+   REFERRAL TRACKING PAGE
+   File: referral-tracking-page.tsx
+   ================================================================ */
+
+/* ── refToneText — colored text via tone modifier ── */
+.refToneText.toneAccent  { color: var(--accent);  }
+.refToneText.toneBlue    { color: var(--blue);    }
+.refToneText.toneAmber   { color: var(--amber);   }
+.refToneText.toneRed     { color: var(--red);     }
+.refToneText.toneMuted   { color: var(--muted);   }
+.refToneText.tonePurple  { color: var(--purple);  }
+
+/* ── refToneBorder — left-border accent on cards ── */
+.refToneBorder { border-left: 3px solid transparent; }
+.refToneBorder.toneAccent { border-left-color: var(--accent); }
+.refToneBorder.toneBlue   { border-left-color: var(--blue);   }
+.refToneBorder.toneAmber  { border-left-color: var(--amber);  }
+.refToneBorder.toneRed    { border-left-color: var(--red);    }
+.refToneBorder.toneText   { border-left-color: var(--border); }
+
+/* ── refToneTag — status chip (In Pipeline / Converted / Lost) ── */
+.refToneTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.refToneTag.toneAccent { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.refToneTag.toneBlue   { background: color-mix(in srgb, var(--blue)   12%, transparent); color: var(--blue);   }
+.refToneTag.toneRed    { background: color-mix(in srgb, var(--red)    12%, transparent); color: var(--red);    }
+
+/* ── refTopRank — rank badge circle on top-referrers cards ── */
+.refTopRank {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  font-size: 0.875rem;
+}
+.refTopRank.toneAccent { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.refTopRank.toneAmber  { background: color-mix(in srgb, var(--amber)  14%, transparent); color: var(--amber);  }
+.refTopRank.toneBlue   { background: color-mix(in srgb, var(--blue)   14%, transparent); color: var(--blue);   }
+
+/* ── refToneBtn — "Thank Client" tone button ── */
+.refToneBtn {
+  border: 1px solid transparent;
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.refToneBtn.toneAccent { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 28%, transparent); }
+.refToneBtn.toneAmber  { background: color-mix(in srgb, var(--amber)  14%, transparent); color: var(--amber);  border-color: color-mix(in srgb, var(--amber)  28%, transparent); }
+.refToneBtn.toneBlue   { background: color-mix(in srgb, var(--blue)   14%, transparent); color: var(--blue);   border-color: color-mix(in srgb, var(--blue)   28%, transparent); }
+
+/* ── refBarTone — progress bar, colors via existing barFill.tone* compound selectors ── */
+.refBarTone { display: block; }
+
+/* ── Referral log row grid ── */
+.refLogRow {
+  display: grid;
+  grid-template-columns: 68px 1.2fr 1.2fr 64px 1fr 72px 1.2fr 80px auto;
+  gap: 12px;
+  align-items: center;
+}
+
+/* ── Top referrers row grid ── */
+.refTopRow {
+  display: grid;
+  grid-template-columns: 2fr 72px 80px 110px 120px auto;
+  gap: 16px;
+  align-items: center;
+}
+
+/* ── Layout / typography helpers ── */
+.refAlignCenter  { align-items: center; }
+.refTitle15      { font-size: 0.9375rem; }
+.refValue20      { font-size: 1.25rem; line-height: 1; }
+.refValue40      { font-size: 2.5rem; line-height: 1; font-weight: 800; }
+.refPad28        { padding: 28px; }
+.refFlex1        { flex: 1; }
+.refW20          { width: 20px; text-align: right; flex-shrink: 0; }
+
+/* ── Program settings helpers ── */
+.refRuleRow    { padding: 12px 0; }
+.refPendingCard { padding: 14px 16px; border-radius: var(--r-sm); border: 1px solid var(--border); }
+
+/* ── Apply credit button — purple variant ── */
+.refApplyBtnPurple {
+  background: color-mix(in srgb, var(--purple) 14%, transparent);
+  color: var(--purple);
+  border: 1px solid color-mix(in srgb, var(--purple) 28%, transparent);
+  border-radius: var(--r-xs);
+  cursor: pointer;
+}
+
+/* ── Analytics progress bar sizing ── */
+.refProg10     { height: 10px; border-radius: 5px; }
+.refProgFill10 { height: 10px; }
+
+/* ── ROI card accent border ── */
+.refAccentBorder { border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+
+
+/* ================================================================
+   COMMUNICATION AUDIT PAGE
+   File: communication-audit-page.tsx
+   ================================================================ */
+
+/* ── commToneText — colored text via tone modifier ── */
+.commToneText.toneAccent { color: var(--accent); }
+.commToneText.toneBlue   { color: var(--blue);   }
+.commToneText.toneAmber  { color: var(--amber);  }
+.commToneText.toneRed    { color: var(--red);    }
+.commToneText.toneMuted  { color: var(--muted);  }
+
+/* ── commToneBorder — left-border accent on "by client" cards ── */
+.commToneBorder { border-left: 3px solid transparent; }
+.commToneBorder.toneAccent { border-left-color: var(--accent); }
+.commToneBorder.toneBlue   { border-left-color: var(--blue);   }
+.commToneBorder.toneAmber  { border-left-color: var(--amber);  }
+
+/* ── commBarFillTone — progress bar fill via tone modifier ── */
+.commProgressSm {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 5px;
+  border: none;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.commProgressSm::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+}
+.commProgressSm::-webkit-progress-value {
+  border-radius: 3px;
+  background: var(--muted);
+}
+.commProgressSm::-moz-progress-bar { border-radius: 3px; background: var(--muted); }
+
+.commBarFillTone.toneAccent::-webkit-progress-value { background: var(--accent); }
+.commBarFillTone.toneBlue::-webkit-progress-value   { background: var(--blue);   }
+.commBarFillTone.toneAmber::-webkit-progress-value  { background: var(--amber);  }
+.commBarFillTone.toneRed::-webkit-progress-value    { background: var(--red);    }
+.commBarFillTone.toneMuted::-webkit-progress-value  { background: var(--muted);  }
+
+.commBarFillTone.toneAccent::-moz-progress-bar { background: var(--accent); }
+.commBarFillTone.toneBlue::-moz-progress-bar   { background: var(--blue);   }
+.commBarFillTone.toneAmber::-moz-progress-bar  { background: var(--amber);  }
+.commBarFillTone.toneRed::-moz-progress-bar    { background: var(--red);    }
+.commBarFillTone.toneMuted::-moz-progress-bar  { background: var(--muted);  }
+
+/* ── Split layout (list + detail panel) ── */
+.commDetailSplit {
+  display: grid;
+  gap: 16px;
+}
+.commDetailSplitClosed { grid-template-columns: 1fr; }
+.commDetailSplitOpen   { grid-template-columns: 1fr 360px; }
+
+/* ── Detail panel ── */
+.commSticky {
+  position: sticky;
+  top: 20px;
+  align-self: start;
+}
+
+/* ── Comm row grid ── */
+.commRow {
+  display: grid;
+  grid-template-columns: 36px 1.2fr 2.5fr 60px 74px 24px 20px;
+  gap: 12px;
+  align-items: center;
+}
+
+/* ── Type icon ── */
+.commTypeIcon {
+  font-size: 1rem;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--r-xs);
+  flex-shrink: 0;
+}
+
+.commTypeIconFixed {
+  font-size: 1rem;
+  width: 24px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* ── Type badge ── */
+.commTypeBadge {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* ── Sentiment icons ── */
+.commSentIcon   { font-size: 0.75rem; font-weight: 700; text-align: center; }
+.commSentIconSm { font-size: 0.7rem; font-weight: 700; width: 20px; text-align: center; }
+
+/* ── Card states ── */
+.commCardSelected { border-color: var(--accent) !important; background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.commCardFlagged  { border-left: 2px solid color-mix(in srgb, var(--red) 50%, transparent); }
+
+/* ── Typography helpers ── */
+.commTitle16 { font-size: 1rem; line-height: 1.3; }
+.commTitle15 { font-size: 0.9375rem; }
+.commValue22 { font-size: 1.375rem; line-height: 1; }
+
+/* ── Snippet block ── */
+.commSnippet { border-radius: var(--r-xs); line-height: 1.5; }
+
+/* ── Layout utilities ── */
+.commFlex1   { flex: 1; }
+.commW20     { width: 20px; text-align: right; flex-shrink: 0; }
+.commRounded6 { border-radius: 6px; }
+.commRounded8 { border-radius: 8px; }
+
+/* ================================================================
+   VENDOR & COST CONTROL PAGE (vendor*)
+   File: vendor-cost-control-page.tsx
+   ================================================================ */
+
+/* ── Tone text (KPI values, renewal dates, priority, cost columns) ── */
+.vendorToneText.toneAccent { color: var(--accent); }
+.vendorToneText.toneBlue   { color: var(--blue);   }
+.vendorToneText.toneAmber  { color: var(--amber);  }
+.vendorToneText.toneRed    { color: var(--red);    }
+.vendorToneText.tonePurple { color: var(--purple); }
+.vendorToneText.toneMuted  { color: var(--muted);  }
+/* "high" priority maps to toneText (--orange fallback) → warm orange */
+.vendorToneText.toneText   { color: color-mix(in srgb, var(--amber) 65%, var(--red) 35%); }
+
+/* ── Tone tag (category chip, status chip) ── */
+.vendorToneTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.vendorToneTag.toneAccent { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.vendorToneTag.toneBlue   { background: color-mix(in srgb, var(--blue)   12%, transparent); color: var(--blue);   }
+.vendorToneTag.toneAmber  { background: color-mix(in srgb, var(--amber)  12%, transparent); color: var(--amber);  }
+.vendorToneTag.tonePurple { background: color-mix(in srgb, var(--purple) 12%, transparent); color: var(--purple); }
+.vendorToneTag.toneRed    { background: color-mix(in srgb, var(--red)    12%, transparent); color: var(--red);    }
+
+/* ── Vendor registry header (8-col, mirrors vendorRegRow columns) ── */
+.vendorRegHead {
+  display: grid;
+  grid-template-columns: 1.6fr 0.7fr 0.8fr 0.7fr 0.8fr 0.6fr 0.6fr auto;
+  gap: 12px;
+  padding: 9px 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── "Reviewing" row highlight ── */
+.vendorReviewRow {
+  background: color-mix(in srgb, var(--amber) 4%, transparent);
+}
+.vendorReviewRow:hover {
+  background: color-mix(in srgb, var(--amber) 7%, transparent) !important;
+}
+
+/* ── Amber text for "Review" ghost button ── */
+.vendorAmberText { color: var(--amber) !important; }
+
+/* ── Margin-left 8px helper ── */
+.vendorMl8 { margin-left: 8px; }
+
+/* ── Software spend bar wrapper height override ── */
+.vendorBarSm {
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* ── Optimisation suggestion card inner padding ── */
+.vendorOptCard {
+  padding: 14px 16px;
+}
+
+/* ── Cost-per-head large figure ── */
+.vendorCostHead {
+  font-size: 1.75rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* ── Freelancer row card (6-col grid) ── */
+.vendorFreeRow {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr 0.8fr 0.7fr 0.6fr auto;
+  gap: 16px;
+  padding: 16px 20px;
+  align-items: center;
+}
+
+/* ── Add-freelancer full-width button ── */
+.vendorAddBtn { width: 100%; }
+
+/* ── Cost-per-project table header (5-col, mirrors vendorProjectRow) ── */
+.vendorProjectHead {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 1fr 1fr 1fr;
+  gap: 12px;
+  padding: 9px 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Cost-per-project totals row ── */
+.vendorProjectTotal {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 1fr 1fr 1fr;
+  gap: 12px;
+  padding: 12px 18px;
+  align-items: center;
+  border-top: 1px solid var(--border);
+}
+
+/* ================================================================
+   BATCH PAGES — ADMIN (7 new pages)
+   ================================================================ */
+
+/* ── Announcements Manager ── */
+.annHead {
+  display: grid;
+  grid-template-columns: 2.5fr 0.7fr 0.7fr 0.9fr 0.6fr 0.7fr 1fr;
+  gap: 12px;
+  padding: 9px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.annRow {
+  display: grid;
+  grid-template-columns: 2.5fr 0.7fr 0.7fr 0.9fr 0.6fr 0.7fr 1fr;
+  gap: 12px;
+  padding: 12px 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+.annRow:hover { background: rgba(255, 255, 255, 0.02); }
+.annRow:last-child { border-bottom: none; }
+
+/* ── Loyalty & Credits ── */
+.loyHead {
+  display: grid;
+  grid-template-columns: 1.8fr 0.7fr 0.9fr 1.1fr 1fr 1.2fr;
+  gap: 12px;
+  padding: 9px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.loyRow {
+  display: grid;
+  grid-template-columns: 1.8fr 0.7fr 0.9fr 1.1fr 1fr 1.2fr;
+  gap: 12px;
+  padding: 12px 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+.loyRow:hover { background: rgba(255, 255, 255, 0.02); }
+.loyRow:last-child { border-bottom: none; }
+
+/* ── Booking & Appointments ── */
+.bkngHead {
+  display: grid;
+  grid-template-columns: 1.5fr 0.9fr 1fr 0.6fr 0.9fr 0.7fr 0.8fr 1fr;
+  gap: 12px;
+  padding: 9px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.bkngRow {
+  display: grid;
+  grid-template-columns: 1.5fr 0.9fr 1fr 0.6fr 0.9fr 0.7fr 0.8fr 1fr;
+  gap: 12px;
+  padding: 12px 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+.bkngRow:hover { background: rgba(255, 255, 255, 0.02); }
+.bkngRow:last-child { border-bottom: none; }
+
+/* ── Design Review Admin ── */
+.drvHead {
+  display: grid;
+  grid-template-columns: 1.8fr 1.2fr 0.9fr 0.9fr 0.5fr 0.7fr 1.2fr;
+  gap: 12px;
+  padding: 9px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.drvRow {
+  display: grid;
+  grid-template-columns: 1.8fr 1.2fr 0.9fr 0.9fr 0.5fr 0.7fr 1.2fr;
+  gap: 12px;
+  padding: 12px 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+.drvRow:hover { background: rgba(255, 255, 255, 0.02); }
+.drvRow:last-child { border-bottom: none; }
+
+/* ── Sprint Board Admin ── */
+.spbCard {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Content Approval ── */
+.capHead {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr 0.9fr 0.9fr 0.7fr 1.1fr;
+  gap: 12px;
+  padding: 9px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.capRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr 0.9fr 0.9fr 0.7fr 1.1fr;
+  gap: 12px;
+  padding: 12px 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+.capRow:hover { background: rgba(255, 255, 255, 0.02); }
+.capRow:last-child { border-bottom: none; }
+
+/* ── Meeting Archive ── */
+.mtaHead {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 0.7fr 0.6fr 0.8fr 0.8fr;
+  gap: 12px;
+  padding: 9px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.mtaRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 0.7fr 0.6fr 0.8fr 0.8fr;
+  gap: 12px;
+  padding: 12px 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+.mtaRow:hover { background: rgba(255, 255, 255, 0.02); }
+.mtaRow:last-child { border-bottom: none; }
+
+/* ── Messages page — Start Call button states ─────────────────────── */
+.btnCallActive {
+  background: #16a34a;
+  color: #050508;
+  border: none;
+}
+.btnCallPending {
+  background: var(--s3);
+  color: #050508;
+  border: none;
+  opacity: 0.7;
+}
+
+/* ── Responsive: KPI grids ──────────────────────────────────────── */
+@media (max-width: 900px) {
+  .cjKpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .cjKpiGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ── Responsive: layout splits and metric grids ─────────────────── */
+@media (max-width: 900px) {
+  .vendorSoftwareSplit {
+    grid-template-columns: 1fr;
+  }
+  .slaMetricGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .slaMetricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* ─── Admin modal overlay & panel ────────────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md, 12px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+
+.modalTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 22px 22px;
+}

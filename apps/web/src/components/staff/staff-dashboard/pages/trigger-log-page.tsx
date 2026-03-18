@@ -1,6 +1,15 @@
+// ════════════════════════════════════════════════════════════════════════════
+// trigger-log-page.tsx — Staff Dashboard: Trigger Log
+// Displays automation job audit log from the automation service.
+// Data: GET /automation/jobs (via getAutomationJobs)
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import { getStaffClients } from "../../../../lib/api/staff/clients";
+import { getAutomationJobs, type AutomationJob } from "../../../../lib/api/staff/automation";
 import { cx } from "../style";
 
 type Integration = {
@@ -51,28 +60,9 @@ const triggers: Trigger[] = [
   { id: "score_dropped", label: "Satisfaction score drop", integration: "internal" }
 ];
 
-const clients = [
-  { id: 1, name: "Volta Studios", avatar: "VS" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC" },
-  { id: 3, name: "Mira Health", avatar: "MH" },
-  { id: 4, name: "Dune Collective", avatar: "DC" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS" }
-];
+const clients: { id: number; name: string; avatar: string }[] = [];
 
-const initialLogs: LogItem[] = [
-  { id: 1, triggerId: "milestone_approved", clientId: 5, integration: "zapier", action: "Send Slack message to #ops", status: "success", duration: 312, time: "Today 10:42 AM", payload: { milestone: "Layout & Typesetting", approvedBy: "Chidi Okafor", projectId: "OS-2025" } },
-  { id: 2, triggerId: "invoice_sent", clientId: 5, integration: "zapier", action: "Create Notion task", status: "success", duration: 488, time: "Today 10:42 AM", payload: { invoice: "INV-0041", amount: "R28,000", dueDate: "Mar 10" } },
-  { id: 3, triggerId: "client_message", clientId: 1, integration: "webhook", action: "Post to Google Chat", status: "success", duration: 201, time: "Today 9:18 AM", payload: { from: "Lena Muller", preview: "Love the amber palette shift...", channel: "porta-messages" } },
-  { id: 4, triggerId: "portal_login", clientId: 3, integration: "internal", action: "Log to Google Sheet", status: "success", duration: 88, time: "Today 8:54 AM", payload: { user: "amara.nkosi@mirahealth.co", session: "14m 22s", pagesViewed: 4 } },
-  { id: 5, triggerId: "retainer_exceeded", clientId: 4, integration: "make", action: "Send email via Gmail", status: "failed", duration: null, time: "Yesterday 6:01 PM", payload: { client: "Dune Collective", exceeded: "4.5h", cycle: "Feb 2026" }, error: "Authentication token expired. Re-authorise Make connection." },
-  { id: 6, triggerId: "standup_submitted", clientId: 0, integration: "zapier", action: "Update Airtable row", status: "success", duration: 544, time: "Yesterday 5:30 PM", payload: { staffMember: "You", mood: 4, flagged: "false" } },
-  { id: 7, triggerId: "score_dropped", clientId: 4, integration: "internal", action: "Send Slack message to #ops", status: "success", duration: 112, time: "Yesterday 4:15 PM", payload: { client: "Dune Collective", oldScore: 50, newScore: 43, drop: -7 } },
-  { id: 8, triggerId: "invoice_paid", clientId: 5, integration: "make", action: "Update CRM contact", status: "success", duration: 390, time: "Feb 21 11:00 AM", payload: { invoice: "INV-0039", amount: "R28,000", paidOn: "Feb 21" } },
-  { id: 9, triggerId: "milestone_approved", clientId: 1, integration: "zapier", action: "Send Slack message to #ops", status: "success", duration: 298, time: "Feb 20 3:44 PM", payload: { milestone: "Brand Colour System", approvedBy: "Lena Muller" } },
-  { id: 10, triggerId: "new_file_uploaded", clientId: 3, integration: "webhook", action: "Create calendar event", status: "failed", duration: null, time: "Feb 20 10:00 AM", payload: { file: "Mira_MobileWireframes_v2.fig", uploadedBy: "James Osei" }, error: "Webhook endpoint returned 503. Retried 3x - all failed." },
-  { id: 11, triggerId: "task_completed", clientId: 2, integration: "n8n", action: "Update Airtable row", status: "success", duration: 622, time: "Feb 19 2:30 PM", payload: { task: "LinkedIn Channel Brief", completedBy: "You" } },
-  { id: 12, triggerId: "client_message", clientId: 2, integration: "webhook", action: "Post to Google Chat", status: "success", duration: 188, time: "Feb 18 9:05 AM", payload: { from: "Marcus Rehn", preview: "Can we reschedule Thursday's call?", channel: "porta-messages" } }
-];
+const initialLogs: LogItem[] = [];
 
 const statusLabel: Record<LogStatus, string> = {
   success: "Success",
@@ -99,12 +89,75 @@ function clientTone(clientId: number) {
   return "colorMuted2";
 }
 
-export function TriggerLogPage({ isActive }: { isActive: boolean }) {
+function mapJobToLog(job: AutomationJob, index: number): LogItem {
+  const topicParts = job.topic.split(".");
+  const triggerKey = topicParts[topicParts.length - 1] ?? job.topic;
+  const matchedTrigger = triggers.find((t) => job.topic.includes(t.id)) ?? triggers.find((t) => job.workflow.includes(t.id));
+
+  let status: LogStatus = "pending";
+  if (job.status === "succeeded") status = "success";
+  else if (job.status === "failed" || job.status === "dead-lettered") status = "failed";
+  else if (job.status === "received" || job.status === "processing" || job.status === "skipped-duplicate") status = "pending";
+
+  const intId = (() => {
+    if (job.workflow.includes("booking") || job.workflow.includes("lead") || job.workflow.includes("proposal")) return "zapier" as const;
+    if (job.workflow.includes("billing") || job.workflow.includes("invoice")) return "make" as const;
+    if (job.workflow.includes("communication") || job.workflow.includes("file")) return "webhook" as const;
+    if (job.workflow.includes("ai") || job.workflow.includes("reporting")) return "n8n" as const;
+    return "internal" as const;
+  })();
+
+  const clientNum = job.clientId ? Math.abs(job.clientId.charCodeAt(0) % 6) : 0;
+
+  return {
+    id: index + 1,
+    triggerId: matchedTrigger?.id ?? triggerKey,
+    clientId: clientNum,
+    integration: intId,
+    action: job.workflow,
+    status,
+    duration: job.attempts > 0 ? job.attempts * 150 : null,
+    time: new Date(job.updatedAt).toLocaleString(),
+    payload: { topic: job.topic, eventId: job.eventId, attempts: job.attempts, workflow: job.workflow },
+    error: job.lastError ?? undefined
+  };
+}
+
+export function TriggerLogPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
   const [logs, setLogs] = useState<LogItem[]>(initialLogs);
-  const [selected, setSelected] = useState<LogItem | null>(initialLogs[0]);
+  const [selected, setSelected] = useState<LogItem | null>(null);
   const [filter, setFilter] = useState<"all" | "success" | "failed">("all");
   const [intFilter, setIntFilter] = useState<"all" | Integration["id"]>("all");
   const [tab, setTab] = useState<"log" | "triggers" | "integrations">("log");
+  const [apiClients, setApiClients] = useState<Array<{ id: string; name: string; avatar: string }>>([]);
+
+  useEffect(() => {
+    if (!session) return;
+    void getStaffClients(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data && r.data.length > 0) {
+        setApiClients(r.data.map((c) => ({
+          id: c.id,
+          name: c.name,
+          avatar: c.name.split(" ").map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase()
+        })));
+      }
+    });
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) return;
+    void getAutomationJobs(session, 50).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data && r.data.length > 0) {
+        const mapped = r.data.map((job, i) => mapJobToLog(job, i));
+        setLogs(mapped);
+        setSelected(mapped[0] ?? null);
+      }
+    });
+  }, [session]);
+
+  const clientsToUse = apiClients.length > 0 ? apiClients : clients.map((c) => ({ id: String(c.id), name: c.name, avatar: c.avatar }));
 
   const retry = (id: number) => {
     setLogs((previous) => previous.map((row) => (row.id === id ? { ...row, status: "success", duration: 340, error: undefined } : row)));
@@ -217,7 +270,7 @@ export function TriggerLogPage({ isActive }: { isActive: boolean }) {
             {filtered.map((log) => {
               const integration = integrations.find((row) => row.id === log.integration);
               const trigger = triggers.find((row) => row.id === log.triggerId);
-              const client = clients.find((row) => row.id === log.clientId);
+              const client = clientsToUse.find((row) => row.id === String(log.clientId));
               const isSelected = selected?.id === log.id;
               return (
                 <button
@@ -248,7 +301,7 @@ export function TriggerLogPage({ isActive }: { isActive: boolean }) {
               {(() => {
                 const integration = integrations.find((row) => row.id === selected.integration);
                 const trigger = triggers.find((row) => row.id === selected.triggerId);
-                const client = clients.find((row) => row.id === selected.clientId);
+                const client = clientsToUse.find((row) => row.id === String(selected.clientId));
 
                 return (
                   <>
@@ -262,7 +315,7 @@ export function TriggerLogPage({ isActive }: { isActive: boolean }) {
                     <div className={cx("text12", "colorMuted2", "mb16")}>→ {selected.action}</div>
 
                     {client ? (
-                      <div className={cx("tlClientCard", clientTone(client.id), "mb16")}>
+                      <div className={cx("tlClientCard", clientTone(selected.clientId), "mb16")}>
                         <div className={cx("tlClientAvatar")}>{client.avatar}</div>
                         <span className={cx("text11")}>{client.name}</span>
                       </div>

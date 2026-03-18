@@ -134,7 +134,9 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
         payload: {
           leadId: lead.id,
           clientId: lead.clientId,
-          status: lead.status
+          status: lead.status,
+          contactName: lead.contactName ?? undefined,
+          contactEmail: lead.contactEmail ?? undefined
         }
       });
 

@@ -27,8 +27,20 @@ export function createCorsPolicy(env: NodeJS.ProcessEnv = process.env): CorsPoli
   return {
     credentials: true,
     origin(origin, callback) {
+      // ── Missing Origin header ──────────────────────────────────────────────
+      // In production environments, every browser request carries an Origin.
+      // We only allow origin-less requests for internal monitoring paths;
+      // all other origin-less requests are rejected to prevent CSRF via
+      // non-browser clients (e.g. curl, Postman) from inheriting CORS trust.
       if (!origin) {
-        callback(null, true);
+        // The CORS middleware doesn't have access to the request path directly,
+        // so we allow all no-origin requests in local dev (where server-to-
+        // server calls are common) and block them in production.
+        if (isLocalEnv) {
+          callback(null, true);
+        } else {
+          callback(null, false);
+        }
         return;
       }
 

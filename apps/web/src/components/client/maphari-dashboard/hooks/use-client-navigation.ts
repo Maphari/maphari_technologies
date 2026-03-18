@@ -40,13 +40,13 @@ export function useClientNavigation({
     const map: Partial<Record<PageId, { value: number; tone: "amber" | "red" }>> = {};
 
     if (pendingApprovals > 0) {
-      map.approvals = { value: pendingApprovals, tone: "amber" };
+      map.milestones = { value: pendingApprovals, tone: "amber" };
     }
     if (unreadNotifications > 0) {
       map.notifications = { value: unreadNotifications, tone: "red" };
     }
     if (outstandingInvoiceCount > 0) {
-      map.billing = { value: outstandingInvoiceCount, tone: "amber" };
+      map.invoices = { value: outstandingInvoiceCount, tone: "amber" };
     }
     if (unreadThreadCount && unreadThreadCount > 0) {
       map.messages = { value: unreadThreadCount, tone: "amber" };

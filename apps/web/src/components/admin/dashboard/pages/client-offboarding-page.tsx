@@ -42,75 +42,9 @@ type PostMortem = {
   npsScore: number;
 };
 
-const offboardings: Offboarding[] = [
-  {
-    id: "OFB-003",
-    client: "Studio Outpost",
-    clientColor: "var(--red)",
-    reason: "Project complete - no retainer renewal",
-    reasonType: "natural",
-    am: "Nomsa Dlamini",
-    startedDate: "Feb 10",
-    targetDate: "Feb 28",
-    mrr: 0,
-    outstandingInvoice: 8400,
-    status: "in-progress",
-    checklist: [
-      { id: 1, category: "Financial", task: "Send final invoice", done: true, doneDate: "Feb 11" },
-      { id: 2, category: "Financial", task: "Confirm payment received", done: false },
-      { id: 3, category: "Financial", task: "Issue credit note if applicable", done: true, doneDate: "Feb 11" },
-      { id: 4, category: "Delivery", task: "Deliver all final files to client", done: true, doneDate: "Feb 12" },
-      { id: 5, category: "Delivery", task: "Transfer project assets (source files, fonts, IP)", done: false },
-      { id: 6, category: "Legal", task: "Confirm IP transfer signed off", done: false },
-      { id: 7, category: "Legal", task: "Archive contract copy", done: true, doneDate: "Feb 13" },
-      { id: 8, category: "Communication", task: "Send farewell email from AM", done: true, doneDate: "Feb 14" },
-      { id: 9, category: "Communication", task: "Request exit feedback / NPS", done: false },
-      { id: 10, category: "System", task: "Revoke client portal access", done: false },
-      { id: 11, category: "System", task: "Archive project in system", done: false },
-      { id: 12, category: "BD", task: "Log re-engagement date (6 months)", done: false }
-    ]
-  },
-  {
-    id: "OFB-002",
-    client: "Helios Digital",
-    clientColor: "var(--amber)",
-    reason: "Client churned - dissatisfied with deliverable quality",
-    reasonType: "churn",
-    am: "Renzo Fabbri",
-    startedDate: "Jan 10",
-    targetDate: "Jan 31",
-    mrr: 16000,
-    outstandingInvoice: 0,
-    status: "complete",
-    checklist: [
-      { id: 1, category: "Financial", task: "Send final invoice", done: true, doneDate: "Jan 11" },
-      { id: 2, category: "Financial", task: "Confirm payment received", done: true, doneDate: "Jan 20" },
-      { id: 3, category: "Delivery", task: "Deliver all final files", done: true, doneDate: "Jan 12" },
-      { id: 4, category: "Legal", task: "IP transfer confirmed", done: true, doneDate: "Jan 15" },
-      { id: 5, category: "Communication", task: "Exit survey sent", done: true, doneDate: "Jan 14" },
-      { id: 6, category: "System", task: "Portal access revoked", done: true, doneDate: "Jan 31" },
-      { id: 7, category: "BD", task: "Post-mortem completed", done: true, doneDate: "Feb 2" }
-    ]
-  }
-];
+const offboardings: Offboarding[] = [];
 
-const postMortems: PostMortem[] = [
-  {
-    client: "Helios Digital",
-    clientColor: "var(--amber)",
-    type: "churn",
-    completedDate: "Feb 2",
-    rootCause: "Deliverable quality did not meet client expectations on rounds 3+. No escalation was triggered until too late.",
-    whatWentWell: ["Project kickoff smooth", "Communication was frequent", "Invoice process clean"],
-    whatWentWrong: ["QA gate missed on Rd 2", "Client feedback loop too slow", "AM did not flag scope risk early enough"],
-    preventionActions: [
-      "Add QA escalation trigger at Rd 2",
-      "AM to flag any 3rd round revision to admin within 24h",
-      "Bi-weekly project health check for all projects"
-    ],
-    npsScore: 3
-  }
-];
+const postMortems: PostMortem[] = [];
 
 const offboardingTemplate: Array<{ category: ChecklistItem["category"]; tasks: string[] }> = [
   { category: "Financial", tasks: ["Send final invoice", "Confirm payment received", "Issue credit note if applicable"] },
@@ -192,7 +126,7 @@ function templateCardClass(color: string): string {
 
 export function ClientOffboardingPage() {
   const [activeTab, setActiveTab] = useState<Tab>("active offboardings");
-  const [expanded, setExpanded] = useState<string>("OFB-003");
+  const [expanded, setExpanded] = useState<string>("");
 
   const active = offboardings.filter((o) => o.status === "in-progress");
   const complete = offboardings.filter((o) => o.status === "complete");
@@ -386,7 +320,7 @@ export function ClientOffboardingPage() {
                 <div key={r.reason} className={styles.cobBarRow}>
                   <span className={styles.text12}>{r.reason}</span>
                   <div className={styles.cobTrack80}>
-                    <progress className={cx("barFill", "uiProgress", fillClass(r.color))} max={100} value={(r.count / offboardings.length) * 100} />
+                    <progress className={cx("barFill", "uiProgress", fillClass(r.color))} max={100} value={offboardings.length > 0 ? (r.count / offboardings.length) * 100 : 0} />
                   </div>
                   <span className={cx(styles.cobBarCount, colorClass(r.color))}>{r.count}</span>
                 </div>
@@ -395,18 +329,26 @@ export function ClientOffboardingPage() {
             <div className={cx("card", "p24")}>
               <div className={styles.cobSectionTitle}>Re-Engagement Pipeline</div>
               <div className={styles.cobMutedBlock}>Clients who leave on good terms are logged for re-engagement at 3-6 months. Churned clients are logged with context for learnings only.</div>
-              {[
-                { client: "Studio Outpost", date: "Aug 2026", type: "Re-engage", color: "var(--accent)" },
-                { client: "Helios Digital", date: "n/a", type: "Learnings only", color: "var(--muted)" }
-              ].map((re) => (
-                <div key={re.client} className={styles.cobReRow}>
-                  <div>
-                    <div className={styles.cobCellStrong}>{re.client}</div>
-                    <div className={styles.cobMuted}>{re.type}</div>
+              {offboardings
+                .filter((o) => o.status === "complete")
+                .map((o) => ({
+                  client: o.client,
+                  date: "—",
+                  type: o.reasonType === "natural" ? "Re-engage" : "Learnings only",
+                  color: o.reasonType === "natural" ? "var(--accent)" : "var(--muted)"
+                }))
+                .map((re) => (
+                  <div key={re.client} className={styles.cobReRow}>
+                    <div>
+                      <div className={styles.cobCellStrong}>{re.client}</div>
+                      <div className={styles.cobMuted}>{re.type}</div>
+                    </div>
+                    <span className={cx(styles.cobMonoDate, colorClass(re.color))}>{re.date}</span>
                   </div>
-                  <span className={cx(styles.cobMonoDate, colorClass(re.color))}>{re.date}</span>
-                </div>
               ))}
+              {offboardings.filter((o) => o.status === "complete").length === 0 && (
+                <div className={styles.cobMuted}>No completed offboardings yet.</div>
+              )}
             </div>
           </div>
         ) : null}

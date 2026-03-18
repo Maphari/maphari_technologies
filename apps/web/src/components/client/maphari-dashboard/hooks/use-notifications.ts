@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { AuthSession } from "../../../../lib/auth/session";
 import type { PageId } from "../config";
 import type { PortalNotificationJob } from "../../../../lib/api/portal/types";
+import { useMarkActiveTabNotificationsRead } from "../../../shared/use-mark-active-tab-notifications-read";
+import { CLIENT_PAGE_TO_NOTIFICATION_TAB } from "../../../shared/notification-routing";
 import {
   loadPortalNotificationsWithRefresh,
   setPortalNotificationReadStateWithRefresh,
@@ -22,6 +24,7 @@ export function useNotifications({
 }) {
   const [notifications, setNotifications] = useState<PortalNotificationJob[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activeTab = CLIENT_PAGE_TO_NOTIFICATION_TAB[activePage] ?? "operations";
 
   // ── Fetch notifications ──────────────────────────────────────────────────
 
@@ -42,11 +45,16 @@ export function useNotifications({
   // ── Poll on mount and interval ───────────────────────────────────────────
 
   useEffect(() => {
-    fetchNotifications();
+    const initialPoll = setTimeout(() => {
+      void fetchNotifications();
+    }, 0);
 
-    intervalRef.current = setInterval(fetchNotifications, POLL_INTERVAL_MS);
+    intervalRef.current = setInterval(() => {
+      void fetchNotifications();
+    }, POLL_INTERVAL_MS);
 
     return () => {
+      clearTimeout(initialPoll);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -72,6 +80,21 @@ export function useNotifications({
     }
     return counts;
   }, [notifications]);
+
+  // Keep unread badges in sync with page navigation (same behavior as admin/staff).
+  const markRead = (auth: AuthSession, id: string, read: boolean) =>
+    setPortalNotificationReadStateWithRefresh(auth, id, read).then((result) => ({
+      data: result.data,
+      error: result.error,
+    }));
+
+  useMarkActiveTabNotificationsRead({
+    session,
+    activeTab,
+    notificationJobs: notifications,
+    setNotificationJobs: setNotifications,
+    markNotificationRead: markRead,
+  });
 
   // ── Mark as read ─────────────────────────────────────────────────────────
 

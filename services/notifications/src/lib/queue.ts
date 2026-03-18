@@ -2,6 +2,9 @@ import type { NotificationJob as PrismaNotificationJob, Prisma } from "@prisma/c
 import type { CreateNotificationJobInput } from "@maphari/contracts";
 import { createHash, randomUUID } from "node:crypto";
 import { prisma } from "./prisma.js";
+import { sendEmail } from "./providers/email.js";
+import { sendSms } from "./providers/sms.js";
+import { sendPush } from "./providers/push.js";
 
 export interface NotificationJob {
   id: string;
@@ -200,6 +203,59 @@ export async function processNextJob(): Promise<NotificationJob | null> {
       ? "Provider rejected recipient"
       : "Exceeded max retry attempts";
 
+    const failed = await prisma.notificationJob.update({
+      where: { id: updatedBase.id },
+      data: {
+        status: "FAILED",
+        failureReason: failedReason,
+        deadLetteredAt: now
+      }
+    });
+    await toDeadLetter(failed, failedReason);
+    return mapJob(failed);
+  }
+
+  // ── Dispatch to real provider ──────────────────────────────────────────
+  let deliveryResult: { success: boolean; error?: string };
+
+  if (updatedBase.channel === "EMAIL") {
+    deliveryResult = await sendEmail({
+      to: updatedBase.recipient,
+      subject: updatedBase.subject ?? "Maphari notification",
+      text: updatedBase.message
+    });
+  } else if (updatedBase.channel === "SMS") {
+    // recipient may be a plain phone number "+27821234567"
+    // or WhatsApp-prefixed "whatsapp:+27821234567"
+    deliveryResult = await sendSms({
+      to: updatedBase.recipient,
+      body: updatedBase.message
+    });
+  } else {
+    // PUSH — FCM via push provider (skips gracefully if FCM_SERVER_KEY not set)
+    const pushTitle = updatedBase.subject ?? "Maphari";
+    const pushData: Record<string, string> = {
+      tab: updatedBase.tab,
+      jobId: updatedBase.id,
+      clientId: updatedBase.clientId,
+    };
+    deliveryResult = await sendPush(updatedBase.recipient, pushTitle, updatedBase.message, pushData);
+  }
+
+  if (!deliveryResult.success) {
+    if (nextAttempts < updatedBase.maxAttempts) {
+      const retryDelayMs = Math.min(60_000, 5_000 * nextAttempts);
+      const queued = await prisma.notificationJob.update({
+        where: { id: updatedBase.id },
+        data: {
+          failureReason: deliveryResult.error ?? "Provider error",
+          nextAttemptAt: new Date(now.getTime() + retryDelayMs)
+        }
+      });
+      return mapJob(queued);
+    }
+
+    const failedReason = deliveryResult.error ?? "Exceeded max retry attempts";
     const failed = await prisma.notificationJob.update({
       where: { id: updatedBase.id },
       data: {

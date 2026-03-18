@@ -5,32 +5,65 @@ import type { PageId as StaffPageId } from "../staff/staff-dashboard/config";
 export type DashboardNotificationTab = "dashboard" | "projects" | "invoices" | "messages" | "settings" | "operations";
 
 export const CLIENT_PAGE_TO_NOTIFICATION_TAB: Record<ClientPageId, DashboardNotificationTab> = {
-  profile:       "settings",
-  dashboard:     "dashboard",
-  request:       "projects",
-  projects:      "projects",
-  approvals:     "operations",
-  messages:      "messages",
-  meetings:      "operations",
-  files:         "settings",
-  feedback:      "operations",
-  billing:       "invoices",
-  contracts:     "invoices",
-  notifications: "operations",
-  reports:       "dashboard",
-  automation:    "operations",
-  services:      "projects",
-  support:       "operations",
-  onboarding:    "dashboard",
-  team:          "settings",
-  retainerUsage: "invoices",
-  sprintVisibility: "projects",
-  deliverableStatus: "projects",
-  milestoneApprovals: "operations",
-  healthScore: "dashboard",
-  satisfactionSurvey: "operations",
-  knowledgeAccess: "operations",
-  settings:      "settings",
+  profile:              "settings",
+  // Overview
+  home:                 "dashboard",
+  dashboard:            "dashboard",
+  notifications:        "operations",
+  // Projects
+  myProjects:           "projects",
+  projectRequest:       "projects",
+  timeline:             "projects",
+  milestones:           "projects",
+  sprintBoard:          "projects",
+  deliverables:         "projects",
+  changeRequests:       "projects",
+  riskRegister:         "projects",
+  decisionLog:          "projects",
+  contentApproval:      "projects",
+  // Finance
+  payments:             "invoices",
+  invoices:             "invoices",
+  budgetTracker:        "invoices",
+  contractsProposals:   "invoices",
+  retainerDashboard:    "invoices",
+  quoteAcceptance:      "invoices",
+  financialReports:     "invoices",
+  invoiceHistory:       "invoices",
+  // Communication
+  messages:             "messages",
+  bookCall:             "messages",
+  announcements:        "messages",
+  designReview:         "messages",
+  meetingArchive:       "messages",
+  // Files
+  filesAssets:          "settings",
+  brandLibrary:         "settings",
+  resourceHub:          "settings",
+  // Reporting
+  projectReports:       "dashboard",
+  healthScore:          "dashboard",
+  performanceDashboard: "dashboard",
+  // Growth
+  serviceCatalog:       "operations",
+  referralProgram:      "operations",
+  loyaltyCredits:       "operations",
+  // Support
+  knowledgeBase:        "operations",
+  slaEscalation:        "operations",
+  // Account
+  feedbackSurvey:       "operations",
+  teamAccess:           "settings",
+  integrations:         "settings",
+  settings:             "settings",
+  dataPrivacy:          "settings",
+  onboardingStatus:     "dashboard",
+  onboarding:           "settings",
+  progressKnowledge:    "operations",
+  knowledgeAccess:      "operations",
+  communicationHistory: "messages",
+  projectBrief:         "projects",
+  offboarding:          "settings",
 };
 
 export const STAFF_PAGE_TO_NOTIFICATION_TAB: Record<StaffPageId, DashboardNotificationTab> = {
@@ -110,7 +143,10 @@ export const STAFF_PAGE_TO_NOTIFICATION_TAB: Record<StaffPageId, DashboardNotifi
   myreports: "operations",
   teamperformance: "operations",
   myintegrations: "settings",
-  settings: "settings"
+  settings: "settings",
+  changeRequests: "projects",
+  slaTracker: "projects",
+  appointments: "messages"
 };
 
 export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotificationTab> = {
@@ -190,5 +226,13 @@ export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotifi
   peerReviewQueue: "operations",
   automationAuditTrail: "settings",
   projectBriefing: "projects",
-  activeHealthMonitor: "dashboard"
+  activeHealthMonitor: "dashboard",
+  announcementsManager: "messages",
+  loyaltyCredits: "invoices",
+  bookingAppointments: "operations",
+  designReviewAdmin: "projects",
+  sprintBoardAdmin: "operations",
+  contentApproval: "messages",
+  meetingArchive: "messages",
+  prospecting: "operations"
 };

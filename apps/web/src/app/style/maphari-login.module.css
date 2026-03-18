@@ -19,7 +19,6 @@
   font-family: var(--font-syne), sans-serif;
   height: 100vh;
   overflow: hidden;
-  cursor: none;
   position: relative;
 }
 
@@ -249,10 +248,11 @@
 }
 
 .featureIcon {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: var(--active-d);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -326,10 +326,12 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  cursor: none;
+  cursor: pointer;
   transition: all 0.25s ease;
   position: relative;
   overflow: hidden;
+  border-radius: 10px;
+  min-height: 52px;
 }
 
 .roleButton::after {
@@ -465,7 +467,7 @@
 
 .fieldLink {
   color: var(--active);
-  cursor: none;
+  cursor: pointer;
   text-decoration: none;
   transition: opacity 0.18s ease;
   font-size: 0.58rem;
@@ -490,13 +492,16 @@
   font-size: 0.88rem;
   padding: 13px 42px 13px 16px;
   outline: none;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   letter-spacing: 0.01em;
+  min-height: 48px;
+  border-radius: 8px;
 }
 
 .fieldInput:focus {
   border-color: var(--active);
   background: rgba(255, 255, 255, 0.025);
+  box-shadow: 0 0 0 3px rgba(200, 241, 53, 0.12), 0 0 12px rgba(200, 241, 53, 0.06);
 }
 
 .fieldInput::placeholder {
@@ -505,6 +510,7 @@
 
 .fieldInputError {
   border-color: #ff5f5f;
+  box-shadow: 0 0 0 3px rgba(255, 95, 95, 0.12);
 }
 
 .fieldIcon {
@@ -514,7 +520,7 @@
   transform: translateY(-50%);
   color: var(--muted2);
   font-size: 0.9rem;
-  cursor: none;
+  cursor: pointer;
   transition: color 0.18s ease;
   -webkit-user-select: none;
   user-select: none;
@@ -549,7 +555,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  cursor: none;
+  cursor: pointer;
   background: none;
   border: none;
 }
@@ -565,7 +571,7 @@
   font-size: 0.6rem;
   flex-shrink: 0;
   transition: all 0.18s ease;
-  cursor: none;
+  border-radius: 4px;
 }
 
 .checkboxChecked {
@@ -578,7 +584,6 @@
   font-size: 0.78rem;
   color: var(--muted);
   font-weight: 400;
-  cursor: none;
 }
 
 .submitButton {
@@ -587,13 +592,15 @@
   background: var(--active);
   color: #050508;
   border: none;
+  border-radius: 10px;
   font-family: var(--font-syne), sans-serif;
   font-weight: 800;
   font-size: 0.88rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  cursor: none;
+  cursor: pointer;
   transition: all 0.22s ease;
+  min-height: 52px;
   position: relative;
   overflow: hidden;
   margin-bottom: 20px;
@@ -703,12 +710,14 @@
   font-weight: 600;
   font-size: 0.8rem;
   letter-spacing: 0.04em;
-  cursor: none;
+  cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
+  min-height: 52px;
+  border-radius: 8px;
   margin-bottom: 28px;
 }
 
@@ -729,7 +738,7 @@
 .formFooter a {
   color: var(--active);
   text-decoration: none;
-  cursor: none;
+  cursor: pointer;
   transition: opacity 0.18s ease;
 }
 
@@ -739,7 +748,7 @@
 
 .inlineLink {
   color: var(--active);
-  cursor: none;
+  cursor: pointer;
   background: none;
   border: none;
   font-family: var(--font-dm-mono), monospace;
@@ -777,10 +786,10 @@
   width: 64px;
   height: 64px;
   border: 2px solid var(--active);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
   animation: scaleIn 0.4s ease;
 }
 
@@ -924,7 +933,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
-  cursor: none;
+  cursor: pointer;
   margin-bottom: 28px;
   background: none;
   border: none;
@@ -947,6 +956,7 @@
   display: block;
   background: var(--green-d, rgba(52, 217, 139, 0.1));
   border: 1px solid rgba(52, 217, 139, 0.2);
+  border-radius: 8px;
   padding: 12px 14px;
   margin-bottom: 16px;
   font-family: var(--font-dm-mono), monospace;
@@ -954,6 +964,52 @@
   letter-spacing: 0.06em;
   color: #34d98b;
   line-height: 1.5;
+}
+
+/* ── Simple role tab switcher (register page) ── */
+.roleTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.roleTab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.roleTab:hover {
+  border-color: var(--border2);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Active tab states reuse existing role active classes */
+.activeStaff.roleTab {
+  border-color: var(--staff);
+  background: var(--staff-d);
+  color: var(--staff);
+}
+
+.activeAdmin.roleTab {
+  border-color: var(--admin);
+  background: var(--admin-d);
+  color: var(--admin);
 }
 
 @media (max-width: 800px) {
@@ -964,6 +1020,107 @@
     display: none;
   }
   .right {
-    padding: 32px 24px;
+    padding: 40px 24px 48px;
+    overflow-y: auto;
+    height: 100vh;
+    justify-content: flex-start;
+    align-items: stretch;
   }
+  .formWrap {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .roleSelector { grid-template-columns: 1fr 1fr; }
+  .right { padding: 24px 16px; }
+  .formTitle { font-size: 1.4rem; }
+}
+
+/* Custom cursor only applies on pointer (mouse) devices — never on touch */
+@media (hover: hover) and (pointer: fine) {
+  .loginRoot { cursor: none; }
+  .roleButton,
+  .fieldLink,
+  .fieldIcon,
+  .checkboxWrap,
+  .submitButton,
+  .ssoButton,
+  .formFooter a,
+  .inlineLink,
+  .backButton { cursor: none; }
+}
+
+/* ── Password requirements checklist ── */
+.pwReqs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 6px;
+}
+.pwReqItem {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.575rem;
+  letter-spacing: 0.06em;
+  color: rgba(240, 237, 232, 0.3);
+  transition: color 0.2s;
+}
+.pwReqMet {
+  color: #34d98b;
+}
+
+/* ── Floating auth toast ── */
+.authToast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid;
+  z-index: 9999;
+  animation: toastIn 0.25s ease forwards;
+  max-width: calc(100vw - 48px);
+  white-space: normal;
+  line-height: 1.5;
+}
+.authToastSuccess {
+  background: rgba(52, 217, 139, 0.12);
+  border-color: rgba(52, 217, 139, 0.3);
+  color: #34d98b;
+}
+.authToastError {
+  background: rgba(255, 95, 95, 0.12);
+  border-color: rgba(255, 95, 95, 0.3);
+  color: #ff5f5f;
+}
+.authToastIcon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 50%, 90% { transform: translateX(-6px); }
+  30%, 70% { transform: translateX(6px); }
+}
+
+.fieldShake {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+.formShake {
+  animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }

@@ -17,11 +17,17 @@ let listJobs: () => Promise<AutomationJobRecord[]> = async () => [];
 let listDeadLetters: () => Promise<AutomationJobRecord[]> = async () => [];
 let getJobById: (jobId: string) => Promise<AutomationJobRecord | null> = async () => null;
 let getRuntimeStats: () => Promise<Record<string, unknown>> = async () => ({});
+let acknowledgeDeadLetters: () => Promise<number> = async () => 0;
+let requeueFailed: () => Promise<number> = async () => 0;
+let saveJob: (record: AutomationJobRecord) => Promise<void> = async () => {};
 const { app, metrics } = createAutomationRuntime({
   listJobs: () => listJobs(),
   listDeadLetters: () => listDeadLetters(),
   getJobById: (jobId) => getJobById(jobId),
-  getRuntimeStats: () => getRuntimeStats()
+  getRuntimeStats: () => getRuntimeStats(),
+  acknowledgeDeadLetters: () => acknowledgeDeadLetters(),
+  requeueFailed: () => requeueFailed(),
+  saveJob: (record) => saveJob(record)
 });
 const persistence = createAutomationPersistence(config, app.log);
 const persistedJobs = await persistence.listJobs();
@@ -41,6 +47,9 @@ listDeadLetters = async () => {
   const jobs = await persistence.listDeadLetters();
   return jobs.length > 0 ? jobs : handleEvent.getDeadLetters();
 };
+acknowledgeDeadLetters = () => persistence.acknowledgeDeadLetters();
+requeueFailed = () => persistence.requeueFailed();
+saveJob = (record) => persistence.saveJob(record);
 getJobById = async (jobId: string) => {
   const persisted = await persistence.getJob(jobId);
   if (persisted) return persisted;

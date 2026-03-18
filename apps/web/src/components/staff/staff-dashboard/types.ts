@@ -32,6 +32,9 @@ export type KanbanColumn = {
   countBg?: string;
   border?: string;
   policyHint?: string;
+  wipLimit?: number;
+  wipCount?: number;
+  agingCount?: number;
   tasks: Array<{
     id: string;
     projectId: string;
@@ -50,6 +53,9 @@ export type KanbanColumn = {
     meta?: { comments?: string; avatar: string };
     faded?: boolean;
     blocked?: boolean;
+    serviceClass?: "expedite" | "standard";
+    needsPrep?: boolean;
+    needsPrepReason?: string;
   }>;
 };
 

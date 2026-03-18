@@ -380,3 +380,42 @@ export async function createPortalSupportTicketWithRefresh(
     return { unauthorized: false, data: response.payload.data, error: null };
   });
 }
+
+export interface PortalTicketComment {
+  id:          string;
+  clientId:    string;
+  type:        string;
+  subject:     string;
+  fromName:    string | null;
+  direction:   string;
+  actionLabel: string | null;
+  occurredAt:  string;
+  createdAt:   string;
+}
+
+/** Post a comment on a support ticket */
+export async function postSupportTicketCommentWithRefresh(
+  session: AuthSession,
+  ticketId: string,
+  body: { message: string; authorName?: string }
+): Promise<AuthorizedResult<PortalTicketComment>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalTicketComment>(
+      `/support-tickets/${ticketId}/comments`,
+      accessToken,
+      { method: "POST", body }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "TICKET_COMMENT_FAILED",
+          response.payload.error?.message ?? "Unable to post comment."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}

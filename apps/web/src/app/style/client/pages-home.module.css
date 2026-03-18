@@ -1,0 +1,4776 @@
+.sectionEyebrow {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+/* ─── Stat card border-left accent variants ──────────────────────── */
+.statCardAccent {
+  border-left-color: var(--lime);
+}
+
+.statCardGreen {
+  border-left-color: var(--green);
+}
+
+.statCardAmber {
+  border-left-color: var(--amber);
+}
+
+.statCardRed {
+  border-left-color: var(--red);
+}
+
+.statCardBlue {
+  border-left-color: var(--blue);
+}
+
+.statCardPurple {
+  border-left-color: var(--purple);
+}
+
+.statCardCyan {
+  border-left-color: var(--cyan);
+}
+
+.statCardMuted {
+  border-left-color: var(--b3);
+}
+
+/* ─── Toggle switch ──────────────────────────────────────────────── */
+.toggleTrack {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.toggleTrackOn {
+  background: var(--lime);
+}
+
+.toggleTrackOff {
+  background: var(--b2);
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.2s ease;
+}
+
+.toggleThumbOn {
+  left: 23px;
+}
+
+.toggleThumbOff {
+  left: 3px;
+}
+
+/* ─── Action chip (small inline action button) ───────────────────── */
+.actionChip {
+  border-radius: 999px;
+  border: 1px solid var(--b2);
+  background: transparent;
+  color: var(--muted);
+  padding: 4px 10px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 120ms ease;
+  cursor: pointer;
+}
+
+.actionChip:hover {
+  border-color: var(--b3);
+  color: var(--text);
+}
+
+
+@keyframes sh {
+  0% {
+    background-position: 200% center;
+  }
+
+  100% {
+    background-position: -200% center;
+  }
+}
+
+/* ─── Dashboard — Mission Control ───────────────────────────────────── */
+
+@keyframes livePulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--lime) 60%, transparent);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px color-mix(in oklab, var(--lime) 0%, transparent);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--lime) 0%, transparent);
+  }
+}
+
+@keyframes commandFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .missionPulseDot {
+    animation: none;
+  }
+
+  .commandCard {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .budgetRingFill {
+    transition: none;
+  }
+
+  .missionProgressFill,
+  .dnaDimFill,
+  .velocityBarFill {
+    transition: none;
+  }
+}
+
+/* ── Mission Banner ─────────────────────────────────────────────────── */
+
+.missionBanner {
+  border: 1px solid color-mix(in oklab, var(--lime) 28%, var(--b2));
+  background: color-mix(in oklab, var(--s1) 92%, var(--lime) 8%);
+  border-radius: var(--r-md);
+  overflow: clip;
+  padding: 20px 24px;
+  position: relative;
+}
+
+.missionBanner::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--lime);
+  border-radius: var(--r-md) 0 0 var(--r-md);
+}
+
+.missionBannerGrid {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.missionBannerLeft {
+  flex: 1;
+  min-width: 220px;
+}
+
+.missionPulseRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.missionPulseDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lime);
+  flex-shrink: 0;
+  animation: livePulse 2s infinite;
+}
+
+.missionOnTrack {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--lime);
+  font-weight: 600;
+}
+
+.missionBadgeOffset {
+  margin-left: auto;
+}
+
+.missionProjectName {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-family: var(--font-syne), sans-serif;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.missionProjectSub {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-family: var(--font-dm-mono), monospace;
+  letter-spacing: 0.04em;
+}
+
+.missionChipGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  min-width: 240px;
+}
+
+.missionChip {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.missionChipLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+
+.missionChipValue {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--text);
+  font-family: var(--font-syne), sans-serif;
+  line-height: 1.2;
+}
+
+.missionChipSub {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.52rem;
+  color: var(--muted2);
+}
+
+.missionProgressSection {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.missionProgressTrack {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--b1);
+  overflow: hidden;
+}
+
+.missionProgressFill {
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--lime), var(--lime2));
+  transition: width 1.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.missionProgressFillActive {
+  width: calc(var(--bar-pct, 0) * 100%);
+}
+
+.missionProgressLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  color: var(--lime);
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+}
+
+/* ── Section Eyebrow Row ────────────────────────────────────────────── */
+
+.sectionEyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.sectionEyebrowLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* ── Dashboard 2D Grid Layout ────────────────────────────────────────── */
+
+.dashMainGrid {
+  display: grid;
+  grid-template-columns: 55fr 45fr;
+  gap: 14px;
+  align-items: stretch;
+}
+
+/* Left column wrapper — matches card style so empty space is filled, not bare page */
+.dashActionWrapper {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  overflow: clip;
+  min-width: 0;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.dashBottomRow {
+  display: grid;
+  grid-template-columns: 5fr 8fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.budgetVelStack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dnaVertWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 16px;
+}
+
+.dnaRadarSvg {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+}
+
+.dnaDimGrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 20px;
+}
+
+@media (max-width: 620px) {
+  .dashMainGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashBottomRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Command Strip ───────────────────────────────────────────────────── */
+
+.commandGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.commandCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  opacity: 0;
+  animation: commandFadeUp 0.32s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  position: relative;
+}
+
+.commandFade0 {
+  animation-delay: 0ms;
+}
+
+.commandFade1 {
+  animation-delay: 70ms;
+}
+
+.commandFade2 {
+  animation-delay: 140ms;
+}
+
+.commandFade3 {
+  animation-delay: 210ms;
+}
+
+.commandCardIconRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.commandCardIconBox {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.commandIconToneLime {
+  background: color-mix(in oklab, var(--lime) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--lime) 30%, transparent);
+  color: var(--lime);
+}
+
+.commandIconToneRed {
+  background: color-mix(in oklab, var(--red) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--red) 30%, transparent);
+  color: var(--red);
+}
+
+.commandIconToneAmber {
+  background: color-mix(in oklab, var(--amber) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--amber) 30%, transparent);
+  color: var(--amber);
+}
+
+.commandIconTonePurple {
+  background: color-mix(in oklab, var(--purple) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--purple) 30%, transparent);
+  color: var(--purple);
+}
+
+.commandUrgencyBadge {
+  margin-left: auto;
+}
+
+.commandCardBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.commandCardTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: var(--font-syne), sans-serif;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.commandCardSub {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+.commandCardCta {
+  width: 100%;
+}
+
+/* ── Timeline ────────────────────────────────────────────────────────── */
+
+.timelineSvgWrap {
+  padding: 8px 24px 18px;
+  overflow: hidden;
+}
+
+/* ── Vitals Grid ─────────────────────────────────────────────────────── */
+
+.vitalsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .vitalsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* DNA Radar */
+
+.dnaWrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 16px 16px;
+  flex-wrap: wrap;
+}
+
+.dnaDimList {
+  flex: 1;
+  min-width: 120px;
+}
+
+.dnaDimRow {
+  margin-bottom: 8px;
+}
+
+.dnaDimTrack {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--b1);
+  overflow: hidden;
+}
+
+.dnaDimFill {
+  height: 100%;
+  width: 100%;
+  border-radius: inherit;
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dnaDimFillMounted {
+  transform: scaleX(var(--dim-scale, 0));
+}
+
+.dnaDimLime {
+  background: var(--lime);
+}
+
+.dnaDimAmber {
+  background: var(--amber);
+}
+
+.dnaDimRed {
+  background: var(--red);
+}
+
+/* Budget Donut */
+
+.budgetDonutWrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px 16px;
+  flex-wrap: wrap;
+}
+
+.budgetDonutSvg {
+  flex-shrink: 0;
+}
+
+.budgetRingFill {
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.budgetStats {
+  flex: 1;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.budgetStatRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.budgetStatRowBorder {
+  padding-top: 8px;
+  border-top: 1px solid var(--b1);
+  margin-top: 2px;
+}
+
+/* Velocity */
+
+.velocityWrap {
+  padding: 8px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.velocityItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.velocityLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  color: var(--muted2);
+  min-width: 22px;
+  text-transform: uppercase;
+}
+
+.velocityItemCurrent .velocityLabel {
+  color: var(--lime);
+  font-weight: 700;
+}
+
+.velocityBarTrack {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--b1);
+  overflow: hidden;
+}
+
+.velocityBarFill {
+  height: 100%;
+  width: 100%;
+  border-radius: inherit;
+  background: var(--b3);
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.velocityBarFillMounted {
+  transform: scaleX(var(--vel-scale, 0));
+}
+
+.velocityBarFillCurrent {
+  background: var(--lime);
+}
+
+.velocityValue {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.62rem;
+  color: var(--muted2);
+  min-width: 22px;
+  text-align: right;
+}
+
+.velocityValueCurrent {
+  color: var(--lime);
+  font-weight: 700;
+}
+
+/* ── AI Situation Report ─────────────────────────────────────────────── */
+
+.aiScanRow {
+  padding: 6px 20px 8px;
+  border-top: 1px solid var(--b1);
+  border-bottom: 1px solid var(--b1);
+  background: color-mix(in oklab, var(--s2) 60%, transparent);
+}
+
+.aiScanLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--lime);
+  font-weight: 600;
+}
+
+.aiInsightList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.aiInsight {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.aiArrow {
+  color: var(--lime);
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 0.82rem;
+}
+
+.aiInsightContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.aiConfRow {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.aiPip {
+  width: 8px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--b3);
+  flex-shrink: 0;
+}
+
+.aiPipFull {
+  background: var(--lime);
+}
+
+.aiConfLabel {
+  margin-left: 6px;
+}
+
+.aiAskRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--b1);
+}
+
+.aiAskInput {
+  flex: 1;
+  border: 1px solid var(--b2);
+  background: var(--s2);
+  color: var(--text);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.72rem;
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  outline: none;
+  min-width: 0;
+}
+
+.aiAskInput:focus {
+  border-color: var(--lime);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--lime) 12%, transparent);
+}
+
+.aiAskInput::placeholder {
+  color: var(--muted2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/* ── Home Page ─────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+@keyframes homeLivePulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Hero row: health ring (fixed) | KPI stats */
+
+.homeHeroGrid {
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+/* Mid row: actions | team (reuses dashMainGrid columns) */
+
+.homeMidGrid {
+  display: grid;
+  grid-template-columns: 55fr 45fr;
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 620px) {
+  .homeHeroGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .homeMidGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* KPI strip */
+
+.homeKpiRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.homeKpiCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.homeKpiIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.homeKpiBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.homeKpiLabel {
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  font-weight: 600;
+  font-family: var(--font-dm-mono), monospace;
+  margin-bottom: 2px;
+}
+
+.homeKpiValue {
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-family: var(--font-syne), sans-serif;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.homeKpiSub {
+  font-size: 0.6rem;
+  color: var(--muted2);
+  font-family: var(--font-dm-mono), monospace;
+  margin-top: 2px;
+}
+
+/* Right column */
+
+.homeRightCol {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Health ring */
+
+.homeHealthWrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 16px 16px;
+}
+
+.homeHealthRing {
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Team strip */
+
+.homeTeamRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.homeTeamLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.homeTeamAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--av-color, var(--s3));
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.homeTeamDot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--s1);
+}
+
+.homeTeamDotActive {
+  background: var(--lime);
+}
+
+.homeTeamDotAway {
+  background: var(--b3);
+}
+
+.homeTeamInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.homeTeamTask {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.homeLiveText {
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: var(--lime);
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.06em;
+  animation: homeLivePulse 2s ease-in-out infinite;
+}
+
+/* Finance donuts */
+
+.homeDonutPair {
+  display: flex;
+  align-items: stretch;
+}
+
+.homeDonutItem {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.homeDonutSvg {
+  flex-shrink: 0;
+  display: block;
+}
+
+.homeDonutRing {
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.homeDonutDivider {
+  width: 1px;
+  background: var(--b1);
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.homeDonutInfo {
+  min-width: 0;
+}
+
+.homeDonutLabel {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted2);
+  font-weight: 600;
+  font-family: var(--font-dm-mono), monospace;
+  margin-bottom: 4px;
+}
+
+.homeDonutValue {
+  font-size: 0.88rem;
+  font-weight: 800;
+  font-family: var(--font-syne), sans-serif;
+  margin-bottom: 2px;
+}
+
+.homeDonutValueMuted {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.homeDonutSub {
+  font-size: 0.6rem;
+  color: var(--muted2);
+  font-family: var(--font-dm-mono), monospace;
+}
+
+/* Activity feed */
+
+.homeFeedRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--b1);
+}
+
+.homeFeedRow:last-child {
+  border-bottom: none;
+}
+
+.homeFeedAvatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--av-color, var(--s3));
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.homeFeedEventIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--ev-color, var(--lime)) 12%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.homeFeedBody {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Dismiss button (for home action cards) */
+
+.commandCardDismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted2);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: var(--r-xs);
+  z-index: 1;
+}
+
+.commandCardDismiss:hover {
+  color: var(--text);
+  background: var(--s3);
+}
+
+/* Responsive */
+
+@media (max-width: 620px) {
+  .homeKpiRow {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .homeHealthRing,
+  .homeDonutRing {
+    transition: none;
+  }
+
+  .homeLiveText {
+    animation: none;
+  }
+}
+
+/* ── Home Page v3 — Command Center (hx prefix) ─────────────────────────────── */
+
+@keyframes hxActFade {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hxLivePulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Hero ─────────────────────────────────────────────────────────────────────── */
+
+.hxHero {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-lg);
+  padding: 28px 32px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.hxHeroNum {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--lime);
+  opacity: 0.06;
+  pointer-events: none;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.hxHeroEyebrow {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted2);
+  margin-bottom: 6px;
+}
+
+.hxHeroName {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--fg);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.hxHeroScore {
+  color: var(--lime);
+}
+
+.hxHeroSub {
+  font-size: 0.6875rem;
+  color: var(--muted2);
+  margin-bottom: 18px;
+}
+
+.hxHeroBarWrap {
+  height: 5px;
+  background: var(--s3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  max-width: 520px;
+}
+
+.hxHeroBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--lime) 0%, var(--lime2, #d6f55a) 100%);
+  border-radius: 3px;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hxBarMounted {
+  transform: scaleX(var(--bar-pct, 0));
+}
+
+.hxHeroPills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.hxHeroPill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  padding: 5px 11px 5px 9px;
+}
+
+.hxHeroPillIco {
+  flex-shrink: 0;
+}
+
+.hxHeroPillBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.hxHeroPillVal {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1.1;
+}
+
+.hxHeroPillLbl {
+  font-size: 0.5625rem;
+  color: var(--muted2);
+  line-height: 1;
+}
+
+/* Mid grid ─────────────────────────────────────────────────────────────────── */
+
+.hxMidGrid {
+  display: grid;
+  grid-template-columns: 55fr 45fr;
+  gap: 14px;
+  align-items: stretch;
+  margin-bottom: 14px;
+}
+
+.hxActList {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.hxCombined {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Action list ──────────────────────────────────────────────────────────────── */
+
+.hxActHeaderLbl {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted2);
+}
+
+/* Card header — mirrors hxCombinedHd so both card tops align exactly */
+.hxActListHd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px 12px;
+  border-bottom: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+
+.hxActList {
+  display: flex;
+  flex-direction: column;
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.hxActRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--b1);
+  animation: hxActFade 0.3s ease both;
+  animation-delay: var(--act-delay, 0ms);
+  transition: background 0.12s;
+}
+
+.hxActRow:hover {
+  background: var(--s2);
+}
+
+.hxActRow:last-child {
+  border-bottom: none;
+}
+
+.hxActAccent {
+  width: 3px;
+  align-self: stretch;
+  flex-shrink: 0;
+}
+
+/* Icon bubble inside each action row */
+.hxActIco {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.hxActIcoLime {
+  background: color-mix(in oklab, var(--lime) 14%, transparent);
+}
+
+.hxActIcoRed {
+  background: color-mix(in oklab, var(--red) 14%, transparent);
+}
+
+.hxActIcoAmber {
+  background: color-mix(in oklab, var(--amber) 14%, transparent);
+}
+
+.hxActIcoPurple {
+  background: color-mix(in oklab, var(--purple) 14%, transparent);
+}
+
+.hxActAccentLime {
+  background: var(--lime);
+}
+
+.hxActAccentRed {
+  background: var(--red);
+}
+
+.hxActAccentAmber {
+  background: var(--amber);
+}
+
+.hxActAccentPurple {
+  background: var(--purple);
+}
+
+.hxActMain {
+  flex: 1;
+  padding: 12px 40px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.hxActHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hxActTitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fg);
+  flex: 1;
+  min-width: 0;
+}
+
+.hxActSub {
+  font-size: 0.6875rem;
+  color: var(--muted2);
+}
+
+.hxActBottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.hxActDel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted2);
+  font-size: 1rem;
+  padding: 2px 5px;
+  border-radius: var(--r-xs);
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  z-index: 1;
+}
+
+.hxActRow:hover .hxActDel {
+  opacity: 1;
+}
+
+.hxActDel:hover {
+  color: var(--fg);
+}
+
+/* Combined card (team + feed) ─────────────────────────────────────────────── */
+
+.hxCombined {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.hxCombinedHd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px 12px;
+  border-bottom: 1px solid var(--b1);
+}
+
+.hxCombinedHdTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.hxTeamRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  border-bottom: 1px solid var(--b1);
+}
+
+.hxTeamAv {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--av-color, var(--s3));
+  color: var(--bg);
+  font-size: 0.5625rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.hxTeamDot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--s1);
+}
+
+.hxTeamDotOn {
+  background: var(--lime);
+}
+
+.hxTeamDotOff {
+  background: var(--b3);
+}
+
+.hxTeamInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.hxTeamName {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.2;
+}
+
+.hxTeamTask {
+  font-size: 0.5875rem;
+  color: var(--muted2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hxLive {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--lime);
+  animation: hxLivePulse 2s ease-in-out infinite;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.hxSplitLabel {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted2);
+  padding: 9px 20px 5px;
+  background: var(--s2);
+  border-top: 1px solid var(--b1);
+  border-bottom: 1px solid var(--b1);
+}
+
+.hxFeedRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 20px;
+  border-bottom: 1px solid var(--b1);
+}
+
+.hxFeedRow:last-child {
+  border-bottom: none;
+}
+
+.hxFeedAv {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--av-color, var(--s3));
+  color: var(--bg);
+  font-size: 0.4375rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.hxFeedEvIcon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--ev-color, var(--lime)) 15%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.hxFeedBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.hxFeedText {
+  font-size: 0.6875rem;
+  color: var(--fg);
+  line-height: 1.4;
+}
+
+.hxFeedTime {
+  font-size: 0.5rem;
+  color: var(--muted2);
+  margin-top: 2px;
+}
+
+/* Finance grid ─────────────────────────────────────────────────────────────── */
+
+.hxFinGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.hxFinCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 18px 20px;
+}
+
+.hxFinLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted2);
+  margin-bottom: 8px;
+}
+
+.hxFinVal {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--fg);
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+.hxFinValMuted {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted2);
+}
+
+.hxFinSub {
+  font-size: 0.5625rem;
+  color: var(--muted2);
+  margin-bottom: 12px;
+}
+
+.hxFinBarWrap {
+  height: 6px;
+  background: var(--s3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.hxFinBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hxFinFillLime {
+  background: var(--lime);
+}
+
+.hxFinFillAmber {
+  background: var(--amber);
+}
+
+.hxFinFillAccent {
+  background: var(--accent);
+}
+
+/* Responsive ───────────────────────────────────────────────────────────────── */
+
+@media (max-width: 620px) {
+  .hxMidGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .hxFinGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Reduced motion ───────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .hxHeroBarFill,
+  .hxFinBarFill {
+    transition: none;
+  }
+
+  .hxLive {
+    animation: none;
+  }
+
+  .hxActRow {
+    animation: none;
+  }
+}
+
+/* ── Home Page v4 — Bento · Track · Timeline · Finance Stack ───────────────── */
+
+/* Staggered section entrance */
+@keyframes hxSectFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hxSection {
+  animation: hxSectFade 0.45s ease both;
+  animation-delay: var(--sect-delay, 0ms);
+}
+
+/* ── Bento Hero ─────────────────────────────────────────────────────────────── */
+
+.hxBentoGrid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.hxBentoMain {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-lg);
+  position: relative;
+  overflow: hidden;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.hxBentoHealthBg {
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 8rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--lime);
+  opacity: 0.055;
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: -0.05em;
+}
+
+.hxBentoMainInner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hxBentoScoreRow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 4px 0 6px;
+}
+
+.hxBentoScore {
+  font-size: 2.75rem;
+  font-weight: 900;
+  color: var(--lime);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.hxBentoScoreSuffix {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted2);
+}
+
+.hxBentoFooterText {
+  font-size: 0.5875rem;
+  color: var(--muted2);
+  margin-top: 2px;
+}
+
+/* Stat tiles */
+.hxBentoStat {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 15px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hxBentoStatTop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.hxBentoStatLbl {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted2);
+}
+
+.hxBentoStatVal {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--fg);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.hxBentoDelta {
+  font-size: 0.5625rem;
+  font-weight: 600;
+}
+
+.hxBentoDeltaUp {
+  color: var(--lime);
+}
+
+.hxBentoDeltaDn {
+  color: var(--red);
+}
+
+.hxBentoDeltaNeu {
+  color: var(--muted2);
+}
+
+/* ── Sprint Track ───────────────────────────────────────────────────────────── */
+
+.hxTrackCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.hxTrackBody {
+  padding: 20px 24px 24px;
+}
+
+.hxTrackWrap {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.hxTrackBgLine {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 17px;
+  height: 2px;
+  background: var(--b2);
+  z-index: 0;
+}
+
+.hxTrackProgressLine {
+  position: absolute;
+  left: 18px;
+  top: 17px;
+  width: calc(100% - 36px);
+  height: 2px;
+  background: linear-gradient(90deg, var(--lime) 0%, var(--lime2, #d6f55a) 100%);
+  z-index: 1;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 1.3s cubic-bezier(0.4, 0, 0.2, 1) 0.15s;
+  pointer-events: none;
+}
+
+.hxTrackProgressLine.hxBarMounted {
+  transform: scaleX(var(--bar-pct, 0));
+}
+
+.hxTrackNode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+}
+
+.hxTrackDot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--b2);
+  background: var(--s1);
+}
+
+.hxTrackDotDone {
+  border-color: var(--lime);
+  background: color-mix(in oklab, var(--lime) 18%, transparent);
+}
+
+.hxTrackDotReview {
+  border-color: var(--amber);
+  background: color-mix(in oklab, var(--amber) 18%, transparent);
+}
+
+.hxTrackDotActive {
+  border-color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 18%, transparent);
+}
+
+.hxTrackDotPlanned {
+  border-color: var(--b2);
+  border-style: dashed;
+  background: var(--s2);
+}
+
+.hxTrackNodeId {
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted2);
+}
+
+.hxTrackNodeTitle {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--fg);
+  text-align: center;
+  max-width: 80px;
+  line-height: 1.3;
+}
+
+/* ── Timeline Feed ──────────────────────────────────────────────────────────── */
+
+.hxTimeItem {
+  display: flex;
+  gap: 0;
+  padding: 0 20px;
+}
+
+.hxTimeVert {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.hxTimeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ev-color, var(--b3));
+  flex-shrink: 0;
+  margin-top: 13px;
+}
+
+.hxTimeVLine {
+  width: 1px;
+  flex: 1;
+  background: var(--b1);
+  min-height: 12px;
+}
+
+.hxTimeItem:last-child .hxTimeVLine {
+  display: none;
+}
+
+.hxTimeBody {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0 10px 8px;
+  border-bottom: 1px solid var(--b1);
+}
+
+.hxTimeItem:last-child .hxTimeBody {
+  border-bottom: none;
+}
+
+.hxTimeAv {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--av-color, var(--s3));
+  color: var(--bg);
+  font-size: 0.4375rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hxTimeContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.hxTimeText {
+  font-size: 0.6875rem;
+  color: var(--fg);
+  line-height: 1.4;
+}
+
+.hxTimeStamp {
+  font-size: 0.5rem;
+  color: var(--muted2);
+  margin-top: 2px;
+}
+
+/* ── Finance Stack ──────────────────────────────────────────────────────────── */
+
+.hxFinStackCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.hxFinStackRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--b1);
+}
+
+.hxFinStackRow:last-child {
+  border-bottom: none;
+}
+
+.hxFinStackLabel {
+  width: 120px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.hxFinStackBar {
+  flex: 1;
+  height: 6px;
+  background: var(--s3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.hxFinStackFill {
+  height: 100%;
+  border-radius: 3px;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hxFinStackFill.hxBarMounted {
+  transform: scaleX(var(--bar-pct, 0));
+}
+
+.hxFinStackVal {
+  width: 110px;
+  text-align: right;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--fg);
+  flex-shrink: 0;
+}
+
+.hxFinStackPct {
+  width: 30px;
+  text-align: right;
+  font-size: 0.625rem;
+  color: var(--muted2);
+  flex-shrink: 0;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 620px) {
+  .hxBentoGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hxBentoMain {
+    grid-column: span 2;
+    grid-row: auto;
+  }
+
+  .hxTrackBody {
+    overflow-x: auto;
+  }
+
+  .hxTrackWrap {
+    min-width: 440px;
+  }
+
+  .hxFinStackLabel {
+    width: 90px;
+    font-size: 0.625rem;
+  }
+
+  .hxFinStackVal {
+    width: 80px;
+  }
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .hxSection {
+    animation: none;
+  }
+
+  .hxTrackProgressLine {
+    transition: none;
+  }
+
+  .hxFinStackFill {
+    transition: none;
+  }
+}
+
+/* ── Home Page v5 Advances ───────────────────────────────────────────────────── */
+
+/* Hero card: subtle lime warmth gradient */
+.hxBentoMain {
+  background: linear-gradient(135deg,
+      var(--s1) 50%,
+      color-mix(in oklab, var(--lime) 5%, var(--s1)) 100%);
+}
+
+/* Stat tile hover lift */
+.hxBentoStat {
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.hxBentoStat:hover {
+  background: var(--s2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+/* Mini progress bar on each stat tile */
+.hxBentoStatBar {
+  height: 2px;
+  background: var(--s3);
+  border-radius: 1px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.hxBentoStatBarFill {
+  height: 100%;
+  border-radius: 1px;
+  background: var(--stat-color, var(--lime));
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1) 0.4s;
+}
+
+.hxBentoStatBarFill.hxBarMounted {
+  transform: scaleX(var(--bar-pct, 0));
+}
+
+/* Active track node — pulse ring */
+@keyframes hxNodePulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.hxTrackDotActive {
+  position: relative;
+}
+
+.hxTrackDotActive::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  opacity: 0;
+  animation: hxNodePulse 2.2s ease-out infinite;
+  pointer-events: none;
+}
+
+/* Gradient fills for finance stack bars */
+.hxFinStackFill.hxFinFillLime {
+  background: linear-gradient(90deg, var(--lime) 0%, #d6f55a 100%);
+}
+
+.hxFinStackFill.hxFinFillAmber {
+  background: linear-gradient(90deg, var(--amber) 0%, #fde68a 100%);
+}
+
+.hxFinStackFill.hxFinFillAccent {
+  background: linear-gradient(90deg, var(--accent) 0%, var(--lime) 100%);
+}
+
+/* Today's Pulse strip */
+.hxPulseGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.hxPulseCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.hxPulseCard:hover {
+  background: var(--s2);
+  transform: translateY(-1px);
+}
+
+.hxPulseIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: color-mix(in oklab, var(--ic-color, var(--lime)) 14%, transparent);
+}
+
+.hxPulseBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hxPulseLbl {
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted2);
+}
+
+.hxPulseVal {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--fg);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.hxPulseNote {
+  font-size: 0.4875rem;
+  color: var(--muted2);
+  margin-top: 1px;
+}
+
+/* Responsive */
+@media (max-width: 620px) {
+  .hxPulseGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   v6 — 15 UX Improvements
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Account manager contact card ─────────────────────────────────────── */
+.hxManagerCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.hxManagerLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.hxManagerAv {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--lime) 0%, var(--lime-d) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--bg);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.hxManagerOnline {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 2px solid var(--s1);
+}
+
+.hxManagerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hxManagerName {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.hxManagerRole {
+  font-size: 0.625rem;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+}
+
+.hxManagerTag {
+  font-size: 0.5875rem;
+  color: var(--lime);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.hxManagerCtaRow {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.hxManagerCta {
+  padding: 7px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--b2);
+  background: var(--s2);
+  color: var(--fg);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hxManagerCta:hover {
+  background: var(--s3);
+  border-color: var(--b3);
+}
+
+.hxManagerCtaPrimary {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: var(--bg);
+}
+
+.hxManagerCtaPrimary:hover {
+  background: var(--lime2);
+  border-color: var(--lime2);
+}
+
+/* 2. Plain-language status sentence ───────────────────────────────────── */
+.hxStatusSentence {
+  font-size: 0.6875rem;
+  color: var(--muted2);
+  line-height: 1.5;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--b1);
+}
+
+.hxStatusSentence strong {
+  color: var(--lime);
+  font-weight: 700;
+}
+
+/* 3. Phase progress pips ──────────────────────────────────────────────── */
+.hxPhaseRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.hxPhasePip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted2);
+  padding: 3px 7px;
+  border-radius: 30px;
+  border: 1px solid var(--b2);
+  background: transparent;
+  white-space: nowrap;
+}
+
+.hxPhasePipDone {
+  color: var(--lime);
+  border-color: color-mix(in oklab, var(--lime) 30%, transparent);
+  background: color-mix(in oklab, var(--lime) 8%, transparent);
+}
+
+.hxPhasePipActive {
+  color: var(--fg);
+  border-color: var(--b3);
+  background: var(--s3);
+}
+
+.hxPhaseDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* 4. Countdown labels on action rows ─────────────────────────────────── */
+.hxActCountdown {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: var(--muted2);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hxActCountdown.hxCountOverdue {
+  color: var(--red);
+}
+
+.hxActCountdown.hxCountSoon {
+  color: var(--amber);
+}
+
+.hxActCountdown.hxCountOk {
+  color: var(--muted2);
+}
+
+/* 5. Milestone celebration banner ─────────────────────────────────────── */
+@keyframes hxCelebSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hxCelebBanner {
+  background: color-mix(in oklab, var(--lime) 8%, transparent);
+  border: 1px solid color-mix(in oklab, var(--lime) 30%, transparent);
+  border-radius: var(--r-md);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  animation: hxCelebSlide 0.4s ease both;
+}
+
+.hxCelebIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--lime) 16%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hxCelebBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.hxCelebTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--lime);
+}
+
+.hxCelebSub {
+  font-size: 0.5875rem;
+  color: var(--muted2);
+}
+
+/* 6. Empty state for dismissed actions ───────────────────────────────── */
+.hxActEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  gap: 10px;
+  text-align: center;
+}
+
+.hxActEmptyIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--lime) 10%, transparent);
+  border: 1px solid color-mix(in oklab, var(--lime) 25%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hxActEmptyTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.hxActEmptySub {
+  font-size: 0.6rem;
+  color: var(--muted2);
+  line-height: 1.5;
+  max-width: 180px;
+}
+
+/* 7. Outcome strip (3 quick wins) ────────────────────────────────────── */
+.hxOutcomeRow {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.hxOutcomeStat {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 18px;
+  border-right: 1px solid var(--b1);
+}
+
+.hxOutcomeStat:first-child {
+  padding-left: 0;
+}
+
+.hxOutcomeStat:last-child {
+  border-right: none;
+}
+
+.hxOutcomeIco {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: color-mix(in oklab, var(--oc, var(--lime)) 12%, transparent);
+}
+
+.hxOutcomeBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.hxOutcomeVal {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--fg);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.hxOutcomeLbl {
+  font-size: 0.5625rem;
+  color: var(--muted2);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* 8. Latest deliverables pinned row ──────────────────────────────────── */
+.hxFilesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  padding: 12px 20px 20px;
+}
+
+.hxFileCard {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.hxFileCard:hover {
+  background: var(--s3);
+  border-color: var(--b3);
+  transform: translateY(-1px);
+}
+
+.hxFileTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hxFileIco {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hxFileName {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.3;
+}
+
+.hxFileMeta {
+  font-size: 0.5625rem;
+  color: var(--muted2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hxFileBtn {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: var(--lime);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* 9. Budget velocity line ─────────────────────────────────────────────── */
+.hxVelocityLine {
+  font-size: 0.6rem;
+  color: var(--muted2);
+  padding: 10px 20px 16px;
+  border-top: 1px solid var(--b1);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hxVelocityLine span {
+  color: var(--amber);
+  font-weight: 700;
+}
+
+/* 10. Risk row in activity card ──────────────────────────────────────── */
+.hxRiskRow {
+  background: color-mix(in oklab, var(--red) 7%, transparent);
+  border: 1px solid color-mix(in oklab, var(--red) 22%, transparent);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.hxRiskIco {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-xs);
+  background: color-mix(in oklab, var(--red) 14%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hxRiskBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.hxRiskTitle {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.hxRiskSub {
+  font-size: 0.5625rem;
+  color: var(--muted2);
+}
+
+/* 11. Data freshness timestamp ───────────────────────────────────────── */
+.hxFreshness {
+  font-size: 0.5rem;
+  color: var(--muted2);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.hxFreshDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+/* 12. NPS / satisfaction ping card ──────────────────────────────────── */
+.hxNpsCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.hxNpsLeft {
+  flex: 1;
+  min-width: 160px;
+}
+
+.hxNpsTitle {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+
+.hxNpsSub {
+  font-size: 0.5875rem;
+  color: var(--muted2);
+}
+
+.hxNpsStars {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.hxNpsStar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--b2);
+  background: var(--s2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.15s, border-color 0.15s, transform 0.12s;
+  user-select: none;
+}
+
+.hxNpsStar:hover {
+  background: var(--s3);
+  border-color: var(--b3);
+  transform: scale(1.1);
+}
+
+.hxNpsStarActive {
+  background: color-mix(in oklab, var(--lime) 15%, transparent);
+  border-color: color-mix(in oklab, var(--lime) 40%, transparent);
+}
+
+/* 13. Scope strip inside pipeline card ──────────────────────────────── */
+.hxScopeStrip {
+  border-top: 1px solid var(--b1);
+  margin-top: 14px;
+  padding: 14px 24px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.hxScopeTitle {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted2);
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.hxScopeTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.hxScopeTag {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  color: var(--muted2);
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: 30px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+/* 14. Briefing line in page header ──────────────────────────────────── */
+.hxBriefingLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  font-size: 0.6875rem;
+}
+
+.hxBriefPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 30px;
+  font-size: 0.5875rem;
+  font-weight: 700;
+}
+
+.hxBriefPillRed {
+  background: color-mix(in oklab, var(--red) 8%, transparent);
+  color: var(--red);
+  border: 1px solid color-mix(in oklab, var(--red) 25%, transparent);
+}
+
+.hxBriefPillAmber {
+  background: color-mix(in oklab, var(--amber) 8%, transparent);
+  color: var(--amber);
+  border: 1px solid color-mix(in oklab, var(--amber) 25%, transparent);
+}
+
+.hxBriefPillGreen {
+  background: color-mix(in oklab, var(--lime) 8%, transparent);
+  color: var(--lime);
+  border: 1px solid color-mix(in oklab, var(--lime) 25%, transparent);
+}
+
+/* 15. Responsive for new sections ───────────────────────────────────── */
+@media (max-width: 620px) {
+  .hxManagerCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hxManagerCtaRow {
+    width: 100%;
+  }
+
+  .hxOutcomeRow {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .hxOutcomeStat {
+    border-right: none;
+    border-bottom: 1px solid var(--b1);
+    padding: 4px 0 10px;
+  }
+
+  .hxOutcomeStat:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .hxNpsCard {
+    flex-direction: column;
+  }
+}
+
+/* Reduced motion for v5 additions */
+@media (prefers-reduced-motion: reduce) {
+  .hxBentoStat:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .hxTrackDotActive::before {
+    animation: none;
+  }
+
+  .hxBentoStatBarFill {
+    transition: none;
+  }
+
+  .hxPulseCard:hover {
+    transform: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   v7 — Equal Height + Further Improvements
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Upcoming events strip ─────────────────────────────────────────────────── */
+.hxEventsStrip {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 0;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.hxEventsHd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px 12px;
+  border-bottom: 1px solid var(--b1);
+}
+
+.hxEventsHdTitle {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.hxEventsList {
+  display: flex;
+  flex-direction: column;
+}
+
+.hxEventRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--b1);
+  transition: background 0.12s;
+}
+
+.hxEventRow:last-child {
+  border-bottom: none;
+}
+
+.hxEventRow:hover {
+  background: var(--s2);
+}
+
+.hxEventTimePill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--r-sm);
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  flex-shrink: 0;
+}
+
+.hxEventDay {
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted2);
+}
+
+.hxEventDate {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: var(--fg);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.hxEventBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.hxEventTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hxEventMeta {
+  font-size: 0.5625rem;
+  color: var(--muted2);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hxEventTypeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ev-dot, var(--lime));
+  flex-shrink: 0;
+}
+
+.hxEventCta {
+  font-size: 0.5875rem;
+  font-weight: 700;
+  color: var(--lime);
+  border: 1px solid color-mix(in oklab, var(--lime) 30%, transparent);
+  background: color-mix(in oklab, var(--lime) 8%, transparent);
+  border-radius: var(--r-xs);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.hxEventCta:hover {
+  background: color-mix(in oklab, var(--lime) 14%, transparent);
+}
+
+/* Health sparkline ──────────────────────────────────────────────────────── */
+.hxSparkWrap {
+  margin-top: 12px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.hxSparkLabel {
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted2);
+  margin-bottom: 2px;
+  flex-shrink: 0;
+}
+
+.hxSparkSvg {
+  flex: 1;
+  overflow: visible;
+}
+
+/* Sprint velocity dots in pipeline header ─────────────────────────────── */
+.hxVelRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.hxVelDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--s3);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.hxVelDotDone {
+  background: var(--lime);
+  transform: scale(1.1);
+}
+
+.hxVelDotActive {
+  background: var(--amber);
+  transform: scale(1.1);
+}
+
+.hxVelDotFail {
+  background: var(--red);
+  transform: scale(0.9);
+}
+
+/* Approval wait timer on action rows ──────────────────────────────────── */
+.hxActTimer {
+  font-size: 0.5rem;
+  color: var(--muted2);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  flex-shrink: 0;
+  padding-right: 36px;
+}
+
+.hxActTimerRed {
+  color: var(--red);
+}
+
+/* Announcements / "What's new" banner ─────────────────────────────────── */
+.hxAnnounceBanner {
+  background: color-mix(in oklab, var(--purple) 7%, transparent);
+  border: 1px solid color-mix(in oklab, var(--purple) 22%, transparent);
+  border-radius: var(--r-md);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hxAnnounceIco {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-xs);
+  background: color-mix(in oklab, var(--purple) 14%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hxAnnounceBody {
+  flex: 1;
+}
+
+.hxAnnounceTitle {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.hxAnnounceSub {
+  font-size: 0.5625rem;
+  color: var(--muted2);
+  margin-top: 2px;
+}
+
+/* Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 620px) {
+  .hxEventRow {
+    flex-wrap: wrap;
+  }
+
+  .hxEventCta {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hxVelDot {
+    transition: none;
+  }
+
+  .hxEventRow {
+    transition: none;
+  }
+
+  .hxEventCta {
+    transition: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Notification Center — redesign following system design §5.12
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Stats strip ─────────────────────────────────────────────────────────────── */
+.ntfStatsRow {
+  display: flex;
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.ntfStatItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 12px;
+  gap: 4px;
+  border-right: 1px solid var(--b1);
+}
+
+.ntfStatItem:last-child {
+  border-right: none;
+}
+
+.ntfStatVal {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--fg);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.ntfStatValAccent {
+  color: var(--lime);
+}
+
+.ntfStatValRed {
+  color: var(--red);
+}
+
+.ntfStatValAmber {
+  color: var(--amber);
+}
+
+.ntfStatLbl {
+  font-size: 0.52rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted2);
+}
+
+/* Time group labels ─────────────────────────────────────────────────────── */
+.ntfGroupLabel {
+  font-family: var(--font-dm-mono, monospace);
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  padding: 14px 20px 6px;
+  border-bottom: 1px solid var(--b1);
+}
+
+.ntfGroupLabel:first-child {
+  padding-top: 0;
+  border-bottom: none;
+}
+
+/* Notification row ─────────────────────────────────────────────────────── */
+@keyframes ntfFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.ntfRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  min-height: 56px;
+  border-bottom: 1px solid var(--b1);
+  cursor: pointer;
+  transition: background 0.12s;
+  position: relative;
+  animation: ntfFadeIn 0.25s ease both;
+}
+
+.ntfRow:last-child {
+  border-bottom: none;
+}
+
+.ntfRow:hover {
+  background: var(--s2);
+}
+
+/* Unread state */
+.ntfRowUnread {
+  background: color-mix(in oklab, var(--lime) 4%, transparent);
+}
+
+.ntfRowUnread:hover {
+  background: color-mix(in oklab, var(--lime) 7%, transparent);
+}
+
+/* Left accent bar — type-coded */
+.ntfAccent {
+  width: 3px;
+  align-self: stretch;
+  flex-shrink: 0;
+  border-radius: 0;
+}
+
+.ntfAccentLime {
+  background: var(--lime);
+}
+
+.ntfAccentGreen {
+  background: var(--green);
+}
+
+.ntfAccentRed {
+  background: var(--red);
+}
+
+.ntfAccentAmber {
+  background: var(--amber);
+}
+
+.ntfAccentPurple {
+  background: var(--purple);
+}
+
+.ntfAccentMuted {
+  background: var(--muted2);
+}
+
+/* Icon circle — 36px, semantic tint */
+.ntfIco {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin: 12px 12px 12px 14px;
+}
+
+.ntfIcoLime {
+  background: color-mix(in oklab, var(--lime) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--lime) 20%, transparent);
+}
+
+.ntfIcoGreen {
+  background: color-mix(in oklab, var(--green) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--green) 20%, transparent);
+}
+
+.ntfIcoRed {
+  background: color-mix(in oklab, var(--red) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--red) 20%, transparent);
+}
+
+.ntfIcoAmber {
+  background: color-mix(in oklab, var(--amber) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--amber) 20%, transparent);
+}
+
+.ntfIcoPurple {
+  background: color-mix(in oklab, var(--purple) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--purple) 20%, transparent);
+}
+
+.ntfIcoMuted {
+  background: color-mix(in oklab, var(--muted2) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--muted2) 20%, transparent);
+}
+
+/* Row content ──────────────────────────────────────────────────────────── */
+.ntfContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 12px 12px 0;
+  min-width: 0;
+}
+
+.ntfHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ntfTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+}
+
+.ntfTitleRead {
+  color: var(--muted2);
+  font-weight: 600;
+}
+
+.ntfDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lime);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px var(--lime);
+}
+
+.ntfBody {
+  font-size: 0.6875rem;
+  color: var(--muted2);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ntfMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.ntfTime {
+  font-family: var(--font-dm-mono, monospace);
+  font-size: 0.52rem;
+  color: var(--muted2);
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.ntfActionRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* Right side — time + dismiss */
+.ntfRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 12px 14px 12px 0;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 72px;
+}
+
+.ntfDismiss {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-xs);
+  border: none;
+  background: transparent;
+  color: var(--muted2);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+
+.ntfRow:hover .ntfDismiss {
+  opacity: 1;
+}
+
+.ntfDismiss:hover {
+  background: var(--s3);
+  color: var(--fg);
+}
+
+/* Card footer for load more ─────────────────────────────────────────────── */
+.ntfFooter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 20px;
+  border-top: 1px solid var(--b1);
+}
+
+/* Filter tabs — icon + label variant ────────────────────────────────────── */
+.ntfTabRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  .ntfTabRow {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    margin-top: 12px;
+  }
+  .ntfTabRow::-webkit-scrollbar { display: none; }
+  .ntfTab { flex-shrink: 0; }
+}
+
+.ntfTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 30px;
+  border: 1px solid var(--b2);
+  background: var(--s1);
+  color: var(--muted2);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.ntfTab:hover {
+  background: var(--s2);
+  color: var(--fg);
+  border-color: var(--b3);
+}
+
+.ntfTabActive {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: var(--bg);
+}
+
+.ntfTabActive:hover {
+  background: var(--lime2);
+  border-color: var(--lime2);
+  color: var(--bg);
+}
+
+.ntfTabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 30px;
+  background: var(--red);
+  color: #fff;
+  font-size: 0.45rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Empty state — system design spec ─────────────────────────────────────── */
+.ntfEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 32px;
+  gap: 12px;
+  text-align: center;
+}
+
+.ntfEmptyIco {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--b2);
+  background: var(--s2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+/* Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 620px) {
+  .ntfTabRow {
+    gap: 4px;
+  }
+
+  .ntfTab {
+    font-size: 0.55rem;
+    padding: 5px 10px;
+  }
+
+  .ntfStatVal {
+    font-size: 1.125rem;
+  }
+
+  .ntfRight {
+    min-width: 56px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ntfRow {
+    animation: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   START A NEW PROJECT  (prq = project-request)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Trust strip ──────────────────────────────────────────────────────────────── */
+.prqTrustStrip {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 4px 0 22px;
+  flex-wrap: wrap;
+}
+
+.prqTrustItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--muted2);
+  font-weight: 500;
+}
+
+.prqTrustSep {
+  width: 1px;
+  height: 12px;
+  background: var(--b2);
+}
+
+/* Step indicator ───────────────────────────────────────────────────────────── */
+.prqStepper {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.prqStepItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prqStepCircle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--b2);
+  border: 1px solid var(--b3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--muted);
+  font-family: var(--font-mono, monospace);
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.prqStepCircleActive {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: var(--bg);
+}
+
+.prqStepCircleDone {
+  background: var(--lime-d);
+  border-color: var(--lime);
+  color: var(--lime);
+}
+
+.prqStepLabel {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.prqStepLabelActive {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.prqStepLine {
+  flex: 1;
+  height: 1px;
+  background: var(--b2);
+  margin: 0 12px;
+  min-width: 32px;
+  transition: background 0.3s;
+}
+
+.prqStepLineDone {
+  background: var(--lime);
+}
+
+/* Service cards ────────────────────────────────────────────────────────────── */
+.prqSvcGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.prqSvcCard {
+  background: var(--s1);
+  border: 1.5px solid var(--b2);
+  border-radius: var(--r-md);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  --svc-color: var(--lime);
+  width: 100%;
+  position: relative;
+}
+
+/* Override shared-module button reset (specificity: .root button:not() = 0-2-1) */
+.prqSvcGrid .prqSvcCard,
+.prqSvcGrid .prqSvcCardActive {
+  padding: 20px !important;
+}
+
+.prqSvcCard:hover {
+  border-color: var(--b3);
+  background: var(--s2);
+}
+
+.prqSvcCardActive {
+  background: color-mix(in oklab, var(--svc-color) 7%, transparent);
+  border-color: var(--svc-color) !important;
+}
+
+/* Popular badge — top-right corner */
+.prqSvcPopular {
+  position: absolute;
+  top: -1px;
+  right: 14px;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  background: var(--lime);
+  color: var(--bg);
+  border-radius: 0 0 var(--r-xs) var(--r-xs);
+}
+
+/* Tag inside service card meta */
+.prqSvcTag {
+  display: inline-block;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--r-xs);
+  margin-top: 3px;
+}
+
+.prqSvcTagMuted {
+  background: var(--s3);
+  color: var(--muted);
+}
+
+.prqSvcHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.prqSvcIco {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  background: var(--b1);
+  border: 1px solid var(--b2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.prqSvcCardActive .prqSvcIco {
+  background: color-mix(in oklab, var(--svc-color) 15%, transparent);
+  border-color: color-mix(in oklab, var(--svc-color) 30%, transparent);
+}
+
+.prqSvcMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.prqSvcName {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.prqSvcPrice {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color 0.15s;
+}
+
+.prqSvcCardActive .prqSvcPrice {
+  color: var(--svc-color);
+}
+
+.prqSvcCheck {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--svc-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prqSvcDesc {
+  font-size: 0.72rem;
+  color: var(--muted2);
+  line-height: 1.55;
+}
+
+.prqSelRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+  padding-bottom: 80px;
+}
+
+/* Form ─────────────────────────────────────────────────────────────────────── */
+.prqFormBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.prqFormField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prqFormLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted2);
+}
+
+.prqRequired {
+  color: var(--red);
+  margin-left: 2px;
+}
+
+.prqOptional {
+  font-size: 0.65rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+/* Review ───────────────────────────────────────────────────────────────────── */
+.prqReviewSvcs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.prqReviewGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+}
+
+.prqReviewItem {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--b1);
+}
+
+.prqReviewLbl {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted2);
+  margin-bottom: 3px;
+}
+
+.prqReviewVal {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.prqReviewSection {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--b1);
+}
+
+.prqReviewText {
+  font-size: 0.75rem;
+  color: var(--muted2);
+  line-height: 1.6;
+}
+
+/* What happens next ────────────────────────────────────────────────────────── */
+.prqNextList {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.prqNextItem {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.prqNextNum {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--lime-d);
+  border: 1px solid var(--lime);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--lime);
+  font-family: var(--font-mono, monospace);
+}
+
+.prqNextTitle {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.prqNextSub {
+  font-size: 0.7rem;
+  color: var(--muted2);
+}
+
+/* Action row ───────────────────────────────────────────────────────────────── */
+.prqActionRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.prqActionRowSpread {
+  justify-content: space-between;
+}
+
+/* Success state ────────────────────────────────────────────────────────────── */
+.prqSuccessCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 56px 32px;
+}
+
+.prqSuccessIco {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--green) 12%, transparent);
+  border: 1.5px solid color-mix(in oklab, var(--green) 30%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.prqSuccessTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.prqSuccessSub {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 400px;
+  margin-bottom: 28px;
+}
+
+.prqSuccessActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.prqSuccessRef {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  font-size: 0.7rem;
+  color: var(--muted2);
+}
+
+.prqSuccessRefVal {
+  font-family: var(--font-mono, monospace);
+  color: var(--lime);
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+/* Responsive ───────────────────────────────────────────────────────────────── */
+@media (max-width: 620px) {
+  .prqSvcGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .prqAddonGrid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .prqReviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .prqStepLine {
+    min-width: 16px;
+    margin: 0 6px;
+  }
+
+  .prqStepLabel {
+    display: none;
+  }
+
+  .prqStepLabelActive {
+    display: inline;
+  }
+
+  .prqSuccessCard {
+    padding: 36px 16px;
+  }
+}
+
+/* ── Bundle deal combo cards ─────────────────────────────────────────────── */
+.prqComboCard {
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--b2);
+  overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.prqComboCard:hover {
+  border-color: var(--b3);
+}
+
+/* 3px colour accent bar at top of combo card */
+.h3 { height: 3px; }
+
+/* Padding inside combo card content area */
+.p14x16x16 { padding: 14px 16px 16px; }
+
+/* Flex helpers used in combo cards */
+.flexAlignStart { display: flex; align-items: flex-start; }
+.flexAlignEnd   { align-items: flex-end; }
+.justifyBetween  { justify-content: space-between; }
+
+/* 5px accent dot for highlight bullets */
+.dot5 {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--bg-color, var(--muted2));
+  flex-shrink: 0;
+}
+
+.prqComboIco {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prqComboPrice {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.prqComboSavingBadge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--r-xs);
+  letter-spacing: 0.02em;
+  align-self: center;
+}
+
+.comboPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--r-sm);
+  border: 1.5px solid var(--border-color, var(--b2));
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  margin-left: auto;
+}
+
+/* ── Business size picker cards ──────────────────────────────────────────── */
+.prqBizCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px !important;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--b2);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.prqBizCard:hover {
+  border-color: var(--b3);
+}
+
+.prqBizIco {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 6px;
+}
+
+/* ── Goal picker ──────────────────────────────────────────────────────────── */
+.prqGoalRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.prqGoalCard {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px 16px !important;
+  background: var(--s1);
+  border: 1.5px solid var(--b2);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.prqGoalCard:hover {
+  border-color: var(--b3);
+  background: var(--s2);
+}
+
+.prqGoalCardActive {
+  border-color: var(--lime) !important;
+  background: var(--lime-g) !important;
+}
+
+.prqGoalIco {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.prqGoalLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.prqGoalSub {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* ── Live estimate strip ──────────────────────────────────────────────────── */
+@keyframes prqEstIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.prqEstStrip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 14px 20px;
+  margin-bottom: 14px;
+  animation: prqEstIn 0.25s ease both;
+}
+
+.prqEstItem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 20px;
+  min-width: 110px;
+}
+
+.prqEstItem:first-child {
+  padding-left: 0;
+}
+
+.prqEstItem:last-child {
+  padding-right: 0;
+}
+
+.prqEstVal {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--lime);
+  line-height: 1;
+}
+
+.prqEstLbl {
+  font-size: 10px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.prqEstDivider {
+  width: 1px;
+  height: 34px;
+  background: var(--b2);
+  flex-shrink: 0;
+}
+
+/* ── Tech includes pills ──────────────────────────────────────────────────── */
+.prqIncPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.prqIncPill {
+  font-size: 9px;
+  font-weight: 600;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  color: var(--muted2);
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-xs);
+  padding: 2px 6px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Recommended badge on service card ────────────────────────────────────── */
+.prqSvcReco {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+
+.prqSvcRecoDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  animation: prqRecoPulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes prqRecoPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.prqSvcCardReco {
+  border-color: color-mix(in oklab, var(--amber) 45%, transparent) !important;
+}
+
+/* ── Add-on cards grid ────────────────────────────────────────────────────── */
+.prqAddonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.prqAddonCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px !important;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--b2);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.prqAddonCard:hover {
+  border-color: var(--b3);
+}
+
+.prqAddonIco {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prqAddonPrice {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: var(--r-xs);
+  letter-spacing: 0.02em;
+}
+
+.prqAddonAddedRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+  margin-top: 2px;
+  border-top: 1.5px solid var(--b1);
+}
+
+.prqAddonAddedLabel {
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+/* ── Service-specific extra questions (radio) ─────────────────────────────── */
+.prqExtraCard {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  margin-top: 6px;
+}
+
+.prqExtraHd {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prqRadioRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.prqRadioOpt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px !important;
+  background: var(--s1);
+  border: 1.5px solid var(--b2);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted2);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.prqRadioOpt:hover {
+  border-color: var(--b3);
+  color: var(--text);
+}
+
+.prqRadioOptActive {
+  border-color: var(--lime) !important;
+  color: var(--text) !important;
+  background: var(--lime-g) !important;
+}
+
+.prqRadioOptDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--b3);
+  background: transparent;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.prqRadioOptActive .prqRadioOptDot {
+  background: var(--lime);
+  border-color: var(--lime);
+}
+
+/* ── Decision Log ─────────────────────────────────────────────────────────── */
+.dlStats {
+  display: flex;
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.dlStat {
+  flex: 1;
+  padding: 16px 20px;
+  border-right: 1px solid var(--b2);
+}
+
+.dlStat:last-child {
+  border-right: none;
+}
+
+.dlStatVal {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.dlStatLbl {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted2);
+}
+
+.dlToolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.dlRow {
+  position: relative;
+}
+
+.dlAccentBar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--dl-color, var(--b2));
+}
+
+.dlRowHd {
+  width: 100%;
+  padding: 15px 20px 15px 24px !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.dlRowHd:hover {
+  background: var(--s2);
+}
+
+.dlRowHdOpen {
+  background: var(--s2);
+}
+
+.dlId {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted2);
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-xs);
+  padding: 2px 6px;
+  flex-shrink: 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.04em;
+}
+
+.dlTitle {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+}
+
+.dlMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dlDate {
+  font-size: 10px;
+  color: var(--muted2);
+  white-space: nowrap;
+}
+
+.dlBody {
+  padding: 4px 20px 18px 24px;
+}
+
+.dlByRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.dlByLabel {
+  font-size: 11px;
+  color: var(--muted2);
+}
+
+.dlByChip {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-xs);
+  padding: 2px 8px;
+}
+
+.dlSections {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+.dlSection {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+}
+
+.dlSectionHd {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+
+.dlSectionBody {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+@media (max-width: 700px) {
+  .dlSections {
+    grid-template-columns: 1fr;
+  }
+
+  .dlStats {
+    flex-wrap: wrap;
+  }
+
+  .dlStat {
+    min-width: 50%;
+    border-bottom: 1px solid var(--b2);
+  }
+}
+/* ================================================================
+
+/* ── Responsive: KPI grids ──────────────────────────────────────── */
+@media (max-width: 900px) {
+  .hxPulseGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .hxPulseGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ── Responsive: card grids ──────────────────────────────────────── */
+@media (max-width: 480px) {
+  .actionGrid,
+  .dnaDimGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Unsigned contract alert banner ─────────────────────────────── */
+.ctUnsignedBanner {
+  background: color-mix(in oklab, var(--amber) 10%, var(--s2));
+  border: 1px solid color-mix(in oklab, var(--amber) 30%, transparent);
+  border-radius: var(--r-md);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

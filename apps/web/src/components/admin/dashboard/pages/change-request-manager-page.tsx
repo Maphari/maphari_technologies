@@ -1,14 +1,106 @@
+// ════════════════════════════════════════════════════════════════════════════
+// change-request-manager-page.tsx — Admin Change Request Manager
+// Data : loadProjectChangeRequestsWithRefresh → GET /change-requests
+// Mut  : updateProjectChangeRequestWithRefresh → PATCH /change-requests/:id
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
+import { useEffect, useState } from "react";
+import { formatMoneyCents } from "@/lib/i18n/currency";
 import { cx, styles } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import {
+  loadProjectChangeRequestsWithRefresh,
+  updateProjectChangeRequestWithRefresh,
+} from "../../../../lib/api/admin/project-ops";
+import type { ProjectChangeRequest } from "../../../../lib/api/admin/types";
 
-const changeRequests = [
-  { id: "CR-001", project: "Q1 Campaign Strategy", client: "Kestrel Capital", title: "Add Instagram Reels to deliverables", impact: "Scope +15%", costImpact: "+R3,200", submittedBy: "Kira Bosman", status: "Pending" as const },
-  { id: "CR-002", project: "Website Redesign", client: "Mira Health", title: "Replace carousel with hero video", impact: "Timeline +1 week", costImpact: "+R4,500", submittedBy: "James Okonkwo", status: "Pending" as const },
-  { id: "CR-003", project: "Brand Identity System", client: "Volta Studios", title: "Add motion language to guidelines", impact: "Scope +10%", costImpact: "+R6,000", submittedBy: "Thabo Mokoena", status: "Approved" as const },
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-export function ChangeRequestManagerPage() {
+function statusLabel(s: ProjectChangeRequest["status"]): string {
+  switch (s) {
+    case "DRAFT":            return "Draft";
+    case "SUBMITTED":        return "Submitted";
+    case "ESTIMATED":        return "Estimated";
+    case "ADMIN_APPROVED":   return "Admin Approved";
+    case "ADMIN_REJECTED":   return "Admin Rejected";
+    case "CLIENT_APPROVED":  return "Client Approved";
+    case "CLIENT_REJECTED":  return "Client Rejected";
+  }
+}
+
+function statusBadge(s: ProjectChangeRequest["status"]): string {
+  switch (s) {
+    case "DRAFT":           return "badgeMuted";
+    case "SUBMITTED":       return "badgeAmber";
+    case "ESTIMATED":       return "badgePurple";
+    case "ADMIN_APPROVED":  return "badgeGreen";
+    case "ADMIN_REJECTED":  return "badgeRed";
+    case "CLIENT_APPROVED": return "badgeGreen";
+    case "CLIENT_REJECTED": return "badgeRed";
+  }
+}
+
+function formatCost(cents: number | null): string {
+  if (cents == null) return "—";
+  return formatMoneyCents(cents, { maximumFractionDigits: 0 });
+}
+
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "2-digit" });
+  } catch {
+    return iso;
+  }
+}
+
+function shortId(id: string): string {
+  return id.slice(0, 8).toUpperCase();
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function ChangeRequestManagerPage({
+  session,
+  onNotify,
+}: {
+  session: AuthSession | null;
+  onNotify?: (tone: "success" | "error" | "warning" | "info", message: string) => void;
+}) {
+  const [items, setItems] = useState<ProjectChangeRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!session) { setLoading(false); return; }
+    let cancelled = false;
+    void loadProjectChangeRequestsWithRefresh(session).then((r) => {
+      if (cancelled) return;
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setItems(r.data);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [session]);
+
+  const handleDecision = async (id: string, status: "ADMIN_APPROVED" | "ADMIN_REJECTED") => {
+    if (!session || updating) return;
+    setUpdating(id);
+    const r = await updateProjectChangeRequestWithRefresh(session, id, { status });
+    if (r.nextSession) saveSession(r.nextSession);
+    if (!r.error && r.data) {
+      setItems((prev) => prev.map((cr) => (cr.id === id ? r.data! : cr)));
+      onNotify?.("success", status === "ADMIN_APPROVED" ? "Change request approved — team notified." : "Change request rejected.");
+    } else if (r.error) {
+      onNotify?.("error", r.error.message ?? "Failed to update change request.");
+    }
+    setUpdating(null);
+  };
+
+  const canAct = (s: ProjectChangeRequest["status"]) =>
+    s === "SUBMITTED" || s === "ESTIMATED";
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -18,26 +110,83 @@ export function ChangeRequestManagerPage() {
           <div className={styles.pageSub}>Review and approve project scope change requests</div>
         </div>
       </div>
+
       <article className={styles.card}>
-        <div className={styles.cardHd}><span className={styles.cardHdTitle}>Change Requests</span></div>
+        <div className={styles.cardHd}>
+          <span className={styles.cardHdTitle}>Change Requests</span>
+          {!loading && <span className={cx("colorMuted", "text12")}>{items.length} total</span>}
+        </div>
         <div className={styles.cardInner}>
-          <table className={styles.table}>
-            <thead><tr><th>ID</th><th>Change</th><th>Project</th><th>Impact</th><th>Cost Δ</th><th>Submitted By</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody>
-              {changeRequests.map((cr) => (
-                <tr key={cr.id}>
-                  <td className={cx("fontMono", "text12")}>{cr.id}</td>
-                  <td className={cx("fw600")}>{cr.title}</td>
-                  <td className={cx("colorMuted")}>{cr.project}</td>
-                  <td className={cx("text12")}>{cr.impact}</td>
-                  <td className={cx("fontMono", "fw600", "colorAmber")}>{cr.costImpact}</td>
-                  <td className={cx("text12", "colorMuted")}>{cr.submittedBy}</td>
-                  <td><span className={cx("badge", cr.status === "Approved" ? "badgeGreen" : "badgeAmber")}>{cr.status}</span></td>
-                  <td>{cr.status === "Pending" && <div className={cx("flex", "gap4")}><button type="button" className={cx("btnSm", "btnAccent")}>Approve</button><button type="button" className={cx("btnSm", "btnGhost")}>Reject</button></div>}</td>
+          {loading ? (
+            <div className={cx("colorMuted2", "text12", "mt16")}>Loading change requests…</div>
+          ) : items.length === 0 ? (
+            <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="18" cy="18" r="3" stroke="currentColor" strokeWidth="1.5"/>
+                    <circle cx="6" cy="6" r="3" stroke="currentColor" strokeWidth="1.5"/>
+                    <path d="M13 6h3a2 2 0 0 1 2 2v7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <line x1="6" y1="9" x2="6" y2="21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <div className={styles.emptyTitle}>No change requests</div>
+                <div className={styles.emptySub}>When clients or staff submit scope change requests on active projects, they will appear here for review, estimation, and approval.</div>
+              </div>
+          ) : (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th scope="col">ID</th>
+                  <th scope="col">Change</th>
+                  <th scope="col">Impact</th>
+                  <th scope="col">Estimated Cost</th>
+                  <th scope="col">Submitted By</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {items.map((cr) => (
+                  <tr key={cr.id}>
+                    <td className={cx("fontMono", "text12")}>{shortId(cr.id)}</td>
+                    <td className={cx("fw600")}>{cr.title}</td>
+                    <td className={cx("text12", "colorMuted")}>{cr.impactSummary ?? "—"}</td>
+                    <td className={cx("fontMono", "fw600", "colorAmber")}>{formatCost(cr.estimatedCostCents)}</td>
+                    <td className={cx("text12", "colorMuted")}>{cr.requestedByName ?? "—"}</td>
+                    <td className={cx("fontMono", "text11", "colorMuted")}>{formatDate(cr.requestedAt)}</td>
+                    <td>
+                      <span className={cx("badge", statusBadge(cr.status))}>
+                        {statusLabel(cr.status)}
+                      </span>
+                    </td>
+                    <td>
+                      {canAct(cr.status) && (
+                        <div className={cx("flex", "gap4")}>
+                          <button
+                            type="button"
+                            className={cx("btnSm", "btnAccent")}
+                            disabled={updating === cr.id}
+                            onClick={() => void handleDecision(cr.id, "ADMIN_APPROVED")}
+                          >
+                            {updating === cr.id ? "…" : "Approve"}
+                          </button>
+                          <button
+                            type="button"
+                            className={cx("btnSm", "btnGhost")}
+                            disabled={updating === cr.id}
+                            onClick={() => void handleDecision(cr.id, "ADMIN_REJECTED")}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </article>
     </div>

@@ -1,60 +1,193 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { formatMoneyCents } from "@/lib/i18n/currency";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import { useAdminWorkspaceContext } from "../../admin-workspace-context";
+import { saveSession } from "../../../../lib/auth/session";
+import {
+  loadAdminServiceCatalogWithRefresh,
+  updateAdminPackageWithRefresh,
+  deleteAdminPackageWithRefresh,
+  createAdminPackageWithRefresh,
+  updateAdminRetainerWithRefresh,
+  deleteAdminRetainerWithRefresh,
+  createAdminRetainerWithRefresh,
+  type ServicePackage,
+  type ServiceAddon,
+  type RetainerPlan,
+} from "../../../../lib/api/admin/service-catalog";
 
-const services = [
-  { id: 1, name: "Brand Identity System", category: "Branding", cost: 8000, price: 22000, hours: 60, margin: 63.6 },
-  { id: 2, name: "UX/UI Design (per screen)", category: "Product Design", cost: 800, price: 2400, hours: 6, margin: 66.7 },
-  { id: 3, name: "Website Design & Dev", category: "Digital", cost: 15000, price: 42000, hours: 140, margin: 64.3 },
-  { id: 4, name: "Monthly Retainer - Core", category: "Retainer", cost: 12000, price: 28000, hours: 80, margin: 57.1 },
-  { id: 5, name: "Monthly Retainer - Growth", category: "Retainer", cost: 18000, price: 45000, hours: 130, margin: 60.0 },
-  { id: 6, name: "Monthly Retainer - Enterprise", category: "Retainer", cost: 26000, price: 72000, hours: 200, margin: 63.9 },
-  { id: 7, name: "Social Media Management", category: "Content", cost: 5000, price: 12000, hours: 40, margin: 58.3 },
-  { id: 8, name: "Content Strategy Workshop", category: "Strategy", cost: 2000, price: 6500, hours: 16, margin: 69.2 },
-  { id: 9, name: "Photography Day Rate", category: "Production", cost: 1200, price: 3800, hours: 8, margin: 68.4 }
-] as const;
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const retainerTiers = [
-  { name: "Core", hours: 80, price: 28000, features: ["Brand updates", "Copywriting", "Social content", "Monthly report"] },
-  { name: "Growth", hours: 130, price: 45000, features: ["Core +", "UX/UI design", "Ad creatives", "Strategy sessions"] },
-  { name: "Enterprise", hours: 200, price: 72000, features: ["Growth +", "Full campaign management", "Dev support", "Priority AM"] }
-] as const;
-
-const quoteItems = [
-  { service: "Brand Identity System", qty: 1, price: 22000 },
-  { service: "Website Design & Dev", qty: 1, price: 42000 },
-  { service: "Photography Day Rate", qty: 2, price: 3800 }
-] as const;
-
-const pendingDiscounts = [
-  { client: "Dune Collective", item: "Monthly Retainer - Growth", discount: 15, reason: "Long-term client loyalty", requestedBy: "Nomsa Dlamini", status: "pending" },
-  { client: "Mira Health", item: "Website Design & Dev", discount: 10, reason: "Project scope reduction", requestedBy: "Renzo Fabbri", status: "pending" }
-] as const;
-
-const tabs = ["service catalog", "quote builder", "retainer tiers", "discount approvals"] as const;
-
-const categories = [...new Set(services.map((s) => s.category))];
-
-function MarginBadge({ margin }: { margin: number }) {
-  return <span className={cx(styles.pricMarginBadge, margin >= 65 ? "colorAccent" : margin >= 55 ? "colorAmber" : "colorRed")}>{margin.toFixed(1)}%</span>;
+function fmtPrice(minCents: number, maxCents: number, isCustom = false): string {
+  if (isCustom) return "Custom Quote";
+  const currency = process.env.NEXT_PUBLIC_BILLING_CURRENCY ?? "ZAR";
+  const r = (c: number) => formatMoneyCents(c, { currency, maximumFractionDigits: 0 });
+  return minCents === maxCents ? r(minCents) : `${r(minCents)} – ${r(maxCents)}`;
 }
 
+const pendingDiscounts: Array<{ client: string; item: string; discount: number; reason: string; requestedBy: string; status: string }> = [];
+
+const tabs = ["service catalog", "retainer tiers", "quote builder", "discount approvals"] as const;
+
+// ── Create/Edit modal forms ───────────────────────────────────────────────────
+
+interface PkgDraft {
+  name:          string;
+  slug:          string;
+  tagline:       string;
+  priceMinCents: number;
+  priceMaxCents: number;
+  isCustomQuote: boolean;
+  deliveryDays:  string;
+  paymentTerms:  string;
+  billingType:   string;
+}
+
+interface RetainerDraft {
+  name:          string;
+  description:   string;
+  priceMinCents: number;
+  priceMaxCents: number;
+}
+
+const emptyPkgDraft = (): PkgDraft => ({
+  name: "", slug: "", tagline: "", priceMinCents: 0, priceMaxCents: 0,
+  isCustomQuote: false, deliveryDays: "", paymentTerms: "", billingType: "ONCE_OFF",
+});
+
+const emptyRetainerDraft = (): RetainerDraft => ({
+  name: "", description: "", priceMinCents: 0, priceMaxCents: 0,
+});
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export function PricingPage() {
+  const { snapshot, session } = useAdminWorkspaceContext();
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("service catalog");
-  const [selectedCat, setSelectedCat] = useState<string>("All");
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [quoteClient, setQuoteClient] = useState("Volta Studios");
+  const [quoteClient, setQuoteClient] = useState("");
   const [discount, setDiscount] = useState(0);
 
-  const filtered = selectedCat === "All" ? services : services.filter((s) => s.category === selectedCat);
+  // ── Catalog state ─────────────────────────────────────────────────────────
+  const [packages,  setPackages]  = useState<ServicePackage[]>([]);
+  const [addons,    setAddons]    = useState<ServiceAddon[]>([]);
+  const [retainers, setRetainers] = useState<RetainerPlan[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [saving,    setSaving]    = useState(false);
+  const loaded                    = useRef(false);
 
-  const quoteSubtotal = quoteItems.reduce((s, i) => s + i.price * i.qty, 0);
+  // ── Catalog sub-filter ────────────────────────────────────────────────────
+  const [catalogView, setCatalogView] = useState<"packages" | "addons">("packages");
+
+  // ── Edit/create modal ─────────────────────────────────────────────────────
+  const [pkgModal,      setPkgModal]      = useState<{ mode: "create" | "edit"; draft: PkgDraft; id?: string } | null>(null);
+  const [retainerModal, setRetainerModal] = useState<{ mode: "create" | "edit"; draft: RetainerDraft; id?: string } | null>(null);
+
+  // ── Load catalog ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (loaded.current || !session) return;
+    loaded.current = true;
+    void (async () => {
+      const result = await loadAdminServiceCatalogWithRefresh(session);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.data) {
+        setPackages(result.data.packages);
+        setAddons(result.data.addons);
+        setRetainers(result.data.retainers);
+      }
+      setLoading(false);
+    })();
+  }, [session]);
+
+  // ── Package CRUD ──────────────────────────────────────────────────────────
+
+  async function savePkg() {
+    if (!session || !pkgModal) return;
+    setSaving(true);
+    try {
+      if (pkgModal.mode === "create") {
+        const body = {
+          ...pkgModal.draft,
+          idealFor: [] as string[],
+          features: [] as { label: string; included: boolean }[],
+          sortOrder: packages.length,
+          isActive: true,
+        };
+        const res = await createAdminPackageWithRefresh(session, body);
+        if (res.nextSession) saveSession(res.nextSession);
+        if (res.data) setPackages((prev) => [...prev, res.data!]);
+      } else if (pkgModal.id) {
+        const res = await updateAdminPackageWithRefresh(session, pkgModal.id, pkgModal.draft);
+        if (res.nextSession) saveSession(res.nextSession);
+        if (res.data) setPackages((prev) => prev.map((p) => p.id === pkgModal.id ? res.data! : p));
+      }
+      setPkgModal(null);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deletePkg(id: string) {
+    if (!session) return;
+    const res = await deleteAdminPackageWithRefresh(session, id);
+    if (res.nextSession) saveSession(res.nextSession);
+    setPackages((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  async function togglePkgActive(pkg: ServicePackage) {
+    if (!session) return;
+    const res = await updateAdminPackageWithRefresh(session, pkg.id, { isActive: !pkg.isActive });
+    if (res.nextSession) saveSession(res.nextSession);
+    if (res.data) setPackages((prev) => prev.map((p) => p.id === pkg.id ? res.data! : p));
+  }
+
+  // ── Retainer CRUD ─────────────────────────────────────────────────────────
+
+  async function saveRetainer() {
+    if (!session || !retainerModal) return;
+    setSaving(true);
+    try {
+      if (retainerModal.mode === "create") {
+        const body = {
+          ...retainerModal.draft,
+          features: [] as string[],
+          sortOrder: retainers.length,
+          isActive: true,
+        };
+        const res = await createAdminRetainerWithRefresh(session, body);
+        if (res.nextSession) saveSession(res.nextSession);
+        if (res.data) setRetainers((prev) => [...prev, res.data!]);
+      } else if (retainerModal.id) {
+        const res = await updateAdminRetainerWithRefresh(session, retainerModal.id, retainerModal.draft);
+        if (res.nextSession) saveSession(res.nextSession);
+        if (res.data) setRetainers((prev) => prev.map((r) => r.id === retainerModal.id ? res.data! : r));
+      }
+      setRetainerModal(null);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteRetainer(id: string) {
+    if (!session) return;
+    const res = await deleteAdminRetainerWithRefresh(session, id);
+    if (res.nextSession) saveSession(res.nextSession);
+    setRetainers((prev) => prev.filter((r) => r.id !== id));
+  }
+
+  // ── Quote builder (uses loaded packages as line-item source) ──────────────
+
+  const [quoteLines, setQuoteLines] = useState<Array<{ pkgId: string; qty: number }>>([]);
+  const quoteSubtotal = quoteLines.reduce((sum, line) => {
+    const pkg = packages.find((p) => p.id === line.pkgId);
+    return sum + (pkg ? (pkg.priceMinCents / 100) * line.qty : 0);
+  }, 0);
   const quoteDiscount = quoteSubtotal * (discount / 100);
-  const quoteTotal = quoteSubtotal - quoteDiscount;
-  const quoteVAT = quoteTotal * 0.15;
-  const quoteFinal = quoteTotal + quoteVAT;
+  const quoteTotal    = quoteSubtotal - quoteDiscount;
+  const quoteVAT      = quoteTotal * 0.15;
+  const quoteFinal    = quoteTotal + quoteVAT;
 
   return (
     <div className={cx(styles.pageBody, styles.pricRoot)}>
@@ -62,20 +195,26 @@ export function PricingPage() {
         <div>
           <div className={styles.pageEyebrow}>ADMIN / PRICING &amp; QUOTE ENGINE</div>
           <h1 className={styles.pageTitle}>Pricing Control</h1>
-          <div className={styles.pageSub}>Service catalog - Quote builder - Discount approvals</div>
+          <div className={styles.pageSub}>Service catalog · Retainer tiers · Quote builder · Discount approvals</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnGhost")}>Export Pricelist</button>
-          <button type="button" className={cx("btnSm", "btnAccent")}>+ New Service</button>
+          <button
+            type="button"
+            className={cx("btnSm", "btnAccent")}
+            onClick={() => setPkgModal({ mode: "create", draft: emptyPkgDraft() })}
+          >
+            + New Package
+          </button>
         </div>
       </div>
 
       <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Avg Project Margin", value: "64.2%", color: "var(--accent)", sub: "Target: 60%" },
-          { label: "Services in Catalog", value: "9", color: "var(--blue)", sub: "4 categories" },
-          { label: "Pending Discounts", value: "2", color: "var(--amber)", sub: "Needs approval" },
-          { label: "Active Quotes", value: "6", color: "var(--purple)", sub: "R284k total value" }
+          { label: "Packages",         value: loading ? "…" : String(packages.length),  color: "var(--accent)", sub: "in catalog" },
+          { label: "Add-ons",          value: loading ? "…" : String(addons.length),    color: "var(--blue)",   sub: "available" },
+          { label: "Retainer Plans",   value: loading ? "…" : String(retainers.length), color: "var(--purple)", sub: "active tiers" },
+          { label: "Pending Discounts",value: String(pendingDiscounts.length),           color: "var(--amber)",  sub: "needs approval" },
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}>{s.label}</div>
@@ -86,39 +225,170 @@ export function PricingPage() {
       </div>
 
       <div className={styles.filterRow}>
-        <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as (typeof tabs)[number])} className={styles.filterSelect}>
-          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        <select title="Select tab" value={activeTab} onChange={(e) => setActiveTab(e.target.value as (typeof tabs)[number])} className={styles.filterSelect}>
+          {tabs.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
 
+      {/* ── Service Catalog Tab ──────────────────────────────────────────────── */}
       {activeTab === "service catalog" && (
         <div>
-          <select title="Filter by category" value={selectedCat} onChange={e => setSelectedCat(e.target.value)} className={styles.filterSelect}>
-            {["All", ...categories].map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <div className={styles.pricTableCard}>
-            <div className={styles.pricTableInner}>
-              <div className={cx(styles.pricTableHead, "fontMono", "text10", "colorMuted", "uppercase")}>
-                {"Service|Category|Est. Hours|Cost|Price|Margin|".split("|").map((h, idx) => <span key={`${h}-${idx}`}>{h}</span>)}
+          <div className={cx("flexRow", "gap8", "mb14")}>
+            {(["packages", "addons"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                className={cx("btnSm", catalogView === v ? "btnAccent" : "btnGhost")}
+                onClick={() => setCatalogView(v)}
+              >
+                {v === "packages" ? `Packages (${packages.length})` : `Add-ons (${addons.length})`}
+              </button>
+            ))}
+          </div>
+
+          {loading && <div className={cx("colorMuted", "text12", "mb12")}>Loading catalog…</div>}
+
+          {catalogView === "packages" && (
+            <div className={styles.pricTableCard}>
+              <div className={styles.pricTableInner}>
+                <div className={cx(styles.pricTableHead, "fontMono", "text10", "colorMuted", "uppercase")}>
+                  {"Name|Delivery|Billing|Price Range|Status|".split("|").map((h, i) => <span key={`${h}-${i}`}>{h}</span>)}
+                </div>
+                {packages.map((pkg, i) => (
+                  <div key={pkg.id} className={cx(styles.pricTableRow, i < packages.length - 1 && "borderB")}>
+                    <span className={cx("fw600")}>{pkg.name}</span>
+                    <span className={cx("text11", "colorMuted", "fontMono")}>{pkg.deliveryDays ?? "—"}</span>
+                    <span className={cx("fontMono", "colorMuted")}>{pkg.billingType}</span>
+                    <span className={cx("fontMono", "colorAccent", "fw700")}>{fmtPrice(pkg.priceMinCents, pkg.priceMaxCents, pkg.isCustomQuote)}</span>
+                    <span className={cx("text11", pkg.isActive ? "colorAccent" : "colorMuted")}>{pkg.isActive ? "Active" : "Inactive"}</span>
+                    <div className={cx("flexRow", "gap6")}>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnGhost")}
+                        onClick={() => setPkgModal({
+                          mode: "edit",
+                          id: pkg.id,
+                          draft: {
+                            name: pkg.name, slug: pkg.slug, tagline: pkg.tagline ?? "",
+                            priceMinCents: pkg.priceMinCents, priceMaxCents: pkg.priceMaxCents,
+                            isCustomQuote: pkg.isCustomQuote, deliveryDays: pkg.deliveryDays ?? "",
+                            paymentTerms: pkg.paymentTerms ?? "", billingType: pkg.billingType,
+                          },
+                        })}
+                      >
+                        Edit
+                      </button>
+                      <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => togglePkgActive(pkg)}>
+                        {pkg.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnGhost", "colorRed")}
+                        onClick={() => { if (confirm(`Delete "${pkg.name}"?`)) void deletePkg(pkg.id); }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {!loading && packages.length === 0 && (
+                  <div className={cx("colorMuted", "text12", styles.pricEmptyRow)}>No packages yet. Create one above.</div>
+                )}
               </div>
-              {filtered.map((s, i) => (
-                <div key={s.id} className={cx(styles.pricTableRow, i < filtered.length - 1 && "borderB", editingId === s.id && styles.pricRowEditing)}>
-                  <span className={cx("fw600")}>{s.name}</span>
-                  <span className={cx("text11", "colorMuted", "fontMono")}>{s.category}</span>
-                  <span className={cx("fontMono", "colorMuted")}>{s.hours}h</span>
-                  <span className={cx("fontMono", "colorMuted")}>R{(s.cost / 1000).toFixed(0)}k</span>
-                  <span className={cx("fontMono", "colorAccent", "fw700")}>R{(s.price / 1000).toFixed(0)}k</span>
-                  <MarginBadge margin={s.margin} />
-                  <button type="button" onClick={() => setEditingId(editingId === s.id ? null : s.id)} className={cx("btnSm", "btnGhost")}>
-                    {editingId === s.id ? "Done" : "Edit"}
+            </div>
+          )}
+
+          {catalogView === "addons" && (
+            <div className={styles.pricTableCard}>
+              <div className={styles.pricTableInner}>
+                <div className={cx(styles.pricTableHead, "fontMono", "text10", "colorMuted", "uppercase")}>
+                  {"Name|Category|Price Range|Label|Status|".split("|").map((h, i) => <span key={`${h}-${i}`}>{h}</span>)}
+                </div>
+                {addons.map((addon, i) => (
+                  <div key={addon.id} className={cx(styles.pricTableRow, i < addons.length - 1 && "borderB")}>
+                    <span className={cx("fw600")}>{addon.name}</span>
+                    <span className={cx("text11", "colorMuted", "fontMono")}>{addon.category}</span>
+                    <span className={cx("fontMono", "colorAccent", "fw700")}>{fmtPrice(addon.priceMinCents, addon.priceMaxCents)}</span>
+                    <span className={cx("text11", "colorMuted")}>{addon.priceLabel ?? ""}</span>
+                    <span className={cx("text11", addon.isActive ? "colorAccent" : "colorMuted")}>{addon.isActive ? "Active" : "Inactive"}</span>
+                  </div>
+                ))}
+                {!loading && addons.length === 0 && (
+                  <div className={cx("colorMuted", "text12", styles.pricEmptyRow)}>No add-ons found.</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Retainer Tiers Tab ───────────────────────────────────────────────── */}
+      {activeTab === "retainer tiers" && (
+        <div>
+          <div className={cx("flexEnd", "mb14")}>
+            <button
+              type="button"
+              className={cx("btnSm", "btnAccent")}
+              onClick={() => setRetainerModal({ mode: "create", draft: emptyRetainerDraft() })}
+            >
+              + New Retainer Plan
+            </button>
+          </div>
+          {loading && <div className={cx("colorMuted", "text12", "mb12")}>Loading retainer plans…</div>}
+          <div className={styles.pricTierGrid}>
+            {retainers.map((plan, i) => (
+              <div key={plan.id} className={cx(styles.pricTierCard, i === 1 && styles.pricTierCardPopular)}>
+                {i === 1 && <div className={styles.pricPopularTag}>MOST POPULAR</div>}
+                <div className={cx(styles.pricTierName, i === 1 ? styles.pricTierNamePopular : "colorText")}>{plan.name}</div>
+                <div className={styles.pricTierPrice}>{fmtPrice(plan.priceMinCents, plan.priceMaxCents)}</div>
+                <div className={styles.pricTierSub}>per month</div>
+                {plan.description && (
+                  <div className={cx("text11", "colorMuted", "mb8")}>{plan.description}</div>
+                )}
+                <div className={styles.pricDivider} />
+                <div className={styles.pricFeatureStack}>
+                  {plan.features.map((f) => (
+                    <div key={f} className={styles.pricFeatureRow}>
+                      <span className={styles.pricCheck}>v</span>
+                      <span className={styles.colorMuted}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className={cx("flexRow", "gap6", "mt12")}>
+                  <button
+                    type="button"
+                    className={cx("btnSm", i === 1 ? "btnAccent" : "btnGhost", styles.pricBigBtn)}
+                    onClick={() => setRetainerModal({
+                      mode: "edit",
+                      id: plan.id,
+                      draft: {
+                        name: plan.name,
+                        description: plan.description ?? "",
+                        priceMinCents: plan.priceMinCents,
+                        priceMaxCents: plan.priceMaxCents,
+                      },
+                    })}
+                  >
+                    Edit Plan
+                  </button>
+                  <button
+                    type="button"
+                    className={cx("btnSm", "btnGhost", "colorRed")}
+                    onClick={() => { if (confirm(`Delete "${plan.name}"?`)) void deleteRetainer(plan.id); }}
+                  >
+                    Delete
                   </button>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+            {!loading && retainers.length === 0 && (
+              <div className={cx("colorMuted", "text12")}>No retainer plans found. Create one above.</div>
+            )}
           </div>
         </div>
       )}
 
+      {/* ── Quote Builder Tab ────────────────────────────────────────────────── */}
       {activeTab === "quote builder" && (
         <div className={styles.pricQuoteSplit}>
           <div>
@@ -128,7 +398,8 @@ export function PricingPage() {
                 <div>
                   <div className={styles.pricFieldLabel}>Client</div>
                   <select title="Quote client" value={quoteClient} onChange={(e) => setQuoteClient(e.target.value)} className={styles.formInput}>
-                    {["Volta Studios", "Mira Health", "Kestrel Capital", "Dune Collective", "Okafor & Sons"].map((c) => <option key={c}>{c}</option>)}
+                    <option value="">Select client…</option>
+                    {(snapshot.clients ?? []).map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -146,15 +417,35 @@ export function PricingPage() {
               <div className={cx(styles.pricQuoteHead, "fontMono", "text10", "colorMuted", "uppercase")}>
                 {"Service|Qty|Unit Price|Total".split("|").map((h) => <span key={h}>{h}</span>)}
               </div>
-              {quoteItems.map((item, i) => (
-                <div key={i} className={cx(styles.pricQuoteRow, "borderB")}>
-                  <span className={cx("fw600")}>{item.service}</span>
-                  <span className={cx("fontMono", "colorMuted")}>{item.qty}</span>
-                  <span className={cx("fontMono", "colorMuted")}>R{item.price.toLocaleString()}</span>
-                  <span className={cx("fontMono", "colorAccent", "fw700")}>R{((item.price * item.qty) / 1000).toFixed(0)}k</span>
-                </div>
-              ))}
-              <button type="button" className={styles.pricAddItemBtn}>+ Add Line Item</button>
+              {quoteLines.map((line, i) => {
+                const pkg = packages.find((p) => p.id === line.pkgId);
+                if (!pkg) return null;
+                const unitPrice = pkg.priceMinCents / 100;
+                return (
+                  <div key={i} className={cx(styles.pricQuoteRow, "borderB")}>
+                    <span className={cx("fw600")}>{pkg.name}</span>
+                    <span className={cx("fontMono", "colorMuted")}>{line.qty}</span>
+                    <span className={cx("fontMono", "colorMuted")}>R{unitPrice.toLocaleString()}</span>
+                    <span className={cx("fontMono", "colorAccent", "fw700")}>R{(unitPrice * line.qty).toLocaleString()}</span>
+                  </div>
+                );
+              })}
+              <div className={styles.pricPadRow}>
+                <div className={cx(styles.pricFieldLabel, "mb6")}>Add Package</div>
+                <select
+                  title="Add package to quote"
+                  className={styles.filterSelect}
+                  defaultValue=""
+                  onChange={(e) => {
+                    if (!e.target.value) return;
+                    setQuoteLines((prev) => [...prev, { pkgId: e.target.value, qty: 1 }]);
+                    e.target.value = "";
+                  }}
+                >
+                  <option value="">Select package…</option>
+                  {packages.map((p) => <option key={p.id} value={p.id}>{p.name} ({fmtPrice(p.priceMinCents, p.priceMaxCents, p.isCustomQuote)})</option>)}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -163,10 +454,10 @@ export function PricingPage() {
               <div className={styles.pricSectionTitle}>Quote Summary</div>
               <div className={styles.pricSummaryStack}>
                 {[
-                  { label: "Subtotal", value: `R${(quoteSubtotal / 1000).toFixed(1)}k`, color: "var(--text)" },
-                  { label: `Discount (${discount}%)`, value: `-R${(quoteDiscount / 1000).toFixed(1)}k`, color: "var(--amber)" },
-                  { label: "Excl. VAT", value: `R${(quoteTotal / 1000).toFixed(1)}k`, color: "var(--text)" },
-                  { label: "VAT (15%)", value: `R${(quoteVAT / 1000).toFixed(1)}k`, color: "var(--muted)" }
+                  { label: "Subtotal",          value: `R${quoteSubtotal.toLocaleString()}`,                         color: "var(--text)"  },
+                  { label: `Discount (${discount}%)`, value: `-R${quoteDiscount.toLocaleString()}`,                  color: "var(--amber)" },
+                  { label: "Excl. VAT",         value: `R${quoteTotal.toLocaleString()}`,                            color: "var(--text)"  },
+                  { label: "VAT (15%)",          value: `R${quoteVAT.toLocaleString()}`,                             color: "var(--muted)" },
                 ].map((r) => (
                   <div key={r.label} className={styles.pricSummaryRow}>
                     <span className={cx("text13", "colorMuted")}>{r.label}</span>
@@ -175,67 +466,32 @@ export function PricingPage() {
                 ))}
                 <div className={styles.pricTotalRow}>
                   <span className={styles.pricTotalLabel}>Total</span>
-                  <span className={styles.pricTotalValue}>R{(quoteFinal / 1000).toFixed(1)}k</span>
+                  <span className={styles.pricTotalValue}>R{quoteFinal.toLocaleString()}</span>
                 </div>
               </div>
               <div className={styles.pricActionStack}>
-                <button type="button" className={cx("btnSm", "btnAccent", styles.pricBigBtn)}>Send Quote to {quoteClient}</button>
-                <button type="button" className={cx("btnSm", "btnGhost", styles.pricBigBtn)}>Download PDF</button>
+                <button type="button" className={cx("btnSm", "btnAccent", styles.pricBigBtn)}>
+                  Send Quote{quoteClient ? ` to ${quoteClient}` : ""}
+                </button>
+                <button type="button" className={cx("btnSm", "btnGhost", styles.pricBigBtn)} onClick={() => window.print()}>
+                  Download PDF
+                </button>
               </div>
-            </div>
-
-            <div className={styles.pricQuoteCard}>
-              <div className={styles.pricSectionTitle}>Margin Health</div>
-              <div className={styles.pricMarginBig}>
-                {(
-                  ((quoteTotal - quoteItems.reduce((s, i) => {
-                    const svc = services.find((sv) => sv.name === i.service);
-                    return s + (svc ? svc.cost * i.qty : 0);
-                  }, 0)) /
-                    quoteTotal) *
-                  100
-                ).toFixed(1)}
-                %
-              </div>
-              <div className={cx("text12", "colorMuted")}>Estimated margin on this quote</div>
             </div>
           </div>
         </div>
       )}
 
-      {activeTab === "retainer tiers" && (
-        <div className={styles.pricTierGrid}>
-          {retainerTiers.map((tier, i) => (
-            <div key={tier.name} className={cx(styles.pricTierCard, i === 1 && styles.pricTierCardPopular)}>
-              {i === 1 && <div className={styles.pricPopularTag}>MOST POPULAR</div>}
-              <div className={cx(styles.pricTierName, i === 1 ? styles.pricTierNamePopular : "colorText")}>{tier.name}</div>
-              <div className={styles.pricTierPrice}>R{(tier.price / 1000).toFixed(0)}k</div>
-              <div className={styles.pricTierSub}>per month - {tier.hours}h included</div>
-              <div className={styles.pricDivider} />
-              <div className={styles.pricFeatureStack}>
-                {tier.features.map((f) => (
-                  <div key={f} className={styles.pricFeatureRow}>
-                    <span className={styles.pricCheck}>v</span>
-                    <span className={styles.colorMuted}>{f}</span>
-                  </div>
-                ))}
-              </div>
-              <div className={styles.pricOverageBox}>
-                <div className={styles.pricFieldLabel}>Overage Rate</div>
-                <div className={styles.pricOverageVal}>R{Math.round((tier.price / tier.hours) * 1.2).toLocaleString()}/h</div>
-              </div>
-              <button type="button" className={cx("btnSm", i === 1 ? "btnAccent" : "btnGhost", styles.pricBigBtn)}>Edit Tier</button>
-            </div>
-          ))}
-        </div>
-      )}
-
+      {/* ── Discount Approvals Tab ───────────────────────────────────────────── */}
       {activeTab === "discount approvals" && (
         <div className={styles.pricDiscountStack}>
           <div className={styles.pricPolicyCard}>
             <div className={styles.pricPolicyTitle}>Discount Policy</div>
             <div className={styles.pricPolicyText}>Any discount above 10% requires admin approval. Discounts exceeding 20% require justification and are logged for quarterly review. Max allowed discount: 30%.</div>
           </div>
+          {pendingDiscounts.length === 0 && (
+            <div className={cx("colorMuted", "text12", "p16")}>No pending discount approvals.</div>
+          )}
           {pendingDiscounts.map((d, i) => (
             <div key={i} className={styles.pricDiscountCard}>
               <div className={styles.pricDiscountGrid}>
@@ -259,6 +515,107 @@ export function PricingPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Package Create/Edit Modal ────────────────────────────────────────── */}
+      {pkgModal && (
+        <div
+          className={styles.pricModalOverlay}
+          onClick={(e) => { if (e.target === e.currentTarget) setPkgModal(null); }}
+        >
+          <div className={styles.pricModalBox}>
+            <div className={cx("fw700", "text16", "mb20")}>
+              {pkgModal.mode === "create" ? "New Package" : "Edit Package"}
+            </div>
+            <div className={cx("flexCol", "gap14")}>
+              {([
+                { key: "name",          label: "Name",              type: "text"   },
+                { key: "slug",          label: "Slug",              type: "text"   },
+                { key: "tagline",       label: "Tagline",           type: "text"   },
+                { key: "deliveryDays",  label: "Delivery Days",     type: "text"   },
+                { key: "paymentTerms",  label: "Payment Terms",     type: "text"   },
+                { key: "priceMinCents", label: "Price Min (cents)", type: "number" },
+                { key: "priceMaxCents", label: "Price Max (cents)", type: "number" },
+              ] as const).map(({ key, label, type }) => (
+                <div key={key}>
+                  <label className={styles.pricModalLabel}>{label}</label>
+                  <input
+                    type={type}
+                    className={styles.formInput}
+                    value={pkgModal.draft[key]}
+                    onChange={(e) =>
+                      setPkgModal((prev) =>
+                        prev ? { ...prev, draft: { ...prev.draft, [key]: type === "number" ? Number(e.target.value) : e.target.value } } : null
+                      )
+                    }
+                  />
+                </div>
+              ))}
+              <div>
+                <label className={styles.pricModalCheckLabel}>
+                  <input
+                    type="checkbox"
+                    checked={pkgModal.draft.isCustomQuote}
+                    onChange={(e) =>
+                      setPkgModal((prev) =>
+                        prev ? { ...prev, draft: { ...prev.draft, isCustomQuote: e.target.checked } } : null
+                      )
+                    }
+                  />
+                  Custom Quote (hides price range)
+                </label>
+              </div>
+            </div>
+            <div className={cx("flexRow", "gap8", "flexEnd", "mt20")}>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setPkgModal(null)} disabled={saving}>Cancel</button>
+              <button type="button" className={cx("btnSm", "btnAccent")} onClick={savePkg} disabled={saving}>
+                {saving ? "Saving…" : pkgModal.mode === "create" ? "Create" : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Retainer Create/Edit Modal ───────────────────────────────────────── */}
+      {retainerModal && (
+        <div
+          className={styles.pricModalOverlay}
+          onClick={(e) => { if (e.target === e.currentTarget) setRetainerModal(null); }}
+        >
+          <div className={styles.pricModalBoxSm}>
+            <div className={cx("fw700", "text16", "mb20")}>
+              {retainerModal.mode === "create" ? "New Retainer Plan" : "Edit Retainer Plan"}
+            </div>
+            <div className={cx("flexCol", "gap14")}>
+              {([
+                { key: "name",          label: "Name",              type: "text"   },
+                { key: "description",   label: "Description",       type: "text"   },
+                { key: "priceMinCents", label: "Price Min (cents)",  type: "number" },
+                { key: "priceMaxCents", label: "Price Max (cents)",  type: "number" },
+              ] as const).map(({ key, label, type }) => (
+                <div key={key}>
+                  <label className={styles.pricModalLabel}>{label}</label>
+                  <input
+                    type={type}
+                    className={styles.formInput}
+                    value={retainerModal.draft[key]}
+                    onChange={(e) =>
+                      setRetainerModal((prev) =>
+                        prev ? { ...prev, draft: { ...prev.draft, [key]: type === "number" ? Number(e.target.value) : e.target.value } } : null
+                      )
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+            <div className={cx("flexRow", "gap8", "flexEnd", "mt20")}>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setRetainerModal(null)} disabled={saving}>Cancel</button>
+              <button type="button" className={cx("btnSm", "btnAccent")} onClick={saveRetainer} disabled={saving}>
+                {saving ? "Saving…" : retainerModal.mode === "create" ? "Create" : "Save Changes"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

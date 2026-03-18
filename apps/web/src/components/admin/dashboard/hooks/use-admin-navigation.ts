@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { navItems, type PageId, type NavItem } from "../config";
 import type { AuthSession } from "../../../../lib/auth/session";
 import type { NotificationJob, ProjectBlocker } from "../../../../lib/api/admin";
@@ -100,17 +100,17 @@ export function useAdminNavigation({ session, snapshot, notificationJobs, projec
     };
   }, [notificationJobs, projectBlockers, snapshot.clients, snapshot.invoices, snapshot.leads, snapshot.projects]);
 
-  function handlePageChange(nextPage: PageId): void {
+  const handlePageChange = useCallback((nextPage: PageId): void => {
     setPage(nextPage);
     setRecentPages((previous) => [nextPage, ...previous.filter((entry) => entry !== nextPage)].slice(0, 6));
-  }
+  }, []);
 
-  async function handleLogout(): Promise<void> {
+  const handleLogout = useCallback(async (): Promise<void> => {
     if (loggingOut) return;
     setLoggingOut(true);
     await signOut();
     window.location.href = "/internal-login";
-  }
+  }, [loggingOut, signOut]);
 
   return {
     page,

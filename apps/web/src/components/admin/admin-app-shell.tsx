@@ -186,7 +186,7 @@ export function AdminAppShell({ children }: AdminAppShellProps) {
             <div className={styles.topIdentityStack}>
               <div className={styles.topBarTitle}>
                 <strong className={styles.brandLikeTitle}>Admin Workspace</strong>
-                <small>{session?.user.email ?? "admin@mapharitechnologies.com"}</small>
+                <small>{session?.user.email ?? ""}</small>
               </div>
             </div>
             <div className={styles.topActions}>

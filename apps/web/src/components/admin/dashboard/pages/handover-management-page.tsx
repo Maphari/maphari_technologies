@@ -1,54 +1,135 @@
+// ════════════════════════════════════════════════════════════════════════════
+// handover-management-page.tsx — Admin Handover Management
+// Data     : loadHandoversWithRefresh → GET /admin/handovers
+//            updateHandoverWithRefresh → PATCH /admin/handovers/:id
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
+import { useState, useEffect } from "react";
 import { cx, styles } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import {
+  loadHandoversWithRefresh,
+  updateHandoverWithRefresh,
+  type AdminHandover,
+} from "../../../../lib/api/admin";
 
-const handovers = [
-  { id: "HND-001", project: "Brand Identity System", from: "Thabo Mokoena", to: "Lerato Dlamini", status: "In Progress" as const, progress: 65, dueDate: "Mar 5, 2026", items: 12 },
-  { id: "HND-002", project: "Q1 Campaign Strategy", from: "Fatima Al-Rashid", to: "Kira Bosman", status: "Complete" as const, progress: 100, dueDate: "Feb 14, 2026", items: 8 },
-  { id: "HND-003", project: "Website Redesign", from: "James Okonkwo", to: "TBD", status: "Not Started" as const, progress: 0, dueDate: "Apr 1, 2026", items: 15 },
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function statusBadge(status: string) {
+  const s = status.toUpperCase();
+  if (s === "COMPLETE" || s === "COMPLETED") return "badgeGreen";
+  if (s === "IN_PROGRESS")                   return "badgeAmber";
+  return "badgeRed"; // PENDING / CANCELLED
+}
 
-export function HandoverManagementPage() {
+function statusLabel(status: string) {
+  const s = status.toUpperCase();
+  if (s === "IN_PROGRESS") return "In Progress";
+  if (s === "COMPLETE" || s === "COMPLETED") return "Complete";
+  return status;
+}
+
+function formatDate(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+export function HandoverManagementPage({ session }: { session: AuthSession | null }) {
+  const [handovers, setHandovers] = useState<AdminHandover[]>([]);
+  const [updating,  setUpdating]  = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!session) return;
+    void loadHandoversWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setHandovers(r.data);
+    });
+  }, [session]);
+
+  const active   = handovers.filter((h) => h.status.toUpperCase() === "IN_PROGRESS").length;
+  const complete = handovers.filter((h) => ["COMPLETE", "COMPLETED"].includes(h.status.toUpperCase())).length;
+  const pending  = handovers.filter((h) => h.status.toUpperCase() === "PENDING").length;
+
+  async function handleComplete(id: string) {
+    if (!session || updating) return;
+    setUpdating(id);
+    try {
+      const r = await updateHandoverWithRefresh(session, id, { status: "COMPLETED" });
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setHandovers((prev) => prev.map((h) => h.id === id ? r.data! : h));
+    } finally {
+      setUpdating(null);
+    }
+  }
+
   return (
     <div className={styles.pageBody}>
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>ADMIN / KNOWLEDGE</div>
           <h1 className={styles.pageTitle}>Handover Management</h1>
-          <div className={styles.pageSub}>Create and monitor project handover checklists</div>
+          <div className={styles.pageSub}>Create and monitor project handover records</div>
         </div>
         <button type="button" className={cx("btnSm", "btnAccent")}>+ New Handover</button>
       </div>
+
+      {/* ── KPI Cards ── */}
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Active", value: String(handovers.filter((h) => h.status === "In Progress").length), color: "var(--amber)" },
-          { label: "Complete", value: String(handovers.filter((h) => h.status === "Complete").length), color: "var(--accent)" },
-          { label: "Pending", value: String(handovers.filter((h) => h.status === "Not Started").length), color: "var(--red)" },
+          { label: "Active",   value: String(active),   cls: "colorAmber"  },
+          { label: "Complete", value: String(complete), cls: "colorAccent" },
+          { label: "Pending",  value: String(pending),  cls: "colorRed"    },
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue)} style={{ color: s.color }}>{s.value}</div>
+            <div className={cx(styles.statValue, s.cls)}>{s.value}</div>
           </div>
         ))}
       </div>
-      <div className={cx("flexCol", "gap16")}>
-        {handovers.map((h) => (
-          <article key={h.id} className={styles.card}>
-            <div className={cx(styles.cardHd)}><span className={styles.cardHdTitle}>{h.project}</span><span className={cx("badge", h.status === "Complete" ? "badgeGreen" : h.status === "In Progress" ? "badgeAmber" : "badgeRed")}>{h.status}</span></div>
-            <div className={styles.cardInner}>
-              <div className={cx("flexBetween", "mb8")}>
-                <span className={cx("text12", "colorMuted")}>From: <strong>{h.from}</strong> → To: <strong>{h.to}</strong></span>
-                <span className={cx("text12", "colorMuted")}>Due: {h.dueDate}</span>
+
+      {/* ── Handover cards ── */}
+      {handovers.length === 0 ? (
+        <div className={cx("colorMuted", "text12", "textCenter", "py24")}>
+          No handovers recorded yet.
+        </div>
+      ) : (
+        <div className={cx("flexCol", "gap16")}>
+          {handovers.map((h) => (
+            <article key={h.id} className={styles.card}>
+              <div className={cx(styles.cardHd)}>
+                <span className={styles.cardHdTitle}>
+                  {h.fromStaffName ?? "Unknown"} → {h.toStaffName ?? "TBD"}
+                </span>
+                <span className={cx("badge", statusBadge(h.status))}>{statusLabel(h.status)}</span>
               </div>
-              <div className={cx("flexBetween", "mb4")}>
-                <span className={cx("text11", "colorMuted")}>{h.items} checklist items</span>
-                <span className={cx("fontMono", "text11")}>{h.progress}%</span>
+              <div className={styles.cardInner}>
+                <div className={cx("flexBetween", "mb8")}>
+                  <span className={cx("text12", "colorMuted")}>
+                    {h.projectId ? `Project: ${h.projectId}` : h.clientId ? `Client: ${h.clientId}` : "No project/client linked"}
+                  </span>
+                  <span className={cx("text12", "colorMuted")}>Transfer: {formatDate(h.transferDate)}</span>
+                </div>
+                {h.notes && (
+                  <div className={cx("text12", "colorMuted", "mb12")}>{h.notes}</div>
+                )}
+                {(h.status.toUpperCase() === "PENDING" || h.status.toUpperCase() === "IN_PROGRESS") && (
+                  <button
+                    type="button"
+                    className={cx("btnSm", "btnAccent")}
+                    disabled={updating === h.id}
+                    onClick={() => void handleComplete(h.id)}
+                  >
+                    {updating === h.id ? "…" : "Mark Complete"}
+                  </button>
+                )}
               </div>
-              <progress max={100} value={h.progress} style={{ width: "100%", height: "4px", accentColor: "var(--accent)" }} />
-            </div>
-          </article>
-        ))}
-      </div>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

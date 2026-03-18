@@ -1,108 +1,260 @@
+// ════════════════════════════════════════════════════════════════════════════
+// client-health-summary-page.tsx — Staff Client Health Summary
+// Data : getStaffAllHealthScores → GET /staff/health-scores
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
+import { useEffect, useState } from "react";
 import { cx } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import {
+  getStaffAllHealthScores,
+  type StaffHealthScoreEntry,
+} from "../../../../lib/api/staff/clients";
 
-const clients = [
-  { name: "Volta Studios", avatar: "VS", healthScore: 88, trend: "up" as const, sentiment: "Positive", responseTime: "2.4h", portalLogins: 18, lastContact: "Today", milestoneCompletion: 75, paymentStatus: "Current" },
-  { name: "Kestrel Capital", avatar: "KC", healthScore: 42, trend: "down" as const, sentiment: "Negative", responseTime: "8.1h", portalLogins: 3, lastContact: "5 days ago", milestoneCompletion: 89, paymentStatus: "Overdue" },
-  { name: "Mira Health", avatar: "MH", healthScore: 72, trend: "stable" as const, sentiment: "Neutral", responseTime: "3.6h", portalLogins: 11, lastContact: "Yesterday", milestoneCompletion: 50, paymentStatus: "Current" },
-  { name: "Dune Collective", avatar: "DC", healthScore: 31, trend: "down" as const, sentiment: "Negative", responseTime: "12.3h", portalLogins: 1, lastContact: "8 days ago", milestoneCompletion: 100, paymentStatus: "Overdue" },
-  { name: "Okafor & Sons", avatar: "OS", healthScore: 95, trend: "up" as const, sentiment: "Positive", responseTime: "1.2h", portalLogins: 24, lastContact: "Today", milestoneCompletion: 34, paymentStatus: "Current" },
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function healthColor(score: number) {
-  if (score >= 80) return "colorGreen";
-  if (score >= 60) return "colorAmber";
+function scoreColor(n: number) {
+  if (n >= 80) return "colorGreen";
+  if (n >= 60) return "colorAmber";
   return "colorRed";
 }
 
-function healthBadge(score: number) {
-  if (score >= 80) return { label: "Healthy", tone: "badgeGreen" as const };
-  if (score >= 60) return { label: "Moderate", tone: "badgeAmber" as const };
-  return { label: "At Risk", tone: "badgeRed" as const };
+function scoreFill(n: number) {
+  if (n >= 80) return "chsHealthFillGreen";
+  if (n >= 60) return "chsHealthFillAmber";
+  return "chsHealthFillRed";
 }
 
-function trendIcon(trend: string) {
-  if (trend === "up") return "↑";
-  if (trend === "down") return "↓";
+function healthLabel(n: number) {
+  if (n >= 80) return { text: "Healthy",  cls: "chsBadgeGreen" };
+  if (n >= 60) return { text: "Moderate", cls: "chsBadgeAmber" };
+  return              { text: "At Risk",  cls: "chsBadgeRed"   };
+}
+
+type Trend = "up" | "down" | "stable";
+
+function trendCls(t: Trend) {
+  if (t === "up")   return "chsTrendUp";
+  if (t === "down") return "chsTrendDown";
+  return "chsTrendStable";
+}
+
+function trendGlyph(t: Trend) {
+  if (t === "up")   return "↑";
+  if (t === "down") return "↓";
   return "→";
 }
 
-function sentimentTone(s: string) {
-  if (s === "Positive") return "badgeGreen";
-  if (s === "Negative") return "badgeRed";
-  return "badgeAmber";
+function sentimentCls(s: string) {
+  if (s === "positive") return "chsSentGreen";
+  if (s === "at_risk")  return "chsSentRed";
+  return "chsSentAmber";
 }
 
-export function ClientHealthSummaryPage({ isActive }: { isActive: boolean }) {
-  const avgHealth = Math.round(clients.reduce((s, c) => s + c.healthScore, 0) / clients.length);
-  const atRisk = clients.filter((c) => c.healthScore < 60).length;
+function sentimentLabel(s: string) {
+  if (s === "positive") return "Positive";
+  if (s === "at_risk")  return "At Risk";
+  return "Neutral";
+}
+
+function paymentCls(p: string) {
+  return p === "paid" ? "chsPayGreen" : "chsPayRed";
+}
+
+function paymentLabel(p: string) {
+  if (p === "paid")    return "Paid";
+  if (p === "pending") return "Pending";
+  return "Overdue";
+}
+
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "short" });
+  } catch {
+    return iso;
+  }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function ClientHealthSummaryPage({
+  isActive,
+  session,
+}: {
+  isActive: boolean;
+  session: AuthSession | null;
+}) {
+  const [entries, setEntries] = useState<StaffHealthScoreEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!session) { setLoading(false); return; }
+    let cancelled = false;
+    void getStaffAllHealthScores(session).then((r) => {
+      if (cancelled) return;
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setEntries(r.data);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [session?.accessToken]);
+
+  const avgHealth = entries.length > 0
+    ? Math.round(entries.reduce((s, c) => s + c.score, 0) / entries.length)
+    : 0;
+  const healthy = entries.filter((c) => c.score >= 80).length;
+  const atRisk  = entries.filter((c) => c.score < 60).length;
+  const sorted  = [...entries].sort((a, b) => a.score - b.score);
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-client-health-summary">
       <div className={cx("pageHeaderBar")}>
         <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
         <h1 className={cx("pageTitleText")}>Client Health Summary</h1>
-        <p className={cx("pageSubtitleText", "mb20")}>Health badges and key indicators for assigned clients</p>
+        <p className={cx("pageSubtitleText", "mb20")}>Health scores and key indicators for all assigned clients</p>
       </div>
 
-      <div className={cx("stats", "stats3", "mb28")}>
-        {[
-          { label: "Avg Health Score", value: String(avgHealth), tone: healthColor(avgHealth) },
-          { label: "At Risk", value: String(atRisk), tone: atRisk > 0 ? "colorRed" : "colorGreen" },
-          { label: "Total Clients", value: String(clients.length), tone: "colorAccent" },
-        ].map((stat) => (
-          <div key={stat.label} className={cx("card")}>
-            <div className={cx("text10", "colorMuted2", "uppercase", "tracking", "mb6")}>{stat.label}</div>
-            <div className={cx("fontDisplay", "fw800", "text20", stat.tone)}>{stat.value}</div>
+      {/* ── Summary stats ── */}
+      <div className={cx("chsStatGrid")}>
+
+        <div className={cx("chsStatCard")}>
+          <div className={cx("chsStatCardTop")}>
+            <div className={cx("chsStatLabel")}>Avg Health Score</div>
+            <div className={cx("chsStatValue", scoreColor(avgHealth))}>{loading ? "…" : avgHealth}</div>
           </div>
-        ))}
+          <div className={cx("chsStatCardDivider")} />
+          <div className={cx("chsStatCardBottom")}>
+            <span className={cx("chsStatDot", "dynBgColor")} style={{ "--bg-color": avgHealth >= 80 ? "var(--green)" : avgHealth >= 60 ? "var(--amber)" : "var(--red)" } as React.CSSProperties} />
+            <span className={cx("chsStatMeta")}>across all clients</span>
+          </div>
+        </div>
+
+        <div className={cx("chsStatCard")}>
+          <div className={cx("chsStatCardTop")}>
+            <div className={cx("chsStatLabel")}>Healthy</div>
+            <div className={cx("chsStatValue", "colorGreen")}>{loading ? "…" : healthy}</div>
+          </div>
+          <div className={cx("chsStatCardDivider")} />
+          <div className={cx("chsStatCardBottom")}>
+            <span className={cx("chsStatDot", "dotBgGreen")} />
+            <span className={cx("chsStatMeta")}>score ≥ 80</span>
+          </div>
+        </div>
+
+        <div className={cx("chsStatCard")}>
+          <div className={cx("chsStatCardTop")}>
+            <div className={cx("chsStatLabel")}>At Risk</div>
+            <div className={cx("chsStatValue", atRisk > 0 ? "colorRed" : "colorGreen")}>{loading ? "…" : atRisk}</div>
+          </div>
+          <div className={cx("chsStatCardDivider")} />
+          <div className={cx("chsStatCardBottom")}>
+            <span className={cx("chsStatDot", "dynBgColor")} style={{ "--bg-color": atRisk > 0 ? "var(--red)" : "var(--muted2)" } as React.CSSProperties} />
+            <span className={cx("chsStatMeta")}>{atRisk > 0 ? "needs attention" : "all clear"}</span>
+          </div>
+        </div>
+
+        <div className={cx("chsStatCard")}>
+          <div className={cx("chsStatCardTop")}>
+            <div className={cx("chsStatLabel")}>Total Clients</div>
+            <div className={cx("chsStatValue", "colorAccent")}>{loading ? "…" : entries.length}</div>
+          </div>
+          <div className={cx("chsStatCardDivider")} />
+          <div className={cx("chsStatCardBottom")}>
+            <span className={cx("chsStatDot", "dotBgAccent")} />
+            <span className={cx("chsStatMeta")}>assigned to you</span>
+          </div>
+        </div>
+
       </div>
 
-      <div className={cx("flexCol", "gap16")}>
-        {clients.sort((a, b) => a.healthScore - b.healthScore).map((client) => {
-          const badge = healthBadge(client.healthScore);
-          return (
-            <div key={client.name} className={cx("card", "cardBody")}>
-              <div className={cx("flexBetween", "mb12")}>
-                <div className={cx("flex", "gap12", "alignCenter")}>
-                  <div className={cx("profileCircle", "profileCircleSm")}>{client.avatar}</div>
-                  <div>
-                    <div className={cx("fw700", "text14")}>{client.name}</div>
-                    <div className={cx("text11", "colorMuted")}>Last contact: {client.lastContact}</div>
+      {/* ── Client cards ── */}
+      <div className={cx("chsSection")}>
+
+        <div className={cx("chsSectionHeader")}>
+          <div className={cx("chsSectionTitle")}>All Clients</div>
+          <span className={cx("chsSectionMeta")}>{sorted.length} CLIENT{sorted.length !== 1 ? "S" : ""}</span>
+        </div>
+
+        {loading ? (
+          <div className={cx("colorMuted2", "text12", "mt16")}>Loading health scores…</div>
+        ) : sorted.length === 0 ? (
+          <div className={cx("emptyState")}>
+            <div className={cx("emptyStateIcon")}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+            <div className={cx("emptyStateTitle")}>No client data yet</div>
+            <p className={cx("emptyStateSub")}>Health scores will appear once clients are assigned to you.</p>
+          </div>
+        ) : (
+          <div className={cx("chsCardList")}>
+            {sorted.map((entry, idx) => {
+              const badge = healthLabel(entry.score);
+              return (
+                <div key={entry.id} className={cx("chsClientCard", idx === sorted.length - 1 && "chsClientCardLast")}>
+
+                  {/* Head: avatar + name + score + trend + badge */}
+                  <div className={cx("chsClientHead")}>
+                    <div className={cx("chsClientLeft")}>
+                      <div className={cx("chsAvatar")}>{entry.avatar}</div>
+                      <div>
+                        <div className={cx("chsClientName")}>{entry.name}</div>
+                        <div className={cx("chsClientContact")}>Last contact: {formatDate(entry.lastTouched)}</div>
+                      </div>
+                    </div>
+                    <div className={cx("chsClientRight")}>
+                      <span className={cx("chsScore", scoreColor(entry.score))}>{entry.score}</span>
+                      <span className={cx("chsTrend", trendCls(entry.trend))}>{trendGlyph(entry.trend)}</span>
+                      <span className={cx("chsHealthBadge", badge.cls)}>{badge.text}</span>
+                    </div>
                   </div>
-                </div>
-                <div className={cx("flex", "gap8", "alignCenter")}>
-                  <span className={cx("fontDisplay", "fw800", "text20", healthColor(client.healthScore))}>
-                    {client.healthScore}
-                    <span className={cx("text12", client.trend === "up" ? "colorGreen" : client.trend === "down" ? "colorRed" : "colorMuted")}> {trendIcon(client.trend)}</span>
-                  </span>
-                  <span className={cx("badge", badge.tone)}>{badge.label}</span>
-                </div>
-              </div>
 
-              <div className={cx("stats", "stats4")}>
-                <div>
-                  <div className={cx("text10", "colorMuted2", "uppercase", "tracking")}>Sentiment</div>
-                  <span className={cx("badge", sentimentTone(client.sentiment))}>{client.sentiment}</span>
+                  {/* Health score bar */}
+                  <div className={cx("chsHealthBarWrap")}>
+                    <div className={cx("chsHealthBarMeta")}>
+                      <span className={cx("chsHealthBarLabel")}>Health Score</span>
+                      <span className={cx("chsHealthBarPct", scoreColor(entry.score))}>{entry.score}</span>
+                    </div>
+                    <div className={cx("chsHealthTrack")}>
+                      <div className={cx("chsHealthFill", scoreFill(entry.score))} style={{ '--pct': `${entry.score}%` } as React.CSSProperties} />
+                    </div>
+                  </div>
+
+                  {/* Metrics strip */}
+                  <div className={cx("chsMetrics")}>
+                    <div className={cx("chsMetricCell")}>
+                      <div className={cx("chsMetricLabel")}>Sentiment</div>
+                      <span className={cx("chsMetricBadge", sentimentCls(entry.sentiment))}>{sentimentLabel(entry.sentiment)}</span>
+                    </div>
+                    <div className={cx("chsMetricCell")}>
+                      <div className={cx("chsMetricLabel")}>Overdue Tasks</div>
+                      <div className={cx("chsMetricValue", entry.overdueTasks > 0 ? "colorRed" : "colorGreen")}>{entry.overdueTasks}</div>
+                    </div>
+                    <div className={cx("chsMetricCell")}>
+                      <div className={cx("chsMetricLabel")}>Unread Msgs</div>
+                      <div className={cx("chsMetricValue", entry.unreadMessages > 0 ? "colorAmber" : "colorMuted2")}>{entry.unreadMessages}</div>
+                    </div>
+                    <div className={cx("chsMetricCell")}>
+                      <div className={cx("chsMetricLabel")}>Milestone Delay</div>
+                      <div className={cx("chsMetricValue", entry.milestoneDelay > 0 ? "colorAmber" : "colorGreen")}>
+                        {entry.milestoneDelay > 0 ? `${entry.milestoneDelay}d` : "On track"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer: invoice status */}
+                  <div className={cx("chsClientFooter")}>
+                    <span className={cx("chsPayBadge", paymentCls(entry.invoiceStatus))}>{paymentLabel(entry.invoiceStatus)}</span>
+                    <span className={cx("chsFooterLabel")}>Invoice status</span>
+                  </div>
+
                 </div>
-                <div>
-                  <div className={cx("text10", "colorMuted2", "uppercase", "tracking")}>Response Time</div>
-                  <div className={cx("fontMono", "fw600", "text12")}>{client.responseTime}</div>
-                </div>
-                <div>
-                  <div className={cx("text10", "colorMuted2", "uppercase", "tracking")}>Portal Activity</div>
-                  <div className={cx("fontMono", "fw600", "text12")}>{client.portalLogins} logins</div>
-                </div>
-                <div>
-                  <div className={cx("text10", "colorMuted2", "uppercase", "tracking")}>Milestones</div>
-                  <div className={cx("fontMono", "fw600", "text12")}>{client.milestoneCompletion}% done</div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        )}
+
       </div>
+
     </section>
   );
 }

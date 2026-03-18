@@ -1,6 +1,6 @@
 import type { ApiResponse } from "@maphari/contracts";
 
-type HttpMethod = "GET" | "POST" | "PATCH" | "PUT";
+type HttpMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
 export async function proxyRequest<TResponse = unknown, TBody = unknown>(
   url: string,

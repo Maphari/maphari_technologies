@@ -21,3 +21,28 @@ model FileRecord {
   @@index([clientId, createdAt])
   @@map("files")
 }
+
+/// Admin Document Vault — structured metadata for uploaded company documents.
+/// Documents are stored in S3 (storageKey) and tracked here with rich metadata.
+/// clientId is optional: null means the document belongs to the company (admin-only).
+model VaultDocument {
+  id          String    @id @default(uuid())
+  title       String
+  category    String    @default("MISC")    // CONTRACT | BRIEF | DELIVERABLE | INVOICE | ASSET | TEMPLATE | MISC
+  description String?
+  status      String    @default("PUBLISHED") // DRAFT | PUBLISHED | ARCHIVED
+  clientId    String?                          // null = company-wide doc
+  fileName    String
+  mimeType    String
+  sizeBytes   BigInt    @default(0)
+  storageKey  String
+  uploadedBy  String    @default("admin")
+  version     Int       @default(1)
+  tags        String[]  @default([])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([category, status])
+  @@index([clientId, createdAt])
+  @@map("vault_documents")
+}

@@ -24,130 +24,7 @@ const deliverables: Array<{
   revisions: Array<{ date: string; note: string; requestedBy: string }>;
   score: number | null;
   checklist: Array<{ item: string; done: boolean }>;
-}> = [
-  {
-    id: "DLV-041",
-    project: "Brand Identity System",
-    client: "Volta Studios",
-    clientColor: "var(--accent)",
-    name: "Logo System & Variants",
-    type: "Design",
-    assignee: "Renzo Fabbri",
-    reviewer: "Sipho Nkosi",
-    submittedDate: "Feb 20",
-    reviewDue: "Feb 24",
-    status: "in-review",
-    round: 1,
-    revisions: [],
-    score: null,
-    checklist: [
-      { item: "Meets brand brief requirements", done: true },
-      { item: "All file formats provided (SVG, PNG, PDF)", done: true },
-      { item: "Dark & light variants included", done: true },
-      { item: "Responsive/favicon versions included", done: false },
-      { item: "Colour accessibility checked", done: false },
-    ],
-  },
-  {
-    id: "DLV-040",
-    project: "Website Redesign",
-    client: "Mira Health",
-    clientColor: "var(--blue)",
-    name: "Homepage Wireframe",
-    type: "UX",
-    assignee: "Kira Bosman",
-    reviewer: "Leilani Fotu",
-    submittedDate: "Feb 18",
-    reviewDue: "Feb 21",
-    status: "changes-requested",
-    round: 2,
-    revisions: [
-      { date: "Feb 19", note: "CTA hierarchy unclear - hero section needs revision", requestedBy: "Leilani Fotu" },
-      { date: "Feb 22", note: "Mobile layout still does not reflect nav requirements", requestedBy: "Leilani Fotu" },
-    ],
-    score: null,
-    checklist: [
-      { item: "Matches UX brief scope", done: true },
-      { item: "Mobile-first structure verified", done: false },
-      { item: "Content blocks match sitemap", done: true },
-      { item: "Navigation pattern consistent", done: false },
-      { item: "Accessibility annotations included", done: false },
-    ],
-  },
-  {
-    id: "DLV-039",
-    project: "Q1 Campaign Strategy",
-    client: "Kestrel Capital",
-    clientColor: "var(--purple)",
-    name: "Campaign Strategy Deck",
-    type: "Strategy",
-    assignee: "Nomsa Dlamini",
-    reviewer: "Sipho Nkosi",
-    submittedDate: "Feb 15",
-    reviewDue: "Feb 17",
-    status: "approved",
-    round: 1,
-    revisions: [],
-    score: 88,
-    checklist: [
-      { item: "Objectives clearly defined", done: true },
-      { item: "Target audience documented", done: true },
-      { item: "Channel strategy justified", done: true },
-      { item: "KPIs and measurement plan included", done: true },
-      { item: "Budget allocation included", done: true },
-    ],
-  },
-  {
-    id: "DLV-038",
-    project: "Annual Report 2025",
-    client: "Okafor & Sons",
-    clientColor: "var(--amber)",
-    name: "Annual Report Draft v2",
-    type: "Copy + Design",
-    assignee: "Tapiwa Moyo",
-    reviewer: "Renzo Fabbri",
-    submittedDate: "Feb 21",
-    reviewDue: "Feb 25",
-    status: "in-review",
-    round: 2,
-    revisions: [{ date: "Feb 17", note: "Page count exceeded - reduce section 3 by 2 pages", requestedBy: "Renzo Fabbri" }],
-    score: null,
-    checklist: [
-      { item: "Word count within spec", done: true },
-      { item: "All financial data verified", done: true },
-      { item: "Photography sourced and licensed", done: true },
-      { item: "Print-ready specs met", done: false },
-      { item: "Client brand guidelines applied", done: true },
-    ],
-  },
-  {
-    id: "DLV-037",
-    project: "Editorial Design System",
-    client: "Dune Collective",
-    clientColor: "var(--amber)",
-    name: "Template Library - Vol 1",
-    type: "Design",
-    assignee: "Renzo Fabbri",
-    reviewer: "Sipho Nkosi",
-    submittedDate: "Feb 10",
-    reviewDue: "Feb 12",
-    status: "rejected",
-    round: 3,
-    revisions: [
-      { date: "Feb 11", note: "Typography system doesn't match editorial tone", requestedBy: "Sipho Nkosi" },
-      { date: "Feb 14", note: "Layout grid inconsistent across templates", requestedBy: "Sipho Nkosi" },
-      { date: "Feb 19", note: "Still not meeting client brand standards - escalate conversation", requestedBy: "Sipho Nkosi" },
-    ],
-    score: null,
-    checklist: [
-      { item: "Typography system consistent", done: false },
-      { item: "Grid system applied correctly", done: false },
-      { item: "All 12 templates included", done: true },
-      { item: "Editable formats provided", done: true },
-      { item: "Client branding applied", done: false },
-    ],
-  },
-];
+}> = [];
 
 const statusConfig: Record<DeliverableStatus, { color: string; label: string; bg: string }> = {
   "in-review": { color: "var(--blue)", label: "In Review", bg: "color-mix(in srgb, var(--blue) 8%, transparent)" },
@@ -173,8 +50,8 @@ export function QualityAssurancePage() {
 
   const pending = deliverables.filter((d) => d.status === "in-review" || d.status === "changes-requested");
   const approved = deliverables.filter((d) => d.status === "approved");
-  const avgRounds = (deliverables.reduce((s, d) => s + d.round, 0) / deliverables.length).toFixed(1);
-  const approvalRate = Math.round((approved.length / deliverables.length) * 100);
+  const avgRounds = deliverables.length > 0 ? (deliverables.reduce((s, d) => s + d.round, 0) / deliverables.length).toFixed(1) : "0.0";
+  const approvalRate = deliverables.length > 0 ? Math.round((approved.length / deliverables.length) * 100) : 0;
 
   const filtered =
     activeTab === "pending review"
@@ -356,7 +233,7 @@ export function QualityAssurancePage() {
         <div className={cx("grid2", "gap20")}>
           <div className={cx("card", "p24")}>
             <div className={cx("text13", "fw700", "mb20", "uppercase")}>Revision Rounds by Assignee</div>
-            {["Renzo Fabbri", "Kira Bosman", "Nomsa Dlamini", "Tapiwa Moyo"].map((name) => {
+            {[...new Set(deliverables.map((d) => d.assignee))].map((name) => {
               const theirWork = deliverables.filter((d) => d.assignee === name);
               const avg = theirWork.length > 0 ? (theirWork.reduce((s, d) => s + d.round, 0) / theirWork.length).toFixed(1) : "0.0";
               const avgNum = parseFloat(avg);
@@ -381,19 +258,30 @@ export function QualityAssurancePage() {
                 <div key={status} className={cx("flexRow", "gap12", "mb12", styles.qaAlignCenter)}>
                   <span className={cx("text12", styles.qaFlex1, styles.qaToneText, toneClass(cfg.color))}>{cfg.label}</span>
                   <div className={cx("progressBar", styles.qaTrack80)}>
-                    <progress className={cx("barFill", "uiProgress", styles.qaFillRound3, toneClass(cfg.color))} max={100} value={(count / deliverables.length) * 100} />
+                    <progress className={cx("barFill", "uiProgress", styles.qaFillRound3, toneClass(cfg.color))} max={100} value={deliverables.length > 0 ? (count / deliverables.length) * 100 : 0} />
                   </div>
                   <span className={cx("fontMono", "fw700", "textRight", styles.qaToneText, styles.qaW20, toneClass(cfg.color))}>{count}</span>
                 </div>
               );
               })}
             </div>
-            <div className={cx("card", "p20", styles.qaAdvisoryCard)}>
-              <div className={cx("fw700", "colorAmber", "mb8")}>&#9888; QA Advisory</div>
-              <div className={cx("text12", "colorMuted", styles.qaLine17)}>
-                Dune Collective deliverable is on round 3. This signals a deeper scope or communication issue - recommend admin-level conversation before submitting again.
-              </div>
-            </div>
+            {(() => {
+              const highRound = deliverables.find((d) => d.round >= 3 && d.status !== "approved");
+              return (
+                <div className={cx("card", "p20", styles.qaAdvisoryCard)}>
+                  {highRound ? (
+                    <>
+                      <div className={cx("fw700", "colorAmber", "mb8")}>&#9888; QA Advisory</div>
+                      <div className={cx("text12", "colorMuted", styles.qaLine17)}>
+                        {highRound.client} deliverable is on round {highRound.round}. This signals a deeper scope or communication issue — recommend admin-level conversation before submitting again.
+                      </div>
+                    </>
+                  ) : (
+                    <div className={cx("text12", "colorMuted", styles.qaLine17)}>No active QA advisories at this time.</div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       ) : null}

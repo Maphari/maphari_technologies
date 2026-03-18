@@ -1,19 +1,29 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import {
+  getMyTasks,
+  type StaffTask
+} from "../../../../lib/api/staff/tasks";
+import {
+  getStaffProjects,
+  type StaffProject
+} from "../../../../lib/api/staff/projects";
 import { cx } from "../style";
 
 type Status = "done" | "in_progress" | "in_revision" | "awaiting_approval" | "not_started";
 
 type ClientRow = {
-  id: number;
+  id: string;
   name: string;
   avatar: string;
 };
 
 type TaskRow = {
   id: string;
-  clientId: number;
+  clientId: string;
   title: string;
   status: Status;
   due: string;
@@ -21,74 +31,180 @@ type TaskRow = {
   blocking: string[];
 };
 
-const clients: ClientRow[] = [
-  { id: 1, name: "Volta Studios", avatar: "VS" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC" },
-  { id: 3, name: "Mira Health", avatar: "MH" },
-  { id: 4, name: "Dune Collective", avatar: "DC" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS" }
-];
-
-const allTasks: TaskRow[] = [
-  { id: "v1", clientId: 1, title: "Logo & Visual Direction", status: "awaiting_approval", due: "Feb 22", blockedBy: [], blocking: ["v2", "v3"] },
-  { id: "v2", clientId: 1, title: "Brand Guidelines Document", status: "not_started", due: "Mar 3", blockedBy: ["v1"], blocking: ["v3"] },
-  { id: "v3", clientId: 1, title: "Animation Direction Deck", status: "not_started", due: "Mar 10", blockedBy: ["v1", "v2"], blocking: [] },
-
-  { id: "k1", clientId: 2, title: "Audience Segmentation Analysis", status: "done", due: "Feb 14", blockedBy: [], blocking: ["k2"] },
-  { id: "k2", clientId: 2, title: "Campaign Strategy Deck", status: "awaiting_approval", due: "Feb 17", blockedBy: ["k1"], blocking: ["k3", "k4"] },
-  { id: "k3", clientId: 2, title: "LinkedIn Channel Brief", status: "in_progress", due: "Feb 26", blockedBy: ["k2"], blocking: ["k5"] },
-  { id: "k4", clientId: 2, title: "Paid Media Plan", status: "not_started", due: "Mar 5", blockedBy: ["k2"], blocking: ["k5"] },
-  { id: "k5", clientId: 2, title: "Content Calendar Q1", status: "not_started", due: "Mar 12", blockedBy: ["k3", "k4"], blocking: [] },
-
-  { id: "m1", clientId: 3, title: "Mobile Wireframes", status: "in_revision", due: "Feb 24", blockedBy: [], blocking: ["m2"] },
-  { id: "m2", clientId: 3, title: "Desktop Wireframes", status: "not_started", due: "Feb 28", blockedBy: ["m1"], blocking: ["m3"] },
-  { id: "m3", clientId: 3, title: "Component Library", status: "not_started", due: "Mar 7", blockedBy: ["m2"], blocking: ["m4"] },
-  { id: "m4", clientId: 3, title: "Framer Build & Handover", status: "not_started", due: "Mar 21", blockedBy: ["m3"], blocking: [] },
-
-  { id: "d1", clientId: 4, title: "Type & Grid System", status: "awaiting_approval", due: "Feb 9", blockedBy: [], blocking: ["d2"] },
-  { id: "d2", clientId: 4, title: "Master Template Set", status: "not_started", due: "Mar 1", blockedBy: ["d1"], blocking: [] },
-
-  { id: "o1", clientId: 5, title: "Data Visualisation Suite", status: "done", due: "Feb 19", blockedBy: [], blocking: ["o2"] },
-  { id: "o2", clientId: 5, title: "Layout & Typesetting", status: "in_progress", due: "Feb 27", blockedBy: ["o1"], blocking: ["o3"] },
-  { id: "o3", clientId: 5, title: "Cover Design (3 options)", status: "not_started", due: "Mar 3", blockedBy: ["o2"], blocking: ["o4"] },
-  { id: "o4", clientId: 5, title: "Final PDF Export & Print Prep", status: "not_started", due: "Mar 10", blockedBy: ["o3"], blocking: [] }
-];
-
 const statusConfig: Record<Status, { label: string; icon: string }> = {
-  done: { label: "Done", icon: "✓" },
-  in_progress: { label: "In Progress", icon: "●" },
-  in_revision: { label: "In Revision", icon: "↻" },
-  awaiting_approval: { label: "Awaiting Approval", icon: "◎" },
-  not_started: { label: "Not Started", icon: "○" }
+  done: { label: "Done", icon: "\u2713" },
+  in_progress: { label: "In Progress", icon: "\u25CF" },
+  in_revision: { label: "In Revision", icon: "\u21BB" },
+  awaiting_approval: { label: "Awaiting Approval", icon: "\u25CE" },
+  not_started: { label: "Not Started", icon: "\u25CB" }
 };
 
-const taskById = new Map(allTasks.map((task) => [task.id, task]));
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function isBlocked(task: TaskRow) {
-  return task.blockedBy.some((depId) => {
-    const dep = taskById.get(depId);
-    return dep ? dep.status !== "done" : false;
-  });
-}
-
-function getDepth(taskId: string, memo: Record<string, number> = {}) {
-  if (memo[taskId] !== undefined) return memo[taskId];
-  const task = taskById.get(taskId);
-  if (!task || task.blockedBy.length === 0) {
-    memo[taskId] = 0;
-    return 0;
+function mapApiStatus(raw: string): Status {
+  switch (raw) {
+    case "DONE":
+      return "done";
+    case "IN_PROGRESS":
+      return "in_progress";
+    case "BLOCKED":
+      return "not_started"; // blocked tasks treated as not yet startable
+    default:
+      return "not_started";
   }
-  const maxParent = Math.max(...task.blockedBy.map((parentId) => getDepth(parentId, memo)));
-  memo[taskId] = maxParent + 1;
-  return maxParent + 1;
 }
 
-export function TaskDependenciesPage({ isActive }: { isActive: boolean }) {
+function formatDate(iso: string | null): string {
+  if (!iso) return "TBD";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-ZA", { day: "numeric", month: "short" });
+}
+
+function getInitial(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function buildDependencyLinks(
+  tasks: StaffTask[],
+  projectId: string
+): { blockedByMap: Map<string, string[]>; blockingMap: Map<string, string[]> } {
+  // Since the API doesn't expose explicit dependency edges, we infer:
+  // BLOCKED tasks depend on IN_PROGRESS tasks in the same project.
+  const blockedByMap = new Map<string, string[]>();
+  const blockingMap = new Map<string, string[]>();
+
+  const projectTasks = tasks.filter((t) => t.projectId === projectId);
+  const blockedTasks = projectTasks.filter((t) => t.status === "BLOCKED");
+  const inProgressTasks = projectTasks.filter((t) => t.status === "IN_PROGRESS");
+
+  for (const bt of blockedTasks) {
+    const deps = inProgressTasks.map((ip) => ip.id);
+    blockedByMap.set(bt.id, deps);
+    for (const ip of inProgressTasks) {
+      const existing = blockingMap.get(ip.id) ?? [];
+      existing.push(bt.id);
+      blockingMap.set(ip.id, existing);
+    }
+  }
+
+  return { blockedByMap, blockingMap };
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+type PageProps = {
+  isActive: boolean;
+  session: AuthSession | null;
+};
+
+export function TaskDependenciesPage({ isActive, session }: PageProps) {
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [selected, setSelected] = useState<TaskRow | null>(null);
   const [highlight, setHighlight] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [clients, setClients] = useState<ClientRow[]>([]);
+  const [allTasks, setAllTasks] = useState<TaskRow[]>([]);
 
-  const filteredClients = clientFilter === "all" ? clients : clients.filter((client) => client.id === Number(clientFilter));
+  // ── Fetch data ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!session?.accessToken) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+
+      // Fetch projects to build client rows
+      const projectsResult = await getStaffProjects(session);
+      if (cancelled) return;
+      if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
+
+      const projects: StaffProject[] = projectsResult.data ?? [];
+
+      // Fetch tasks
+      const tasksResult = await getMyTasks(projectsResult.nextSession ?? session);
+      if (cancelled) return;
+      if (tasksResult.nextSession) saveSession(tasksResult.nextSession);
+
+      const apiTasks: StaffTask[] = tasksResult.data ?? [];
+
+      // Build unique client rows from projects
+      const clientMap = new Map<string, ClientRow>();
+      for (const p of projects) {
+        if (!clientMap.has(p.clientId)) {
+          const name = p.ownerName ?? p.name;
+          clientMap.set(p.clientId, {
+            id: p.clientId,
+            name,
+            avatar: getInitial(name)
+          });
+        }
+      }
+
+      // Build task rows with inferred dependency links
+      const projectIdToClientId = new Map(projects.map((p) => [p.id, p.clientId]));
+      const uniqueProjectIds = [...new Set(apiTasks.map((t) => t.projectId))];
+
+      const allBlockedByMap = new Map<string, string[]>();
+      const allBlockingMap = new Map<string, string[]>();
+
+      for (const pid of uniqueProjectIds) {
+        const { blockedByMap, blockingMap } = buildDependencyLinks(apiTasks, pid);
+        for (const [k, v] of blockedByMap) allBlockedByMap.set(k, v);
+        for (const [k, v] of blockingMap) allBlockingMap.set(k, v);
+      }
+
+      const taskRows: TaskRow[] = apiTasks.map((t) => ({
+        id: t.id,
+        clientId: projectIdToClientId.get(t.projectId) ?? t.projectId,
+        title: t.title,
+        status: mapApiStatus(t.status),
+        due: formatDate(t.dueAt),
+        blockedBy: allBlockedByMap.get(t.id) ?? [],
+        blocking: allBlockingMap.get(t.id) ?? []
+      }));
+
+      setClients(Array.from(clientMap.values()));
+      setAllTasks(taskRows);
+      setLoading(false);
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.accessToken]);
+
+  // ── Derived lookups ───────────────────────────────────────────────────────
+  const taskById = useMemo(() => new Map(allTasks.map((task) => [task.id, task])), [allTasks]);
+
+  function isBlocked(task: TaskRow) {
+    return task.blockedBy.some((depId) => {
+      const dep = taskById.get(depId);
+      return dep ? dep.status !== "done" : false;
+    });
+  }
+
+  function getDepth(taskId: string, memo: Record<string, number> = {}) {
+    if (memo[taskId] !== undefined) return memo[taskId];
+    const task = taskById.get(taskId);
+    if (!task || task.blockedBy.length === 0) {
+      memo[taskId] = 0;
+      return 0;
+    }
+    const maxParent = Math.max(...task.blockedBy.map((parentId) => getDepth(parentId, memo)));
+    memo[taskId] = maxParent + 1;
+    return maxParent + 1;
+  }
+
+  const filteredClients = clientFilter === "all" ? clients : clients.filter((client) => client.id === clientFilter);
 
   const getRelated = (task: TaskRow) => {
     const ids = new Set<string>([task.id, ...task.blockedBy, ...task.blocking]);
@@ -120,15 +236,57 @@ export function TaskDependenciesPage({ isActive }: { isActive: boolean }) {
     () =>
       filteredClients.map((client) => {
         const tasks = allTasks.filter((task) => task.clientId === client.id);
-        const maxDepth = Math.max(...tasks.map((task) => getDepth(task.id)));
+        const depths = tasks.map((task) => getDepth(task.id));
+        const maxDepth = depths.length > 0 ? Math.max(...depths) : 0;
         const columns = Array.from({ length: maxDepth + 1 }, (_, index) => tasks.filter((task) => getDepth(task.id) === index));
         return { client, columns };
       }),
-    [filteredClients]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredClients, allTasks, taskById]
   );
 
+  // ── Loading state ─────────────────────────────────────────────────────────
+  if (!isActive) return null;
+
+  if (loading) {
+    return (
+      <section className={cx("page", "pageBody", "pageActive")} id="page-task-dependencies">
+        <div className={cx("pageHeaderBar", "borderB", "tdHeaderBar")}>
+          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Planning</div>
+          <h1 className={cx("pageTitleText")}>Task Dependencies</h1>
+        </div>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateText")}>Loading task dependencies…</div>
+        </div>
+      </section>
+    );
+  }
+
+  // ── Empty state ───────────────────────────────────────────────────────────
+  if (allTasks.length === 0) {
+    return (
+      <section className={cx("page", "pageBody", "pageActive")} id="page-task-dependencies">
+        <div className={cx("pageHeaderBar", "borderB", "tdHeaderBar")}>
+          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Planning</div>
+          <h1 className={cx("pageTitleText")}>Task Dependencies</h1>
+        </div>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M9 12h6M9 16h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div className={cx("emptyStateTitle")}>No tasks found</div>
+          <div className={cx("emptyStateSub")}>Tasks will appear here once assigned to your projects.</div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-task-dependencies">
+    <section className={cx("page", "pageBody", "pageActive")} id="page-task-dependencies">
       <div className={cx("pageHeaderBar", "borderB", "tdHeaderBar")}>
         <div className={cx("flexBetween", "mb20", "tdHeaderTop")}>
           <div>
@@ -159,7 +317,7 @@ export function TaskDependenciesPage({ isActive }: { isActive: boolean }) {
           >
             <option value="all">All projects</option>
             {clients.map((client) => (
-              <option key={client.id} value={String(client.id)}>
+              <option key={client.id} value={client.id}>
                 {client.name}
               </option>
             ))}
@@ -172,15 +330,15 @@ export function TaskDependenciesPage({ isActive }: { isActive: boolean }) {
           {chains.map(({ client, columns }) => (
             <div key={client.id} className={cx("mb32")}>
               <div className={cx("tdClientHead")}>
-                <div className={cx("flexCenter", "tdClientAvatar")} data-client-id={String(client.id)}>{client.avatar}</div>
-                <span className={cx("text13", "fw600", "tdClientName")} data-client-id={String(client.id)}>{client.name}</span>
-                <div className={cx("flex1", "tdClientLine")} data-client-id={String(client.id)} />
+                <div className={cx("flexCenter", "tdClientAvatar")} data-client-id={client.id}>{client.avatar}</div>
+                <span className={cx("text13", "fw600", "tdClientName")} data-client-id={client.id}>{client.name}</span>
+                <div className={cx("flex1", "tdClientLine")} data-client-id={client.id} />
               </div>
 
-              <div className={cx("tdColumns")}> 
+              <div className={cx("tdColumns")}>
                 {columns.map((columnTasks, columnIndex) => (
                   <div key={String(columnIndex)} className={cx("tdColumnWrap")}>
-                    <div className={cx("flexCol", "gap10", "tdColumn")}> 
+                    <div className={cx("flexCol", "gap10", "tdColumn")}>
                       {columnTasks.map((task) => {
                         const status = statusConfig[task.status];
                         const blocked = isBlocked(task);
@@ -200,7 +358,7 @@ export function TaskDependenciesPage({ isActive }: { isActive: boolean }) {
                               blocked && task.status !== "done" && "tdTaskCardBlocked",
                               dimmed && "tdTaskCardDimmed"
                             )}
-                            data-client-id={String(task.clientId)}
+                            data-client-id={task.clientId}
                             onClick={() => handleSelect(task)}
                           >
                             <div className={cx("flexRow", "gap6", "mb6")}>
@@ -213,9 +371,9 @@ export function TaskDependenciesPage({ isActive }: { isActive: boolean }) {
                             <div className={cx("text10", "colorMuted2")}>Due {task.due}</div>
 
                             {task.blockedBy.length > 0 || task.blocking.length > 0 ? (
-                              <div className={cx("flexRow", "gap8", "mt6")}> 
-                                {task.blockedBy.length > 0 ? <span className={cx("textXs", "colorMuted2")}>← {task.blockedBy.length} dep{task.blockedBy.length > 1 ? "s" : ""}</span> : null}
-                                {task.blocking.length > 0 ? <span className={cx("textXs", "colorMuted2")}>{task.blocking.length} blocking →</span> : null}
+                              <div className={cx("flexRow", "gap8", "mt6")}>
+                                {task.blockedBy.length > 0 ? <span className={cx("textXs", "colorMuted2")}>&larr; {task.blockedBy.length} dep{task.blockedBy.length > 1 ? "s" : ""}</span> : null}
+                                {task.blocking.length > 0 ? <span className={cx("textXs", "colorMuted2")}>{task.blocking.length} blocking &rarr;</span> : null}
                               </div>
                             ) : null}
                           </div>
@@ -226,7 +384,7 @@ export function TaskDependenciesPage({ isActive }: { isActive: boolean }) {
                     {columnIndex < columns.length - 1 ? (
                       <div className={cx("flexCenter", "tdArrowCol", columnTasks.length > 1 ? "tdArrowColMulti" : "tdArrowColSingle")}>
                         <div className={cx("tdArrowLine")} />
-                        <div className={cx("text10", "tdArrowGlyph")}>›</div>
+                        <div className={cx("text10", "tdArrowGlyph")}>&rsaquo;</div>
                       </div>
                     ) : null}
                   </div>
@@ -254,14 +412,14 @@ export function TaskDependenciesPage({ isActive }: { isActive: boolean }) {
 
                   <div className={cx("fontDisplay", "fw800", "colorText", "mb6", "tdPanelTitle")}>{selected.title}</div>
                   <div className={cx("flexRow", "gap10")}>
-                    <span className={cx("text11", "tdClientName")} data-client-id={String(selected.clientId)}>{client?.name}</span>
+                    <span className={cx("text11", "tdClientName")} data-client-id={selected.clientId}>{client?.name}</span>
                     <span className={cx("text11", "colorMuted2")}>Due {selected.due}</span>
                   </div>
                 </div>
 
                 {blocked && selected.status !== "done" ? (
-                  <div className={cx("tdBlockedPanel")}> 
-                    <div className={cx("text11", "mb4", "tdBlockedPanelTitle")}>⚑ This task is blocked</div>
+                  <div className={cx("tdBlockedPanel")}>
+                    <div className={cx("text11", "mb4", "tdBlockedPanelTitle")}>&starf; This task is blocked</div>
                     <div className={cx("text11", "colorMuted")}>Cannot start until all dependencies are marked done.</div>
                   </div>
                 ) : null}
@@ -278,7 +436,7 @@ export function TaskDependenciesPage({ isActive }: { isActive: boolean }) {
                             <div className={cx("text12", "colorText")}>{task.title}</div>
                             <div className={cx("text10", "tdStatusTone", "tdMiniStatus")} data-status={task.status}>{taskStatus.label}</div>
                           </div>
-                          {task.status !== "done" ? <span className={cx("text10", "colorRed")}>Incomplete</span> : <span className={cx("text10", "colorAccent")}>✓ Done</span>}
+                          {task.status !== "done" ? <span className={cx("text10", "colorRed")}>Incomplete</span> : <span className={cx("text10", "colorAccent")}>&check; Done</span>}
                         </div>
                       );
                     })}
@@ -296,7 +454,7 @@ export function TaskDependenciesPage({ isActive }: { isActive: boolean }) {
                           <span className={cx("text12", "tdStatusTone")} data-status={task.status}>{taskStatus.icon}</span>
                           <div className={cx("flex1")}>
                             <div className={cx("text12", "colorText")}>{task.title}</div>
-                            <div className={cx("text10", "tdStatusTone", "tdMiniStatus")} data-status={task.status}>{taskStatus.label} · Due {task.due}</div>
+                            <div className={cx("text10", "tdStatusTone", "tdMiniStatus")} data-status={task.status}>{taskStatus.label} &middot; Due {task.due}</div>
                           </div>
                           {taskBlocked ? <span className={cx("text10", "colorRed")}>Still blocked</span> : null}
                         </div>

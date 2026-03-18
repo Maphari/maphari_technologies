@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState, useEffect } from "react";
-import { useDashboardToasts, DashboardToastStack } from "../shared/dashboard-core";
+import { useDashboardToasts, DashboardToastStack, DashboardLoadingFallback } from "../shared/dashboard-core";
 import {
   loadNotificationJobsWithRefresh,
   processNotificationQueueWithRefresh,
@@ -10,6 +10,7 @@ import {
   type ProjectHandoffExportRecord
 } from "../../lib/api/admin";
 import { useStaffWorkspace } from "../../lib/auth/use-staff-workspace";
+import { DashboardErrorBoundary } from "./staff-dashboard/error-boundary";
 import { useRealtimeRefresh } from "../../lib/auth/use-realtime-refresh";
 import { useCursorTrail } from "../shared/use-cursor-trail";
 import { useDelayedFlag } from "../shared/use-delayed-flag";
@@ -19,6 +20,11 @@ import { useSessionTimeout } from "../shared/use-session-timeout";
 import { useTheme } from "../shared/use-theme";
 import { useQuickCompose } from "../shared/use-quick-compose";
 import { createPortalConversationWithRefresh } from "../../lib/api/portal/messages";
+import { getStaffApprovals, type StaffApprovalItem } from "../../lib/api/staff/approvals";
+import { searchGlobal } from "../../lib/api/shared/search";
+import { getStaffAllHealthScores, type StaffHealthScoreEntry } from "../../lib/api/staff/clients";
+import { getMyProfile } from "../../lib/api/staff/profile";
+import { saveSession } from "../../lib/auth/session";
 import { pageTitles } from "./staff-dashboard/constants";
 import { StaffSidebar } from "./staff-dashboard/sidebar";
 import { StaffTopbar } from "./staff-dashboard/topbar";
@@ -72,6 +78,7 @@ import { ClientHealthSummaryPage } from "./staff-dashboard/pages/client-health-s
 import { FeedbackInboxPage } from "./staff-dashboard/pages/feedback-inbox-page";
 import { MyOnboardingPage } from "./staff-dashboard/pages/my-onboarding-page";
 import { MyLeavePage } from "./staff-dashboard/pages/my-leave-page";
+import { AppointmentsPage } from "./staff-dashboard/pages/appointments-page";
 import { MyLearningPage } from "./staff-dashboard/pages/my-learning-page";
 import { MyEnpsPage } from "./staff-dashboard/pages/my-enps-page";
 import { MyEmploymentPage } from "./staff-dashboard/pages/my-employment-page";
@@ -99,8 +106,11 @@ import { AutoDraftUpdatesPage } from "./staff-dashboard/pages/auto-draft-updates
 import { SettingsPage } from "./staff-dashboard/pages/settings-page";
 import { TasksPage } from "./staff-dashboard/pages/tasks-page";
 import { TimeLogPage } from "./staff-dashboard/pages/time-log-page";
+import { ChangeRequestsPage } from "./staff-dashboard/pages/change-requests-page";
+import { SlaTrackerPage } from "./staff-dashboard/pages/sla-tracker-page";
 import { styles, cx } from "./staff-dashboard/style";
-import type { NavItem, PageId } from "./staff-dashboard/types";
+import { inferCountryFromLocale, currencyFromCountry } from "../../lib/i18n/currency";
+import type { PageId } from "./staff-dashboard/types";
 import { formatDateLong, getInitials } from "./staff-dashboard/utils";
 import { useStaffData } from "./staff-dashboard/hooks/use-staff-data";
 import { useStaffTasks } from "./staff-dashboard/hooks/use-staff-tasks";
@@ -113,15 +123,25 @@ import { useStaffSettings } from "./staff-dashboard/hooks/use-staff-settings";
 import { useStaffActivity } from "./staff-dashboard/hooks/use-staff-activity";
 import { useStaffWorkflow } from "./staff-dashboard/hooks/use-staff-workflow";
 import { useStaffSla } from "./staff-dashboard/hooks/use-staff-sla";
+import { useStaffNav } from "./staff-dashboard/hooks/use-staff-nav";
+import { useStaffTour, STAFF_TOUR_STEPS } from "./staff-dashboard/hooks/use-staff-tour";
+import { DashboardTour } from "../shared/dashboard-tour";
 
 export function MaphariStaffDashboard() {
   // ─── Navigation + UI state kept in orchestrator ───
   const [activePage, setActivePage] = useState<PageId>("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [staffTourOpen, setStaffTourOpen] = useState(false);
-  const [staffTourStep, setStaffTourStep] = useState(0);
   const [topbarSearch] = useState("");
+  const [filterProjectId, setFilterProjectId] = useState<string | undefined>(undefined);
   const { toasts, setFeedback } = useDashboardToasts({ dismissMs: 4200 });
+
+  // ─── Currency (browser locale detection) ───
+  const staffCurrency = useMemo(() => {
+    if (typeof navigator === "undefined") return "USD";
+    const country = inferCountryFromLocale(navigator.language);
+    return currencyFromCountry(country) ?? "USD";
+  }, []);
 
   // ─── Automations page state (not extracted into a hook yet) ───
   const [processingAutomationQueue, setProcessingAutomationQueue] = useState(false);
@@ -161,20 +181,36 @@ export function MaphariStaffDashboard() {
   const clients = useMemo(() => snapshot.clients ?? [], [snapshot.clients]);
 
   const staffEmail = session?.user.email ?? "staff@maphari.co.za";
-  const staffName = staffEmail.split("@")[0]?.replace(/\./g, " ") ?? "Staff";
+  const staffEmailFallbackName = staffEmail.split("@")[0]?.replace(/\./g, " ") ?? "Staff";
+
+  // Load real display name from profile API
+  const [staffProfileName, setStaffProfileName] = useState<string | null>(null);
+  useEffect(() => {
+    if (!session) return;
+    void getMyProfile(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data) {
+        const full = [r.data.firstName, r.data.lastName].filter(Boolean).join(" ").trim();
+        if (full) setStaffProfileName(full);
+      }
+    });
+  }, [session?.accessToken]);
+
+  const staffName = staffProfileName ?? staffEmailFallbackName;
   const staffInitials = getInitials(staffName);
   const staffRole = session?.user.role ?? "STAFF";
 
   const searchQuery = topbarSearch.trim().toLowerCase();
 
-  // ─── Tour auto-open ───
-  useEffect(() => {
-    if (!session?.user?.email) return;
-    const key = `maphari:tour:staff:${session.user.email}`;
-    if (!window.localStorage.getItem(key)) {
-      queueMicrotask(() => setStaffTourOpen(true));
-    }
-  }, [session?.user?.email]);
+  // ─── Tour ───
+  const {
+    staffTourOpen,
+    staffTourStep,
+    handleStaffTourNext,
+    handleStaffTourBack,
+    completeStaffTour,
+    resetStaffTour
+  } = useStaffTour({ session, onNavigate: setActivePage });
 
   // ─── UX hooks: Theme ───
   const themeHook = useTheme({ storageKey: "maphari_staff_theme" });
@@ -532,6 +568,36 @@ export function MaphariStaffDashboard() {
     searchQuery
   });
 
+  // ─── Approvals: count for sidebar badge + dashboard brief ───
+  const [approvalItems, setApprovalItems] = useState<StaffApprovalItem[]>([]);
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    void getStaffApprovals(session).then((result) => {
+      if (cancelled) return;
+      if (result.nextSession) saveSession(result.nextSession);
+      setApprovalItems(result.data ?? []);
+    });
+    return () => { cancelled = true; };
+  }, [session?.accessToken]);
+  const pendingApprovals = useMemo(() => approvalItems.filter((a) => a.status === "Pending"), [approvalItems]);
+  const pendingApprovalsCount = pendingApprovals.length;
+
+  // ─── Health scores: at-risk count for dashboard brief ───
+  const [healthEntries, setHealthEntries] = useState<StaffHealthScoreEntry[]>([]);
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    void getStaffAllHealthScores(session).then((result) => {
+      if (cancelled) return;
+      if (result.nextSession) saveSession(result.nextSession);
+      setHealthEntries(result.data ?? []);
+    });
+    return () => { cancelled = true; };
+  }, [session?.accessToken]);
+  const atRiskClients = useMemo(() => healthEntries.filter((e) => e.score < 65).sort((a, b) => a.score - b.score), [healthEntries]);
+  const atRiskClientsCount = atRiskClients.length;
+
   // ─── Computed values for the render tree ───
   const openTasks = useMemo(() => taskContexts.filter((task) => task.status !== "DONE"), [taskContexts]);
 
@@ -555,474 +621,16 @@ export function MaphariStaffDashboard() {
     ((today.getTime() - new Date(today.getFullYear(), 0, 1).getTime()) / 86400000 + new Date(today.getFullYear(), 0, 1).getDay() + 1) / 7
   );
 
-  // ─── Navigation sections ───
-  const allNavSections = useMemo(() => {
-    const taskCount = openTasks.length;
-    const threadCount = openConversations.length;
-    const overdueDeliverables = milestoneStats.overdue;
-    const openBlockersCount = projectBlockers.filter((blocker) => blocker.status !== "RESOLVED").length;
-    const items: NavItem[] = [
-      {
-        id: "dashboard",
-        label: "My Dashboard",
-        section: "Workspace",
-        badge: unreadByTab.dashboard > 0 ? { value: String(unreadByTab.dashboard), tone: "blue" } : undefined
-      },
-      {
-        id: "notifications",
-        label: "Notifications",
-        section: "Workspace",
-        badge: totalUnreadNotifications > 0 ? { value: String(totalUnreadNotifications), tone: "amber" } : undefined
-      },
-      {
-        id: "tasks",
-        label: "My Tasks",
-        section: "Workspace",
-        badge: Math.max(taskCount, unreadByTab.operations) > 0 ? { value: String(Math.max(taskCount, unreadByTab.operations)), tone: "blue" } : undefined
-      },
-      {
-        id: "kanban",
-        label: "Kanban Board",
-        section: "Workspace",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "clients",
-        label: "Client Threads",
-        section: "Client Work",
-        badge: Math.max(threadCount, unreadByTab.messages) > 0 ? { value: String(Math.max(threadCount, unreadByTab.messages)), tone: "amber" } : undefined
-      },
-      {
-        id: "autodraft",
-        label: "Auto-draft Updates",
-        section: "Client Work",
-        badge: unreadByTab.messages > 0 ? { value: String(unreadByTab.messages), tone: "amber" } : undefined
-      },
-      {
-        id: "meetingprep",
-        label: "Meeting Prep",
-        section: "Client Work",
-        badge: unreadByTab.messages > 0 ? { value: String(unreadByTab.messages), tone: "amber" } : undefined
-      },
-      {
-        id: "comms",
-        label: "Communication History",
-        section: "Client Work",
-        badge: unreadByTab.messages > 0 ? { value: String(unreadByTab.messages), tone: "amber" } : undefined
-      },
-      {
-        id: "onboarding",
-        label: "Client Onboarding",
-        section: "Client Work",
-        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
-      },
-      {
-        id: "health",
-        label: "Client Health",
-        section: "Client Work",
-        badge:
-          Math.max(openBlockersCount, milestoneStats.overdue) > 0
-            ? { value: String(Math.max(openBlockersCount, milestoneStats.overdue)), tone: "red" }
-            : undefined
-      },
-      {
-        id: "response",
-        label: "Response Time",
-        section: "Client Work",
-        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
-      },
-      {
-        id: "sentiment",
-        label: "Sentiment Flags",
-        section: "Client Work",
-        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
-      },
-      {
-        id: "lasttouched",
-        label: "Last Touched",
-        section: "Client Work",
-        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
-      },
-      {
-        id: "portal",
-        label: "Portal Activity",
-        section: "Client Work",
-        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
-      },
-      {
-        id: "smartsuggestions",
-        label: "Smart Suggestions",
-        section: "Client Work",
-        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
-      },
-      {
-        id: "sprintplanning",
-        label: "Sprint Planning",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "taskdependencies",
-        label: "Task Dependencies",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "recurringtasks",
-        label: "Recurring Tasks",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "focusmode",
-        label: "Focus Mode",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "peerrequests",
-        label: "Peer Requests",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "triggerlog",
-        label: "Trigger Log",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "amber" } : undefined
-      },
-      {
-        id: "privatenotes",
-        label: "Private Notes",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "keyboardshortcuts",
-        label: "Keyboard Shortcuts",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "estimatesactuals",
-        label: "Estimates vs Actuals",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "satisfactionscores",
-        label: "Satisfaction Scores",
-        section: "Client Work",
-        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
-      },
-      {
-        id: "knowledge",
-        label: "Knowledge Base",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "decisionlog",
-        label: "Decision Log",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "handoverchecklist",
-        label: "Handover Checklist",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "closeoutreport",
-        label: "Close-out Report",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "staffhandovers",
-        label: "Staff Handovers",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "context",
-        label: "Project Context",
-        section: "Client Work",
-        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
-      },
-      {
-        id: "signoff",
-        label: "Milestone Sign-off",
-        section: "Client Work",
-        badge:
-          Math.max(milestoneStats.overdue, unreadByTab.projects) > 0
-            ? { value: String(Math.max(milestoneStats.overdue, unreadByTab.projects)), tone: "red" }
-            : undefined
-      },
-      {
-        id: "standup",
-        label: "Daily Standup",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "retainer",
-        label: "Retainer Burn",
-        section: "Client Work",
-        badge: unreadByTab.projects > 0 ? { value: String(unreadByTab.projects), tone: "amber" } : undefined
-      },
-      {
-        id: "invoiceviewer",
-        label: "Invoice Viewer",
-        section: "Client Finance",
-      },
-      {
-        id: "projectbudget",
-        label: "Project Budget",
-        section: "Client Finance",
-      },
-      {
-        id: "clientbudget",
-        label: "Client Budget",
-        section: "Client Finance",
-      },
-      {
-        id: "expensesubmit",
-        label: "Expense Submission",
-        section: "Client Finance",
-      },
-      {
-        id: "paystub",
-        label: "Pay Stubs",
-        section: "Personal Finance",
-      },
-      {
-        id: "ratecard",
-        label: "Rate Card",
-        section: "Client Finance",
-      },
-      {
-        id: "vendordirectory",
-        label: "Vendor Directory",
-        section: "Client Finance",
-      },
-      {
-        id: "myportfolio",
-        label: "My Portfolio",
-        section: "Project Management",
-      },
-      {
-        id: "mycapacity",
-        label: "My Capacity",
-        section: "Project Management",
-      },
-      {
-        id: "mytimeline",
-        label: "My Timeline",
-        section: "Project Management",
-      },
-      {
-        id: "qachecklist",
-        label: "QA Checklist",
-        section: "Quality",
-      },
-      {
-        id: "approvalqueue",
-        label: "Approval Queue",
-        section: "Workflow",
-      },
-      {
-        id: "clienthealthsummary",
-        label: "Health Summary",
-        section: "Client Intelligence",
-      },
-      {
-        id: "feedbackinbox",
-        label: "Feedback Inbox",
-        section: "Client Intelligence",
-      },
-      {
-        id: "myonboarding",
-        label: "My Onboarding",
-        section: "HR",
-      },
-      {
-        id: "myleave",
-        label: "My Leave",
-        section: "HR",
-      },
-      {
-        id: "mylearning",
-        label: "My Learning",
-        section: "HR",
-      },
-      {
-        id: "myenps",
-        label: "My Feedback (eNPS)",
-        section: "HR",
-      },
-      {
-        id: "myemployment",
-        label: "My Employment",
-        section: "HR",
-      },
-      {
-        id: "brandkit",
-        label: "Brand Kit",
-        section: "Knowledge",
-      },
-      {
-        id: "contractviewer",
-        label: "Contract Viewer",
-        section: "Knowledge",
-      },
-      {
-        id: "servicecatalog",
-        label: "Service Catalog",
-        section: "Knowledge",
-      },
-      {
-        id: "projectdocuments",
-        label: "Project Documents",
-        section: "Knowledge",
-      },
-      {
-        id: "requestviewer",
-        label: "Request Viewer",
-        section: "Client Lifecycle",
-      },
-      {
-        id: "clientjourney",
-        label: "Client Journey",
-        section: "Client Lifecycle",
-      },
-      {
-        id: "offboardingtasks",
-        label: "Offboarding Tasks",
-        section: "Client Lifecycle",
-      },
-      {
-        id: "interventionactions",
-        label: "Intervention Actions",
-        section: "Client Lifecycle",
-      },
-      {
-        id: "clientteam",
-        label: "Client Team",
-        section: "Client Lifecycle",
-      },
-      {
-        id: "deliverystatus",
-        label: "Delivery Status",
-        section: "Client Lifecycle",
-      },
-      {
-        id: "myteam",
-        label: "My Team",
-        section: "Governance",
-      },
-      {
-        id: "myrisks",
-        label: "My Risks",
-        section: "Governance",
-      },
-      {
-        id: "systemstatus",
-        label: "System Status",
-        section: "Governance",
-      },
-      {
-        id: "incidentalerts",
-        label: "Incident Alerts",
-        section: "Governance",
-      },
-      {
-        id: "myanalytics",
-        label: "My Analytics",
-        section: "Analytics",
-      },
-      {
-        id: "myreports",
-        label: "My Reports",
-        section: "Analytics",
-      },
-      {
-        id: "teamperformance",
-        label: "Team Performance",
-        section: "Analytics",
-      },
-      {
-        id: "myintegrations",
-        label: "My Integrations",
-        section: "Settings",
-      },
-      {
-        id: "performance",
-        label: "My Performance",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "eodwrap",
-        label: "End-of-day Wrap",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "deliverables",
-        label: "Deliverables",
-        section: "Client Work",
-        badge:
-          Math.max(overdueDeliverables, unreadByTab.projects, openBlockersCount) > 0
-            ? { value: String(Math.max(overdueDeliverables, unreadByTab.projects, openBlockersCount)), tone: "red" }
-            : undefined
-      },
-      {
-        id: "timelog",
-        label: "Time Log",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "blue" } : undefined
-      },
-      {
-        id: "automations",
-        label: "Automations",
-        section: "Tracking",
-        badge: unreadByTab.operations > 0 ? { value: String(unreadByTab.operations), tone: "amber" } : undefined
-      },
-      {
-        id: "settings",
-        label: "Settings",
-        section: "Account",
-        badge: unreadByTab.settings > 0 ? { value: String(unreadByTab.settings), tone: "amber" } : undefined
-      }
-    ];
-    const sections = new Map<string, NavItem[]>();
-    items.forEach((item) => {
-      if (!sections.has(item.section)) sections.set(item.section, []);
-      sections.get(item.section)?.push(item);
-    });
-    return Array.from(sections.entries());
-  }, [milestoneStats.overdue, openConversations.length, openTasks.length, projectBlockers, totalUnreadNotifications, unreadByTab]);
-
-  const navSections = useMemo(() => {
-    const primarySidebarIds = new Set<PageId>([
-      "dashboard",
-      "notifications",
-      "tasks",
-      "kanban",
-      "clients",
-      "meetingprep",
-      "health",
-      "deliverables",
-      "timelog",
-      "settings"
-    ]);
-
-    return allNavSections
-      .map(([section, items]) => [section, items.filter((item) => primarySidebarIds.has(item.id))] as [string, NavItem[]])
-      .filter(([, items]) => items.length > 0);
-  }, [allNavSections]);
+  // ─── Navigation sections (extracted into useStaffNav hook) ───
+  const { allNavSections, navSections } = useStaffNav({
+    openTasksCount:          openTasks.length,
+    openConversationsCount:  openConversations.length,
+    overdueDeliverables:     milestoneStats.overdue,
+    openBlockersCount:       projectBlockers.filter((b) => b.status !== "RESOLVED").length,
+    totalUnreadNotifications,
+    pendingApprovalsCount,
+    unreadByTab,
+  });
 
   // ─── Handlers that stay in the orchestrator ───
 
@@ -1141,7 +749,26 @@ export function MaphariStaffDashboard() {
     return sources;
   }, [allNavSections, projects, threadItems, setActivePage, selectConversation]);
 
-  const commandSearch = useCommandSearch({ sources: commandSearchSources });
+  const staffAsyncSearch = useCallback(async (q: string) => {
+    if (!session) return [];
+    const res = await searchGlobal(q, session);
+    const hits = res.data?.results ?? [];
+    return hits.map((hit) => ({
+      id: `search-${hit.id}`,
+      type: hit.type.charAt(0).toUpperCase() + hit.type.slice(1),
+      label: hit.title,
+      meta: hit.subtitle ?? hit.status ?? "",
+      action: () => {
+        if (hit.type === "project" || hit.type === "task") setActivePage("context");
+        else if (hit.type === "client") setActivePage("clients");
+        else if (hit.type === "lead") setActivePage("dashboard");
+        else if (hit.type === "ticket") setActivePage("comms");
+        else setActivePage("dashboard");
+      }
+    }));
+  }, [session, setActivePage]);
+
+  const commandSearch = useCommandSearch({ sources: commandSearchSources, asyncSearch: staffAsyncSearch });
 
   // ─── UX hooks: Keyboard Shortcuts ───
   const staffChordMap: Record<string, PageId> = useMemo(() => ({
@@ -1181,15 +808,11 @@ export function MaphariStaffDashboard() {
     setFeedback,
   });
 
-  // ─── Tour steps ───
-  const staffTourSteps = [
-    { title: "Dashboard", detail: "Check priorities, workload distribution, and SLA health." },
-    { title: "Tasks + Kanban", detail: "Plan delivery work, move status, and escalate blockers." },
-    { title: "Clients + Threads", detail: "Handle client communication with clear ownership." },
-    { title: "Deliverables + Time", detail: "Manage milestones, change estimates, and time logs." }
-  ] as const;
-
   // ─── Render ───
+  if (loading && !snapshot.clients?.length && !snapshot.projects?.length) {
+    return <DashboardLoadingFallback variant="staff" />;
+  }
+
   return (
     <div className={`${styles.staffRoot} ${styles.root} dashboardScale dashboardBlendAdmin dashboardThemeStaff`}>
       <div className={styles.cursor} ref={cursorRef} />
@@ -1200,11 +823,42 @@ export function MaphariStaffDashboard() {
           navSections={navSections}
           allPagesSections={allNavSections}
           activePage={activePage}
-          onNavigate={setActivePage}
+          onNavigate={(p) => { setActivePage(p); setSidebarOpen(false); }}
           staffInitials={staffInitials}
           staffName={staffName}
           staffRole={staffRole}
+          mobileOpen={sidebarOpen}
+          quickActionProjects={projects.map((p) => ({ id: p.id, name: p.name }))}
+          onQuickAddTask={() => {
+            setActivePage("tasks");
+            setSidebarOpen(false);
+            setShowTaskComposer(true);
+          }}
+          onQuickLogTime={async (projectId, minutes, label) => {
+            await addTimeEntry({ projectId, minutes, taskLabel: label, staffName });
+            setFeedback({ tone: "success", message: `${minutes}m logged to ${projectById.get(projectId)?.name ?? "project"}.` });
+          }}
         />
+        {sidebarOpen && (
+          <div className={styles.mobileOverlay} onClick={() => setSidebarOpen(false)} />
+        )}
+        <button
+          type="button"
+          className={styles.hamburgerBtn}
+          aria-label="Toggle navigation"
+          onClick={() => setSidebarOpen((prev) => !prev)}
+        >
+          {sidebarOpen
+            ? <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+              </svg>
+            : <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                <rect x="1" y="4"    width="16" height="1.5" rx="0.75" fill="currentColor"/>
+                <rect x="1" y="8.25" width="16" height="1.5" rx="0.75" fill="currentColor"/>
+                <rect x="1" y="12.5" width="16" height="1.5" rx="0.75" fill="currentColor"/>
+              </svg>
+          }
+        </button>
 
         <div className={styles.main}>
           <StaffTopbar
@@ -1216,63 +870,38 @@ export function MaphariStaffDashboard() {
             unreadNotificationsCount={totalUnreadNotifications}
             onLogout={() => void handleLogout()}
             staffInitials={staffInitials}
+            staffName={staffName}
             staffEmail={staffEmail}
             staffRole={staffRole}
             isLoggingOut={loggingOut}
+            onOpenHelp={() => setActivePage("knowledge")}
+            onMenuToggle={() => setSidebarOpen((prev) => !prev)}
+            onNewTask={() => {
+              setActivePage("tasks");
+              setSidebarOpen(false);
+              setShowTaskComposer(true);
+            }}
+            onStartTimer={() => {
+              setActivePage("timelog");
+              setSidebarOpen(false);
+            }}
+            onOpenFiles={() => {
+              setActivePage("projectdocuments");
+              setSidebarOpen(false);
+            }}
           />
 
           <div className={styles.content}>
             <DashboardToastStack toasts={toasts} />
-            {staffTourOpen ? (
-              <div className={`${styles.card} ${styles.tourCardWrap}`}>
-                <div className={styles.cardHeader}>
-                  <span className={styles.cardHeaderTitle}>Staff Onboarding Tour</span>
-                  <span className={`${styles.pageSub} ${styles.pageSubNoTop}`}>Step {staffTourStep + 1} / {staffTourSteps.length}</span>
-                </div>
-                <div className={styles.cardBody}>
-                  <div className={styles.cardHeaderTitle}>{staffTourSteps[staffTourStep]?.title}</div>
-                  <div className={`${styles.pageSub} ${styles.pageSubTightTop}`}>{staffTourSteps[staffTourStep]?.detail}</div>
-                  <div className={styles.tourActionsRow}>
-                    <button
-                      type="button"
-                      className={`${styles.button} ${styles.buttonGhost}`}
-                      onClick={() => setStaffTourStep((value) => Math.max(0, value - 1))}
-                      disabled={staffTourStep === 0}
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.button} ${styles.buttonAccent}`}
-                      onClick={() => {
-                        if (staffTourStep < staffTourSteps.length - 1) {
-                          setStaffTourStep((value) => value + 1);
-                          return;
-                        }
-                        if (session?.user?.email) {
-                          window.localStorage.setItem(`maphari:tour:staff:${session.user.email}`, "done");
-                        }
-                        setStaffTourOpen(false);
-                      }}
-                    >
-                      {staffTourStep < staffTourSteps.length - 1 ? "Next" : "Finish"}
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.button} ${styles.buttonGhost}`}
-                      onClick={() => {
-                        if (session?.user?.email) {
-                          window.localStorage.setItem(`maphari:tour:staff:${session.user.email}`, "done");
-                        }
-                        setStaffTourOpen(false);
-                      }}
-                    >
-                      Skip
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
+            <DashboardErrorBoundary>
+            <DashboardTour
+              open={staffTourOpen}
+              step={staffTourStep}
+              steps={STAFF_TOUR_STEPS}
+              onBack={handleStaffTourBack}
+              onNext={handleStaffTourNext}
+              onSkip={completeStaffTour}
+            />
             <DashboardPage
               isActive={activePage === "dashboard"}
               todayLabel={todayLabel}
@@ -1321,7 +950,7 @@ export function MaphariStaffDashboard() {
               flowHealth={flowHealth}
             />
 
-            <NotificationsPage isActive={activePage === "notifications"} />
+            <NotificationsPage isActive={activePage === "notifications"} session={session ?? null} />
 
             <TasksPage
               isActive={activePage === "tasks"}
@@ -1422,6 +1051,10 @@ export function MaphariStaffDashboard() {
                 void handleMoveTask(taskId, projectId, currentStatus, nextStatus)
               }
               announcement={kanbanAnnouncement}
+              onAutoEscalateBlocked={async () => {
+                await new Promise((r) => setTimeout(r, 800));
+                setFeedback({ tone: "success", message: `Blocked & aging tasks escalated — project managers notified.` });
+              }}
             />
 
             <ClientsPage
@@ -1470,141 +1103,158 @@ export function MaphariStaffDashboard() {
               onUnassign={() => void handleUnassignConversation()}
             />
 
-            <AutoDraftUpdatesPage isActive={activePage === "autodraft"} />
+            <AutoDraftUpdatesPage isActive={activePage === "autodraft"} session={session ?? null} />
 
-            <MeetingPrepPage isActive={activePage === "meetingprep"} />
+            <MeetingPrepPage isActive={activePage === "meetingprep"} session={session ?? null} />
 
             <CommunicationHistoryPage isActive={activePage === "comms"} />
 
-            <ClientOnboardingPage isActive={activePage === "onboarding"} />
+            <ClientOnboardingPage isActive={activePage === "onboarding"} session={session ?? null} onNavigate={setActivePage} />
 
-            <ClientHealthPage isActive={activePage === "health"} />
+            <ClientHealthPage isActive={activePage === "health"} session={session ?? null} />
 
-            <ResponseTimePage isActive={activePage === "response"} />
+            <ResponseTimePage isActive={activePage === "response"} session={session ?? null} />
 
-            <SentimentFlagsPage isActive={activePage === "sentiment"} />
+            <SentimentFlagsPage isActive={activePage === "sentiment"} session={session ?? null} />
 
-            <LastTouchedPage isActive={activePage === "lasttouched"} />
+            <LastTouchedPage isActive={activePage === "lasttouched"} session={session ?? null} />
 
-            <PortalActivityPage isActive={activePage === "portal"} />
+            <PortalActivityPage isActive={activePage === "portal"} session={session ?? null} />
 
-            <SmartSuggestionsPage isActive={activePage === "smartsuggestions"} />
+            <SmartSuggestionsPage isActive={activePage === "smartsuggestions"} session={session ?? null} />
 
-            <SprintPlanningPage isActive={activePage === "sprintplanning"} />
+            <SprintPlanningPage isActive={activePage === "sprintplanning"} session={session ?? null} />
 
-            <TaskDependenciesPage isActive={activePage === "taskdependencies"} />
+            <TaskDependenciesPage isActive={activePage === "taskdependencies"} session={session ?? null} />
 
-            <RecurringTasksPage isActive={activePage === "recurringtasks"} />
+            <RecurringTasksPage isActive={activePage === "recurringtasks"} session={session ?? null} />
 
-            <FocusModePage isActive={activePage === "focusmode"} />
+            <FocusModePage isActive={activePage === "focusmode"} session={session ?? null} />
 
-            <PeerRequestsPage isActive={activePage === "peerrequests"} />
+            <PeerRequestsPage isActive={activePage === "peerrequests"} session={session ?? null} />
 
-            <TriggerLogPage isActive={activePage === "triggerlog"} />
+            <TriggerLogPage isActive={activePage === "triggerlog"} session={session ?? null} />
 
             <PrivateNotesPage isActive={activePage === "privatenotes"} />
 
-            <KeyboardShortcutsPage isActive={activePage === "keyboardshortcuts"} />
+            <KeyboardShortcutsPage isActive={activePage === "keyboardshortcuts"} session={session ?? null} />
 
-            <EstimatesVsActualsPage isActive={activePage === "estimatesactuals"} />
+            <EstimatesVsActualsPage isActive={activePage === "estimatesactuals"} session={session ?? null} />
 
-            <SatisfactionScoresPage isActive={activePage === "satisfactionscores"} />
+            <SatisfactionScoresPage isActive={activePage === "satisfactionscores"} session={session ?? null} />
 
-            <KnowledgeBasePage isActive={activePage === "knowledge"} />
+            <KnowledgeBasePage isActive={activePage === "knowledge"} session={session} />
 
-            <DecisionLogPage isActive={activePage === "decisionlog"} />
+            <DecisionLogPage isActive={activePage === "decisionlog"} session={session ?? null} />
 
-            <HandoverChecklistPage isActive={activePage === "handoverchecklist"} />
+            <HandoverChecklistPage isActive={activePage === "handoverchecklist"} session={session ?? null} />
 
-            <CloseOutReportPage isActive={activePage === "closeoutreport"} />
+            <CloseOutReportPage isActive={activePage === "closeoutreport"} session={session ?? null} />
 
-            <StaffHandoversPage isActive={activePage === "staffhandovers"} />
+            <StaffHandoversPage isActive={activePage === "staffhandovers"} session={session} />
 
-            <ProjectContextPage isActive={activePage === "context"} />
+            <ProjectContextPage isActive={activePage === "context"} session={session ?? null} />
 
-            <MilestoneSignOffPage isActive={activePage === "signoff"} />
+            <MilestoneSignOffPage isActive={activePage === "signoff"} session={session ?? null} />
 
-            <DailyStandupPage isActive={activePage === "standup"} />
+            <DailyStandupPage isActive={activePage === "standup"} session={session} />
 
-            <RetainerBurnPage isActive={activePage === "retainer"} />
+            <RetainerBurnPage isActive={activePage === "retainer"} session={session ?? null} />
 
-            <InvoiceViewerPage isActive={activePage === "invoiceviewer"} />
+            <InvoiceViewerPage isActive={activePage === "invoiceviewer"} session={session ?? null} />
 
-            <ProjectBudgetPage isActive={activePage === "projectbudget"} />
+            <ProjectBudgetPage isActive={activePage === "projectbudget"} session={session ?? null} />
 
-            <ClientBudgetPage isActive={activePage === "clientbudget"} />
+            <ClientBudgetPage isActive={activePage === "clientbudget"} session={session ?? null} />
 
-            <ExpenseSubmitPage isActive={activePage === "expensesubmit"} />
+            <ExpenseSubmitPage isActive={activePage === "expensesubmit"} session={session} onFeedback={(tone, message) => setFeedback({ tone, message })} />
 
-            <PayStubPage isActive={activePage === "paystub"} />
+            <PayStubPage isActive={activePage === "paystub"} session={session} />
 
-            <RateCardPage isActive={activePage === "ratecard"} />
+            <RateCardPage isActive={activePage === "ratecard"} session={session ?? null} />
 
-            <VendorDirectoryPage isActive={activePage === "vendordirectory"} />
+            <VendorDirectoryPage isActive={activePage === "vendordirectory"} session={session ?? null} />
 
-            <MyPortfolioPage isActive={activePage === "myportfolio"} />
+            <MyPortfolioPage isActive={activePage === "myportfolio"} session={session ?? null} />
 
-            <MyCapacityPage isActive={activePage === "mycapacity"} />
+            <MyCapacityPage isActive={activePage === "mycapacity"} session={session ?? null} />
 
-            <MyTimelinePage isActive={activePage === "mytimeline"} />
+            <MyTimelinePage isActive={activePage === "mytimeline"} session={session ?? null} />
 
-            <QAChecklistPage isActive={activePage === "qachecklist"} />
+            <QAChecklistPage isActive={activePage === "qachecklist"} session={session ?? null} />
 
-            <ApprovalQueuePage isActive={activePage === "approvalqueue"} />
+            <ApprovalQueuePage
+              isActive={activePage === "approvalqueue"}
+              session={session ?? null}
+              onFeedback={(tone, message) => setFeedback({ tone, message })}
+            />
 
-            <ClientHealthSummaryPage isActive={activePage === "clienthealthsummary"} />
+            <ClientHealthSummaryPage isActive={activePage === "clienthealthsummary"} session={session ?? null} />
 
-            <FeedbackInboxPage isActive={activePage === "feedbackinbox"} />
+            <FeedbackInboxPage isActive={activePage === "feedbackinbox"} session={session ?? null} />
 
-            <MyOnboardingPage isActive={activePage === "myonboarding"} />
+            <MyOnboardingPage isActive={activePage === "myonboarding"} session={session} />
 
-            <MyLeavePage isActive={activePage === "myleave"} />
+            <MyLeavePage isActive={activePage === "myleave"} session={session} />
 
-            <MyLearningPage isActive={activePage === "mylearning"} />
+            <AppointmentsPage isActive={activePage === "appointments"} session={session ?? null} />
 
-            <MyEnpsPage isActive={activePage === "myenps"} />
+            <MyLearningPage isActive={activePage === "mylearning"} session={session} />
 
-            <MyEmploymentPage isActive={activePage === "myemployment"} />
+            <MyEnpsPage isActive={activePage === "myenps"} session={session ?? null} />
 
-            <BrandKitPage isActive={activePage === "brandkit"} />
+            <MyEmploymentPage isActive={activePage === "myemployment"} session={session ?? null} />
 
-            <ContractViewerPage isActive={activePage === "contractviewer"} />
+            <BrandKitPage isActive={activePage === "brandkit"} session={session ?? null} />
 
-            <ServiceCatalogPage isActive={activePage === "servicecatalog"} />
+            <ContractViewerPage isActive={activePage === "contractviewer"} session={session ?? null} />
 
-            <ProjectDocumentsPage isActive={activePage === "projectdocuments"} />
+            <ServiceCatalogPage isActive={activePage === "servicecatalog"} session={session ?? null} />
 
-            <RequestViewerPage isActive={activePage === "requestviewer"} />
+            <ProjectDocumentsPage isActive={activePage === "projectdocuments"} session={session ?? null} />
 
-            <ClientJourneyPage isActive={activePage === "clientjourney"} />
+            <RequestViewerPage isActive={activePage === "requestviewer"} session={session ?? null} />
 
-            <OffboardingTasksPage isActive={activePage === "offboardingtasks"} />
+            <ClientJourneyPage isActive={activePage === "clientjourney"} session={session ?? null} />
 
-            <InterventionActionsPage isActive={activePage === "interventionactions"} />
+            <OffboardingTasksPage isActive={activePage === "offboardingtasks"} session={session ?? null} />
 
-            <ClientTeamPage isActive={activePage === "clientteam"} />
+            <InterventionActionsPage isActive={activePage === "interventionactions"} session={session ?? null} />
 
-            <DeliveryStatusPage isActive={activePage === "deliverystatus"} />
+            <ClientTeamPage isActive={activePage === "clientteam"} session={session ?? null} />
 
-            <MyTeamPage isActive={activePage === "myteam"} />
+            <DeliveryStatusPage
+              isActive={activePage === "deliverystatus"}
+              session={session ?? null}
+              onGoTasks={(projectId) => {
+                setFilterProjectId(projectId);
+                setActivePage("tasks");
+              }}
+            />
 
-            <MyRisksPage isActive={activePage === "myrisks"} />
+            <MyTeamPage isActive={activePage === "myteam"} session={session ?? null} />
 
-            <SystemStatusPage isActive={activePage === "systemstatus"} />
+            <MyRisksPage isActive={activePage === "myrisks"} session={session ?? null} />
 
-            <IncidentAlertsPage isActive={activePage === "incidentalerts"} />
+            <SystemStatusPage isActive={activePage === "systemstatus"} session={session ?? null} />
 
-            <MyAnalyticsPage isActive={activePage === "myanalytics"} />
+            <IncidentAlertsPage isActive={activePage === "incidentalerts"} session={session ?? null} />
 
-            <MyReportsPage isActive={activePage === "myreports"} />
+            <MyAnalyticsPage isActive={activePage === "myanalytics"} session={session ?? null} />
 
-            <TeamPerformancePage isActive={activePage === "teamperformance"} />
+            <MyReportsPage isActive={activePage === "myreports"} session={session ?? null} />
 
-            <MyIntegrationsPage isActive={activePage === "myintegrations"} />
+            <TeamPerformancePage isActive={activePage === "teamperformance"} session={session ?? null} />
 
-            <PersonalPerformancePage isActive={activePage === "performance"} />
+            <MyIntegrationsPage isActive={activePage === "myintegrations"} session={session ?? null} />
 
-            <EndOfDayWrapPage isActive={activePage === "eodwrap"} />
+            <ChangeRequestsPage isActive={activePage === "changeRequests"} session={session ?? null} />
+
+            <SlaTrackerPage isActive={activePage === "slaTracker"} session={session ?? null} />
+
+            <PersonalPerformancePage isActive={activePage === "performance"} session={session ?? null} />
+
+            <EndOfDayWrapPage isActive={activePage === "eodwrap"} session={session ?? null} />
 
             <DeliverablesPage
               isActive={activePage === "deliverables"}
@@ -1669,21 +1319,17 @@ export function MaphariStaffDashboard() {
               weeklyTargetHours={settingsProfile.weeklyTargetHours || weeklyTargetHours}
               onExportCsv={handleExportTimeLog}
               onExportJson={handleExportTimeLogJson}
+              onQuickLog8h={async () => {
+                const primaryProjectId = effectiveSelectedTimerProjectId || projects[0]?.id;
+                if (!primaryProjectId) return;
+                await addTimeEntry({ projectId: primaryProjectId, minutes: 480, taskLabel: "Quick-log (8h)", staffName });
+                setFeedback({ tone: "success", message: `8h logged to ${projectById.get(primaryProjectId)?.name ?? "project"}.` });
+              }}
             />
 
             <AutomationsPage
               isActive={activePage === "automations"}
-              queuedNotifications={notificationJobs.filter((job) => job.status === "QUEUED").length}
-              failedNotifications={notificationJobs.filter((job) => job.status === "FAILED").length}
-              openBlockers={projectBlockers.filter((blocker) => blocker.status !== "RESOLVED").length}
-              overdueMilestones={milestoneStats.overdue}
-              openThreads={openConversations.length}
-              workflowRows={staffWorkflowRows}
-              jobs={notificationJobs}
-              processingQueue={processingAutomationQueue}
-              acknowledgingFailures={acknowledgingAutomationFailures}
-              onProcessQueue={() => void handleProcessAutomationQueue()}
-              onAcknowledgeFailures={() => void handleAcknowledgeAutomationFailures()}
+              session={session ?? null}
               onOpenDeliverables={() => setActivePage("deliverables")}
               onOpenClients={() => setActivePage("clients")}
             />
@@ -1729,7 +1375,15 @@ export function MaphariStaffDashboard() {
               hasWorkspaceChanges={hasWorkspaceChanges}
               projects={projects}
               highPriorityClients={highPriorityClients}
+              theme={themeHook.theme}
+              onThemeChange={themeHook.setTheme}
+              kanbanViewMode={kanbanViewMode}
+              onKanbanViewModeChange={setKanbanViewMode}
+              kanbanSwimlane={kanbanSwimlane}
+              onKanbanSwimlaneChange={setKanbanSwimlane}
+              onRestartTour={resetStaffTour}
             />
+            </DashboardErrorBoundary>
           </div>
         </div>
       </div>

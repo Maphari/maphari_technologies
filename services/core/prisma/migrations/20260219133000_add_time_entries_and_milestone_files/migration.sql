@@ -1,7 +1,7 @@
 ALTER TABLE "project_milestones" ADD COLUMN "fileId" UUID;
 
 CREATE TABLE "project_time_entries" (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "id" UUID DEFAULT gen_random_uuid(),
     "projectId" UUID NOT NULL,
     "clientId" UUID NOT NULL,
     "staffUserId" UUID,

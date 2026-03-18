@@ -1,28 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminTabs } from "./shared";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
-
-const cashEvents = [
-  { id: "CF-001", type: "inflow", category: "Retainer", client: "Volta Studios", clientColor: "var(--accent)", amount: 28000, date: "2026-02-28", status: "expected", description: "Feb retainer - Volta Studios" },
-  { id: "CF-002", type: "inflow", category: "Retainer", client: "Mira Health", clientColor: "var(--blue)", amount: 21600, date: "2026-02-28", status: "expected", description: "Feb retainer - Mira Health" },
-  { id: "CF-003", type: "inflow", category: "Retainer", client: "Okafor & Sons", clientColor: "var(--amber)", amount: 12000, date: "2026-02-25", status: "received", description: "Feb retainer - Okafor" },
-  { id: "CF-004", type: "inflow", category: "Invoice", client: "Kestrel Capital", clientColor: "var(--accent)", amount: 21000, date: "2026-02-28", status: "overdue", description: "INV-0039 - overdue", overdueDays: 12 },
-  { id: "CF-005", type: "inflow", category: "Invoice", client: "Dune Collective", clientColor: "var(--amber)", amount: 16000, date: "2026-03-01", status: "expected", description: "INV-0040 - project milestone" },
-  { id: "CF-006", type: "inflow", category: "Retainer", client: "Volta Studios", clientColor: "var(--accent)", amount: 28000, date: "2026-03-31", status: "forecast", description: "Mar retainer - Volta Studios" },
-  { id: "CF-007", type: "inflow", category: "Retainer", client: "Mira Health", clientColor: "var(--blue)", amount: 21600, date: "2026-03-31", status: "forecast", description: "Mar retainer - Mira Health" },
-  { id: "CF-008", type: "inflow", category: "Retainer", client: "Okafor & Sons", clientColor: "var(--amber)", amount: 12000, date: "2026-03-25", status: "forecast", description: "Mar retainer - Okafor" },
-  { id: "CF-009", type: "inflow", category: "Retainer", client: "Kestrel Capital", clientColor: "var(--accent)", amount: 21000, date: "2026-03-31", status: "forecast", description: "Mar retainer - Kestrel" },
-  { id: "CF-010", type: "inflow", category: "Retainer", client: "Dune Collective", clientColor: "var(--amber)", amount: 16000, date: "2026-03-31", status: "forecast", description: "Mar retainer - Dune" },
-  { id: "CF-011", type: "outflow", category: "Payroll", client: null, clientColor: "var(--muted)", amount: -142000, date: "2026-02-25", status: "scheduled", description: "Feb payroll - all staff" },
-  { id: "CF-012", type: "outflow", category: "Tools", client: null, clientColor: "var(--muted)", amount: -5500, date: "2026-02-28", status: "scheduled", description: "Monthly SaaS subscriptions" },
-  { id: "CF-013", type: "outflow", category: "Freelancer", client: null, clientColor: "var(--muted)", amount: -18000, date: "2026-03-01", status: "scheduled", description: "Studio Outpost - Dune scope" },
-  { id: "CF-014", type: "outflow", category: "Payroll", client: null, clientColor: "var(--muted)", amount: -142000, date: "2026-03-25", status: "forecast", description: "Mar payroll - all staff" },
-  { id: "CF-015", type: "outflow", category: "Tools", client: null, clientColor: "var(--muted)", amount: -5500, date: "2026-03-31", status: "forecast", description: "Mar SaaS subscriptions" },
-  { id: "CF-016", type: "outflow", category: "Rent", client: null, clientColor: "var(--muted)", amount: -22000, date: "2026-03-01", status: "scheduled", description: "Studio rent - Q1 quarter" }
-] as const;
+import { fetchCashFlowEvents, type CashFlowEvent } from "../../../../lib/api/admin/billing";
+import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 
 const statusConfig = {
   received: { color: "var(--accent)", label: "Received" },
@@ -34,10 +17,51 @@ const statusConfig = {
 
 const tabs = ["90-day view", "calendar", "scenario planner"] as const;
 type Tab = (typeof tabs)[number];
-const months = ["Feb 2026", "Mar 2026", "Apr 2026"] as const;
+
+// ── Dynamic 3-month window from current date ───────────────────────────────
+function buildMonths(): string[] {
+  const now = new Date();
+  return [0, 1, 2].map((offset) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    return d.toLocaleDateString("en-ZA", { month: "short", year: "numeric" });
+  });
+}
+
+function getMonthPrefix(label: string): string {
+  // label = "Feb 2026" → "2026-02"
+  const [mon, yr] = label.split(" ");
+  const monMap: Record<string, string> = {
+    Jan: "01", Feb: "02", Mar: "03", Apr: "04",
+    May: "05", Jun: "06", Jul: "07", Aug: "08",
+    Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+  };
+  return `${yr}-${monMap[mon ?? ""] ?? "01"}`;
+}
+
+const CURRENT_DAY_OF_MONTH = new Date().getDate();
+const CURRENT_MONTH_DAYS = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+const CURRENT_MONTH_ISO = new Date().toISOString().slice(0, 7); // "YYYY-MM"
 
 export function CashFlowCalendarPage() {
+  const { session } = useAdminWorkspaceContext();
   const [activeTab, setActiveTab] = useState<Tab>("90-day view");
+  const [cashEvents, setCashEvents] = useState<CashFlowEvent[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+
+  const loadCashEvents = useCallback(async () => {
+    if (!session) return;
+    setLoadingEvents(true);
+    try {
+      const result = await fetchCashFlowEvents(session);
+      setCashEvents(result.data ?? []);
+    } finally {
+      setLoadingEvents(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    void loadCashEvents();
+  }, [loadCashEvents]);
 
   const inflows = cashEvents.filter((e) => e.type === "inflow");
   const outflows = cashEvents.filter((e) => e.type === "outflow");
@@ -45,22 +69,26 @@ export function CashFlowCalendarPage() {
   const totalOut = Math.abs(outflows.reduce((s, e) => s + e.amount, 0));
   const overdue = cashEvents.filter((e) => e.status === "overdue").reduce((s, e) => s + e.amount, 0);
 
+  const dynamicMonths = useMemo(() => buildMonths(), []);
+
   const monthData = useMemo(
     () =>
-      months.map((m) => {
-        const [mon, yr] = m.split(" ");
-        const monNum = ({ Feb: "02", Mar: "03", Apr: "04" } as const)[mon as "Feb" | "Mar" | "Apr"];
-        const prefix = `${yr}-${monNum}`;
+      dynamicMonths.map((m) => {
+        const prefix = getMonthPrefix(m);
         const monInflows = cashEvents.filter((e) => e.date.startsWith(prefix) && e.type === "inflow");
         const monOutflows = cashEvents.filter((e) => e.date.startsWith(prefix) && e.type === "outflow");
         const totalIn = monInflows.reduce((s, e) => s + e.amount, 0);
         const monthOut = Math.abs(monOutflows.reduce((s, e) => s + e.amount, 0));
         return { month: m, totalIn, totalOut: monthOut, net: totalIn - monthOut };
       }),
-    []
+    [cashEvents, dynamicMonths]
   );
 
-  const openingBalance = 285000;
+  // Opening balance: sum of all received inflows so far
+  const openingBalance = useMemo(
+    () => cashEvents.filter((e) => e.type === "inflow" && e.status === "received").reduce((s, e) => s + e.amount, 0),
+    [cashEvents]
+  );
 
   return (
     <div className={cx(styles.pageBody, styles.reportsRoot)}>
@@ -77,7 +105,7 @@ export function CashFlowCalendarPage() {
 
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Opening Balance", value: `R${(openingBalance / 1000).toFixed(0)}k`, color: "var(--blue)", sub: "As at Feb 23" },
+          { label: "Opening Balance", value: `R${(openingBalance / 1000).toFixed(0)}k`, color: "var(--blue)", sub: `Received invoices` },
           { label: "Expected Inflows (90d)", value: `R${(totalExpected / 1000).toFixed(0)}k`, color: "var(--accent)", sub: "Retainers and invoices" },
           { label: "Planned Outflows (90d)", value: `R${(totalOut / 1000).toFixed(0)}k`, color: "var(--red)", sub: "Payroll, tools, rent" },
           { label: "Overdue Receivables", value: `R${(overdue / 1000).toFixed(0)}k`, color: "var(--red)", sub: "Needs immediate chase" }
@@ -103,6 +131,7 @@ export function CashFlowCalendarPage() {
       <div className={cx("overflowAuto", "minH0")}>
         {activeTab === "90-day view" && (
           <div>
+            {loadingEvents && <div className={cx("colorMuted", "text12")}>Loading cash flow data…</div>}
             <div className={cx("grid3", "gap16", "mb20")}>
               {monthData.map((m, i) => {
                 const runningBal = openingBalance + monthData.slice(0, i + 1).reduce((s, md) => s + md.net, 0);
@@ -168,20 +197,29 @@ export function CashFlowCalendarPage() {
 
         {activeTab === "calendar" && (
           <div className={cx("card", "p24")}>
-            <div className={cx("text13", "fw700", "mb20", "uppercase", "tracking")}>February 2026 - Daily View</div>
+            <div className={cx("text13", "fw700", "mb20", "uppercase", "tracking")}>
+              {dynamicMonths[0]} — Daily View
+            </div>
             <div className={styles.cashFlowCalGrid}>
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
                 <div key={d} className={cx("textCenter", "text10", "colorMuted", "fw700", styles.cashFlowDayHead)}>{d}</div>
               ))}
-              {Array(6).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
-              {Array.from({ length: 28 }, (_, i) => {
+              {/* Leading empty cells for first-of-month weekday offset */}
+              {Array(
+                (() => {
+                  const firstDayDow = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getDay();
+                  // Mon=0 … Sun=6
+                  return firstDayDow === 0 ? 6 : firstDayDow - 1;
+                })()
+              ).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
+              {Array.from({ length: CURRENT_MONTH_DAYS }, (_, i) => {
                 const day = i + 1;
-                const dateStr = `2026-02-${String(day).padStart(2, "0")}`;
+                const dateStr = `${CURRENT_MONTH_ISO}-${String(day).padStart(2, "0")}`;
                 const dayEvents = cashEvents.filter((e) => e.date === dateStr);
                 const hasInflow = dayEvents.some((e) => e.type === "inflow");
                 const hasOutflow = dayEvents.some((e) => e.type === "outflow");
                 const hasOverdue = dayEvents.some((e) => e.status === "overdue");
-                const isToday = day === 23;
+                const isToday = day === CURRENT_DAY_OF_MONTH;
                 return (
                   <div key={day} className={cx("bgBg", "borderDefault", styles.cashFlowDayCell, isToday && styles.cashFlowDayToday)}>
                     <div className={cx("text11", "fontMono", "mb4", isToday ? "colorAccent" : "colorMuted")}>{day}</div>
@@ -200,7 +238,7 @@ export function CashFlowCalendarPage() {
             {[
               { label: "Best Case", desc: "All invoices paid on time plus one new client", inflow: totalExpected + 28000, color: "var(--accent)" },
               { label: "Base Case", desc: "Invoices paid, overdue resolved by Mar", inflow: totalExpected, color: "var(--blue)" },
-              { label: "Worst Case", desc: "Kestrel and Dune don't pay this month", inflow: totalExpected - 37000, color: "var(--amber)" },
+              { label: "Worst Case", desc: "Two largest invoices unpaid this month", inflow: totalExpected - 37000, color: "var(--amber)" },
               { label: "Crisis Case", desc: "Both clients churn and no new revenue", inflow: totalExpected - 72000, color: "var(--red)" }
             ].map((scenario) => {
               const net = scenario.inflow - totalOut;

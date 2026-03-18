@@ -1,34 +1,114 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { cx } from "../style";
+import { Ic } from "../ui";
+import { getStaffCapacity, type StaffCapacity } from "@/lib/api/staff/profile";
+import type { AuthSession } from "@/lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import { submitLeaveRequestWithRefresh } from "@/lib/api/staff/hr";
 
-const capacityData = {
-  weeklyHours: 40,
-  allocatedHours: 34,
-  loggedThisWeek: 28,
-  projects: [
-    { name: "Brand Identity System", allocated: 12, logged: 10, client: "Volta Studios" },
-    { name: "Q1 Campaign Strategy", allocated: 8, logged: 7.5, client: "Kestrel Capital" },
-    { name: "Website Redesign", allocated: 10, logged: 8, client: "Mira Health" },
-    { name: "Annual Report 2025", allocated: 4, logged: 2.5, client: "Okafor & Sons" },
-  ],
-  weekHistory: [
-    { week: "W5", allocated: 36, logged: 34 },
-    { week: "W6", allocated: 38, logged: 37 },
-    { week: "W7", allocated: 34, logged: 32 },
-    { week: "W8", allocated: 34, logged: 28 },
-  ],
+type MyCapacityPageProps = {
+  isActive: boolean;
+  session:  AuthSession | null;
 };
+
+// ── Tone helpers ──────────────────────────────────────────────────────────────
 
 function utilizationColor(pct: number) {
   if (pct >= 100) return "colorRed";
-  if (pct >= 85) return "colorAmber";
+  if (pct >= 85)  return "colorAmber";
   return "colorGreen";
 }
 
-export function MyCapacityPage({ isActive }: { isActive: boolean }) {
-  const utilizationPct = Math.round((capacityData.allocatedHours / capacityData.weeklyHours) * 100);
-  const availableHours = capacityData.weeklyHours - capacityData.allocatedHours;
+function allocFill(pct: number) {
+  if (pct >= 100) return "progressFillRed";
+  if (pct >= 85)  return "progressFillAmber";
+  return "progressFillAccent";
+}
+
+function logFill(pct: number) {
+  if (pct >= 100) return "progressFillAmber";
+  return "progressFillGreen";
+}
+
+function pct(a: number, b: number): number {
+  if (b === 0) return 0;
+  return Math.round((a / b) * 100);
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+
+function SkeletonStat() {
+  return (
+    <div className={cx("mcStatCard", "opacity50")}>
+      <div className={cx("mcStatCardTop")}>
+        <div className={cx("skeleBlock10x50p")} />
+        <div className={cx("skeleBlock22x35p")} />
+      </div>
+      <div className={cx("mcStatCardDivider")} />
+      <div className={cx("skeleBlock9x60p")} />
+    </div>
+  );
+}
+
+// ── Page component ────────────────────────────────────────────────────────────
+
+export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
+  const [capacity, setCapacity] = useState<StaffCapacity | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [reqStart, setReqStart]       = useState("");
+  const [reqEnd, setReqEnd]           = useState("");
+  const [reqNotes, setReqNotes]       = useState("");
+  const [reqSubmitting, setReqSubmitting] = useState(false);
+  const [reqFeedback, setReqFeedback] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    if (!session || !isActive) return;
+    let cancelled = false;
+
+    setLoading(true);
+    void getStaffCapacity(session).then((result) => {
+      if (cancelled) return;
+      if (result.data) setCapacity(result.data);
+      setLoading(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [session, isActive]);
+
+  async function handleReduceCapacity() {
+    if (!session || !reqStart || !reqEnd) return;
+    setReqSubmitting(true);
+    const startMs = new Date(reqStart).getTime();
+    const endMs   = new Date(reqEnd).getTime();
+    const days    = Math.max(1, Math.round((endMs - startMs) / (1000 * 60 * 60 * 24)) + 1);
+    const result  = await submitLeaveRequestWithRefresh(session, {
+      type: "CAPACITY_REDUCTION",
+      startDate: reqStart,
+      endDate:   reqEnd,
+      days,
+      notes: reqNotes || undefined,
+    });
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.error || !result.data) {
+      setReqFeedback({ tone: "error", text: result.error?.message ?? "Failed to submit request." });
+    } else {
+      setReqFeedback({ tone: "success", text: "Capacity reduction request submitted." });
+      setRequestOpen(false);
+      setReqStart(""); setReqEnd(""); setReqNotes("");
+    }
+    setReqSubmitting(false);
+  }
+
+  const weeklyHours        = capacity?.weeklyHours         ?? 40;
+  const loggedThisWeek     = capacity?.loggedThisWeekHours ?? 0;
+  const projects           = capacity?.projects            ?? [];
+  const weekHistory        = capacity?.weekHistory         ?? [];
+
+  const utilizationPct  = pct(loggedThisWeek, weeklyHours);
+  const availableHours  = Math.max(0, weeklyHours - loggedThisWeek);
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-capacity">
@@ -38,73 +118,229 @@ export function MyCapacityPage({ isActive }: { isActive: boolean }) {
         <p className={cx("pageSubtitleText", "mb20")}>Personal workload vs. capacity this week</p>
       </div>
 
-      <div className={cx("stats", "stats4", "mb28")}>
-        {[
-          { label: "Weekly Capacity", value: `${capacityData.weeklyHours}h`, tone: "colorMuted" },
-          { label: "Allocated", value: `${capacityData.allocatedHours}h`, tone: utilizationColor(utilizationPct) },
-          { label: "Logged", value: `${capacityData.loggedThisWeek}h`, tone: "colorAccent" },
-          { label: "Available", value: `${availableHours}h`, tone: availableHours > 0 ? "colorGreen" : "colorRed" },
-        ].map((stat) => (
-          <div key={stat.label} className={cx("card")}>
-            <div className={cx("text10", "colorMuted2", "uppercase", "tracking", "mb6")}>{stat.label}</div>
-            <div className={cx("fontDisplay", "fw800", "text20", stat.tone)}>{stat.value}</div>
-          </div>
-        ))}
+      <div className={cx("flexEnd", "mb20")}>
+        <button
+          type="button"
+          className={cx("btnSm", "btnOutline")}
+          onClick={() => { setRequestOpen(true); setReqFeedback(null); }}
+        >
+          Request Reduced Capacity
+        </button>
       </div>
 
-      <div className={cx("card", "cardBody", "mb24")}>
-        <div className={cx("sectionLabel", "mb16")}>Allocation by Project</div>
-        <div className={cx("flexCol", "gap12")}>
-          {capacityData.projects.map((project) => {
-            const pct = Math.round((project.allocated / capacityData.weeklyHours) * 100);
-            const loggedPct = Math.round((project.logged / project.allocated) * 100);
-            return (
-              <div key={project.name}>
-                <div className={cx("flexBetween", "mb4")}>
-                  <div>
-                    <span className={cx("fw600", "text12")}>{project.name}</span>
-                    <span className={cx("text11", "colorMuted", "ml8")}>· {project.client}</span>
-                  </div>
-                  <span className={cx("fontMono", "text11", "colorAccent")}>{project.allocated}h ({pct}%)</span>
-                </div>
-                <div className={cx("progressTrack")}>
-                  <div className={cx("progressFill", loggedPct >= 100 ? "progressFillAmber" : "progressFillGreen")} style={{ width: `${Math.min(loggedPct, 100)}%` }} />
-                </div>
-                <div className={cx("text10", "colorMuted2", "mt4")}>{project.logged}h logged / {project.allocated}h allocated</div>
+      {/* ── Summary stats ──────────────────────────────────────────────────── */}
+      <div className={cx("mcStatGrid")}>
+        {loading ? (
+          [1, 2, 3, 4].map((n) => <SkeletonStat key={n} />)
+        ) : (
+          <>
+            {/* Weekly Capacity */}
+            <div className={cx("mcStatCard")}>
+              <div className={cx("mcStatCardTop")}>
+                <div className={cx("mcStatLabel")}>Weekly Capacity</div>
+                <div className={cx("mcStatValue")}>{weeklyHours}h</div>
               </div>
-            );
-          })}
-        </div>
+              <div className={cx("mcStatCardDivider")} />
+              <div className={cx("mcStatCardBottom")}>
+                <span className={cx("mcStatDot", "dotBgMuted2")} />
+                <span className={cx("mcStatMeta")}>per week</span>
+              </div>
+            </div>
+
+            {/* Logged */}
+            <div className={cx("mcStatCard")}>
+              <div className={cx("mcStatCardTop")}>
+                <div className={cx("mcStatLabel")}>Logged This Week</div>
+                <div className={cx("mcStatValue", "colorAccent")}>{loggedThisWeek}h</div>
+              </div>
+              <div className={cx("mcStatCardDivider")} />
+              <div className={cx("mcStatCardBottom")}>
+                <span className={cx("mcStatDot", "dotBgAccent")} />
+                <span className={cx("mcStatMeta")}>{utilizationPct}% utilised</span>
+              </div>
+            </div>
+
+            {/* Utilization */}
+            <div className={cx("mcStatCard")}>
+              <div className={cx("mcStatCardTop")}>
+                <div className={cx("mcStatLabel")}>Utilization</div>
+                <div className={cx("mcStatValue", utilizationColor(utilizationPct))}>{utilizationPct}%</div>
+              </div>
+              <div className={cx("mcStatCardDivider")} />
+              <div className={cx("mcStatCardBottom")}>
+                <span className={cx("mcStatDot", "dynBgColor")} style={{ "--bg-color": utilizationPct >= 85 ? "var(--amber)" : "var(--green)" } as React.CSSProperties} />
+                <span className={cx("mcStatMeta")}>{utilizationPct >= 100 ? "Overloaded" : utilizationPct >= 85 ? "Near limit" : "Healthy"}</span>
+              </div>
+            </div>
+
+            {/* Available */}
+            <div className={cx("mcStatCard")}>
+              <div className={cx("mcStatCardTop")}>
+                <div className={cx("mcStatLabel")}>Available</div>
+                <div className={cx("mcStatValue", availableHours > 0 ? "colorGreen" : "colorRed")}>{availableHours}h</div>
+              </div>
+              <div className={cx("mcStatCardDivider")} />
+              <div className={cx("mcStatCardBottom")}>
+                <span className={cx("mcStatDot", "dynBgColor")} style={{ "--bg-color": availableHours > 0 ? "var(--green)" : "var(--red)" } as React.CSSProperties} />
+                <span className={cx("mcStatMeta")}>{availableHours > 0 ? "hours free" : "fully booked"}</span>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-      <div className={cx("card", "cardBody")}>
-        <div className={cx("sectionLabel", "mb16")}>Weekly Trend</div>
-        <div className={cx("tableWrap")}>
-          <table className={cx("table")}>
-            <thead>
-              <tr>
-                <th>Week</th>
-                <th>Allocated</th>
-                <th>Logged</th>
-                <th>Utilization</th>
-              </tr>
-            </thead>
-            <tbody>
-              {capacityData.weekHistory.map((w) => {
-                const util = Math.round((w.logged / w.allocated) * 100);
-                return (
-                  <tr key={w.week}>
-                    <td className={cx("fw600")}>{w.week}</td>
-                    <td className={cx("fontMono")}>{w.allocated}h</td>
-                    <td className={cx("fontMono")}>{w.logged}h</td>
-                    <td className={cx("fontMono", "fw600", utilizationColor(util))}>{util}%</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {/* ── Allocation by project ─────────────────────────────────────────── */}
+      {!loading && projects.length > 0 && (
+        <div className={cx("mcSection")}>
+          <div className={cx("mcSectionHeader")}>
+            <div className={cx("mcSectionTitle")}>Time Logged by Project</div>
+            <span className={cx("mcSectionMeta")}>{projects.length} PROJECTS</span>
+          </div>
+
+          <div className={cx("mcCardList")}>
+            {projects.map((project) => {
+              const capacityPct = pct(project.loggedHours, weeklyHours);
+              const remaining   = Math.max(0, weeklyHours - project.loggedHours);
+
+              return (
+                <div key={project.projectId} className={cx("mcProjectCard")}>
+                  <div className={cx("mcProjectHead")}>
+                    <div className={cx("mcProjectLeft")}>
+                      <div className={cx("mcProjectName")}>{project.name}</div>
+                      <div className={cx("mcProjectClient")}>{project.clientName}</div>
+                    </div>
+                    <div className={cx("mcProjectRight")}>
+                      <span className={cx("mcAllocAmount")}>{project.loggedHours}h</span>
+                      <span className={cx("mcAllocPct")}>{capacityPct}% of week</span>
+                    </div>
+                  </div>
+
+                  <div className={cx("mcBars")}>
+                    <div className={cx("mcBarRow")}>
+                      <div className={cx("mcBarMeta")}>
+                        <span className={cx("mcBarLabel")}>Capacity share</span>
+                        <span className={cx("mcBarPct")}>{capacityPct}%</span>
+                      </div>
+                      <div className={cx("progressTrack")}>
+                        <div className={cx("progressFill", allocFill(capacityPct))} style={{ '--pct': `${capacityPct}%` } as React.CSSProperties} />
+                      </div>
+                    </div>
+                    <div className={cx("mcBarRow")}>
+                      <div className={cx("mcBarMeta")}>
+                        <span className={cx("mcBarLabel")}>Hours logged</span>
+                        <span className={cx("mcBarPct", "colorAccent")}>{project.loggedHours}h</span>
+                      </div>
+                      <div className={cx("progressTrack")}>
+                        <div className={cx("progressFill", logFill(capacityPct))} style={{ '--pct': `${Math.min(capacityPct, 100)}%` } as React.CSSProperties} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={cx("mcProjectFooter")}>
+                    <span className={cx("mcFooterVal", "colorAccent")}>{project.loggedHours}h logged</span>
+                    <span className={cx("mcFooterSep")} />
+                    <span className={cx("mcFooterVal")}>{weeklyHours}h capacity</span>
+                    <span className={cx("mcFooterSep")} />
+                    <span className={cx("mcFooterVal", remaining > 0 ? "colorGreen" : "colorAmber")}>
+                      {remaining > 0 ? `${remaining}h remaining` : "on target"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ── Empty state ───────────────────────────────────────────────────── */}
+      {!loading && projects.length === 0 && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="zap" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>No time logged this week</div>
+          <div className={cx("emptyStateSub")}>Start the timer or log time entries to see your capacity breakdown.</div>
+        </div>
+      )}
+
+      {/* ── Weekly trend ──────────────────────────────────────────────────── */}
+      {!loading && weekHistory.length > 0 && (
+        <div className={cx("mcSection")}>
+          <div className={cx("mcSectionHeader")}>
+            <div className={cx("mcSectionTitle")}>Weekly Trend</div>
+            <span className={cx("mcSectionMeta")}>{weekHistory.length} WEEKS</span>
+          </div>
+          <div className={cx("tableWrap")}>
+            <table className={cx("table")}>
+              <thead>
+                <tr>
+                  <th scope="col">Week</th>
+                  <th scope="col">Hours Logged</th>
+                  <th scope="col">Utilization</th>
+                </tr>
+              </thead>
+              <tbody>
+                {weekHistory.map((w) => {
+                  const util = pct(w.loggedHours, weeklyHours);
+                  return (
+                    <tr key={w.week}>
+                      <td className={cx("fw600")}>{w.week}</td>
+                      <td className={cx("fontMono")}>{w.loggedHours}h</td>
+                      <td className={cx("fontMono", "fw600", utilizationColor(util))}>{util}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      {requestOpen && (
+        <div className={cx("mcSection", "mt24")}>
+          <div className={cx("mcSectionHeader")}>
+            <div className={cx("mcSectionTitle")}>Request Reduced Capacity</div>
+            <button type="button" className={cx("btnXs", "btnGhost")} onClick={() => setRequestOpen(false)}>
+              Cancel
+            </button>
+          </div>
+          <div className={cx("flexCol", "gap16", "pt16")}>
+            <div className={cx("flexRow", "gap16")}>
+              <div className={cx("flex1")}>
+                <label className={cx("mcStatLabel", "mb6")}>Start Date</label>
+                <input type="date" value={reqStart} onChange={(e) => setReqStart(e.target.value)}
+                  className={cx("dsHoursInput")} />
+              </div>
+              <div className={cx("flex1")}>
+                <label className={cx("mcStatLabel", "mb6")}>End Date</label>
+                <input type="date" value={reqEnd} onChange={(e) => setReqEnd(e.target.value)}
+                  className={cx("dsHoursInput")} />
+              </div>
+            </div>
+            <div>
+              <label className={cx("mcStatLabel", "mb6")}>Notes (optional)</label>
+              <textarea
+                value={reqNotes}
+                onChange={(e) => setReqNotes(e.target.value)}
+                placeholder="Reason for reduced capacity..."
+                className={cx("dsTextarea")}
+              />
+            </div>
+            {reqFeedback && (
+              <div className={cx(reqFeedback.tone === "success" ? "colorAccent" : "colorRed", "text12")}>
+                {reqFeedback.text}
+              </div>
+            )}
+            <div className={cx("flexEnd")}>
+              <button
+                type="button"
+                className={cx("btnSm", "btnAccent")}
+                disabled={!reqStart || !reqEnd || reqSubmitting}
+                onClick={() => void handleReduceCapacity()}
+              >
+                {reqSubmitting ? "Submitting…" : "Submit Request"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -1,10 +1,19 @@
+// ════════════════════════════════════════════════════════════════════════════
+// learning-development-page.tsx — Admin Learning & Development
+// Data     : loadAllTrainingWithRefresh → GET /training
+//            loadAllStaffWithRefresh    → GET /staff
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
 import { AdminTabs } from "./shared";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { loadAllTrainingWithRefresh, loadAllStaffWithRefresh, type AdminTrainingRecord, type AdminStaffProfile } from "../../../../lib/api/admin";
+import { saveSession } from "../../../../lib/auth/session";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
 type CourseStatus = "complete" | "in-progress" | "planned" | "upcoming";
 type CourseType = "Course" | "Short Course" | "Conference" | "Mentorship" | "Workshop";
 
@@ -29,49 +38,7 @@ type StaffMember = {
   courses: Course[];
 };
 
-const staff: StaffMember[] = [
-  {
-    id: "EMP-001", name: "Sipho Nkosi", role: "Founder & CEO", avatar: "SN", color: "var(--accent)",
-    ldBudget: 12000, ldSpent: 4800, courses: [
-      { name: "Strategic Leadership - Regenesys", type: "Course", status: "complete", cost: 4800, date: "Feb 2026", hours: 20, provider: "Regenesys" },
-      { name: "Creative Business Summit", type: "Conference", status: "upcoming", cost: 0, date: "Apr 2026", hours: 8, provider: "ADCSA" }
-    ]
-  },
-  {
-    id: "EMP-002", name: "Leilani Fotu", role: "Head of Operations", avatar: "LF", color: "var(--blue)",
-    ldBudget: 8000, ldSpent: 3200, courses: [
-      { name: "Project Management Fundamentals", type: "Course", status: "in-progress", cost: 2200, date: "Jan-Mar 2026", hours: 40, provider: "PMI Online" },
-      { name: "Asana Advanced Workflow", type: "Short Course", status: "complete", cost: 1000, date: "Jan 2026", hours: 6, provider: "Asana Academy" }
-    ]
-  },
-  {
-    id: "EMP-003", name: "Renzo Fabbri", role: "Creative Director", avatar: "RF", color: "var(--amber)",
-    ldBudget: 10000, ldSpent: 5400, courses: [
-      { name: "Motion Design Masterclass", type: "Course", status: "complete", cost: 3600, date: "Dec 2025", hours: 30, provider: "School of Motion" },
-      { name: "Creative Direction - Portfolio Review", type: "Mentorship", status: "in-progress", cost: 1800, date: "Jan-Mar 2026", hours: 12, provider: "Industry mentor" }
-    ]
-  },
-  {
-    id: "EMP-004", name: "Nomsa Dlamini", role: "Account Manager", avatar: "ND", color: "var(--accent)",
-    ldBudget: 6000, ldSpent: 0, courses: [
-      { name: "Client Success Certification", type: "Course", status: "planned", cost: 2800, date: "Apr 2026", hours: 20, provider: "Gainsight Academy" }
-    ]
-  },
-  {
-    id: "EMP-005", name: "Kira Bosman", role: "UX Designer", avatar: "KB", color: "var(--amber)",
-    ldBudget: 8000, ldSpent: 890, courses: [
-      { name: "Figma Advanced - Components & Variables", type: "Short Course", status: "complete", cost: 890, date: "Feb 2026", hours: 8, provider: "Figma Community" },
-      { name: "UX Research Methods", type: "Course", status: "planned", cost: 3200, date: "Mar 2026", hours: 24, provider: "Nielsen Norman Group" }
-    ]
-  },
-  {
-    id: "EMP-006", name: "Tapiwa Moyo", role: "Copywriter", avatar: "TM", color: "var(--blue)",
-    ldBudget: 5000, ldSpent: 0, courses: [
-      { name: "Brand Storytelling - Masterclass", type: "Course", status: "planned", cost: 1200, date: "Mar 2026", hours: 16, provider: "Masterclass" }
-    ]
-  }
-];
-
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const statusConfig: Record<CourseStatus, { color: string; label: string }> = {
   complete: { color: "var(--accent)", label: "Complete" },
   "in-progress": { color: "var(--blue)", label: "In Progress" },
@@ -87,21 +54,56 @@ const typeColors: Record<CourseType, string> = {
   Workshop: "var(--amber)"
 };
 
-const tabs = ["by staff", "all courses", "budget", "skills matrix"] as const;
-type Tab = (typeof tabs)[number];
-
 const skills = ["Brand Strategy", "Visual Design", "UX / Product", "Motion Design", "Copywriting", "Account Management", "Operations", "Leadership"] as const;
 type Skill = (typeof skills)[number];
 
-const skillMap: Record<string, Record<Skill, number>> = {
-  "Sipho Nkosi": { "Brand Strategy": 5, "Visual Design": 3, "UX / Product": 2, "Motion Design": 2, Copywriting: 3, "Account Management": 4, Operations: 4, Leadership: 5 },
-  "Leilani Fotu": { "Brand Strategy": 3, "Visual Design": 2, "UX / Product": 3, "Motion Design": 1, Copywriting: 2, "Account Management": 3, Operations: 5, Leadership: 4 },
-  "Renzo Fabbri": { "Brand Strategy": 5, "Visual Design": 5, "UX / Product": 3, "Motion Design": 5, Copywriting: 3, "Account Management": 2, Operations: 2, Leadership: 4 },
-  "Nomsa Dlamini": { "Brand Strategy": 4, "Visual Design": 2, "UX / Product": 2, "Motion Design": 1, Copywriting: 3, "Account Management": 5, Operations: 3, Leadership: 3 },
-  "Kira Bosman": { "Brand Strategy": 3, "Visual Design": 4, "UX / Product": 5, "Motion Design": 2, Copywriting: 2, "Account Management": 2, Operations: 2, Leadership: 2 },
-  "Tapiwa Moyo": { "Brand Strategy": 3, "Visual Design": 2, "UX / Product": 2, "Motion Design": 1, Copywriting: 5, "Account Management": 2, Operations: 2, Leadership: 2 }
-};
+const tabs = ["by staff", "all courses", "budget", "skills matrix"] as const;
+type Tab = (typeof tabs)[number];
 
+function mapApiStatus(status: string): CourseStatus {
+  const s = status.toUpperCase();
+  if (s === "COMPLETED") return "complete";
+  if (s === "IN_PROGRESS" || s === "IN-PROGRESS") return "in-progress";
+  if (s === "UPCOMING") return "upcoming";
+  return "planned";
+}
+
+function mapApiCourse(t: AdminTrainingRecord): Course {
+  const validTypes: CourseType[] = ["Course", "Short Course", "Conference", "Mentorship", "Workshop"];
+  const courseType: CourseType = validTypes.includes(t.category as CourseType) ? (t.category as CourseType) : "Course";
+  const dateStr = t.completedAt
+    ? new Date(t.completedAt).toLocaleDateString("en-ZA", { month: "short", year: "numeric" })
+    : new Date(t.createdAt).toLocaleDateString("en-ZA", { month: "short", year: "numeric" });
+  return {
+    name: t.courseName,
+    type: courseType,
+    status: mapApiStatus(t.status),
+    cost: 0,
+    date: dateStr,
+    hours: 0,
+    provider: t.provider ?? "—",
+  };
+}
+
+function buildStaffMembers(staff: AdminStaffProfile[], training: AdminTrainingRecord[]): StaffMember[] {
+  return staff.map((s) => {
+    const initials = s.avatarInitials ?? s.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+    const color = s.avatarColor ?? "var(--accent)";
+    const staffCourses = training.filter((t) => t.staffId === s.id).map(mapApiCourse);
+    return {
+      id: s.id,
+      name: s.name,
+      role: s.role,
+      avatar: initials,
+      color,
+      ldBudget: 0,
+      ldSpent: 0,
+      courses: staffCourses,
+    };
+  });
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 function Avatar({ initials, color, size = 32 }: { initials: string; color: string; size?: number }) {
   const sizeClass = size === 22 ? "lndAvatar22" : size === 28 ? "lndAvatar28" : "lndAvatar32";
   return (
@@ -113,44 +115,30 @@ function Avatar({ initials, color, size = 32 }: { initials: string; color: strin
 
 function toneVarClass(color: string): string {
   switch (color) {
-    case "var(--accent)":
-      return styles.lndToneAccent;
-    case "var(--red)":
-      return styles.lndToneRed;
-    case "var(--amber)":
-      return styles.lndToneAmber;
-    case "var(--blue)":
-      return styles.lndToneBlue;
-    case "var(--purple)":
-      return styles.lndTonePurple;
-    default:
-      return styles.lndToneMuted;
+    case "var(--accent)": return styles.lndToneAccent;
+    case "var(--red)": return styles.lndToneRed;
+    case "var(--amber)": return styles.lndToneAmber;
+    case "var(--blue)": return styles.lndToneBlue;
+    case "var(--purple)": return styles.lndTonePurple;
+    default: return styles.lndToneMuted;
   }
 }
 
 function fillClass(color: string): string {
   switch (color) {
-    case "var(--accent)":
-      return styles.lndFillAccent;
-    case "var(--amber)":
-      return styles.lndFillAmber;
-    case "var(--blue)":
-      return styles.lndFillBlue;
-    default:
-      return styles.lndFillMuted;
+    case "var(--accent)": return styles.lndFillAccent;
+    case "var(--amber)": return styles.lndFillAmber;
+    case "var(--blue)": return styles.lndFillBlue;
+    default: return styles.lndFillMuted;
   }
 }
 
 function planFillClass(color: string): string {
   switch (color) {
-    case "var(--accent)":
-      return styles.lndPlanFillAccent;
-    case "var(--amber)":
-      return styles.lndPlanFillAmber;
-    case "var(--blue)":
-      return styles.lndPlanFillBlue;
-    default:
-      return styles.lndPlanFillMuted;
+    case "var(--accent)": return styles.lndPlanFillAccent;
+    case "var(--amber)": return styles.lndPlanFillAmber;
+    case "var(--blue)": return styles.lndPlanFillBlue;
+    default: return styles.lndPlanFillMuted;
   }
 }
 
@@ -163,18 +151,45 @@ function skillToneClass(level: number): string {
   return styles.lndSkillTone5;
 }
 
-export function LearningDevelopmentPage() {
+// ── Component ─────────────────────────────────────────────────────────────────
+export function LearningDevelopmentPage({ session }: { session: AuthSession | null }) {
   const [activeTab, setActiveTab] = useState<Tab>("by staff");
-  const [expanded, setExpanded] = useState<string>("EMP-003");
+  const [expanded, setExpanded] = useState<string>("");
+  const [apiStaff, setApiStaff] = useState<AdminStaffProfile[]>([]);
+  const [apiTraining, setApiTraining] = useState<AdminTrainingRecord[]>([]);
+
+  useEffect(() => {
+    if (!session) return;
+    Promise.all([loadAllStaffWithRefresh(session), loadAllTrainingWithRefresh(session)]).then(([sr, tr]) => {
+      if (sr.nextSession) saveSession(sr.nextSession);
+      else if (tr.nextSession) saveSession(tr.nextSession);
+      if (!sr.error && sr.data) {
+        setApiStaff(sr.data);
+        setExpanded(sr.data[0]?.id ?? "");
+      }
+      if (!tr.error && tr.data) setApiTraining(tr.data);
+    });
+  }, [session]);
+
+  const staff = useMemo<StaffMember[]>(
+    () => buildStaffMembers(apiStaff, apiTraining),
+    [apiStaff, apiTraining]
+  );
 
   const totalBudget = staff.reduce((s, m) => s + m.ldBudget, 0);
   const totalSpent = staff.reduce((s, m) => s + m.ldSpent, 0);
   const allCourses = useMemo(
     () => staff.flatMap((m) => m.courses.map((c) => ({ ...c, staffName: m.name, staffColor: m.color, staffAvatar: m.avatar }))),
-    []
+    [staff]
   );
   const inProgress = allCourses.filter((c) => c.status === "in-progress").length;
   const completed = allCourses.filter((c) => c.status === "complete").length;
+
+  // Static skill map — not yet in API, kept as placeholder zeros
+  const skillMap: Record<string, Record<Skill, number>> = useMemo(() =>
+    Object.fromEntries(staff.map((m) => [m.name, Object.fromEntries(skills.map((s) => [s, 0])) as Record<Skill, number>])),
+    [staff]
+  );
 
   return (
     <div className={cx(styles.pageBody, styles.lndRoot)}>
@@ -217,6 +232,9 @@ export function LearningDevelopmentPage() {
       <div className={cx("overflowAuto", "minH0")}>
         {activeTab === "by staff" ? (
           <div className={styles.lndStack12}>
+            {staff.length === 0 ? (
+              <div className={cx("colorMuted", "text13", "py24", "textCenter")}>No staff records found.</div>
+            ) : null}
             {staff.map((member) => {
               const isExp = expanded === member.id;
               const budgetPct = Math.round((member.ldSpent / Math.max(member.ldBudget, 1)) * 100);
@@ -264,6 +282,9 @@ export function LearningDevelopmentPage() {
                   {isExp ? (
                     <div className={styles.lndExpandWrap}>
                       <div className={styles.lndCourseList}>
+                        {member.courses.length === 0 ? (
+                          <div className={cx("colorMuted", "text12", "py12")}>No courses logged.</div>
+                        ) : null}
                         {member.courses.map((course, i) => {
                           const sc = statusConfig[course.status];
                           const tc = typeColors[course.type] || "var(--muted)";
@@ -276,7 +297,7 @@ export function LearningDevelopmentPage() {
                               <span className={cx(styles.lndTypeTag, toneVarClass(tc))}>{course.type}</span>
                               <span className={cx(styles.lndStatusTag, toneVarClass(sc.color))}>{sc.label}</span>
                               <span className={styles.lndMoney}>{course.cost > 0 ? `R${(course.cost / 1000).toFixed(1)}k` : "Free"}</span>
-                              <span className={styles.lndHours}>{course.hours}h</span>
+                              <span className={styles.lndHours}>{course.hours > 0 ? `${course.hours}h` : "—"}</span>
                               {course.status === "complete" ? <span className={styles.lndCheck}>✓</span> : <button type="button" className={cx("btnSm", "btnGhost")}>Update</button>}
                             </div>
                           );
@@ -295,6 +316,9 @@ export function LearningDevelopmentPage() {
             <div className={styles.lndCourseHead}>
               {["Staff", "Course", "Provider", "Type", "Status", "Cost", "Hours"].map((h) => <span key={h}>{h}</span>)}
             </div>
+            {allCourses.length === 0 ? (
+              <div className={cx("colorMuted", "text13", "py24", "textCenter")}>No courses logged.</div>
+            ) : null}
             {allCourses.map((c, i) => {
               const sc = statusConfig[c.status];
               const tc = typeColors[c.type] || "var(--muted)";
@@ -312,7 +336,7 @@ export function LearningDevelopmentPage() {
                   <span className={cx(styles.lndTypeTag, toneVarClass(tc))}>{c.type}</span>
                   <span className={cx(styles.lndStatusTag, toneVarClass(sc.color))}>{sc.label}</span>
                   <span className={styles.lndMoney}>{c.cost > 0 ? `R${(c.cost / 1000).toFixed(1)}k` : "Free"}</span>
-                  <span className={styles.lndHours}>{c.hours}h</span>
+                  <span className={styles.lndHours}>{c.hours > 0 ? `${c.hours}h` : "—"}</span>
                 </div>
               );
             })}

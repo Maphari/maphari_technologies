@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type CSSProperties } from "react";
+import { useCallback, useState, useEffect } from "react";
 import {
   useDashboardToasts,
   DashboardToastStack,
@@ -8,59 +8,144 @@ import {
   hasAnyDashboardData,
 } from "../shared/dashboard-core";
 import { usePortalWorkspace } from "../../lib/auth/use-portal-workspace";
-import { useDelayedFlag } from "../shared/use-delayed-flag";
+import { useRealtimeRefresh } from "../../lib/auth/use-realtime-refresh";
 import { pageTitles } from "./maphari-dashboard/constants";
+import type { PageId } from "./maphari-dashboard/config";
 import { cx, styles } from "./maphari-dashboard/style";
+import { Ic } from "./maphari-dashboard/ui";
+import { DashboardToastCtx, type PageNotifyFn } from "./maphari-dashboard/hooks/use-page-toast";
+import { ProjectLayerCtx } from "./maphari-dashboard/hooks/use-project-layer";
 
 // ── Hooks ────────────────────────────────────────────────────────────────────
 import { useClientData } from "./maphari-dashboard/hooks/use-client-data";
 import { useClientNavigation } from "./maphari-dashboard/hooks/use-client-navigation";
-import { useClientActions } from "./maphari-dashboard/hooks/use-client-actions";
 import { useNotifications } from "./maphari-dashboard/hooks/use-notifications";
 import { useCommandSearch } from "./maphari-dashboard/hooks/use-command-search";
+import { searchGlobal } from "../../lib/api/shared/search";
 import { useKeyboardShortcuts } from "./maphari-dashboard/hooks/use-keyboard-shortcuts";
-import { useClientTour } from "./maphari-dashboard/hooks/use-client-tour";
+import { useClientTour, CLIENT_TOUR_STEPS } from "./maphari-dashboard/hooks/use-client-tour";
+import { DashboardTour } from "../shared/dashboard-tour";
 import { useSessionTimeout } from "./maphari-dashboard/hooks/use-session-timeout";
 import { useTheme } from "./maphari-dashboard/hooks/use-theme";
 import { useQuickCompose } from "./maphari-dashboard/hooks/use-quick-compose";
 
 // ── Shell components ─────────────────────────────────────────────────────────
+import { DashboardErrorBoundary } from "./maphari-dashboard/error-boundary";
 import { ClientSidebar } from "./maphari-dashboard/sidebar";
 import { ClientTopbar } from "./maphari-dashboard/topbar";
 
 // ── Pages ────────────────────────────────────────────────────────────────────
+// Overview
+import { HomePage } from "./maphari-dashboard/pages/home-page";
 import { DashboardPage } from "./maphari-dashboard/pages/dashboard-page";
-import { ProjectsPage } from "./maphari-dashboard/pages/projects-page";
-import { MessagesPage } from "./maphari-dashboard/pages/messages-page";
 import { NotificationsPage } from "./maphari-dashboard/pages/notifications-page";
+// Projects
+import { MyProjectsPage } from "./maphari-dashboard/pages/my-projects-page";
 import { ProjectRequestPage } from "./maphari-dashboard/pages/project-request-page";
-import { ApprovalsPage } from "./maphari-dashboard/pages/approvals-page";
-import { MeetingsPage } from "./maphari-dashboard/pages/meetings-page";
-import { FilesPage } from "./maphari-dashboard/pages/files-page";
-import { FeedbackPage } from "./maphari-dashboard/pages/feedback-page";
-import { BillingPage } from "./maphari-dashboard/pages/billing-page";
-import { ContractsPage } from "./maphari-dashboard/pages/contracts-page";
-import { ReportsPage } from "./maphari-dashboard/pages/reports-page";
-import { AIAutomationPage } from "./maphari-dashboard/pages/ai-automation-page";
-import { ServicesGrowthPage } from "./maphari-dashboard/pages/services-growth-page";
-import { SupportPage } from "./maphari-dashboard/pages/support-page";
-import { OnboardingPage } from "./maphari-dashboard/pages/onboarding-page";
-import { TeamPage } from "./maphari-dashboard/pages/team-page";
-import { SettingsPage } from "./maphari-dashboard/pages/settings-page";
-import { RetainerUsagePage } from "./maphari-dashboard/pages/retainer-usage-page";
-import { SprintVisibilityPage } from "./maphari-dashboard/pages/sprint-visibility-page";
-import { DeliverableStatusPage } from "./maphari-dashboard/pages/deliverable-status-page";
-import { MilestoneApprovalsPage } from "./maphari-dashboard/pages/milestone-approvals-page";
+import { TimelinePage } from "./maphari-dashboard/pages/timeline-page";
+import { MilestonesPage } from "./maphari-dashboard/pages/milestones-page";
+import { SprintBoardPage } from "./maphari-dashboard/pages/sprint-board-page";
+import { DeliverablesPage } from "./maphari-dashboard/pages/deliverables-page";
+import { ChangeRequestsPage } from "./maphari-dashboard/pages/change-requests-page";
+import { RiskRegisterPage } from "./maphari-dashboard/pages/risk-register-page";
+import { DecisionLogPage } from "./maphari-dashboard/pages/decision-log-page";
+import { ContentApprovalPage } from "./maphari-dashboard/pages/content-approval-page";
+// Finance
+import { PaymentsPage } from "./maphari-dashboard/pages/payments-page";
+import { InvoicesPage } from "./maphari-dashboard/pages/invoices-page";
+import { BudgetTrackerPage } from "./maphari-dashboard/pages/budget-tracker-page";
+import { ContractsProposalsPage } from "./maphari-dashboard/pages/contracts-proposals-page";
+import { RetainerDashboardPage } from "./maphari-dashboard/pages/retainer-dashboard-page";
+import { QuoteAcceptancePage } from "./maphari-dashboard/pages/quote-acceptance-page";
+import { FinancialReportsPage } from "./maphari-dashboard/pages/financial-reports-page";
+import { InvoiceHistoryPage } from "./maphari-dashboard/pages/invoice-history-page";
+// Communication
+import { MessagesPage } from "./maphari-dashboard/pages/messages-page";
+import { BookCallPage } from "./maphari-dashboard/pages/book-call-page";
+import { AnnouncementsPage } from "./maphari-dashboard/pages/announcements-page";
+import { DesignReviewPage } from "./maphari-dashboard/pages/design-review-page";
+import { MeetingArchivePage } from "./maphari-dashboard/pages/meeting-archive-page";
+// Files
+import { FilesAssetsPage } from "./maphari-dashboard/pages/files-assets-page";
+import { BrandLibraryPage } from "./maphari-dashboard/pages/brand-library-page";
+import { ResourceHubPage } from "./maphari-dashboard/pages/resource-hub-page";
+// Reporting
+import { ProjectReportsPage } from "./maphari-dashboard/pages/project-reports-page";
 import { HealthScorePage } from "./maphari-dashboard/pages/health-score-page";
-import { SatisfactionSurveyPage } from "./maphari-dashboard/pages/satisfaction-survey-page";
+import { PerformanceDashboardPage } from "./maphari-dashboard/pages/performance-dashboard-page";
+// Growth
+import { ServiceCatalogPage } from "./maphari-dashboard/pages/service-catalog-page";
+import { ReferralProgramPage } from "./maphari-dashboard/pages/referral-program-page";
+import { LoyaltyCreditsPage } from "./maphari-dashboard/pages/loyalty-credits-page";
+// Support
+import { KnowledgeBasePage } from "./maphari-dashboard/pages/knowledge-base-page";
 import { KnowledgeAccessPage } from "./maphari-dashboard/pages/knowledge-access-page";
+import { SlaEscalationPage } from "./maphari-dashboard/pages/sla-escalation-page";
+// Account
+import { FeedbackSurveyPage } from "./maphari-dashboard/pages/feedback-survey-page";
+import { TeamAccessPage } from "./maphari-dashboard/pages/team-access-page";
+import { IntegrationsPage } from "./maphari-dashboard/pages/integrations-page";
+import { SettingsPage } from "./maphari-dashboard/pages/settings-page";
+import { DataPrivacyPage } from "./maphari-dashboard/pages/data-privacy-page";
+import { OnboardingStatusPage } from "./maphari-dashboard/pages/onboarding-status-page";
+import { OnboardingPage } from "./maphari-dashboard/pages/onboarding-page";
+import { SupportPage as ProgressKnowledgePage } from "./maphari-dashboard/pages/support-page";
+import { CommunicationHistoryPage } from "./maphari-dashboard/pages/communication-history-page";
+import { ProjectBriefPage } from "./maphari-dashboard/pages/project-brief-page";
+import { OffboardingPage } from "./maphari-dashboard/pages/offboarding-page";
+import { CompanyProfilePage } from "./maphari-dashboard/pages/company-profile-page";
 
-// ── Dummy data (no backend source for these entities yet) ────────────────────
-import {
-  DUMMY_NOTIFICATION_PREFS,
-  DUMMY_INTEGRATIONS,
-  DUMMY_SESSIONS,
-} from "./maphari-dashboard/dummy-data";
+import type { NotificationPreference } from "./maphari-dashboard/types";
+
+const DEFAULT_NOTIFICATION_PREFS: NotificationPreference[] = [
+  { category: "Project Updates",   inApp: true,  email: true,  push: true  },
+  { category: "Invoice & Payments",inApp: true,  email: true,  push: false },
+  { category: "Messages",          inApp: true,  email: true,  push: true  },
+  { category: "Milestone Approvals",inApp: true, email: true,  push: true  },
+  { category: "File Uploads",      inApp: true,  email: false, push: false },
+  { category: "Team Changes",      inApp: true,  email: true,  push: false },
+  { category: "Support Tickets",   inApp: true,  email: true,  push: false },
+  { category: "Weekly Digest",     inApp: false, email: true,  push: false },
+];
+import { getPortalPreferenceWithRefresh, setPortalPreferenceWithRefresh } from "@/lib/api/portal/settings";
+import { inferCountryFromLocale, currencyFromCountry } from "@/lib/i18n/currency";
+import { loadPortalProfileWithRefresh, type PortalClientProfile } from "@/lib/api/portal/profile";
+import { saveSession } from "@/lib/auth/session";
+
+// ── Command search constants ──────────────────────────────────────────────────
+
+const CMD_SUGGESTIONS: Array<{ icon: string; label: string; page: PageId }> = [
+  { icon: "home",       label: "Home",          page: "home"          },
+  { icon: "briefcase",  label: "My Projects",   page: "myProjects"    },
+  { icon: "bell",       label: "Notifications", page: "notifications" },
+  { icon: "message",    label: "Messages",      page: "messages"      },
+  { icon: "invoiceDoc", label: "Invoices",      page: "invoices"      },
+  { icon: "settings",   label: "Settings",      page: "settings"      },
+];
+
+const CMD_TYPE_ICON: Record<string, string> = {
+  Page:         "file",
+  Project:      "briefcase",
+  Message:      "message",
+  Invoice:      "invoiceDoc",
+  Notification: "bell",
+};
+
+const CMD_TYPE_ICO_COLOR: Record<string, string> = {
+  Page:         "var(--blue)",
+  Project:      "var(--accent)",
+  Message:      "var(--lime)",
+  Invoice:      "var(--amber)",
+  Notification: "var(--purple)",
+};
+
+const CMD_TYPE_ICO_BG: Record<string, string> = {
+  Page:         "color-mix(in oklab, var(--blue)   10%, var(--s2))",
+  Project:      "color-mix(in oklab, var(--accent)  10%, var(--s2))",
+  Message:      "color-mix(in oklab, var(--lime)    10%, var(--s2))",
+  Invoice:      "color-mix(in oklab, var(--amber)   10%, var(--s2))",
+  Notification: "color-mix(in oklab, var(--purple)  10%, var(--s2))",
+};
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -78,77 +163,102 @@ export function MaphariClientDashboard() {
 
   // ── 2. Toast system ──────────────────────────────────────────────────────
   const { toasts, setFeedback } = useDashboardToasts();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ── 3. Delayed flag for animation delay ──────────────────────────────────
-  const _ready = useDelayedFlag(snapshot, 200);
-
-  // ── 4. Data transformation ───────────────────────────────────────────────
+  // ── 3. Data transformation ───────────────────────────────────────────────
   const clientData = useClientData({
     snapshot,
     userId: session?.user.id ?? null,
   });
 
+  const [activePageForHooks, setActivePageForHooks] = useState<PageId>("home");
+
   // ── 5. Notifications ────────────────────────────────────────────────────
   const notifs = useNotifications({
     session: session ?? null,
-    activePage: "dashboard",
+    activePage: activePageForHooks,
   });
 
-  // ── 6. Navigation (with badge counts) ───────────────────────────────────
-  // Derive pending approvals from overdue/at-risk projects as a proxy
+  // ── 5. Navigation (with badge counts) ───────────────────────────────────
+  // Use elevated risk as a proxy for items likely to need client attention.
   const pendingApprovalCount = snapshot.projects.filter(
-    (p) =>
-      p.riskLevel === "HIGH" ||
-      p.riskLevel === "CRITICAL" ||
-      (p.dueAt && new Date(p.dueAt).getTime() < Date.now() && p.status !== "COMPLETED"),
+    (p) => p.riskLevel === "HIGH" || p.riskLevel === "CRITICAL",
   ).length;
 
   const nav = useClientNavigation({
-    initialPage: "dashboard",
+    initialPage: "home",
     unreadNotifications: notifs.unreadCount,
     pendingApprovals: pendingApprovalCount,
     outstandingInvoiceCount: clientData.outstandingInvoices.length,
     unreadThreadCount: clientData.threads.filter((t) => t.unread).length,
   });
 
-  // ── 7. Actions ──────────────────────────────────────────────────────────
-  const actions = useClientActions({
-    session: session ?? null,
-    refreshSnapshot,
-    setFeedback,
-  });
+  // nav.navigateTo is stable (useCallback with no deps in useClientNavigation)
+  // Using nav.navigateTo as dep instead of nav object prevents recreation on every render
+  const handleNavigate = useCallback(
+    (page: PageId) => {
+      setActivePageForHooks(page);
+      nav.navigateTo(page);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [nav.navigateTo],
+  );
 
-  // ── 8. Command search ───────────────────────────────────────────────────
+  // ── 6. Command search ───────────────────────────────────────────────────
+  const clientAsyncSearch = useCallback(async (q: string) => {
+    if (!session) return [];
+    const res = await searchGlobal(q, session);
+    if (res.nextSession) saveSession(res.nextSession);
+    return (res.data?.results ?? []).map((hit) => ({
+      id: `search-${hit.id}`,
+      type: hit.type.charAt(0).toUpperCase() + hit.type.slice(1),
+      label: hit.title,
+      meta: [hit.status, hit.subtitle].filter(Boolean).join(" · ") || hit.type,
+      action: () => {
+        if (hit.type === "project") handleNavigate("myProjects");
+        else handleNavigate("dashboard");
+      },
+    }));
+  }, [session, handleNavigate]);
+
   const commandSearch = useCommandSearch({
     threads: clientData.threads,
     projects: clientData.projects,
     invoices: clientData.invoices,
     navItems: nav.navSectionsWithBadges.flatMap(([, items]) => items),
     notifications: notifs.notifications,
-    onNavigate: nav.navigateTo,
+    onNavigate: handleNavigate,
     onSelectThread: (threadId) => {
       selectConversation(threadId);
-      nav.navigateTo("messages");
+      handleNavigate("messages");
     },
+    asyncSearch: clientAsyncSearch,
   });
 
-  // ── 9. Keyboard shortcuts ───────────────────────────────────────────────
+  // ── 7. Keyboard shortcuts ───────────────────────────────────────────────
   const shortcuts = useKeyboardShortcuts({
-    onNavigate: nav.navigateTo,
+    onNavigate: handleNavigate,
     onOpenSearch: commandSearch.open,
     isSearchOpen: commandSearch.isOpen,
   });
 
-  // ── 10. Tour ────────────────────────────────────────────────────────────
+  // ── 8. Tour ────────────────────────────────────────────────────────────
   const tour = useClientTour();
 
-  // ── 11. Session timeout ─────────────────────────────────────────────────
+  // ── 9. Real-time SSE refresh ──────────────────────────────────────────
+  const handleSseRefresh = useCallback(() => {
+    void refreshSnapshot(undefined, { background: true });
+  }, [refreshSnapshot]);
+  useRealtimeRefresh(session ?? null, handleSseRefresh);
+
+  // ── 9. Session timeout ─────────────────────────────────────────────────
   const sessionTimeout = useSessionTimeout({ onTimeout: signOut });
 
-  // ── 12. Theme ───────────────────────────────────────────────────────────
+  // ── 10. Theme ───────────────────────────────────────────────────────────
   const themeHook = useTheme();
 
-  // ── 13. Quick compose ───────────────────────────────────────────────────
+  // ── 11. Quick compose ───────────────────────────────────────────────────
   const quickCompose = useQuickCompose({
     session: session ?? null,
     projects: snapshot.projects.map((p) => ({ id: p.id, name: p.name })),
@@ -161,6 +271,70 @@ export function MaphariClientDashboard() {
     null,
   );
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // ── Client profile (for sidebar user card) ───────────────────────────────
+  const [profile, setProfile] = useState<PortalClientProfile | null>(null);
+
+  useEffect(() => {
+    if (!session) return;
+    void loadPortalProfileWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setProfile(r.data);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+
+  // ── Currency preference ──────────────────────────────────────────────────
+  const [currency, setCurrency] = useState<string>(() => {
+    if (typeof navigator === "undefined") return "USD";
+    const country = inferCountryFromLocale(navigator.language);
+    return currencyFromCountry(country) ?? "USD";
+  });
+
+  useEffect(() => {
+    if (!session) return;
+    void getPortalPreferenceWithRefresh(session, "settingsCurrency").then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data?.value) setCurrency(r.data.value);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+
+  // ── Notification preferences (loaded from portal preferences API) ─────────
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreference[]>(DEFAULT_NOTIFICATION_PREFS);
+
+  useEffect(() => {
+    if (!session) return;
+    getPortalPreferenceWithRefresh(session, "settingsNotifications").then(r => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data?.value) {
+        try {
+          const parsed = JSON.parse(r.data.value) as NotificationPreference[];
+          if (Array.isArray(parsed) && parsed.length > 0) setNotificationPrefs(parsed);
+        } catch { /* keep defaults */ }
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+
+  const handleToggleNotification = useCallback(
+    (category: string, channel: string, value: boolean) => {
+      setNotificationPrefs(prev => {
+        const next = prev.map(p =>
+          p.category === category ? { ...p, [channel]: value } : p
+        );
+        // Persist asynchronously — fire and forget
+        if (session) {
+          setPortalPreferenceWithRefresh(session, {
+            key: "settingsNotifications",
+            value: JSON.stringify(next),
+          }).then(r => { if (r.nextSession) saveSession(r.nextSession); });
+        }
+        return next;
+      });
+    },
+    [session],
+  );
 
   // ── Derived ──────────────────────────────────────────────────────────────
   const hasWorkspaceData = hasAnyDashboardData([
@@ -183,17 +357,24 @@ export function MaphariClientDashboard() {
     ? pageTitle.split(" / ")
     : ["Portal", pageTitle];
 
+  // ── Page notify (must be before early returns to satisfy Rules of Hooks) ──
+  const pageNotify: PageNotifyFn = useCallback(
+    (tone, title, subtitle) =>
+      setFeedback({ tone, message: subtitle ? `${title} — ${subtitle}` : title }),
+    [setFeedback],
+  );
+
   // ── Loading gate ─────────────────────────────────────────────────────────
   if (loading && !hasWorkspaceData) {
-    return <DashboardLoadingFallback label="Loading your portal..." />;
+    return <DashboardLoadingFallback variant="client" label="Loading your portal…" />;
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
-  const contentStyle = nav.activePage === "settings"
-    ? ({ "--layout-content-pad": "0px" } as CSSProperties)
-    : undefined;
+  const contentStyle = undefined;
 
   return (
+    <ProjectLayerCtx.Provider value={{ session, projectId: selectedProjectId ?? snapshot.projects[0]?.id ?? null }}>
+    <DashboardToastCtx.Provider value={pageNotify}>
     <div className={`${styles.clientRoot} ${styles.root} dashboardScale dashboardBlendClient`}>
       <div className={styles.shell}>
         {/* ── Sidebar ─────────────────────────────────────────────────── */}
@@ -201,10 +382,11 @@ export function MaphariClientDashboard() {
           navSections={nav.navSectionsWithBadges}
           allPagesSections={nav.allPagesSections}
           activePage={nav.activePage}
-          onNavigate={nav.navigateTo}
-          clientName={session?.user.email?.split("@")[0] ?? "Client"}
-          companyName={session?.user.email?.split("@")[1] ?? "Company"}
-          clientInitials={(session?.user.email?.[0] ?? "C").toUpperCase()}
+          onNavigate={(p) => { handleNavigate(p); setSidebarOpen(false); }}
+          clientName={profile?.ownerName ?? session?.user.email?.split("@")[0] ?? "Client"}
+          companyName={profile?.companyName ?? profile?.name ?? session?.user.email?.split("@")[1] ?? "Company"}
+          clientInitials={((profile?.ownerName ?? profile?.companyName ?? profile?.name ?? session?.user.email)?.[0] ?? "C").toUpperCase()}
+          planLabel={profile?.tier ? profile.tier.charAt(0) + profile.tier.slice(1).toLowerCase().replace(/_/g, " ") : undefined}
           projects={snapshot.projects.map((p) => ({ id: p.id, name: p.name }))}
           activeProjectName={
             selectedProjectId
@@ -212,7 +394,29 @@ export function MaphariClientDashboard() {
               : undefined
           }
           onProjectChange={setSelectedProjectId}
+          onOpenSearch={() => commandSearch.open()}
+          mobileOpen={sidebarOpen}
         />
+        {sidebarOpen && (
+          <div className={styles.mobileOverlay} onClick={() => setSidebarOpen(false)} />
+        )}
+        <button
+          type="button"
+          className={styles.hamburgerBtn}
+          aria-label="Toggle navigation"
+          onClick={() => setSidebarOpen((prev) => !prev)}
+        >
+          {sidebarOpen
+            ? <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+              </svg>
+            : <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                <rect x="1" y="4"    width="16" height="1.5" rx="0.75" fill="currentColor"/>
+                <rect x="1" y="8.25" width="16" height="1.5" rx="0.75" fill="currentColor"/>
+                <rect x="1" y="12.5" width="16" height="1.5" rx="0.75" fill="currentColor"/>
+              </svg>
+          }
+        </button>
 
         {/* ── Main area ───────────────────────────────────────────────── */}
         <div className={styles.main}>
@@ -220,145 +424,133 @@ export function MaphariClientDashboard() {
             eyebrow={eyebrow}
             title={title}
             onOpenApps={() => window.dispatchEvent(new CustomEvent("client:open-app-grid"))}
-            onOpenNotifications={() => nav.navigateTo("notifications")}
+            onOpenNotifications={() => handleNavigate("notifications")}
             onNewMessage={() => quickCompose.open()}
+            onOpenHelp={() => handleNavigate("knowledgeBase")}
             unreadCount={notifs.unreadCount}
             onLogout={handleLogout}
             clientInitials={(session?.user.email?.[0] ?? "C").toUpperCase()}
             clientEmail={session?.user.email ?? ""}
             isLoggingOut={isLoggingOut}
+            onOpenSearch={() => commandSearch.open()}
+            onNavigateSettings={() => handleNavigate("settings")}
+            onNavigateTeam={() => handleNavigate("teamAccess")}
+            onMenuToggle={() => setSidebarOpen((v) => !v)}
           />
 
           <div className={styles.content} style={contentStyle}>
-            {/* ── Dashboard ───────────────────────────────────────────── */}
-            {nav.activePage === "dashboard" && <DashboardPage />}
-
-            {/* ── Projects ────────────────────────────────────────────── */}
-            {nav.activePage === "projects" && <ProjectsPage />}
-
-            {/* ── Messages ────────────────────────────────────────────── */}
-            {nav.activePage === "messages" && <MessagesPage />}
-
-            {/* ── Notifications ───────────────────────────────────────── */}
-            {nav.activePage === "notifications" && (
-              <NotificationsPage />
-            )}
-
-            {/* ── Project Request ─────────────────────────────────────── */}
-            {nav.activePage === "request" && (
-              <ProjectRequestPage />
-            )}
-
-            {/* ── Approvals ───────────────────────────────────────────── */}
-            {nav.activePage === "approvals" && (
-              <ApprovalsPage />
-            )}
-
-            {/* ── Meetings ────────────────────────────────────────────── */}
-            {nav.activePage === "meetings" && <MeetingsPage />}
-
-            {/* ── Files ───────────────────────────────────────────────── */}
-            {nav.activePage === "files" && <FilesPage />}
-
-            {/* ── Feedback ────────────────────────────────────────────── */}
-            {nav.activePage === "feedback" && <FeedbackPage />}
-
-            {/* ── Billing ─────────────────────────────────────────────── */}
-            {nav.activePage === "billing" && (
-              <BillingPage />
-            )}
-
-            {/* ── Contracts ───────────────────────────────────────────── */}
-            {nav.activePage === "contracts" && (
-              <ContractsPage />
-            )}
-
-            {/* ── Reports ─────────────────────────────────────────────── */}
-            {nav.activePage === "reports" && (
-              <ReportsPage />
-            )}
-
-            {/* ── AI & Automation ─────────────────────────────────────── */}
-            {nav.activePage === "automation" && (
-              <AIAutomationPage />
-            )}
-
-            {/* ── Services & Growth ────────────────────────────────────── */}
-            {nav.activePage === "services" && (
-              <ServicesGrowthPage />
-            )}
-
-            {/* ── Support ─────────────────────────────────────────────── */}
-            {nav.activePage === "support" && (
-              <SupportPage />
-            )}
-
-            {/* ── Onboarding ──────────────────────────────────────────── */}
-            {nav.activePage === "onboarding" && (
-              <OnboardingPage />
-            )}
-
-            {/* ── Team ────────────────────────────────────────────────── */}
-            {nav.activePage === "team" && (
-              <TeamPage />
-            )}
-
-            {nav.activePage === "retainerUsage" && (
-              <RetainerUsagePage />
-            )}
-
-            {nav.activePage === "sprintVisibility" && (
-              <SprintVisibilityPage />
-            )}
-
-            {nav.activePage === "deliverableStatus" && (
-              <DeliverableStatusPage />
-            )}
-
-            {nav.activePage === "milestoneApprovals" && (
-              <MilestoneApprovalsPage />
-            )}
-
-            {nav.activePage === "healthScore" && (
-              <HealthScorePage />
-            )}
-
-            {nav.activePage === "satisfactionSurvey" && (
-              <SatisfactionSurveyPage />
-            )}
-
-            {nav.activePage === "knowledgeAccess" && (
-              <KnowledgeAccessPage />
-            )}
-
-            {/* ── Settings ────────────────────────────────────────────── */}
-            {nav.activePage === "profile" && (
-              <SettingsPage
-                notificationPrefs={DUMMY_NOTIFICATION_PREFS}
-                integrations={DUMMY_INTEGRATIONS}
-                sessions={DUMMY_SESSIONS}
-                onToggleNotification={() => {}}
-                onDisconnectIntegration={() => {}}
-                onRevokeSession={() => {}}
-                theme={themeHook.theme}
-                onToggleTheme={themeHook.toggleTheme}
-                mode="profile"
+            <DashboardErrorBoundary>
+            {/* ── Overview ────────────────────────────────────────────── */}
+            {nav.activePage === "home" && (
+              <HomePage
+                projects={clientData.projects}
+                outstandingInvoices={clientData.outstandingInvoices}
+                budgetHealth={clientData.budgetHealth}
+                onNavigate={handleNavigate}
               />
             )}
+            {nav.activePage === "dashboard" && (
+              <DashboardPage
+                projects={clientData.projects}
+                outstandingInvoices={clientData.outstandingInvoices}
+                budgetHealth={clientData.budgetHealth}
+                onNavigate={handleNavigate}
+              />
+            )}
+            {nav.activePage === "notifications" && <NotificationsPage />}
 
+            {/* ── Projects ────────────────────────────────────────────── */}
+            {nav.activePage === "myProjects" && <MyProjectsPage projects={clientData.projects} onNavigate={handleNavigate} />}
+            {nav.activePage === "projectRequest" && <ProjectRequestPage />}
+            {nav.activePage === "timeline" && <TimelinePage />}
+            {nav.activePage === "milestones" && <MilestonesPage />}
+            {nav.activePage === "sprintBoard" && <SprintBoardPage />}
+            {nav.activePage === "deliverables" && <DeliverablesPage />}
+            {nav.activePage === "changeRequests" && <ChangeRequestsPage />}
+            {nav.activePage === "riskRegister" && <RiskRegisterPage />}
+            {nav.activePage === "decisionLog" && <DecisionLogPage />}
+            {nav.activePage === "contentApproval" && <ContentApprovalPage />}
+
+            {/* ── Finance ─────────────────────────────────────────────── */}
+            {nav.activePage === "payments" && <PaymentsPage payments={snapshot.payments} invoices={snapshot.invoices} />}
+            {nav.activePage === "invoices" && <InvoicesPage invoices={snapshot.invoices} />}
+            {nav.activePage === "budgetTracker" && <BudgetTrackerPage invoices={snapshot.invoices} />}
+            {nav.activePage === "contractsProposals" && <ContractsProposalsPage />}
+            {nav.activePage === "retainerDashboard" && <RetainerDashboardPage />}
+            {nav.activePage === "quoteAcceptance" && <QuoteAcceptancePage />}
+            {nav.activePage === "financialReports" && <FinancialReportsPage invoices={snapshot.invoices} />}
+            {nav.activePage === "invoiceHistory" && <InvoiceHistoryPage invoices={snapshot.invoices} />}
+
+            {/* ── Communication ───────────────────────────────────────── */}
+            {nav.activePage === "messages" && <MessagesPage threads={clientData.threads} />}
+            {nav.activePage === "bookCall" && <BookCallPage />}
+            {nav.activePage === "announcements" && <AnnouncementsPage />}
+            {nav.activePage === "designReview" && <DesignReviewPage />}
+            {nav.activePage === "meetingArchive" && <MeetingArchivePage />}
+
+            {/* ── Files ───────────────────────────────────────────────── */}
+            {nav.activePage === "filesAssets" && <FilesAssetsPage />}
+            {nav.activePage === "brandLibrary" && <BrandLibraryPage />}
+            {nav.activePage === "resourceHub" && <ResourceHubPage />}
+
+            {/* ── Reporting ───────────────────────────────────────────── */}
+            {nav.activePage === "projectReports" && <ProjectReportsPage />}
+            {nav.activePage === "healthScore" && <HealthScorePage invoices={snapshot.invoices} projects={snapshot.projects} />}
+            {nav.activePage === "performanceDashboard" && <PerformanceDashboardPage invoices={snapshot.invoices} projects={snapshot.projects} />}
+
+            {/* ── Growth ──────────────────────────────────────────────── */}
+            {nav.activePage === "serviceCatalog" && <ServiceCatalogPage />}
+            {nav.activePage === "referralProgram" && <ReferralProgramPage />}
+            {nav.activePage === "loyaltyCredits" && <LoyaltyCreditsPage />}
+
+            {/* ── Support ─────────────────────────────────────────────── */}
+            {nav.activePage === "progressKnowledge" && <ProgressKnowledgePage />}
+            {nav.activePage === "knowledgeBase" && <KnowledgeBasePage />}
+            {nav.activePage === "knowledgeAccess" && <KnowledgeAccessPage />}
+            {nav.activePage === "slaEscalation" && <SlaEscalationPage />}
+
+            {/* ── Account ─────────────────────────────────────────────── */}
+            {nav.activePage === "feedbackSurvey" && <FeedbackSurveyPage />}
+            {nav.activePage === "teamAccess" && <TeamAccessPage />}
+            {nav.activePage === "integrations" && <IntegrationsPage />}
+            {nav.activePage === "dataPrivacy" && <DataPrivacyPage />}
+            {nav.activePage === "onboardingStatus" && <OnboardingStatusPage />}
+            {nav.activePage === "onboarding" && <OnboardingPage />}
+            {nav.activePage === "communicationHistory" && <CommunicationHistoryPage />}
+            {nav.activePage === "projectBrief" && <ProjectBriefPage onNavigate={handleNavigate} />}
+            {nav.activePage === "offboarding" && <OffboardingPage />}
+
+            {/* ── Settings / Profile ──────────────────────────────────── */}
+            {nav.activePage === "profile" && <CompanyProfilePage />}
             {nav.activePage === "settings" && (
               <SettingsPage
-                notificationPrefs={DUMMY_NOTIFICATION_PREFS}
-                integrations={DUMMY_INTEGRATIONS}
-                sessions={DUMMY_SESSIONS}
-                onToggleNotification={() => {}}
+                notificationPrefs={notificationPrefs}
+                integrations={[]}
+                sessions={[]}
+                onToggleNotification={handleToggleNotification}
                 onDisconnectIntegration={() => {}}
                 onRevokeSession={() => {}}
                 theme={themeHook.theme}
                 onToggleTheme={themeHook.toggleTheme}
                 mode="security"
+                currency={currency}
+                onCurrencyChange={(c) => {
+                  setCurrency(c);
+                  if (session) {
+                    void setPortalPreferenceWithRefresh(session, { key: "settingsCurrency", value: c })
+                      .then(r => { if (r.nextSession) saveSession(r.nextSession); });
+                  }
+                }}
+                clientName={profile?.ownerName ?? session?.user.email?.split("@")[0] ?? "Client"}
+                companyName={profile?.companyName ?? profile?.name ?? session?.user.email?.split("@")[1] ?? "Company"}
+                clientEmail={session?.user.email ?? ""}
+                clientInitials={((profile?.ownerName ?? profile?.companyName ?? profile?.name ?? session?.user.email)?.[0] ?? "C").toUpperCase()}
+                onNavigate={handleNavigate}
+                session={session}
+                onRestartTour={tour.resetTour}
               />
             )}
+            </DashboardErrorBoundary>
           </div>
         </div>
       </div>
@@ -373,27 +565,49 @@ export function MaphariClientDashboard() {
             aria-label="Command search"
             onClick={(e) => e.stopPropagation()}
           >
-            <input
-              className={styles.cmdInput}
-              type="text"
-              placeholder="Search pages, projects, threads..."
-              value={commandSearch.query}
-              onChange={(e) => commandSearch.setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") commandSearch.close();
-                if (e.key === "Enter") commandSearch.executeActive();
-                if (e.key === "ArrowUp") {
-                  e.preventDefault();
-                  commandSearch.moveUp();
-                }
-                if (e.key === "ArrowDown") {
-                  e.preventDefault();
-                  commandSearch.moveDown();
-                }
-              }}
-              autoFocus
-            />
+            {/* Input row */}
+            <div className={styles.cmdInputWrap}>
+              <Ic n="search" sz={16} c="var(--muted2)" />
+              <input
+                className={styles.cmdInput}
+                type="text"
+                placeholder="Search pages, projects, messages…"
+                value={commandSearch.query}
+                onChange={(e) => commandSearch.setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") commandSearch.close();
+                  if (e.key === "Enter") commandSearch.executeActive();
+                  if (e.key === "ArrowUp") { e.preventDefault(); commandSearch.moveUp(); }
+                  if (e.key === "ArrowDown") { e.preventDefault(); commandSearch.moveDown(); }
+                }}
+                autoFocus
+              />
+              <kbd className={styles.cmdEscHint}>esc</kbd>
+            </div>
+
+            {/* Results */}
             <div className={styles.cmdResults}>
+              {/* Quick navigate grid when no query */}
+              {!commandSearch.query && (
+                <>
+                  <div className={styles.cmdSuggestLabel}>Quick navigate</div>
+                  <div className={styles.cmdSuggestGrid}>
+                    {CMD_SUGGESTIONS.map(({ icon, label, page }) => (
+                      <button
+                        key={page}
+                        type="button"
+                        className={styles.cmdSuggestItem}
+                        onClick={() => { commandSearch.close(); handleNavigate(page); }}
+                      >
+                        <Ic n={icon} sz={13} c="var(--muted)" />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Search results — flat rows with colored dot + stacked label/meta */}
               {commandSearch.results.map((result, i) => (
                 <button
                   key={result.id}
@@ -402,14 +616,63 @@ export function MaphariClientDashboard() {
                     "cmdItem",
                     i === commandSearch.activeIndex && "cmdItemActive",
                   )}
-                  onClick={() => result.action()}
+                  onClick={() => { result.action(); commandSearch.close(); }}
                 >
-                  <span className={styles.cmdItemLabel}>{result.label}</span>
-                  <span className={styles.cmdItemMeta}>{result.meta}</span>
+                  {/* Colored icon chip */}
+                  <span
+                    className={styles.cmdTypeIcon}
+                    style={{ "--cmd-ic-bg": CMD_TYPE_ICO_BG[result.type] ?? "var(--s2)" } as React.CSSProperties}
+                  >
+                    <Ic
+                      n={CMD_TYPE_ICON[result.type] ?? "file"}
+                      sz={14}
+                      c={CMD_TYPE_ICO_COLOR[result.type] ?? "var(--muted2)"}
+                    />
+                  </span>
+                  <span className={styles.cmdItemBody}>
+                    <span className={styles.cmdItemLabel}>{result.label}</span>
+                    {result.meta ? (
+                      <span className={styles.cmdItemMeta}>{result.meta}</span>
+                    ) : null}
+                  </span>
+                  {result.type !== "Page" ? (
+                    <span
+                      className={styles.cmdItemType}
+                      style={{
+                        background: CMD_TYPE_ICO_BG[result.type]   ?? "var(--s2)",
+                        color:      CMD_TYPE_ICO_COLOR[result.type] ?? "var(--muted2)",
+                      }}
+                    >
+                      {result.type}
+                    </span>
+                  ) : null}
                 </button>
               ))}
+
+              {/* No results */}
               {commandSearch.query && commandSearch.results.length === 0 && (
-                <div className={styles.cmdEmpty}>No results found</div>
+                <div className={styles.cmdEmpty}>
+                  <Ic n="search" sz={22} c="var(--muted2)" />
+                  No results for &ldquo;{commandSearch.query}&rdquo;
+                </div>
+              )}
+            </div>
+
+            {/* Footer: keyboard hints + result count */}
+            <div className={styles.cmdFooter}>
+              <span className={styles.cmdFooterHint}>
+                <kbd className={styles.cmdKbd}>↑↓</kbd> navigate
+              </span>
+              <span className={styles.cmdFooterHint}>
+                <kbd className={styles.cmdKbd}>↵</kbd> open
+              </span>
+              <span className={styles.cmdFooterHint}>
+                <kbd className={styles.cmdKbd}>esc</kbd> close
+              </span>
+              {commandSearch.query && commandSearch.results.length > 0 && (
+                <span className={styles.cmdFooterCount}>
+                  {commandSearch.results.length} result{commandSearch.results.length !== 1 ? "s" : ""}
+                </span>
               )}
             </div>
           </div>
@@ -422,17 +685,19 @@ export function MaphariClientDashboard() {
           <div className={styles.shortcutsPanelTitle}>Keyboard Shortcuts</div>
           {(
             [
-              ["G \u2192 D", "Dashboard"],
-              ["G \u2192 P", "Project Overview"],
+              ["G \u2192 H", "Home"],
+              ["G \u2192 N", "Notifications"],
+              ["G \u2192 P", "My Projects"],
               ["G \u2192 M", "Messages"],
-              ["G \u2192 N", "Communication Log"],
-              ["G \u2192 B", "Billing"],
-              ["G \u2192 A", "Change History"],
-              ["G \u2192 F", "Files"],
-              ["G \u2192 R", "Status & Launch"],
-              ["G \u2192 I", "AI & Automation"],
-              ["G \u2192 V", "Services & Growth"],
-              ["G \u2192 T", "Team"],
+              ["G \u2192 B", "Payments"],
+              ["G \u2192 I", "Invoices"],
+              ["G \u2192 C", "Change Requests"],
+              ["G \u2192 A", "Milestones"],
+              ["G \u2192 D", "Design Review"],
+              ["G \u2192 F", "Files & Assets"],
+              ["G \u2192 R", "Project Reports"],
+              ["G \u2192 K", "Knowledge Base"],
+              ["G \u2192 T", "Team Access"],
               ["G \u2192 S", "Settings"],
               ["\u2318K", "Search"],
               ["?", "Toggle shortcuts"],
@@ -447,64 +712,15 @@ export function MaphariClientDashboard() {
       )}
 
       {/* ── Tour overlay ────────────────────────────────────────────────── */}
-      {tour.tourActive && (
-        <div className={styles.tourOverlay}>
-          <div className={styles.tourCard} role="dialog" aria-modal="true" aria-label="Product tour">
-            <div className={styles.tourTitle}>
-              {tour.currentStepData.title}
-            </div>
-            <div className={styles.tourDesc}>
-              {tour.currentStepData.description}
-            </div>
-            <div className={styles.tourSteps}>
-              {Array.from({ length: tour.totalSteps }).map((_, i) => (
-                <div
-                  key={i}
-                  className={cx(
-                    "tourStepDot",
-                    i === tour.tourStep && "tourStepDotActive",
-                  )}
-                />
-              ))}
-            </div>
-            <div className={styles.tourActions}>
-              {tour.tourStep > 0 && (
-                <button
-                  type="button"
-                  className={cx("button", "buttonGhost")}
-                  onClick={tour.prevStep}
-                >
-                  Back
-                </button>
-              )}
-              <button
-                type="button"
-                className={cx("button", "buttonGhost")}
-                onClick={tour.skipTour}
-              >
-                Skip
-              </button>
-              {tour.tourStep < tour.totalSteps - 1 ? (
-                <button
-                  type="button"
-                  className={cx("button", "buttonAccent")}
-                  onClick={tour.nextStep}
-                >
-                  Next
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={cx("button", "buttonAccent")}
-                  onClick={tour.completeTour}
-                >
-                  Get Started
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <DashboardTour
+        open={tour.tourActive}
+        step={tour.tourStep}
+        steps={CLIENT_TOUR_STEPS}
+        showOverlay
+        onBack={tour.prevStep}
+        onNext={tour.nextStep}
+        onSkip={tour.skipTour}
+      />
 
       {/* ── Session timeout warning ─────────────────────────────────────── */}
       {sessionTimeout.showWarning && (
@@ -591,8 +807,23 @@ export function MaphariClientDashboard() {
         </div>
       )}
 
+      {/* ── Floating Quick Ask button ───────────────────────────────────── */}
+      {!quickCompose.isOpen && (
+        <button
+          type="button"
+          className={cx("floatingAskBtn")}
+          onClick={() => quickCompose.open(snapshot.projects[0]?.id)}
+          aria-label="Quick ask — send a message to your team"
+        >
+          <Ic n="message" sz={13} c="var(--bg)" />
+          Quick Ask
+        </button>
+      )}
+
       {/* ── Toast stack ─────────────────────────────────────────────────── */}
       <DashboardToastStack toasts={toasts} />
     </div>
+    </DashboardToastCtx.Provider>
+    </ProjectLayerCtx.Provider>
   );
 }

@@ -13,6 +13,7 @@ import {
   type PartnerApiKey
 } from "../../../../lib/api/admin";
 import { useRealtimeRefresh } from "../../../../lib/auth/use-realtime-refresh";
+import { inferCountryFromLocale, currencyFromCountry } from "../../../../lib/i18n/currency";
 import type { AuthSession } from "../../../../lib/auth/session";
 import type { DashboardToast } from "../../../shared/dashboard-core";
 import type { PageId } from "../config";
@@ -42,7 +43,11 @@ export function useAdminData({ session, activePage, pushToast }: Params): UseAdm
   const [projectBlockers, setProjectBlockers] = useState<ProjectBlocker[]>([]);
   const [publicApiKeys, setPublicApiKeys] = useState<PartnerApiKey[]>([]);
   const [analyticsMetricsRows, setAnalyticsMetricsRows] = useState(0);
-  const [adminDisplayCurrency, setAdminDisplayCurrency] = useState("AUTO");
+  const [adminDisplayCurrency, setAdminDisplayCurrency] = useState<string>(() => {
+    if (typeof navigator === "undefined") return "USD";
+    const country = inferCountryFromLocale(navigator.language);
+    return currencyFromCountry(country) ?? "USD";
+  });
 
   // Load currency preference + notification jobs on session load
   useEffect(() => {

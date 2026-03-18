@@ -90,7 +90,7 @@
 }
 
 .kicker {
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
   color: var(--accent);
   font-size: 0.68rem;
   letter-spacing: 0.18em;
@@ -168,7 +168,7 @@
 }
 
 .label {
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
   font-size: 0.64rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;

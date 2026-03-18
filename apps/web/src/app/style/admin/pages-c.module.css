@@ -1,0 +1,489 @@
+/* ==========================================================================
+   ADMIN CSS BATCH C
+   Generated page-specific classes for 8 admin dashboard pages.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. CLIENT ONBOARDING PAGE
+   ========================================================================== */
+
+/* Tone variants for onboarding (border-left coloring, avatar bg) */
+
+.onboardProgFill {
+  display: block;
+  width: 100%;
+  height: 6px;
+  border: none;
+  border-radius: 3px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+}
+
+.onboardProgFill::-webkit-progress-bar {
+  background: transparent;
+  border-radius: 3px;
+}
+
+/* conb (client onboarding) prefixed classes */
+
+.conbFillAccent::-webkit-progress-value { background: var(--accent); }
+
+.conbFillRed::-webkit-progress-value { background: var(--red); }
+
+.conbFillBlue::-webkit-progress-value { background: var(--blue); }
+
+.conbFillAmber::-webkit-progress-value { background: var(--amber); }
+
+.conbFillPurple::-webkit-progress-value { background: var(--purple); }
+
+.conbFillMuted::-webkit-progress-value { background: var(--muted); }
+
+.conbFillAccent::-moz-progress-bar { background: var(--accent); }
+
+.conbFillRed::-moz-progress-bar { background: var(--red); }
+
+.conbFillBlue::-moz-progress-bar { background: var(--blue); }
+
+.conbFillAmber::-moz-progress-bar { background: var(--amber); }
+
+.conbFillPurple::-moz-progress-bar { background: var(--purple); }
+
+.conbFillMuted::-moz-progress-bar { background: var(--muted); }
+
+.conbStatusAccent { background: var(--accent-d); color: var(--accent); }
+
+.conbStatusRed { background: var(--red-d); color: var(--red); }
+
+.conbStatusBlue { background: var(--blue-d); color: var(--blue); }
+
+.conbStatusAmber { background: var(--amber-d); color: var(--amber); }
+
+.conbStatusPurple { background: var(--purple-d); color: var(--purple); }
+
+.conbStatusMuted { background: rgba(255,255,255,0.04); color: var(--muted); }
+
+.conbCategoryCardAccent { border-left: 3px solid var(--accent); }
+
+.conbCategoryCardRed { border-left: 3px solid var(--red); }
+
+.conbCategoryCardBlue { border-left: 3px solid var(--blue); }
+
+.conbCategoryCardAmber { border-left: 3px solid var(--amber); }
+
+.conbCategoryCardPurple { border-left: 3px solid var(--purple); }
+
+.conbCategoryCardMuted { border-left: 3px solid var(--muted); }
+
+.conbOverdueStat {
+  border-color: var(--red) !important;
+  background: var(--red-d) !important;
+}
+
+.conbTabsRail {
+  margin-bottom: 20px;
+}
+
+.conbList {
+  display: grid;
+  gap: 16px;
+}
+
+.conbCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--s1);
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.conbCardOverdue {
+  border-color: var(--red);
+}
+
+.conbCardComplete {
+  border-color: var(--accent);
+  opacity: 0.75;
+}
+
+.conbCardHead {
+  padding: 20px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.conbCardHead:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+.conbBlockerChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--r-xs);
+  font-size: 0.625rem;
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 700;
+  background: var(--red-d);
+  color: var(--red);
+}
+
+.conbClearChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--r-xs);
+  font-size: 0.625rem;
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 700;
+  background: var(--accent-d);
+  color: var(--accent);
+}
+
+.conbStatusChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 0.625rem;
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.conbCategoryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.conbCategoryCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 16px;
+  background: rgba(255,255,255,0.02);
+}
+
+.conbCategoryTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.conbTaskRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.conbTaskRow:last-child {
+  border-bottom: none;
+}
+
+.conbTaskWarn {
+  color: var(--red);
+  font-weight: 700;
+  font-size: 0.625rem;
+}
+
+.conbBlockerText {
+  font-size: 0.625rem;
+  color: var(--red);
+  margin-top: 2px;
+}
+
+.conbTaskMeta {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.conbExpandedFoot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.conbContactCard {
+  flex: 1;
+}
+
+.conbMarkBtn {
+  border-color: var(--accent-d);
+  color: var(--accent);
+}
+
+.conbTemplateTitle {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+
+.conbTemplateRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.conbTemplateRow:last-child {
+  border-bottom: none;
+}
+
+.conbTemplateTask {
+  flex: 1;
+  font-size: 0.75rem;
+}
+
+.conbTemplateOwner {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  font-family: var(--font-dm-mono), monospace;
+}
+
+.conbAnalyticsCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 24px;
+  background: var(--s1);
+}
+
+.conbSectionTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.conbSpeedRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.conbSpeedRow:last-child {
+  border-bottom: none;
+}
+
+.conbAvgBox {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(255,255,255,0.02);
+  border-radius: var(--r-sm);
+  text-align: center;
+}
+
+.conbAvgValue {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.conbSideStack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.conbBlockerRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.conbBlockerRow:last-child {
+  border-bottom: none;
+}
+
+.conbRateRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.conbRateRow:last-child {
+  border-bottom: none;
+}
+
+.conbRateName {
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.conbRateTrack {
+  flex: 1;
+  height: 6px;
+}
+
+.conbRateVal {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 700;
+  font-size: 0.75rem;
+  width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   2. CLIENT SATISFACTION PAGE
+   ========================================================================== */
+
+/* Tone variants for CSAT page */
+
+.csatToneAccent { --csat-tone: var(--accent); --csat-tone-d: var(--accent-d); color: var(--accent); }
+
+.csatToneRed { --csat-tone: var(--red); --csat-tone-d: var(--red-d); color: var(--red); }
+
+.csatToneBlue { --csat-tone: var(--blue); --csat-tone-d: var(--blue-d); color: var(--blue); }
+
+.csatToneAmber { --csat-tone: var(--amber); --csat-tone-d: var(--amber-d); color: var(--amber); }
+
+.csatTonePurple { --csat-tone: var(--purple); --csat-tone-d: var(--purple-d); color: var(--purple); }
+
+.csatToneMuted { --csat-tone: var(--muted); --csat-tone-d: rgba(255,255,255,0.04); color: var(--muted); }
+
+.csatToneBorder { --csat-tone: var(--border); --csat-tone-d: rgba(255,255,255,0.03); color: var(--border); }
+
+.csatToneOrange { --csat-tone: #ff8c00; --csat-tone-d: rgba(255,140,0,0.12); color: #ff8c00; }
+
+.csatMiniChartSvg {
+  display: block;
+  overflow: visible;
+}
+
+.csatGauge {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
+}
+
+.csatGaugeSvg {
+  display: block;
+  overflow: visible;
+  transform: rotate(-90deg);
+}
+
+.csatGaugeInner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.csatGaugeScore {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.csatScoreGrid {
+  display: grid;
+  grid-template-columns: 1.2fr auto 0.8fr 1.2fr auto auto auto;
+  gap: 20px;
+  align-items: center;
+}
+
+.csatClientName {
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.csatBigScore {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.csatTrendIcon {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.csatTrendLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.csatFeedbackQuote {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.02);
+  border-radius: var(--r-sm);
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-style: italic;
+  border-left: 3px solid var(--border);
+}
+
+.csatTrendGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.csatTrendScore {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.csatTrendMonth {
+  font-size: 0.625rem;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.csatTrendTrack {
+  width: 100%;
+  height: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.csatTrendTrack::-webkit-progress-bar {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.csatTrendTrack::-webkit-progress-value {
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.csatTrendTrack::-moz-progress-bar {
+  background: var(--accent);
+  border-radius: 2px;
+}
+

@@ -132,6 +132,24 @@ exports.Prisma.FileRecordScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.VaultDocumentScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  category: 'category',
+  description: 'description',
+  status: 'status',
+  clientId: 'clientId',
+  fileName: 'fileName',
+  mimeType: 'mimeType',
+  sizeBytes: 'sizeBytes',
+  storageKey: 'storageKey',
+  uploadedBy: 'uploadedBy',
+  version: 'version',
+  tags: 'tags',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -142,9 +160,15 @@ exports.Prisma.QueryMode = {
   insensitive: 'insensitive'
 };
 
+exports.Prisma.NullsOrder = {
+  first: 'first',
+  last: 'last'
+};
+
 
 exports.Prisma.ModelName = {
-  FileRecord: 'FileRecord'
+  FileRecord: 'FileRecord',
+  VaultDocument: 'VaultDocument'
 };
 
 /**

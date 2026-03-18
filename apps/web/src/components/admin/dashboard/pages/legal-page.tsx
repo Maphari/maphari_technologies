@@ -1,18 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { fetchContracts, type LegalContract } from "../../../../lib/api/admin/contracts";
+import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { AdminTabs } from "./shared";
 import { colorClass } from "./admin-page-utils";
-
-const contracts = [
-  { id: "CTR-001", client: "Volta Studios", type: "Retainer Agreement", signed: "2024-09-01", expires: "2026-09-01", status: "active", value: "R336,000", monthsLeft: 7 },
-  { id: "CTR-002", client: "Kestrel Capital", type: "Project Contract", signed: "2025-11-15", expires: "2026-04-15", status: "expiring-soon", value: "R84,000", monthsLeft: 2 },
-  { id: "CTR-003", client: "Mira Health", type: "Retainer Agreement", signed: "2025-07-01", expires: "2026-07-01", status: "active", value: "R258,000", monthsLeft: 5 },
-  { id: "CTR-004", client: "Dune Collective", type: "Project Contract", signed: "2025-12-01", expires: "2026-06-01", status: "active", value: "R192,000", monthsLeft: 4 },
-  { id: "CTR-005", client: "Okafor & Sons", type: "NDA + Retainer", signed: "2024-06-01", expires: "2026-03-01", status: "expiring-soon", value: "R144,000", monthsLeft: 1 },
-  { id: "CTR-006", client: "Studio Outpost", type: "Contractor Agreement", signed: "2025-01-15", expires: "2026-01-15", status: "expired", value: "N/A", monthsLeft: 0 }
-] as const;
 
 const compliance = [
   { area: "POPIA Compliance", status: "compliant", lastReview: "Jan 2026", nextReview: "Jan 2027", risk: "low" },
@@ -31,15 +24,25 @@ const dataRetention = [
   { category: "Project Files", retentionYears: 5, policy: "Client Agreements", records: 156, lastAudit: "Jan 2026" }
 ] as const;
 
-const incidents = [
-  { id: "INC-001", type: "Data Query", description: "Mira Health requested client data export", date: "2026-02-10", status: "resolved", severity: "low" },
-  { id: "INC-002", type: "Contract Dispute", description: "Luma Events - payment dispute, settled at 80%", date: "2026-01-22", status: "resolved", severity: "medium" },
-  { id: "INC-003", type: "IP Concern", description: "Usage rights query on Volta Studios deliverables", date: "2026-02-18", status: "open", severity: "medium" }
-] as const;
+// ── Display helpers ────────────────────────────────────────────────────────────
+
+/** Map DB status (PENDING | SIGNED | VOID) to display status */
+function contractDisplayStatus(c: LegalContract): string {
+  if (c.status === "SIGNED" || c.signed) return "active";
+  if (c.status === "VOID") return "expired";
+  return "pending";
+}
+
+function contractSignedDate(c: LegalContract): string {
+  if (!c.signedAt) return "—";
+  return new Date(c.signedAt).toLocaleDateString("en-ZA", { month: "short", year: "numeric" });
+}
+
+// ── Status/Risk badges ─────────────────────────────────────────────────────────
 
 function statusBadgeClass(status: string): string {
   if (status === "active" || status === "compliant" || status === "resolved") return styles.lglStatusAccent;
-  if (status === "expiring-soon" || status === "attention" || status === "open") return styles.lglStatusAmber;
+  if (status === "expiring-soon" || status === "attention" || status === "open" || status === "pending") return styles.lglStatusAmber;
   if (status === "expired") return styles.lglStatusRed;
   return styles.lglStatusMuted;
 }
@@ -63,11 +66,28 @@ function RiskBadge({ risk }: { risk: "low" | "medium" | "high" }) {
 const tabs = ["contracts", "compliance", "data retention", "legal incidents"] as const;
 
 export function LegalPage() {
+  const { session } = useAdminWorkspaceContext();
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("contracts");
+  const [contracts, setContracts] = useState<LegalContract[]>([]);
+  const [loadingContracts, setLoadingContracts] = useState(true);
 
-  const expiringCount = contracts.filter((c) => c.status === "expiring-soon").length;
-  const expiredCount = contracts.filter((c) => c.status === "expired").length;
-  const highRisk = compliance.filter((c) => c.risk === "high").length;
+  const loadContracts = useCallback(async () => {
+    if (!session) return;
+    setLoadingContracts(true);
+    const result = await fetchContracts(session);
+    if (result.data) setContracts(result.data);
+    setLoadingContracts(false);
+  }, [session]);
+
+  useEffect(() => {
+    void loadContracts();
+  }, [loadContracts]);
+
+  // ── Derived counts ─────────────────────────────────────────────────────────
+  const expiringCount = contracts.filter((c) => contractDisplayStatus(c) === "expiring-soon").length;
+  const expiredCount  = contracts.filter((c) => contractDisplayStatus(c) === "expired").length;
+  const activeCount   = contracts.filter((c) => contractDisplayStatus(c) === "active").length;
+  const highRisk      = compliance.filter((c) => c.risk === "high").length;
 
   return (
     <div className={cx(styles.pageBody, styles.lglRoot)}>
@@ -85,9 +105,9 @@ export function LegalPage() {
 
       <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Active Contracts", value: "5", color: "var(--accent)", sub: "Total value R1.01M", alert: false },
-          { label: "Expiring < 60 days", value: String(expiringCount), color: "var(--amber)", sub: "Renew immediately", alert: true },
-          { label: "Expired (no renewal)", value: String(expiredCount), color: "var(--red)", sub: "Action required", alert: true },
+          { label: "Active Contracts", value: String(activeCount), color: "var(--accent)", sub: "Total active contracts", alert: false },
+          { label: "Expiring < 60 days", value: String(expiringCount), color: "var(--amber)", sub: "Renew immediately", alert: expiringCount > 0 },
+          { label: "Expired (no renewal)", value: String(expiredCount), color: "var(--red)", sub: "Action required", alert: expiredCount > 0 },
           { label: "Compliance Issues", value: String(highRisk), color: highRisk > 0 ? "var(--red)" : "var(--accent)", sub: highRisk > 0 ? "High-risk items" : "All clear", alert: highRisk > 0 }
         ].map((s) => (
           <div key={s.label} className={cx(styles.statCard, s.alert && (s.color === "var(--red)" ? styles.lglStatAlertRed : styles.lglStatAlertAmber))}>
@@ -108,70 +128,70 @@ export function LegalPage() {
         borderColor={"var(--border)"}
       />
 
+      {/* ── Contracts Tab ───────────────────────────────────────────────────── */}
       {activeTab === "contracts" ? (
         <div>
           <div className={styles.lglExpiryCard}>
             <div className={styles.lglSectionAmber}>Expiry Calendar - Next 12 Months</div>
             <div className={styles.lglTimelineWrap}>
               <div className={styles.lglTimelineLine} />
-              {["Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"].map((m, i) => {
-                const contractsThisMonth = contracts.filter((c) => {
-                  const month = new Date(c.expires).getMonth();
-                  return month === i + 2;
-                });
-                return (
-                  <div key={m} className={styles.lglTimelineCol}>
-                    <div className={styles.lglTimelineMonth}>{m}</div>
-                    <div className={cx(styles.lglTimelineDot, contractsThisMonth.length > 0 && styles.lglTimelineDotActive)} />
-                    {contractsThisMonth.map((c) => (
-                      <div key={c.id} className={styles.lglTimelineChip}>{c.client}</div>
-                    ))}
-                  </div>
-                );
-              })}
+              {["Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"].map((m) => (
+                <div key={m} className={styles.lglTimelineCol}>
+                  <div className={styles.lglTimelineMonth}>{m}</div>
+                  <div className={styles.lglTimelineDot} />
+                </div>
+              ))}
             </div>
           </div>
 
           <div className={styles.lglTableCard}>
             <div className={styles.lglTableMin980}>
               <div className={cx(styles.lglContractHead, "fontMono", "text10", "colorMuted", "uppercase")}>
-                {["ID", "Client", "Type", "Signed", "Expires", "Value", "Status", ""].map((h) => <span key={h}>{h}</span>)}
+                {["ID", "Title", "Type", "Signed", "Client", "Status", "Notes", ""].map((h) => <span key={h}>{h}</span>)}
               </div>
-              {contracts.map((c, i) => (
-                <div
-                  key={c.id}
-                  className={cx(
-                    styles.lglContractRow,
-                    i < contracts.length - 1 && "borderB",
-                    c.status === "expired" && styles.lglContractRowExpired,
-                    c.status === "expiring-soon" && styles.lglContractRowSoon
-                  )}
-                >
-                  <span className={styles.lglMonoMuted}>{c.id}</span>
-                  <span className={styles.lglCellStrong}>{c.client}</span>
-                  <span className={styles.lglCellMuted}>{c.type}</span>
-                  <span className={styles.lglMonoMuted}>{c.signed}</span>
-                  <div>
-                    <div className={cx(styles.lglMono12, c.monthsLeft <= 2 ? "colorRed" : "colorMuted")}>{c.expires}</div>
-                    {c.monthsLeft > 0 ? <div className={styles.lglCellMuted}>{c.monthsLeft}mo left</div> : null}
+
+              {loadingContracts && (
+                <div className={cx("text12", "colorMuted", "p16")}>Loading contracts…</div>
+              )}
+
+              {!loadingContracts && contracts.length === 0 && (
+                <div className={cx("text12", "colorMuted", "p16")}>No contracts found.</div>
+              )}
+
+              {!loadingContracts && contracts.map((c, i) => {
+                const displayStatus = contractDisplayStatus(c);
+                return (
+                  <div
+                    key={c.id}
+                    className={cx(
+                      styles.lglContractRow,
+                      i < contracts.length - 1 && "borderB",
+                      displayStatus === "expired" && styles.lglContractRowExpired,
+                      displayStatus === "expiring-soon" && styles.lglContractRowSoon
+                    )}
+                  >
+                    <span className={styles.lglMonoMuted}>{c.id.slice(0, 8)}</span>
+                    <span className={styles.lglCellStrong}>{c.title}</span>
+                    <span className={styles.lglCellMuted}>{c.type}</span>
+                    <span className={styles.lglMonoMuted}>{contractSignedDate(c)}</span>
+                    <span className={styles.lglCellMuted}>{c.clientId.slice(0, 8)}…</span>
+                    <StatusBadge status={displayStatus} />
+                    <span className={styles.lglCellMuted}>{c.notes ?? "—"}</span>
+                    <div className={styles.lglActionRow}>
+                      <button type="button" className={cx("btnSm", "btnGhost")}>View</button>
+                      {displayStatus === "expired" ? (
+                        <button type="button" className={cx(styles.lglRenewBtn, "colorRed")}>Renew</button>
+                      ) : null}
+                    </div>
                   </div>
-                  <span className={styles.lglValue}>{c.value}</span>
-                  <StatusBadge status={c.status} />
-                  <div className={styles.lglActionRow}>
-                    <button type="button" className={cx("btnSm", "btnGhost")}>View</button>
-                    {c.status !== "active" ? (
-                      <button type="button" className={cx(styles.lglRenewBtn, c.status === "expired" ? "colorRed" : "colorAmber")}>
-                        Renew
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
       ) : null}
 
+      {/* ── Compliance Tab ──────────────────────────────────────────────────── */}
       {activeTab === "compliance" ? (
         <div className={styles.lglComplianceSplit}>
           <div className={styles.lglTableCard}>
@@ -213,6 +233,7 @@ export function LegalPage() {
         </div>
       ) : null}
 
+      {/* ── Data Retention Tab ──────────────────────────────────────────────── */}
       {activeTab === "data retention" ? (
         <div className={cx("flexCol", "gap16")}>
           <div className={styles.lglInfoCard}>
@@ -239,35 +260,16 @@ export function LegalPage() {
         </div>
       ) : null}
 
+      {/* ── Legal Incidents Tab ─────────────────────────────────────────────── */}
       {activeTab === "legal incidents" ? (
         <div className={cx("flexCol", "gap12")}>
           <div className={styles.lglIncidentHead}>
             <button type="button" className={styles.lglLogBtn}>+ Log New Incident</button>
           </div>
-          {incidents.map((inc) => (
-            <div key={inc.id} className={cx(styles.lglIncidentCard, inc.status === "open" && styles.lglIncidentOpen)}>
-              <div className={styles.lglIncidentGrid}>
-                <span className={styles.lglMonoMuted}>{inc.id}</span>
-                <div>
-                  <div className={styles.lglLabel}>Type</div>
-                  <div className={styles.lglCellStrong}>{inc.type}</div>
-                </div>
-                <div>
-                  <div className={styles.lglLabel}>Description</div>
-                  <div className={styles.text13}>{inc.description}</div>
-                </div>
-                <div>
-                  <div className={styles.lglLabel}>Date</div>
-                  <div className={styles.lglMono12}>{inc.date}</div>
-                </div>
-                <StatusBadge status={inc.status} />
-                <div className={styles.lglActionRow}>
-                  <button type="button" className={cx("btnSm", "btnGhost")}>View</button>
-                  {inc.status === "open" ? <button type="button" className={styles.lglResolveBtn}>Resolve</button> : null}
-                </div>
-              </div>
-            </div>
-          ))}
+          <div className={cx(styles.card, styles.cardInner, "textCenter")}>
+            <div className={cx("text13", "mb4")}>No legal incidents recorded</div>
+            <div className={cx("text12", "colorMuted")}>All systems compliant. Log incidents above when they occur.</div>
+          </div>
         </div>
       ) : null}
     </div>

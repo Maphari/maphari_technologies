@@ -1,43 +1,84 @@
+// ════════════════════════════════════════════════════════════════════════════
+// peer-review-queue-page.tsx — Admin Peer Review Queue
+// Data     : loadAdminPeerReviewsWithRefresh → GET /peer-reviews
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
+import { useState, useEffect } from "react";
 import { cx, styles } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { loadAdminPeerReviewsWithRefresh, type AdminPeerReview } from "../../../../lib/api/admin";
+import { saveSession } from "../../../../lib/auth/session";
 
-const reviews = [
-  { id: "PR-001", title: "Brand Guidelines — Final Review", requester: "Thabo Mokoena", reviewer: "Naledi Mthembu", project: "Brand Identity System", priority: "High", submittedAt: "Feb 21, 2026", status: "Pending" as const },
-  { id: "PR-002", title: "Campaign Strategy Deck", requester: "Kira Bosman", reviewer: "Fatima Al-Rashid", project: "Q1 Campaign Strategy", priority: "Medium", submittedAt: "Feb 20, 2026", status: "In Review" as const },
-  { id: "PR-003", title: "Wireframe Set — Checkout Flow", requester: "Lerato Dlamini", reviewer: "James Okonkwo", project: "Website Redesign", priority: "High", submittedAt: "Feb 22, 2026", status: "Pending" as const },
-  { id: "PR-004", title: "Annual Report Data Visualization", requester: "Thabo Mokoena", reviewer: "Naledi Mthembu", project: "Annual Report 2025", priority: "Low", submittedAt: "Feb 19, 2026", status: "Complete" as const },
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function priorityBadge(dueAt: string | null): string {
+  if (!dueAt) return "badge";
+  const diff = new Date(dueAt).getTime() - Date.now();
+  if (diff < 86_400_000 * 2) return "badgeRed";
+  if (diff < 86_400_000 * 7) return "badgeAmber";
+  return "badge";
+}
+function priorityLabel(dueAt: string | null): string {
+  if (!dueAt) return "Normal";
+  const diff = new Date(dueAt).getTime() - Date.now();
+  if (diff < 86_400_000 * 2) return "High";
+  if (diff < 86_400_000 * 7) return "Medium";
+  return "Low";
+}
+function statusBadge(status: string): string {
+  if (status === "SUBMITTED") return "badgeGreen";
+  if (status === "PENDING")   return "badgeRed";
+  return "badgeAmber";
+}
+function statusLabel(status: string): string {
+  if (status === "SUBMITTED") return "Complete";
+  if (status === "PENDING")   return "Pending";
+  return "In Review";
+}
 
-export function PeerReviewQueuePage() {
+// ── Component ─────────────────────────────────────────────────────────────────
+export function PeerReviewQueuePage({ session }: { session: AuthSession | null }) {
+  const [reviews, setReviews] = useState<AdminPeerReview[]>([]);
+
+  useEffect(() => {
+    if (!session) return;
+    loadAdminPeerReviewsWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setReviews(r.data);
+    });
+  }, [session]);
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
           <h1 className={styles.pageTitle}>Peer Review Queue</h1>
-          <div className={styles.pageSub}>Manage and distribute peer review requests across the team</div>
+          <div className={styles.pageSub}>Manage and distribute peer review assignments across the team</div>
         </div>
       </div>
       <article className={styles.card}>
-        <div className={styles.cardHd}><span className={styles.cardHdTitle}>Review Requests</span></div>
+        <div className={styles.cardHd}><span className={styles.cardHdTitle}>Review Requests ({reviews.length})</span></div>
         <div className={styles.cardInner}>
-          <table className={styles.table}>
-            <thead><tr><th>ID</th><th>Review</th><th>Requester</th><th>Reviewer</th><th>Project</th><th>Priority</th><th>Status</th></tr></thead>
-            <tbody>
-              {reviews.map((r) => (
-                <tr key={r.id}>
-                  <td className={cx("fontMono", "text12")}>{r.id}</td>
-                  <td className={cx("fw600")}>{r.title}</td>
-                  <td className={cx("text12")}>{r.requester}</td>
-                  <td className={cx("text12")}>{r.reviewer}</td>
-                  <td className={cx("colorMuted", "text12")}>{r.project}</td>
-                  <td><span className={cx("badge", r.priority === "High" ? "badgeRed" : r.priority === "Medium" ? "badgeAmber" : "badge")}>{r.priority}</span></td>
-                  <td><span className={cx("badge", r.status === "Complete" ? "badgeGreen" : r.status === "In Review" ? "badgeAmber" : "badgeRed")}>{r.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {reviews.length === 0 ? (
+            <div className={cx("colorMuted", "text13", "py24", "textCenter")}>No peer reviews found.</div>
+          ) : (
+            <table className={styles.table}>
+              <thead><tr><th scope="col">ID</th><th scope="col">Reviewer</th><th scope="col">Reviewee</th><th scope="col">Project</th><th scope="col">Priority</th><th scope="col">Status</th></tr></thead>
+              <tbody>
+                {reviews.map((r) => (
+                  <tr key={r.id}>
+                    <td className={cx("fontMono", "text12")}>{r.id.slice(0, 8).toUpperCase()}</td>
+                    <td className={cx("fw600", "text12")}>{r.reviewerId.slice(0, 8)}…</td>
+                    <td className={cx("text12")}>{r.revieweeId.slice(0, 8)}…</td>
+                    <td className={cx("colorMuted", "text12")}>{r.projectId ? r.projectId.slice(0, 8) + "…" : "—"}</td>
+                    <td><span className={cx("badge", priorityBadge(r.dueAt))}>{priorityLabel(r.dueAt)}</span></td>
+                    <td><span className={cx("badge", statusBadge(r.status))}>{statusLabel(r.status)}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </article>
     </div>

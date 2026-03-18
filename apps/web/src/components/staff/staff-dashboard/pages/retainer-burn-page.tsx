@@ -1,446 +1,339 @@
+// ════════════════════════════════════════════════════════════════════════════
+// retainer-burn-page.tsx — Staff Retainer Burn Dashboard
+// Data : GET /staff/retainer-burn → StaffRetainerBurnEntry[]
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cx } from "../style";
+import { Ic } from "../ui";
+import {
+  getStaffRetainerBurn,
+  type StaffRetainerBurnEntry,
+  type StaffRetainerBurnMonth,
+} from "../../../../lib/api/staff/clients";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
 
-type RetainerStatus = "healthy" | "moderate" | "critical" | "exceeded";
+// ── Props ─────────────────────────────────────────────────────────────────────
 
-type RetainerTask = {
-  name: string;
-  hours: number;
-  category: "Design" | "Strategy" | "Research" | "Admin" | "Production";
+type RetainerBurnPageProps = {
+  isActive: boolean;
+  session:  AuthSession | null;
 };
 
-type RetainerRecord = {
-  id: number;
-  client: string;
-  avatar: string;
-  project: string;
-  status: RetainerStatus;
-  retainerHours: number;
-  hoursUsed: number;
-  retainerValue: number;
-  billingCycle: string;
-  cycleStart: string;
-  cycleEnd: string;
-  daysLeft: number;
-  hourlyRate: number;
-  overage: number;
-  tasks: RetainerTask[];
-  burnHistory: number[];
-  alert: string | null;
-};
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const retainers: RetainerRecord[] = [
-  {
-    id: 1,
-    client: "Volta Studios",
-    avatar: "VS",
-    project: "Brand Identity System",
-    status: "healthy",
-    retainerHours: 80,
-    hoursUsed: 49.5,
-    retainerValue: 28000,
-    billingCycle: "Monthly",
-    cycleStart: "Feb 1",
-    cycleEnd: "Feb 28",
-    daysLeft: 6,
-    hourlyRate: 350,
-    overage: 0,
-    tasks: [
-      { name: "Logo & Visual Direction", hours: 18, category: "Design" },
-      { name: "Brand Guidelines Doc", hours: 12.5, category: "Design" },
-      { name: "Client Communication", hours: 7, category: "Admin" },
-      { name: "Asset Exports", hours: 5, category: "Production" },
-      { name: "Internal Review", hours: 7, category: "Admin" }
-    ],
-    burnHistory: [62, 55, 49, 61, 58, 62],
-    alert: null
-  },
-  {
-    id: 2,
-    client: "Kestrel Capital",
-    avatar: "KC",
-    project: "Q1 Campaign Strategy",
-    status: "critical",
-    retainerHours: 60,
-    hoursUsed: 58.5,
-    retainerValue: 21000,
-    billingCycle: "Monthly",
-    cycleStart: "Feb 1",
-    cycleEnd: "Feb 28",
-    daysLeft: 6,
-    hourlyRate: 350,
-    overage: 0,
-    tasks: [
-      { name: "Strategy Deck", hours: 22, category: "Strategy" },
-      { name: "Audience Research", hours: 14, category: "Research" },
-      { name: "Content Calendar", hours: 11, category: "Strategy" },
-      { name: "Client Calls & Admin", hours: 8, category: "Admin" },
-      { name: "Revision Rounds", hours: 3.5, category: "Design" }
-    ],
-    burnHistory: [80, 75, 90, 97, 95, 97],
-    alert: "97.5% burned - 1.5 hours remaining. Flag for scope review."
-  },
-  {
-    id: 3,
-    client: "Mira Health",
-    avatar: "MH",
-    project: "Website Redesign",
-    status: "moderate",
-    retainerHours: 100,
-    hoursUsed: 61,
-    retainerValue: 35000,
-    billingCycle: "Monthly",
-    cycleStart: "Feb 1",
-    cycleEnd: "Feb 28",
-    daysLeft: 6,
-    hourlyRate: 350,
-    overage: 0,
-    tasks: [
-      { name: "UX Wireframes - Mobile", hours: 24, category: "Design" },
-      { name: "Component Library", hours: 18, category: "Design" },
-      { name: "UX Research", hours: 10, category: "Research" },
-      { name: "Client Workshops", hours: 6, category: "Admin" },
-      { name: "Revision Rounds", hours: 3, category: "Design" }
-    ],
-    burnHistory: [48, 52, 55, 58, 60, 61],
-    alert: null
-  },
-  {
-    id: 4,
-    client: "Dune Collective",
-    avatar: "DC",
-    project: "Editorial Design System",
-    status: "exceeded",
-    retainerHours: 50,
-    hoursUsed: 56,
-    retainerValue: 17500,
-    billingCycle: "Monthly",
-    cycleStart: "Feb 1",
-    cycleEnd: "Feb 28",
-    daysLeft: 6,
-    hourlyRate: 350,
-    overage: 6,
-    tasks: [
-      { name: "Type & Grid System", hours: 20, category: "Design" },
-      { name: "Component Docs", hours: 16, category: "Design" },
-      { name: "Revision Rounds", hours: 12, category: "Design" },
-      { name: "Client Comms", hours: 8, category: "Admin" }
-    ],
-    burnHistory: [70, 80, 90, 100, 108, 112],
-    alert: "Retainer exceeded by 6 hours - R2,100 in unbilled work. Raise with admin."
-  },
-  {
-    id: 5,
-    client: "Okafor & Sons",
-    avatar: "OS",
-    project: "Annual Report 2025",
-    status: "healthy",
-    retainerHours: 40,
-    hoursUsed: 13.5,
-    retainerValue: 14000,
-    billingCycle: "Monthly",
-    cycleStart: "Feb 1",
-    cycleEnd: "Feb 28",
-    daysLeft: 6,
-    hourlyRate: 350,
-    overage: 0,
-    tasks: [
-      { name: "Data Visualisation", hours: 8, category: "Design" },
-      { name: "Layout & Typesetting", hours: 3, category: "Design" },
-      { name: "Client Review Session", hours: 1.5, category: "Admin" },
-      { name: "Asset Prep", hours: 1, category: "Production" }
-    ],
-    burnHistory: [20, 22, 28, 30, 33, 33],
-    alert: null
-  }
-];
+type BurnStatus = "healthy" | "moderate" | "critical" | "exceeded";
 
-function statusClass(status: RetainerStatus) {
-  if (status === "healthy") return "rbStatusHealthy";
-  if (status === "moderate") return "rbStatusModerate";
-  if (status === "critical") return "rbStatusCritical";
-  return "rbStatusExceeded";
+function burnStatus(pct: number): BurnStatus {
+  if (pct > 100) return "exceeded";
+  if (pct >= 85) return "critical";
+  if (pct >= 70) return "moderate";
+  return "healthy";
 }
 
-function statusMeterClass(status: RetainerStatus) {
-  if (status === "healthy") return "rbMeterHealthy";
-  if (status === "moderate") return "rbMeterModerate";
-  if (status === "critical") return "rbMeterCritical";
-  return "rbMeterExceeded";
+function statusLabel(s: BurnStatus): string {
+  if (s === "exceeded") return "Exceeded";
+  if (s === "critical") return "Critical";
+  if (s === "moderate") return "Moderate";
+  return "Healthy";
 }
 
-function statusStroke(status: RetainerStatus) {
-  if (status === "healthy") return "var(--accent)";
-  if (status === "moderate") return "var(--amber)";
-  if (status === "critical") return "var(--amber)";
-  return "var(--red)";
+function statusBadgeCls(s: BurnStatus): string {
+  if (s === "exceeded") return "rbStatusExceeded";
+  if (s === "critical") return "rbStatusCritical";
+  if (s === "moderate") return "rbStatusModerate";
+  return "rbStatusHealthy";
 }
 
-function categoryClass(category: RetainerTask["category"]) {
-  if (category === "Design") return "rbCatDesign";
-  if (category === "Strategy") return "rbCatStrategy";
-  if (category === "Research") return "rbCatResearch";
-  if (category === "Production") return "rbCatProduction";
-  return "rbCatAdmin";
+function donutColor(s: BurnStatus): string {
+  if (s === "exceeded") return "var(--red)";
+  if (s === "critical") return "var(--red)";
+  if (s === "moderate") return "var(--amber)";
+  return "var(--green)";
 }
 
-function actionToneClass(index: number) {
-  if (index === 0) return "rbActionPrimary";
-  if (index === 1) return "rbActionWarn";
-  return "rbActionNeutral";
+function burnFillCls(pct: number): string {
+  if (pct >= 100) return "progressFillRed";
+  if (pct >= 85)  return "progressFillRed";
+  if (pct >= 70)  return "progressFillAmber";
+  return "progressFillGreen";
 }
 
-function BurnBar({ used, total, status, compact = false }: { used: number; total: number; status: RetainerStatus; compact?: boolean }) {
-  const pct = Math.min((used / total) * 100, 100);
-  const over = used > total;
+function initials(name: string): string {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return parts[0].slice(0, 2).toUpperCase();
+}
+
+// ── SVG: Donut ────────────────────────────────────────────────────────────────
+
+function DonutChart({ pct, status }: { pct: number; status: BurnStatus }) {
+  const r           = 19;
+  const circ        = 2 * Math.PI * r;
+  const fill        = Math.min(pct / 100, 1) * circ;
+  const color       = donutColor(status);
   return (
-    <div className={cx("rbBurnBarTrack", compact ? "rbBurnBarTrackSm" : "rbBurnBarTrackLg")}>
-      <progress className={cx("progressMeter", "rbBurnProgress", compact ? "rbBurnProgressSm" : "rbBurnProgressLg", statusMeterClass(status))} max={100} value={pct} />
-      {over ? <div className={cx("rbBurnOverDot", compact ? "rbBurnOverDotSm" : "rbBurnOverDotLg")} /> : null}
-    </div>
-  );
-}
-
-function MiniSparkline({ data, status }: { data: number[]; status: RetainerStatus }) {
-  const max = Math.max(...data, 100);
-  const points = data
-    .map((value, index) => {
-      const x = (index / (data.length - 1)) * 120;
-      const y = 30 - (value / max) * 28;
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  const stroke = statusStroke(status);
-
-  return (
-    <svg width="120" height="32" viewBox="0 0 120 32" className={cx("rbSparkline")}>
-      <polyline points={points} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
-      {data.map((value, index) => {
-        const x = (index / (data.length - 1)) * 120;
-        const y = 30 - (value / max) * 28;
-        return index === data.length - 1 ? <circle key={index} cx={x} cy={y} r="2.5" fill={stroke} /> : null;
-      })}
+    <svg width="52" height="52" viewBox="0 0 48 48" className={cx("noShrink")}>
+      <circle cx="24" cy="24" r={r} fill="none" stroke="var(--s3)" strokeWidth="6" />
+      <circle
+        cx="24" cy="24" r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth="6"
+        strokeDasharray={`${fill} ${circ}`}
+        strokeLinecap="round"
+        transform="rotate(-90 24 24)"
+      />
     </svg>
   );
 }
 
-export function RetainerBurnPage({ isActive }: { isActive: boolean }) {
-  const [selected, setSelected] = useState(retainers[0].id);
+// ── SVG: Sparkline ────────────────────────────────────────────────────────────
 
-  const current = retainers.find((retainer) => retainer.id === selected) ?? retainers[0];
-  const burnPct = Math.round((current.hoursUsed / current.retainerHours) * 100);
-  const remaining = Math.max(current.retainerHours - current.hoursUsed, 0);
-  const projectedTotal = current.hoursUsed + (current.hoursUsed / (30 - current.daysLeft)) * current.daysLeft;
+function Sparkline({ history, status }: { history: StaffRetainerBurnMonth[]; status: BurnStatus }) {
+  if (history.length < 2) {
+    return <svg width="80" height="24" viewBox="0 0 80 24" />;
+  }
+  const color = donutColor(status);
+  const maxV  = Math.max(...history.map((h) => h.burnPct), 1);
+  const W = 80, H = 24, pad = 2;
+  const pts = history.map((h, i) => {
+    const x = pad + (i / (history.length - 1)) * (W - pad * 2);
+    const y = H - pad - ((h.burnPct / maxV) * (H - pad * 2));
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
 
-  const r = 54;
-  const circ = 2 * Math.PI * r;
-  const usedDash = Math.min(burnPct / 100, 1) * circ;
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className={cx("overflowVisible")}>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+
+function SkeletonStat() {
+  return (
+    <div className={cx("rbStatCard", "opacity50")}>
+      <div className={cx("rbStatCardTop")}>
+        <div className={cx("skeleBlock10x50p")} />
+        <div className={cx("skeleBlock22x35p")} />
+      </div>
+      <div className={cx("rbStatCardDivider")} />
+      <div className={cx("skeleBlock9x60p")} />
+    </div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className={cx("rbCard", "opacity40")}>
+      <div className={cx("skeleBlock14x40p")} />
+      <div className={cx("skeleBlock9x25p")} />
+    </div>
+  );
+}
+
+// ── Page component ────────────────────────────────────────────────────────────
+
+export function RetainerBurnPage({ isActive, session }: RetainerBurnPageProps) {
+  const [clients, setClients]   = useState<StaffRetainerBurnEntry[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!session || !isActive) return;
+    let cancelled = false;
+
+    setLoading(true);
+    void getStaffRetainerBurn(session).then((result) => {
+      if (cancelled) return;
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.data) {
+        setClients(result.data);
+        if (result.data.length > 0) setActiveId(result.data[0].clientId);
+      }
+      setLoading(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [session?.accessToken, isActive]);
+
+  // ── Derived stats ──────────────────────────────────────────────────────────
+  const avgBurn     = clients.length > 0
+    ? Math.round(clients.reduce((s, c) => s + c.retainerBurnPct, 0) / clients.length)
+    : 0;
+  const atRisk      = clients.filter((c) => c.retainerBurnPct >= 85).length;
+  const exceeded    = clients.filter((c) => c.retainerBurnPct > 100).length;
+  const activeClient = clients.find((c) => c.clientId === activeId) ?? clients[0] ?? null;
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-retainer-burn">
-      <div className={cx("pageHeaderBar", "rbHeaderBar")}>
-        <div className={cx("flexBetween", "mb20")}> 
-          <div>
-            <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Finance</div>
-            <h1 className={cx("pageTitleText")}>Retainer Burn</h1>
-          </div>
-          <div className={cx("rbTopStats")}>
-            {[
-              { label: "Cycle", value: "Feb 2026", className: "colorMuted" },
-              { label: "Days left", value: "6", className: "colorAmber" },
-              { label: "Exceeded", value: retainers.filter((retainer) => retainer.status === "exceeded").length, className: "colorRed" },
-              { label: "Critical", value: retainers.filter((retainer) => retainer.status === "critical").length, className: "rbToneCritical" }
-            ].map((summary) => (
-              <div key={summary.label} className={cx("textRight")}>
-                <div className={cx("statLabelNew")}>{summary.label}</div>
-                <div className={cx("statValueNew", summary.className)}>{summary.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={cx("rbClientTabs")}> 
-          {retainers.map((retainer) => {
-            const pct = Math.round((retainer.hoursUsed / retainer.retainerHours) * 100);
-            const isCurrent = selected === retainer.id;
-            return (
-              <button type="button"
-                key={retainer.id}
-                className={cx("rbClientTab", "rbClientTabCard", isCurrent ? "rbClientTabActive" : "rbClientTabIdle", statusClass(retainer.status))}
-                onClick={() => setSelected(retainer.id)}
-              >
-                <div className={cx("rbClientTabHead")}>
-                  <div className={cx("rbTabDot", statusClass(retainer.status))} />
-                  <span className={cx("rbClientTabName", isCurrent ? "colorText" : "colorMuted2")}>{retainer.client}</span>
-                </div>
-                <div className={cx("rbClientTabBarRow")}>
-                  <progress className={cx("progressMeter", "rbClientTabProgress", statusMeterClass(retainer.status))} max={100} value={Math.min(pct, 100)} />
-                  <span className={cx("text10", statusClass(retainer.status), "rbPctMin")}>{pct}%</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+      <div className={cx("pageHeaderBar")}>
+        <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Finance</div>
+        <h1 className={cx("pageTitleText")}>Retainer Burn</h1>
+        <p className={cx("pageSubtitleText", "mb20")}>Retainer utilisation across all clients</p>
       </div>
 
-      <div className={cx("rbLayout")}> 
-        <div>
-          {current.alert ? (
-            <div className={cx("rbAlertBanner", current.status === "exceeded" ? "rbAlertExceeded" : "rbAlertCritical", "mb24")}>
-              <span className={cx("text14")}>⚠</span>
-              <span className={cx("text12", current.status === "exceeded" ? "colorRed" : "rbToneCritical")}>{current.alert}</span>
-            </div>
-          ) : null}
-
-          <div className={cx("rbStatGrid", "mb28")}>
-            {[
-              { label: "Hours used", value: `${current.hoursUsed}`, unit: "h", className: statusClass(current.status) },
-              { label: "Retainer total", value: `${current.retainerHours}`, unit: "h", className: "colorMuted" },
-              {
-                label: "Remaining",
-                value: `${current.status === "exceeded" ? `-${current.overage}` : remaining}`,
-                unit: "h",
-                className: current.status === "exceeded" ? "colorRed" : "colorAccent"
-              },
-              {
-                label: "Overage cost",
-                value: current.overage > 0 ? `R${(current.overage * current.hourlyRate).toLocaleString()}` : "-",
-                unit: "",
-                className: current.overage > 0 ? "colorRed" : "colorMuted2"
-              }
-            ].map((stat) => (
-              <div key={stat.label} className={cx("rbStatCard")}>
-                <div className={cx("text10", "colorMuted2", "uppercase", "tracking", "mb6")}>{stat.label}</div>
-                <div className={cx("fontDisplay", "fw800", "text20", stat.className)}>
-                  {stat.value}
-                  <span className={cx("text12", "colorMuted2", "fontMono", "fw400")}>{stat.unit}</span>
-                </div>
+      {/* ── Summary stats ────────────────────────────────────────────────── */}
+      <div className={cx("rbStatGrid")}>
+        {loading ? (
+          [1, 2, 3, 4].map((n) => <SkeletonStat key={n} />)
+        ) : (
+          <>
+            <div className={cx("rbStatCard")}>
+              <div className={cx("rbStatCardTop")}>
+                <div className={cx("rbStatLabel")}>Clients</div>
+                <div className={cx("rbStatValue")}>{clients.length}</div>
               </div>
-            ))}
-          </div>
-
-          <div className={cx("mb28")}>
-            <div className={cx("rbCycleHead")}>
-              <div className={cx("sectionLabel")}>Cycle burn</div>
-              <div className={cx("rbCycleMeta")}>
-                <span className={cx("text11", "colorMuted2")}>{current.cycleStart}</span>
-                <span className={cx("text11", "colorMuted2")}>→</span>
-                <span className={cx("text11", "colorMuted2")}>{current.cycleEnd}</span>
-                <span className={cx("text11", "fw600", statusClass(current.status))}>{burnPct}%</span>
+              <div className={cx("rbStatCardDivider")} />
+              <div className={cx("rbStatCardBottom")}>
+                <span className={cx("rbStatDot", "dotBgMuted2")} />
+                <span className={cx("rbStatMeta")}>retainer clients</span>
               </div>
             </div>
-            <BurnBar used={current.hoursUsed} total={current.retainerHours} status={current.status} />
-            {current.status === "exceeded" ? (
-              <div className={cx("text10", "colorRed", "mt6")}>
-                Exceeded by {current.overage}h - R{(current.overage * current.hourlyRate).toLocaleString()} unbilled
-              </div>
-            ) : null}
-          </div>
 
-          <div>
-            <div className={cx("sectionLabel", "mb14")}>Hours by Task</div>
-            <div className={cx("flexCol")}>
-              {[...current.tasks]
-                .sort((left, right) => right.hours - left.hours)
-                .map((task, index) => {
-                  const pct = (task.hours / current.hoursUsed) * 100;
-                  return (
-                    <div key={index} className={cx("rbTaskRow", "rbTaskRowCard")}>
-                      <div className={cx("rbTaskDot", categoryClass(task.category))} />
-                      <div className={cx("flex1", "minW0")}>
-                        <div className={cx("rbTaskHead")}>
-                          <span className={cx("text12", "colorText")}>{task.name}</span>
-                          <span className={cx("text11", "colorMuted")}>{task.hours}h</span>
-                        </div>
-                        <progress className={cx("progressMeter", "rbTaskProgress", categoryClass(task.category))} max={100} value={pct} />
-                      </div>
-                      <span className={cx("text10", categoryClass(task.category), "rbPctMin", "textRight")}>{Math.round(pct)}%</span>
+            <div className={cx("rbStatCard")}>
+              <div className={cx("rbStatCardTop")}>
+                <div className={cx("rbStatLabel")}>Avg Burn</div>
+                <div className={cx("rbStatValue", burnFillCls(avgBurn).replace("progressFill", "color"))}>{avgBurn}%</div>
+              </div>
+              <div className={cx("rbStatCardDivider")} />
+              <div className={cx("rbStatCardBottom")}>
+                <span className={cx("rbStatDot", "dotBgAccent")} />
+                <span className={cx("rbStatMeta")}>portfolio average</span>
+              </div>
+            </div>
+
+            <div className={cx("rbStatCard")}>
+              <div className={cx("rbStatCardTop")}>
+                <div className={cx("rbStatLabel")}>At Risk</div>
+                <div className={cx("rbStatValue", atRisk > 0 ? "colorAmber" : "colorGreen")}>{atRisk}</div>
+              </div>
+              <div className={cx("rbStatCardDivider")} />
+              <div className={cx("rbStatCardBottom")}>
+                <span className={cx("rbStatDot", "dynBgColor")} style={{ "--bg-color": atRisk > 0 ? "var(--amber)" : "var(--green)" } as React.CSSProperties} />
+                <span className={cx("rbStatMeta")}>≥ 85% burn</span>
+              </div>
+            </div>
+
+            <div className={cx("rbStatCard")}>
+              <div className={cx("rbStatCardTop")}>
+                <div className={cx("rbStatLabel")}>Exceeded</div>
+                <div className={cx("rbStatValue", exceeded > 0 ? "colorRed" : "colorGreen")}>{exceeded}</div>
+              </div>
+              <div className={cx("rbStatCardDivider")} />
+              <div className={cx("rbStatCardBottom")}>
+                <span className={cx("rbStatDot", "dynBgColor")} style={{ "--bg-color": exceeded > 0 ? "var(--red)" : "var(--green)" } as React.CSSProperties} />
+                <span className={cx("rbStatMeta")}>&gt; 100% burn</span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Client tabs + detail ──────────────────────────────────────────── */}
+      {loading ? (
+        <div className={cx("flexCol", "gap12")}>
+          {[1, 2, 3].map((n) => <SkeletonCard key={n} />)}
+        </div>
+      ) : clients.length === 0 ? (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="activity" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>No retainer data</div>
+          <div className={cx("emptyStateSub")}>Retainer burn data will appear once clients are on retainer.</div>
+        </div>
+      ) : (
+        <div className={cx("rbLayout")}>
+
+          {/* Client tab list */}
+          <div className={cx("rbClientList")}>
+            {clients.map((c) => {
+              const st = burnStatus(c.retainerBurnPct);
+              return (
+                <div
+                  key={c.clientId}
+                  className={cx("rbClientTab", activeId === c.clientId && "rbClientTabActive")}
+                  onClick={() => setActiveId(c.clientId)}
+                >
+                  <div className={cx("rbTabAvatar")}>{initials(c.clientName)}</div>
+                  <div className={cx("rbTabInfo")}>
+                    <div className={cx("rbTabName")}>{c.clientName}</div>
+                    <div className={cx("rbTabBurn", st === "healthy" ? "colorGreen" : st === "moderate" ? "colorAmber" : "colorRed")}>
+                      {c.retainerBurnPct}%
                     </div>
-                  );
-                })}
-            </div>
-
-            <div className={cx("rbLegendRow")}> 
-              {(["Design", "Strategy", "Research", "Admin", "Production"] as const).map((category) => (
-                <div key={category} className={cx("rbLegendItem")}>
-                  <div className={cx("rbCatDot", categoryClass(category))} />
-                  <span className={cx("text10", "colorMuted2")}>{category}</span>
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        </div>
 
-        <div className={cx("rbSideCol")}>
-          <div className={cx("rbOverviewCard")}>
-            <div className={cx("sectionLabel", "mb16", "wFull")}>Burn overview</div>
-            <svg width="132" height="132" viewBox="0 0 132 132" className={cx("rbDonut")}> 
-              <circle cx="66" cy="66" r={r} fill="none" className={cx("rbDonutTrack")} strokeWidth="10" />
-              <circle
-                cx="66"
-                cy="66"
-                r={r}
-                fill="none"
-                stroke={statusStroke(current.status)}
-                className={cx("rbDonutArc")}
-                strokeWidth="10"
-                strokeDasharray={`${usedDash} ${circ}`}
-                strokeLinecap="round"
-                transform="rotate(-90 66 66)"
-              />
-              <text x="66" y="60" textAnchor="middle" fill={statusStroke(current.status)} className={cx("rbDonutPct")}>{burnPct}%</text>
-              <text x="66" y="76" textAnchor="middle" className={cx("rbDonutLabel")}>burned</text>
-            </svg>
-            <div className={cx("wFull", "mt16")}>
-              {[
-                { label: "Used", value: `${current.hoursUsed}h`, className: statusClass(current.status) },
-                { label: "Total", value: `${current.retainerHours}h`, className: "colorMuted2" },
-                { label: "Value", value: `R${current.retainerValue.toLocaleString()}`, className: "colorMuted" },
-                { label: "Cycle", value: current.billingCycle, className: "colorMuted" }
-              ].map((row, index, arr) => (
-                <div key={row.label} className={cx("rbOverviewRow", index === arr.length - 1 && "rbOverviewRowLast")}>
-                  <span className={cx("text11", "colorMuted2")}>{row.label}</span>
-                  <span className={cx("text11", row.className)}>{row.value}</span>
+          {/* Detail panel */}
+          {activeClient && (() => {
+            const st = burnStatus(activeClient.retainerBurnPct);
+            return (
+              <div className={cx("rbDetailPanel")}>
+                {/* Head */}
+                <div className={cx("rbDetailHead")}>
+                  <div>
+                    <div className={cx("rbDetailName")}>{activeClient.clientName}</div>
+                    <div className={cx("rbDetailHours")}>{activeClient.hoursUsed}h logged this cycle</div>
+                  </div>
+                  <span className={cx("rbStatusBadge", statusBadgeCls(st))}>{statusLabel(st)}</span>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          <div className={cx("rbDetailCard")}>
-            <div className={cx("sectionLabel", "mb12")}>6-Month Trend</div>
-            <MiniSparkline data={current.burnHistory} status={current.status} />
-            <div className={cx("text10", "colorMuted2", "mt8")}>
-              {current.burnHistory[current.burnHistory.length - 1] > current.burnHistory[0]
-                ? "↑ Burn rate increasing - check scope creep"
-                : "↓ Burn rate stable or decreasing"}
-            </div>
-          </div>
+                {/* Donut + burn % */}
+                <div className={cx("rbDonutRow")}>
+                  <DonutChart pct={activeClient.retainerBurnPct} status={st} />
+                  <div className={cx("rbDonutMeta")}>
+                    <div className={cx("rbBurnPct", st === "healthy" ? "colorGreen" : st === "moderate" ? "colorAmber" : "colorRed")}>
+                      {activeClient.retainerBurnPct}%
+                    </div>
+                    <div className={cx("rbBurnLabel")}>retainer used</div>
+                  </div>
+                </div>
 
-          <div className={cx("rbDetailCard")}>
-            <div className={cx("sectionLabel", "mb12")}>End-of-cycle Projection</div>
-            <div className={cx("fontDisplay", "fw800", "text24", projectedTotal > current.retainerHours ? "colorRed" : "colorAccent", "mb4")}>
-              {Math.round(projectedTotal * 10) / 10}h
-            </div>
-            <div className={cx("text11", "colorMuted2")}>
-              {projectedTotal > current.retainerHours
-                ? `Will exceed by ~${Math.round((projectedTotal - current.retainerHours) * 10) / 10}h`
-                : `~${Math.round((current.retainerHours - projectedTotal) * 10) / 10}h buffer remaining`}
-            </div>
-          </div>
+                {/* Progress bar */}
+                <div className={cx("rbBarSection")}>
+                  <div className={cx("rbBarMeta")}>
+                    <span className={cx("rbBarLabel")}>Burn Rate</span>
+                    <span className={cx("rbBarPct", st === "healthy" ? "colorGreen" : st === "moderate" ? "colorAmber" : "colorRed")}>
+                      {activeClient.retainerBurnPct}%
+                    </span>
+                  </div>
+                  <div className={cx("progressTrack")}>
+                    <div
+                      className={cx("progressFill", burnFillCls(activeClient.retainerBurnPct))}
+                      style={{ '--pct': `${Math.min(activeClient.retainerBurnPct, 100)}%` } as React.CSSProperties}
+                    />
+                  </div>
+                </div>
 
-          <div className={cx("rbActions")}> 
-            <div className={cx("sectionLabel", "mb4")}>Actions</div>
-            {["Request scope extension", "Flag to admin", "Export burn report"].map((label, index) => (
-              <button key={label} className={cx("rbActionBtn", "rbActionBtnBase", actionToneClass(index))} type="button">
-                {label}
-              </button>
-            ))}
-          </div>
+                {/* Sparkline */}
+                {activeClient.burnHistory.length > 0 && (
+                  <div className={cx("rbSparkSection")}>
+                    <div className={cx("rbSparkLabel")}>Burn Trend ({activeClient.burnHistory.length} months)</div>
+                    <div className={cx("rbSparkWrap")}>
+                      <Sparkline history={activeClient.burnHistory} status={st} />
+                    </div>
+                    <div className={cx("rbSparkMonths")}>
+                      {activeClient.burnHistory.map((h) => (
+                        <div key={h.month} className={cx("rbSparkMonth")}>
+                          <div className={cx("rbSparkMonthLabel")}>{h.month.slice(0, 3)}</div>
+                          <div className={cx("rbSparkMonthVal")}>{h.burnPct}%</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
-      </div>
+      )}
     </section>
   );
 }

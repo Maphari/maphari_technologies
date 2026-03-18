@@ -179,6 +179,7 @@ export async function updateProjectWithRefresh(
   input: {
     name?: string;
     description?: string;
+    status?: string;
     ownerName?: string;
     priority?: "LOW" | "MEDIUM" | "HIGH";
     riskLevel?: "LOW" | "MEDIUM" | "HIGH";

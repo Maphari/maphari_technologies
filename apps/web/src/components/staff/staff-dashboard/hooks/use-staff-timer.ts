@@ -10,6 +10,15 @@ import {
 import type { TimeEntrySummary } from "../types";
 import { formatDuration, formatTimer, startOfWeek } from "../utils";
 
+const TIMER_STORAGE_KEY = "staff:timer:state";
+
+type TimerStorageState = {
+  projectId: string;
+  taskLabel: string;
+  startedAt: string;    // ISO timestamp when timer was started
+  workSessionId: string | null;
+};
+
 type AdminProject = {
   id: string;
   clientId: string;
@@ -85,6 +94,28 @@ export function useStaffTimer({
 
   const timerRef = useRef<number | null>(null);
   const timerStartRef = useRef<string | null>(null);
+
+  // ─── Restore timer from localStorage on mount ───
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(TIMER_STORAGE_KEY);
+      if (!raw) return;
+      const saved: TimerStorageState = JSON.parse(raw) as TimerStorageState;
+      if (saved.projectId) setSelectedTimerProjectId(saved.projectId);
+      if (saved.taskLabel) setTimerTaskLabel(saved.taskLabel);
+      if (saved.startedAt) {
+        const elapsedSeconds = Math.floor((Date.now() - new Date(saved.startedAt).getTime()) / 1000);
+        if (elapsedSeconds > 0 && elapsedSeconds < 86400) { // valid if < 24h
+          timerStartRef.current = saved.startedAt;
+          setTimerSeconds(elapsedSeconds);
+          setTimerRunning(true);
+        }
+      }
+      if (saved.workSessionId) setActiveWorkSessionId(saved.workSessionId);
+    } catch {
+      // ignore malformed storage
+    }
+  }, []); // run once on mount
 
   const effectiveSelectedTimerProjectId =
     selectedTimerProjectId && projects.some((project) => project.id === selectedTimerProjectId)
@@ -183,6 +214,7 @@ export function useStaffTimer({
     }
     if (timerRunning) {
       setTimerRunning(false);
+      try { localStorage.removeItem(TIMER_STORAGE_KEY); } catch { /* ignore */ }
       if (session && effectiveSelectedTimerProjectId && activeWorkSessionId) {
         void updateProjectWorkSessionWithRefresh(session, effectiveSelectedTimerProjectId, activeWorkSessionId, {
           status: "PAUSED"
@@ -192,6 +224,13 @@ export function useStaffTimer({
     }
     timerStartRef.current = new Date().toISOString();
     setTimerRunning(true);
+    const storageState: TimerStorageState = {
+      projectId: effectiveSelectedTimerProjectId,
+      taskLabel: timerTaskLabel,
+      startedAt: timerStartRef.current!,
+      workSessionId: null,
+    };
+    try { localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(storageState)); } catch { /* ignore */ }
     if (session && effectiveSelectedTimerProjectId) {
       void (async () => {
         const created = await createProjectWorkSessionWithRefresh(session, effectiveSelectedTimerProjectId, {
@@ -203,12 +242,20 @@ export function useStaffTimer({
         });
         if (created.data) {
           setActiveWorkSessionId(created.data.id);
+          try {
+            const existing = localStorage.getItem(TIMER_STORAGE_KEY);
+            if (existing) {
+              const parsed = JSON.parse(existing) as TimerStorageState;
+              localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify({ ...parsed, workSessionId: created.data.id }));
+            }
+          } catch { /* ignore */ }
         }
       })();
     }
   }, [activeWorkSessionId, effectiveSelectedTimerProjectId, session, setFeedback, staffName, timerRunning, timerTaskLabel]);
 
   const handleTimerStop = useCallback(async () => {
+    try { localStorage.removeItem(TIMER_STORAGE_KEY); } catch { /* ignore */ }
     setTimerRunning(false);
     if (session && effectiveSelectedTimerProjectId && activeWorkSessionId) {
       await updateProjectWorkSessionWithRefresh(session, effectiveSelectedTimerProjectId, activeWorkSessionId, {

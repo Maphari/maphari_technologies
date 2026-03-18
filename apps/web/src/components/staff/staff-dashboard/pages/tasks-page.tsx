@@ -71,19 +71,21 @@ export function TasksPage({
 }: TasksPageProps) {
   return (
     <section className={cx("page", "pageBody", "tasksPage", isActive && "pageActive")} id="page-tasks">
-      <div className={cx(styles.pageHeader, "tasksHeader")}>
-        <div>
-          <div className={styles.pageEyebrow}>Your Assignments</div>
-          <div className={styles.pageTitle}>My Tasks</div>
-          <div className={styles.pageSub}>{openTasksCount} open tasks across {projectsCount} active projects.</div>
-        </div>
-        <div className={cx(styles.pageActions, "tasksHeaderActions")}>
-          <button className={cx("button", "buttonGhost")} type="button" onClick={onToggleHighPriority}>
-            {highPriorityOnly ? "High Priority Only" : "All Priorities"}
-          </button>
-          <button className={cx("button", "buttonBlue")} type="button" onClick={onToggleComposer}>
-            {showComposer ? "Close" : "+ Add Task"}
-          </button>
+      <div className={cx("pageHeaderBar", "tasksHeader")}>
+        <div className={cx("flexBetween", "gap24", "mb20")}>
+          <div>
+            <div className={cx("pageEyebrowText", "mb8")}>Your Assignments</div>
+            <h1 className={cx("pageTitleText")}>My Tasks</h1>
+            <p className={cx("pageSubtitleText")}>{openTasksCount} open tasks across {projectsCount} active projects.</p>
+          </div>
+          <div className={cx("pageActions", "tasksHeaderActions")}>
+            <button className={cx("button", "buttonGhost")} type="button" onClick={onToggleHighPriority}>
+              {highPriorityOnly ? "High Priority Only" : "All Priorities"}
+            </button>
+            <button className={cx("button", "buttonBlue")} type="button" onClick={onToggleComposer}>
+              {showComposer ? "Close" : "+ Add Task"}
+            </button>
+          </div>
         </div>
       </div>
 

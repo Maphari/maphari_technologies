@@ -13,6 +13,7 @@ export function AdminTopbar({
   onOpenNotifications,
   onOpenMessages,
   onLogout,
+  onMenuToggle,
 }: {
   title: [string, string];
   unreadNotificationsCount: number;
@@ -21,6 +22,7 @@ export function AdminTopbar({
   onOpenNotifications: () => void;
   onOpenMessages: () => void;
   onLogout: () => void;
+  onMenuToggle?: () => void;
 }) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
@@ -49,13 +51,27 @@ export function AdminTopbar({
 
   return (
     <header className={styles.topbar}>
+      {onMenuToggle ? (
+        <button
+          type="button"
+          className={styles.hamburger}
+          aria-label="Toggle navigation"
+          onClick={onMenuToggle}
+        >
+          <svg width="26" height="26" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <rect x="1" y="4"    width="16" height="1.5" rx="0.75" fill="currentColor"/>
+            <rect x="1" y="8.25" width="16" height="1.5" rx="0.75" fill="currentColor"/>
+            <rect x="1" y="12.5" width="16" height="1.5" rx="0.75" fill="currentColor"/>
+          </svg>
+        </button>
+      ) : null}
       <div className={styles.topbarTitle}>
         {title[0]} <span>/ {title[1]}</span>
       </div>
       <div className={styles.topbarActions}>
         <button
           type="button"
-          className={styles.iconBtn}
+          className={`${styles.iconBtn} ${styles.topbarAppsBtn}`}
           onClick={openAppGrid}
           aria-label="Open app grid"
         >
@@ -84,7 +100,7 @@ export function AdminTopbar({
           href="https://designsystem.digital.gov/components/header/"
           target="_blank"
           rel="noreferrer"
-          className={styles.iconBtn}
+          className={`${styles.iconBtn} ${styles.topbarHelpBtn}`}
           aria-label="Open help docs"
         >
           <DashboardUtilityIcon kind="help" className={styles.topbarIcon} />
@@ -100,7 +116,7 @@ export function AdminTopbar({
             <span className={styles.topbarUserAvatar}>
               {email[0]?.toUpperCase() ?? "A"}
             </span>
-            <span className={styles.topbarUserLabel}>Admin</span>
+            <span className={`${styles.topbarUserLabel} ${styles.topbarLabel}`}>Admin</span>
           </button>
           {profileMenuOpen ? (
             <div className={styles.topbarUserDropdown}>

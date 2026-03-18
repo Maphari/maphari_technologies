@@ -1,25 +1,86 @@
+// ════════════════════════════════════════════════════════════════════════════
+// my-learning-page.tsx — Staff My Learning
+// Data     : loadMyTrainingWithRefresh → GET /training
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { loadMyTrainingWithRefresh, type StaffTrainingRecord } from "../../../../lib/api/staff";
+import { saveSession } from "../../../../lib/auth/session";
 
-const courses = [
-  { id: 1, title: "Advanced Figma Techniques", category: "Design", progress: 100, duration: "4h", status: "Completed" as const, completedAt: "Jan 2026" },
-  { id: 2, title: "Design Systems at Scale", category: "Design", progress: 65, duration: "6h", status: "In Progress" as const, completedAt: null },
-  { id: 3, title: "Client Communication Masterclass", category: "Soft Skills", progress: 30, duration: "3h", status: "In Progress" as const, completedAt: null },
-  { id: 4, title: "Accessibility Standards (WCAG 2.2)", category: "Compliance", progress: 0, duration: "5h", status: "Not Started" as const, completedAt: null },
-  { id: 5, title: "Motion Design Principles", category: "Design", progress: 100, duration: "3h", status: "Completed" as const, completedAt: "Dec 2025" },
-  { id: 6, title: "Project Estimation Workshop", category: "Operations", progress: 0, duration: "2h", status: "Not Started" as const, completedAt: null },
-];
+type Status = "Completed" | "In Progress" | "Not Started";
 
-function statusTone(s: string) {
-  if (s === "Completed") return "badgeGreen";
-  if (s === "In Progress") return "badgeAmber";
-  return "badge";
+function categoryCls(c: string) {
+  if (c === "Design")      return "mllCatDesign";
+  if (c === "Soft Skills") return "mllCatSoftSkills";
+  if (c === "Compliance")  return "mllCatCompliance";
+  return "mllCatOps";
 }
 
-export function MyLearningPage({ isActive }: { isActive: boolean }) {
-  const completed = courses.filter((c) => c.status === "Completed").length;
-  const totalHours = courses.reduce((s, c) => s + parseInt(c.duration), 0);
+function statusCls(s: Status) {
+  if (s === "Completed")   return "mllStatusDone";
+  if (s === "In Progress") return "mllStatusProgress";
+  return "mllStatusNotStarted";
+}
+
+function progressFillCls(s: Status) {
+  if (s === "Completed")   return "mllFillGreen";
+  if (s === "In Progress") return "mllFillAmber";
+  return "";
+}
+
+function progressPctCls(s: Status) {
+  if (s === "Completed")   return "colorGreen";
+  if (s === "In Progress") return "colorAmber";
+  return "colorMuted2";
+}
+
+function mapApiStatus(s: string): Status {
+  const u = s.toUpperCase();
+  if (u === "COMPLETED") return "Completed";
+  if (u === "IN_PROGRESS" || u === "IN-PROGRESS") return "In Progress";
+  return "Not Started";
+}
+
+export function MyLearningPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
+  const [apiTraining, setApiTraining] = useState<StaffTrainingRecord[]>([]);
+
+  useEffect(() => {
+    if (!session) return;
+    loadMyTrainingWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setApiTraining(r.data);
+    });
+  }, [session]);
+
+  const courses = useMemo(() =>
+    apiTraining.map((t, idx) => {
+      const status = mapApiStatus(t.status);
+      const progress = status === "Completed" ? 100 : status === "In Progress" ? 50 : 0;
+      const completedAt = t.completedAt
+        ? new Date(t.completedAt).toLocaleDateString("en-ZA", { month: "short", year: "numeric" })
+        : null;
+      return {
+        id:          idx + 1,
+        title:       t.courseName,
+        category:    t.category ?? "General",
+        progress,
+        duration:    "—",
+        status,
+        completedAt,
+      };
+    }),
+  [apiTraining]);
+
+  const completedCount  = courses.filter((c) => c.status === "Completed").length;
+  const inProgressCount = courses.filter((c) => c.status === "In Progress").length;
+  const notStartedCount = courses.filter((c) => c.status === "Not Started").length;
+  const totalHours      = 0; // hours not stored in API yet
+
+  const STATUS_ORDER: Record<Status, number> = { "In Progress": 0, "Not Started": 1, "Completed": 2 };
+  const sorted = [...courses].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-learning">
@@ -29,38 +90,118 @@ export function MyLearningPage({ isActive }: { isActive: boolean }) {
         <p className={cx("pageSubtitleText", "mb20")}>Course catalog, enrollments, and certifications</p>
       </div>
 
-      <div className={cx("stats", "stats3", "mb28")}>
-        {[
-          { label: "Completed", value: String(completed), tone: "colorGreen" },
-          { label: "In Progress", value: String(courses.filter((c) => c.status === "In Progress").length), tone: "colorAmber" },
-          { label: "Total Hours", value: `${totalHours}h`, tone: "colorAccent" },
-        ].map((s) => (
-          <div key={s.label} className={cx("card")}>
-            <div className={cx("text10", "colorMuted2", "uppercase", "tracking", "mb6")}>{s.label}</div>
-            <div className={cx("fontDisplay", "fw800", "text20", s.tone)}>{s.value}</div>
+      {/* ── Summary stats ────────────────────────────────────────────────── */}
+      <div className={cx("mllStatGrid")}>
+
+        <div className={cx("mllStatCard")}>
+          <div className={cx("mllStatCardTop")}>
+            <div className={cx("mllStatLabel")}>Completed</div>
+            <div className={cx("mllStatValue", "colorGreen")}>{completedCount}</div>
           </div>
-        ))}
+          <div className={cx("mllStatCardDivider")} />
+          <div className={cx("mllStatCardBottom")}>
+            <span className={cx("mllStatDot", "dotBgGreen")} />
+            <span className={cx("mllStatMeta")}>courses finished</span>
+          </div>
+        </div>
+
+        <div className={cx("mllStatCard")}>
+          <div className={cx("mllStatCardTop")}>
+            <div className={cx("mllStatLabel")}>In Progress</div>
+            <div className={cx("mllStatValue", "colorAmber")}>{inProgressCount}</div>
+          </div>
+          <div className={cx("mllStatCardDivider")} />
+          <div className={cx("mllStatCardBottom")}>
+            <span className={cx("mllStatDot", "dotBgAmber")} />
+            <span className={cx("mllStatMeta")}>currently active</span>
+          </div>
+        </div>
+
+        <div className={cx("mllStatCard")}>
+          <div className={cx("mllStatCardTop")}>
+            <div className={cx("mllStatLabel")}>Not Started</div>
+            <div className={cx("mllStatValue")}>{notStartedCount}</div>
+          </div>
+          <div className={cx("mllStatCardDivider")} />
+          <div className={cx("mllStatCardBottom")}>
+            <span className={cx("mllStatDot", "dotBgMuted2")} />
+            <span className={cx("mllStatMeta")}>yet to begin</span>
+          </div>
+        </div>
+
+        <div className={cx("mllStatCard")}>
+          <div className={cx("mllStatCardTop")}>
+            <div className={cx("mllStatLabel")}>Total Hours</div>
+            <div className={cx("mllStatValue", "colorAccent")}>{totalHours}h</div>
+          </div>
+          <div className={cx("mllStatCardDivider")} />
+          <div className={cx("mllStatCardBottom")}>
+            <span className={cx("mllStatDot", "dotBgAccent")} />
+            <span className={cx("mllStatMeta")}>learning content</span>
+          </div>
+        </div>
+
       </div>
 
-      <div className={cx("flexCol", "gap12")}>
-        {courses.map((course) => (
-          <div key={course.id} className={cx("card", "cardBody")}>
-            <div className={cx("flexBetween", "mb8")}>
-              <div>
-                <div className={cx("fw700", "text14")}>{course.title}</div>
-                <div className={cx("text11", "colorMuted")}>{course.category} · {course.duration}</div>
+      {/* ── Course list ───────────────────────────────────────────────────── */}
+      <div className={cx("mllSection")}>
+
+        <div className={cx("mllSectionHeader")}>
+          <div className={cx("mllSectionTitle")}>All Courses</div>
+          <span className={cx("mllSectionMeta")}>{apiTraining.length} COURSES</span>
+        </div>
+
+        <div className={cx("mllCourseList")}>
+          {sorted.map((course, idx) => (
+            <div key={course.id} className={cx("mllCourseCard", idx === sorted.length - 1 && "mllCourseCardLast")}>
+
+              {/* Head: title | status badge */}
+              <div className={cx("mllCourseHead")}>
+                <div className={cx("mllCourseTitle")}>{course.title}</div>
+                <span className={cx("mllStatusBadge", statusCls(course.status))}>{course.status}</span>
               </div>
-              <span className={cx("badge", statusTone(course.status))}>{course.status}</span>
+
+              {/* Meta: category badge + duration chip */}
+              <div className={cx("mllCourseMeta")}>
+                <span className={cx("mllCatBadge", categoryCls(course.category))}>{course.category}</span>
+                <span className={cx("mllDuration")}>{course.duration}</span>
+              </div>
+
+              {/* Progress bar */}
+              <div className={cx("mllProgressWrap")}>
+                <div className={cx("mllProgressMeta")}>
+                  <span className={cx("mllProgressLabel")}>Progress</span>
+                  <span className={cx("mllProgressPct", progressPctCls(course.status))}>{course.progress}%</span>
+                </div>
+                <div className={cx("mllProgressTrack")}>
+                  {course.progress > 0 && (
+                    <div
+                      className={cx("mllProgressFill", progressFillCls(course.status))}
+                      style={{ '--pct': `${course.progress}%` } as React.CSSProperties}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className={cx("mllCourseFooter")}>
+                {course.status === "Completed" && course.completedAt && (
+                  <span className={cx("mllCompletedAt")}>Completed {course.completedAt}</span>
+                )}
+                {course.status === "In Progress" && (
+                  <span className={cx("mllInProgressText")}>{course.progress}% complete</span>
+                )}
+                {course.status === "Not Started" && (
+                  <span className={cx("mllNotStartedText")}>Not yet started</span>
+                )}
+              </div>
+
             </div>
-            {course.progress > 0 && course.progress < 100 && (
-              <div className={cx("progressTrack")}>
-                <div className={cx("progressFill", "progressFillAmber")} style={{ width: `${course.progress}%` }} />
-              </div>
-            )}
-            {course.completedAt && <div className={cx("text10", "colorGreen", "mt4")}>Completed {course.completedAt}</div>}
-          </div>
-        ))}
+          ))}
+        </div>
+
       </div>
+
     </section>
   );
 }

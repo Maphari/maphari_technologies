@@ -51,7 +51,7 @@
 }
 
 .brandSub {
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
   color: #9aa4bd;
   font-size: 0.66rem;
   text-transform: uppercase;
@@ -67,7 +67,7 @@
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 12px;
   padding: 0.7rem 0.8rem;
-  font-family: var(--font-dm-sans), sans-serif;
+  font-family: var(--font-syne), sans-serif;
   font-size: 0.94rem;
 }
 
@@ -97,7 +97,7 @@
 
 .header p {
   color: #9aa4bd;
-  font-family: var(--font-dm-sans), sans-serif;
+  font-family: var(--font-syne), sans-serif;
 }
 
 .menuButton {
@@ -147,7 +147,7 @@
 }
 
 .authForm label {
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
   font-size: 0.67rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -157,7 +157,7 @@
   border: 1px solid var(--grey);
   border-radius: 12px;
   padding: 0.72rem 0.8rem;
-  font-family: var(--font-dm-sans), sans-serif;
+  font-family: var(--font-syne), sans-serif;
 }
 
 .authForm button {
@@ -186,7 +186,7 @@
 }
 
 .metricCard p {
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -227,7 +227,7 @@
   background: rgba(18, 214, 197, 0.12);
   color: var(--teal);
   padding: 0.24rem 0.6rem;
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
   font-size: 0.66rem;
   letter-spacing: 0.09em;
 }
@@ -283,13 +283,13 @@
 }
 
 .messageCard p {
-  font-family: var(--font-dm-sans), sans-serif;
+  font-family: var(--font-syne), sans-serif;
   line-height: 1.55;
 }
 
 .messageCard small {
   color: #95a0ba;
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
   font-size: 0.65rem;
 }
 
@@ -313,7 +313,7 @@
 }
 
 .uploadForm label {
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -324,7 +324,7 @@
   flex: 1;
   min-width: 220px;
   color: var(--offwhite);
-  font-family: var(--font-dm-sans), sans-serif;
+  font-family: var(--font-syne), sans-serif;
 }
 
 .uploadForm button {
@@ -344,7 +344,7 @@
 .uploadSuccess,
 .uploadError {
   width: 100%;
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
   font-size: 0.66rem;
   margin-top: 0.2rem;
 }
@@ -368,7 +368,7 @@
 .tableHead {
   padding: 0.48rem 0.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.65rem;
@@ -378,7 +378,7 @@
 .tableRow {
   padding: 0.65rem 0.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  font-family: var(--font-dm-sans), sans-serif;
+  font-family: var(--font-syne), sans-serif;
   font-size: 0.9rem;
 }
 
@@ -397,7 +397,7 @@
   align-items: center;
   border-radius: 999px;
   padding: 0.18rem 0.6rem;
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
   letter-spacing: 0.08em;
   border: 1px solid transparent;
@@ -444,14 +444,14 @@
 
 .empty {
   color: #97a0b8;
-  font-family: var(--font-dm-sans), sans-serif;
+  font-family: var(--font-syne), sans-serif;
   padding: 0.7rem 0.4rem;
 }
 
 .error {
   margin-top: 1rem;
   color: #ff9e9e;
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-dm-mono), monospace;
   font-size: 0.75rem;
 }
 

@@ -9,7 +9,7 @@ describe("resolveAuthRedirect", () => {
       role: null,
     });
 
-    expect(redirect).toBe("/login?next=%2Fportal%3Ftab%3Dfiles");
+    expect(redirect).toBe("/client/login?next=%2Fportal%3Ftab%3Dfiles");
   });
 
   it("redirects CLIENT away from admin paths", () => {
@@ -19,7 +19,7 @@ describe("resolveAuthRedirect", () => {
       role: "CLIENT",
     });
 
-    expect(redirect).toBe("/portal");
+    expect(redirect).toBe("/client");
   });
 
   it("redirects authenticated STAFF from login to staff home", () => {

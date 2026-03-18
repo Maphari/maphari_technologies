@@ -323,6 +323,218 @@ export function NavIcon({ id, className }: { id: PageId; className: string }) {
           <path d="M8 1.6v2M8 12.4v2M1.6 8h2M12.4 8h2M3.2 3.2l1.4 1.4M11.4 11.4l1.4 1.4M3.2 12.8l1.4-1.4M11.4 4.6l1.4-1.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
         </svg>
       );
+    case "knowledgeBaseAdmin":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <path d="M8 13.5V4.5M8 4.5C8 4.5 6 3.5 2.5 3.5v9c3.5 0 5.5 1 5.5 1zM8 4.5c0 0 2-1 5.5-1v9c-3.5 0-5.5 1-5.5 1z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "decisionRegistry":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <circle cx="5" cy="3.5" r="1.5" stroke="currentColor" strokeWidth="1.2" />
+          <circle cx="11" cy="3.5" r="1.5" stroke="currentColor" strokeWidth="1.2" />
+          <circle cx="8" cy="13.5" r="1.5" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M8 12V8M8 8L5 5M8 8L11 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "handoverManagement":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <path d="M4 6h8M9 3.5l2.5 2.5L9 8.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M12 10H4M7 7.5L4.5 10 7 12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "closeoutReview":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <rect x="2.5" y="1.5" width="11" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M5 7.5l2 2 4.5-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M5 12h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      );
+    case "staffTransitionPlanner":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <circle cx="5.5" cy="4.5" r="2" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M2 12.5c0-2 1.6-3.5 3.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          <path d="M10 9l4 2-4 2M14 11H9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "serviceCatalogManager":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+          <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+          <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M9 10h5M9 12.5h3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      );
+    case "requestInbox":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <rect x="2" y="7.5" width="12" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M2 10h3.5L7 12h2l1.5-2H14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M8 2v5M5.5 4.5L8 7l2.5-2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "changeRequestManager":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <rect x="2.5" y="1.5" width="11" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M5.5 7l2 2 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M5.5 11.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      );
+    case "supportQueue":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <path d="M3.5 9.5V8a4.5 4.5 0 0 1 9 0v1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          <rect x="2" y="9" width="3" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+          <rect x="11" y="9" width="3" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+        </svg>
+      );
+    case "lifecycleDashboard":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <path d="M13.5 8a5.5 5.5 0 1 1-1.7-3.9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          <path d="M11.8 4.1l-.1 2.4 2.5-1.2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "stakeholderDirectory":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <circle cx="8" cy="3" r="1.5" stroke="currentColor" strokeWidth="1.2" />
+          <circle cx="3" cy="11" r="1.5" stroke="currentColor" strokeWidth="1.2" />
+          <circle cx="13" cy="11" r="1.5" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M8 4.5L3 9.5M8 4.5L13 9.5M4.5 11h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      );
+    case "aiActionRecommendations":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <path d="M8 2l1.3 3.8H13L10 8l1.2 3.8L8 10l-3.2 1.8L6 8 3 5.8h3.7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "updateQueueManager":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <path d="M3 4.5h7M3 7.5h7M3 10.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          <path d="M13 8.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M13 9.5v1.5l.8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      );
+    case "standupFeed":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <circle cx="8" cy="3.5" r="2" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M5.5 9.5h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          <path d="M8 5.5v7M6 14l2-2.5 2 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "eodDigest":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M8 5v3.2l2 1.3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          <path d="M4.5 13l1-1.5 1 1.5M9.5 13l1-1.5 1 1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "peerReviewQueue":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <circle cx="5" cy="4" r="1.8" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M2 11.5c0-1.8 1.3-3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          <circle cx="11" cy="4" r="1.8" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M9.5 8.5c.5-.2 1-.3 1.5-.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          <path d="M9.5 12l1.5 1.5 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "automationAuditTrail":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <rect x="1.5" y="5.5" width="4.5" height="5" rx="2.5" stroke="currentColor" strokeWidth="1.3" />
+          <rect x="10" y="5.5" width="4.5" height="5" rx="2.5" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M6 8h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+      );
+    case "projectBriefing":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <rect x="2.5" y="1.5" width="11" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+          <circle cx="8" cy="5.5" r="1" fill="currentColor" />
+          <path d="M6.5 8.5h3M7 10.5h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      );
+    case "activeHealthMonitor":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <path d="M1.5 8h2.5l2-4.5 2.5 9 2-4.5H14.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "announcementsManager":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <path d="M2.5 6.2v3.6h2l4.5 2.7V3.5L4.5 6.2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+          <path d="M9 5.2a3.5 3.5 0 0 1 0 5.6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+      );
+    case "loyaltyCredits":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <path d="M8 2.5L9.5 6h3.5L10 8.5l1.5 4.5L8 11l-3.5 2L6 8.5 3 6h3.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "bookingAppointments":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <rect x="2" y="3.5" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M2 7.5h12M5.5 2v3M10.5 2v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          <path d="M5.5 10.5l1.5 1.5 3.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "designReviewAdmin":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <path d="M2 8c1.5-3.5 3.5-5.5 6-5.5S12.5 4.5 14 8c-1.5 3.5-3.5 5.5-6 5.5S3.5 11.5 2 8z" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M8 5.2l2.8 2.8-2.8 2.8-2.8-2.8z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+        </svg>
+      );
+    case "sprintBoardAdmin":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <rect x="1.5" y="3" width="3.5" height="10" rx="1" stroke="currentColor" strokeWidth="1.3" />
+          <rect x="6.5" y="3" width="3.5" height="6.5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+          <rect x="11" y="3" width="3.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+        </svg>
+      );
+    case "contentApproval":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <rect x="2" y="1.5" width="9.5" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M4.5 6h7M4.5 8.5h7M4.5 11h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          <circle cx="13" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M11.8 12l.8.8 1.5-1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "meetingArchive":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <path d="M2 6.5h12V14H2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+          <path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h10a1.5 1.5 0 0 1 1.5 1.5V6.5H1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+          <path d="M6 10.5h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      );
+    case "prospecting":
+      return (
+        <svg viewBox="0 0 16 16" fill="none" className={className}>
+          <circle cx="4.5" cy="9.5" r="3" stroke="currentColor" strokeWidth="1.3" />
+          <circle cx="11.5" cy="9.5" r="3" stroke="currentColor" strokeWidth="1.3" />
+          <path d="M7.5 9.5h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          <path d="M3 6l1.5 2.5M13 6l-1.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          <path d="M6 4h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      );
     default:
       return (
         <svg viewBox="0 0 16 16" fill="none" className={className}>

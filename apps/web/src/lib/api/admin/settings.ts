@@ -3,6 +3,19 @@ import { callGateway, isUnauthorized, toGatewayError, withAuthorizedSession } fr
 import type { AuthorizedResult } from "./_shared";
 import type { PartnerApiKey } from "./types";
 
+// ── Feature flags ─────────────────────────────────────────────────────────────
+
+export interface FeatureFlag {
+  key: string;
+  name: string;
+  description: string | null;
+  enabled: boolean;
+  scope: string;
+  updatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export async function loadPublicApiKeysWithRefresh(
   session: AuthSession
 ): Promise<AuthorizedResult<PartnerApiKey[]>> {
@@ -123,6 +136,51 @@ export async function createMaintenanceCheckWithRefresh(
         error: toGatewayError(
           response.payload.error?.code ?? "MAINTENANCE_CHECK_CREATE_FAILED",
           response.payload.error?.message ?? "Unable to create maintenance check"
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function loadFeatureFlagsWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<FeatureFlag[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<FeatureFlag[]>("/admin/feature-flags", accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: [],
+        error: toGatewayError(
+          response.payload.error?.code ?? "FEATURE_FLAGS_LOAD_FAILED",
+          response.payload.error?.message ?? "Unable to load feature flags"
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+export async function toggleFeatureFlagWithRefresh(
+  session: AuthSession,
+  key: string
+): Promise<AuthorizedResult<FeatureFlag>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<FeatureFlag>(
+      `/admin/feature-flags/${encodeURIComponent(key)}/toggle`,
+      accessToken,
+      { method: "PATCH" }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "FEATURE_FLAG_TOGGLE_FAILED",
+          response.payload.error?.message ?? "Unable to toggle feature flag"
         )
       };
     }

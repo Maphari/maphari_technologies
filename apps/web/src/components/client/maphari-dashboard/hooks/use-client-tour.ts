@@ -1,58 +1,59 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
+import type { TourStep } from "../../../shared/dashboard-tour";
 
-// ─── Tour steps ──────────────────────────────────────────────────────────────
-
-const TOUR_STEPS = [
+export const CLIENT_TOUR_STEPS: TourStep[] = [
   {
-    title: "Welcome to your portal",
+    eye: "Step 1 of 6 · Welcome",
+    title: "Welcome to your Maphari portal",
     description:
-      "This is your command center for tracking projects, invoices, and communications.",
+      "Everything you need to track progress, approve work, and communicate with your team is here. This tour takes 60 seconds.",
+    note: "Your team can see everything you do here — comments, approvals, and file uploads are shared instantly."
   },
   {
-    title: "Dashboard",
+    eye: "Step 2 of 6 · Dashboard",
+    title: "Your engagement health at a glance",
     description:
-      "Get a high-level view of your engagement health, deadlines, and outstanding actions.",
+      "The dashboard shows project health indicators, upcoming deadlines, and outstanding actions. Green means on track. Amber or red means something needs your attention."
   },
   {
-    title: "Projects & Approvals",
+    eye: "Step 3 of 6 · Approvals",
+    title: "Sign off deliverables here",
     description:
-      "Track active projects, review milestones, and approve deliverables.",
+      "When your team completes work, it appears in Projects for your approval. Don't let approvals sit — delays hold up your timeline and theirs."
   },
   {
-    title: "Messages & Files",
+    eye: "Step 4 of 6 · Messages & Files",
+    title: "One place for all communication",
     description:
-      "Communicate with your team and access all project files in one place.",
+      "All messages and project files live in one thread. You'll never search your email for a brief again. Attach files or feedback directly in the thread."
   },
   {
-    title: "Billing & Contracts",
+    eye: "Step 5 of 6 · Billing",
+    title: "Invoices and contracts, always accessible",
     description:
-      "View invoices, track payments, and manage contract documents.",
+      "Your invoices, payment history, and signed contracts are here. Download PDFs, track payment status, and view your billing timeline without emailing us."
   },
   {
-    title: "You're all set!",
+    eye: "Step 6 of 6 · Ready",
+    title: "You're all set",
     description:
-      "Explore your portal. Use \u2318K to search anything, and G+letter shortcuts for quick navigation.",
-  },
-] as const;
+      "Use ⌘K to search anything across your portal — projects, files, messages. Your team is ready. Raise questions via the Messages section."
+  }
+];
 
 const STORAGE_KEY = "maphari_client_tour_completed";
-
-// ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useClientTour() {
   const [tourActive, setTourActive] = useState(false);
   const [tourStep, setTourStep] = useState(0);
 
-  const totalSteps = TOUR_STEPS.length;
-
-  // ── Check localStorage on mount ──────────────────────────────────────────
+  const totalSteps = CLIENT_TOUR_STEPS.length;
 
   useEffect(() => {
     try {
-      const completed = localStorage.getItem(STORAGE_KEY);
-      if (completed !== "true") {
+      if (localStorage.getItem(STORAGE_KEY) !== "true") {
         setTourActive(true);
       }
     } catch {
@@ -60,59 +61,44 @@ export function useClientTour() {
     }
   }, []);
 
-  // ── Current step data ────────────────────────────────────────────────────
-
-  const currentStepData = useMemo(
-    () => ({
-      title: TOUR_STEPS[tourStep]?.title ?? "",
-      description: TOUR_STEPS[tourStep]?.description ?? "",
-    }),
-    [tourStep],
-  );
-
-  // ── Navigation ───────────────────────────────────────────────────────────
-
   const nextStep = useCallback(() => {
-    setTourStep((prev) => {
-      if (prev < totalSteps - 1) return prev + 1;
-      return prev;
-    });
+    setTourStep((prev) => Math.min(prev + 1, totalSteps - 1));
   }, [totalSteps]);
 
   const prevStep = useCallback(() => {
-    setTourStep((prev) => (prev > 0 ? prev - 1 : 0));
+    setTourStep((prev) => Math.max(prev - 1, 0));
   }, []);
-
-  // ── Complete / Skip ──────────────────────────────────────────────────────
 
   const completeTour = useCallback(() => {
     try {
       localStorage.setItem(STORAGE_KEY, "true");
     } catch {
-      // Ignore storage errors
+      // ignore
     }
     setTourActive(false);
     setTourStep(0);
   }, []);
 
-  const skipTour = useCallback(() => {
+  const skipTour = completeTour;
+
+  const resetTour = useCallback(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, "true");
+      localStorage.removeItem(STORAGE_KEY);
     } catch {
-      // Ignore storage errors
+      // ignore
     }
-    setTourActive(false);
     setTourStep(0);
+    setTourActive(true);
   }, []);
 
   return {
     tourActive,
     tourStep,
     totalSteps,
-    currentStepData,
     nextStep,
     prevStep,
     skipTour,
     completeTour,
+    resetTour
   };
 }

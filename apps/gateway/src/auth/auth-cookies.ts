@@ -49,21 +49,21 @@ export function setAuthCookies(
       maxAgeSeconds: rememberMe ? refreshMaxAge : undefined,
       httpOnly: true,
       secure,
-      sameSite: "Lax",
+      sameSite: "Strict",
       path: "/"
     }),
     serializeCookie(ROLE_COOKIE, input.role, {
       maxAgeSeconds: rememberMe ? refreshMaxAge : undefined,
       httpOnly: false,
       secure,
-      sameSite: "Lax",
+      sameSite: "Strict",
       path: "/"
     }),
     serializeCookie(REMEMBER_ME_COOKIE, rememberMe ? "1" : "0", {
       maxAgeSeconds: rememberMe ? refreshMaxAge : undefined,
       httpOnly: false,
       secure,
-      sameSite: "Lax",
+      sameSite: "Strict",
       path: "/"
     })
   ]);
@@ -79,21 +79,21 @@ export function clearAuthCookies(
       maxAgeSeconds: 0,
       httpOnly: true,
       secure,
-      sameSite: "Lax",
+      sameSite: "Strict",
       path: "/"
     }),
     serializeCookie(ROLE_COOKIE, "", {
       maxAgeSeconds: 0,
       httpOnly: false,
       secure,
-      sameSite: "Lax",
+      sameSite: "Strict",
       path: "/"
     }),
     serializeCookie(REMEMBER_ME_COOKIE, "", {
       maxAgeSeconds: 0,
       httpOnly: false,
       secure,
-      sameSite: "Lax",
+      sameSite: "Strict",
       path: "/"
     })
   ]);

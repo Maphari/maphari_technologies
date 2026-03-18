@@ -1,302 +1,1199 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { cx, styles } from "../style";
+// ════════════════════════════════════════════════════════════════════════════
+// project-request-page.tsx — Request a New Project (revamped)
+// ════════════════════════════════════════════════════════════════════════════
 
-type BriefTab = "Brief" | "Version History" | "Team Notes";
+import { useState } from "react";
+import { saveSession } from "../../../../lib/auth/session";
+import { useProjectLayer } from "../hooks/use-project-layer";
+import {
+  createPortalProjectRequestWithRefresh,
+  createPortalInvoiceWithRefresh,
+  createPortalPaymentWithRefresh,
+  initiatePortalPayfastWithRefresh,
+} from "../../../../lib/api/portal/projects";
+import type { PortalProjectRequestServiceOption } from "../../../../lib/api/portal/types";
+import { cx } from "../style";
+import { Ic } from "../ui";
 
-type BriefVersion = {
-  num: string;
-  name: string;
-  meta: string;
-  current: boolean;
-};
+// ── Service catalogue ─────────────────────────────────────────────────────
 
-type BriefField = {
-  id: string;
-  label: string;
-  value: string;
-};
+const SERVICES = [
+  // ── Small Business Essentials ────────────────────────────────────────────
+  { id: "bizWebsite",   icon: "globe",      color: "var(--lime)",   label: "Business Website",         desc: "Professional 5–10 page site — mobile-first, fast & SEO-ready. Own your online presence today.",      from: "From R 8,000",   popular: false, tag: "Small Biz", weeks: [2,  6]  as [number,number] },
+  { id: "landingPage",  icon: "trending",   color: "var(--green)",  label: "Landing Page & Funnel",    desc: "High-converting single page with lead capture, contact forms & Google Analytics built in.",           from: "From R 4,500",   popular: false, tag: "Quick Win", weeks: [1,  3]  as [number,number] },
+  { id: "seoMarketing", icon: "zap",        color: "var(--amber)",  label: "SEO & Digital Marketing",  desc: "Keyword strategy, on-page SEO, Google Business Profile & monthly ranking reports.",                   from: "R 3,500/mo",     popular: false, tag: "Monthly",   weeks: [2,  4]  as [number,number] },
+  { id: "socialMedia",  icon: "message",    color: "var(--accent)", label: "Social Media Pack",        desc: "Content calendar, post designs, copy & scheduling across 3 platforms — fully done-for-you.",         from: "R 4,500/mo",     popular: false, tag: "Monthly",   weeks: [1,  1]  as [number,number] },
+  { id: "crmSystems",   icon: "users",      color: "var(--purple)", label: "CRM & Business Systems",   desc: "HubSpot, Pipedrive or custom CRM — pipelines, automations & client management configured.",          from: "From R 12,000",  popular: false, tag: null,        weeks: [3,  8]  as [number,number] },
+  // ── Build & Scale ────────────────────────────────────────────────────────
+  { id: "startupMvp",   icon: "rocket",     color: "var(--lime)",   label: "Startup MVP Package",      desc: "Strategy, brand, design, build & launch. Fastest path from idea to live product in market.",         from: "From R 85,000",  popular: true,  tag: null,        weeks: [12, 20] as [number,number] },
+  { id: "webApp",       icon: "code",       color: "var(--lime)",   label: "Full-Stack Web App",       desc: "Next.js, REST/GraphQL APIs, auth, databases & CI/CD deployment. Built to scale from day one.",       from: "From R 55,000",  popular: false, tag: null,        weeks: [8,  16] as [number,number] },
+  { id: "mobileApp",    icon: "layers",     color: "var(--purple)", label: "Mobile App",               desc: "React Native for iOS & Android. One codebase, two platforms, zero compromise on quality.",           from: "From R 75,000",  popular: false, tag: null,        weeks: [10, 18] as [number,number] },
+  { id: "ecommerce",    icon: "creditCard", color: "var(--green)",  label: "E-Commerce Store",         desc: "Shopify, WooCommerce or custom storefront — payments, inventory & sales analytics included.",        from: "From R 35,000",  popular: false, tag: null,        weeks: [6,  12] as [number,number] },
+  // ── Enhance & Grow ───────────────────────────────────────────────────────
+  { id: "designBrand",  icon: "edit",       color: "var(--amber)",  label: "UI/UX & Brand Identity",   desc: "Wireframes, prototypes, design system, logo & full brand guidelines — bundled into one.",             from: "From R 18,000",  popular: false, tag: "Bundle",    weeks: [3,  8]  as [number,number] },
+  { id: "aiAutomation", icon: "zap",        color: "var(--accent)", label: "AI & Automation",          desc: "AI chatbots, OpenAI integrations, n8n & Zapier workflows. Automate the repetitive and grow.",        from: "From R 22,000",  popular: false, tag: null,        weeks: [4,  10] as [number,number] },
+  { id: "analytics",    icon: "chart",      color: "var(--purple)", label: "Analytics & Dashboards",   desc: "Custom reporting, live data visualisation, KPI dashboards & BI tool integrations.",                   from: "From R 28,000",  popular: false, tag: null,        weeks: [4,  8]  as [number,number] },
+  { id: "retainer",     icon: "shield",     color: "var(--muted2)", label: "Retainer & Support",       desc: "Dedicated dev hours, bug fixes, feature updates & SLA-backed monitoring every month.",                from: "R 8,000/mo",     popular: false, tag: "Monthly",   weeks: [1,  1]  as [number,number] },
+] as const;
 
-type TeamNote = {
-  av: string;
-  color: string;
-  name: string;
-  date: string;
-  note: string;
-};
+type ServiceId = (typeof SERVICES)[number]["id"];
 
-const TABS: BriefTab[] = ["Brief", "Version History", "Team Notes"];
+// ── Service groups (for visual grouping in step 1) ────────────────────────
 
-const VERSIONS: BriefVersion[] = [
-  { num: "v3", name: "Current Brief", meta: "Submitted Feb 20 · Acknowledged by team", current: true },
-  { num: "v2", name: "Updated Brief", meta: "Submitted Feb 10 · Minor scope additions", current: false },
-  { num: "v1", name: "Initial Brief", meta: "Submitted Jan 10 · Original submission", current: false },
+const SERVICE_GROUPS: { label: string; sub: string; color: string; ids: ServiceId[] }[] = [
+  { label: "Small Business Essentials", sub: "Affordable packages to get your business online",  color: "var(--amber)",  ids: ["bizWebsite", "landingPage", "seoMarketing", "socialMedia", "crmSystems"] },
+  { label: "Build & Scale",             sub: "Full-stack products, apps & digital platforms",    color: "var(--lime)",   ids: ["startupMvp", "webApp", "mobileApp", "ecommerce"] },
+  { label: "Enhance & Grow",            sub: "Level up what you already have",                   color: "var(--purple)", ids: ["designBrand", "aiAutomation", "analytics", "retainer"] },
 ];
 
-const BRIEF_FIELDS: BriefField[] = [
+// ── Combo packages ────────────────────────────────────────────────────────
+
+interface ComboItem {
+  id: string; badge: string; badgeCls: string; icon: string; color: string;
+  label: string; sub: string; services: ServiceId[];
+  highlights: string[]; from: string; saving: string; weeks: [number, number];
+}
+
+const COMBOS: ComboItem[] = [
   {
-    id: "overview",
-    label: "Business Overview",
-    value:
-      "Veldt Finance is a fintech startup providing micro-lending solutions to SMEs in South Africa. We currently serve 2,400+ clients across 5 provinces and are looking to modernise our digital presence to scale to 10,000+ clients by end of 2026.",
+    id: "smeLaunch", badge: "Small Business", badgeCls: "badgeAmber",
+    icon: "globe",    color: "var(--amber)",
+    label: "SME Launch Bundle",
+    sub: "Everything a new business needs to go live fast",
+    services: ["bizWebsite", "designBrand"],
+    highlights: ["5-page responsive website", "Full logo & brand identity kit", "Mobile-first & SEO-ready from day 1", "1 month post-launch support"],
+    from: "From R 22,000", saving: "Save R 4,000", weeks: [4, 8],
   },
   {
-    id: "goals",
-    label: "Project Goals",
-    value:
-      "1. Redesign client-facing dashboard for ease of use\n2. Increase loan application completion rate from 43% to 70%+\n3. Reduce support tickets by 35% through better UX\n4. Build mobile-first for our primarily smartphone-based users",
+    id: "digitalPro", badge: "Best Value", badgeCls: "badgeAccent",
+    icon: "trending", color: "var(--lime)",
+    label: "Digital Presence Pro",
+    sub: "Get found online, look great and convert visitors",
+    services: ["bizWebsite", "seoMarketing", "landingPage"],
+    highlights: ["Business website + landing page", "3 months SEO foundation", "Google Business Profile setup", "Lead capture forms & analytics"],
+    from: "From R 17,000", saving: "Save R 5,000", weeks: [3, 8],
   },
   {
-    id: "audience",
-    label: "Target Audience",
-    value:
-      "SME owners aged 28–55 in peri-urban and urban South Africa. Mostly using mobile (Android). Not very tech-savvy — need simple, clear interfaces. Primary language English and Zulu.",
+    id: "growthAccel", badge: "Growth", badgeCls: "badgeGreen",
+    icon: "chart",    color: "var(--green)",
+    label: "Growth Accelerator",
+    sub: "Sell online, rank higher and track everything",
+    services: ["ecommerce", "seoMarketing", "analytics"],
+    highlights: ["Full e-commerce store (Shopify/WooCommerce)", "SEO & Google Shopping setup", "Custom sales analytics dashboard", "Automated weekly performance reports"],
+    from: "From R 40,000", saving: "Save R 8,000", weeks: [8, 14],
   },
   {
-    id: "references",
-    label: "Design References",
-    value:
-      "Flutterwave dashboard — clean, African market-friendly\nKuda Bank — minimal, mobile-first\nWe want something that feels modern but not 'Silicon Valley cold'",
+    id: "techScale", badge: "Scale Up", badgeCls: "badgePurple",
+    icon: "zap",      color: "var(--purple)",
+    label: "Tech Scale Stack",
+    sub: "Build, automate and measure — the complete package",
+    services: ["webApp", "aiAutomation", "analytics"],
+    highlights: ["Full-stack web application", "AI chatbot & workflow automation (n8n / OpenAI)", "Custom KPI dashboards & BI reports", "3 months retainer support included"],
+    from: "From R 95,000", saving: "Save R 12,000", weeks: [10, 18],
   },
   {
-    id: "metrics",
-    label: "Success Metrics",
-    value:
-      "- Loan application completion rate > 70%\n- Support ticket volume down 35%\n- App Store rating > 4.2\n- Load time under 1.5s on 4G",
+    id: "brandBoost", badge: "Starter", badgeCls: "badgeMuted",
+    icon: "edit",     color: "var(--accent)",
+    label: "Brand & Visibility Kit",
+    sub: "Look professional and get discovered from day one",
+    services: ["designBrand", "landingPage", "socialMedia"],
+    highlights: ["Brand identity & logo design", "High-converting landing page", "Social media starter kit (3 platforms)", "30-day content plan included"],
+    from: "From R 27,000", saving: "Save R 4,500", weeks: [4, 9],
   },
   {
-    id: "constraints",
-    label: "Constraints & Must-Haves",
-    value:
-      "- Must integrate with existing Temenos core banking system\n- All UI in English + Zulu\n- Launch before June 2026 AGM\n- Budget cap: R 80,000",
+    id: "automateAll", badge: "Efficiency", badgeCls: "badgeAmber",
+    icon: "users",    color: "var(--amber)",
+    label: "Automate & Manage",
+    sub: "Cut admin time and manage clients like a pro",
+    services: ["crmSystems", "aiAutomation", "retainer"],
+    highlights: ["CRM setup (HubSpot / Pipedrive)", "AI-powered workflows & chatbots", "Monthly retainer for ongoing improvements", "Team training session included"],
+    from: "From R 35,000", saving: "Save R 7,000", weeks: [5, 12],
   },
 ];
 
-const TEAM_NOTES: TeamNote[] = [
-  {
-    av: "SN",
-    color: "#c8f135",
-    name: "Sipho Ndlovu",
-    date: "Feb 20",
-    note: "Noted the Temenos integration requirement — flagged to our backend team. We will confirm feasibility by Feb 25.",
-  },
-  {
-    av: "LM",
-    color: "#8b6fff",
-    name: "Lerato Mokoena",
-    date: "Feb 12",
-    note: "The reference to Flutterwave and Kuda is helpful. I will use both as visual benchmarks for brand identity.",
-  },
-];
+// ── Business size picker ──────────────────────────────────────────────────
 
-const STATUS_STEPS = ["Submitted", "Acknowledged", "In Use", "Locked"] as const;
+const BUSINESS_SIZES = [
+  { id: "starter",    label: "Just Starting",   sub: "Pre-launch or idea stage",     icon: "rocket",   color: "var(--lime)",   range: "Budgets from R 5k"  },
+  { id: "smallbiz",   label: "Small Business",  sub: "Established · 1–20 staff",     icon: "users",    color: "var(--amber)",  range: "Budgets from R 15k" },
+  { id: "growing",    label: "Growing Fast",    sub: "Scaling up, need more",        icon: "trending", color: "var(--purple)", range: "Budgets from R 50k" },
+  { id: "enterprise", label: "Enterprise",      sub: "Large org · complex needs",    icon: "shield",   color: "var(--accent)", range: "Custom budgets"     },
+] as const;
+type BizSize = (typeof BUSINESS_SIZES)[number]["id"];
+
+// ── Goals ─────────────────────────────────────────────────────────────────
+
+const GOALS = [
+  { id: "launch",   icon: "globe",    color: "var(--amber)",  label: "Launch online",        sub: "Website, brand & first customers",    recs: ["bizWebsite", "designBrand", "landingPage"] as ServiceId[] },
+  { id: "build",    icon: "rocket",   color: "var(--lime)",   label: "Build a product",      sub: "App, platform or SaaS from scratch",  recs: ["startupMvp", "webApp", "mobileApp"] as ServiceId[] },
+  { id: "grow",     icon: "trending", color: "var(--green)",  label: "Grow & sell more",     sub: "E-commerce, SEO & revenue tools",     recs: ["ecommerce", "seoMarketing", "analytics"] as ServiceId[] },
+  { id: "automate", icon: "zap",      color: "var(--accent)", label: "Automate & save time", sub: "AI, CRM & workflow integrations",     recs: ["aiAutomation", "crmSystems", "retainer"] as ServiceId[] },
+  { id: "refresh",  icon: "edit",     color: "var(--purple)", label: "Rebrand & redesign",   sub: "New look, better UX, stronger brand", recs: ["designBrand", "bizWebsite", "landingPage"] as ServiceId[] },
+  { id: "market",   icon: "message",  color: "var(--amber)",  label: "Market my business",   sub: "SEO, social media & content",         recs: ["seoMarketing", "socialMedia", "analytics"] as ServiceId[] },
+] as const;
+type GoalId = (typeof GOALS)[number]["id"];
+
+// ── Add-ons (14 total) ────────────────────────────────────────────────────
+
+const ADDONS = [
+  { id: "hosting",   icon: "globe",    color: "var(--accent)", label: "Managed Hosting & DevOps",     desc: "VPS setup, auto-deployments, uptime monitoring & SSL certificates managed for you.",           price: "+R 2,500/mo" },
+  { id: "priority",  icon: "shield",   color: "var(--lime)",   label: "Priority Support SLA",          desc: "4-hour response guarantee, dedicated support hotline & formal escalation policy.",              price: "+R 3,500/mo" },
+  { id: "training",  icon: "users",    color: "var(--amber)",  label: "Staff Training (2 Sessions)",   desc: "Hands-on workshops covering your platform, CMS & core business workflows.",                     price: "+R 5,000" },
+  { id: "reporting", icon: "chart",    color: "var(--purple)", label: "Analytics & Reporting Setup",   desc: "GA4 configuration, custom KPI dashboards & automated weekly email performance reports.",        price: "+R 8,000" },
+  { id: "seoBoost",  icon: "zap",      color: "var(--amber)",  label: "SEO Foundation Package",        desc: "Keyword research, meta tag optimisation, XML sitemap & Google Search Console setup.",          price: "+R 4,500" },
+  { id: "copywrite", icon: "edit",     color: "var(--green)",  label: "Copywriting (5 Pages)",         desc: "Professional web copy — compelling headlines, body text & CTAs written by our team.",           price: "+R 6,000" },
+  { id: "emailMkt",  icon: "message",  color: "var(--lime)",   label: "Email Marketing Setup",         desc: "Mailchimp or Klaviyo — list setup, welcome automation flow, templates & CRM integration.",      price: "+R 4,000" },
+  { id: "crmSetup",  icon: "users",    color: "var(--purple)", label: "CRM Configuration",             desc: "Custom pipeline setup, fields, automation rules, notifications & team onboarding session.",    price: "+R 5,500" },
+  { id: "socialKit", icon: "trending", color: "var(--green)",  label: "Social Media Starter Kit",      desc: "Profile setup, 10 branded post templates, 30-day content calendar & hashtag strategy.",        price: "+R 3,500" },
+  { id: "perfAudit", icon: "zap",      color: "var(--amber)",  label: "Performance & Speed Audit",     desc: "Lighthouse test, image compression, Core Web Vitals fixes & a full written report.",           price: "+R 3,000" },
+  { id: "security",  icon: "shield",   color: "var(--red)",    label: "Security Hardening",            desc: "Penetration test, WAF config, OWASP checklist review & monthly vulnerability scans.",          price: "+R 5,000" },
+  { id: "multiLang", icon: "globe",    color: "var(--purple)", label: "Multi-language Support",        desc: "i18n implementation for English + 1 additional language with a full translation pipeline.",     price: "+R 7,500" },
+  { id: "liveChat",  icon: "message",  color: "var(--lime)",   label: "Live Chat Integration",         desc: "Intercom, Crisp or Tawk.to installed, branded & fully wired into your platform or app.",       price: "+R 2,500" },
+  { id: "backup",    icon: "shield",   color: "var(--muted2)", label: "Automated Daily Backups",       desc: "Daily backups with 30-day retention, off-site storage & a one-click restore system.",          price: "+R 1,500/mo" },
+] as const;
+type AddonId = (typeof ADDONS)[number]["id"];
+
+// ── Price / week / tech lookups ────────────────────────────────────────────
+
+const PRICE_MAP: Record<ServiceId, [number, number]> = {
+  bizWebsite:   [8000,   18000], landingPage:  [4500,   12000],
+  seoMarketing: [3500,   12000], socialMedia:  [4500,   12000],
+  crmSystems:   [12000,  35000], startupMvp:   [85000, 200000],
+  webApp:       [55000, 150000], mobileApp:    [75000, 180000],
+  ecommerce:    [35000, 100000], designBrand:  [18000,  55000],
+  aiAutomation: [22000,  80000], analytics:    [28000,  70000],
+  retainer:     [8000,   25000],
+};
+const WEEKS_MAP: Record<ServiceId, [number, number]> = {
+  bizWebsite:   [2,  6],  landingPage:  [1,  3],  seoMarketing: [2,  4],  socialMedia:  [1, 1],
+  crmSystems:   [3,  8],  startupMvp:   [12, 20], webApp:       [8, 16],  mobileApp:    [10, 18],
+  ecommerce:    [6,  12], designBrand:  [3,  8],  aiAutomation: [4, 10],  analytics:    [4,  8],
+  retainer:     [1,  1],
+};
+const INCLUDES_MAP: Record<ServiceId, string[]> = {
+  bizWebsite:   ["5 Pages", "CMS", "SEO", "Mobile", "SSL"],
+  landingPage:  ["Analytics", "Forms", "A/B Ready", "Fast"],
+  seoMarketing: ["Keywords", "On-Page", "GMB", "Reports"],
+  socialMedia:  ["3 Platforms", "Content", "Scheduling", "Reports"],
+  crmSystems:   ["HubSpot", "Pipelines", "Automations", "Reports"],
+  startupMvp:   ["Next.js", "Figma", "Stripe", "Vercel", "Auth"],
+  webApp:       ["Next.js", "API", "Auth", "DB", "CI/CD"],
+  mobileApp:    ["React Native", "iOS", "Android", "OTA"],
+  ecommerce:    ["Shopify", "WooCommerce", "Payments", "Analytics"],
+  designBrand:  ["Figma", "Design System", "Brand Kit", "Prototype"],
+  aiAutomation: ["OpenAI", "n8n", "Zapier", "Webhooks"],
+  analytics:    ["Dashboards", "SQL", "BI", "Live Data"],
+  retainer:     ["SLA", "Monitoring", "Updates", "Support"],
+};
+
+// ── Misc constants ─────────────────────────────────────────────────────────
+
+const BUDGET_OPTIONS   = ["Under R 15k", "R 15k–R 50k", "R 50k–R 150k", "R 150k–R 500k", "R 500k+"];
+const TIMELINE_OPTIONS = ["ASAP (< 1 month)", "1–3 months", "3–6 months", "6+ months"];
+const STEP_LABELS      = ["Service", "Brief", "Quote", "Sign", "Pay"] as const;
+
+const TRUST = [
+  { icon: "check",    text: "3-step process"        },
+  { icon: "clock",    text: "24h response"           },
+  { icon: "shield",   text: "No lock-in contracts"   },
+  { icon: "users",    text: "Dedicated PM assigned"  },
+  { icon: "trending", text: "13 services available"  },
+  { icon: "zap",      text: "SME-friendly pricing"   },
+] as const;
+
+const NEXT_STEPS = [
+  { n: "01", title: "We review your brief",       sub: "Within 24 hours of submission",      icon: "file"   },
+  { n: "02", title: "We send a custom proposal",  sub: "Tailored pricing, scope & timeline", icon: "send"   },
+  { n: "03", title: "You approve & we kick off",  sub: "Contract signing + onboarding call", icon: "rocket" },
+] as const;
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function fmtR(n: number): string {
+  if (n >= 1_000_000) return `R ${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `R ${Math.round(n / 1_000)}k`;
+  return `R ${n}`;
+}
+
+function FormSection({ label, note }: { label: string; note?: string }) {
+  return (
+    <div className={cx("flexRow", "gap8", "pb10", "borderB", "mb16", "mt8")}>
+      <span className={cx("text10", "fw700", "colorMuted", "uppercase", "ls008")}>{label}</span>
+      {note && <span className={cx("text10", "colorMuted")}>{note}</span>}
+    </div>
+  );
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
 
 export function ProjectRequestPage() {
-  const [tab, setTab] = useState<BriefTab>("Brief");
-  const [editing, setEditing] = useState(false);
-  const [fields, setFields] = useState<BriefField[]>(BRIEF_FIELDS);
-  const [toast, setToast] = useState<{ title: string; subtitle: string } | null>(null);
+  const { session } = useProjectLayer();
+  const clientId = session?.user.clientId ?? null;
 
-  useEffect(() => {
-    if (!toast) return;
-    const timeout = window.setTimeout(() => setToast(null), 3200);
-    return () => window.clearTimeout(timeout);
-  }, [toast]);
+  const [step,          setStep]          = useState(1);
+  const [bizSize,       setBizSize]       = useState<BizSize | null>(null);
+  const [goal,          setGoal]          = useState<GoalId | null>(null);
+  const [selected,      setSelected]      = useState<Set<ServiceId>>(new Set());
+  const [addons,        setAddons]        = useState<Set<AddonId>>(new Set());
+  const [submitted,     setSubmitted]     = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
+  const [agreedToTerms,   setAgreedToTerms]   = useState(false);
+  const [signatureText,   setSignatureText]   = useState("");
+  const [scrolledToEnd,   setScrolledToEnd]   = useState(false);
+  const [payMethod,       setPayMethod]       = useState<"EFT" | "PAYFAST" | null>(null);
+  const [submitting,      setSubmitting]      = useState(false);
+  const [submitError,     setSubmitError]     = useState<string | null>(null);
 
-  function notify(title: string, subtitle: string): void {
-    setToast({ title, subtitle });
-  }
+  // Brief fields
+  const [name,           setName]           = useState("");
+  const [overview,       setOverview]       = useState("");
+  const [goals,          setGoals]          = useState("");
+  const [audience,       setAudience]       = useState("");
+  const [budget,         setBudget]         = useState("");
+  const [timeline,       setTimeline]       = useState("");
+  const [references,     setReferences]     = useState("");
+  const [requirements,   setRequirements]   = useState("");
+  const [mobilePlatform, setMobilePlatform] = useState("");
+  const [ecPlatform,     setEcPlatform]     = useState("");
+  const [hasBrandAssets, setHasBrandAssets] = useState("");
 
-  return (
-    <div className={cx("pageBody", styles.projBriefRoot)}>
-      <div className={styles.projBriefLayout}>
-        <aside className={styles.projBriefSidebar}>
-          <div className={styles.projBriefSection}>Brief</div>
-          {TABS.map((item, idx) => (
-            <button
-              key={item}
-              type="button"
-              className={cx(styles.projBriefSideItem, tab === item && styles.projBriefSideItemActive)}
-              onClick={() => setTab(item)}
-            >
-              <span
-                className={styles.projBriefSideDot}
-                style={{
-                  background:
-                    idx === 0 ? "var(--accent)" : idx === 1 ? "var(--purple)" : "var(--blue)",
-                }}
-              />
-              <span>{item}</span>
+  // Derived
+  const goalObj        = goal ? GOALS.find(g => g.id === goal) : null;
+  const recommendedIds = new Set<ServiceId>(goalObj?.recs ?? []);
+  const selArr         = [...selected];
+  const estMin         = selArr.reduce((s, id) => s + PRICE_MAP[id][0], 0);
+  const estMax         = selArr.reduce((s, id) => s + PRICE_MAP[id][1], 0);
+  const wksMin         = selArr.reduce((mx, id) => Math.max(mx, WEEKS_MAP[id][0]), 0);
+  const wksMax         = selArr.reduce((mx, id) => Math.max(mx, WEEKS_MAP[id][1]), 0);
+  const isOngoing      = selArr.length === 1 && selArr[0] === "retainer";
+  const step2Valid     = !!(name.trim() && overview.trim() && goals.trim());
+
+  // Quote amounts (prices are in Rands; convert to cents for API)
+  const quoteCents     = estMin * 100;  // conservative quote = estMin
+  const depositCents   = Math.round(quoteCents * 0.5);
+  const milestoneCents = Math.round(quoteCents * 0.3);
+  const finalCents     = quoteCents - depositCents - milestoneCents;
+
+  const toggleService = (id: ServiceId) =>
+    setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleAddon = (id: AddonId) =>
+    setAddons(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const isComboActive = (c: ComboItem) => c.services.every(s => selected.has(s));
+  const selectCombo   = (c: ComboItem) => setSelected(prev => {
+    const n = new Set(prev);
+    isComboActive(c) ? c.services.forEach(s => n.delete(s)) : c.services.forEach(s => n.add(s));
+    return n;
+  });
+
+  // ── Stepper ────────────────────────────────────────────────────────────────
+
+  const Stepper = () => (
+    <div className={cx("prqStepper")}>
+      {STEP_LABELS.map((label, idx) => {
+        const n = idx + 1; const done = step > n; const active = step === n;
+        return (
+          <div key={label} className={cx("dContents")}>
+            <div className={cx("prqStepItem")}>
+              <div className={cx("prqStepCircle", done ? "prqStepCircleDone" : "", active ? "prqStepCircleActive" : "")}>
+                {done ? <Ic n="check" sz={11} c="var(--lime)" /> : <span>{n}</span>}
+              </div>
+              <span className={cx("prqStepLabel", active ? "prqStepLabelActive" : "")}>{label}</span>
+            </div>
+            {idx < STEP_LABELS.length - 1 && <div className={cx("prqStepLine", step > n ? "prqStepLineDone" : "")} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // ── Estimate strip ─────────────────────────────────────────────────────────
+
+  const EstStrip = () =>
+    selected.size === 0 ? null : (
+      <div className={cx("mb16")}>
+        <div className={cx("prqEstStrip")}>
+          <div className={cx("prqEstItem")}>
+            <span className={cx("prqEstVal")}>{isOngoing ? `${fmtR(estMin)}/mo` : `${fmtR(estMin)} – ${fmtR(estMax)}`}</span>
+            <span className={cx("prqEstLbl")}>Estimate</span>
+          </div>
+          <div className={cx("prqEstDivider")} />
+          <div className={cx("prqEstItem")}>
+            <span className={cx("prqEstVal")}>{isOngoing ? "Ongoing" : wksMin === wksMax ? `${wksMin}w` : `${wksMin}–${wksMax}w`}</span>
+            <span className={cx("prqEstLbl")}>Timeline</span>
+          </div>
+          <div className={cx("prqEstDivider")} />
+          <div className={cx("prqEstItem")}>
+            <span className={cx("prqEstVal")}>{selected.size}</span>
+            <span className={cx("prqEstLbl")}>Service{selected.size > 1 ? "s" : ""}</span>
+          </div>
+          <div className={cx("mlAuto", "flexRow", "flexCenter", "gap10")}>
+            <span className={cx("text10", "colorMuted")}>Indicative — exact pricing in proposal</span>
+            <button type="button" onClick={() => setShowBreakdown(b => !b)}
+              className={cx("textBtn")}>
+              {showBreakdown ? "Hide" : "Breakdown"} <Ic n={showBreakdown ? "chevronDown" : "chevronRight"} sz={10} c="var(--muted2)" />
             </button>
-          ))}
-
-          <div className={styles.projBriefDivider} />
-          <div className={styles.projBriefStatusCard}>
-            <div className={styles.projBriefStatusTitle}>Status</div>
-            <span className={cx("badge", "badgeGreen")}>v3 · Acknowledged</span>
-            <div className={styles.projBriefStatusMeta}>
-              Last updated Feb 20.
-              <br />
-              You can edit until work begins on each phase.
-            </div>
           </div>
-        </aside>
-
-        <section className={styles.projBriefMain}>
-          <div className={cx("pageHeader", "mb0")}>
-            <div>
-              <div className={cx("pageEyebrow")}>Veldt Finance · Project Brief</div>
-              <h1 className={cx("pageTitle")}>Project Brief</h1>
-              <p className={cx("pageSub")}>
-                Your submitted brief is the foundation everything is built on. Edit anytime before a phase starts.
-              </p>
-            </div>
-            <div className={cx("pageActions")}>
-              {editing ? (
-                <>
-                  <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setEditing(false)}>
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className={cx("btnSm", "btnAccent")}
-                    onClick={() => {
-                      setEditing(false);
-                      notify("Brief saved", "Version 4 submitted — team notified");
-                    }}
-                  >
-                    Save &amp; Submit v4
-                  </button>
-                </>
-              ) : (
-                <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setEditing(true)}>
-                  Edit Brief
-                </button>
-              )}
-            </div>
+        </div>
+        {showBreakdown && (
+          <div className={cx("prqBreakdownPanel")}>
+            {selArr.map(id => {
+              const svc = SERVICES.find(x => x.id === id)!;
+              return (
+                <div key={id} className={cx("flexRow", "flexCenter", "gap10", "mb8")}>
+                  <div className={cx("prqBizIco", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${svc.color} 12%, transparent)` } as React.CSSProperties}>
+                    <Ic n={svc.icon} sz={12} c={svc.color} />
+                  </div>
+                  <span className={cx("fw600", "text12", "flex1")}>{svc.label}</span>
+                  <span className={cx("text11", "colorMuted", "mr12")}>
+                    {svc.tag === "Monthly" ? "Ongoing" : `${WEEKS_MAP[id][0]}–${WEEKS_MAP[id][1]}w`}
+                  </span>
+                  <span className={cx("fw600", "text11", "colorAccent", "minW120", "textRight")}>
+                    {fmtR(PRICE_MAP[id][0])} – {fmtR(PRICE_MAP[id][1])}
+                  </span>
+                </div>
+              );
+            })}
+            {selected.size > 1 && (
+              <div className={cx("flexBetween", "pt8", "borderT")}>
+                <span className={cx("fw700", "text12")}>Combined Estimate</span>
+                <span className={cx("fw700", "text12", "colorAccent")}>{fmtR(estMin)} – {fmtR(estMax)}</span>
+              </div>
+            )}
           </div>
+        )}
+      </div>
+    );
 
-          {tab === "Brief" ? (
-            <div className={styles.projBriefContent}>
-              <div className={styles.projBriefSteps}>
-                {STATUS_STEPS.map((step, idx) => (
-                  <div
-                    key={step}
-                    className={cx(
-                      styles.projBriefStep,
-                      idx < 2 && styles.projBriefStepDone,
-                      idx === 2 && styles.projBriefStepActive,
-                    )}
-                  >
-                    {idx < 2 ? "✓ " : ""}
-                    {step}
-                  </div>
-                ))}
-              </div>
+  // ── Selection summary bar (step 2 header) ─────────────────────────────────
 
-              {editing ? (
-                <div className={styles.projBriefEditBanner}>
-                  Editing mode — changes will create a new version (v4) and notify your project lead.
-                </div>
-              ) : null}
+  const SelectionBar = () => (
+    <div className={cx("tagWrapRow", "mb16")}>
+      <span className={cx("text11", "colorMuted", "fw600")}>Selected:</span>
+      {selArr.map(id => {
+        const svc = SERVICES.find(x => x.id === id)!;
+        return (
+          <span key={id} className={cx("prqSelBarTag", "dynBgColor", "dynBorderLeft3")} style={{ "--bg-color": `color-mix(in oklab, ${svc.color} 10%, transparent)`, "--color": `color-mix(in oklab, ${svc.color} 25%, transparent)` } as React.CSSProperties}>
+            <Ic n={svc.icon} sz={10} c={svc.color} />
+            <span className={cx("text11", "fw600", "dynColor")} style={{ "--color": svc.color } as React.CSSProperties}>{svc.label}</span>
+          </span>
+        );
+      })}
+      <span className={cx("text11", "colorMuted", "mlAuto")}>
+        Estimate: <strong className={cx("colorAccent")}>{isOngoing ? `${fmtR(estMin)}/mo` : `${fmtR(estMin)} – ${fmtR(estMax)}`}</strong>
+      </span>
+    </div>
+  );
 
-              <div className={cx("card", styles.projBriefCard)}>
-                {fields.map((field, idx) => (
-                  <div key={field.id}>
-                    <div className={styles.projBriefLabel}>{field.label}</div>
-                    {editing ? (
-                      <textarea
-                        className={styles.projBriefTextarea}
-                        value={field.value}
-                        onChange={(event) =>
-                          setFields((prev) =>
-                            prev.map((item, itemIdx) =>
-                              itemIdx === idx ? { ...item, value: event.target.value } : item,
-                            ),
-                          )
-                        }
-                      />
-                    ) : (
-                      <div className={styles.projBriefReadBlock}>{field.value}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
+  // ── Success screen ─────────────────────────────────────────────────────────
 
-              <div className={styles.projBriefAck}>
-                <span className={styles.projBriefAckIcon}>✅</span>
-                <div>
-                  <div className={styles.projBriefAckTitle}>Brief acknowledged by Sipho Ndlovu</div>
-                  <div className={styles.projBriefAckText}>
-                    Feb 20, 2026 at 09:14 — "Brief received and reviewed. We are aligned on goals and constraints.
-                    Work begins Monday."
-                  </div>
-                </div>
+  if (submitted) {
+    const refCode = `PRJ-${Date.now().toString().slice(-6)}`;
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("pageHeader", "mb0")}>
+          <div>
+            <div className={cx("pageEyebrow")}>Projects · New Request</div>
+            <h1 className={cx("pageTitle")}>Start a New Project</h1>
+          </div>
+        </div>
+        <div className={cx("card", "mt24", "borderLeftAccent")}>
+          <div className={cx("prqSuccessCard")}>
+            <div className={cx("prqSuccessCircle")}>
+              <Ic n="check" sz={26} c="var(--lime)" />
+            </div>
+            <div className={cx("prqSuccessTitle")}>Request received!</div>
+            <p className={cx("prqSuccessSub")}>
+              Your project brief has been submitted. Your dedicated PM will reach out within <strong>24 hours</strong> with a tailored proposal.
+            </p>
+            <div className={cx("prqRefBox")}>
+              <Ic n="hash" sz={16} c="var(--lime)" />
+              <div className={cx("textLeft")}>
+                <div className={cx("text10", "colorMuted", "mb2")}>Your Reference Number</div>
+                <div className={cx("fw700", "text13", "colorAccent", "fontMono", "fs11rem", "ls006")}>{refCode}</div>
               </div>
             </div>
-          ) : null}
-
-          {tab === "Version History" ? (
-            <div className={styles.projBriefContent}>
-              <div className={styles.projBriefSectionLine}>All Versions</div>
-              <div className={cx("card", styles.projBriefVersionCard)}>
-                {VERSIONS.map((version) => (
-                  <div key={version.num} className={styles.projBriefVersionItem}>
-                    <div className={styles.projBriefVersionNum}>{version.num}</div>
-                    <div className={styles.projBriefGrow}>
-                      <div className={styles.projBriefVersionName}>
-                        {version.name}
-                        {version.current ? <span className={cx("badge", "badgeAccent", styles.projBriefCurrent)}>Current</span> : null}
-                      </div>
-                      <div className={styles.projBriefVersionMeta}>{version.meta}</div>
-                    </div>
-                    <button
-                      type="button"
-                      className={cx("btnSm", "btnGhost")}
-                      onClick={() => notify("Version loaded", `Viewing ${version.num}`)}
-                    >
-                      View
-                    </button>
+            {/* ── Request Status Timeline ───────────────────────────────── */}
+            <div className={cx("wFull", "maxW480", "m0auto28", "textLeft")}>
+              <div className={cx("text10", "fw700", "colorMuted", "uppercase", "ls008", "mb14")}>Request Status</div>
+              {([
+                { step: 1, label: "Request Submitted",    sub: "Your brief has been received by our team.",               done: true,  active: false },
+                { step: 2, label: "Under Admin Review",   sub: "Our team is reviewing your brief — typically 24–48 hrs.", done: false, active: true  },
+                { step: 3, label: "Decision & Proposal",  sub: "You'll be notified once we've reviewed your request.",    done: false, active: false },
+              ] as const).map((stage, i, arr) => (
+                <div key={stage.step} className={cx("flexRow", "gap14", "relative", i < arr.length - 1 && "pb18")}>
+                  {i < arr.length - 1 && (
+                    <div className={cx("stageConnector", "dynBgColor")} style={{ "--bg-color": stage.done ? "var(--lime)" : "var(--b2)" } as React.CSSProperties} />
+                  )}
+                  <div className={cx("stageCircle36", "dynBgColor")} style={{ "--bg-color": stage.done ? "color-mix(in oklab, var(--lime) 15%, transparent)" : stage.active ? "color-mix(in oklab, var(--accent) 10%, transparent)" : "var(--s3)", "--border-color": stage.done ? "var(--lime)" : stage.active ? "var(--accent)" : "var(--b2)" } as React.CSSProperties}>
+                    {stage.done
+                      ? <Ic n="check" sz={14} c="var(--lime)" />
+                      : stage.active
+                        ? <Ic n="clock" sz={14} c="var(--accent)" />
+                        : <span className={cx("dot8")} style={{ "--bg-color": "var(--b2)" } as React.CSSProperties} />
+                    }
                   </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {tab === "Team Notes" ? (
-            <div className={styles.projBriefContent}>
-              <div className={styles.projBriefSectionLine}>Notes from Your Team</div>
-              {TEAM_NOTES.map((note) => (
-                <div key={`${note.name}-${note.date}`} className={cx("card", styles.projBriefNoteCard)}>
-                  <div
-                    className={styles.projBriefNoteAvatar}
-                    style={{ background: note.color, color: "#050508" }}
-                  >
-                    {note.av}
-                  </div>
-                  <div className={styles.projBriefGrow}>
-                    <div className={styles.projBriefNoteHead}>
-                      {note.name}
-                      <span className={styles.projBriefNoteDate}>· {note.date}</span>
+                  <div className={cx("pt7")}>
+                    <div className={cx("fw600", "text12", "dynColor")} style={{ "--color": stage.done ? "var(--lime)" : stage.active ? "var(--text)" : "var(--muted2)" } as React.CSSProperties}>
+                      {stage.label}
                     </div>
-                    <div className={styles.projBriefNoteText}>{note.note}</div>
+                    <div className={cx("text11", "colorMuted")}>{stage.sub}</div>
                   </div>
                 </div>
               ))}
             </div>
-          ) : null}
-        </section>
-      </div>
-
-      {toast ? (
-        <div className={cx("toastStack")}>
-          <div className={cx("toast", "toastSuccess")}>
-            <strong>{toast.title}</strong>
-            <div>{toast.subtitle}</div>
+            <div className={cx("prqSuccessActions")}>
+              <button type="button" className={cx("btnSm", "btnAccent")}><Ic n="message" sz={12} c="var(--bg)" /> Message Your PM</button>
+              <button type="button" className={cx("btnSm", "btnGhost")}><Ic n="calendar" sz={12} c="var(--muted2)" /> Book Kickoff Call</button>
+              <button type="button" className={cx("btnSm", "btnGhost")}>View Services</button>
+            </div>
           </div>
         </div>
-      ) : null}
+      </div>
+    );
+  }
+
+  // ── Wizard ─────────────────────────────────────────────────────────────────
+
+  return (
+    <div className={cx("pageBody")}>
+      <div className={cx("pageHeader", "mb0")}>
+        <div>
+          <div className={cx("pageEyebrow")}>Projects · New Request</div>
+          <h1 className={cx("pageTitle")}>Start a New Project</h1>
+          <p className={cx("pageSub")}>Tell us what you need and we&apos;ll put together a tailored proposal within 24 hours.</p>
+        </div>
+      </div>
+
+      {/* Trust strip */}
+      <div className={cx("prqTrustStrip")}>
+        {TRUST.map((t, i) => (
+          <div key={t.text} className={cx("dContents")}>
+            <div className={cx("prqTrustItem")}><Ic n={t.icon} sz={12} c="var(--lime)" />{t.text}</div>
+            {i < TRUST.length - 1 && <div className={cx("prqTrustSep")} />}
+          </div>
+        ))}
+      </div>
+
+      <Stepper />
+
+      {/* ══ STEP 1 ════════════════════════════════════════════════════════════ */}
+      {step === 1 && (
+        <>
+          {/* ── Business size ───────────────────────────────────────────────── */}
+          <div className={cx("mb24")}>
+            <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb10")}>
+              What stage is your business at? <span className={cx("textNone", "lsNormal", "fw400")}>— we&apos;ll tailor our suggestions</span>
+            </div>
+            <div className={cx("grid4Cols", "gap8")}>
+              {BUSINESS_SIZES.map(s => {
+                const active = bizSize === s.id;
+                return (
+                  <button key={s.id} type="button" onClick={() => setBizSize(active ? null : s.id as BizSize)}
+                    className={cx("prqBizCard", "dynBgColor", "dynBorderLeft3")} style={{ "--bg-color": active ? `color-mix(in oklab, ${s.color} 8%, transparent)` : "var(--s2)", "--color": active ? s.color : "var(--b2)" } as React.CSSProperties}>
+                    <div className={cx("flexBetween")}>
+                      <div className={cx("prqBizIco", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${s.color} 15%, transparent)` } as React.CSSProperties}>
+                        <Ic n={s.icon} sz={13} c={active ? s.color : "var(--muted2)"} />
+                      </div>
+                      {active && (
+                        <div className={cx("iconDot16", "dynBgColor")} style={{ "--bg-color": s.color } as React.CSSProperties}>
+                          <Ic n="check" sz={9} c="var(--bg)" />
+                        </div>
+                      )}
+                    </div>
+                    <div className={cx("fs08", "fw700", "colorText", "mt4")}>{s.label}</div>
+                    <div className={cx("fs065", "colorMuted", "lineH14")}>{s.sub}</div>
+                    <div className={cx("fs065", "mt2", "dynColor")} style={{ "--color": active ? s.color : "var(--muted)" } as React.CSSProperties}>{s.range}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Goal picker ─────────────────────────────────────────────────── */}
+          <div className={cx("mb24")}>
+            <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb10")}>
+              What are you trying to achieve?
+            </div>
+            <div className={cx("grid3Cols8Gap")}>
+              {GOALS.map(g => {
+                const active = goal === g.id;
+                return (
+                  <button key={g.id} type="button" className={cx("prqGoalCard", active ? "prqGoalCardActive" : "")}
+                    onClick={() => setGoal(active ? null : g.id as GoalId)}>
+                    <div className={cx("prqGoalIco", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${g.color} 12%, transparent)` } as React.CSSProperties}>
+                      <Ic n={g.icon} sz={14} c={active ? g.color : "var(--muted2)"} />
+                    </div>
+                    <div className={cx("prqGoalLabel")}>{g.label}</div>
+                    <div className={cx("prqGoalSub")}>{g.sub}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Bundle deals ────────────────────────────────────────────────── */}
+          <div className={cx("mb28")}>
+            <div className={cx("flexRow", "flexCenter", "gap10", "mb14")}>
+              <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted")}>Bundle Deals</div>
+              <span className={cx("text10", "colorMuted")}>— combine services & save more</span>
+              <div className={cx("flexDivider")} />
+              <span className={cx("badge", "badgeAccent")}>{COMBOS.length} packages</span>
+            </div>
+            <div className={cx("grid2Cols", "gap10")}>
+              {COMBOS.map(combo => {
+                const active = isComboActive(combo);
+                return (
+                  <div key={combo.id}
+                    className={cx("prqComboCard", "dynBgColor", "dynBorderLeft3")} style={{ "--bg-color": active ? `color-mix(in oklab, ${combo.color} 5%, var(--s1))` : "var(--s1)", "--color": active ? combo.color : "var(--b2)" } as React.CSSProperties}>
+                    {/* Colour bar */}
+                    <div className={cx("h3", "dynBgColor")} style={{ "--bg-color": combo.color } as React.CSSProperties} />
+                    <div className={cx("p14x16x16")}>
+                      {/* Header */}
+                      <div className={cx("flexAlignStart", "justifyBetween", "mb10")}>
+                        <div className={cx("flexRow", "gap8")}>
+                          <div className={cx("prqComboIco", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${combo.color} 15%, transparent)` } as React.CSSProperties}>
+                            <Ic n={combo.icon} sz={16} c={combo.color} />
+                          </div>
+                          <div>
+                            <div className={cx("fs08", "fw700", "colorText", "lineH12")}>{combo.label}</div>
+                            <div className={cx("fs06", "colorMuted2", "mt2")}>{combo.sub}</div>
+                          </div>
+                        </div>
+                        <span className={cx("badge", combo.badgeCls, "noShrink", "ml8")}>{combo.badge}</span>
+                      </div>
+                      {/* Highlights */}
+                      <div className={cx("flexCol", "gap5", "mb12")}>
+                        {combo.highlights.map(h => (
+                          <div key={h} className={cx("flexRow", "flexAlignStart", "gap7")}>
+                            <div className={cx("dot5", "noShrink", "mt4")} style={{ "--bg-color": combo.color } as React.CSSProperties} />
+                            <span className={cx("fs065", "colorText", "lineH15", "opacity85")}>{h}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Footer */}
+                      <div className={cx("flexBetween", "flexAlignStart", "gap8", "pt10", "borderT")}>
+                        <div>
+                          <div className={cx("prqComboPrice", "dynColor")} style={{ "--color": combo.color } as React.CSSProperties}>{combo.from}</div>
+                          <div className={cx("fs055", "colorMuted2", "mt2")}>{combo.weeks[0]}–{combo.weeks[1]} weeks</div>
+                        </div>
+                        <div className={cx("flexCol", "gap6", "flexAlignEnd")}>
+                          <span className={cx("prqComboSavingBadge", "dynBgColor", "dynColor")} style={{ "--bg-color": `color-mix(in oklab, ${combo.color} 15%, transparent)`, "--color": combo.color } as React.CSSProperties}>
+                            {combo.saving}
+                          </span>
+                          <button type="button" onClick={() => selectCombo(combo)}
+                            className={cx("comboPill", "dynBgColor", "dynColor")} style={{ "--bg-color": active ? combo.color : "transparent", "--color": active ? "var(--bg)" : "var(--text)", "--border-color": active ? combo.color : "var(--b2)" } as React.CSSProperties}>
+                            {active ? "✓ Selected" : "Select Package"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Individual services label ────────────────────────────────────── */}
+          <div className={cx("flexRow", "flexCenter", "gap10", "mb6")}>
+            <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted")}>Individual Services</div>
+            <span className={cx("text10", "colorMuted")}>— mix & match, multi-select supported</span>
+            {goal && <span className={cx("ml4", "colorAmber", "fs10", "fw500")}>· Recommended highlighted</span>}
+            <div className={cx("flexDivider")} />
+          </div>
+
+          <EstStrip />
+
+          {/* ── Service grid — grouped ────────────────────────────────────────── */}
+          {SERVICE_GROUPS.map(group => (
+            <div key={group.label} className={cx("mb22")}>
+              <div className={cx("flexRow", "flexCenter", "gap8", "mb10")}>
+                <div className={cx("wh6", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": group.color } as React.CSSProperties} />
+                <span className={cx("fs07", "fw700", "colorText")}>{group.label}</span>
+                <span className={cx("fs06", "colorMuted2")}>{group.sub}</span>
+                <div className={cx("flexDivider")} />
+              </div>
+              <div className={cx("prqSvcGrid")}>
+                {SERVICES.filter(svc => (group.ids as readonly string[]).includes(svc.id)).map(svc => {
+                  const isActive = selected.has(svc.id);
+                  const isReco   = recommendedIds.has(svc.id) && !isActive;
+                  return (
+                    <button key={svc.id} type="button"
+                      className={cx("prqSvcCard", isActive ? "prqSvcCardActive" : "", isReco ? "prqSvcCardReco" : "")}
+                      style={{ "--svc-color": svc.color } as React.CSSProperties}
+                      onClick={() => toggleService(svc.id)}>
+                      {svc.popular && <span className={cx("prqSvcPopular")}>Most Popular</span>}
+                      {isReco && <span className={cx("prqSvcReco")}><span className={cx("prqSvcRecoDot")} />Recommended</span>}
+                      <div className={cx("prqSvcHead")}>
+                        <div className={cx("prqSvcIco")}><Ic n={svc.icon} sz={16} c={isActive ? svc.color : "var(--muted2)"} /></div>
+                        <div className={cx("prqSvcMeta")}>
+                          <div className={cx("prqSvcName")}>{svc.label}</div>
+                          <div className={cx("prqSvcPrice")}>{svc.from}</div>
+                          <div className={cx("flexRow", "gap4", "flexWrap", "mt3")}>
+                            {svc.tag && (
+                              <span className={cx("prqSvcTag", "dynBgColor", "dynColor")} style={{ "--bg-color": `color-mix(in oklab, ${svc.color} 15%, transparent)`, "--color": svc.color } as React.CSSProperties}>{svc.tag}</span>
+                            )}
+                            <span className={cx("prqSvcTag", "prqSvcTagMuted")}>
+                              {svc.tag === "Monthly" ? "Ongoing" : `${svc.weeks[0]}–${svc.weeks[1]}w`}
+                            </span>
+                          </div>
+                        </div>
+                        {isActive && <div className={cx("prqSvcCheck")}><Ic n="check" sz={11} c="var(--bg)" /></div>}
+                      </div>
+                      <div className={cx("prqSvcDesc")}>{svc.desc}</div>
+                      <div className={cx("prqIncPills")}>
+                        {INCLUDES_MAP[svc.id].map(t => <span key={t} className={cx("prqIncPill")}>{t}</span>)}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {/* ── Add-ons ──────────────────────────────────────────────────────── */}
+          <div className={cx("mt24", "mb20")}>
+            <div className={cx("flexRow", "flexCenter", "gap10", "mb14")}>
+              <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted")}>Optional Add-ons</div>
+              <span className={cx("text10", "colorMuted")}>— bolt on to any service</span>
+              <div className={cx("flexDivider")} />
+              <span className={cx("badge", "badgeMuted")}>{ADDONS.length} available</span>
+            </div>
+            <div className={cx("prqAddonGrid")}>
+              {ADDONS.map(a => {
+                const on = addons.has(a.id);
+                return (
+                  <button key={a.id} type="button" onClick={() => toggleAddon(a.id)}
+                    className={cx("prqAddonCard", "dynBgColor", "dynBorderLeft3")} style={{ "--bg-color": on ? `color-mix(in oklab, ${a.color} 8%, var(--s2))` : "var(--s2)", "--color": on ? a.color : "var(--b2)" } as React.CSSProperties}>
+                    {/* Icon + price row */}
+                    <div className={cx("flexBetween")}>
+                      <div className={cx("prqAddonIco", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${a.color} 16%, transparent)` } as React.CSSProperties}>
+                        <Ic n={a.icon} sz={15} c={on ? a.color : "var(--muted2)"} />
+                      </div>
+                      <span className={cx("prqAddonPrice", "dynBgColor", "dynColor")} style={{ "--bg-color": on ? `color-mix(in oklab, ${a.color} 18%, transparent)` : "var(--s3)", "--color": on ? a.color : "var(--muted2)" } as React.CSSProperties}>
+                        {a.price}
+                      </span>
+                    </div>
+                    {/* Label */}
+                    <div className={cx("fs08", "fw700", "colorText", "lineH13")}>{a.label}</div>
+                    {/* Description */}
+                    <div className={cx("text11", "colorMuted", "lineH16")}>{a.desc}</div>
+                    {/* Added indicator */}
+                    {on && (
+                      <div className={cx("prqAddonAddedRow", "dynBorderLeft3")} style={{ "--color": `color-mix(in oklab, ${a.color} 20%, transparent)` } as React.CSSProperties}>
+                        <div className={cx("iconDot14", "noShrink", "dynBgColor")} style={{ "--bg-color": a.color } as React.CSSProperties}>
+                          <Ic n="check" sz={8} c="var(--bg)" />
+                        </div>
+                        <span className={cx("prqAddonAddedLabel", "dynColor")} style={{ "--color": a.color } as React.CSSProperties}>Added to project</span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Bottom action row */}
+          <div className={cx("prqSelRow")}>
+            {selected.size > 0 && <span className={cx("badge", "badgeAccent")}>{selected.size} service{selected.size > 1 ? "s" : ""} selected</span>}
+            {addons.size > 0 && <span className={cx("badge", "badgeMuted")}>{addons.size} add-on{addons.size > 1 ? "s" : ""}</span>}
+            <button type="button" className={cx("btnSm", "btnAccent", selected.size === 0 && "opacity45")} disabled={selected.size === 0} onClick={() => setStep(2)}>
+              Next — Project Brief <Ic n="chevronRight" sz={12} c="var(--bg)" />
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ══ STEP 2 — Brief ════════════════════════════════════════════════════ */}
+      {step === 2 && (
+        <>
+          <SelectionBar />
+          <div className={cx("card")}>
+            <div className={cx("cardHd")}>
+              <Ic n="file" sz={14} c="var(--accent)" />
+              <span className={cx("cardHdTitle", "ml8")}>Project Brief</span>
+              <span className={cx("badge", "badgeMuted", "mlAuto")}>Fields marked * are required</span>
+            </div>
+            <div className={cx("cardBodyPad")}>
+              <div className={cx("prqFormBody")}>
+
+                <FormSection label="About the Project" />
+
+                <div className={cx("prqFormField")}>
+                  <label className={cx("prqFormLabel")}>Project Name <span className={cx("prqRequired")}>*</span></label>
+                  <input className={cx("input")} placeholder="e.g. Veldt Finance Web App Redesign" value={name} onChange={e => setName(e.target.value)} />
+                </div>
+                <div className={cx("prqFormField")}>
+                  <label className={cx("prqFormLabel")}>Business Overview <span className={cx("prqRequired")}>*</span></label>
+                  <textarea className={cx("input", "resizeV")} rows={3} placeholder="What does your business do? Who are your customers?" value={overview} onChange={e => setOverview(e.target.value)}  />
+                </div>
+                <div className={cx("prqFormField")}>
+                  <label className={cx("prqFormLabel")}>Project Goals <span className={cx("prqRequired")}>*</span></label>
+                  <textarea className={cx("input", "resizeV")} rows={3} placeholder="What are you trying to achieve? What does success look like?" value={goals} onChange={e => setGoals(e.target.value)}  />
+                </div>
+
+                <FormSection label="Scope & Constraints" />
+
+                <div className={cx("grid2")}>
+                  <div className={cx("prqFormField")}>
+                    <label className={cx("prqFormLabel")}>Target Audience</label>
+                    <input className={cx("input")} placeholder="Who will use this?" value={audience} onChange={e => setAudience(e.target.value)} />
+                  </div>
+                  <div className={cx("prqFormField")}>
+                    <label className={cx("prqFormLabel")}>Budget Range</label>
+                    <select className={cx("input")} value={budget} onChange={e => setBudget(e.target.value)}>
+                      <option value="">Select budget...</option>
+                      {BUDGET_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className={cx("prqFormField")}>
+                  <label className={cx("prqFormLabel")}>Preferred Timeline</label>
+                  <select className={cx("input")} value={timeline} onChange={e => setTimeline(e.target.value)}>
+                    <option value="">Select timeline...</option>
+                    {TIMELINE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+
+                {(selected.has("mobileApp") || selected.has("ecommerce") || selected.has("designBrand") || selected.has("bizWebsite")) && (
+                  <FormSection label="Service-Specific Details" />
+                )}
+                {selected.has("mobileApp") && (
+                  <div className={cx("prqFormField")}>
+                    <div className={cx("prqExtraCard")}>
+                      <div className={cx("prqExtraHd")}><Ic n="layers" sz={11} c="var(--purple)" /> Which platforms do you need?</div>
+                      <div className={cx("prqRadioRow")}>
+                        {["iOS only", "Android only", "Both platforms"].map(opt => (
+                          <button key={opt} type="button" className={cx("prqRadioOpt", mobilePlatform === opt ? "prqRadioOptActive" : "")} onClick={() => setMobilePlatform(opt)}>
+                            <span className={cx("prqRadioOptDot")} />{opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {selected.has("ecommerce") && (
+                  <div className={cx("prqFormField")}>
+                    <div className={cx("prqExtraCard")}>
+                      <div className={cx("prqExtraHd")}><Ic n="creditCard" sz={11} c="var(--green)" /> Which e-commerce platform?</div>
+                      <div className={cx("prqRadioRow")}>
+                        {["Shopify", "WooCommerce", "Custom build", "Not sure yet"].map(opt => (
+                          <button key={opt} type="button" className={cx("prqRadioOpt", ecPlatform === opt ? "prqRadioOptActive" : "")} onClick={() => setEcPlatform(opt)}>
+                            <span className={cx("prqRadioOptDot")} />{opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {(selected.has("designBrand") || selected.has("bizWebsite")) && (
+                  <div className={cx("prqFormField")}>
+                    <div className={cx("prqExtraCard")}>
+                      <div className={cx("prqExtraHd")}><Ic n="edit" sz={11} c="var(--amber)" /> Do you have existing brand assets?</div>
+                      <div className={cx("prqRadioRow")}>
+                        {["Yes, full brand kit", "Some assets exist", "Starting from scratch"].map(opt => (
+                          <button key={opt} type="button" className={cx("prqRadioOpt", hasBrandAssets === opt ? "prqRadioOptActive" : "")} onClick={() => setHasBrandAssets(opt)}>
+                            <span className={cx("prqRadioOptDot")} />{opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <FormSection label="References & Notes" note="(optional)" />
+
+                <div className={cx("prqFormField")}>
+                  <label className={cx("prqFormLabel")}>Design References <span className={cx("prqOptional")}>(optional)</span></label>
+                  <textarea className={cx("input", "resizeV")} rows={2} placeholder="Links, screenshots, or brands you admire..." value={references} onChange={e => setReferences(e.target.value)}  />
+                </div>
+                <div className={cx("prqFormField")}>
+                  <label className={cx("prqFormLabel")}>Special Requirements <span className={cx("prqOptional")}>(optional)</span></label>
+                  <textarea className={cx("input", "resizeV")} rows={2} placeholder="Integrations, compliance, languages, accessibility..." value={requirements} onChange={e => setRequirements(e.target.value)}  />
+                </div>
+
+              </div>
+            </div>
+          </div>
+          <div className={cx("prqActionRow", "prqActionRowSpread")}>
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setStep(1)}>← Back</button>
+            <button type="button" className={cx("btnSm", "btnAccent", !step2Valid && "opacity45")} disabled={!step2Valid} onClick={() => setStep(3)}>
+              Next — Review <Ic n="chevronRight" sz={12} c="var(--bg)" />
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ══ STEP 3 — Confirm ══════════════════════════════════════════════════ */}
+      {step === 3 && (
+        <>
+          <div className={cx("card", "mb14")}>
+            <div className={cx("cardHd")}>
+              <Ic n="check" sz={14} c="var(--lime)" />
+              <span className={cx("cardHdTitle", "ml8")}>Review Your Request</span>
+              <button type="button" className={cx("btnSm", "btnGhost", "mlAuto")} onClick={() => setStep(1)}>
+                <Ic n="edit" sz={11} c="var(--muted2)" /> Edit Services
+              </button>
+            </div>
+            <div className={cx("cardBodyPad")}>
+              <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb8")}>Services selected</div>
+              <div className={cx("prqReviewSvcs")}>
+                {[...selected].map(id => {
+                  const svc = SERVICES.find(x => x.id === id)!;
+                  return (
+                    <span key={id} className={cx("badge", "badgeAccent", "inlineFlex", "gap4")}>
+                      <Ic n={svc.icon} sz={10} c="var(--lime)" />{svc.label}
+                    </span>
+                  );
+                })}
+              </div>
+              {addons.size > 0 && (
+                <>
+                  <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb8", "mt12")}>Add-ons</div>
+                  <div className={cx("flexRow", "gap6", "flexWrap")}>
+                    {[...addons].map(id => {
+                      const a = ADDONS.find(x => x.id === id)!;
+                      return (
+                        <span key={id} className={cx("badge", "badgeMuted", "inlineFlex", "gap4")}>
+                          <Ic n={a.icon} sz={9} c="var(--muted2)" />{a.label} · {a.price}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+              <div className={cx("mt14")}><EstStrip /></div>
+              <div className={cx("pt12", "borderT")}>
+                <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb10")}>Project Brief</div>
+                <div className={cx("prqReviewGrid", "mb12")}>
+                  {([["Project Name", name], ["Budget Range", budget || "Not specified"], ["Timeline", timeline || "Not specified"], ["Target Audience", audience || "Not specified"]] as [string, string][]).map(([label, value]) => (
+                    <div key={label} className={cx("prqReviewItem")}>
+                      <div className={cx("prqReviewLbl")}>{label}</div>
+                      <div className={cx("prqReviewVal")}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+                {overview && <div className={cx("prqReviewSection")}><div className={cx("prqReviewLbl", "mb6")}>Business Overview</div><div className={cx("prqReviewText")}>{overview.length > 300 ? `${overview.slice(0, 300)}…` : overview}</div></div>}
+                {goals && <div className={cx("prqReviewSection", "mt10")}><div className={cx("prqReviewLbl", "mb6")}>Project Goals</div><div className={cx("prqReviewText")}>{goals.length > 300 ? `${goals.slice(0, 300)}…` : goals}</div></div>}
+                <div className={cx("mt14", "flexRow", "justifyEnd")}>
+                  <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setStep(2)}><Ic n="edit" sz={11} c="var(--muted2)" /> Edit Brief</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={cx("card", "mb20")}>
+            <div className={cx("cardHd")}>
+              <Ic n="trending" sz={14} c="var(--accent)" />
+              <span className={cx("cardHdTitle", "ml8")}>What Happens Next</span>
+            </div>
+            <div className={cx("cardBodyPad")}>
+              {NEXT_STEPS.map((ns, i) => (
+                <div key={ns.n} className={cx("flexRow", "gap14", "relative", i < NEXT_STEPS.length - 1 && "pb18")}>
+                  {i < NEXT_STEPS.length - 1 && <div className={cx("stageConnector")} />}
+                  <div className={cx("stageCircleLime")}>
+                    <Ic n={ns.icon} sz={15} c="var(--lime)" />
+                  </div>
+                  <div className={cx("pt7")}>
+                    <div className={cx("fw600", "text12")}>{ns.title}</div>
+                    <div className={cx("text11", "colorMuted")}>{ns.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {!isOngoing && (
+            <div className={cx("card", "mb14")}>
+              <div className={cx("cardHd")}>
+                <Ic n="creditCard" sz={14} c="var(--accent)" />
+                <span className={cx("cardHdTitle", "ml8")}>Payment Schedule</span>
+              </div>
+              <div className={cx("cardBodyPad")}>
+                {[
+                  { label: "50% Deposit",   amount: depositCents,   note: "Due on submission" },
+                  { label: "30% Milestone", amount: milestoneCents, note: "On admin approval" },
+                  { label: "20% Final",     amount: finalCents,     note: "On project delivery" },
+                ].map(({ label, amount, note }, i) => (
+                  <div key={label} className={cx("flexRow", "gap12", i < 2 ? "borderB" : "", "py10")}>
+                    <div className={cx("fw600", "text12")} style={{ minWidth: 120 }}>{label}</div>
+                    <div className={cx("fontMono", "fw700", "colorAccent")}>{fmtR(Math.round(amount / 100))}</div>
+                    <div className={cx("colorMuted", "text11", "mlAuto")}>{note}</div>
+                  </div>
+                ))}
+                <div className={cx("pt10", "text11", "colorMuted")}>
+                  Total estimate based on selected services (R {estMin.toLocaleString()} min — R {estMax.toLocaleString()} max)
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className={cx("prqActionRow", "prqActionRowSpread")}>
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setStep(2)}>← Edit Brief</button>
+            <button type="button" className={cx("btnSm", "btnAccent", "minW200")} onClick={() => setStep(4)}>
+              Continue to Sign <Ic n="check" sz={12} c="var(--bg)" />
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ══ STEP 4 — Sign Agreement ══════════════════════════════════════════ */}
+      {step === 4 && (
+        <>
+          <div className={cx("card", "mb14")}>
+            <div className={cx("cardHd")}>
+              <Ic n="shield" sz={14} c="var(--accent)" />
+              <span className={cx("cardHdTitle", "ml8")}>Engagement Agreement</span>
+              <span className={cx("colorMuted", "text11", "mlAuto")}>Scroll to read before signing</span>
+            </div>
+            <div className={cx("cardBodyPad")}>
+              <div
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  if (el.scrollHeight - el.scrollTop <= el.clientHeight + 40) setScrolledToEnd(true);
+                }}
+                style={{ maxHeight: 320, overflowY: "auto", padding: "12px 0", lineHeight: 1.7 }}
+                className={cx("text12", "colorMuted")}
+              >
+                <p className={cx("fw700", "colorText", "mb8")}>ENGAGEMENT AGREEMENT — MAPHARI TECHNOLOGIES (PTY) LTD</p>
+                <p className={cx("mb10")}>This Engagement Agreement (&ldquo;Agreement&rdquo;) is entered into between Maphari Technologies (Pty) Ltd (&ldquo;Service Provider&rdquo;) and the client submitting this project request (&ldquo;Client&rdquo;).</p>
+                <p className={cx("fw600", "mb6")}>1. Scope of Work</p>
+                <p className={cx("mb10")}>The Service Provider agrees to deliver the services selected in this project request brief, as further defined in a Statement of Work (SOW) issued upon project approval. Any changes to scope must be agreed in writing via a Change Order.</p>
+                <p className={cx("fw600", "mb6")}>2. Payment Terms</p>
+                <p className={cx("mb10")}>The Client agrees to the 50% / 30% / 20% payment schedule: a 50% deposit is due upon request submission, 30% upon milestone completion, and 20% final payment upon project delivery. All amounts are in South African Rand (ZAR). Late payments attract 2% per month interest.</p>
+                <p className={cx("fw600", "mb6")}>3. Intellectual Property</p>
+                <p className={cx("mb10")}>All deliverables become the property of the Client upon receipt of final payment. The Service Provider retains the right to showcase completed work in portfolios unless otherwise agreed in writing.</p>
+                <p className={cx("fw600", "mb6")}>4. Confidentiality</p>
+                <p className={cx("mb10")}>Both parties agree to keep all confidential information disclosed during the engagement strictly confidential. This includes business processes, technical specifications, financial data, and client lists.</p>
+                <p className={cx("fw600", "mb6")}>5. Termination</p>
+                <p className={cx("mb10")}>Either party may terminate this Agreement with 14 days written notice. Work completed up to the termination date will be invoiced at the applicable pro-rata rate. The 50% deposit is non-refundable once work has commenced.</p>
+                <p className={cx("fw600", "mb6")}>6. Governing Law</p>
+                <p className={cx("mb10")}>This Agreement is governed by the laws of the Republic of South Africa. Any disputes shall be resolved through mediation before litigation.</p>
+                <p className={cx("mb6")}>By signing below, the Client confirms they have read, understood, and agreed to the terms of this Engagement Agreement.</p>
+              </div>
+              {!scrolledToEnd && (
+                <div className={cx("text11", "colorMuted", "mt8")} style={{ textAlign: "center" }}>
+                  ↓ Scroll to the bottom to enable signing
+                </div>
+              )}
+              {scrolledToEnd && (
+                <div className={cx("mt14")}>
+                  <label className={cx("flexRow", "gap8", "mb12")} style={{ cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={e => setAgreedToTerms(e.target.checked)}
+                      style={{ accentColor: "var(--lime)", width: 16, height: 16, flexShrink: 0, cursor: "pointer" }}
+                    />
+                    <span className={cx("text12")}>I have read and agree to the Engagement Agreement</span>
+                  </label>
+                  <div className={cx("mb6")}>
+                    <label className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb6")} style={{ display: "block" }}>
+                      Digital Signature — Type your full name
+                    </label>
+                    <input
+                      type="text"
+                      className={cx("inputSm")}
+                      placeholder="Your full name…"
+                      value={signatureText}
+                      onChange={e => setSignatureText(e.target.value)}
+                      disabled={!agreedToTerms}
+                      style={{ width: "100%", fontStyle: signatureText ? "italic" : "normal" }}
+                    />
+                    {signatureText && (
+                      <div className={cx("text11", "colorMuted", "mt6")}>
+                        Signed: <em>{signatureText}</em> — {new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className={cx("prqActionRow", "prqActionRowSpread")}>
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setStep(3)}>← Back to Quote</button>
+            <button
+              type="button"
+              className={cx("btnSm", "btnAccent", "minW200")}
+              disabled={!agreedToTerms || !signatureText.trim()}
+              onClick={() => setStep(5)}
+            >
+              Continue to Payment <Ic n="check" sz={12} c="var(--bg)" />
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ══ STEP 5 — Pay Deposit ════════════════════════════════════════════ */}
+      {step === 5 && (
+        <>
+          <div className={cx("card", "mb14")}>
+            <div className={cx("cardHd")}>
+              <Ic n="creditCard" sz={14} c="var(--accent)" />
+              <span className={cx("cardHdTitle", "ml8")}>Pay 50% Deposit</span>
+              <span className={cx("fontMono", "fw700", "colorAccent", "mlAuto")}>{fmtR(Math.round(depositCents / 100))}</span>
+            </div>
+            <div className={cx("cardBodyPad")}>
+              <div className={cx("text12", "colorMuted", "mb16")}>
+                Your deposit secures your project slot. Work begins after our team reviews and approves your request.
+              </div>
+
+              {/* EFT option */}
+              <button
+                type="button"
+                className={cx("card", "mb10")}
+                style={{
+                  display: "block", width: "100%", textAlign: "left", cursor: "pointer",
+                  border: payMethod === "EFT" ? "1.5px solid var(--lime)" : undefined,
+                }}
+                onClick={() => setPayMethod("EFT")}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
+                  <Ic n="layers" sz={16} c={payMethod === "EFT" ? "var(--lime)" : "var(--muted2)"} />
+                  <div>
+                    <div className={cx("fw600", "text12")}>EFT / Bank Transfer</div>
+                    <div className={cx("colorMuted", "text11")}>Transfer to our account. We&apos;ll confirm receipt within 24h.</div>
+                  </div>
+                  {payMethod === "EFT" && <span style={{ marginLeft: "auto" }}><Ic n="check" sz={14} c="var(--lime)" /></span>}
+                </div>
+              </button>
+
+              {/* PayFast option */}
+              <button
+                type="button"
+                className={cx("card", "mb14")}
+                style={{
+                  display: "block", width: "100%", textAlign: "left", cursor: "pointer",
+                  border: payMethod === "PAYFAST" ? "1.5px solid var(--lime)" : undefined,
+                }}
+                onClick={() => setPayMethod("PAYFAST")}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
+                  <Ic n="zap" sz={16} c={payMethod === "PAYFAST" ? "var(--lime)" : "var(--muted2)"} />
+                  <div>
+                    <div className={cx("fw600", "text12")}>PayFast — Instant Online Payment</div>
+                    <div className={cx("colorMuted", "text11")}>Credit/debit card, EFT, or SnapScan via PayFast.</div>
+                  </div>
+                  {payMethod === "PAYFAST" && <span style={{ marginLeft: "auto" }}><Ic n="check" sz={14} c="var(--lime)" /></span>}
+                </div>
+              </button>
+
+              {/* EFT bank details */}
+              {payMethod === "EFT" && (
+                <div className={cx("card", "mb14")} style={{ background: "var(--lime-g)" }}>
+                  <div className={cx("cardBodyPad")}>
+                    <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb10")}>Bank Details</div>
+                    {([
+                      ["Bank", "FNB (First National Bank)"],
+                      ["Account Name", "Maphari Technologies (Pty) Ltd"],
+                      ["Account Number", "62896xxxxx"],
+                      ["Branch Code", "250655"],
+                      ["Reference", `DEP-${(name || "PROJECT").toUpperCase().replace(/\s+/g, "-").slice(0, 12)}-${Date.now().toString().slice(-6)}`],
+                    ] as [string, string][]).map(([label, value]) => (
+                      <div key={label} className={cx("flexRow", "gap12", "mb6")}>
+                        <span className={cx("colorMuted", "text11")} style={{ minWidth: 120 }}>{label}</span>
+                        <span className={cx("fontMono", "text12", "fw600")}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {submitError && (
+                <div className={cx("text12")} style={{ color: "var(--red)", marginBottom: 12 }}>{submitError}</div>
+              )}
+            </div>
+          </div>
+
+          <div className={cx("prqActionRow", "prqActionRowSpread")}>
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setStep(4)} disabled={submitting}>← Back</button>
+            <button
+              type="button"
+              className={cx("btnSm", "btnAccent", "minW200")}
+              disabled={!payMethod || submitting}
+              onClick={async () => {
+                if (!session || !clientId || !payMethod) return;
+                setSubmitting(true);
+                setSubmitError(null);
+                try {
+                  // 1. Create deposit invoice
+                  const invoiceRef = `DEP-${Date.now()}`;
+                  const invRes = await createPortalInvoiceWithRefresh(session, {
+                    number: invoiceRef,
+                    amountCents: depositCents,
+                    status: "ISSUED",
+                  });
+                  if (invRes.nextSession) saveSession(invRes.nextSession);
+                  if (invRes.error || !invRes.data) {
+                    setSubmitError(invRes.error?.message ?? "Unable to create deposit invoice.");
+                    return;
+                  }
+                  const invoiceId = invRes.data.id;
+
+                  // 2. Create pending payment
+                  const payRes = await createPortalPaymentWithRefresh(session, {
+                    invoiceId,
+                    amountCents: depositCents,
+                    status: "PENDING",
+                    provider: payMethod,
+                    transactionRef: `${payMethod}-${Date.now()}`,
+                  });
+                  if (payRes.nextSession) saveSession(payRes.nextSession);
+                  if (payRes.error || !payRes.data) {
+                    setSubmitError(payRes.error?.message ?? "Unable to record deposit.");
+                    return;
+                  }
+                  const paymentId = payRes.data.id;
+
+                  // 3. Submit project request
+                  const selectedServices = SERVICES.filter(s => selected.has(s.id)).map(s => s.label) as unknown as PortalProjectRequestServiceOption[];
+                  const reqRes = await createPortalProjectRequestWithRefresh(session, {
+                    name: name || [...selected].map(id => SERVICES.find(s => s.id === id)?.label ?? id).join(" + "),
+                    description: overview || undefined,
+                    estimatedBudgetCents: quoteCents,
+                    priority: "MEDIUM",
+                    scopePrompt: [overview, goals, audience, requirements].filter(Boolean).join("\n"),
+                    selectedServices,
+                    signedAgreementFileId: `portal-sig-${Date.now()}`,
+                    estimatedQuoteCents: quoteCents,
+                    depositInvoiceId: invoiceId,
+                    depositPaymentId: paymentId,
+                  });
+                  if (reqRes.nextSession) saveSession(reqRes.nextSession);
+                  if (reqRes.error) {
+                    setSubmitError(reqRes.error.message ?? "Unable to submit project request.");
+                    return;
+                  }
+
+                  // 4. For PayFast: redirect to payment page
+                  if (payMethod === "PAYFAST") {
+                    const pfRes = await initiatePortalPayfastWithRefresh(session, {
+                      invoiceId,
+                      returnUrl: `${typeof window !== "undefined" ? window.location.origin : ""}/client/dashboard?page=my-projects&pf=success`,
+                      cancelUrl: `${typeof window !== "undefined" ? window.location.href : ""}`,
+                    });
+                    if (pfRes.nextSession) saveSession(pfRes.nextSession);
+                    if (pfRes.data?.redirectUrl && typeof window !== "undefined") {
+                      window.location.href = pfRes.data.redirectUrl;
+                      return;
+                    }
+                  }
+
+                  setSubmitted(true);
+                } catch {
+                  setSubmitError("An unexpected error occurred. Please try again.");
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              {submitting ? "Processing…" : payMethod === "PAYFAST" ? "Pay via PayFast →" : "Submit & Confirm EFT →"}
+            </button>
+          </div>
+        </>
+      )}
+
     </div>
   );
 }

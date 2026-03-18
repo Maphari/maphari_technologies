@@ -20,7 +20,9 @@ import {
   type ConversationEscalation,
   type ConversationNote
 } from "../../../../lib/api/admin";
+import { createAdHocVideoRoom } from "../../../../lib/api/staff/governance";
 import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
 import { toneClass } from "./admin-page-utils";
 
 type MessagesPageProps = {
@@ -84,6 +86,7 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
   const [noteText, setNoteText] = useState("");
   const [escalationReason, setEscalationReason] = useState("");
   const [escalationSeverity, setEscalationSeverity] = useState<"LOW" | "MEDIUM" | "HIGH" | "CRITICAL">("MEDIUM");
+  const [startingCall, setStartingCall] = useState(false);
 
   const loadConversations = useCallback(
     async (notifyErrors = true) => {
@@ -321,17 +324,41 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
     onNotify("success", "Escalation opened.");
   }
 
+  async function handleStartCall(): Promise<void> {
+    if (!session || !canEdit) return;
+    setStartingCall(true);
+    const cName = selectedConversation
+      ? clientName(snapshot.clients, selectedConversation.clientId)
+      : "Ad-hoc Meeting";
+    const result = await createAdHocVideoRoom(session, cName);
+    setStartingCall(false);
+    if (result.error || !result.data) {
+      onNotify("error", result.error?.message ?? "Unable to create video room.");
+      return;
+    }
+    window.open(result.data.roomUrl, "_blank", "noopener,noreferrer");
+  }
+
   async function handleEscalationStatus(escalationId: string, status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED"): Promise<void> {
     if (!session) return;
     const updated = await updateConversationEscalationWithRefresh(session, escalationId, {
       status,
       ...(status === "RESOLVED" ? { resolvedAt: new Date().toISOString() } : {})
     });
-    if (!updated.nextSession || !updated.data) {
+    if (updated.nextSession) saveSession(updated.nextSession);
+    if (updated.error || !updated.data) {
       onNotify("error", updated.error?.message ?? "Unable to update escalation.");
       return;
     }
     setEscalations((prev) => prev.map((item) => (item.id === escalationId ? (updated.data as ConversationEscalation) : item)));
+    onNotify(
+      "success",
+      status === "RESOLVED"
+        ? "Escalation resolved."
+        : status === "ACKNOWLEDGED"
+        ? "Escalation acknowledged."
+        : "Escalation re-opened."
+    );
   }
 
   return (
@@ -347,36 +374,36 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
         </button>
       </div>
 
-      <div className={cx("topCardsStack", "gap16", "mb16")}>
+      <div className={styles.msgKpiGrid}>
         {[
           { label: "Active Threads", value: filteredConversations.length.toString(), sub: "Sorted by latest activity", color: "var(--accent)" },
           { label: "Unread Client Messages", value: unreadClientCount.toString(), sub: "Pending review in selected thread", color: unreadClientCount > 0 ? "var(--amber)" : "var(--accent)" },
           { label: "Open Escalations", value: openEscalationsCount.toString(), sub: "Needs owner action", color: openEscalationsCount > 0 ? "var(--red)" : "var(--accent)" },
           { label: "Assigned Threads", value: conversations.filter((c) => Boolean(c.assigneeUserId)).length.toString(), sub: "Ownership coverage", color: "var(--blue)" }
         ].map((k) => (
-          <div key={k.label} className={cx("statCard")}>
-            <div className={cx("statLabel")}>{k.label}</div>
-            <div className={cx("statValue", styles.msgToneText, styles.msgValue24, toneClass(k.color))}>{k.value}</div>
-            <div className={cx("text11", "colorMuted")}>{k.sub}</div>
+          <div key={k.label} className={cx(styles.msgKpiCard, toneClass(k.color))}>
+            <div className={styles.msgKpiLabel}>{k.label}</div>
+            <div className={cx(styles.msgKpiValue, styles.msgToneText, toneClass(k.color))}>{k.value}</div>
+            <div className={styles.msgKpiMeta}>{k.sub}</div>
           </div>
         ))}
       </div>
 
-      <div className={cx("card", "mb16", styles.msgPad14)}>
-        <div className={cx("flexRow", "gap10", "flexWrap", styles.msgAlignCenter)}>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search thread or client" className={cx("formInput", "fontMono", "text12", styles.msgInput260)} />
-          <select title="Select client" value={newConversationClientId} onChange={(e) => setNewConversationClientId(e.target.value)} className={cx("formInput", "fontMono", "text12")}>
-            <option value="">Select client</option>
-            {snapshot.clients.map((client) => (
-              <option key={client.id} value={client.id}>{client.name}</option>
-            ))}
-          </select>
-          <input value={newSubject} onChange={(e) => setNewSubject(e.target.value)} placeholder="New thread subject" className={cx("formInput", "fontMono", "text12", styles.msgInput260)} />
-
-          <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={cx(styles.filterSelect, "mlAuto")}>
-            {(["inbox", "escalations"] as Tab[]).map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
+      <div className={styles.msgToolbar}>
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search thread or client" className={cx("formInput", "fontMono", "text12", styles.msgSearchInput)} />
+        <div className={styles.msgToolbarDivider} />
+        <span className={styles.msgToolbarLabel}>New Thread</span>
+        <select title="Select client" value={newConversationClientId} onChange={(e) => setNewConversationClientId(e.target.value)} className={cx("formInput", "fontMono", "text12")}>
+          <option value="">Select client</option>
+          {snapshot.clients.map((client) => (
+            <option key={client.id} value={client.id}>{client.name}</option>
+          ))}
+        </select>
+        <input value={newSubject} onChange={(e) => setNewSubject(e.target.value)} placeholder="Thread subject" className={cx("formInput", "fontMono", "text12", styles.msgSubjectInput)} />
+        <div className={styles.msgToolbarDivider} />
+        <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={cx(styles.filterSelect)}>
+          {(["inbox", "escalations"] as Tab[]).map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
       {activeTab === "inbox" ? (
@@ -385,7 +412,15 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
             {loadingConversations ? (
               <div className={cx("p20", "colorMuted", "text12")}>Loading conversations...</div>
             ) : filteredConversations.length === 0 ? (
-              <div className={cx("p20", "colorMuted", "text12")}>No conversations found.</div>
+              <div className={styles.emptyState}>
+                  <div className={styles.emptyIcon}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div className={styles.emptyTitle}>No conversations yet</div>
+                  <div className={styles.emptySub}>Start a new thread to communicate with a client. Select a client and subject above, then click &quot;+ New Thread&quot;.</div>
+                </div>
             ) : (
               filteredConversations.map((conversation) => {
                 const selected = selectedConversationId === conversation.id;
@@ -425,6 +460,14 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
                     </span>
                     {canEdit ? (
                       <>
+                        <button
+                          type="button"
+                          onClick={() => void handleStartCall()}
+                          disabled={startingCall}
+                          className={cx("btnSm", "fontMono", "text10", startingCall ? styles.btnCallPending : styles.btnCallActive)}
+                        >
+                          {startingCall ? "Creating…" : "Start Call"}
+                        </button>
                         <button type="button" onClick={() => void handleAssignConversation(viewerUserId)} disabled={!viewerUserId || selectedConversation.assigneeUserId === viewerUserId} className={cx("btnSm", "btnGhost", "fontMono", "text10")}>Assign to me</button>
                         <button type="button" onClick={() => void handleAssignConversation(null)} disabled={!selectedConversation.assigneeUserId} className={cx("btnSm", "btnGhost", "fontMono", "text10")}>Unassign</button>
                       </>

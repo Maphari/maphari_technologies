@@ -78,5 +78,13 @@ export const pageTitles: Record<PageId, [string, string]> = {
   automationAuditTrail: ["Governance", "Automation Audit Trail"],
   projectBriefing: ["Governance", "Project Briefing"],
   activeHealthMonitor: ["Governance", "Active Health Monitor"],
+  announcementsManager: ["Communication", "Announcements Manager"],
+  loyaltyCredits: ["Finance", "Loyalty & Credits"],
+  bookingAppointments: ["Operations", "Booking & Appointments"],
+  designReviewAdmin: ["Experience", "Design Review"],
+  sprintBoardAdmin: ["Operations", "Sprint Board"],
+  contentApproval: ["Communication", "Content Approval"],
+  meetingArchive: ["Communication", "Meeting Archive"],
+  prospecting: ["Operations", "AI Prospecting"],
   settings: ["Account", "Settings"]
 };

@@ -343,7 +343,7 @@ export function ServicesGrowthPage() {
               <div className={styles.svcGrowGrid3}>
                 {PORTFOLIO.map((item) => (
                   <div key={item.name} className={styles.svcGrowPortfolioCard}>
-                    <div className={styles.svcGrowPortfolioThumb} style={{ background: item.bg }}>
+                    <div className={styles.svcGrowPortfolioThumb} style={{ '--bg-color': item.bg } as React.CSSProperties}>
                       <span>{item.thumb}</span>
                       <span className={styles.svcGrowPortfolioTag}>{item.tag}</span>
                     </div>

@@ -1,440 +1,441 @@
+// ════════════════════════════════════════════════════════════════════════════
+// personal-performance-page.tsx — Staff Personal Performance
+// Data : GET /staff/me/performance    → StaffPerformance
+//        GET /staff/me/response-times → StaffResponseTimes
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { cx } from "../style";
+import { Ic } from "../ui";
+import {
+  getStaffMyPerformance,
+  getStaffResponseTimes,
+  type StaffPerformance,
+  type StaffPerformanceWeek,
+  type StaffResponseTimes,
+} from "../../../../lib/api/staff/performance";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
 
-type WeeklyPoint = {
-  week: string;
-  hours: number;
-  tasks: number;
-  responseTime: number;
-  score: number;
+// ── Props ─────────────────────────────────────────────────────────────────────
+
+type PersonalPerformancePageProps = {
+  isActive: boolean;
+  session:  AuthSession | null;
 };
 
-type Tone = "accent" | "purple" | "blue" | "amber" | "orange" | "muted";
+type TabKey = "overview" | "time" | "clients" | "milestones";
 
-type TaskTypePoint = {
-  type: string;
-  hours: number;
-  tasks: number;
-  tone: Tone;
-};
+// ── Constants ─────────────────────────────────────────────────────────────────
 
-type ClientPoint = {
-  client: string;
-  hours: number;
-  tasks: number;
-  tone: Tone;
-};
+const HOURS_TARGET = 40;
+const TASKS_TARGET = 16;
 
-type MilestonePoint = {
-  name: string;
-  client: string;
-  status: "pending" | "revision" | "approved";
-  deliveredOn: string;
-  dueDate: string;
-  onTime: boolean;
-};
+const CLIENT_TONES = ["colorAccent", "colorMuted2", "colorGreen", "colorAmber", "colorMuted2"] as const;
 
-const weeklyData: WeeklyPoint[] = [
-  { week: "Jan W1", hours: 38, tasks: 14, responseTime: 2.1, score: 78 },
-  { week: "Jan W2", hours: 41, tasks: 17, responseTime: 1.8, score: 83 },
-  { week: "Jan W3", hours: 36, tasks: 12, responseTime: 2.4, score: 74 },
-  { week: "Jan W4", hours: 43, tasks: 19, responseTime: 1.5, score: 89 },
-  { week: "Feb W1", hours: 40, tasks: 16, responseTime: 1.9, score: 85 },
-  { week: "Feb W2", hours: 37, tasks: 13, responseTime: 2.2, score: 80 },
-  { week: "Feb W3", hours: 42, tasks: 18, responseTime: 1.6, score: 87 },
-  { week: "Feb W4", hours: 39, tasks: 15, responseTime: 1.7, score: 84 }
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const tasksByType: TaskTypePoint[] = [
-  { type: "Design", hours: 62, tasks: 28, tone: "accent" },
-  { type: "Strategy", hours: 24, tasks: 9, tone: "purple" },
-  { type: "Research", hours: 18, tasks: 7, tone: "blue" },
-  { type: "Admin", hours: 21, tasks: 14, tone: "muted" },
-  { type: "Production", hours: 11, tasks: 6, tone: "amber" }
-];
-
-const clientBreakdown: ClientPoint[] = [
-  { client: "Volta Studios", hours: 49.5, tasks: 18, tone: "accent" },
-  { client: "Kestrel Capital", hours: 38, tasks: 14, tone: "purple" },
-  { client: "Mira Health", hours: 31, tasks: 12, tone: "blue" },
-  { client: "Dune Collective", hours: 27, tasks: 10, tone: "amber" },
-  { client: "Okafor & Sons", hours: 13.5, tasks: 6, tone: "muted" }
-];
-
-const milestoneHistory: MilestonePoint[] = [
-  { name: "Logo & Visual Direction", client: "Volta", status: "pending", deliveredOn: "Feb 22", dueDate: "Feb 22", onTime: true },
-  { name: "Campaign Strategy Deck", client: "Kestrel", status: "pending", deliveredOn: "Feb 17", dueDate: "Feb 16", onTime: false },
-  { name: "Mobile Wireframes", client: "Mira", status: "revision", deliveredOn: "Feb 19", dueDate: "Feb 20", onTime: true },
-  { name: "Data Visualisation", client: "Okafor", status: "approved", deliveredOn: "Feb 19", dueDate: "Feb 20", onTime: true },
-  { name: "Type & Grid System", client: "Dune", status: "pending", deliveredOn: "Feb 9", dueDate: "Feb 10", onTime: true }
-];
-
-const targets = { hours: 40, tasks: 16, responseTime: 2.0 };
-
-function toneClass(tone: Tone) {
-  if (tone === "accent") return "ppToneAccent";
-  if (tone === "purple") return "ppTonePurple";
-  if (tone === "blue") return "ppToneBlue";
-  if (tone === "amber") return "ppToneAmber";
-  if (tone === "orange") return "ppToneOrange";
-  return "ppToneMuted";
+function milestoneStatusCls(s: string): string {
+  if (s === "APPROVED" || s === "approved") return "ppDotApproved";
+  if (s === "REJECTED" || s === "rejected") return "ppDotRejected";
+  return "ppDotPending";
 }
 
-function meterToneClass(tone: Tone) {
-  if (tone === "accent") return "ppMeterAccent";
-  if (tone === "purple") return "ppMeterPurple";
-  if (tone === "blue") return "ppMeterBlue";
-  if (tone === "amber") return "ppMeterAmber";
-  if (tone === "orange") return "ppMeterOrange";
-  return "ppMeterMuted";
+function milestoneLabel(s: string): string {
+  if (s === "APPROVED" || s === "approved") return "Approved";
+  if (s === "REJECTED" || s === "rejected") return "Rejected";
+  return "Pending";
 }
 
-function toneStroke(tone: Tone) {
-  if (tone === "accent") return "var(--accent)";
-  if (tone === "purple") return "var(--purple)";
-  if (tone === "blue") return "var(--blue)";
-  if (tone === "amber") return "var(--amber)";
-  if (tone === "orange") return "var(--amber)";
-  return "var(--muted)";
+function fmtDate(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    return new Intl.DateTimeFormat("en-ZA", {
+      day: "numeric", month: "short", year: "numeric",
+    }).format(new Date(iso));
+  } catch { return iso; }
 }
 
-function milestoneStatusClass(status: MilestonePoint["status"]) {
-  if (status === "approved") return "ppStatusApproved";
-  if (status === "revision") return "ppStatusRevision";
-  return "ppStatusPending";
+function pctOf(value: number, target: number): number {
+  return target > 0 ? Math.round(Math.min((value / target) * 100, 100)) : 0;
 }
 
-function MiniLineChart({
-  data,
-  valueKey,
-  min,
-  max,
-  tone
-}: {
-  data: WeeklyPoint[];
-  valueKey: keyof WeeklyPoint;
-  min: number;
-  max: number;
-  tone: Tone;
-}) {
-  const width = 720;
-  const height = 160;
-  const padX = 10;
-  const padY = 12;
-  const drawW = width - padX * 2;
-  const drawH = height - padY * 2;
+function pctCls(pct: number): string {
+  if (pct >= 90) return "colorGreen";
+  if (pct >= 60) return "colorAmber";
+  return "colorRed";
+}
 
-  const points = data
-    .map((row, index) => {
-      const value = Number(row[valueKey]);
-      const x = padX + (index / Math.max(1, data.length - 1)) * drawW;
-      const y = padY + (1 - (value - min) / Math.max(1, max - min)) * drawH;
-      return { x, y, label: row.week };
-    })
-    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+// ── SVG: Mini line chart ──────────────────────────────────────────────────────
 
-  const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
-  const stroke = toneStroke(tone);
-
+function MiniLineChart({ data, field }: { data: StaffPerformanceWeek[]; field: "hoursLogged" | "tasksCompleted" }) {
+  if (data.length < 2) return <svg width="100%" height="32" />;
+  const vals  = data.map((d) => d[field]);
+  const max   = Math.max(...vals, 1);
+  const W = 200, H = 32, pad = 2;
+  const pts = vals.map((v, i) => {
+    const x = pad + (i / (vals.length - 1)) * (W - pad * 2);
+    const y = H - pad - ((v / max) * (H - pad * 2));
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
   return (
-    <div>
-      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="160" className={cx("ppChartSvg")}>
-        <polyline points={polyline} fill="none" stroke={stroke} strokeWidth="2" />
-        {points.map((point) => (
-          <circle key={point.label} cx={point.x} cy={point.y} r="3" fill={stroke} />
-        ))}
-      </svg>
-      <div className={cx("ppChartLabels")}>
-        {data.map((point) => (
-          <div key={point.week} className={cx("ppChartLabel")}>{point.week}</div>
-        ))}
-      </div>
-    </div>
+    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      <polyline points={pts} fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
   );
 }
+
+// ── StatCard ──────────────────────────────────────────────────────────────────
 
 function StatCard({
   label,
   value,
-  unit,
-  target,
-  targetLabel,
-  tone,
-  trend
+  sub,
+  pct,
+  trend,
+  delta,
 }: {
-  label: string;
-  value: number;
-  unit: string;
-  target?: number;
-  targetLabel?: string;
-  tone: Tone;
-  trend?: number;
+  label:   string;
+  value:   string;
+  sub:     string;
+  pct?:    number;
+  trend?:  "up" | "down" | "flat";
+  delta?:  number;
 }) {
-  const hitTarget = target ? (label.toLowerCase().includes("response") ? value <= target : value >= target) : true;
   return (
     <div className={cx("ppStatCard")}>
-      <div className={cx("ppStatLabel")}>{label}</div>
-      <div className={cx("ppStatValue", toneClass(tone))}>
-        {value}
-        <span className={cx("ppStatUnit")}>{unit}</span>
+      <div className={cx("ppStatCardTop")}>
+        <div className={cx("ppStatLabel")}>{label}</div>
+        <div className={cx("ppStatValue")}>{value}</div>
       </div>
-      {target ? (
-        <div className={cx("ppTargetRow")}>
-          <div className={cx("ppTargetDot", hitTarget ? "ppTargetHit" : "ppTargetMiss")} />
-          <span className={cx("ppTargetText", hitTarget ? "ppTargetHit" : "ppTargetMiss")}>
-            {hitTarget ? "On target" : "Below target"} ({targetLabel ?? `target: ${target}${unit}`})
-          </span>
+      {pct !== undefined && (
+        <div
+          className={cx("ppStatProgressBar")}
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className={cx("ppStatProgressFill", pctCls(pct) === "colorGreen" ? "ppProgressGreen" : pctCls(pct) === "colorAmber" ? "ppProgressAmber" : "ppProgressRed")}
+            style={{ "--pct": `${pct}%` } as React.CSSProperties}
+          />
         </div>
-      ) : null}
-      {typeof trend === "number" ? (
-        <div className={cx("ppTrend", trend > 0 ? "ppTrendUp" : "ppTrendDown")}>
-          {trend > 0 ? "↑" : "↓"} {Math.abs(trend)} vs last month
+      )}
+      <div className={cx("ppStatCardDivider")} />
+      <div className={cx("ppStatCardBottom")}>
+        <span className={cx("ppStatMeta")}>{sub}</span>
+        <div className={cx("ppStatBottomRight")}>
+          {trend && trend !== "flat" && delta !== undefined && delta !== 0 && (
+            <span className={cx("ppStatTrend", trend === "up" ? "ppTrendUp" : "ppTrendDown")}>
+              {trend === "up" ? "▲" : "▼"} {Math.abs(delta)}
+            </span>
+          )}
+          {pct !== undefined && (
+            <span className={cx("ppStatPct", pctCls(pct))}>{pct}%</span>
+          )}
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }
 
-export function PersonalPerformancePage({ isActive }: { isActive: boolean }) {
-  const [tab, setTab] = useState<"overview" | "time" | "clients" | "milestones">("overview");
-  const [period, setPeriod] = useState<"4w" | "8w">("4w");
+// ── Skeleton ──────────────────────────────────────────────────────────────────
 
-  const chartData = useMemo(() => (period === "4w" ? weeklyData.slice(-4) : weeklyData), [period]);
+function SkeletonStat() {
+  return (
+    <div className={cx("ppStatCard", "opacity50")}>
+      <div className={cx("ppStatCardTop")}>
+        <div className={cx("skeleBlock10x50p")} />
+        <div className={cx("skeleBlock22x35p")} />
+      </div>
+      <div className={cx("ppStatCardDivider")} />
+      <div className={cx("skeleBlock9x60p")} />
+    </div>
+  );
+}
 
-  const currentPeriod = useMemo(() => weeklyData.slice(-4), []);
-  const avgHours = Math.round((currentPeriod.reduce((sum, week) => sum + week.hours, 0) / currentPeriod.length) * 10) / 10;
-  const avgTasks = Math.round((currentPeriod.reduce((sum, week) => sum + week.tasks, 0) / currentPeriod.length) * 10) / 10;
-  const avgResponse = Math.round((currentPeriod.reduce((sum, week) => sum + week.responseTime, 0) / currentPeriod.length) * 10) / 10;
-  const avgScore = Math.round(currentPeriod.reduce((sum, week) => sum + week.score, 0) / currentPeriod.length);
-  const onTimeRate = Math.round((milestoneHistory.filter((item) => item.onTime).length / milestoneHistory.length) * 100);
-  const totalHours = clientBreakdown.reduce((sum, client) => sum + client.hours, 0);
-  const totalTypeHours = tasksByType.reduce((sum, type) => sum + type.hours, 0);
-  const maxHours = Math.max(...chartData.map((item) => item.hours), 1);
-  const maxTasks = Math.max(...chartData.map((item) => item.tasks), 1);
-  const lateCount = milestoneHistory.filter((item) => !item.onTime).length;
+function SkeletonList({ count }: { count: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className={cx("ppWeekRow", "opacity40")}>
+          <div className={cx("skeleBlock11x30p")} />
+          <div className={cx("skeleBlock9x50p")} />
+        </div>
+      ))}
+    </>
+  );
+}
+
+// ── Page component ────────────────────────────────────────────────────────────
+
+export function PersonalPerformancePage({ isActive, session }: PersonalPerformancePageProps) {
+  const [perf, setPerf]               = useState<StaffPerformance | null>(null);
+  const [responseTimes, setResponseTimes] = useState<StaffResponseTimes | null>(null);
+  const [loading, setLoading]         = useState(true);
+  const [tab, setTab]                 = useState<TabKey>("overview");
+
+  useEffect(() => {
+    if (!session || !isActive) return;
+    let cancelled = false;
+
+    setLoading(true);
+    void Promise.all([
+      getStaffMyPerformance(session),
+      getStaffResponseTimes(session),
+    ]).then(([perfResult, rtResult]) => {
+      if (cancelled) return;
+      if (perfResult.nextSession) saveSession(perfResult.nextSession);
+      if (rtResult.nextSession)   saveSession(rtResult.nextSession);
+      if (perfResult.data)  setPerf(perfResult.data);
+      if (rtResult.data)    setResponseTimes(rtResult.data);
+      setLoading(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [session?.accessToken, isActive]);
+
+  // ── Derived ──────────────────────────────────────────────────────────────
+  const weeks         = perf?.weeklyData       ?? [];
+  const clients       = perf?.clientBreakdown  ?? [];
+  const milestones    = perf?.milestoneHistory  ?? [];
+  const lastWeek      = weeks[weeks.length - 1]       ?? null;
+  const prevWeek      = weeks[weeks.length - 2]       ?? null;
+  const totalHours    = weeks.reduce((s, w) => s + w.hoursLogged, 0);
+  const totalTasks    = weeks.reduce((s, w) => s + w.tasksCompleted, 0);
+  const hoursThisWeek = lastWeek?.hoursLogged    ?? 0;
+  const tasksThisWeek = lastWeek?.tasksCompleted ?? 0;
+
+  // Trend vs previous week
+  const hoursDelta = prevWeek ? hoursThisWeek - prevWeek.hoursLogged : 0;
+  const tasksDelta = prevWeek ? tasksThisWeek - prevWeek.tasksCompleted : 0;
+  const hoursTrend: "up" | "down" | "flat" = hoursDelta > 0 ? "up" : hoursDelta < 0 ? "down" : "flat";
+  const tasksTrend: "up" | "down" | "flat" = tasksDelta > 0 ? "up" : tasksDelta < 0 ? "down" : "flat";
+
+  // Response rate
+  const responsePct = responseTimes
+    ? Math.round((responseTimes.metCount / Math.max(responseTimes.totalCount, 1)) * 100)
+    : undefined;
+
+  const TABS: { key: TabKey; label: string }[] = [
+    { key: "overview",   label: "Overview"  },
+    { key: "time",       label: "Time"       },
+    { key: "clients",    label: "Clients"    },
+    { key: "milestones", label: "Milestones" },
+  ];
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-personal-performance">
-      <div className={cx("pageHeaderBar", "ppHeaderBar")}> 
-        <div className={cx("flexBetween", "mb20", "ppHeaderTop")}> 
-          <div>
-            <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Personal Growth</div>
-            <h1 className={cx("pageTitleText")}>My Performance</h1>
-          </div>
-          <div className={cx("ppScoreWrap")}>
-            <div className={cx("statLabelNew")}>4-week score</div>
-            <div className={cx("ppScoreValue")}>{avgScore}<span className={cx("ppScoreUnit")}>/100</span></div>
-          </div>
-        </div>
-
-        <div className={cx("flexBetween", "gap10")}> 
-          <div className={cx("flexRow")}>
-            {[
-              { key: "overview", label: "Overview" },
-              { key: "time", label: "Time & Tasks" },
-              { key: "clients", label: "By Client" },
-              { key: "milestones", label: "Milestones" }
-            ].map((item) => (
-              <button type="button"
-                key={item.key}
-                className={cx("ppTabBtn", "ppTabPill", tab === item.key ? "ppTabPillActive" : "ppTabPillIdle")}
-                onClick={() => setTab(item.key as "overview" | "time" | "clients" | "milestones")}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <div className={cx("ppPeriodWrap")}>
-            {(["4w", "8w"] as const).map((item) => (
-              <button type="button"
-                key={item}
-                className={cx("ppPeriodBtn", "ppPeriodPill", period === item ? "ppPeriodPillActive" : "ppPeriodPillIdle")}
-                onClick={() => setPeriod(item)}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className={cx("pageHeaderBar")}>
+        <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Analytics</div>
+        <h1 className={cx("pageTitleText")}>My Performance</h1>
+        <p className={cx("pageSubtitleText", "mb20")}>Personal metrics and weekly activity</p>
       </div>
 
-      <div className={cx("ppBody")}> 
-        {tab === "overview" ? (
-          <div className={cx("ppStack")}>
-            <div className={cx("ppStatGrid")}>
-              <StatCard label="Avg hours / week" value={avgHours} unit="h" target={targets.hours} tone="accent" trend={1.5} />
-              <StatCard label="Avg tasks / week" value={avgTasks} unit="" target={targets.tasks} tone="purple" trend={2} />
-              <StatCard label="Avg response time" value={avgResponse} unit="h" target={targets.responseTime} targetLabel={`target: <${targets.responseTime}h`} tone="blue" trend={-0.3} />
-              <StatCard label="On-time delivery" value={onTimeRate} unit="%" tone={onTimeRate >= 90 ? "accent" : "amber"} trend={5} />
-            </div>
+      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
+      <div className={cx("ppTabBar")}>
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            className={cx("ppTab", tab === t.key && "ppTabActive")}
+            onClick={() => setTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-            <div className={cx("ppPanel")}> 
-              <div className={cx("sectionLabel", "mb16")}>Weekly Performance Score</div>
-              <MiniLineChart data={chartData} valueKey="score" min={60} max={100} tone="accent" />
-            </div>
-
-            <div className={cx("ppGrid2")}> 
-              <div className={cx("ppPanel")}>
-                <div className={cx("sectionLabel", "mb16")}>Hours by Task Type (4w)</div>
-                {tasksByType.map((type) => (
-                  <div key={type.type} className={cx("ppTypeRow")}> 
-                    <div className={cx("ppTypeTop")}>
-                      <div className={cx("flexRow", "gap8")}>
-                        <div className={cx("ppMiniDot", toneClass(type.tone))} />
-                        <span className={cx("text11", "colorMuted")}>{type.type}</span>
-                      </div>
-                      <span className={cx("text11", toneClass(type.tone))}>{type.hours}h</span>
-                    </div>
-                    <progress className={cx("progressMeter", meterToneClass(type.tone), "ppSlimProgress")} max={totalTypeHours} value={type.hours} />
-                  </div>
-                ))}
-              </div>
-
-              <div className={cx("ppPanel")}>
-                <div className={cx("sectionLabel", "mb16")}>Highlights & Flags</div>
-                {[
-                  { icon: "↑", text: "Best response time in 8 weeks (1.6h last week)", tone: "accent" as Tone },
-                  { icon: "✓", text: "4 of 5 milestones delivered on time this period", tone: "accent" as Tone },
-                  { icon: "↓", text: "Week 3 hours below target (36h vs 40h target)", tone: "amber" as Tone },
-                  { icon: "⚑", text: "Admin time up 18% - check for inefficiencies", tone: "orange" as Tone }
-                ].map((item, index, arr) => (
-                  <div key={item.text} className={cx("ppHighlightRow", index === arr.length - 1 && "ppHighlightRowLast")}>
-                    <span className={cx("ppHighlightIcon", toneClass(item.tone))}>{item.icon}</span>
-                    <span className={cx("text12", "colorMuted", "lh15")}>{item.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+      {/* ── Overview tab ─────────────────────────────────────────────────── */}
+      {tab === "overview" && (
+        <>
+          <div className={cx("ppStatGrid5")}>
+            {loading ? (
+              [1, 2, 3, 4, 5].map((n) => <SkeletonStat key={n} />)
+            ) : (
+              <>
+                <StatCard
+                  label="Hours This Week"
+                  value={`${hoursThisWeek}h`}
+                  sub={`target: ${HOURS_TARGET}h`}
+                  pct={pctOf(hoursThisWeek, HOURS_TARGET)}
+                  trend={hoursTrend}
+                  delta={Math.abs(hoursDelta)}
+                />
+                <StatCard
+                  label="Tasks This Week"
+                  value={`${tasksThisWeek}`}
+                  sub={`target: ${TASKS_TARGET}`}
+                  pct={pctOf(tasksThisWeek, TASKS_TARGET)}
+                  trend={tasksTrend}
+                  delta={Math.abs(tasksDelta)}
+                />
+                <StatCard
+                  label="Total Hours"
+                  value={`${totalHours}h`}
+                  sub={`across ${weeks.length} week${weeks.length !== 1 ? "s" : ""}`}
+                />
+                <StatCard
+                  label="Total Tasks"
+                  value={`${totalTasks}`}
+                  sub={`across ${weeks.length} week${weeks.length !== 1 ? "s" : ""}`}
+                />
+                <StatCard
+                  label="Response Rate"
+                  value={responseTimes
+                    ? `${responseTimes.metCount}/${responseTimes.totalCount}`
+                    : "—"
+                  }
+                  sub={responseTimes
+                    ? `avg ${responseTimes.avgActual}h · target ${responseTimes.avgTarget}h`
+                    : "no data yet"
+                  }
+                  pct={responsePct}
+                />
+              </>
+            )}
           </div>
-        ) : null}
 
-        {tab === "time" ? (
-          <div className={cx("ppStack")}> 
-            <div className={cx("ppGrid2")}>
-              <div className={cx("ppPanel")}>
-                <div className={cx("sectionLabel", "mb16")}>Hours per Week</div>
-                <div className={cx("ppWeekList")}>
-                  {chartData.map((item) => (
-                    <div key={item.week} className={cx("ppWeekRow")}>
-                      <div className={cx("ppWeekHead")}>
-                        <span className={cx("text10", "colorMuted2")}>{item.week}</span>
-                        <span className={cx("text10", item.hours >= targets.hours ? "colorAccent" : "colorAmber")}>{item.hours}h</span>
-                      </div>
-                      <progress className={cx("progressMeter", item.hours >= targets.hours ? "ppMeterAccent" : "ppMeterAmber", "ppWeekProgress")} max={maxHours} value={item.hours} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className={cx("ppPanel")}>
-                <div className={cx("sectionLabel", "mb16")}>Tasks Completed per Week</div>
-                <div className={cx("ppWeekList")}>
-                  {chartData.map((item) => (
-                    <div key={item.week} className={cx("ppWeekRow")}>
-                      <div className={cx("ppWeekHead")}>
-                        <span className={cx("text10", "colorMuted2")}>{item.week}</span>
-                        <span className={cx("text10", item.tasks >= targets.tasks ? "ppTonePurple" : "colorAmber")}>{item.tasks}</span>
-                      </div>
-                      <progress className={cx("progressMeter", item.tasks >= targets.tasks ? "ppMeterPurple" : "ppMeterAmber", "ppWeekProgress")} max={maxTasks} value={item.tasks} />
-                    </div>
-                  ))}
-                </div>
-              </div>
+          {!loading && weeks.length > 1 && (
+            <div className={cx("ppChartCard")}>
+              <div className={cx("ppChartLabel")}>Weekly Hours Logged</div>
+              <MiniLineChart data={weeks} field="hoursLogged" />
             </div>
+          )}
 
-            <div className={cx("ppPanel")}>
-              <div className={cx("ppPanelHead")}> 
-                <div className={cx("sectionLabel")}>Average Response Time (hours)</div>
-                <span className={cx("text11", "colorMuted2")}>Target: &lt;{targets.responseTime}h</span>
-              </div>
-              <MiniLineChart data={chartData} valueKey="responseTime" min={0} max={4} tone="blue" />
+          {!loading && !perf && (
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}><Ic n="trending-up" sz={22} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateTitle")}>No performance data</div>
+              <div className={cx("emptyStateSub")}>Log time and complete tasks to see your metrics here.</div>
             </div>
-          </div>
-        ) : null}
+          )}
+        </>
+      )}
 
-        {tab === "clients" ? (
-          <div className={cx("ppGrid2")}>
-            <div>
-              <div className={cx("sectionLabel", "mb16")}>Hours by Client (4 weeks)</div>
-              <div className={cx("flexCol", "gap10")}>
-                {clientBreakdown.map((client) => (
-                  <div key={client.client} className={cx("ppClientCard")}>
-                    <div className={cx("ppClientHead")}>
-                      <div className={cx("flexRow", "gap8")}>
-                        <div className={cx("ppMiniDot", toneClass(client.tone))} />
-                        <span className={cx("text12", "colorText")}>{client.client}</span>
-                      </div>
-                      <div className={cx("flexRow", "gap14")}>
-                        <span className={cx("text11", toneClass(client.tone))}>{client.hours}h</span>
-                        <span className={cx("text11", "colorMuted2")}>{client.tasks} tasks</span>
+      {/* ── Time tab ─────────────────────────────────────────────────────── */}
+      {tab === "time" && (
+        <div className={cx("ppSection")}>
+          {loading ? (
+            <div className={cx("ppWeekList")}>
+              <SkeletonList count={5} />
+            </div>
+          ) : weeks.length === 0 ? (
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}><Ic n="clock" sz={22} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateTitle")}>No time data</div>
+              <div className={cx("emptyStateSub")}>Weekly time logs will appear here.</div>
+            </div>
+          ) : (
+            <>
+              <div className={cx("ppChartCard", "mb16")}>
+                <div className={cx("ppChartLabel")}>Tasks Completed per Week</div>
+                <MiniLineChart data={weeks} field="tasksCompleted" />
+              </div>
+              <div className={cx("ppWeekList")}>
+                {[...weeks].reverse().map((w, idx) => {
+                  const hPct = pctOf(w.hoursLogged, HOURS_TARGET);
+                  const tPct = pctOf(w.tasksCompleted, TASKS_TARGET);
+                  return (
+                    <div key={w.week} className={cx("ppWeekRow", idx === weeks.length - 1 && "ppWeekRowLast")}>
+                      <div className={cx("ppWeekLabel")}>{w.week}</div>
+                      <div className={cx("ppWeekMetrics")}>
+                        <div className={cx("ppWeekMetric")}>
+                          <span className={cx("ppWeekMetricLabel")}>Hours</span>
+                          <span className={cx("ppWeekMetricValue", pctCls(hPct))}>{w.hoursLogged}h</span>
+                        </div>
+                        <div className={cx("ppWeekSep")} />
+                        <div className={cx("ppWeekMetric")}>
+                          <span className={cx("ppWeekMetricLabel")}>Tasks</span>
+                          <span className={cx("ppWeekMetricValue", pctCls(tPct))}>{w.tasksCompleted}</span>
+                        </div>
                       </div>
                     </div>
-                    <progress className={cx("progressMeter", meterToneClass(client.tone), "ppClientProgress")} max={totalHours} value={client.hours} />
-                    <div className={cx("text10", "colorMuted2", "mt6")}>
-                      {Math.round((client.hours / totalHours) * 100)}% of total · avg {Math.round((client.hours / client.tasks) * 10) / 10}h/task
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Clients tab ──────────────────────────────────────────────────── */}
+      {tab === "clients" && (
+        <div className={cx("ppSection")}>
+          {loading ? (
+            <div className={cx("ppClientList")}>
+              <SkeletonList count={4} />
+            </div>
+          ) : clients.length === 0 ? (
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}><Ic n="users" sz={22} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateTitle")}>No client breakdown</div>
+              <div className={cx("emptyStateSub")}>Client hours will appear once time is logged against projects.</div>
+            </div>
+          ) : (
+            <div className={cx("ppClientList")}>
+              {clients.map((c, idx) => {
+                const tone    = CLIENT_TONES[idx % CLIENT_TONES.length];
+                const maxH    = Math.max(...clients.map((cl) => cl.hoursLogged), 1);
+                const fillPct = Math.round((c.hoursLogged / maxH) * 100);
+                return (
+                  <div key={c.clientId} className={cx("ppClientRow")}>
+                    <div className={cx("ppClientName")}>{c.clientName}</div>
+                    <div className={cx("ppClientBarWrap")}>
+                      <div
+                        className={cx("ppClientBar", "dotBgAccent")}
+                        style={{ "--pct": `${fillPct}%` } as React.CSSProperties}
+                      />
                     </div>
+                    <div className={cx("ppClientHours", tone)}>{c.hoursLogged}h</div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
+          )}
+        </div>
+      )}
 
-            <div>
-              <div className={cx("sectionLabel", "mb16")}>Distribution</div>
-              <div className={cx("ppPanel")}>
-                {clientBreakdown.map((client) => (
-                  <div key={client.client} className={cx("ppDistRow")}>
-                    <div className={cx("ppWeekHead")}>
-                      <span className={cx("text10", "colorMuted")}>{client.client}</span>
-                      <span className={cx("text10", toneClass(client.tone))}>{client.hours}h</span>
+      {/* ── Milestones tab ───────────────────────────────────────────────── */}
+      {tab === "milestones" && (
+        <div className={cx("ppSection")}>
+          {loading ? (
+            <div className={cx("ppMilestoneList")}>
+              <SkeletonList count={5} />
+            </div>
+          ) : milestones.length === 0 ? (
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}><Ic n="flag" sz={22} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateTitle")}>No milestone history</div>
+              <div className={cx("emptyStateSub")}>Milestones you&apos;ve contributed to will appear here.</div>
+            </div>
+          ) : (
+            <div className={cx("ppMilestoneList")}>
+              {milestones.map((m, idx) => (
+                <div
+                  key={m.id}
+                  className={cx("ppMilestoneRow", idx === milestones.length - 1 && "ppMilestoneRowLast")}
+                >
+                  <div className={cx("ppMilestoneDot", milestoneStatusCls(m.status))} />
+                  <div className={cx("ppMilestoneInfo")}>
+                    <div className={cx("ppMilestoneTitle")}>{m.title}</div>
+                    <div className={cx("ppMilestoneMeta")}>
+                      <span className={cx("ppMilestoneStatus")}>{milestoneLabel(m.status)}</span>
+                      {m.approvedAt && (
+                        <>
+                          <span className={cx("ppMilestoneSep")}>·</span>
+                          <span>{fmtDate(m.approvedAt)}</span>
+                        </>
+                      )}
                     </div>
-                    <progress className={cx("progressMeter", meterToneClass(client.tone), "ppDistProgress")} max={totalHours} value={client.hours} />
-                  </div>
-                ))}
-                <div className={cx("text11", "colorMuted2", "textCenter", "mt10")}>{totalHours}h total across {clientBreakdown.length} clients</div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {tab === "milestones" ? (
-          <div className={cx("ppMilestoneWrap")}>
-            <div className={cx("ppMilestoneStatGrid")}>
-              <div className={cx("ppMilestoneStatCard")}>
-                <div className={cx("ppMilestoneStatLabel")}>On-time rate</div>
-                <div className={cx("ppMilestoneStatValue", "ppToneAccent")}>{onTimeRate}%</div>
-              </div>
-              <div className={cx("ppMilestoneStatCard")}>
-                <div className={cx("ppMilestoneStatLabel")}>Delivered</div>
-                <div className={cx("ppMilestoneStatValue", "ppTonePurple")}>{milestoneHistory.length}</div>
-              </div>
-              <div className={cx("ppMilestoneStatCard")}>
-                <div className={cx("ppMilestoneStatLabel")}>Late</div>
-                <div className={cx("ppMilestoneStatValue", lateCount > 0 ? "colorRed" : "ppToneAccent")}>{lateCount}</div>
-              </div>
-            </div>
-
-            <div className={cx("sectionLabel", "mb14")}>Milestone History</div>
-            <div className={cx("flexCol")}>
-              {milestoneHistory.map((milestone, index) => (
-                <div key={milestone.name} className={cx("perfMilestoneRow", "ppMilestoneRow", index === milestoneHistory.length - 1 && "ppMilestoneRowLast")}>
-                  <div className={cx("ppMilestoneDot", milestoneStatusClass(milestone.status))} />
-                  <div className={cx("flex1", "minW0")}>
-                    <div className={cx("text12", "colorText")}>{milestone.name}</div>
-                    <div className={cx("text10", "colorMuted2", "mt2")}>{milestone.client}</div>
-                  </div>
-                  <div className={cx("textRight", "noShrink")}>
-                    <div className={cx("text11", milestone.onTime ? "colorAccent" : "colorRed")}>{milestone.onTime ? "✓ On time" : "✗ Late"}</div>
-                    <div className={cx("text10", "colorMuted2", "mt2")}>Delivered {milestone.deliveredOn}</div>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        ) : null}
-      </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }

@@ -66,13 +66,14 @@ export async function loadPortalContractsWithRefresh(
 
 export async function signPortalContractWithRefresh(
   session: AuthSession,
-  contractId: string
+  contractId: string,
+  signedByName: string
 ): Promise<AuthorizedResult<PortalContract>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const response = await callGateway<PortalContract>(
       `/contracts/${contractId}`,
       accessToken,
-      { method: "PATCH", body: { signed: true } }
+      { method: "PATCH", body: { signed: true, signedByName } }
     );
     if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
     if (!response.payload.success || !response.payload.data) {
@@ -108,6 +109,36 @@ export async function getPortalContractFileIdWithRefresh(
         error: toGatewayError(
           response.payload.error?.code    ?? "CONTRACT_DOWNLOAD_FAILED",
           response.payload.error?.message ?? "No file attached to this contract."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+// ── Load a rendered contract template ────────────────────────────────────────
+
+export interface ContractTemplateResult {
+  renderedHtml: string;
+}
+
+export async function loadContractTemplateWithRefresh(
+  session: AuthSession,
+  templateId: string,
+  variables: Record<string, string>
+): Promise<AuthorizedResult<ContractTemplateResult>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const qs = new URLSearchParams(variables).toString();
+    const path = `/contract-templates/${templateId}${qs ? `?${qs}` : ""}`;
+    const response = await callGateway<ContractTemplateResult>(path, accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code    ?? "CONTRACT_TEMPLATE_FAILED",
+          response.payload.error?.message ?? "Unable to load contract template."
         )
       };
     }

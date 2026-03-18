@@ -1,0 +1,559 @@
+/* ═══ Missing classes patch ═══ */
+/* ═══════════════════════════════════════════════════════════════════
+   Admin Dashboard — Missing CSS Class Definitions
+   Generated for: analytics, automation, integrations, reports, settings
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Analytics Page ───────────────────────────────────────────────── */
+
+/* Flex wrapper holding all monthly bar columns side by side */
+.analyticsBarsWrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 140px;
+  padding: 8px 0;
+}
+
+/* Individual bar column: stacks SVG bar on top, label below */
+.analyticsBarCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* SVG element rendered as a vertical bar inside each column */
+.analyticsBarSvg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 2px 2px 0 0;
+  overflow: hidden;
+}
+
+/* Month label text beneath each bar */
+.analyticsBarLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  color: var(--muted2);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Larger variant of donutWrap for the tier breakdown chart */
+.donutWrapLg {
+  gap: 32px;
+  padding: 24px 28px;
+}
+
+/* Larger variant of donutSvg for tier revenue donut */
+.donutSvgLg {
+  width: 120px;
+  height: 120px;
+}
+
+/* Donut legend dot — accent color */
+.dotAccent {
+  background: var(--accent);
+}
+
+/* Donut legend dot — amber color */
+.dotAmber {
+  background: var(--amber);
+}
+
+/* Donut legend dot — purple color */
+.dotPurple {
+  background: var(--purple);
+}
+
+
+/* ─── Automation Page ──────────────────────────────────────────────── */
+
+/* Root container for the automation/workflows page */
+.autoRoot {
+  display: grid;
+  gap: 20px;
+}
+
+/* Filter row holding status/domain selects and search input */
+.autoFiltersRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.autoFiltersRow::-webkit-scrollbar {
+  display: none;
+}
+
+.autoFiltersRow > * {
+  flex: 0 0 auto;
+}
+
+/* Search input with extended width inside the filter row */
+.autoSearch {
+  flex: 1;
+  min-width: 160px;
+}
+
+/* Two-column split: workflow table left, sidebar cards right */
+.autoSplitHealth {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Vertical stack of cards with 16px gap */
+.autoStack16 {
+  display: grid;
+  gap: 16px;
+}
+
+/* Table header row for the workflow-health grid (5 columns) */
+.autoFlowHead {
+  display: grid;
+  grid-template-columns: 1.4fr 1.2fr 0.8fr 0.7fr 1fr;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Table body row for each workflow entry */
+.autoFlowRow {
+  display: grid;
+  grid-template-columns: 1.4fr 1.2fr 0.8fr 0.7fr 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+/* Status chip: small inline label showing workflow state */
+.autoStatusChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border-radius: var(--r-xs);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  width: fit-content;
+  border: 1px solid transparent;
+}
+
+/* Status chip tone: active/accent */
+.autoStatusAccent {
+  color: var(--accent);
+  background: var(--accent-d);
+  border-color: color-mix(in oklab, var(--accent) 25%, transparent);
+}
+
+/* Status chip tone: at-risk/red */
+.autoStatusRed {
+  color: var(--red);
+  background: var(--red-d);
+  border-color: color-mix(in oklab, var(--red) 25%, transparent);
+}
+
+/* Status chip tone: draft/muted */
+.autoStatusMuted {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border);
+}
+
+/* Progress/failure track bar (HTML <progress>) */
+.autoFailTrack {
+  display: block;
+  width: 100%;
+  height: 6px;
+  border: none;
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.autoFailTrack::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+}
+
+.autoFailTrack::-webkit-progress-value {
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+.autoFailTrack::-moz-progress-bar {
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+/* Fill color variants for progress bars */
+.autoFillAccent::-webkit-progress-value { background: var(--accent); }
+.autoFillAccent::-moz-progress-bar { background: var(--accent); }
+
+.autoFillAmber::-webkit-progress-value { background: var(--amber); }
+.autoFillAmber::-moz-progress-bar { background: var(--amber); }
+
+.autoFillRed::-webkit-progress-value { background: var(--red); }
+.autoFillRed::-moz-progress-bar { background: var(--red); }
+
+.autoFillBlue::-webkit-progress-value { background: var(--blue); }
+.autoFillBlue::-moz-progress-bar { background: var(--blue); }
+
+.autoFillPurple::-webkit-progress-value { background: var(--purple); }
+.autoFillPurple::-moz-progress-bar { background: var(--purple); }
+
+.autoFillMuted::-webkit-progress-value { background: var(--muted); }
+.autoFillMuted::-moz-progress-bar { background: var(--muted); }
+
+/* Two-column grid for trigger controls (lead, billing, project, publish) */
+.autoControlGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Label wrapping a control name + its select input */
+.autoControlLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* Toggle row: label + toggle button on the same line */
+.autoToggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+/* Guardrail key-value row in the right-hand column */
+.autoGuardRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+}
+
+/* Muted body text with comfortable line-height for explanatory notes */
+.autoBodyText {
+  line-height: 1.55;
+}
+
+/* Simulation result output box */
+.autoResultBox {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: var(--r-sm);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Coverage map table header (4 columns: Flow, Coverage, Status, Domain) */
+.autoCoverageHead {
+  display: grid;
+  grid-template-columns: 1.4fr 1.2fr 0.8fr 1fr;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Coverage map table body row */
+.autoCoverageRow {
+  display: grid;
+  grid-template-columns: 1.4fr 1.2fr 0.8fr 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+/* Operational note row in the coverage map sidebar */
+.autoNoteRow {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.6;
+  padding: 4px 0;
+}
+
+/* Inset callout note at the bottom of a notes list */
+.autoInsetNote {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: var(--r-sm);
+  font-size: 0.6875rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+
+/* ─── Integrations Page ────────────────────────────────────────────── */
+
+/* Table header row for the keys inventory (6 columns) */
+.integrationsKeyHead {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.2fr 0.7fr 0.6fr 0.6fr;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Table body row for each API key */
+.integrationsKeyRow {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.2fr 0.7fr 0.6fr 0.6fr;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+/* Highlight row for high-risk keys */
+.integrationsRiskHighRow {
+  background: color-mix(in oklab, var(--red) 4%, transparent);
+}
+
+/* Extended-width search input within the filter bar */
+.integrationsSearchInput {
+  flex: 1;
+  min-width: 180px;
+}
+
+/* Inline tone tag (scope, risk) — pill-like label with a subtle bg */
+.integrationsToneTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--r-xs);
+  border: 1px solid color-mix(in oklab, var(--_tone, var(--muted)) 22%, transparent);
+  background: color-mix(in oklab, var(--_tone, var(--muted)) 10%, transparent);
+  color: var(--_tone, var(--muted));
+}
+
+/* Text element whose color is driven by the --_tone CSS variable */
+.integrationsToneText {
+  color: var(--_tone, var(--text));
+}
+
+/* ── integrationsToneText compound selectors (toneClass() integration) ── */
+.integrationsToneText.toneAccent { color: var(--accent); }
+.integrationsToneText.toneBlue   { color: var(--blue);   }
+.integrationsToneText.toneAmber  { color: var(--amber);  }
+.integrationsToneText.toneRed    { color: var(--red);    }
+.integrationsToneText.tonePurple { color: var(--purple); }
+.integrationsToneText.toneMuted  { color: var(--muted);  }
+
+/* ── integrationsToneTag compound selectors (toneClass() integration) ── */
+.integrationsToneTag.toneAccent {
+  border-color: color-mix(in oklab, var(--accent) 25%, transparent);
+  background:   color-mix(in oklab, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+.integrationsToneTag.toneBlue {
+  border-color: color-mix(in oklab, var(--blue) 25%, transparent);
+  background:   color-mix(in oklab, var(--blue) 10%, transparent);
+  color: var(--blue);
+}
+.integrationsToneTag.toneAmber {
+  border-color: color-mix(in oklab, var(--amber) 25%, transparent);
+  background:   color-mix(in oklab, var(--amber) 10%, transparent);
+  color: var(--amber);
+}
+.integrationsToneTag.toneRed {
+  border-color: color-mix(in oklab, var(--red) 25%, transparent);
+  background:   color-mix(in oklab, var(--red) 10%, transparent);
+  color: var(--red);
+}
+.integrationsToneTag.tonePurple {
+  border-color: color-mix(in oklab, var(--purple) 25%, transparent);
+  background:   color-mix(in oklab, var(--purple) 10%, transparent);
+  color: var(--purple);
+}
+.integrationsToneTag.toneMuted {
+  border-color: var(--border2);
+  background:   rgba(255,255,255,0.04);
+  color: var(--muted);
+}
+
+/* Line-height utility (16px equivalent — tighter body text) */
+.integrationsLine16 {
+  line-height: 1.5;
+  border-radius: var(--r-sm);
+}
+
+/* Line-height utility (17px equivalent — comfortable body text) */
+.integrationsLine17 {
+  line-height: 1.6;
+}
+
+
+/* ─── Reports Page ─────────────────────────────────────────────────── */
+
+/* Grid layout for handoff history rows (5 columns) */
+.reportsHandoffGrid {
+  display: grid;
+  grid-template-columns: 1.6fr 0.7fr 1fr 1.4fr 0.7fr;
+  align-items: center;
+}
+
+/* Header row of the handoff history table */
+.reportsHandoffHead {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Body row for each handoff export entry */
+.reportsHandoffRow {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Last body row — no bottom border */
+.reportsHandoffRowLast {
+  border-bottom: none;
+}
+
+/* Extended-width search input for report packs filter */
+.reportsSearchInput {
+  flex: 1;
+  min-width: 180px;
+}
+
+/* Comfortable line-height for report description text */
+.reportsLine17 {
+  line-height: 1.6;
+}
+
+
+/* ─── Settings Page ────────────────────────────────────────────────── */
+
+/* Row in the settings change monitor log */
+.settingsLogRow {
+  display: grid;
+  grid-template-columns: 140px 90px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settingsLogRow:last-child {
+  border-bottom: none;
+}
+
+
+/* ─── Responsive ───────────────────────────────────────────────────── */
+
+@media (max-width: 1200px) {
+  .autoSplitHealth {
+    grid-template-columns: 1fr;
+  }
+
+  .integrationsKeyHead,
+  .integrationsKeyRow {
+    grid-template-columns: 1.4fr 1fr 1fr 0.7fr 0.6fr 0.6fr;
+  }
+
+  .reportsHandoffGrid {
+    grid-template-columns: 1.4fr 0.7fr 1fr 1.2fr 0.7fr;
+  }
+
+  .settingsLogRow {
+    grid-template-columns: 120px 80px 1fr auto;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 880px) {
+  .analyticsBarsWrap {
+    height: auto;
+    min-height: 100px;
+  }
+
+  .autoSplitHealth {
+    grid-template-columns: 1fr;
+  }
+
+  .autoFlowHead,
+  .autoFlowRow {
+    grid-template-columns: 1fr 1fr 0.7fr;
+  }
+
+  .autoFlowHead span:nth-child(4),
+  .autoFlowHead span:nth-child(5),
+  .autoFlowRow > *:nth-child(4),
+  .autoFlowRow > *:nth-child(5) {
+    display: none;
+  }
+
+  .autoCoverageHead,
+  .autoCoverageRow {
+    grid-template-columns: 1fr 1fr 0.8fr;
+  }
+
+  .autoCoverageHead span:nth-child(4),
+  .autoCoverageRow > *:nth-child(4) {
+    display: none;
+  }
+
+  .autoControlGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .integrationsKeyHead,
+  .integrationsKeyRow {
+    grid-template-columns: 1.2fr 0.8fr 1fr 0.7fr;
+  }
+
+  .integrationsKeyHead span:nth-child(5),
+  .integrationsKeyHead span:nth-child(6),
+  .integrationsKeyRow > *:nth-child(5),
+  .integrationsKeyRow > *:nth-child(6) {
+    display: none;
+  }
+
+  .reportsHandoffGrid {
+    grid-template-columns: 1.2fr 0.6fr 1fr auto;
+  }
+
+  .reportsHandoffGrid span:nth-child(4) {
+    display: none;
+  }
+
+  .settingsLogRow {
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+  }
+
+  .settingsLogRow > *:nth-child(1),
+  .settingsLogRow > *:nth-child(2) {
+    display: none;
+  }
+}

@@ -132,6 +132,12 @@ exports.Prisma.UserScalarFieldEnum = {
   otpCode: 'otpCode',
   otpExpiresAt: 'otpExpiresAt',
   otpVerifiedAt: 'otpVerifiedAt',
+  totpSecret: 'totpSecret',
+  totpBackupCodes: 'totpBackupCodes',
+  totpEnabledAt: 'totpEnabledAt',
+  googleId: 'googleId',
+  passwordResetTokenHash: 'passwordResetTokenHash',
+  passwordResetExpiresAt: 'passwordResetExpiresAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

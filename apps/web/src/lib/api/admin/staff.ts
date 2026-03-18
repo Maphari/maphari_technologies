@@ -95,6 +95,30 @@ export async function revokeStaffUserWithRefresh(
   });
 }
 
+export async function lockdownSessionsWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<{ revokedSessions: number; lockedAt: string }>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ revokedSessions: number; lockedAt: string }>(
+      "/auth/admin/lockdown",
+      accessToken,
+      { method: "POST" }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "LOCKDOWN_FAILED",
+          response.payload.error?.message ?? "Emergency lockdown failed."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
 export async function provisionClientAccessWithRefresh(
   session: AuthSession,
   payload: { email: string; clientId: string; clientName?: string }
@@ -116,5 +140,47 @@ export async function provisionClientAccessWithRefresh(
       };
     }
     return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+// ── Staff performance metrics (admin view) ────────────────────────────────────
+
+export interface AdminStaffPerformance {
+  userId:           string;
+  name:             string;
+  role:             string;
+  avatarInitials:   string;
+  avatarColor:      string | null;
+  deliveryScore:    number;
+  onTimeRate:       number;
+  clientSat:        number;
+  billableHours:    number;
+  totalHours:       number;
+  billablePct:      number;
+  retainersManaged: number;
+  tasksCompleted:   number;
+  tasksMissed:      number;
+  bonusEligible:    boolean;
+  bonusAmount:      number;
+  salary:           number;
+}
+
+export async function loadAdminStaffPerformanceWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<AdminStaffPerformance[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<AdminStaffPerformance[]>("/admin/staff/performance", accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: [],
+        error: toGatewayError(
+          response.payload.error?.code    ?? "ADMIN_PERF_LOAD_FAILED",
+          response.payload.error?.message ?? "Unable to load staff performance."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
   });
 }

@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getProjectPreferenceWithRefresh, setProjectPreferenceWithRefresh, type NotificationJob } from "../../../../lib/api/admin";
+import {
+  getProjectPreferenceWithRefresh,
+  setProjectPreferenceWithRefresh,
+  simulateAutomationWithRefresh,
+  type AutomationSimulateResult,
+  type NotificationJob
+} from "../../../../lib/api/admin";
 import type { DashboardToast } from "../../../shared/dashboard-core";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
@@ -73,8 +79,10 @@ export function AdminAutomationPageClient({
   const [autoEscalateSla, setAutoEscalateSla] = useState(true);
   const [autoRetryFailures, setAutoRetryFailures] = useState(true);
   const [publishState, setPublishState] = useState<"DRAFT" | "REVIEW" | "PUBLISHED">("DRAFT");
-  const [simulationPayload, setSimulationPayload] = useState("{\"type\":\"invoice.overdue\",\"client\":\"demo\"}");
-  const [simulationResult, setSimulationResult] = useState<string | null>(null);
+  const [simulationPayload, setSimulationPayload] = useState("{\"topic\":\"invoice.overdue\",\"payload\":{\"invoiceId\":\"demo\"}}");
+  const [simulationResult, setSimulationResult] = useState<AutomationSimulateResult | null>(null);
+  const [simulationRunning, setSimulationRunning] = useState(false);
+  const [simulationError, setSimulationError] = useState<string | null>(null);
   const [lastSavedPhase2, setLastSavedPhase2] = useState<string | null>(null);
 
   const failureByChannel = [
@@ -137,17 +145,46 @@ export function AdminAutomationPageClient({
     onNotify("success", "Retry cycle requested for queued and failed jobs.");
   }
 
-  function runSimulation(): void {
+  async function runSimulation(): Promise<void> {
+    if (!session || simulationRunning) return;
+    let parsed: { topic?: unknown; payload?: unknown };
     try {
-      const parsed = JSON.parse(simulationPayload) as Record<string, unknown>;
-      const flow = String(parsed.type ?? "generic.event");
-      const outcome = autoRetryFailures ? "with retry policy" : "without retry policy";
-      const escalation = autoEscalateSla ? "SLA escalation enabled" : "SLA escalation disabled";
-      setSimulationResult(`Simulated ${flow}: dispatching actions ${outcome}; ${escalation}.`);
-      onNotify("success", "Simulation completed.");
+      parsed = JSON.parse(simulationPayload) as { topic?: unknown; payload?: unknown };
     } catch {
-      setSimulationResult("Invalid JSON payload. Fix payload syntax and run again.");
+      setSimulationError("Invalid JSON payload. Fix payload syntax and run again.");
+      setSimulationResult(null);
       onNotify("error", "Simulation payload is invalid JSON.");
+      return;
+    }
+    if (!parsed.topic || typeof parsed.topic !== "string") {
+      setSimulationError("Payload must have a top-level \"topic\" string field.");
+      setSimulationResult(null);
+      onNotify("error", "Simulation requires a topic field.");
+      return;
+    }
+    setSimulationRunning(true);
+    setSimulationError(null);
+    setSimulationResult(null);
+    const result = await simulateAutomationWithRefresh(session, {
+      topic: parsed.topic,
+      payload: typeof parsed.payload === "object" && parsed.payload !== null
+        ? parsed.payload as Record<string, unknown>
+        : {}
+    });
+    setSimulationRunning(false);
+    if (!result.data && !result.error) {
+      setSimulationError("Session expired. Please log in again.");
+      onNotify("error", "Session expired.");
+      return;
+    }
+    if (result.error) {
+      setSimulationError(result.error.message);
+      onNotify("error", "Simulation failed.");
+      return;
+    }
+    if (result.data) {
+      setSimulationResult(result.data);
+      onNotify("success", result.data.wouldTrigger ? "Simulation complete — workflow triggered." : "Simulation complete — no matching workflow.");
     }
   }
 
@@ -352,14 +389,36 @@ export function AdminAutomationPageClient({
               <div className={cx("text12", "fw700", "mb12")}>Simulation Payload</div>
               <textarea value={simulationPayload} onChange={(e) => setSimulationPayload(e.target.value)} rows={14} className={cx("formTextarea", "mb10")} />
               <div className={cx("flexRow", "gap8")}>
-                <button type="button" onClick={() => runSimulation()} className={cx("btnSm", "btnGhost")}>Run Dry Run</button>
+                <button type="button" onClick={() => void runSimulation()} disabled={simulationRunning} className={cx("btnSm", "btnGhost")}>
+                  {simulationRunning ? "Running…" : "Run Dry Run"}
+                </button>
                 <button type="button" onClick={() => setPublishState("REVIEW")} className={cx("btnSm", "btnAccent")}>Submit For Review</button>
               </div>
             </div>
             <div className={cx("card", "p20")}>
               <div className={cx("text12", "fw700", "mb12")}>Simulation Result</div>
-              {simulationResult ? (
-                <div className={styles.autoResultBox}>{simulationResult}</div>
+              {simulationError ? (
+                <div className={cx(styles.autoResultBox, styles.autoResultError)}>{simulationError}</div>
+              ) : simulationResult ? (
+                <div className={styles.autoResultBox}>
+                  <div className={cx("text11", "fw700", "mb8")}>
+                    {simulationResult.wouldTrigger ? "✓ Workflow would trigger" : "✗ No matching workflow"}
+                  </div>
+                  <div className={cx("text11", "colorMuted", "mb4")}>
+                    <span className="fw600">Topic:</span> {simulationResult.topic}
+                  </div>
+                  <div className={cx("text11", "colorMuted", "mb8")}>
+                    <span className="fw600">Workflow:</span> {simulationResult.workflow}
+                  </div>
+                  {simulationResult.estimatedActions.length > 0 ? (
+                    <div>
+                      <div className={cx("text11", "fw600", "mb4")}>Estimated actions:</div>
+                      {simulationResult.estimatedActions.map((action, i) => (
+                        <div key={i} className={cx("text11", "colorMuted")}>→ {action}</div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               ) : (
                 <EmptyState title="No simulation yet" subtitle="Run a dry run to validate trigger and policy behavior before publishing." compact variant="message" />
               )}

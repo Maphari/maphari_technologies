@@ -648,3 +648,45 @@ export async function setClientPreferenceWithRefresh(
     return { unauthorized: false, data: response.payload.data, error: null };
   });
 }
+
+/**
+ * Creates a new lead in the pipeline.
+ * Used by the AI Prospecting page to bulk-insert discovered prospects.
+ */
+export async function createLeadWithRefresh(
+  session: AuthSession,
+  input: {
+    title: string;
+    source?: string;
+    status?: import("./types").LeadPipelineStatus;
+    notes?: string;
+    contactName?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    company?: string;
+  }
+): Promise<AuthorizedResult<AdminLead>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<AdminLead>("/leads", accessToken, {
+      method: "POST",
+      body: input
+    });
+
+    if (isUnauthorized(response)) {
+      return { unauthorized: true, data: null, error: null };
+    }
+
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "LEAD_CREATE_FAILED",
+          response.payload.error?.message ?? "Unable to create lead."
+        )
+      };
+    }
+
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}

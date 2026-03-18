@@ -1,0 +1,2160 @@
+/* ================================================================
+   ADMIN DASHBOARD — BATCH B
+   Pages: Payroll Ledger, Pricing, Vendor Cost Control, Invoices,
+          Business Development, Client Health Scorecard,
+          Client Journey, Client Offboarding
+   ================================================================ */
+
+/* ================================================================
+   1. PAYROLL LEDGER PAGE
+   ================================================================ */
+
+.payRoot {
+  display: grid;
+  gap: 20px;
+}
+
+.payAvatar {
+  border-radius: 50%;
+  background: var(--s2);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.payAvatar28 {
+  width: 28px;
+  height: 28px;
+  font-size: 0.6rem;
+}
+
+.payAvatar36 {
+  width: 36px;
+  height: 36px;
+  font-size: 0.68rem;
+}
+
+.payToneText.toneAccent { color: var(--accent); }
+
+.payToneText.toneRed { color: var(--red); }
+
+.payToneText.toneAmber { color: var(--amber); }
+
+.payToneText.toneBlue { color: var(--blue); }
+
+.payToneText.tonePurple { color: var(--purple); }
+
+.payToneText.toneMuted { color: var(--muted); }
+
+.payToneText.toneText { color: var(--text); }
+
+.payMainSplit {
+  display: grid;
+  gap: 24px;
+  transition: grid-template-columns 0.2s ease;
+}
+
+.payMainSplitOne {
+  grid-template-columns: 1fr;
+}
+
+.payMainSplitTwo {
+  grid-template-columns: 1fr 360px;
+}
+
+.payRowSelected {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.payAlignCenter {
+  align-items: center;
+}
+
+.payTableFoot {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.8fr 0.8fr 0.8fr 0.8fr 60px;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-top: 1px solid var(--border);
+}
+
+.payToneBorder.toneAccent { border-left: 3px solid var(--accent); }
+
+.payToneBorder.toneRed { border-left: 3px solid var(--red); }
+
+.payToneBorder.toneAmber { border-left: 3px solid var(--amber); }
+
+.payToneBorder.toneBlue { border-left: 3px solid var(--blue); }
+
+.payToneBorder.tonePurple { border-left: 3px solid var(--purple); }
+
+.payToneBorder.toneMuted { border-left: 3px solid var(--muted); }
+
+.payToneBorder.toneText { border-left: 3px solid var(--text); }
+
+.payTitle16 {
+  font-size: 1rem;
+}
+
+.payLabelBold {
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.payLabelNorm {
+  font-weight: 400;
+  font-size: 0.78rem;
+}
+
+.payValueBold {
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.payValueNorm {
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.payValueLg {
+  font-size: 1.1rem;
+}
+
+.payPad12 {
+  padding: 12px;
+  border-radius: var(--r-sm);
+}
+
+.payPy4 {
+  padding: 4px 0;
+}
+
+.payFlex1 {
+  flex: 1;
+}
+
+.payHistRow {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 60px;
+  gap: 10px;
+  padding: 12px 16px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.payToneTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 0.625rem;
+  font-family: var(--font-dm-mono), monospace;
+}
+
+.payToneTag.toneAccent {
+  background: var(--accent-d);
+  color: var(--accent);
+}
+
+.payToneTag.toneAmber {
+  background: var(--amber-d);
+  color: var(--amber);
+}
+
+.payToneTag.toneRed {
+  background: var(--red-d);
+  color: var(--red);
+}
+
+.payToneTag.toneBlue {
+  background: var(--blue-d);
+  color: var(--blue);
+}
+
+.payToneTag.tonePurple {
+  background: var(--purple-d);
+  color: var(--purple);
+}
+
+.payToneTag.toneMuted {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+}
+
+.payRuleRow {
+  padding: 12px 0;
+}
+
+.payPy10 {
+  padding: 10px 0;
+}
+
+.payPy12 {
+  padding: 12px 0;
+}
+
+/* ================================================================
+   2. PRICING PAGE
+   ================================================================ */
+
+.pricRoot {
+  display: grid;
+  gap: 20px;
+}
+
+.pricTabsRail {
+  margin-bottom: 20px;
+}
+
+.pricCategoryPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.pricTableCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.pricTableInner {
+  min-width: 700px;
+}
+
+.pricTableHead {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 0.7fr 0.7fr 0.7fr 0.7fr 60px;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.pricTableRow {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 0.7fr 0.7fr 0.7fr 0.7fr 60px;
+  gap: 10px;
+  padding: 12px 16px;
+  align-items: center;
+}
+
+.pricRowEditing {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pricMarginBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 0.625rem;
+  font-family: var(--font-dm-mono), monospace;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pricQuoteSplit {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+}
+
+.pricQuoteCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 20px;
+  background: var(--s1);
+  margin-bottom: 16px;
+}
+
+.pricSectionTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.pricFormGrid3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.pricFieldLabel {
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.pricDiscountInput {
+  width: 100%;
+}
+
+.pricQuoteHead {
+  display: grid;
+  grid-template-columns: 1.5fr 0.5fr 0.8fr 0.8fr;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.pricQuoteRow {
+  display: grid;
+  grid-template-columns: 1.5fr 0.5fr 0.8fr 0.8fr;
+  gap: 10px;
+  padding: 12px 16px;
+  align-items: center;
+}
+
+.pricAddItemBtn {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  padding: 12px 16px;
+  font-size: 0.78rem;
+  font-family: var(--font-dm-mono), monospace;
+  width: 100%;
+  text-align: left;
+  border-top: 1px dashed var(--border);
+  transition: background 0.12s ease;
+}
+
+.pricAddItemBtn:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.pricSideStack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pricSummaryStack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pricSummaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.pricTotalRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 0;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.pricTotalLabel {
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.pricTotalValue {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+
+.pricActionStack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pricBigBtn {
+  width: 100%;
+  text-align: center;
+  padding: 10px 14px;
+}
+
+.pricMarginBig {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 800;
+  font-size: 2rem;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.pricTierGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.pricTierCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 28px 24px;
+  background: var(--s1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pricTierCardPopular {
+  border-color: var(--accent);
+  background: rgba(167, 139, 250, 0.04);
+}
+
+.pricPopularTag {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #050508 !important;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 3px 12px;
+  border-radius: var(--r-xs);
+}
+
+.pricTierName {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pricTierNamePopular {
+  color: var(--accent);
+}
+
+.pricTierPrice {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 800;
+  font-size: 1.8rem;
+  color: var(--text);
+}
+
+.pricTierSub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.pricDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+.pricFeatureStack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.pricFeatureRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+}
+
+.pricCheck {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.68rem;
+  flex-shrink: 0;
+}
+
+.pricOverageBox {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
+.pricOverageVal {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--amber);
+}
+
+.pricDiscountStack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pricPolicyCard {
+  border: 1px solid var(--amber-d);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  background: rgba(245, 166, 35, 0.04);
+}
+
+.pricPolicyTitle {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--amber);
+  margin-bottom: 6px;
+}
+
+.pricPolicyText {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.pricDiscountCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 20px;
+  background: var(--s1);
+}
+
+.pricDiscountGrid {
+  display: grid;
+  grid-template-columns: 1.5fr 0.8fr 1fr auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.pricDiscountClient {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.pricRequestedBy {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.pricDiscountValue {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: var(--amber);
+}
+
+.pricApprovalBtns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pricRejectBtn {
+  border-color: var(--red-d);
+  color: var(--red);
+}
+
+/* generic references used by pricing */
+
+/* ================================================================
+   3. VENDOR & COST CONTROL PAGE
+   ================================================================ */
+
+/* Note: This page uses many plain cx() utility classes (vendorRegHead, vendorRegRow, etc.)
+   rather than styles.XXX. Only actual styles.* references are generated here. */
+
+/* pageBody, pageHeader, pageEyebrow, pageTitle, pageSub, pageActions,
+   statCard, statLabel, statValue, filterTabs, formInput
+   — these are shared classes already defined elsewhere. */
+
+/* ================================================================
+   4. INVOICES / FINANCIAL CONTROL PAGE
+   ================================================================ */
+
+.invcStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 0.625rem;
+  font-family: var(--font-dm-mono), monospace;
+  text-transform: capitalize;
+}
+
+.invcStatusBadge.toneAccent {
+  background: var(--accent-d);
+  color: var(--accent);
+}
+
+.invcStatusBadge.toneRed {
+  background: var(--red-d);
+  color: var(--red);
+}
+
+.invcStatusBadge.toneAmber {
+  background: var(--amber-d);
+  color: var(--amber);
+}
+
+.invcStatusBadge.toneBlue {
+  background: var(--blue-d);
+  color: var(--blue);
+}
+
+.invcStatusBadge.tonePurple {
+  background: var(--purple-d);
+  color: var(--purple);
+}
+
+.invcStatusBadge.toneMuted {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+}
+
+.invcStatusBadge.toneText {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
+.invcAcctRow {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  background: var(--s1);
+}
+
+.invcAmount22 {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--accent);
+}
+
+.invcDashedBtn {
+  cursor: pointer;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--accent);
+  padding: 14px 20px;
+  border-radius: var(--r-md);
+  font-size: 0.78rem;
+  font-family: var(--font-dm-mono), monospace;
+  width: 100%;
+  text-align: center;
+  transition: all 0.12s ease;
+}
+
+.invcDashedBtn:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--accent);
+}
+
+.invcMinW900 {
+  min-width: 900px;
+}
+
+.invcPendingBg {
+  background: rgba(245, 166, 35, 0.04);
+}
+
+.invcRejectBtn {
+  cursor: pointer;
+  border: 1px solid var(--red-d);
+  background: transparent;
+  color: var(--red);
+  padding: 6px 14px;
+  border-radius: var(--r-xs);
+  font-size: 0.72rem;
+  font-family: var(--font-dm-mono), monospace;
+  transition: all 0.12s ease;
+}
+
+.invcRejectBtn:hover {
+  background: var(--red-d);
+}
+
+.invcOverdueRow {
+  background: rgba(255, 95, 95, 0.04);
+}
+
+.invcChaseBtn {
+  cursor: pointer;
+  border: 1px solid var(--amber-d);
+  background: transparent;
+  color: var(--amber);
+  padding: 6px 14px;
+  border-radius: var(--r-xs);
+  font-size: 0.72rem;
+  font-family: var(--font-dm-mono), monospace;
+  transition: all 0.12s ease;
+}
+
+.invcChaseBtn:hover {
+  background: var(--amber-d);
+}
+
+.invcTaxSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.invcCardTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.invcTaxRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.invcVatDueCard {
+  border: 1px solid var(--accent-d);
+  border-radius: var(--r-md);
+  padding: 20px;
+  background: rgba(167, 139, 250, 0.04);
+}
+
+.invcVatDueValue {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.invcWarnCard {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  border: 1px solid var(--amber-d);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  background: rgba(245, 166, 35, 0.04);
+}
+
+.invcWarnIcon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.invcWriteoffRow {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 1.5fr auto auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  background: var(--s1);
+}
+
+.invcWriteoffAmount {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--red);
+}
+
+.invcWriteoffBtn {
+  cursor: pointer;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--red);
+  padding: 14px 20px;
+  border-radius: var(--r-md);
+  font-size: 0.78rem;
+  font-family: var(--font-dm-mono), monospace;
+  width: 100%;
+  text-align: center;
+  transition: all 0.12s ease;
+}
+
+.invcWriteoffBtn:hover {
+  background: rgba(255, 95, 95, 0.04);
+  border-color: var(--red);
+}
+
+/* ================================================================
+   5. BUSINESS DEVELOPMENT PAGE
+   ================================================================ */
+
+.bdevRoot {
+  display: grid;
+  gap: 20px;
+}
+
+.bdevTabsRail {
+  margin-bottom: 0;
+}
+
+/* --- Fill classes (progress bar value color) --- */
+
+.bdevFillAccent::-webkit-progress-value { background: var(--accent); border-radius: var(--r-xs); }
+
+.bdevFillAccent::-moz-progress-bar { background: var(--accent); border-radius: var(--r-xs); }
+
+.bdevFillRed::-webkit-progress-value { background: var(--red); border-radius: var(--r-xs); }
+
+.bdevFillRed::-moz-progress-bar { background: var(--red); border-radius: var(--r-xs); }
+
+.bdevFillAmber::-webkit-progress-value { background: var(--amber); border-radius: var(--r-xs); }
+
+.bdevFillAmber::-moz-progress-bar { background: var(--amber); border-radius: var(--r-xs); }
+
+.bdevFillBlue::-webkit-progress-value { background: var(--blue); border-radius: var(--r-xs); }
+
+.bdevFillBlue::-moz-progress-bar { background: var(--blue); border-radius: var(--r-xs); }
+
+.bdevFillPurple::-webkit-progress-value { background: var(--purple); border-radius: var(--r-xs); }
+
+.bdevFillPurple::-moz-progress-bar { background: var(--purple); border-radius: var(--r-xs); }
+
+.bdevFillMuted::-webkit-progress-value { background: var(--muted); border-radius: var(--r-xs); }
+
+.bdevFillMuted::-moz-progress-bar { background: var(--muted); border-radius: var(--r-xs); }
+
+/* --- Tag classes (badge bg + text color) --- */
+
+.bdevTagAccent { background: var(--accent-d); color: var(--accent); }
+
+.bdevTagRed { background: var(--red-d); color: var(--red); }
+
+.bdevTagAmber { background: var(--amber-d); color: var(--amber); }
+
+.bdevTagBlue { background: var(--blue-d); color: var(--blue); }
+
+.bdevTagPurple { background: var(--purple-d); color: var(--purple); }
+
+.bdevTagMuted { background: rgba(255, 255, 255, 0.04); color: var(--muted); }
+
+/* --- Segment card tone (left border) --- */
+
+.bdevSegmentCardAccent { border-left: 3px solid var(--accent); }
+
+.bdevSegmentCardRed { border-left: 3px solid var(--red); }
+
+.bdevSegmentCardAmber { border-left: 3px solid var(--amber); }
+
+.bdevSegmentCardBlue { border-left: 3px solid var(--blue); }
+
+.bdevSegmentCardPurple { border-left: 3px solid var(--purple); }
+
+.bdevSegmentCardMuted { border-left: 3px solid var(--muted); }
+
+.bdevTableCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.bdevTableHead {
+  display: grid;
+  grid-template-columns: 0.6fr 1.4fr 1fr 0.7fr 0.6fr 0.6fr 0.8fr 0.7fr 60px;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.bdevTableRow {
+  display: grid;
+  grid-template-columns: 0.6fr 1.4fr 1fr 0.7fr 0.6fr 0.6fr 0.8fr 0.7fr 60px;
+  gap: 10px;
+  padding: 12px 16px;
+  align-items: center;
+}
+
+.bdevStageTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 0.625rem;
+  font-family: var(--font-dm-mono), monospace;
+}
+
+.bdevKanbanGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.bdevStageHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bdevStageName {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bdevStageStack {
+  display: grid;
+  gap: 10px;
+}
+
+.bdevDealCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 14px;
+  background: var(--s1);
+}
+
+.bdevDealName {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+}
+
+.bdevDealMeta {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.bdevDealFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.72rem;
+}
+
+.bdevMiniTrack {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border: none;
+  border-radius: var(--r-xs);
+  background: transparent;
+}
+
+.bdevMiniTrack::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--r-xs);
+}
+
+.bdevDealSmall {
+  font-size: 0.6rem;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.bdevEmptyLane {
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding: 16px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--r-sm);
+}
+
+.bdevPartnerList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bdevPartnerRow {
+  display: grid;
+  grid-template-columns: 1.5fr 0.8fr auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  background: var(--s1);
+}
+
+.bdevPartnerRowExploring {
+  border-color: var(--amber-d);
+  background: rgba(245, 166, 35, 0.03);
+}
+
+.bdevPartnerName {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.bdevPartnerMeta {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.bdevCellLabel {
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.bdevContactBtn {
+  border-color: var(--accent-d);
+  color: var(--accent);
+}
+
+.bdevAddPartnership {
+  cursor: pointer;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--accent);
+  padding: 14px 20px;
+  border-radius: var(--r-md);
+  font-size: 0.78rem;
+  font-family: var(--font-dm-mono), monospace;
+  width: 100%;
+  text-align: center;
+  transition: all 0.12s ease;
+}
+
+.bdevAddPartnership:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--accent);
+}
+
+.bdevSegmentGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.bdevSegmentCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 20px;
+  background: var(--s1);
+}
+
+.bdevSegmentHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.bdevSegmentName {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.bdevSegmentMeta {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.bdevSegmentDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Fill classes on the segment dot */
+
+.bdevSegmentDot.bdevFillAccent { background: var(--accent); }
+
+.bdevSegmentDot.bdevFillRed { background: var(--red); }
+
+.bdevSegmentDot.bdevFillAmber { background: var(--amber); }
+
+.bdevSegmentDot.bdevFillBlue { background: var(--blue); }
+
+.bdevSegmentDot.bdevFillPurple { background: var(--purple); }
+
+.bdevSegmentDot.bdevFillMuted { background: var(--muted); }
+
+.bdevSegmentStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.bdevMiniCard {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+}
+
+.bdevMiniValue {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.bdevRateRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.bdevTargetsGrid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+}
+
+.bdevSectionTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.bdevTargetStack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.bdevTargetHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.bdevTargetTrack {
+  margin-bottom: 4px;
+}
+
+.bdevTargetTrackFill {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  border: none;
+  border-radius: var(--r-xs);
+  background: transparent;
+}
+
+.bdevTargetTrackFill::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--r-xs);
+}
+
+.bdevTargetPct {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.bdevTargetSide {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bdevSourceRow {
+  display: grid;
+  grid-template-columns: 100px 1fr 30px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.bdevSourceName {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.bdevSourceTrack {
+  /* wrapper for progress */
+}
+
+.bdevSourceTrackFill {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border: none;
+  border-radius: var(--r-xs);
+  background: transparent;
+}
+
+.bdevSourceTrackFill::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--r-xs);
+}
+
+.bdevSourceCount {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.bdevAnnualCard {
+  border: 1px solid var(--accent-d);
+  border-radius: var(--r-md);
+  padding: 20px;
+  background: rgba(167, 139, 250, 0.04);
+}
+
+.bdevAnnualTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.bdevAnnualValue {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.bdevAnnualAccent {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ================================================================
+   6. CLIENT HEALTH SCORECARD PAGE
+   ================================================================ */
+
+.healthToneText.toneAccent { color: var(--accent); }
+
+.healthToneText.toneRed { color: var(--red); }
+
+.healthToneText.toneAmber { color: var(--amber); }
+
+.healthToneText.toneBlue { color: var(--blue); }
+
+.healthToneText.tonePurple { color: var(--purple); }
+
+.healthToneText.toneMuted { color: var(--muted); }
+
+.healthToneText.toneText { color: var(--text); }
+
+.healthMinW900 {
+  min-width: 900px;
+}
+
+.healthRowAtRisk {
+  background: rgba(255, 95, 95, 0.04);
+}
+
+.healthDot8 {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.healthDot8.toneAccent { background: var(--accent); }
+
+.healthDot8.toneRed { background: var(--red); }
+
+.healthDot8.toneAmber { background: var(--amber); }
+
+.healthDot8.toneBlue { background: var(--blue); }
+
+.healthDot8.tonePurple { background: var(--purple); }
+
+.healthDot8.toneMuted { background: var(--muted); }
+
+.healthDot8.toneText { background: var(--text); }
+
+.healthTinyTrack {
+  margin-bottom: 2px;
+}
+
+.healthTinyFill {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  border: none;
+  border-radius: var(--r-xs);
+  background: transparent;
+}
+
+.healthTinyFill::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--r-xs);
+}
+
+.healthTinyFill.toneAccent::-webkit-progress-value { background: var(--accent); border-radius: var(--r-xs); }
+
+.healthTinyFill.toneRed::-webkit-progress-value { background: var(--red); border-radius: var(--r-xs); }
+
+.healthTinyFill.toneAmber::-webkit-progress-value { background: var(--amber); border-radius: var(--r-xs); }
+
+.healthTinyFill.toneBlue::-webkit-progress-value { background: var(--blue); border-radius: var(--r-xs); }
+
+.healthTinyFill.tonePurple::-webkit-progress-value { background: var(--purple); border-radius: var(--r-xs); }
+
+.healthTinyFill.toneMuted::-webkit-progress-value { background: var(--muted); border-radius: var(--r-xs); }
+
+.healthTinyFill.toneAccent::-moz-progress-bar { background: var(--accent); border-radius: var(--r-xs); }
+
+.healthTinyFill.toneRed::-moz-progress-bar { background: var(--red); border-radius: var(--r-xs); }
+
+.healthTinyFill.toneAmber::-moz-progress-bar { background: var(--amber); border-radius: var(--r-xs); }
+
+.healthTinyFill.toneBlue::-moz-progress-bar { background: var(--blue); border-radius: var(--r-xs); }
+
+.healthTinyFill.tonePurple::-moz-progress-bar { background: var(--purple); border-radius: var(--r-xs); }
+
+.healthTinyFill.toneMuted::-moz-progress-bar { background: var(--muted); border-radius: var(--r-xs); }
+
+.healthScore18 {
+  font-size: 1.1rem;
+}
+
+.healthScore16 {
+  font-size: 1rem;
+}
+
+.healthScore20 {
+  font-size: 1.25rem;
+}
+
+.healthScore24 {
+  font-size: 1.5rem;
+}
+
+.healthScore40 {
+  font-size: 2.5rem;
+}
+
+.healthDeepDiveSplit {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 20px;
+}
+
+.healthSelectCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  background: var(--s1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.12s ease;
+}
+
+.healthSelectCard:hover {
+  background: var(--s2);
+}
+
+.healthSelectCardActive {
+  border-color: var(--border2);
+  background: var(--s2);
+}
+
+.healthSelectCardActive.toneAccent { border-left: 3px solid var(--accent); }
+
+.healthSelectCardActive.toneRed { border-left: 3px solid var(--red); }
+
+.healthSelectCardActive.toneAmber { border-left: 3px solid var(--amber); }
+
+.healthSelectCardActive.toneBlue { border-left: 3px solid var(--blue); }
+
+.healthSelectCardActive.tonePurple { border-left: 3px solid var(--purple); }
+
+.healthSelectCardActive.toneMuted { border-left: 3px solid var(--muted); }
+
+.healthSelectCardActive.toneText { border-left: 3px solid var(--text); }
+
+.healthDetailCard {
+  position: relative;
+}
+
+.healthDetailCard.toneAccent { border-left: 3px solid var(--accent); }
+
+.healthDetailCard.toneRed { border-left: 3px solid var(--red); }
+
+.healthDetailCard.toneAmber { border-left: 3px solid var(--amber); }
+
+.healthDetailCard.toneBlue { border-left: 3px solid var(--blue); }
+
+.healthDetailCard.tonePurple { border-left: 3px solid var(--purple); }
+
+.healthDetailCard.toneMuted { border-left: 3px solid var(--muted); }
+
+.healthDetailCard.toneText { border-left: 3px solid var(--text); }
+
+.healthTitle22 {
+  font-size: 1.35rem;
+}
+
+.healthDimRow {
+  display: grid;
+  grid-template-columns: 160px 1fr 50px 30px 60px;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.healthTrackBg {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--r-xs);
+  overflow: hidden;
+}
+
+.healthFillFull {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border: none;
+  border-radius: var(--r-xs);
+  background: transparent;
+}
+
+.healthFillFull::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--r-xs);
+}
+
+.healthFillFull.toneAccent::-webkit-progress-value { background: var(--accent); border-radius: var(--r-xs); }
+
+.healthFillFull.toneRed::-webkit-progress-value { background: var(--red); border-radius: var(--r-xs); }
+
+.healthFillFull.toneAmber::-webkit-progress-value { background: var(--amber); border-radius: var(--r-xs); }
+
+.healthFillFull.toneBlue::-webkit-progress-value { background: var(--blue); border-radius: var(--r-xs); }
+
+.healthFillFull.tonePurple::-webkit-progress-value { background: var(--purple); border-radius: var(--r-xs); }
+
+.healthFillFull.toneMuted::-webkit-progress-value { background: var(--muted); border-radius: var(--r-xs); }
+
+.healthFillFull.toneAccent::-moz-progress-bar { background: var(--accent); border-radius: var(--r-xs); }
+
+.healthFillFull.toneRed::-moz-progress-bar { background: var(--red); border-radius: var(--r-xs); }
+
+.healthFillFull.toneAmber::-moz-progress-bar { background: var(--amber); border-radius: var(--r-xs); }
+
+.healthFillFull.toneBlue::-moz-progress-bar { background: var(--blue); border-radius: var(--r-xs); }
+
+.healthFillFull.tonePurple::-moz-progress-bar { background: var(--purple); border-radius: var(--r-xs); }
+
+.healthFillFull.toneMuted::-moz-progress-bar { background: var(--muted); border-radius: var(--r-xs); }
+
+.healthDangerBtn {
+  cursor: pointer;
+  border: 1px solid var(--red-d);
+  background: transparent;
+  color: var(--red);
+  border-radius: var(--r-xs);
+  font-size: 0.72rem;
+  font-family: var(--font-dm-mono), monospace;
+  transition: all 0.12s ease;
+}
+
+.healthDangerBtn:hover {
+  background: var(--red-d);
+}
+
+.healthBtnPad {
+  padding: 8px 16px;
+}
+
+.healthName15 {
+  font-size: 0.9rem;
+}
+
+.healthRiskCard {
+  border-color: var(--red-d);
+  background: rgba(255, 95, 95, 0.03);
+}
+
+.healthRiskGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 60px 1.5fr 0.8fr 0.8fr auto;
+  gap: 16px;
+  align-items: center;
+}
+
+/* ================================================================
+   7. CLIENT JOURNEY PAGE
+   ================================================================ */
+
+.journeyMapRow {
+  display: grid;
+  grid-template-columns: 1.3fr 0.8fr 0.6fr 0.7fr 0.7fr 0.8fr 1.2fr;
+  gap: 10px;
+  padding: 12px 16px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.journeyAgingRow {
+  display: grid;
+  grid-template-columns: 1.3fr 0.8fr 0.7fr 0.6fr 1.5fr;
+  gap: 10px;
+  padding: 12px 16px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.journeyMomentsSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* ================================================================
+   8. CLIENT OFFBOARDING PAGE
+   ================================================================ */
+
+.cobRoot {
+  display: grid;
+  gap: 20px;
+}
+
+/* --- Fill classes (progress bar value color) --- */
+
+.cobFillAccent::-webkit-progress-value { background: var(--accent); border-radius: var(--r-xs); }
+
+.cobFillAccent::-moz-progress-bar { background: var(--accent); border-radius: var(--r-xs); }
+
+.cobFillRed::-webkit-progress-value { background: var(--red); border-radius: var(--r-xs); }
+
+.cobFillRed::-moz-progress-bar { background: var(--red); border-radius: var(--r-xs); }
+
+.cobFillAmber::-webkit-progress-value { background: var(--amber); border-radius: var(--r-xs); }
+
+.cobFillAmber::-moz-progress-bar { background: var(--amber); border-radius: var(--r-xs); }
+
+.cobFillBlue::-webkit-progress-value { background: var(--blue); border-radius: var(--r-xs); }
+
+.cobFillBlue::-moz-progress-bar { background: var(--blue); border-radius: var(--r-xs); }
+
+.cobFillPurple::-webkit-progress-value { background: var(--purple); border-radius: var(--r-xs); }
+
+.cobFillPurple::-moz-progress-bar { background: var(--purple); border-radius: var(--r-xs); }
+
+.cobFillMuted::-webkit-progress-value { background: var(--muted); border-radius: var(--r-xs); }
+
+.cobFillMuted::-moz-progress-bar { background: var(--muted); border-radius: var(--r-xs); }
+
+/* --- Reason pill classes --- */
+
+.cobReasonAccent { background: var(--accent-d); color: var(--accent); }
+
+.cobReasonRed { background: var(--red-d); color: var(--red); }
+
+.cobReasonAmber { background: var(--amber-d); color: var(--amber); }
+
+.cobReasonBlue { background: var(--blue-d); color: var(--blue); }
+
+.cobReasonPurple { background: var(--purple-d); color: var(--purple); }
+
+.cobReasonMuted { background: rgba(255, 255, 255, 0.04); color: var(--muted); }
+
+/* --- Template card tone (left border) --- */
+
+.cobTemplateCardAccent { border-left: 3px solid var(--accent); }
+
+.cobTemplateCardRed { border-left: 3px solid var(--red); }
+
+.cobTemplateCardAmber { border-left: 3px solid var(--amber); }
+
+.cobTemplateCardBlue { border-left: 3px solid var(--blue); }
+
+.cobTemplateCardPurple { border-left: 3px solid var(--purple); }
+
+.cobTemplateCardMuted { border-left: 3px solid var(--muted); }
+
+.cobList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cobCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--s1);
+  overflow: hidden;
+}
+
+.cobCardComplete {
+  opacity: 0.65;
+}
+
+.cobHead {
+  padding: 20px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.cobHead:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.cobHeadRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.cobClientBlock {
+  display: flex;
+  gap: 12px;
+}
+
+.cobLeadBar {
+  width: 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+/* Fill classes on the lead bar */
+
+.cobLeadBar.cobFillAccent { background: var(--accent); }
+
+.cobLeadBar.cobFillRed { background: var(--red); }
+
+.cobLeadBar.cobFillAmber { background: var(--amber); }
+
+.cobLeadBar.cobFillBlue { background: var(--blue); }
+
+.cobLeadBar.cobFillPurple { background: var(--purple); }
+
+.cobLeadBar.cobFillMuted { background: var(--muted); }
+
+.cobHeadMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.cobMono {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.cobReasonPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 0.6rem;
+  font-family: var(--font-dm-mono), monospace;
+  text-transform: capitalize;
+}
+
+.cobClientName {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+}
+
+.cobMuted {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.cobProgressBlock {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.cobProgressPct {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 800;
+  font-size: 1.3rem;
+}
+
+.cobOutstanding {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.68rem;
+  color: var(--red);
+  margin-top: 2px;
+}
+
+.progressBar {
+  margin-top: 4px;
+}
+
+.cobExpanded {
+  padding: 16px 20px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--border);
+}
+
+.cobExpandedGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cobCategoryCard {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--r-sm);
+  padding: 14px;
+}
+
+.cobCategoryTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+
+.cobTaskRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.cobCheck {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r-xs);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 0.6rem;
+}
+
+.cobCheckDone {
+  background: var(--accent-d);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cobCheckMark {
+  font-size: 0.6rem;
+  line-height: 1;
+}
+
+.cobTaskTextWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.cobTaskText {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.cobTaskTextDone {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.cobTaskDate {
+  font-size: 0.6rem;
+  color: var(--muted);
+  font-family: var(--font-dm-mono), monospace;
+  margin-top: 2px;
+}
+
+.cobActionRow {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.cobPostBtn {
+  cursor: pointer;
+  border: 1px solid var(--amber-d);
+  background: transparent;
+  color: var(--amber);
+  padding: 6px 14px;
+  border-radius: var(--r-xs);
+  font-size: 0.72rem;
+  font-family: var(--font-dm-mono), monospace;
+  transition: all 0.12s ease;
+}
+
+.cobPostBtn:hover {
+  background: var(--amber-d);
+}
+
+.cobPmList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cobPmCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 24px;
+  background: var(--s1);
+}
+
+.cobPmHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cobPmClient {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.cobPmScoreWrap {
+  text-align: right;
+}
+
+.cobLabel {
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.cobPmScore {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 800;
+  font-size: 1.3rem;
+}
+
+.cobRootCause {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--r-sm);
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.cobRootCauseLabel {
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.cobRootCauseText {
+  font-size: 0.78rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.cobPmGrid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.cobPmWell {
+  background: rgba(52, 217, 139, 0.04);
+  border-radius: var(--r-sm);
+  padding: 14px;
+}
+
+.cobPmHeadingWell {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cobPmWrong {
+  background: rgba(255, 95, 95, 0.04);
+  border-radius: var(--r-sm);
+  padding: 14px;
+}
+
+.cobPmHeadingWrong {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--red);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cobPmPrev {
+  background: rgba(91, 156, 245, 0.04);
+  border-radius: var(--r-sm);
+  padding: 14px;
+}
+
+.cobPmHeadingPrev {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--blue);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cobPmLine {
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding: 3px 0;
+  line-height: 1.45;
+}
+
+.cobCreateBtn {
+  cursor: pointer;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--accent);
+  padding: 14px 20px;
+  border-radius: var(--r-md);
+  font-size: 0.78rem;
+  font-family: var(--font-dm-mono), monospace;
+  width: 100%;
+  text-align: center;
+  transition: all 0.12s ease;
+}
+
+.cobCreateBtn:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--accent);
+}
+
+.cobTemplateGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.cobTemplateCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 20px;
+  background: var(--s1);
+}
+
+.cobTemplateTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 14px;
+}
+
+.cobTemplateTask {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cobTemplateBox {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r-xs);
+  flex-shrink: 0;
+}
+
+.cobAnalysisSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.cobSectionTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.cobBarRow {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 30px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.cobTrack80 {
+  /* wrapper for progress bar */
+}
+
+.cobBarCount {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.cobMutedBlock {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.cobReRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cobCellStrong {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.cobMonoDate {
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+
+
+/* ── Pricing Page — Create/Edit Modals ───────────────────────────── */
+.pricModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pricModalBox {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: 14px;
+  box-shadow: var(--shadow-modal);
+  width: 100%;
+  max-width: 520px;
+  padding: 28px 28px 24px;
+}
+
+.pricModalBoxSm {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: 14px;
+  box-shadow: var(--shadow-modal);
+  width: 100%;
+  max-width: 480px;
+  padding: 28px 28px 24px;
+}
+
+.pricModalLabel {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.pricModalCheckLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pricPadRow {
+  padding: 10px 14px;
+}
+
+.pricEmptyRow {
+  padding: 16px 14px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  /* 2-col splits → 1-col */
+  .payMainSplitTwo,
+  .pricQuoteSplit,
+  .bdevTargetsGrid,
+  .bdevSegmentStats,
+  .healthDeepDiveSplit,
+  .journeyMomentsSplit,
+  .cobAnalysisSplit {
+    grid-template-columns: 1fr;
+  }
+
+  /* 3-4 col grids → 2-col */
+  .pricTierGrid,
+  .pricFormGrid3,
+  .cobExpandedGrid,
+  .cobPmGrid3,
+  .cobTemplateGrid,
+  .bdevSegmentGrid,
+  .bdevKanbanGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .pricTierGrid,
+  .pricFormGrid3,
+  .cobExpandedGrid,
+  .cobPmGrid3,
+  .cobTemplateGrid,
+  .bdevSegmentGrid,
+  .bdevKanbanGrid {
+    grid-template-columns: 1fr;
+  }
+}
+

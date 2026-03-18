@@ -6,84 +6,13 @@ import { toneClass } from "./admin-page-utils";
 
 type Priority = "critical" | "high" | "medium" | "low";
 
-const ownerOKRs = [
-  {
-    objective: "Scale to R500k MRR",
-    keyResults: [
-      { kr: "Close 5 new retainers", progress: 60, target: 5, current: 3 },
-      { kr: "Upsell 3 existing clients to Growth tier", progress: 33, target: 3, current: 1 },
-      { kr: "Zero churn Q1", progress: 100, target: 0, current: 0 },
-    ],
-  },
-  {
-    objective: "Build a high-performance team",
-    keyResults: [
-      { kr: "Hire Senior Designer by Apr 2026", progress: 50, target: 1, current: 0, note: "Interviewing" },
-      { kr: "Avg staff delivery score >= 88", progress: 80, target: 88, current: 87.2 },
-      { kr: "All staff complete Q1 L&D", progress: 40, target: 5, current: 2 },
-    ],
-  },
-] as const;
+const ownerOKRs: readonly { objective: string; keyResults: readonly { kr: string; progress: number; target: number; current: number; note?: string }[] }[] = [];
 
-const decisions = [
-  {
-    date: "Feb 22",
-    title: "Approved Studio Outpost for Dune Collective scope extension",
-    context: "Dune Collective project delayed due to scope creep. Approved additional R18k contractor budget to meet deadline.",
-    tags: ["budget", "client"],
-    outcome: "pending",
-  },
-  {
-    date: "Feb 18",
-    title: "Decided to pause Helios Digital pitch",
-    context: "Prospect showed inconsistent buying signals across 4 touchpoints. Marketing team overstretched. Revisit Q3 2026.",
-    tags: ["bd", "resourcing"],
-    outcome: "implemented",
-  },
-  {
-    date: "Feb 10",
-    title: "Invested in Figma Enterprise upgrade",
-    context: "Team of 6 regularly hitting file limits. Figma Enterprise solves collaboration issues and adds SSO. Annual cost R31,200.",
-    tags: ["tooling", "budget"],
-    outcome: "implemented",
-  },
-  {
-    date: "Jan 28",
-    title: "Approved Kira Bosman performance review plan",
-    context: "Kira's utilisation at 65.5% and task completion rate below threshold. Agreed: bi-weekly 1:1s with Leilani, focused task assignments for 60 days.",
-    tags: ["staff", "hr"],
-    outcome: "in-progress",
-  },
-] as const;
+const decisions: readonly { date: string; title: string; context: string; tags: readonly string[]; outcome: string }[] = [];
 
-const privateNotes: Array<{ client: string; note: string; priority: Priority; date: string }> = [
-  {
-    client: "Kestrel Capital",
-    note: "CEO is under pressure from board. The dispute may be about cash flow, not the invoice itself. Consider offering a 30-day extension quietly before escalating.",
-    priority: "high",
-    date: "Feb 22",
-  },
-  {
-    client: "Volta Studios",
-    note: "Founder mentioned wanting to expand into events. Potential for a new project scope or retainer tier upgrade by mid-year.",
-    priority: "medium",
-    date: "Feb 15",
-  },
-  {
-    client: "General",
-    note: "Need to restructure BD process - currently too reactive. Target 2 proactive outreach per week from March.",
-    priority: "medium",
-    date: "Feb 10",
-  },
-];
+const privateNotes: Array<{ client: string; note: string; priority: Priority; date: string }> = [];
 
-const focusItems: Array<{ text: string; priority: Priority; done: boolean }> = [
-  { text: "Call Kestrel Capital CEO re: invoice", priority: "critical", done: false },
-  { text: "Review Kira performance plan with Leilani", priority: "high", done: false },
-  { text: "Sign off Senior Designer job spec", priority: "high", done: false },
-  { text: "Review Feb P&L with accountant", priority: "medium", done: true },
-  { text: "Horizon Media proposal - review before sending", priority: "high", done: false },
-];
+const focusItems: Array<{ text: string; priority: Priority; done: boolean }> = [];
 
 const priorityColors: Record<Priority, string> = {
   critical: "var(--red)",
@@ -167,12 +96,12 @@ export function OwnersWorkspacePage() {
               <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>Business Pulse</div>
               <div className={cx("grid3", "gap12")}>
                 {[
-                  { label: "MRR", value: "R398.6k", sub: "\u25b2 5.4% MoM", color: "var(--accent)" },
-                  { label: "Team Util.", value: "81%", sub: "Target: 85%", color: "var(--amber)" },
-                  { label: "Client Health", value: "74/100", sub: "2 at risk", color: "var(--amber)" },
-                  { label: "Pipeline", value: "R168k", sub: "5 prospects", color: "var(--blue)" },
-                  { label: "Overdue Inv.", value: "R21k", sub: "1 invoice", color: "var(--red)" },
-                  { label: "Runway", value: "3.9mo", sub: "Cash reserves", color: "var(--purple)" },
+                  { label: "MRR", value: "—", sub: "Live from billing", color: "var(--accent)" },
+                  { label: "Team Util.", value: "—", sub: "Target: 85%", color: "var(--amber)" },
+                  { label: "Client Health", value: "—", sub: "Live from health", color: "var(--amber)" },
+                  { label: "Pipeline", value: "—", sub: "Live from CRM", color: "var(--blue)" },
+                  { label: "Overdue Inv.", value: "—", sub: "Live from invoices", color: "var(--red)" },
+                  { label: "Runway", value: "—", sub: "Cash reserves", color: "var(--purple)" },
                 ].map((s) => (
                   <div key={s.label} className={cx("bgBg", "p16", styles.ownerRounded8)}>
                     <div className={cx("text10", "colorMuted", "uppercase", "tracking", "mb4")}>{s.label}</div>

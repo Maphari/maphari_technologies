@@ -1,745 +1,891 @@
 "use client";
 
+// ════════════════════════════════════════════════════════════════════════════
+// messages-page.tsx — Client Portal Messages & Updates (redesigned)
+// Layout  : Left pane (thread list) + Right pane (horizontal pillTabs + content)
+// Data    : threads from parent, messages per thread, deliverables & risks for
+//           activity feed, support tickets via portal API
+// ════════════════════════════════════════════════════════════════════════════
+
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Av, Ic } from "../ui";
-import { cx, styles } from "../style";
+import { cx } from "../style";
+import { usePageToast } from "../hooks/use-page-toast";
+import { useProjectLayer } from "../hooks/use-project-layer";
+import { saveSession } from "../../../../lib/auth/session";
+import {
+  loadConversationMessagesWithRefresh,
+  createPortalMessageWithRefresh,
+  createPortalConversationWithRefresh,
+  createPortalSupportTicketWithRefresh,
+  loadPortalDeliverablesWithRefresh,
+  loadPortalRisksWithRefresh,
+  type PortalDeliverable,
+  type PortalRisk,
+} from "../../../../lib/api/portal";
+import type { Thread as WorkspaceThread } from "../types";
 
-type MsgUpdatesTab = "Messages" | "Activity" | "Support Ticket";
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type MsgTab = "Inbox" | "Activity" | "AI Assistant" | "Support";
 type Priority = "Low" | "Medium" | "High";
-type Tone = "accent" | "green" | "amber" | "red" | "purple" | "muted";
-type ThreadTagTone = "green" | "purple" | "amber" | "red" | "muted";
 type ActivityTone = "accent" | "amber" | "purple" | "red" | "green";
-
-type ThreadTag = {
-  label: string;
-  tone: ThreadTagTone;
-};
+type ActivityFilter = "All" | "Deliverables" | "Risks";
 
 type Thread = {
-  id: number;
-  name: string;
-  avatar: string;
-  title: string;
+  id: string;
+  conversationId: string;
+  subject: string;
   preview: string;
   time: string;
-  tags: ThreadTag[];
   unread: boolean;
-  project: string;
-  tone: Tone;
-};
-
-type MsgFile = {
-  name: string;
-  size: string;
+  avatarInitials: string;
+  avatarBg: string;
+  projectName: string;
 };
 
 type ChatMessage = {
-  id: number;
-  threadId: number;
-  from: string;
-  fromName: string;
-  text: string;
-  time: string;
+  id: string;
+  content: string;
   mine: boolean;
-  reactions: string[];
-  tone: Tone;
-  file?: MsgFile;
+  createdAt: string;
 };
 
 type ActivityItem = {
+  id: string;
+  icon: string;
   tone: ActivityTone;
-  text: string;
+  title: string;
+  sub: string;
   time: string;
 };
 
-type ToastState = { text: string; sub: string } | null;
-const TABS: MsgUpdatesTab[] = ["Messages", "Activity", "Support Ticket"];
+type AiMsg = { role: "ai" | "user"; text: string };
 
-const THREADS: Thread[] = [
-  {
-    id: 1,
-    name: "Thabo Khumalo",
-    avatar: "TK",
-    title: "Stripe Integration - Staging Live",
-    preview: "All endpoints confirmed. Ready for your go-ahead on production deploy.",
-    time: "Now",
-    tags: [{ tone: "green", label: "projects" }],
-    unread: true,
-    project: "Client Portal v2",
-    tone: "amber",
-  },
-  {
-    id: 2,
-    name: "James Mahlangu",
-    avatar: "JM",
-    title: "UAT Checklist - Items 1-7",
-    preview: "Checklist shared. 7 items need your sign-off before Friday's window.",
-    time: "2h",
-    tags: [{ tone: "amber", label: "milestone" }],
-    unread: true,
-    project: "Lead Pipeline",
-    tone: "red",
-  },
-  {
-    id: 3,
-    name: "Lerato Mokoena",
-    avatar: "LM",
-    title: "Updated Figma Screens v3",
-    preview: "14 screens exported. Handoff doc attached in this thread.",
-    time: "Yesterday",
-    tags: [{ tone: "purple", label: "design" }],
-    unread: false,
-    project: "Automation Suite",
-    tone: "purple",
-  },
-  {
-    id: 4,
-    name: "Sipho Ndlovu",
-    avatar: "SN",
-    title: "Q1 Kickoff - Action Items",
-    preview: "Meeting notes attached. Your approvals needed on 3 items.",
-    time: "Feb 18",
-    tags: [{ tone: "muted", label: "general" }],
-    unread: false,
-    project: "All Projects",
-    tone: "accent",
-  },
-  {
-    id: 5,
-    name: "Nomsa Dlamini",
-    avatar: "ND",
-    title: "QA Report - Sprint 4",
-    preview: "All tests passing. Zero critical issues found in staging.",
-    time: "Feb 17",
-    tags: [{ tone: "green", label: "qa" }],
-    unread: false,
-    project: "Client Portal v2",
-    tone: "green",
-  },
+// ─── Static data ──────────────────────────────────────────────────────────────
+
+const TABS: MsgTab[] = ["Inbox", "Activity", "AI Assistant", "Support"];
+
+const ACTIVITY_FILTERS: ActivityFilter[] = ["All", "Deliverables", "Risks"];
+
+const AI_PROMPTS = [
+  "What's the current project status?",
+  "Any blockers I should know about?",
+  "When is the next milestone?",
+  "How is budget tracking?",
 ];
 
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    id: 1,
-    threadId: 1,
-    from: "TK",
-    fromName: "Thabo K.",
-    text: "Hey! Stripe integration is live on staging. All endpoints returning expected responses.",
-    time: "09:12",
-    mine: false,
-    reactions: ["👍", "✅"],
-    tone: "amber",
-  },
-  {
-    id: 2,
-    threadId: 1,
-    from: "TK",
-    fromName: "Thabo K.",
-    text: "I attached the deployment checklist below. Once approved, we can push to production in under an hour.",
-    time: "09:13",
-    mine: false,
-    reactions: [],
-    tone: "amber",
-    file: { name: "Deployment-Checklist-v2.pdf", size: "124 KB" },
-  },
-  {
-    id: 3,
-    threadId: 1,
-    from: "me",
-    fromName: "You",
-    text: "Great work. Give me 20 minutes to review and I will confirm.",
-    time: "09:31",
-    mine: true,
-    reactions: ["🔥"],
-    tone: "accent",
-  },
-  {
-    id: 4,
-    threadId: 1,
-    from: "TK",
-    fromName: "Thabo K.",
-    text: "No rush. Load test is clean - p95 latency under 180ms.",
-    time: "09:33",
-    mine: false,
-    reactions: ["💪"],
-    tone: "amber",
-  },
-  {
-    id: 5,
-    threadId: 1,
-    from: "me",
-    fromName: "You",
-    text: "Reviewed and approved. Go ahead with production deploy.",
-    time: "09:52",
-    mine: true,
-    reactions: ["✅", "🎉"],
-    tone: "accent",
-  },
-];
+const AI_INITIAL: AiMsg = {
+  role: "ai",
+  text: "Hi! I'm your AI project assistant. I have full context on your active projects, milestones, budget, and team activity. Ask me anything.",
+};
 
-const ACTIVITY: ActivityItem[] = [
-  { tone: "accent", text: "Thabo K. sent a message in Stripe Integration", time: "Just now" },
-  { tone: "amber", text: "James M. shared UAT checklist - 7 items pending", time: "2h ago" },
-  { tone: "purple", text: "Lerato M. uploaded 14 Figma screens", time: "Yesterday" },
-  { tone: "red", text: "System flagged INV-011 as overdue", time: "Feb 19" },
-  { tone: "green", text: "Nomsa D. closed all QA issues in Sprint 4", time: "Feb 17" },
-];
+const AI_REPLIES: Record<string, string> = {
+  "What's the current project status?":
+    "Your project is currently in active development. The team is on track with the current sprint and deliverables are progressing as planned.",
+  "Any blockers I should know about?":
+    "No critical blockers at the moment. Check the Risks page for any flagged concerns that the team is monitoring.",
+  "When is the next milestone?":
+    "Your next milestone is coming up at the end of this sprint. Visit the Milestones page for exact dates and deliverable details.",
+  "How is budget tracking?":
+    "Budget is on track. For a detailed breakdown visit the Billing page or ask your project manager for the latest forecast.",
+};
 
-function toneDotClass(tone: Tone | ThreadTagTone | ActivityTone): string {
-  if (tone === "green") return "msguDotGreen";
-  if (tone === "amber") return "msguDotAmber";
-  if (tone === "red") return "msguDotRed";
-  if (tone === "purple") return "msguDotPurple";
-  if (tone === "muted") return "msguDotMuted";
-  return "msguDotAccent";
+const TONE_DOT: Record<ActivityTone, string> = {
+  accent: "msguDotAccent",
+  amber: "msguDotAmber",
+  purple: "msguDotPurple",
+  red: "msguDotRed",
+  green: "msguDotGreen",
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function fmtAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60_000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
 }
 
-function badgeToneClass(tone: ThreadTagTone): string {
-  if (tone === "green") return "msguTagGreen";
-  if (tone === "purple") return "msguTagPurple";
-  if (tone === "amber") return "msguTagAmber";
-  if (tone === "red") return "msguTagRed";
-  return "msguTagMuted";
+function isoToDay(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-ZA", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 }
 
-function bubbleToneClass(tone: Tone, mine: boolean): string {
-  if (mine) return "msguBubbleMine";
-  if (tone === "amber") return "msguBubbleAmber";
-  if (tone === "red") return "msguBubbleRed";
-  if (tone === "purple") return "msguBubblePurple";
-  if (tone === "green") return "msguBubbleGreen";
-  return "msguBubbleTheirs";
+function deliverableToActivity(d: PortalDeliverable): ActivityItem {
+  return {
+    id: `del-${d.id}`,
+    icon: "package",
+    tone: d.status === "DONE" ? "accent" : d.status === "IN_REVIEW" ? "purple" : "amber",
+    title: d.name,
+    sub: `Status: ${d.status.replace(/_/g, " ")}`,
+    time: fmtAgo(d.updatedAt),
+  };
 }
 
-function tabId(tab: MsgUpdatesTab): string {
-  return `messages-tab-${tab.toLowerCase().replace(/\s+/g, "-")}`;
+function riskToActivity(r: PortalRisk): ActivityItem {
+  return {
+    id: `risk-${r.id}`,
+    icon: "alert",
+    tone: r.impact === "HIGH" || r.impact === "CRITICAL" ? "red" : "amber",
+    title: r.name,
+    sub: `Impact: ${r.impact} · Likelihood: ${r.likelihood}`,
+    time: fmtAgo(r.updatedAt),
+  };
 }
 
-function panelId(tab: MsgUpdatesTab): string {
-  return `messages-panel-${tab.toLowerCase().replace(/\s+/g, "-")}`;
+function mapThread(t: WorkspaceThread): Thread {
+  return {
+    id: t.id,
+    conversationId: t.id,
+    subject: t.subject,
+    preview: t.preview,
+    time: fmtAgo(t.lastMessageAt),
+    unread: t.unread,
+    avatarInitials: t.senderInitials,
+    avatarBg: t.avatarBg,
+    projectName: t.projectName,
+  };
 }
 
-export function MessagesPage() {
-  const [activeTab, setActiveTab] = useState<MsgUpdatesTab>("Messages");
-  const [threads, setThreads] = useState<Thread[]>(THREADS);
-  const [activeThreadId, setActiveThreadId] = useState<number>(THREADS[0]?.id ?? 1);
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export function MessagesPage({ threads: apiThreads = [] }: { threads?: WorkspaceThread[] }) {
+  const { session, projectId } = useProjectLayer();
+  const showToast = usePageToast();
+
+  // ── Core state ────────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState<MsgTab>("Inbox");
+  const [activeThread, setActiveThread] = useState<Thread | null>(null);
+  const [threadSearch, setThreadSearch] = useState("");
+
+  // ── Inbox ─────────────────────────────────────────────────────────────────
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [compose, setCompose] = useState("");
-  const [searchThread, setSearchThread] = useState("");
-  const [priority, setPriority] = useState<Priority>("Medium");
-  const [ticketSubject, setTicketSubject] = useState("");
-  const [ticketCategory, setTicketCategory] = useState("Project / Milestone Issue");
-  const [ticketProject, setTicketProject] = useState("Select a project...");
-  const [ticketDescription, setTicketDescription] = useState("");
-  const [toast, setToast] = useState<ToastState>(null);
-  const [liveAnnouncement, setLiveAnnouncement] = useState("");
+  const [sending, setSending] = useState(false);
+  const msgBodyRef = useRef<HTMLDivElement>(null);
 
-  const msgBodyRef = useRef<HTMLDivElement | null>(null);
-  const tabRefs = useRef<Partial<Record<MsgUpdatesTab, HTMLButtonElement | null>>>({});
-  const threadButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  // ── New thread modal ──────────────────────────────────────────────────────
+  const [showNewThread, setShowNewThread] = useState(false);
+  const [newSubject, setNewSubject] = useState("");
+  const [creatingThread, setCreatingThread] = useState(false);
 
-  const unreadCount = useMemo(() => threads.filter((thread) => thread.unread).length, [threads]);
+  // ── Activity ──────────────────────────────────────────────────────────────
+  const [activityItems, setActivityItems] = useState<ActivityItem[]>([]);
+  const [activityLoaded, setActivityLoaded] = useState(false);
+  const [actFilter, setActFilter] = useState<ActivityFilter>("All");
 
-  const filteredThreads = useMemo(() => {
-    const query = searchThread.trim().toLowerCase();
-    if (!query) return threads;
-    return threads.filter((thread) =>
-      thread.title.toLowerCase().includes(query) || thread.preview.toLowerCase().includes(query),
-    );
-  }, [searchThread, threads]);
+  // ── AI Assistant ──────────────────────────────────────────────────────────
+  const [aiChat, setAiChat] = useState<AiMsg[]>([AI_INITIAL]);
+  const [aiInput, setAiInput] = useState("");
+  const [aiTyping, setAiTyping] = useState(false);
+  const aiBodyRef = useRef<HTMLDivElement>(null);
 
-  const activeThread = useMemo(
-    () => threads.find((thread) => thread.id === activeThreadId) ?? null,
-    [activeThreadId, threads],
+  // ── Support ───────────────────────────────────────────────────────────────
+  const [supTitle, setSupTitle] = useState("");
+  const [supDesc, setSupDesc] = useState("");
+  const [supCategory, setSupCategory] = useState("GENERAL");
+  const [supPriority, setSupPriority] = useState<Priority>("Medium");
+  const [supSending, setSupSending] = useState(false);
+  const [supDone, setSupDone] = useState(false);
+
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const threads = useMemo(() => apiThreads.map(mapThread), [apiThreads]);
+
+  const filteredThreads = useMemo(
+    () =>
+      threads.filter(
+        (t) =>
+          threadSearch === "" ||
+          t.subject.toLowerCase().includes(threadSearch.toLowerCase()) ||
+          t.projectName.toLowerCase().includes(threadSearch.toLowerCase()),
+      ),
+    [threads, threadSearch],
   );
 
-  const visibleMessages = useMemo(
-    () => messages.filter((message) => message.threadId === activeThreadId),
-    [activeThreadId, messages],
-  );
+  const filteredActivity = useMemo(() => {
+    if (actFilter === "All") return activityItems;
+    if (actFilter === "Deliverables") return activityItems.filter((a) => a.id.startsWith("del-"));
+    return activityItems.filter((a) => a.id.startsWith("risk-"));
+  }, [activityItems, actFilter]);
 
+  // ── Load messages on thread change ────────────────────────────────────────
   useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 3200);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
-
-  useEffect(() => {
-    if (!msgBodyRef.current) return;
-    msgBodyRef.current.scrollTop = msgBodyRef.current.scrollHeight;
-  }, [visibleMessages]);
-
-  const showToast = (text: string, sub: string) => setToast({ text, sub });
-
-  const selectThread = (threadId: number) => {
-    const selected = threads.find((thread) => thread.id === threadId);
-    setActiveThreadId(threadId);
-    setThreads((prev) => prev.map((thread) => (thread.id === threadId ? { ...thread, unread: false } : thread)));
-    if (selected) {
-      setLiveAnnouncement(
-        `${selected.title}. ${selected.project}.${selected.unread ? " Marked as read." : ""}`,
-      );
+    if (!session || !activeThread) {
+      setMessages([]);
+      return;
     }
-  };
+    setLoadingMsgs(true);
+    void loadConversationMessagesWithRefresh(session, activeThread.conversationId).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data) {
+        setMessages(
+          r.data.map((m) => ({
+            id: m.id,
+            content: m.content,
+            mine: m.authorRole === "CLIENT",
+            createdAt: m.createdAt,
+          })),
+        );
+      }
+      setLoadingMsgs(false);
+    });
+  }, [activeThread?.conversationId, session?.accessToken]);
 
-  const sendMessage = () => {
-    const text = compose.trim();
-    if (!text || !activeThread) return;
-    const nextMessage: ChatMessage = {
-      id: Date.now(),
-      threadId: activeThread.id,
-      from: "me",
-      fromName: "You",
-      text,
-      time: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }),
+  // ── Load activity feed (lazy — first time Activity tab opens) ─────────────
+  useEffect(() => {
+    if (activeTab !== "Activity" || activityLoaded || !session || !projectId) return;
+    void Promise.all([
+      loadPortalDeliverablesWithRefresh(session, projectId),
+      loadPortalRisksWithRefresh(session, projectId),
+    ]).then(([dr, rr]) => {
+      if (dr.nextSession) saveSession(dr.nextSession);
+      if (rr.nextSession) saveSession(rr.nextSession);
+      const items: ActivityItem[] = [
+        ...(dr.data ?? []).map(deliverableToActivity),
+        ...(rr.data ?? []).map(riskToActivity),
+      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      setActivityItems(items);
+      setActivityLoaded(true);
+    });
+  }, [activeTab, activityLoaded, session?.accessToken, projectId]);
+
+  // ── Scroll to bottom on new messages ──────────────────────────────────────
+  useEffect(() => {
+    if (msgBodyRef.current) {
+      msgBodyRef.current.scrollTop = msgBodyRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (aiBodyRef.current) {
+      aiBodyRef.current.scrollTop = aiBodyRef.current.scrollHeight;
+    }
+  }, [aiChat]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  function selectThread(thread: Thread) {
+    setActiveThread(thread);
+    setActiveTab("Inbox");
+  }
+
+  async function handleSend() {
+    if (!compose.trim() || !session || !activeThread) return;
+    setSending(true);
+    const content = compose.trim();
+    const optimistic: ChatMessage = {
+      id: `opt-${Date.now()}`,
+      content,
       mine: true,
-      reactions: [],
-      tone: "accent",
+      createdAt: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, nextMessage]);
     setCompose("");
-    setLiveAnnouncement("Message sent.");
-  };
+    setMessages((prev) => [...prev, optimistic]);
+    const r = await createPortalMessageWithRefresh(session, {
+      conversationId: activeThread.conversationId,
+      content,
+    });
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.error) showToast("error", "Failed to send message");
+    setSending(false);
+  }
 
-  const addReaction = (msgId: number, emoji: string) => {
-    setMessages((prev) =>
-      prev.map((message) => {
-        if (message.id !== msgId) return message;
-        const exists = message.reactions.includes(emoji);
-        return {
-          ...message,
-          reactions: exists ? message.reactions.filter((item) => item !== emoji) : [...message.reactions, emoji],
-        };
-      }),
-    );
-  };
-
-  const submitTicket = () => {
-    showToast("Ticket submitted", "We'll respond within 1 business day.");
-    setTicketSubject("");
-    setTicketDescription("");
-    setPriority("Medium");
-    setTicketCategory("Project / Milestone Issue");
-    setTicketProject("Select a project...");
-    setLiveAnnouncement("Support ticket submitted.");
-  };
-
-  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, tab: MsgUpdatesTab) => {
-    const index = TABS.indexOf(tab);
-    if (index < 0) return;
-
-    let targetIndex = index;
-    if (event.key === "ArrowRight") targetIndex = (index + 1) % TABS.length;
-    if (event.key === "ArrowLeft") targetIndex = (index - 1 + TABS.length) % TABS.length;
-    if (event.key === "Home") targetIndex = 0;
-    if (event.key === "End") targetIndex = TABS.length - 1;
-    if (targetIndex === index) return;
-
-    event.preventDefault();
-    const nextTab = TABS[targetIndex];
-    setActiveTab(nextTab);
-    tabRefs.current[nextTab]?.focus();
-  };
-
-  const handleThreadKeyDown = (event: KeyboardEvent<HTMLButtonElement>, threadId: number) => {
-    const index = filteredThreads.findIndex((thread) => thread.id === threadId);
-    if (index < 0) return;
-
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      const delta = event.key === "ArrowDown" ? 1 : -1;
-      const nextIndex = (index + delta + filteredThreads.length) % filteredThreads.length;
-      const nextThreadId = filteredThreads[nextIndex]?.id;
-      if (!nextThreadId) return;
-      selectThread(nextThreadId);
-      threadButtonRefs.current[nextThreadId]?.focus();
+  function handleComposeKey(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void handleSend();
     }
-  };
+  }
+
+  async function handleCreateThread() {
+    if (!newSubject.trim() || !session) return;
+    setCreatingThread(true);
+    const r = await createPortalConversationWithRefresh(session, {
+      subject: newSubject.trim(),
+      projectId: projectId ?? undefined,
+    });
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.error) showToast("error", "Failed to create conversation");
+    else showToast("success", "Conversation started");
+    setCreatingThread(false);
+    setNewSubject("");
+    setShowNewThread(false);
+  }
+
+  function handleAiPrompt(prompt: string) {
+    setAiInput(prompt);
+  }
+
+  function handleSendAi() {
+    const q = aiInput.trim();
+    if (!q) return;
+    setAiInput("");
+    setAiChat((prev) => [...prev, { role: "user", text: q }]);
+    setAiTyping(true);
+    setTimeout(() => {
+      const reply =
+        AI_REPLIES[q] ??
+        "I don't have specific data on that right now. Your project manager can give you an accurate answer.";
+      setAiChat((prev) => [...prev, { role: "ai", text: reply }]);
+      setAiTyping(false);
+    }, 900);
+  }
+
+  function handleAiKey(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSendAi();
+    }
+  }
+
+  async function handleSupportSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!session || !supTitle.trim() || !supDesc.trim()) return;
+    setSupSending(true);
+    const r = await createPortalSupportTicketWithRefresh(session, {
+      clientId: session.user?.clientId ?? "",
+      title: supTitle.trim(),
+      description: supDesc.trim(),
+      category: supCategory,
+      priority: supPriority.toUpperCase(),
+    });
+    if (r.nextSession) saveSession(r.nextSession);
+    setSupSending(false);
+    if (r.error) {
+      showToast("error", "Failed to submit ticket");
+    } else {
+      setSupDone(true);
+      setSupTitle("");
+      setSupDesc("");
+      showToast("success", "Support ticket submitted");
+    }
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className={cx("pageBody", "msguPageRoot")}>
-      <div className={cx("msguPage")}> 
-        <div className={cx("msguMain")}>
-          <div className={cx("pageHeader")}> 
-            <div>
-              <div className={cx("pageEyebrow")}>Communication · Inbox</div>
-              <h1 className={cx("pageTitle")}>Messages & Updates</h1>
-              <p className={cx("pageSub")}>Threaded conversations, status nudges, reactions, and support tickets.</p>
+    <div className={cx("msguPageRoot")}>
+      <div className={cx("msguSplit")}>
+        {/* ── LEFT: Thread list ─────────────────────────────────────────── */}
+        <aside className={cx("msguLeftPane")}>
+          {/* Search + new thread */}
+          <div className={cx("msguSearchZone")}>
+            <div className={cx("msguThreadSearch")}>
+              <Ic n="search" sz={14} c="var(--muted2)" />
+              <input
+                placeholder="Search conversations…"
+                value={threadSearch}
+                onChange={(e) => setThreadSearch(e.target.value)}
+                title="Search conversations"
+              />
             </div>
-            <div className={cx("pageActions")}>
-              {unreadCount > 0 ? <span className={cx("msguUnreadPill")}>{unreadCount} unread</span> : null}
-              <button className={cx("btnSm", "btnGhost")} type="button" onClick={() => showToast("Status nudge sent", "Team has been notified.")}>Nudge Team</button>
-              <button className={cx("btnSm", "btnAccent")} type="button" onClick={() => showToast("Composer", "New thread composer opened.")}>+ New Thread</button>
-            </div>
-          </div>
-
-          <div className={styles.filterTabs} role="tablist" aria-label="Messages page sections">
-            {TABS.map((tab) => (
-              <button
-                key={tab}
-                id={tabId(tab)}
-                type="button"
-                className={cx("filterTab", activeTab === tab && "filterTabActive")}
-                onClick={() => setActiveTab(tab)}
-                onKeyDown={(event) => handleTabKeyDown(event, tab)}
-                role="tab"
-                tabIndex={activeTab === tab ? 0 : -1}
-                aria-selected={activeTab === tab}
-                aria-controls={panelId(tab)}
-                ref={(element) => {
-                  tabRefs.current[tab] = element;
-                }}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {activeTab === "Messages" ? (
-            <div
-              className={cx("msguCommLayout")}
-              role="tabpanel"
-              id={panelId("Messages")}
-              aria-labelledby={tabId("Messages")}
+            <button
+              type="button"
+              className={cx("msguIconBtn")}
+              onClick={() => setShowNewThread(true)}
+              title="New conversation"
             >
-              <section className={cx("msguFeedCol")}>
-                <label htmlFor="messages-thread-search" className={cx("srOnly")}>
-                  Search message threads
-                </label>
-                <div className={cx("msguThreadSearch")}> 
-                  <span aria-hidden="true">
-                    <Ic n="search" sz={12} c="var(--muted2)" />
-                  </span>
-                  <input
-                    id="messages-thread-search"
-                    placeholder="Search threads..."
-                    value={searchThread}
-                    onChange={(event) => setSearchThread(event.target.value)}
-                    aria-label="Search threads"
-                  />
-                </div>
+              +
+            </button>
+          </div>
 
-                <div className={cx("msguThreadList")} role="listbox" aria-label="Conversation threads">
-                  {filteredThreads.length === 0 ? (
-                    <div className={cx("msguThreadEmpty")} role="status">
-                      No threads match this search.
-                    </div>
-                  ) : (
-                    filteredThreads.map((thread) => (
-                      <button
-                        key={thread.id}
-                        id={`msg-thread-${thread.id}`}
-                        type="button"
-                        role="option"
-                        aria-selected={activeThreadId === thread.id}
-                        aria-label={`${thread.title}, ${thread.project}${thread.unread ? ", unread" : ""}`}
-                        className={cx(
-                          "msguThreadItem",
-                          activeThreadId === thread.id && "msguThreadItemActive",
-                          thread.unread && "msguThreadItemUnread",
-                        )}
-                        onClick={() => selectThread(thread.id)}
-                        onKeyDown={(event) => handleThreadKeyDown(event, thread.id)}
-                        ref={(element) => {
-                          threadButtonRefs.current[thread.id] = element;
-                        }}
-                      >
-                        <Av initials={thread.avatar} size={34} />
-                        <div className={cx("msguThreadBody")}>
-                          <div className={cx("msguThreadTop")}> 
-                            <span className={cx("msguThreadTitle")} title={thread.title}>{thread.title}</span>
-                            <span className={cx("msguThreadTime")}>{thread.time}</span>
-                          </div>
-                          <div className={cx("msguThreadPreview")}>{thread.preview}</div>
-                          <div className={cx("msguThreadTags")}>
-                            {thread.tags.map((tag) => (
-                              <span key={`${thread.id}-${tag.label}`} className={cx("msguTag", badgeToneClass(tag.tone))}>{tag.label}</span>
-                            ))}
-                            <span className={cx("msguThreadProject")}>{thread.project}</span>
-                          </div>
-                        </div>
-                        {thread.unread ? <span className={cx("msguThreadPulse")} aria-hidden="true" /> : null}
-                      </button>
-                    ))
+          {/* Thread list */}
+          <div className={cx("msguThreadList")}>
+            {filteredThreads.length === 0 ? (
+              <div className={cx("msguThreadEmpty")}>
+                <span>No conversations yet</span>
+              </div>
+            ) : (
+              filteredThreads.map((thread) => (
+                <button
+                  key={thread.id}
+                  type="button"
+                  className={cx(
+                    "msguThreadItem",
+                    activeThread?.id === thread.id ? "msguThreadItemActive" : "",
+                    thread.unread ? "msguThreadItemUnread" : "",
                   )}
-                </div>
-              </section>
-
-              <section className={cx("msguThreadCol")}>
-                {activeThread ? (
-                  <>
-                    <div className={cx("msguThreadHeader")}> 
-                      <div>
-                        <div className={cx("msguThreadHeaderTitle")}>{activeThread.title}</div>
-                        <div className={cx("msguThreadHeaderSub")}>{activeThread.project} · {activeThread.name}</div>
-                      </div>
-                      <div className={cx("msguThreadHeaderActions")}> 
-                        <button type="button" className={cx("msguIconBtn")} aria-label="Pin thread" onClick={() => showToast("Pinned", "Thread pinned")}>📌</button>
-                        <button type="button" className={cx("msguIconBtn")} aria-label="Search in conversation" onClick={() => showToast("Search", "Search opened")}>🔍</button>
-                        <button type="button" className={cx("msguIconBtn")} aria-label="Open more thread actions" onClick={() => showToast("More", "More actions")}>⋯</button>
-                      </div>
-                    </div>
-
-                    <div
-                      className={cx("msguMsgBody")}
-                      ref={msgBodyRef}
-                      role="log"
-                      aria-live="polite"
-                      aria-relevant="additions text"
-                      aria-label={`Conversation with ${activeThread.name}`}
-                    >
-                      {visibleMessages.map((message) => (
-                        <div key={message.id} className={cx("msguBubbleRow", message.mine && "msguBubbleRowMine")}>
-                          {!message.mine ? <Av initials={message.from} size={28} /> : null}
-
-                          <div className={cx("msguBubbleContent")}> 
-                            <div className={cx("msguBubbleName", message.mine && "msguBubbleNameRight")}>{message.fromName}</div>
-                            <div className={cx("msguBubble", bubbleToneClass(message.tone, message.mine))}>
-                              {message.text}
-                              {message.file ? (
-                                <div className={cx("msguFileBubble")}> 
-                                  <div className={cx("msguFileIcon")}>📄</div>
-                                  <div>
-                                    <div className={cx("msguFileName")}>{message.file.name}</div>
-                                    <div className={cx("msguFileSize")}>{message.file.size}</div>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    className={cx("msguFileDownload")}
-                                    aria-label={`Download ${message.file.name}`}
-                                    onClick={() => {
-                                      const fileName = message.file?.name ?? "attachment";
-                                      showToast("Downloading...", fileName);
-                                    }}
-                                  >
-                                    ↓
-                                  </button>
-                                </div>
-                              ) : null}
-                            </div>
-                            <div className={cx("msguBubbleTime", message.mine && "msguBubbleTimeRight")}>{message.time}</div>
-
-                            {message.reactions.length > 0 ? (
-                              <div className={cx("msguReactions")}> 
-                                {message.reactions.map((reaction) => (
-                                  <button
-                                    key={`${message.id}-${reaction}`}
-                                    type="button"
-                                    className={cx("msguReaction", message.mine && "msguReactionMine")}
-                                    aria-label={`Toggle reaction ${reaction}`}
-                                    onClick={() => addReaction(message.id, reaction)}
-                                  >
-                                    {reaction}
-                                  </button>
-                                ))}
-                                <button type="button" className={cx("msguReaction")} aria-label="Add thumbs up reaction" onClick={() => addReaction(message.id, "👍")}>+</button>
-                              </div>
-                            ) : null}
-                          </div>
-
-                          {message.mine ? <Av initials="Me" size={28} /> : null}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className={cx("msguComposeWrap")}>
-                      <div className={cx("msguMentionRow")}> 
-                        <span className={cx("msguMentionLabel")}>@ Mention:</span>
-                        {threads.slice(0, 4).map((thread) => (
-                          <button
-                            key={`mention-${thread.id}`}
-                            type="button"
-                            className={cx("msguMentionBtn")}
-                            aria-label={`Mention ${thread.name}`}
-                            onClick={() => setCompose((prev) => `${prev} @${thread.name.split(" ")[0]}`.trim())}
-                          >
-                            {thread.name.split(" ")[0]}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className={cx("msguComposeInputWrap")}> 
-                        <textarea
-                          className={cx("msguComposeInput")}
-                          rows={1}
-                          placeholder="Type a message... use @ to mention someone"
-                          aria-label="Message composer"
-                          value={compose}
-                          onChange={(event) => setCompose(event.target.value)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" && !event.shiftKey) {
-                              event.preventDefault();
-                              sendMessage();
-                            }
-                          }}
-                        />
-                        <div className={cx("msguComposeActions")}>
-                          <button type="button" className={cx("msguComposeBtn")} aria-label="Attach a file" onClick={() => showToast("File picker", "Choose a file to attach")}>📎</button>
-                          <button type="button" className={cx("msguComposeBtn")} aria-label="Record voice note" onClick={() => showToast("Voice note", "Recording started")}>🎙</button>
-                          <button type="button" className={cx("msguSendBtn")} aria-label="Send message" onClick={sendMessage}>→</button>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                ) : null}
-              </section>
-
-              <aside className={cx("msguRightCol")}>
-                <div className={cx("msguNudgeCard")}>
-                  <div className={cx("msguNudgeTitle")}>Request an Update</div>
-                  <div className={cx("msguNudgeSub")}>Send a gentle nudge to the team without messaging directly.</div>
-                  <button
-                    type="button"
-                    className={cx("msguNudgeBtn")}
-                    onClick={() => showToast("Status nudge sent", "Team has been notified you're waiting for an update")}
-                  >
-                    Send Nudge
-                  </button>
-                </div>
-
-                <div className={cx("msguSideSectionWrap")}>
-                  <div className={cx("msguSideSectionTitle")}>Recent Activity</div>
-                  {ACTIVITY.map((item, index) => (
-                    <div key={`${item.text}-${index}`} className={cx("msguActivityItem")}>
-                      <span className={cx("msguActivityDot", toneDotClass(item.tone))} />
-                      <div>
-                        <div className={cx("msguActivityText")}>{item.text}</div>
-                        <div className={cx("msguActivityTime")}>{item.time}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </aside>
-            </div>
-          ) : null}
-
-          {activeTab === "Activity" ? (
-            <div
-              className={cx("msguActivityPage")}
-              role="tabpanel"
-              id={panelId("Activity")}
-              aria-labelledby={tabId("Activity")}
-            >
-              {[...ACTIVITY, ...ACTIVITY.map((item, index) => ({ ...item, time: `${index + 1} weeks ago` }))].map((item, index) => (
-                <div key={`${item.text}-${index}`} className={cx("msguActivityRow")}> 
-                  <span className={cx("msguActivityDot", toneDotClass(item.tone))} />
-                  <div className={cx("msguGrow")}> 
-                    <div className={cx("msguActivityText")}>{item.text}</div>
-                    <div className={cx("msguActivityTime")}>{item.time}</div>
+                  onClick={() => selectThread(thread)}
+                >
+                  <div className={cx("msguAvatarWrap")}>
+                    <Av initials={thread.avatarInitials} size={34} />
+                    {thread.unread && <span className={cx("msguUnreadDot")} />}
                   </div>
-                </div>
+                  <div className={cx("msguThreadBody")}>
+                    <div className={cx("msguThreadTop")}>
+                      <span className={cx("msguThreadName")}>{thread.subject}</span>
+                      <span className={cx("msguThreadTime", "fontMono")}>{thread.time}</span>
+                    </div>
+                    <div className={cx("msguThreadPreview")}>{thread.preview}</div>
+                    {thread.projectName && (
+                      <div className={cx("msguProjectTag")}>{thread.projectName}</div>
+                    )}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </aside>
+
+        {/* ── RIGHT: Tabs + content ─────────────────────────────────────── */}
+        <div className={cx("msguRightPane")}>
+          {/* Tab bar */}
+          <div className={cx("msguTopBar")}>
+            <div className={cx("pillTabs")}>
+              {TABS.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={cx("pillTab", activeTab === tab ? "pillTabActive" : "")}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab}
+                </button>
               ))}
             </div>
-          ) : null}
+          </div>
 
-          {activeTab === "Support Ticket" ? (
-            <div
-              className={cx("msguTicketPage")}
-              role="tabpanel"
-              id={panelId("Support Ticket")}
-              aria-labelledby={tabId("Support Ticket")}
-            >
-              <div className={cx("card", "msguTicketIntro")}> 
-                <div className={cx("msguTicketIntroTitle")}>Submit a Support Ticket</div>
-                <div className={cx("msguTicketIntroSub")}>Log an issue, ask a question, or flag something that needs attention. We respond within 1 business day.</div>
-              </div>
+          {/* ── INBOX ───────────────────────────────────────────────────── */}
+          {activeTab === "Inbox" && (
+            <div className={cx("msguChatLayout")}>
+              {activeThread ? (
+                <>
+                  {/* Thread header */}
+                  <div className={cx("msguThreadHeader")}>
+                    <div className={cx("msguThreadHeaderLeft")}>
+                      <Av initials={activeThread.avatarInitials} size={32} />
+                      <div>
+                        <div className={cx("msguThreadHeaderTitle")}>{activeThread.subject}</div>
+                        {activeThread.projectName && (
+                          <div className={cx("msguThreadHeaderSub")}>{activeThread.projectName}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
-              <div className={cx("card", "msguTicketForm")}> 
-                <label className={cx("msguFieldLabel")} htmlFor="support-ticket-subject">Subject</label>
-                <input
-                  id="support-ticket-subject"
-                  className={cx("msguFieldInput")}
-                  placeholder="Brief description of the issue"
-                  value={ticketSubject}
-                  onChange={(event) => setTicketSubject(event.target.value)}
-                />
+                  {/* Messages */}
+                  <div className={cx("msguMsgBody")} ref={msgBodyRef}>
+                    {loadingMsgs ? (
+                      <div className={cx("emptyState")}>
+                        <div className={cx("emptyStateTitle", "colorMuted")}>Loading…</div>
+                      </div>
+                    ) : messages.length === 0 ? (
+                      <div className={cx("emptyState")}>
+                        <div className={cx("emptyStateIcon")}>
+                          <Ic n="message" sz={22} c="var(--muted2)" />
+                        </div>
+                        <div className={cx("emptyStateTitle")}>No messages yet</div>
+                        <div className={cx("emptyStateSub")}>
+                          Send a message below to start the conversation.
+                        </div>
+                      </div>
+                    ) : (
+                      (() => {
+                        let lastDay = "";
+                        return messages.map((msg) => {
+                          const day = isoToDay(msg.createdAt);
+                          const showSep = day !== lastDay;
+                          lastDay = day;
+                          return (
+                            <div key={msg.id}>
+                              {showSep && (
+                                <div className={cx("msguDateSep")}>
+                                  <span>{day}</span>
+                                </div>
+                              )}
+                              <div
+                                className={cx(
+                                  "msguBubbleRow",
+                                  msg.mine ? "msguBubbleRowMine" : "",
+                                )}
+                              >
+                                <div className={cx("msguBubbleContent")}>
+                                  <div
+                                    className={cx(
+                                      "msguBubble",
+                                      msg.mine ? "msguBubbleMine" : "msguBubbleTheirs",
+                                    )}
+                                  >
+                                    {msg.content}
+                                  </div>
+                                  <div
+                                    className={cx(
+                                      "msguBubbleTime",
+                                      msg.mine ? "msguBubbleTimeRight" : "",
+                                      "fontMono",
+                                    )}
+                                  >
+                                    {fmtAgo(msg.createdAt)}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()
+                    )}
+                  </div>
 
-                <label className={cx("msguFieldLabel")} htmlFor="support-ticket-category">Category</label>
-                <select
-                  id="support-ticket-category"
-                  className={cx("msguFieldInput")}
-                  value={ticketCategory}
-                  onChange={(event) => setTicketCategory(event.target.value)}
-                >
-                  <option>Project / Milestone Issue</option>
-                  <option>Invoice / Billing Query</option>
-                  <option>Technical Problem</option>
-                  <option>Communication Issue</option>
-                  <option>File / Document Access</option>
-                  <option>Other</option>
-                </select>
+                  {/* Compose */}
+                  <div className={cx("msguComposeWrap")}>
+                    <div className={cx("msguComposeBar")}>
+                      <textarea
+                        className={cx("msguComposeInput")}
+                        placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
+                        value={compose}
+                        onChange={(e) => setCompose(e.target.value)}
+                        onKeyDown={handleComposeKey}
+                        rows={1}
+                        title="Compose message"
+                      />
+                      <button
+                        type="button"
+                        className={cx("msguSendBtn")}
+                        onClick={() => void handleSend()}
+                        disabled={sending || !compose.trim()}
+                        title="Send message"
+                      >
+                        <Ic n="send" sz={16} c="var(--dark)" />
+                      </button>
+                    </div>
+                    <div className={cx("msguComposeHint")}>
+                      <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for newline
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className={cx("msguRightEmpty")}>
+                  <div className={cx("emptyStateIcon")}>
+                    <Ic n="message" sz={28} c="var(--muted2)" />
+                  </div>
+                  <div className={cx("emptyStateTitle")}>Select a conversation</div>
+                  <div className={cx("emptyStateSub")}>
+                    Choose a conversation from the left panel to view messages.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
-                <label className={cx("msguFieldLabel")}>Priority</label>
-                <div className={cx("msguPriorityGrid")} role="radiogroup" aria-label="Ticket priority">
-                  {(["Low", "Medium", "High"] as Priority[]).map((level) => (
+          {/* ── ACTIVITY ────────────────────────────────────────────────── */}
+          {activeTab === "Activity" && (
+            <div className={cx("msguActivityPage")}>
+              <div className={cx("msguActivityHeader")}>
+                <div className={cx("pillTabs")}>
+                  {ACTIVITY_FILTERS.map((f) => (
                     <button
-                      key={level}
+                      key={f}
                       type="button"
-                      role="radio"
-                      aria-checked={priority === level}
-                      className={cx(
-                        "msguPriorityBtn",
-                        level === "Low" && priority === level && "msguPriorityLow",
-                        level === "Medium" && priority === level && "msguPriorityMed",
-                        level === "High" && priority === level && "msguPriorityHigh",
-                      )}
-                      onClick={() => setPriority(level)}
+                      className={cx("pillTab", actFilter === f ? "pillTabActive" : "")}
+                      onClick={() => setActFilter(f)}
                     >
-                      {level}
+                      {f}
                     </button>
                   ))}
                 </div>
+              </div>
 
-                <label className={cx("msguFieldLabel")} htmlFor="support-ticket-project">Project (if applicable)</label>
-                <select
-                  id="support-ticket-project"
-                  className={cx("msguFieldInput")}
-                  value={ticketProject}
-                  onChange={(event) => setTicketProject(event.target.value)}
-                >
-                  <option>Select a project...</option>
-                  <option>Client Portal v2</option>
-                  <option>Lead Pipeline Rebuild</option>
-                  <option>Automation Suite</option>
-                  <option>Not project-specific</option>
-                </select>
-
-                <label className={cx("msguFieldLabel")} htmlFor="support-ticket-description">Description</label>
-                <textarea
-                  id="support-ticket-description"
-                  className={cx("msguFieldTextarea")}
-                  placeholder="Describe the issue in detail. Include steps to reproduce if technical."
-                  value={ticketDescription}
-                  onChange={(event) => setTicketDescription(event.target.value)}
-                />
-
-                <label className={cx("msguFieldLabel")}>Attachments (optional)</label>
-                <div className={cx("msguUploadBox")}>Drop files here or click to upload · Max 10MB per file</div>
-
-                <button
-                  type="button"
-                  className={cx("btnSm", "btnAccent", "msguSubmitBtn")}
-                  onClick={submitTicket}
-                  disabled={!ticketSubject.trim() || !ticketDescription.trim()}
-                >
-                  Submit Ticket
-                </button>
+              <div className={cx("msguActivityFeed")}>
+                {filteredActivity.length === 0 ? (
+                  <div className={cx("emptyState")}>
+                    <div className={cx("emptyStateIcon")}>
+                      <Ic n="activity" sz={22} c="var(--muted2)" />
+                    </div>
+                    <div className={cx("emptyStateTitle")}>No activity yet</div>
+                    <div className={cx("emptyStateSub")}>
+                      Project events will appear here as work progresses.
+                    </div>
+                  </div>
+                ) : (
+                  <div className={cx("msguTimeline")}>
+                    <div className={cx("msguTimelineRail")} />
+                    {filteredActivity.map((item) => (
+                      <div key={item.id} className={cx("msguTimelineItem")}>
+                        <div className={cx("msguTimelineDot", TONE_DOT[item.tone])}>
+                          <Ic n={item.icon as "activity"} sz={11} c="var(--dark)" />
+                        </div>
+                        <div className={cx("msguTimelineBody")}>
+                          <div className={cx("text13", "fw600")}>{item.title}</div>
+                          <div className={cx("text11", "colorMuted")}>{item.sub}</div>
+                        </div>
+                        <span className={cx("text11", "colorMuted", "fontMono")}>{item.time}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-          ) : null}
+          )}
+
+          {/* ── AI ASSISTANT ────────────────────────────────────────────── */}
+          {activeTab === "AI Assistant" && (
+            <div className={cx("msguAiPage")}>
+              {/* Header */}
+              <div className={cx("msguAiHeader")}>
+                <div className={cx("msguAiAvatar")}>
+                  <Ic n="sparkle" sz={16} c="var(--lime)" />
+                </div>
+                <div>
+                  <div className={cx("text13", "fw700")}>
+                    Maphari AI
+                  </div>
+                  <div className={cx("text11", "colorMuted")}>Project intelligence assistant</div>
+                </div>
+              </div>
+
+              {/* Chat feed */}
+              <div className={cx("msguAiFeed")} ref={aiBodyRef}>
+                {aiChat.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={cx(
+                      "msguAiBubbleRow",
+                      msg.role === "user" ? "msguAiBubbleRowUser" : "",
+                    )}
+                  >
+                    {msg.role === "ai" && (
+                      <div className={cx("msguAiAvatar", "noShrink")}>
+                        <Ic n="sparkle" sz={13} c="var(--lime)" />
+                      </div>
+                    )}
+                    <div
+                      className={cx(
+                        "msguAiBubble",
+                        msg.role === "ai" ? "msguAiBubbleAi" : "msguAiBubbleUser",
+                      )}
+                    >
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {aiTyping && (
+                  <div className={cx("msguAiBubbleRow")}>
+                    <div className={cx("msguAiAvatar", "noShrink")}>
+                      <Ic n="sparkle" sz={13} c="var(--lime)" />
+                    </div>
+                    <div className={cx("msguAiBubble", "msguAiBubbleAi", "colorMuted")}>
+                      Thinking…
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Suggested prompts */}
+              <div className={cx("msguAiPrompts")}>
+                {AI_PROMPTS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className={cx("btnSm", "btnGhost")}
+                    onClick={() => handleAiPrompt(p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              {/* AI compose */}
+              <div className={cx("msguComposeWrap")}>
+                <div className={cx("msguComposeBar")}>
+                  <input
+                    className={cx("msguComposeInput")}
+                    placeholder="Ask me anything about your project…"
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    onKeyDown={handleAiKey}
+                    title="AI assistant input"
+                  />
+                  <button
+                    type="button"
+                    className={cx("msguSendBtn")}
+                    onClick={handleSendAi}
+                    disabled={!aiInput.trim() || aiTyping}
+                    title="Send to AI"
+                  >
+                    <Ic n="send" sz={16} c="var(--dark)" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── SUPPORT ─────────────────────────────────────────────────── */}
+          {activeTab === "Support" && (
+            <div className={cx("msguSupportPage")}>
+              <div className={cx("msguSupportHeader")}>
+                <div className={cx("text14", "fw700")}>
+                  Submit a Support Ticket
+                </div>
+                <div className={cx("text12", "colorMuted")}>
+                  Our team will respond within your SLA window.
+                </div>
+              </div>
+
+              {supDone ? (
+                <div className={cx("emptyState")}>
+                  <div className={cx("emptyStateIcon")}>
+                    <Ic n="check" sz={22} c="var(--lime)" />
+                  </div>
+                  <div className={cx("emptyStateTitle")}>Ticket submitted</div>
+                  <div className={cx("emptyStateSub")}>
+                    We've received your request and will be in touch shortly.
+                  </div>
+                  <button
+                    type="button"
+                    className={cx("btnSm", "btnAccent", "mt16")}
+                    onClick={() => setSupDone(false)}
+                  >
+                    Submit another
+                  </button>
+                </div>
+              ) : (
+                <form className={cx("msguSupportForm")} onSubmit={(e) => void handleSupportSubmit(e)}>
+                  <div className={cx("msguFieldGroup")}>
+                    <label className={cx("msguFieldLabel")} htmlFor="sup-title">
+                      Subject
+                    </label>
+                    <input
+                      id="sup-title"
+                      className={cx("msguFieldInput")}
+                      placeholder="Brief description of the issue"
+                      value={supTitle}
+                      onChange={(e) => setSupTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className={cx("msguFieldGroup")}>
+                    <label className={cx("msguFieldLabel")} htmlFor="sup-desc">
+                      Description
+                    </label>
+                    <textarea
+                      id="sup-desc"
+                      className={cx("msguFieldTextarea")}
+                      placeholder="Describe the issue in detail…"
+                      value={supDesc}
+                      onChange={(e) => setSupDesc(e.target.value)}
+                      rows={4}
+                      required
+                    />
+                  </div>
+
+                  <div className={cx("msguSupportRow")}>
+                    <div className={cx("msguFieldGroup")}>
+                      <label className={cx("msguFieldLabel")} htmlFor="sup-cat">
+                        Category
+                      </label>
+                      <select
+                        id="sup-cat"
+                        className={cx("msguFieldInput")}
+                        value={supCategory}
+                        onChange={(e) => setSupCategory(e.target.value)}
+                      >
+                        <option value="GENERAL">General</option>
+                        <option value="BILLING">Billing</option>
+                        <option value="TECHNICAL">Technical</option>
+                        <option value="PROJECT">Project</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+                    <div className={cx("msguFieldGroup")}>
+                      <label className={cx("msguFieldLabel")}>Priority</label>
+                      <div className={cx("msguPriorityGrid")}>
+                        {(["Low", "Medium", "High"] as Priority[]).map((p) => (
+                          <button
+                            key={p}
+                            type="button"
+                            className={cx(
+                              "msguPriorityBtn",
+                              p === "Low" ? "msguPriorityLow" : p === "Medium" ? "msguPriorityMed" : "msguPriorityHigh",
+                              supPriority === p ? "msguPriorityBtnActive" : "",
+                            )}
+                            onClick={() => setSupPriority(p)}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className={cx("msguSubmitBtn")}
+                    disabled={supSending || !supTitle.trim() || !supDesc.trim()}
+                  >
+                    {supSending ? "Submitting…" : "Submit ticket"}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {toast ? (
-        <div className={cx("msguToast")} role="status" aria-live="polite" aria-atomic="true">
-          <div className={cx("msguToastIcon")}>✓</div>
-          <div>
-            <div className={cx("msguToastText")}>{toast.text}</div>
-            <div className={cx("msguToastSub")}>{toast.sub}</div>
+      {/* ── New Thread Modal ─────────────────────────────────────────────── */}
+      {showNewThread && (
+        <div
+          className={cx("modalBackdrop")}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowNewThread(false); }}
+        >
+          <div className={cx("modal")}>
+            <div className={cx("modalHeader")}>
+              <span className={cx("modalTitle")}>New Conversation</span>
+              <button
+                type="button"
+                className={cx("modalClose")}
+                onClick={() => setShowNewThread(false)}
+                title="Close"
+              >
+                <Ic n="x" sz={15} c="var(--text)" />
+              </button>
+            </div>
+            <div className={cx("modalBody")}>
+              <div className={cx("msguFieldGroup")}>
+                <label className={cx("msguFieldLabel")} htmlFor="new-subject">
+                  Subject
+                </label>
+                <input
+                  id="new-subject"
+                  className={cx("msguFieldInput")}
+                  placeholder="What is this conversation about?"
+                  value={newSubject}
+                  onChange={(e) => setNewSubject(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void handleCreateThread(); }}}
+                  autoFocus
+                />
+              </div>
+              <div className={cx("modalFooter")}>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnGhost")}
+                  onClick={() => setShowNewThread(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnAccent")}
+                  disabled={creatingThread || !newSubject.trim()}
+                  onClick={() => void handleCreateThread()}
+                >
+                  {creatingThread ? "Creating…" : "Start conversation"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      ) : null}
-      <div className={cx("srOnly")} aria-live="polite" aria-atomic="true">{liveAnnouncement}</div>
+      )}
     </div>
   );
 }

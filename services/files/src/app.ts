@@ -3,6 +3,7 @@ import type { ApiResponse } from "@maphari/contracts";
 import { registerServiceRateLimit, ServiceMetrics } from "@maphari/platform";
 import { registerFileRoutes } from "./routes/files.js";
 import { registerUploadFlowRoutes } from "./routes/upload-flow.js";
+import { registerDocumentRoutes } from "./routes/documents.js";
 
 export async function createFilesApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
@@ -63,6 +64,7 @@ export async function createFilesApp(): Promise<FastifyInstance> {
 
   await registerUploadFlowRoutes(app);
   await registerFileRoutes(app);
+  await registerDocumentRoutes(app);
 
   return app;
 }

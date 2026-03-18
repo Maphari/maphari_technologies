@@ -480,6 +480,22 @@ export interface MilestoneApproval {
   updatedAt: string;
 }
 
+export interface AdminAppointment {
+  id: string;
+  clientId: string;
+  type: string;
+  scheduledAt: string;
+  durationMins: number;
+  ownerName: string | null;
+  status: string;
+  notes: string | null;
+  videoRoomUrl: string | null;
+  videoProvider: string | null;
+  videoCallStatus: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AdminSnapshot {
   clients: AdminClient[];
   projects: AdminProject[];

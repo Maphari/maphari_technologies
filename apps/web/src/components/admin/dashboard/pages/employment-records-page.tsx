@@ -1,10 +1,18 @@
+// ════════════════════════════════════════════════════════════════════════════
+// employment-records-page.tsx — Admin Employment Records
+// Data     : loadAllStaffWithRefresh → GET /staff
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { colorClass, toneClass } from "./admin-page-utils";
 import { AdminTabs } from "./shared";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { loadAllStaffWithRefresh, type AdminStaffProfile } from "../../../../lib/api/admin";
+import { saveSession } from "../../../../lib/auth/session";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
 type Employee = {
   id: string;
   name: string;
@@ -29,98 +37,78 @@ type Employee = {
   notes: string | null;
 };
 
-const employees: Employee[] = [
-  {
-    id: "EMP-001", name: "Sipho Nkosi", role: "Founder & CEO", department: "Leadership",
-    avatar: "SN", color: "var(--accent)", contractType: "Director", startDate: "Jan 2020",
-    salary: 60000, lastReview: "Aug 2025", nextReview: "Aug 2026",
-    bankAccount: "FNB ****7823", taxNumber: "TRF-****-8821",
-    address: "14 Jacaranda Ave, Pretoria, 0001", idNumber: "82****4083",
-    emergencyContact: "Thandi Nkosi - +27 83 400 1122",
-    documents: ["Contract", "ID Copy", "Tax Certificate", "Equity Certificate"],
-    probation: null, leaveBalance: 13, performanceScore: null,
-    notes: "Founding member. CCMA representative. Company shareholder."
-  },
-  {
-    id: "EMP-002", name: "Leilani Fotu", role: "Head of Operations", department: "Operations",
-    avatar: "LF", color: "var(--blue)", contractType: "Permanent", startDate: "Mar 2022",
-    salary: 44000, lastReview: "Sep 2025", nextReview: "Sep 2026",
-    bankAccount: "Standard Bank ****4412", taxNumber: "TRF-****-3314",
-    address: "8 Baobab St, Centurion, 0157", idNumber: "91****7021",
-    emergencyContact: "Pita Fotu - +27 72 908 3301",
-    documents: ["Contract", "ID Copy", "Tax Certificate", "Qualifications"],
-    probation: null, leaveBalance: 2, performanceScore: 4.2,
-    notes: null
-  },
-  {
-    id: "EMP-003", name: "Renzo Fabbri", role: "Creative Director", department: "Creative",
-    avatar: "RF", color: "var(--amber)", contractType: "Permanent", startDate: "Jun 2021",
-    salary: 52000, lastReview: "Oct 2025", nextReview: "Oct 2026",
-    bankAccount: "Nedbank ****9934", taxNumber: "TRF-****-7741",
-    address: "22 Via Roma, Hatfield, 0083", idNumber: "88****5519",
-    emergencyContact: "Sofia Fabbri - +27 74 217 8890",
-    documents: ["Contract", "ID Copy", "Work Permit", "Tax Certificate"],
-    probation: null, leaveBalance: 3, performanceScore: 4.6,
-    notes: "Italian passport. Work permit valid until Dec 2027."
-  },
-  {
-    id: "EMP-004", name: "Nomsa Dlamini", role: "Account Manager", department: "Client Services",
-    avatar: "ND", color: "var(--accent)", contractType: "Permanent", startDate: "Feb 2023",
-    salary: 38000, lastReview: "Feb 2026", nextReview: "Feb 2027",
-    bankAccount: "Capitec ****2281", taxNumber: "TRF-****-9912",
-    address: "5 Msasa Rd, Sunnyside, 0132", idNumber: "94****0887",
-    emergencyContact: "Bongi Dlamini - +27 81 553 4421",
-    documents: ["Contract", "ID Copy", "Tax Certificate"],
-    probation: null, leaveBalance: 12, performanceScore: 3.9,
-    notes: "Last review Jan 2026 - flagged communication improvement areas."
-  },
-  {
-    id: "EMP-005", name: "Kira Bosman", role: "UX Designer", department: "Creative",
-    avatar: "KB", color: "var(--amber)", contractType: "Permanent", startDate: "Aug 2023",
-    salary: 33500, lastReview: "Aug 2025", nextReview: "Aug 2026",
-    bankAccount: "FNB ****6670", taxNumber: "TRF-****-4423",
-    address: "31 Korhaan St, Brooklyn, 0181", idNumber: "97****2214",
-    emergencyContact: "Johan Bosman - +27 83 112 3344",
-    documents: ["Contract", "ID Copy", "Tax Certificate", "Qualifications"],
-    probation: null, leaveBalance: 11, performanceScore: 4.4,
-    notes: null
-  },
-  {
-    id: "EMP-006", name: "Tapiwa Moyo", role: "Copywriter", department: "Creative",
-    avatar: "TM", color: "var(--blue)", contractType: "Permanent", startDate: "Jan 2024",
-    salary: 28000, lastReview: null, nextReview: "Jan 2026",
-    bankAccount: "Absa ****3345", taxNumber: "TRF-****-8812",
-    address: "12 Flame Lily Close, Lynnwood, 0081", idNumber: "99****1132",
-    emergencyContact: "Grace Moyo - +27 72 881 4409",
-    documents: ["Contract", "ID Copy"],
-    probation: "Completed Jan 2025", leaveBalance: 14, performanceScore: 3.7,
-    notes: "First review overdue - schedule ASAP."
-  }
-];
-
 const reqDocs = ["Contract", "ID Copy", "Tax Certificate"] as const;
 const tabs = ["all records", "record detail", "compliance", "org chart"] as const;
 type Tab = (typeof tabs)[number];
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function parseMonthYear(value: string | null): Date | null {
   if (!value) return null;
   const parsed = new Date(`${value} 1`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+function mapStaffToEmployee(s: AdminStaffProfile): Employee {
+  const initials = s.avatarInitials ?? s.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const color = s.avatarColor ?? "var(--accent)";
+  const salary = s.grossSalaryCents !== null ? Math.round(s.grossSalaryCents / 100) : 0;
+  const startDate = s.hireDate
+    ? new Date(s.hireDate).toLocaleDateString("en-ZA", { month: "short", year: "numeric" })
+    : "—";
+  return {
+    id: s.id.slice(0, 8).toUpperCase(),
+    name: s.name,
+    role: s.role,
+    department: s.department ?? "—",
+    avatar: initials,
+    color,
+    contractType: s.contractType ?? "Permanent",
+    startDate,
+    salary,
+    lastReview: null,
+    nextReview: null,
+    bankAccount: "—",
+    taxNumber: "—",
+    address: "—",
+    idNumber: "—",
+    emergencyContact: "—",
+    documents: ["Contract"],
+    probation: null,
+    leaveBalance: 0,
+    performanceScore: null,
+    notes: null,
+  };
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 function Avatar({ initials, color, size = 40 }: { initials: string; color: string; size?: number }) {
   const sizeClass = size === 24 ? "emprAvatar24" : size === 28 ? "emprAvatar28" : size === 30 ? "emprAvatar30" : size === 56 ? "emprAvatar56" : "emprAvatar40";
-  const toneClass = colorClass(color).replace("color", "tone");
+  const tc = colorClass(color).replace("color", "tone");
   return (
-    <div className={cx(styles.emprAvatar, sizeClass, toneClass)}>
+    <div className={cx(styles.emprAvatar, sizeClass, tc)}>
       {initials}
     </div>
   );
 }
 
-export function EmploymentRecordsPage() {
+// ── Component ─────────────────────────────────────────────────────────────────
+export function EmploymentRecordsPage({ session }: { session: AuthSession | null }) {
   const [activeTab, setActiveTab] = useState<Tab>("all records");
-  const [selected, setSelected] = useState<Employee>(employees[0]);
+  const [apiStaff, setApiStaff] = useState<AdminStaffProfile[]>([]);
+  const [selected, setSelected] = useState<Employee | null>(null);
+
+  useEffect(() => {
+    if (!session) return;
+    loadAllStaffWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) {
+        setApiStaff(r.data);
+        if (r.data.length > 0) setSelected(mapStaffToEmployee(r.data[0]));
+      }
+    });
+  }, [session]);
+
+  const employees = useMemo<Employee[]>(() => apiStaff.map(mapStaffToEmployee), [apiStaff]);
 
   const overdueReviews = useMemo(() => {
     const cutoff = new Date("2026-03-01");
@@ -131,15 +119,15 @@ export function EmploymentRecordsPage() {
       if (!last) return true;
       return last < new Date("2026-01-01");
     });
-  }, []);
+  }, [employees]);
 
   const missingDocs = useMemo(
     () => employees.filter((e) => !reqDocs.every((d) => e.documents.includes(d))),
-    []
+    [employees]
   );
   const workPermits = useMemo(
     () => employees.filter((e) => e.documents.includes("Work Permit")),
-    []
+    [employees]
   );
 
   return (
@@ -157,7 +145,7 @@ export function EmploymentRecordsPage() {
 
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Total Employees", value: employees.length.toString(), color: "var(--accent)", sub: "All permanent staff" },
+          { label: "Total Employees", value: employees.length.toString(), color: "var(--accent)", sub: "All active staff" },
           { label: "Reviews Overdue", value: overdueReviews.length.toString(), color: overdueReviews.length > 0 ? "var(--red)" : "var(--accent)", sub: "Annual reviews past due" },
           { label: "Missing Documents", value: missingDocs.length.toString(), color: missingDocs.length > 0 ? "var(--amber)" : "var(--accent)", sub: "Incomplete compliance files" },
           { label: "Work Permits", value: workPermits.length.toString(), color: "var(--blue)", sub: "Foreign nationals on staff" }
@@ -186,6 +174,9 @@ export function EmploymentRecordsPage() {
             <div className={cx(styles.emprTableHead, "fontMono", "text10", "colorMuted", "uppercase")}>
               {"Employee|Role|Contract|Start Date|Salary|Next Review|Docs|".split("|").map((h, idx) => <span key={`${h}-${idx}`}>{h}</span>)}
             </div>
+            {employees.length === 0 ? (
+              <div className={cx("colorMuted", "text13", "py24", "textCenter")}>No staff records found.</div>
+            ) : null}
             {employees.map((emp, i) => {
               const missingAny = !reqDocs.every((d) => emp.documents.includes(d));
               const reviewAlert = !emp.lastReview;
@@ -201,8 +192,8 @@ export function EmploymentRecordsPage() {
                   <span className={cx("text12", "colorMuted")}>{emp.role}</span>
                   <span className={styles.emprContract}>{emp.contractType}</span>
                   <span className={styles.emprMonoMuted}>{emp.startDate}</span>
-                  <span className={styles.emprSalary}>R{(emp.salary / 1000).toFixed(0)}k</span>
-                  <span className={cx(styles.emprMono12, reviewAlert ? "colorRed" : "colorMuted")}>{emp.nextReview || "Overdue"}</span>
+                  <span className={styles.emprSalary}>{emp.salary > 0 ? `R${(emp.salary / 1000).toFixed(0)}k` : "—"}</span>
+                  <span className={cx(styles.emprMono12, reviewAlert ? "colorRed" : "colorMuted")}>{emp.nextReview || "—"}</span>
                   <span className={cx(styles.emprDocStatus, missingAny ? "colorRed" : "colorAccent")}>{missingAny ? "!" : "OK"}</span>
                   <button type="button" onClick={() => { setSelected(emp); setActiveTab("record detail"); }} className={cx("btnSm", "btnAccent")}>View</button>
                 </div>
@@ -211,7 +202,7 @@ export function EmploymentRecordsPage() {
           </div>
         ) : null}
 
-        {activeTab === "record detail" ? (
+        {activeTab === "record detail" && selected ? (
           <div className={styles.emprDetailSplit}>
             <div className={styles.emprSideList}>
               {employees.map((emp) => (
@@ -251,11 +242,11 @@ export function EmploymentRecordsPage() {
                 <div>
                   <div className={styles.emprSectionTitle}>Employment Details</div>
                   {[
-                    { label: "Salary", value: `R${selected.salary.toLocaleString()}/month`, color: "var(--accent)" },
+                    { label: "Salary", value: selected.salary > 0 ? `R${selected.salary.toLocaleString()}/month` : "—", color: "var(--accent)" },
                     { label: "Bank Account", value: selected.bankAccount },
                     { label: "Tax Number", value: selected.taxNumber },
-                    { label: "Last Review", value: selected.lastReview || "Never", color: !selected.lastReview ? "var(--red)" : "var(--text)" },
-                    { label: "Next Review", value: selected.nextReview || "Overdue", color: !selected.lastReview ? "var(--red)" : "var(--text)" },
+                    { label: "Last Review", value: selected.lastReview || "—", color: !selected.lastReview ? "var(--muted)" : "var(--text)" },
+                    { label: "Next Review", value: selected.nextReview || "—", color: "var(--text)" },
                     { label: "Performance Score", value: selected.performanceScore ? `${selected.performanceScore}/5` : "Not yet rated", color: selected.performanceScore ? (selected.performanceScore >= 4 ? "var(--accent)" : selected.performanceScore >= 3 ? "var(--amber)" : "var(--red)") : "var(--muted)" }
                   ].map((f) => (
                     <div key={f.label} className={styles.emprFieldRow}>
@@ -336,7 +327,7 @@ export function EmploymentRecordsPage() {
                     <span className={styles.text13}>{emp.name.split(" ")[0]}</span>
                   </div>
                   <div className={styles.emprReviewRight}>
-                    <div className={cx(styles.emprMono12, !emp.lastReview ? "colorRed" : "colorMuted")}>Next: {emp.nextReview || "OVERDUE"}</div>
+                    <div className={cx(styles.emprMono12, !emp.lastReview ? "colorRed" : "colorMuted")}>Next: {emp.nextReview || "—"}</div>
                     {!emp.lastReview ? <div className={styles.emprNeverReviewed}>Never reviewed</div> : null}
                   </div>
                 </div>
@@ -347,42 +338,39 @@ export function EmploymentRecordsPage() {
 
         {activeTab === "org chart" ? (
           <div className={styles.emprOrgCard}>
-            <div className={styles.emprOrgWrap}>
-              <div className={styles.emprCeoCard}>
-                <div className={styles.emprMono10Accent}>EMP-001</div>
-                <div className={styles.emprCeoName}>Sipho Nkosi</div>
-                <div className={styles.emprCeoRole}>Founder &amp; CEO</div>
-              </div>
-              <div className={styles.emprOrgLine} />
-
-              <div className={styles.emprLeadsRow}>
-                {[employees[1], employees[2]].map((emp) => (
-                  <div key={emp.id} className={styles.emprLeadCol}>
-                    <div className={styles.emprMiniLine} />
-                    <div className={cx(styles.emprLeadCard, styles.emprLeadCardTone, toneClass(emp.color))}>
-                      <div className={cx(styles.emprLeadId, colorClass(emp.color))}>{emp.id}</div>
-                      <div className={styles.emprLeadName}>{emp.name.split(" ")[0]}</div>
-                      <div className={cx(styles.emprLeadRole, colorClass(emp.color))}>{emp.role}</div>
-                    </div>
-                    <div className={styles.emprMiniLine} />
-                    <div className={styles.emprReportsRow}>
-                      {employees
-                        .filter((e) => {
-                          if (emp.name === "Leilani Fotu") return e.id === "EMP-006";
-                          if (emp.name === "Renzo Fabbri") return ["EMP-004", "EMP-005"].includes(e.id);
-                          return false;
-                        })
-                        .map((report) => (
+            {employees.length === 0 ? (
+              <div className={cx("colorMuted", "text13", "py24", "textCenter")}>No staff records found.</div>
+            ) : (
+              <div className={styles.emprOrgWrap}>
+                <div className={styles.emprCeoCard}>
+                  <div className={styles.emprMono10Accent}>{employees[0]?.id ?? "—"}</div>
+                  <div className={styles.emprCeoName}>{employees[0]?.name ?? "—"}</div>
+                  <div className={styles.emprCeoRole}>{employees[0]?.role ?? "—"}</div>
+                </div>
+                <div className={styles.emprOrgLine} />
+                <div className={styles.emprLeadsRow}>
+                  {employees.slice(1, 3).map((emp) => (
+                    <div key={emp.id} className={styles.emprLeadCol}>
+                      <div className={styles.emprMiniLine} />
+                      <div className={cx(styles.emprLeadCard, styles.emprLeadCardTone, toneClass(emp.color))}>
+                        <div className={cx(styles.emprLeadId, colorClass(emp.color))}>{emp.id}</div>
+                        <div className={styles.emprLeadName}>{emp.name.split(" ")[0]}</div>
+                        <div className={cx(styles.emprLeadRole, colorClass(emp.color))}>{emp.role}</div>
+                      </div>
+                      <div className={styles.emprMiniLine} />
+                      <div className={styles.emprReportsRow}>
+                        {employees.slice(3).filter((_, idx) => idx % 2 === (employees.indexOf(emp) % 2 === 1 ? 0 : 1)).map((report) => (
                           <div key={report.id} className={cx(styles.emprReportCard, styles.emprReportCardTone, toneClass(report.color))}>
                             <div className={styles.emprReportName}>{report.name.split(" ")[0]}</div>
                             <div className={cx(styles.emprReportRole, colorClass(report.color))}>{report.role.split(" ").slice(0, 2).join(" ")}</div>
                           </div>
                         ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ) : null}
       </div>

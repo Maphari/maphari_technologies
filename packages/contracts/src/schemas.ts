@@ -7,9 +7,21 @@ export const loginSchema = z.object({
   rememberMe: z.boolean().optional()
 });
 
+// Password complexity: min 12 chars, at least one uppercase, one lowercase,
+// one digit, and one special character (#, ?, !, @, $, %, ^, &, *, -).
+const strongPassword = z
+  .string()
+  .trim()
+  .min(12, "Password must be at least 12 characters")
+  .max(256)
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one digit")
+  .regex(/[#?!@$%^&*\-]/, "Password must contain at least one special character (#?!@$%^&*-)");
+
 export const registerAdminSchema = z.object({
   email: z.email().trim().toLowerCase(),
-  password: z.string().trim().min(8).max(256)
+  password: strongPassword
 });
 
 export const verifyAdminOtpSchema = z.object({
@@ -23,7 +35,7 @@ export const resendAdminOtpSchema = z.object({
 
 export const registerStaffSchema = z.object({
   email: z.email().trim().toLowerCase(),
-  password: z.string().trim().min(8).max(256)
+  password: strongPassword
 });
 
 export const verifyStaffPinSchema = z.object({
@@ -799,6 +811,8 @@ export const publicContactRequestSchema = z.object({
   service: z.string().trim().min(2).max(120),
   message: z.string().trim().min(10).max(5000),
   company: z.string().trim().max(200).optional(),
+  companyName: z.string().trim().max(200).optional(),
+  budgetRange: z.string().trim().max(60).optional(),
   startedAt: z.iso.datetime().optional(),
   pagePath: z.string().trim().max(256).optional()
 });

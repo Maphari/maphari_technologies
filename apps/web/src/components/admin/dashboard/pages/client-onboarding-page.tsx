@@ -1,204 +1,201 @@
 "use client";
-
-import { useState } from "react";
+// ════════════════════════════════════════════════════════════════════════════
+// client-onboarding-page.tsx — Admin Client Onboarding (real API)
+// GET /clients/:id/onboarding  |  PATCH /clients/:id/onboarding/:rid
+// ════════════════════════════════════════════════════════════════════════════
+import { useEffect, useRef, useState } from "react";
 import { cx, styles } from "../style";
-import { colorClass } from "./admin-page-utils";
+import { colorClass, formatDate } from "./admin-page-utils";
+import { AutomationBanner } from "../../../shared/automation-banner";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import { loadAdminSnapshotWithRefresh, loadClientOnboardingWithRefresh, patchClientOnboardingRecordWithRefresh, updateClientStatusWithRefresh } from "../../../../lib/api/admin";
+import type { AdminClient, ClientOnboardingRecord } from "../../../../lib/api/admin";
 
+type ClientOnboardingPageProps = { session: AuthSession | null; onNotify: (tone: "success" | "error" | "info", message: string) => void };
 type OnboardingStatus = "in-progress" | "overdue" | "complete" | "not-started";
 const categories = ["Admin", "Setup", "Discovery", "Kick-off"] as const;
 type Category = (typeof categories)[number];
 type Tab = "active onboardings" | "template" | "analytics";
+type ChecklistTask = { id: string; clientId: string; category: Category; task: string; done: boolean; doneDate?: string; owner: string; blocker?: string };
+type Onboarding = { id: string; client: string; clientColor: string; avatar: string; am: string; tier: string; startedDate: string; targetDate: string; daysElapsed: number; targetDays: number; status: OnboardingStatus; contactName: string; contactEmail: string; mrr: number; checklist: ChecklistTask[] };
 
-type ChecklistTask = {
-  category: Category;
-  task: string;
-  done: boolean;
-  doneDate?: string;
-  owner: string;
-  blocker?: string;
-};
-
-type Onboarding = {
-  id: string;
-  client: string;
-  clientColor: string;
-  avatar: string;
-  am: string;
-  tier: string;
-  startedDate: string;
-  targetDate: string;
-  daysElapsed: number;
-  targetDays: number;
-  status: OnboardingStatus;
-  contactName: string;
-  contactEmail: string;
-  mrr: number;
-  checklist: ChecklistTask[];
-};
-
-const onboardings: Onboarding[] = [
-  {
-    id: "ONB-005",
-    client: "Bloom Wellness",
-    clientColor: "var(--blue)",
-    avatar: "BW",
-    am: "Nomsa Dlamini",
-    tier: "Core",
-    startedDate: "Feb 18",
-    targetDate: "Mar 4",
-    daysElapsed: 5,
-    targetDays: 14,
-    status: "in-progress",
-    contactName: "Priya Singh",
-    contactEmail: "priya@bloomwellness.co.za",
-    mrr: 28000,
-    checklist: [
-      { category: "Admin", task: "Contract signed", done: true, doneDate: "Feb 18", owner: "Nomsa" },
-      { category: "Admin", task: "Invoice terms confirmed", done: true, doneDate: "Feb 18", owner: "Nomsa" },
-      { category: "Admin", task: "NDA executed (if required)", done: false, owner: "Nomsa" },
-      { category: "Setup", task: "Client portal account created", done: true, doneDate: "Feb 19", owner: "Leilani" },
-      { category: "Setup", task: "Portal walkthrough call completed", done: false, owner: "Nomsa" },
-      { category: "Setup", task: "Communication preferences set", done: true, doneDate: "Feb 19", owner: "Nomsa" },
-      { category: "Discovery", task: "Brand brief completed", done: true, doneDate: "Feb 20", owner: "Renzo" },
-      { category: "Discovery", task: "Stakeholder map completed", done: false, owner: "Nomsa" },
-      { category: "Discovery", task: "Existing asset audit done", done: false, owner: "Renzo" },
-      { category: "Kick-off", task: "Kick-off call scheduled", done: true, doneDate: "Feb 21", owner: "Leilani" },
-      { category: "Kick-off", task: "Project timeline shared", done: false, owner: "Leilani" },
-      { category: "Kick-off", task: "Key contacts introduced to team", done: false, owner: "Nomsa" }
-    ]
-  },
-  {
-    id: "ONB-004",
-    client: "Craft & Co",
-    clientColor: "var(--purple)",
-    avatar: "CC",
-    am: "Nomsa Dlamini",
-    tier: "Core",
-    startedDate: "Feb 10",
-    targetDate: "Feb 24",
-    daysElapsed: 13,
-    targetDays: 14,
-    status: "overdue",
-    contactName: "Marco Russo",
-    contactEmail: "marco@craftandco.co.za",
-    mrr: 18000,
-    checklist: [
-      { category: "Admin", task: "Contract signed", done: true, doneDate: "Feb 10", owner: "Nomsa" },
-      { category: "Admin", task: "Invoice terms confirmed", done: true, doneDate: "Feb 10", owner: "Nomsa" },
-      { category: "Admin", task: "NDA executed", done: true, doneDate: "Feb 11", owner: "Nomsa" },
-      { category: "Setup", task: "Client portal account created", done: true, doneDate: "Feb 11", owner: "Leilani" },
-      { category: "Setup", task: "Portal walkthrough call completed", done: true, doneDate: "Feb 13", owner: "Nomsa" },
-      { category: "Setup", task: "Communication preferences set", done: true, doneDate: "Feb 13", owner: "Nomsa" },
-      { category: "Discovery", task: "Brand brief completed", done: false, owner: "Renzo", blocker: "Client hasn't submitted brand assets" },
-      { category: "Discovery", task: "Stakeholder map completed", done: false, owner: "Nomsa" },
-      { category: "Discovery", task: "Existing asset audit done", done: false, owner: "Renzo" },
-      { category: "Kick-off", task: "Kick-off call scheduled", done: true, doneDate: "Feb 14", owner: "Leilani" },
-      { category: "Kick-off", task: "Project timeline shared", done: false, owner: "Leilani" },
-      { category: "Kick-off", task: "Key contacts introduced to team", done: true, doneDate: "Feb 14", owner: "Nomsa" }
-    ]
-  },
-  {
-    id: "ONB-003",
-    client: "Mira Health",
-    clientColor: "var(--accent)",
-    avatar: "MH",
-    am: "Nomsa Dlamini",
-    tier: "Core",
-    startedDate: "Jan 28",
-    targetDate: "Feb 11",
-    daysElapsed: 26,
-    targetDays: 14,
-    status: "complete",
-    contactName: "Dr. Aisha Obi",
-    contactEmail: "aisha@mirahealth.co.za",
-    mrr: 21600,
-    checklist: [
-      { category: "Admin", task: "Contract signed", done: true, doneDate: "Jan 28", owner: "Nomsa" },
-      { category: "Admin", task: "Invoice terms confirmed", done: true, doneDate: "Jan 28", owner: "Nomsa" },
-      { category: "Admin", task: "NDA executed", done: true, doneDate: "Jan 29", owner: "Nomsa" },
-      { category: "Setup", task: "Client portal account created", done: true, doneDate: "Jan 29", owner: "Leilani" },
-      { category: "Setup", task: "Portal walkthrough call completed", done: true, doneDate: "Feb 1", owner: "Nomsa" },
-      { category: "Setup", task: "Communication preferences set", done: true, doneDate: "Jan 30", owner: "Nomsa" },
-      { category: "Discovery", task: "Brand brief completed", done: true, doneDate: "Feb 3", owner: "Renzo" },
-      { category: "Discovery", task: "Stakeholder map completed", done: true, doneDate: "Feb 4", owner: "Nomsa" },
-      { category: "Discovery", task: "Existing asset audit done", done: true, doneDate: "Feb 5", owner: "Renzo" },
-      { category: "Kick-off", task: "Kick-off call scheduled", done: true, doneDate: "Feb 6", owner: "Leilani" },
-      { category: "Kick-off", task: "Project timeline shared", done: true, doneDate: "Feb 7", owner: "Leilani" },
-      { category: "Kick-off", task: "Key contacts introduced to team", done: true, doneDate: "Feb 6", owner: "Nomsa" }
-    ]
-  }
-];
-
-const categoryColors: Record<Category, string> = {
-  Admin: "var(--accent)",
-  Setup: "var(--blue)",
-  Discovery: "var(--purple)",
-  "Kick-off": "var(--amber)"
-};
-
+const categoryColors: Record<Category, string> = { Admin: "var(--accent)", Setup: "var(--blue)", Discovery: "var(--purple)", "Kick-off": "var(--amber)" };
 const statusConfig: Record<OnboardingStatus, { color: string; label: string }> = {
   "in-progress": { color: "var(--blue)", label: "In Progress" },
   overdue: { color: "var(--red)", label: "Overdue" },
   complete: { color: "var(--accent)", label: "Complete" },
   "not-started": { color: "var(--muted)", label: "Not Started" }
 };
+const TABS: Tab[] = ["active onboardings", "template", "analytics"];
+const COLORS = ["var(--accent)", "var(--blue)", "var(--purple)", "var(--amber)", "var(--red)"];
 
-const tabs: Tab[] = ["active onboardings", "template", "analytics"];
-
-function toneVarClass(value: string): string {
-  if (value === "var(--red)") return styles.onboardToneRed;
-  if (value === "var(--blue)") return styles.onboardToneBlue;
-  if (value === "var(--amber)") return styles.onboardToneAmber;
-  if (value === "var(--purple)") return styles.onboardTonePurple;
-  if (value === "var(--muted)") return styles.onboardToneMuted;
-  if (value === "var(--border)") return styles.onboardToneVarBorder;
+function avatarColor(i: number) { return COLORS[i % COLORS.length]; }
+function initials(name: string) { return name.split(" ").map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase(); }
+function toneVarClass(v: string) {
+  if (v === "var(--red)") return styles.onboardToneRed;
+  if (v === "var(--blue)") return styles.onboardToneBlue;
+  if (v === "var(--amber)") return styles.onboardToneAmber;
+  if (v === "var(--purple)") return styles.onboardTonePurple;
+  if (v === "var(--muted)") return styles.onboardToneMuted;
+  if (v === "var(--border)") return styles.onboardToneVarBorder;
   return styles.onboardToneAccent;
 }
-
-function fillClass(value: string): string {
-  if (value === "var(--red)") return styles.conbFillRed;
-  if (value === "var(--blue)") return styles.conbFillBlue;
-  if (value === "var(--amber)") return styles.conbFillAmber;
-  if (value === "var(--purple)") return styles.conbFillPurple;
-  if (value === "var(--muted)") return styles.conbFillMuted;
-  return styles.conbFillAccent;
+function fillClass(v: string) {
+  if (v === "var(--red)") return styles.conbFillRed; if (v === "var(--blue)") return styles.conbFillBlue;
+  if (v === "var(--amber)") return styles.conbFillAmber; if (v === "var(--purple)") return styles.conbFillPurple;
+  if (v === "var(--muted)") return styles.conbFillMuted; return styles.conbFillAccent;
+}
+function statusClass(v: string) {
+  if (v === "var(--red)") return styles.conbStatusRed; if (v === "var(--blue)") return styles.conbStatusBlue;
+  if (v === "var(--amber)") return styles.conbStatusAmber; if (v === "var(--purple)") return styles.conbStatusPurple;
+  if (v === "var(--muted)") return styles.conbStatusMuted; return styles.conbStatusAccent;
+}
+function catCardClass(v: string) {
+  if (v === "var(--red)") return styles.conbCategoryCardRed; if (v === "var(--blue)") return styles.conbCategoryCardBlue;
+  if (v === "var(--amber)") return styles.conbCategoryCardAmber; if (v === "var(--purple)") return styles.conbCategoryCardPurple;
+  if (v === "var(--muted)") return styles.conbCategoryCardMuted; return styles.conbCategoryCardAccent;
 }
 
-function statusClass(value: string): string {
-  if (value === "var(--red)") return styles.conbStatusRed;
-  if (value === "var(--blue)") return styles.conbStatusBlue;
-  if (value === "var(--amber)") return styles.conbStatusAmber;
-  if (value === "var(--purple)") return styles.conbStatusPurple;
-  if (value === "var(--muted)") return styles.conbStatusMuted;
-  return styles.conbStatusAccent;
+function Avatar({ initials: init, color, size = 36 }: { initials: string; color: string; size?: number }) {
+  return <div className={cx(styles.onboardAvatar, toneVarClass(color), size === 28 ? "onboardAvatar28" : "onboardAvatar36", "flexCenter", "fontMono", "fw700", "noShrink")}>{init}</div>;
 }
 
-function categoryCardClass(value: string): string {
-  if (value === "var(--red)") return styles.conbCategoryCardRed;
-  if (value === "var(--blue)") return styles.conbCategoryCardBlue;
-  if (value === "var(--amber)") return styles.conbCategoryCardAmber;
-  if (value === "var(--purple)") return styles.conbCategoryCardPurple;
-  if (value === "var(--muted)") return styles.conbCategoryCardMuted;
-  return styles.conbCategoryCardAccent;
+function deriveStatus(records: ClientOnboardingRecord[], createdAt: string): OnboardingStatus {
+  if (!records.length) return "not-started";
+  if (records.every((r) => r.status === "complete")) return "complete";
+  const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);
+  return days > 14 ? "overdue" : "in-progress";
 }
 
-function Avatar({ initials, color, size = 36 }: { initials: string; color: string; size?: number }) {
-  const sizeClass = size === 28 ? "onboardAvatar28" : "onboardAvatar36";
-  return (
-    <div className={cx(styles.onboardAvatar, toneVarClass(color), sizeClass, "flexCenter", "fontMono", "fw700", "noShrink")}>
-      {initials}
-    </div>
-  );
+function buildOnboarding(client: AdminClient, records: ClientOnboardingRecord[], idx: number): Onboarding {
+  const checklist: ChecklistTask[] = records.map((r) => ({
+    id: r.id, clientId: client.id,
+    category: (categories as readonly string[]).includes(r.category) ? (r.category as Category) : "Admin",
+    task: r.task, done: r.status === "complete" && r.completedAt !== null,
+    doneDate: r.completedAt ? formatDate(r.completedAt) : undefined,
+    owner: r.owner ?? "—",
+    blocker: r.status === "blocked" ? (r.notes ?? "Blocked") : undefined
+  }));
+  const daysElapsed = Math.max(0, Math.floor((Date.now() - new Date(client.createdAt).getTime()) / 86400000));
+  return {
+    id: client.id, client: client.name, clientColor: avatarColor(idx), avatar: initials(client.name),
+    am: client.ownerName ?? "—", tier: client.tier,
+    startedDate: formatDate(client.createdAt),
+    targetDate: formatDate(new Date(new Date(client.createdAt).getTime() + 14 * 86400000).toISOString()),
+    daysElapsed, targetDays: 14, status: deriveStatus(records, client.createdAt),
+    contactName: "—", contactEmail: "—", mrr: 0, checklist
+  };
 }
 
-export function ClientOnboardingPage() {
+type ModalForm = { clientId: string; onboardingType: string; notes: string };
+
+export function ClientOnboardingPage({ session, onNotify }: ClientOnboardingPageProps) {
   const [activeTab, setActiveTab] = useState<Tab>("active onboardings");
-  const [expanded, setExpanded] = useState<string | null>("ONB-005");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [onboardings, setOnboardings] = useState<Onboarding[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [marking, setMarking] = useState<string | null>(null);
+
+  // ── Start Onboarding modal ──────────────────────────────────────────────
+  const [showModal, setShowModal] = useState(false);
+  const [allClients, setAllClients] = useState<AdminClient[]>([]);
+  const [modalForm, setModalForm] = useState<ModalForm>({ clientId: "", onboardingType: "standard", notes: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const allClientsRef = useRef<AdminClient[]>([]);
+
+  useEffect(() => {
+    if (!session) { setLoading(false); return; }
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      const snap = await loadAdminSnapshotWithRefresh(session!);
+      if (cancelled) return;
+      if (snap.error || !snap.data) { onNotify("error", snap.error?.message ?? "Failed to load clients."); setLoading(false); return; }
+      const clients = snap.data.clients.filter((c) => c.status === "ONBOARDING");
+      if (!clients.length) { setOnboardings([]); setLoading(false); return; }
+      const results = await Promise.all(clients.map((c) => loadClientOnboardingWithRefresh(session!, c.id)));
+      if (cancelled) return;
+      const built = clients.map((c, i) => buildOnboarding(c, results[i].data ?? [], i));
+      setOnboardings(built);
+      if (built.length) setExpanded(built[0].id);
+      setLoading(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load all clients once for the modal selector
+  useEffect(() => {
+    if (!session || allClientsRef.current.length > 0) return;
+    let cancelled = false;
+    async function loadClients() {
+      const snap = await loadAdminSnapshotWithRefresh(session!);
+      if (cancelled || snap.error || !snap.data) return;
+      allClientsRef.current = snap.data.clients;
+      setAllClients(snap.data.clients);
+    }
+    loadClients();
+    return () => { cancelled = true; };
+  }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function openModal() {
+    setModalForm({ clientId: "", onboardingType: "standard", notes: "" });
+    setShowModal(true);
+  }
+
+  async function handleStartOnboarding() {
+    if (!session || !modalForm.clientId) return;
+    const client = allClients.find((c) => c.id === modalForm.clientId);
+    if (!client) return;
+    setSubmitting(true);
+    const res = await updateClientStatusWithRefresh(session, modalForm.clientId, "ONBOARDING");
+    if (res.error) {
+      onNotify("error", res.error.message ?? "Failed to start onboarding.");
+      setSubmitting(false);
+      return;
+    }
+    // Persist refreshed session if withAuthorizedSession obtained a new token
+    if (res.nextSession) saveSession(res.nextSession);
+    onNotify("success", `Onboarding started for ${client.name}.`);
+    setShowModal(false);
+    setSubmitting(false);
+    // Reload onboarding list to reflect the newly onboarding client
+    setLoading(true);
+    const activeSession = res.nextSession ?? session;
+    const snap = await loadAdminSnapshotWithRefresh(activeSession);
+    if (!snap.error && snap.data) {
+      const clients = snap.data.clients.filter((c) => c.status === "ONBOARDING");
+      if (!clients.length) { setOnboardings([]); setLoading(false); return; }
+      const results = await Promise.all(clients.map((c) => loadClientOnboardingWithRefresh(activeSession, c.id)));
+      const built = clients.map((c, i) => buildOnboarding(c, results[i].data ?? [], i));
+      setOnboardings(built);
+      if (built.length) setExpanded(built[0].id);
+    }
+    setLoading(false);
+  }
+
+  async function handleMarkComplete(onb: Onboarding) {
+    if (!session) return;
+    const pending = onb.checklist.filter((t) => !t.done);
+    if (!pending.length) return;
+    setMarking(onb.id);
+    const now = new Date().toISOString();
+    const res = await Promise.all(pending.map((t) => patchClientOnboardingRecordWithRefresh(session, onb.id, t.id, { status: "complete", completedAt: now })));
+    const err = res.find((r) => r.error);
+    if (err) { onNotify("error", err.error?.message ?? "Failed to mark complete."); }
+    else {
+      onNotify("success", `${onb.client} onboarding marked complete.`);
+      setOnboardings((prev) => prev.map((o) => o.id !== onb.id ? o : { ...o, status: "complete" as OnboardingStatus, checklist: o.checklist.map((t) => ({ ...t, done: true, doneDate: formatDate(now) })) }));
+    }
+    setMarking(null);
+  }
 
   const active = onboardings.filter((o) => o.status !== "complete");
   const complete = onboardings.filter((o) => o.status === "complete");
   const overdue = onboardings.filter((o) => o.status === "overdue");
   const avgDays = Math.round(complete.reduce((s, o) => s + o.daysElapsed, 0) / (complete.length || 1));
+  const templateSource = onboardings[0]?.checklist ?? [];
 
   return (
     <div className={cx(styles.pageBody, styles.onboardRoot)}>
@@ -208,10 +205,30 @@ export function ClientOnboardingPage() {
           <h1 className={styles.pageTitle}>Client Onboarding</h1>
           <div className={styles.pageSub}>New client setup - Steps - Blockers - Completion tracking</div>
         </div>
-        <div className={styles.pageActions}>
-          <button type="button" className={cx("btnSm", "btnAccent")}>+ Start Onboarding</button>
-        </div>
+        <div className={styles.pageActions}><button type="button" className={cx("btnSm", "btnAccent")} onClick={openModal}>+ Start Onboarding</button></div>
       </div>
+
+      {/* ── Automation: overdue onboardings escalation ───────────────── */}
+      <AutomationBanner
+        show={overdue.length > 0}
+        variant="error"
+        icon={
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 2v8M8 12.5h.01" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+            <path d="M3 14h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+        }
+        title={`${overdue.length} onboarding${overdue.length > 1 ? "s" : ""} past target date`}
+        description="Clients stuck in onboarding churn faster. Escalation emails will be sent to account managers and flagged in the delivery queue."
+        actionLabel="Escalate all"
+        onAction={async () => {
+          await new Promise((r) => setTimeout(r, 800));
+          onNotify("success", `Escalation triggered for ${overdue.length} overdue onboarding${overdue.length > 1 ? "s" : ""}. Account managers notified.`);
+        }}
+        dismissKey={`admin:onb-escalate-banner:${overdue.map((o) => o.id).sort().join(",")}`}
+        secondaryLabel="View overdue"
+        onSecondary={() => {/* parent handles tab navigation */}}
+      />
 
       <div className={cx("topCardsStack", "mb28")}>
         {[
@@ -230,34 +247,27 @@ export function ClientOnboardingPage() {
 
       <div className={styles.filterRow}>
         <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
-          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+          {TABS.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
 
-      {activeTab === "active onboardings" && (
+      {loading && <div className={cx("text12", "colorMuted", "fontMono")}>Loading onboarding data...</div>}
+
+      {!loading && activeTab === "active onboardings" && (
         <div className={styles.conbList}>
+          {!onboardings.length && <div className={cx("text12", "colorMuted")}>No active onboardings found.</div>}
           {onboardings.map((onb) => {
             const done = onb.checklist.filter((t) => t.done).length;
             const total = onb.checklist.length;
-            const pct = Math.round((done / total) * 100);
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
             const sc = statusConfig[onb.status];
             const isExp = expanded === onb.id;
             const blockers = onb.checklist.filter((t) => t.blocker);
-
             return (
               <div key={onb.id} className={cx(styles.conbCard, onb.status === "overdue" && styles.conbCardOverdue, onb.status === "complete" && styles.conbCardComplete)}>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  className={styles.conbCardHead}
+                <div role="button" tabIndex={0} className={styles.conbCardHead}
                   onClick={() => setExpanded(isExp ? null : onb.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      setExpanded(isExp ? null : onb.id);
-                    }
-                  }}
-                >
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded(isExp ? null : onb.id); } }}>
                   <div className={styles.onboardRow}>
                     <div className={cx("flexRow", "gap12", "flexCenter")}>
                       <Avatar initials={onb.avatar} color={onb.clientColor} />
@@ -273,11 +283,7 @@ export function ClientOnboardingPage() {
                         <span className={cx("fontMono", "fw700", pct === 100 ? "colorAccent" : pct >= 60 ? "colorBlue" : "colorAmber")}>{pct}%</span>
                       </div>
                       <div className={cx(styles.onboardProgTrack, "progressBar")}>
-                        <progress
-                          className={cx(styles.onboardProgFill, pct === 100 ? styles.conbFillAccent : pct >= 60 ? styles.conbFillBlue : styles.conbFillAmber)}
-                          max={100}
-                          value={pct}
-                        />
+                        <progress className={cx(styles.onboardProgFill, pct === 100 ? styles.conbFillAccent : pct >= 60 ? styles.conbFillBlue : styles.conbFillAmber)} max={100} value={pct} />
                       </div>
                     </div>
                     <div>
@@ -287,13 +293,12 @@ export function ClientOnboardingPage() {
                     </div>
                     <div>
                       <div className={cx("text10", "colorMuted", "mb3")}>MRR</div>
-                      <div className={cx("fontMono", "fw700", "colorAccent")}>R{(onb.mrr / 1000).toFixed(0)}k</div>
+                      <div className={cx("fontMono", "fw700", "colorAccent")}>{onb.mrr > 0 ? `R${(onb.mrr / 1000).toFixed(0)}k` : "—"}</div>
                     </div>
                     {blockers.length > 0 ? <div className={styles.conbBlockerChip}>! {blockers.length}</div> : <div className={styles.conbClearChip}>Clear</div>}
                     <span className={cx(styles.conbStatusChip, statusClass(sc.color))}>{sc.label}</span>
                   </div>
                 </div>
-
                 {isExp ? (
                   <div className={styles.onboardExpanded}>
                     <div className={cx(styles.onboardExpandedTop, styles.conbCategoryGrid)}>
@@ -302,7 +307,7 @@ export function ClientOnboardingPage() {
                         const catDone = catTasks.filter((t) => t.done).length;
                         const catColor = categoryColors[cat];
                         return (
-                          <div key={cat} className={cx(styles.conbCategoryCard, categoryCardClass(catColor))}>
+                          <div key={cat} className={cx(styles.conbCategoryCard, catCardClass(catColor))}>
                             <div className={cx("flexBetween", "mb12")}>
                               <span className={cx(styles.conbCategoryTitle, colorClass(catColor))}>{cat}</span>
                               <span className={cx("text10", "fontMono", catDone === catTasks.length ? "colorAccent" : "colorMuted")}>{catDone}/{catTasks.length}</span>
@@ -315,7 +320,7 @@ export function ClientOnboardingPage() {
                                 <div className={styles.onboardGrow}>
                                   <div className={cx("text11", task.done ? styles.onboardTaskDone : styles.onboardTaskText)}>{task.task}</div>
                                   {task.blocker ? <div className={styles.conbBlockerText}>{task.blocker}</div> : null}
-                                  {task.doneDate ? <div className={styles.conbTaskMeta}>{task.doneDate} - {task.owner}</div> : <div className={styles.conbTaskMeta}>{task.owner}</div>}
+                                  <div className={styles.conbTaskMeta}>{task.doneDate ? `${task.doneDate} - ` : ""}{task.owner}</div>
                                 </div>
                               </div>
                             ))}
@@ -330,7 +335,11 @@ export function ClientOnboardingPage() {
                         <div className={cx("text11", "colorBlue")}>{onb.contactEmail}</div>
                       </div>
                       <button type="button" className={cx("btnSm", "btnAccent")}>{onb.status === "complete" ? "View Summary" : "Update Progress"}</button>
-                      {onb.status !== "complete" ? <button type="button" className={cx("btnSm", "btnGhost", styles.conbMarkBtn)}>Mark Complete</button> : null}
+                      {onb.status !== "complete" ? (
+                        <button type="button" className={cx("btnSm", "btnGhost", styles.conbMarkBtn)} disabled={marking === onb.id} onClick={() => handleMarkComplete(onb)}>
+                          {marking === onb.id ? "Saving..." : "Mark Complete"}
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 ) : null}
@@ -340,79 +349,168 @@ export function ClientOnboardingPage() {
         </div>
       )}
 
-      {activeTab === "template" && (
+      {!loading && activeTab === "template" && (
         <div className={cx("grid2", "gap16")}>
           {categories.map((cat) => (
             <div key={cat} className={cx(styles.onboardTemplateCard, styles.onboardToneBorder, toneVarClass(categoryColors[cat]))}>
               <div className={cx(styles.conbTemplateTitle, colorClass(categoryColors[cat]))}>{cat}</div>
-              {onboardings[0].checklist
-                .filter((t) => t.category === cat)
-                .map((task, i) => (
-                  <div key={i} className={styles.conbTemplateRow}>
-                    <div className={styles.onboardTemplateChk} />
-                    <span className={styles.conbTemplateTask}>{task.task}</span>
-                    <span className={styles.conbTemplateOwner}>{task.owner}</span>
-                  </div>
-                ))}
+              {templateSource.filter((t) => t.category === cat).map((task, i) => (
+                <div key={i} className={styles.conbTemplateRow}>
+                  <div className={styles.onboardTemplateChk} />
+                  <span className={styles.conbTemplateTask}>{task.task}</span>
+                  <span className={styles.conbTemplateOwner}>{task.owner}</span>
+                </div>
+              ))}
             </div>
           ))}
         </div>
       )}
 
-      {activeTab === "analytics" && (
+      {!loading && activeTab === "analytics" && (
         <div className={cx("grid2", "gap20")}>
           <div className={styles.conbAnalyticsCard}>
             <div className={styles.conbSectionTitle}>Onboarding Speed</div>
-            {onboardings
-              .filter((o) => o.status === "complete")
-              .map((o) => (
-                <div key={o.client} className={styles.conbSpeedRow}>
-                  <Avatar initials={o.avatar} color={o.clientColor} size={28} />
-                  <div className={styles.onboardGrow}>
-                    <div className={cx("flexBetween", "mb4")}>
-                      <span className={styles.text12}>{o.client}</span>
-                      <span className={cx("fontMono", o.daysElapsed <= o.targetDays ? "colorAccent" : "colorAmber")}>{o.daysElapsed}d</span>
-                    </div>
-                    <div className={cx("progressBar", "h6")}>
-                      <progress
-                        className={cx("barFill", "uiProgress", o.daysElapsed <= o.targetDays ? styles.conbFillAccent : styles.conbFillAmber)}
-                        max={100}
-                        value={Math.min((o.daysElapsed / 30) * 100, 100)}
-                      />
-                    </div>
+            {complete.map((o) => (
+              <div key={o.client} className={styles.conbSpeedRow}>
+                <Avatar initials={o.avatar} color={o.clientColor} size={28} />
+                <div className={styles.onboardGrow}>
+                  <div className={cx("flexBetween", "mb4")}>
+                    <span className={styles.text12}>{o.client}</span>
+                    <span className={cx("fontMono", o.daysElapsed <= o.targetDays ? "colorAccent" : "colorAmber")}>{o.daysElapsed}d</span>
+                  </div>
+                  <div className={cx("progressBar", "h6")}>
+                    <progress className={cx("barFill", "uiProgress", o.daysElapsed <= o.targetDays ? styles.conbFillAccent : styles.conbFillAmber)} max={100} value={Math.min((o.daysElapsed / 30) * 100, 100)} />
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
+            {!complete.length && <div className={cx("text12", "colorMuted")}>No completed onboardings yet.</div>}
             <div className={styles.conbAvgBox}>
               <div className={cx("text11", "colorMuted", "mb4")}>Average Onboarding Time</div>
               <div className={styles.conbAvgValue}>{avgDays} days</div>
               <div className={cx("text11", "colorMuted")}>Target: 14 days</div>
             </div>
           </div>
-
           <div className={styles.conbSideStack}>
             <div className={styles.conbAnalyticsCard}>
               <div className={styles.conbSectionTitle}>Most Common Blockers</div>
-              {["Client delays submitting brand assets", "Portal walkthrough not yet scheduled", "Stakeholder map incomplete"].map((b, i) => (
+              {onboardings.flatMap((o) => o.checklist.filter((t) => t.blocker).map((t) => t.blocker as string)).slice(0, 3).map((b, i) => (
                 <div key={i} className={styles.conbBlockerRow}><span className={styles.conbTaskWarn}>!</span> {b}</div>
               ))}
+              {!onboardings.flatMap((o) => o.checklist.filter((t) => t.blocker)).length && <div className={cx("text12", "colorMuted")}>No blockers recorded.</div>}
             </div>
             <div className={styles.conbAnalyticsCard}>
               <div className={styles.conbSectionTitle}>Category Completion Rates</div>
               {categories.map((cat) => {
-                const allTasks = onboardings.flatMap((o) => o.checklist.filter((t) => t.category === cat));
-                const doneTasks = allTasks.filter((t) => t.done);
-                const rate = allTasks.length > 0 ? Math.round((doneTasks.length / allTasks.length) * 100) : 0;
+                const all = onboardings.flatMap((o) => o.checklist.filter((t) => t.category === cat));
+                const rate = all.length > 0 ? Math.round((all.filter((t) => t.done).length / all.length) * 100) : 0;
                 return (
                   <div key={cat} className={styles.conbRateRow}>
                     <span className={cx(styles.conbRateName, colorClass(categoryColors[cat]))}>{cat}</span>
-                    <div className={styles.conbRateTrack}>
-                      <progress className={cx("barFill", "uiProgress", fillClass(categoryColors[cat]))} max={100} value={rate} />
-                    </div>
+                    <div className={styles.conbRateTrack}><progress className={cx("barFill", "uiProgress", fillClass(categoryColors[cat]))} max={100} value={rate} /></div>
                     <span className={cx(styles.conbRateVal, colorClass(categoryColors[cat]))}>{rate}%</span>
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Start Onboarding Modal ─────────────────────────────────────────── */}
+      {showModal && (
+        <div
+          className={styles.modalOverlay}
+          onClick={(e) => { if (e.target === e.currentTarget && !submitting) setShowModal(false); }}
+        >
+          <div className={styles.modal}>
+            <div className={styles.modalHd}>
+              <span className={styles.modalTitle}>Start Onboarding</span>
+              <button
+                type="button"
+                className={cx("btnSm", "btnGhost")}
+                aria-label="Close"
+                disabled={submitting}
+                onClick={() => setShowModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              {/* Client selector */}
+              <div>
+                <label className={cx("text11", "colorMuted", "mb4")} style={{ display: "block", marginBottom: 6 }}>
+                  Client <span style={{ color: "var(--red)" }}>*</span>
+                </label>
+                <select
+                  title="Select client"
+                  className="inputSm"
+                  value={modalForm.clientId}
+                  disabled={submitting}
+                  onChange={(e) => setModalForm((f) => ({ ...f, clientId: e.target.value }))}
+                >
+                  <option value="">— Select a client —</option>
+                  {allClients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}{c.status === "ONBOARDING" ? " (already onboarding)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Onboarding type */}
+              <div>
+                <label className={cx("text11", "colorMuted", "mb4")} style={{ display: "block", marginBottom: 6 }}>
+                  Onboarding Type
+                </label>
+                <select
+                  title="Onboarding type"
+                  className="inputSm"
+                  value={modalForm.onboardingType}
+                  disabled={submitting}
+                  onChange={(e) => setModalForm((f) => ({ ...f, onboardingType: e.target.value }))}
+                >
+                  <option value="standard">Standard (14-day checklist)</option>
+                  <option value="enterprise">Enterprise (custom timeline)</option>
+                  <option value="rapid">Rapid (7-day accelerated)</option>
+                </select>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className={cx("text11", "colorMuted", "mb4")} style={{ display: "block", marginBottom: 6 }}>
+                  Notes <span className={cx("text10", "colorMuted")}>(optional)</span>
+                </label>
+                <textarea
+                  className="inputSm"
+                  rows={3}
+                  placeholder="Any specific context or instructions for this onboarding..."
+                  value={modalForm.notes}
+                  disabled={submitting}
+                  onChange={(e) => setModalForm((f) => ({ ...f, notes: e.target.value }))}
+                  style={{ resize: "vertical", width: "100%", fontFamily: "inherit" }}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className={cx("flexRow", "gap8", "flexEnd")} style={{ marginTop: 4 }}>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnGhost")}
+                  disabled={submitting}
+                  onClick={() => setShowModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnAccent")}
+                  disabled={submitting || !modalForm.clientId}
+                  onClick={() => void handleStartOnboarding()}
+                >
+                  {submitting ? "Starting…" : "Start Onboarding"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

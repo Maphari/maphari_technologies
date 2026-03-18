@@ -1,15 +1,104 @@
+// ════════════════════════════════════════════════════════════════════════════
+// update-queue-manager-page.tsx — Admin update queue wired to real API
+// Data   : loadContentSubmissionsWithRefresh → GET /admin/content-submissions
+//          approveContentSubmissionWithRefresh → PATCH /:id/approve
+// ════════════════════════════════════════════════════════════════════════════
+
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { cx, styles } from "../style";
+import { colorClass } from "./admin-page-utils";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import type { AdminContentSubmission } from "../../../../lib/api/admin/governance";
+import {
+  loadContentSubmissionsWithRefresh,
+  approveContentSubmissionWithRefresh
+} from "../../../../lib/api/admin/governance";
 
-const drafts = [
-  { id: "UPD-001", client: "Volta Studios", project: "Brand Identity System", generatedAt: "Feb 22, 2026 14:30", draft: "Hi Sarah — Phase 2 is progressing well with brand guidelines at 72% completion. Three key deliverables finalized this week...", confidence: 91, status: "Pending Review" as const },
-  { id: "UPD-002", client: "Mira Health", project: "Website Redesign", generatedAt: "Feb 22, 2026 14:30", draft: "Dr. Patel — Our UX team completed wireframes for 8 of 12 key pages this sprint. User testing is scheduled for next week...", confidence: 85, status: "Pending Review" as const },
-  { id: "UPD-003", client: "Kestrel Capital", project: "Q1 Campaign Strategy", generatedAt: "Feb 22, 2026 14:30", draft: "Daniel — Campaign execution is underway. Content calendar for March is 45% populated. We've identified 2 potential blockers...", confidence: 78, status: "Pending Review" as const },
-  { id: "UPD-004", client: "Volta Studios", project: "Social Media", generatedAt: "Feb 21, 2026 14:30", draft: "Marcus — February engagement metrics show a 12% increase in reach across platforms...", confidence: 88, status: "Approved" as const },
-];
+// ── Props ─────────────────────────────────────────────────────────────────────
 
-export function UpdateQueueManagerPage() {
+interface Props {
+  session: AuthSession | null;
+  onNotify: (tone: "success" | "error" | "warning" | "info", msg: string) => void;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return iso;
+  }
+}
+
+function confidenceBadge(status: string): number {
+  if (status === "APPROVED") return 95;
+  if (status === "REJECTED") return 40;
+  return 80;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function UpdateQueueManagerPage({ session, onNotify }: Props) {
+  const [submissions, setSubmissions] = useState<AdminContentSubmission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!session) { setLoading(false); return; }
+    const r = await loadContentSubmissionsWithRefresh(session);
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.error) onNotify("error", r.error.message);
+    setSubmissions(r.data ?? []);
+    setLoading(false);
+  }, [session, onNotify]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      await load();
+      if (cancelled) return;
+    })();
+    return () => { cancelled = true; };
+  }, [load]);
+
+  const handleApprove = useCallback(async (id: string) => {
+    if (!session) return;
+    setProcessing(id);
+    const r = await approveContentSubmissionWithRefresh(session, id, { approved: true });
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.error) {
+      onNotify("error", r.error.message);
+    } else {
+      onNotify("success", "Submission approved.");
+      setSubmissions((prev) => prev.map((s) => s.id === id ? { ...s, status: "APPROVED", approvedAt: new Date().toISOString() } : s));
+    }
+    setProcessing(null);
+  }, [session, onNotify]);
+
+  const handleReject = useCallback(async (id: string) => {
+    if (!session) return;
+    setProcessing(id);
+    const r = await approveContentSubmissionWithRefresh(session, id, { approved: false });
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.error) {
+      onNotify("error", r.error.message);
+    } else {
+      onNotify("info", "Submission rejected.");
+      setSubmissions((prev) => prev.map((s) => s.id === id ? { ...s, status: "REJECTED", rejectedAt: new Date().toISOString() } : s));
+    }
+    setProcessing(null);
+  }, [session, onNotify]);
+
+  const pending   = submissions.filter((d) => d.status === "PENDING");
+  const approved  = submissions.filter((d) => d.status === "APPROVED");
+  const avgConf   = submissions.length > 0
+    ? Math.round(submissions.reduce((s, d) => s + confidenceBadge(d.status), 0) / submissions.length)
+    : 0;
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -19,42 +108,74 @@ export function UpdateQueueManagerPage() {
           <div className={styles.pageSub}>Review and approve AI-drafted client updates before sending</div>
         </div>
       </div>
+
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Pending Review", value: String(drafts.filter((d) => d.status === "Pending Review").length), color: "var(--amber)" },
-          { label: "Approved Today", value: String(drafts.filter((d) => d.status === "Approved").length), color: "var(--accent)" },
-          { label: "Avg Confidence", value: Math.round(drafts.reduce((s, d) => s + d.confidence, 0) / drafts.length) + "%", color: "var(--accent)" },
+          { label: "Pending Review",  value: String(pending.length),  color: "var(--amber)" },
+          { label: "Approved Today",  value: String(approved.length), color: "var(--accent)" },
+          { label: "Avg Confidence",  value: `${avgConf}%`,           color: "var(--accent)" },
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue)} style={{ color: s.color }}>{s.value}</div>
+            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
           </div>
         ))}
       </div>
+
+      {loading && <div className={cx("colorMuted", "text13")}>Loading submissions…</div>}
+
+      {!loading && submissions.length === 0 && (
+        <div className={cx("card", "p24", "text13", "colorMuted")}>No content submissions found.</div>
+      )}
+
       <div className={cx("flexCol", "gap16")}>
-        {drafts.map((d) => (
-          <article key={d.id} className={styles.card}>
-            <div className={styles.cardHd}>
-              <span className={styles.cardHdTitle}>{d.client} — {d.project}</span>
-              <span className={cx("badge", d.status === "Approved" ? "badgeGreen" : "badgeAmber")}>{d.status}</span>
-            </div>
-            <div className={styles.cardInner}>
-              <div className={cx("text12", "mb12", "p12")} style={{ background: "var(--bg)", borderRadius: "6px", fontStyle: "italic" }}>{d.draft}</div>
-              <div className={cx("flexBetween")}>
-                <div className={cx("flex", "gap12", "text11", "colorMuted")}>
-                  <span>Generated: {d.generatedAt}</span>
-                  <span>Confidence: <strong className={cx("fontMono", d.confidence >= 85 ? "colorGreen" : "colorAmber")}>{d.confidence}%</strong></span>
-                </div>
-                {d.status === "Pending Review" && (
-                  <div className={cx("flex", "gap4")}>
-                    <button type="button" className={cx("btnSm", "btnAccent")}>Approve & Send</button>
-                    <button type="button" className={cx("btnSm", "btnGhost")}>Edit</button>
+        {submissions.map((d) => {
+          const conf = confidenceBadge(d.status);
+          const isPending = d.status === "PENDING";
+          const isProcessing = processing === d.id;
+          return (
+            <article key={d.id} className={styles.card}>
+              <div className={styles.cardHd}>
+                <span className={styles.cardHdTitle}>{d.submittedByName ?? "Unknown"} — {d.title}</span>
+                <span className={cx("badge", d.status === "APPROVED" ? "badgeGreen" : d.status === "REJECTED" ? "badgeRed" : "badgeAmber")}>{d.status}</span>
+              </div>
+              <div className={styles.cardInner}>
+                {d.notes && (
+                  <div className={cx("text12", "mb12", "p12", "bgBg", "rXs", "italic")}>
+                    {d.notes}
                   </div>
                 )}
+                <div className={cx("flexBetween")}>
+                  <div className={cx("flex", "gap12", "text11", "colorMuted")}>
+                    <span>Submitted: {formatDate(d.createdAt)}</span>
+                    <span>Type: <strong className={cx("fontMono")}>{d.type}</strong></span>
+                    <span>Confidence: <strong className={cx("fontMono", conf >= 85 ? "colorGreen" : "colorAmber")}>{conf}%</strong></span>
+                  </div>
+                  {isPending && (
+                    <div className={cx("flex", "gap4")}>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnAccent")}
+                        disabled={isProcessing}
+                        onClick={() => void handleApprove(d.id)}
+                      >
+                        {isProcessing ? "…" : "Approve & Send"}
+                      </button>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnGhost")}
+                        disabled={isProcessing}
+                        onClick={() => void handleReject(d.id)}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
     </div>
   );

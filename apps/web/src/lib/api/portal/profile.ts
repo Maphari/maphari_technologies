@@ -108,3 +108,63 @@ export async function updatePortalProfileWithRefresh(
     return { unauthorized: false, data: response.payload.data ?? null, error: null };
   });
 }
+
+// ── Data Privacy ──────────────────────────────────────────────────────────────
+
+export interface DataExportRequestResult {
+  id:          string;
+  status:      string;
+  requestedAt: string;
+  clientId:    string | null;
+  message:     string;
+}
+
+export async function requestDataExportWithRefresh(
+  session: AuthSession,
+  body?: { reason?: string }
+): Promise<AuthorizedResult<DataExportRequestResult>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<DataExportRequestResult>(
+      "/data-export-requests",
+      accessToken,
+      { method: "POST", body: body ?? {} }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "DATA_EXPORT_FAILED",
+          response.payload.error?.message ?? "Unable to submit data export request."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function requestAccountDeletionWithRefresh(
+  session: AuthSession,
+  body: { confirmation: string; reason?: string }
+): Promise<AuthorizedResult<DataExportRequestResult>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<DataExportRequestResult>(
+      "/account-deletion-requests",
+      accessToken,
+      { method: "POST", body }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "ACCOUNT_DELETION_FAILED",
+          response.payload.error?.message ?? "Unable to submit account deletion request."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}

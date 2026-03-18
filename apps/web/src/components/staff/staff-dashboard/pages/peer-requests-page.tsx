@@ -1,10 +1,25 @@
+// ════════════════════════════════════════════════════════════════════════════
+// peer-requests-page.tsx — Staff Peer Requests
+// Data : getMyProfile → "You" identity
+//        getStaffClients → client dropdown
+// Note : Peer collaboration requests are managed in local session state;
+//        no backend exists for this entity type yet.
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cx } from "../style";
+import { Ic } from "../ui";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import { getMyProfile } from "../../../../lib/api/staff/profile";
+import { getStaffClients, type StaffClient } from "../../../../lib/api/staff/clients";
+import { loadMyPeerReviewsWithRefresh, submitPeerReviewWithRefresh, type StaffPeerReview } from "../../../../lib/api/staff/hr";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type StaffMember = {
-  id: number;
+  id: string;
   name: string;
   avatar: string;
   toneClass: string;
@@ -13,7 +28,7 @@ type StaffMember = {
 };
 
 type ClientRow = {
-  id: number;
+  id: string;
   name: string;
   avatar: string;
   toneClass: string;
@@ -21,21 +36,21 @@ type ClientRow = {
   bannerClass: string;
 };
 
-type CollabType = "review" | "feedback" | "pairing" | "cover" | "input";
-type Urgency = "high" | "medium" | "low";
+type CollabType    = "review" | "feedback" | "pairing" | "cover" | "input";
+type Urgency       = "high" | "medium" | "low";
 type RequestStatus = "pending" | "accepted" | "completed" | "declined";
 
 type ThreadMessage = {
-  authorId: number;
+  authorId: string;
   text: string;
   time: string;
 };
 
 type PeerRequest = {
-  id: number;
-  fromId: number;
-  toId: number;
-  clientId: number;
+  id: string;
+  fromId: string;
+  toId: string;
+  clientId: string;
   type: CollabType;
   title: string;
   description: string;
@@ -49,8 +64,8 @@ type PeerRequest = {
 };
 
 type Draft = {
-  toId: number;
-  clientId: number;
+  toId: string;
+  clientId: string;
   type: CollabType;
   title: string;
   description: string;
@@ -59,221 +74,194 @@ type Draft = {
   urgency: Urgency;
 };
 
-const staff: StaffMember[] = [
-  { id: 1, name: "You", avatar: "YU", toneClass: "prToneAccent", surfaceClass: "prSurfaceAccent", role: "Senior Designer" },
-  { id: 2, name: "Priya Nair", avatar: "PN", toneClass: "prTonePurple", surfaceClass: "prSurfacePurple", role: "Brand Strategist" },
-  { id: 3, name: "James Osei", avatar: "JO", toneClass: "prToneBlue", surfaceClass: "prSurfaceBlue", role: "Junior Designer" },
-  { id: 4, name: "Zara Hoffman", avatar: "ZH", toneClass: "prToneAmber", surfaceClass: "prSurfaceAmber", role: "Account Manager" },
-  { id: 5, name: "Luca Ferreira", avatar: "LF", toneClass: "prToneOrange", surfaceClass: "prSurfaceOrange", role: "Motion Designer" }
-];
-
-const clients: ClientRow[] = [
-  { id: 1, name: "Volta Studios", avatar: "VS", toneClass: "prToneAccent", surfaceClass: "prSurfaceAccent", bannerClass: "prClientBannerAccent" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC", toneClass: "prTonePurple", surfaceClass: "prSurfacePurple", bannerClass: "prClientBannerPurple" },
-  { id: 3, name: "Mira Health", avatar: "MH", toneClass: "prToneBlue", surfaceClass: "prSurfaceBlue", bannerClass: "prClientBannerBlue" },
-  { id: 4, name: "Dune Collective", avatar: "DC", toneClass: "prToneAmber", surfaceClass: "prSurfaceAmber", bannerClass: "prClientBannerAmber" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", toneClass: "prToneOrange", surfaceClass: "prSurfaceOrange", bannerClass: "prClientBannerOrange" }
-];
+// ── Static config ─────────────────────────────────────────────────────────────
 
 const collabTypes: Record<CollabType, { label: string; icon: string; badgeClass: string; sideClass: string }> = {
-  review: { label: "Peer Review", icon: "\u25CE", badgeClass: "prTypeReview", sideClass: "prCardReview" },
-  feedback: { label: "Feedback", icon: "\u25CC", badgeClass: "prTypeFeedback", sideClass: "prCardFeedback" },
-  pairing: { label: "Pair Session", icon: "\u25C9", badgeClass: "prTypePairing", sideClass: "prCardPairing" },
-  cover: { label: "Coverage", icon: "\u22A1", badgeClass: "prTypeCover", sideClass: "prCardCover" },
-  input: { label: "Expert Input", icon: "\u25C8", badgeClass: "prTypeInput", sideClass: "prCardInput" }
+  review:   { label: "Peer Review",  icon: "◎", badgeClass: "prTypeReview",   sideClass: "prCardReview"   },
+  feedback: { label: "Feedback",     icon: "◌", badgeClass: "prTypeFeedback", sideClass: "prCardFeedback" },
+  pairing:  { label: "Pair Session", icon: "◉", badgeClass: "prTypePairing",  sideClass: "prCardPairing"  },
+  cover:    { label: "Coverage",     icon: "⊡", badgeClass: "prTypeCover",    sideClass: "prCardCover"    },
+  input:    { label: "Expert Input", icon: "◈", badgeClass: "prTypeInput",    sideClass: "prCardInput"    },
 };
 
 const urgencyClasses: Record<Urgency, string> = {
-  high: "prToneOrange",
+  high:   "prToneOrange",
   medium: "prToneAmber",
-  low: "prToneMuted2"
+  low:    "prToneMuted2",
 };
-
-const initialRequests: PeerRequest[] = [
-  {
-    id: 1,
-    fromId: 2,
-    toId: 1,
-    clientId: 1,
-    type: "review",
-    title: "Review brand guidelines before client send",
-    description:
-      "I drafted sections 1-3 of the Volta brand guidelines. Can you do a peer review before I send to Lena? Mainly checking for consistency with the approved logo direction and colour rationale.",
-    dueBy: "Feb 25",
-    estimatedTime: "45 min",
-    urgency: "high",
-    status: "pending",
-    createdAt: "Today 9:14 AM",
-    attachments: ["Volta_BrandGuidelines_v2_draft.figma", "Approved logo reference.pdf"],
-    thread: [
-      {
-        authorId: 2,
-        text: "Happy to walk you through it on a quick call if easier - 15 mins should cover it.",
-        time: "9:15 AM"
-      }
-    ]
-  },
-  {
-    id: 2,
-    fromId: 4,
-    toId: 1,
-    clientId: 2,
-    type: "input",
-    title: "Strategy input - Kestrel LinkedIn brief",
-    description:
-      "James is working on the LinkedIn channel brief for Kestrel. He is flagging that the content pillars feel too broad. Can you give him 20 mins of your time? Your experience with B2B positioning would really help.",
-    dueBy: "Feb 26",
-    estimatedTime: "20 min",
-    urgency: "medium",
-    status: "pending",
-    createdAt: "Yesterday 4:30 PM",
-    attachments: ["LinkedIn_ChannelBrief_v1.docx"],
-    thread: []
-  },
-  {
-    id: 3,
-    fromId: 3,
-    toId: 1,
-    clientId: 3,
-    type: "pairing",
-    title: "Pair session - desktop wireframe information architecture",
-    description:
-      "I am stuck on the IA for the Mira Health desktop flows. The patient journey and the clinician journey are overlapping in a confusing way. Could we do a 30-min whiteboard session this week?",
-    dueBy: "Feb 27",
-    estimatedTime: "30 min",
-    urgency: "medium",
-    status: "accepted",
-    createdAt: "Feb 21",
-    attachments: ["Mira_Wireframes_Mobile_v2.fig"],
-    thread: [
-      {
-        authorId: 1,
-        text: "Sure - Thursday at 2 PM works for me. I will set up a FigJam board beforehand.",
-        time: "Feb 21 5:02 PM"
-      },
-      {
-        authorId: 3,
-        text: "Perfect, Thursday 2 PM confirmed. I will share the current state in the thread before.",
-        time: "Feb 21 5:18 PM"
-      }
-    ]
-  },
-  {
-    id: 4,
-    fromId: 1,
-    toId: 5,
-    clientId: 1,
-    type: "cover",
-    title: "Motion guidelines - need Luca's expertise",
-    description:
-      "Volta wants animation guidelines as part of the brand system. I have the direction but I am not confident on the technical spec (easing values, duration guidelines for different contexts). Can you draft the motion principles section?",
-    dueBy: "Mar 3",
-    estimatedTime: "2 hrs",
-    urgency: "low",
-    status: "pending",
-    createdAt: "Feb 22",
-    attachments: [],
-    thread: []
-  },
-  {
-    id: 5,
-    fromId: 1,
-    toId: 2,
-    clientId: 2,
-    type: "feedback",
-    title: "Messaging framework feedback - Kestrel strategy deck",
-    description:
-      "I wrote the messaging hierarchy in the campaign strategy deck. Before it goes to Marcus, I would love your eyes on the positioning language - you are much stronger than me on financial services tone.",
-    dueBy: "Feb 24",
-    estimatedTime: "30 min",
-    urgency: "high",
-    status: "completed",
-    createdAt: "Feb 19",
-    attachments: ["KC_CampaignStrategy_v3.pdf"],
-    thread: [
-      {
-        authorId: 2,
-        text: "Done - left comments in the doc. Main note: enterprise-grade is overused in FS. Swapped for institutional-quality which landed better.",
-        time: "Feb 20 11:00 AM"
-      },
-      {
-        authorId: 1,
-        text: "Brilliant, thank you. Updated and sent to Marcus.",
-        time: "Feb 20 2:30 PM"
-      }
-    ]
-  }
-];
 
 const statusConfig: Record<RequestStatus, { label: string; badgeClass: string }> = {
-  pending: { label: "Pending", badgeClass: "prStatusPending" },
-  accepted: { label: "Accepted", badgeClass: "prStatusAccepted" },
+  pending:   { label: "Pending",   badgeClass: "prStatusPending"   },
+  accepted:  { label: "Accepted",  badgeClass: "prStatusAccepted"  },
   completed: { label: "Completed", badgeClass: "prStatusCompleted" },
-  declined: { label: "Declined", badgeClass: "prStatusDeclined" }
+  declined:  { label: "Declined",  badgeClass: "prStatusDeclined"  },
 };
 
-const emptyDraft: Draft = {
-  toId: 2,
-  clientId: 1,
-  type: "review",
-  title: "",
-  description: "",
-  dueBy: "",
-  estimatedTime: "",
-  urgency: "medium"
-};
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
-  const [requests, setRequests] = useState<PeerRequest[]>(initialRequests);
-  const [selected, setSelected] = useState<PeerRequest | null>(initialRequests[0]);
+function buildInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return ((parts[0]?.[0] ?? "") + (parts[parts.length - 1]?.[0] ?? "")).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+const CLIENT_TONE_CYCLE: Array<{ toneClass: string; surfaceClass: string; bannerClass: string }> = [
+  { toneClass: "prToneAccent",  surfaceClass: "prSurfaceAccent",  bannerClass: "prClientBannerAccent"  },
+  { toneClass: "prToneBlue",    surfaceClass: "prSurfaceBlue",    bannerClass: "prClientBannerBlue"    },
+  { toneClass: "prTonePurple",  surfaceClass: "prSurfacePurple",  bannerClass: "prClientBannerPurple"  },
+  { toneClass: "prToneAmber",   surfaceClass: "prSurfaceAmber",   bannerClass: "prClientBannerAmber"   },
+  { toneClass: "prToneOrange",  surfaceClass: "prSurfaceOrange",  bannerClass: "prClientBannerOrange"  },
+];
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function PeerRequestsPage({
+  isActive,
+  session,
+}: {
+  isActive: boolean;
+  session: AuthSession | null;
+}) {
+  // ── Identity & client data ─────────────────────────────────────────────────
+  const [myId,    setMyId]    = useState<string>("me");
+  const [staff,   setStaff]   = useState<StaffMember[]>([
+    { id: "me", name: "You", avatar: "YU", toneClass: "prToneAccent", surfaceClass: "prSurfaceAccent", role: "Staff Member" },
+  ]);
+  const [clients, setClients] = useState<ClientRow[]>([]);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [peerReviews, setPeerReviews] = useState<StaffPeerReview[]>([]);
+
+  useEffect(() => {
+    if (!session) return;
+    // Load profile, clients, and peer reviews in parallel
+    void Promise.all([
+      getMyProfile(session),
+      getStaffClients(session),
+      loadMyPeerReviewsWithRefresh(session),
+    ]).then(([profileRes, clientsRes, peerRes]) => {
+      // Profile → update "You" entry
+      if (profileRes.nextSession) saveSession(profileRes.nextSession);
+      if (!profileRes.error && profileRes.data) {
+        const p = profileRes.data;
+        const name = `${p.firstName} ${p.lastName}`.trim();
+        setMyId(p.id);
+        setStaff([{
+          id:           p.id,
+          name:         name || "You",
+          avatar:       buildInitials(name || "YU"),
+          toneClass:    "prToneAccent",
+          surfaceClass: "prSurfaceAccent",
+          role:         p.role,
+        }]);
+        // Also update existing requests' fromId placeholder
+        setRequests((prev) => prev.map((r) => ({
+          ...r,
+          fromId: r.fromId === "me" ? p.id : r.fromId,
+          toId:   r.toId   === "me" ? p.id : r.toId,
+        })));
+        setDraft((prev) => ({ ...prev, toId: prev.toId === "me" ? p.id : prev.toId }));
+      }
+
+      // Clients → populate dropdown
+      if (clientsRes.nextSession) saveSession(clientsRes.nextSession);
+      if (!clientsRes.error && clientsRes.data) {
+        const rows: ClientRow[] = clientsRes.data.map((c: StaffClient, i: number) => ({
+          id:           c.id,
+          name:         c.name,
+          avatar:       buildInitials(c.name),
+          ...(CLIENT_TONE_CYCLE[i % CLIENT_TONE_CYCLE.length] ?? CLIENT_TONE_CYCLE[0]),
+        }));
+        setClients(rows);
+        if (rows.length > 0 && !draft.clientId) {
+          setDraft((prev) => ({ ...prev, clientId: rows[0]?.id ?? "" }));
+        }
+      }
+
+      // Peer reviews → store for display
+      if (peerRes.nextSession) saveSession(peerRes.nextSession);
+      if (!peerRes.error && peerRes.data) {
+        setPeerReviews(peerRes.data);
+        // Map peer reviews into requests for the UI
+        const profileId = profileRes.data?.id ?? "me";
+        const mapped: PeerRequest[] = peerRes.data.map((pr) => ({
+          id:            pr.id,
+          fromId:        pr.revieweeId,
+          toId:          pr.reviewerId,
+          clientId:      "",
+          type:          "review" as CollabType,
+          title:         `Peer Review${pr.projectId ? ` — Project ${pr.projectId.slice(0, 6).toUpperCase()}` : ""}`,
+          description:   pr.feedback ?? "Review requested — please provide feedback and a score.",
+          dueBy:         pr.dueAt ? new Date(pr.dueAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" }) : "TBD",
+          estimatedTime: "15 min",
+          urgency:       (pr.status === "PENDING" ? "medium" : "low") as Urgency,
+          status:        pr.status === "SUBMITTED" ? "completed" as RequestStatus
+                       : pr.status === "PENDING"   ? "pending" as RequestStatus
+                       : "accepted" as RequestStatus,
+          createdAt:     new Date(pr.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" }),
+          attachments:   [],
+          thread:        pr.feedback ? [{ authorId: pr.reviewerId === profileId ? profileId : pr.reviewerId, text: pr.feedback, time: pr.submittedAt ? new Date(pr.submittedAt).toLocaleDateString("en-ZA") : "—" }] : [],
+        }));
+        setRequests((prev) => [...mapped, ...prev]);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+
+  // ── Request state ──────────────────────────────────────────────────────────
+  const [requests, setRequests] = useState<PeerRequest[]>([]);
+  const [selected, setSelected] = useState<PeerRequest | null>(null);
   const [creating, setCreating] = useState(false);
-  const [draft, setDraft] = useState<Draft>(emptyDraft);
-  const [view, setView] = useState<"all" | "incoming" | "outgoing">("all");
+  const [draft,    setDraft]    = useState<Draft>({
+    toId: "me", clientId: "", type: "review", title: "",
+    description: "", dueBy: "", estimatedTime: "", urgency: "medium",
+  });
+  const [view,  setView]  = useState<"all" | "incoming" | "outgoing">("all");
   const [reply, setReply] = useState("");
 
-  const incoming = requests.filter((request) => request.toId === 1);
-  const outgoing = requests.filter((request) => request.fromId === 1);
-  const pendingIncoming = incoming.filter((request) => request.status === "pending").length;
-  const filtered = view === "incoming" ? incoming : view === "outgoing" ? outgoing : requests;
+  const incoming        = requests.filter((r) => r.toId === myId);
+  const outgoing        = requests.filter((r) => r.fromId === myId);
+  const pendingIncoming = incoming.filter((r) => r.status === "pending").length;
+  const filtered        = view === "incoming" ? incoming : view === "outgoing" ? outgoing : requests;
 
-  const updateStatus = (id: number, status: RequestStatus) => {
-    setRequests((previous) => previous.map((request) => (request.id === id ? { ...request, status } : request)));
-    if (selected?.id === id) setSelected((previous) => (previous ? { ...previous, status } : previous));
+  const updateStatus = (id: string, status: RequestStatus) => {
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    if (selected?.id === id) setSelected((prev) => (prev ? { ...prev, status } : prev));
   };
 
-  const sendReply = (id: number) => {
+  const sendReply = (id: string) => {
     if (!reply.trim()) return;
-    const message: ThreadMessage = { authorId: 1, text: reply, time: "Just now" };
-    setRequests((previous) =>
-      previous.map((request) => (request.id === id ? { ...request, thread: [...request.thread, message] } : request))
+    const message: ThreadMessage = { authorId: myId, text: reply, time: "Just now" };
+    setRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, thread: [...r.thread, message] } : r))
     );
     if (selected?.id === id) {
-      setSelected((previous) => (previous ? { ...previous, thread: [...previous.thread, message] } : previous));
+      setSelected((prev) => (prev ? { ...prev, thread: [...prev.thread, message] } : prev));
     }
     setReply("");
   };
 
   const saveRequest = () => {
     const next: PeerRequest = {
-      id: Date.now(),
-      fromId: 1,
-      toId: Number(draft.toId),
-      clientId: Number(draft.clientId),
-      type: draft.type,
-      title: draft.title,
-      description: draft.description,
-      dueBy: draft.dueBy,
+      id:            String(Date.now()),
+      fromId:        myId,
+      toId:          draft.toId,
+      clientId:      draft.clientId,
+      type:          draft.type,
+      title:         draft.title,
+      description:   draft.description,
+      dueBy:         draft.dueBy,
       estimatedTime: draft.estimatedTime,
-      urgency: draft.urgency,
-      status: "pending",
-      createdAt: "Just now",
-      attachments: [],
-      thread: []
+      urgency:       draft.urgency,
+      status:        "pending",
+      createdAt:     "Just now",
+      attachments:   [],
+      thread:        [],
     };
-    setRequests((previous) => [next, ...previous]);
+    setRequests((prev) => [next, ...prev]);
     setSelected(next);
     setCreating(false);
-    setDraft(emptyDraft);
+    setDraft((prev) => ({ ...prev, title: "", description: "", dueBy: "", estimatedTime: "" }));
   };
 
   return (
@@ -286,9 +274,9 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
           </div>
           <div className={cx("flexRow", "gap20")}>
             {[
-              { label: "Incoming", value: incoming.length, toneClass: "prToneMuted" },
-              { label: "Needs reply", value: pendingIncoming, toneClass: pendingIncoming > 0 ? "prToneAmber" : "prToneMuted2" },
-              { label: "Outgoing", value: outgoing.length, toneClass: "prToneMuted" }
+              { label: "Incoming",    value: incoming.length,        toneClass: "prToneMuted"  },
+              { label: "Needs reply", value: pendingIncoming,        toneClass: pendingIncoming > 0 ? "prToneAmber" : "prToneMuted2" },
+              { label: "Outgoing",   value: outgoing.length,         toneClass: "prToneMuted"  },
             ].map((stat) => (
               <div key={stat.label} className={cx("textRight")}>
                 <div className={cx("prStatLabel")}>{stat.label}</div>
@@ -298,10 +286,7 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
             <button
               type="button"
               className={cx("prNewBtn")}
-              onClick={() => {
-                setCreating(true);
-                setSelected(null);
-              }}
+              onClick={() => { setCreating(true); setSelected(null); }}
             >
               + New request
             </button>
@@ -309,7 +294,11 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
         </div>
 
         <div className={cx("flexRow")}>
-          {[{ key: "all", label: "All" }, { key: "incoming", label: `Incoming${pendingIncoming > 0 ? ` (${pendingIncoming})` : ""}` }, { key: "outgoing", label: "Outgoing" }].map((tab) => (
+          {[
+            { key: "all",      label: "All" },
+            { key: "incoming", label: `Incoming${pendingIncoming > 0 ? ` (${pendingIncoming})` : ""}` },
+            { key: "outgoing", label: "Outgoing" },
+          ].map((tab) => (
             <button
               key={tab.key}
               type="button"
@@ -323,60 +312,93 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
       </div>
 
       <div className={cx("prMainGrid")}>
+        {/* ── Request list ── */}
         <div className={cx("prSidebar")}>
           {filtered.map((request) => {
-            const ct = collabTypes[request.type];
-            const from = staff.find((item) => item.id === request.fromId);
-            const to = staff.find((item) => item.id === request.toId);
-            const sc = statusConfig[request.status];
+            const ct         = collabTypes[request.type];
+            const from       = staff.find((s) => s.id === request.fromId);
+            const to         = staff.find((s) => s.id === request.toId);
+            const sc         = statusConfig[request.status];
             const isSelected = selected?.id === request.id;
-            const isIncoming = request.toId === 1;
+            const isIncoming = request.toId === myId;
             return (
               <div
                 key={request.id}
-                className={cx("prRequestCard", ct.sideClass, isSelected && "prRequestCardActive", request.status === "completed" && "prRequestCardCompleted")}
-                onClick={() => {
-                  setSelected(request);
-                  setCreating(false);
-                }}
+                className={cx(
+                  "prRequestCard", ct.sideClass,
+                  isSelected && "prRequestCardActive",
+                  request.status === "completed" && "prRequestCardCompleted"
+                )}
+                onClick={() => { setSelected(request); setCreating(false); }}
               >
                 <div className={cx("flexRow", "gap6", "mb6", "flexWrap")}>
                   <span className={cx("prTypeBadge", ct.badgeClass)}>{ct.icon} {ct.label}</span>
                   <span className={cx("prTypeBadge", sc.badgeClass)}>{sc.label}</span>
                 </div>
-                <div className={cx("text12", "mb6", "prRequestTitle", isSelected ? "prToneText" : "prToneMuted")}>{request.title}</div>
+                <div className={cx("text12", "mb6", "prRequestTitle", isSelected ? "prToneText" : "prToneMuted")}>
+                  {request.title}
+                </div>
                 <div className={cx("flexBetween")}>
                   <span className={cx("text10", "colorMuted2")}>
-                    {isIncoming ? `from ${from?.name}` : `to ${to?.name}`}
+                    {isIncoming ? `from ${from?.name ?? "…"}` : `to ${to?.name ?? "…"}`}
                   </span>
-                  <span className={cx("prUrgencyDot", urgencyClasses[request.urgency])}>&bull;</span>
+                  <span className={cx("prUrgencyDot", urgencyClasses[request.urgency])}>•</span>
                 </div>
                 <div className={cx("text10", "colorMuted2", "mt4")}>{request.estimatedTime} - Due {request.dueBy}</div>
               </div>
             );
           })}
+          {filtered.length === 0 ? (
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}><Ic n="users" sz={22} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateTitle")}>No requests yet</div>
+              <div className={cx("emptyStateSub")}>
+                {view === "all"
+                  ? "Peer collaboration requests will appear here once created."
+                  : `No ${view} requests found.`}
+              </div>
+            </div>
+          ) : null}
         </div>
 
+        {/* ── Detail / Create pane ── */}
         <div className={cx("overflowAuto")}>
+          {/* New request form */}
           {creating ? (
             <div className={cx("prDetailPane")}>
               <div className={cx("fontDisplay", "fw800", "colorText", "prFormTitle")}>New Collaboration Request</div>
 
               <div className={cx("formGrid2")}>
                 <div>
-                  <label className={cx("prFormLabel")}>Request from</label>
-                  <select aria-label="Request recipient" value={draft.toId} onChange={(event) => setDraft((previous) => ({ ...previous, toId: Number(event.target.value) }))} className={cx("prFormSelect")}>
-                    {staff.filter((item) => item.id !== 1).map((item) => (
-                      <option key={item.id} value={item.id}>{item.name} - {item.role}</option>
+                  <label className={cx("prFormLabel")}>Send to</label>
+                  <select
+                    aria-label="Request recipient"
+                    value={draft.toId}
+                    onChange={(e) => setDraft((p) => ({ ...p, toId: e.target.value }))}
+                    className={cx("prFormSelect")}
+                  >
+                    {staff.filter((s) => s.id !== myId).map((s) => (
+                      <option key={s.id} value={s.id}>{s.name} - {s.role}</option>
                     ))}
+                    {staff.filter((s) => s.id !== myId).length === 0 ? (
+                      <option value="" disabled>No other staff available</option>
+                    ) : null}
                   </select>
                 </div>
                 <div>
                   <label className={cx("prFormLabel")}>Client</label>
-                  <select aria-label="Request client" value={draft.clientId} onChange={(event) => setDraft((previous) => ({ ...previous, clientId: Number(event.target.value) }))} className={cx("prFormSelect")}>
-                    {clients.map((item) => (
-                      <option key={item.id} value={item.id}>{item.name}</option>
+                  <select
+                    aria-label="Request client"
+                    value={draft.clientId}
+                    onChange={(e) => setDraft((p) => ({ ...p, clientId: e.target.value }))}
+                    className={cx("prFormSelect")}
+                  >
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
+                    {clients.length === 0 ? (
+                      <option value="" disabled>Loading clients…</option>
+                    ) : null}
                   </select>
                 </div>
               </div>
@@ -384,15 +406,25 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
               <div className={cx("prFormGrid3")}>
                 <div>
                   <label className={cx("prFormLabel")}>Type</label>
-                  <select aria-label="Request type" value={draft.type} onChange={(event) => setDraft((previous) => ({ ...previous, type: event.target.value as CollabType }))} className={cx("prFormSelect")}>
-                    {Object.entries(collabTypes).map(([key, value]) => (
-                      <option key={key} value={key}>{value.label}</option>
+                  <select
+                    aria-label="Request type"
+                    value={draft.type}
+                    onChange={(e) => setDraft((p) => ({ ...p, type: e.target.value as CollabType }))}
+                    className={cx("prFormSelect")}
+                  >
+                    {Object.entries(collabTypes).map(([key, val]) => (
+                      <option key={key} value={key}>{val.label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label className={cx("prFormLabel")}>Urgency</label>
-                  <select aria-label="Request urgency" value={draft.urgency} onChange={(event) => setDraft((previous) => ({ ...previous, urgency: event.target.value as Urgency }))} className={cx("prFormSelect")}>
+                  <select
+                    aria-label="Request urgency"
+                    value={draft.urgency}
+                    onChange={(e) => setDraft((p) => ({ ...p, urgency: e.target.value as Urgency }))}
+                    className={cx("prFormSelect")}
+                  >
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
                     <option value="low">Low</option>
@@ -400,27 +432,52 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
                 </div>
                 <div>
                   <label className={cx("prFormLabel")}>Due by</label>
-                  <input value={draft.dueBy} onChange={(event) => setDraft((previous) => ({ ...previous, dueBy: event.target.value }))} placeholder="e.g. Feb 25" className={cx("prFormInput")} />
+                  <input
+                    value={draft.dueBy}
+                    onChange={(e) => setDraft((p) => ({ ...p, dueBy: e.target.value }))}
+                    placeholder="e.g. Feb 25"
+                    className={cx("prFormInput")}
+                  />
                 </div>
               </div>
 
               <div>
                 <label className={cx("prFormLabel")}>Title</label>
-                <input value={draft.title} onChange={(event) => setDraft((previous) => ({ ...previous, title: event.target.value }))} placeholder="What are you asking for?" className={cx("prFormInput")} />
+                <input
+                  value={draft.title}
+                  onChange={(e) => setDraft((p) => ({ ...p, title: e.target.value }))}
+                  placeholder="What are you asking for?"
+                  className={cx("prFormInput")}
+                />
               </div>
 
               <div>
                 <label className={cx("prFormLabel")}>Description</label>
-                <textarea value={draft.description} onChange={(event) => setDraft((previous) => ({ ...previous, description: event.target.value }))} placeholder="Context, what you need from them, and what a good outcome looks like." className={cx("prFormTextarea")} />
+                <textarea
+                  value={draft.description}
+                  onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))}
+                  placeholder="Context, what you need from them, and what a good outcome looks like."
+                  className={cx("prFormTextarea")}
+                />
               </div>
 
               <div>
                 <label className={cx("prFormLabel")}>Estimated time needed</label>
-                <input value={draft.estimatedTime} onChange={(event) => setDraft((previous) => ({ ...previous, estimatedTime: event.target.value }))} placeholder="e.g. 30 min, 1 hour" className={cx("prFormInputShort")} />
+                <input
+                  value={draft.estimatedTime}
+                  onChange={(e) => setDraft((p) => ({ ...p, estimatedTime: e.target.value }))}
+                  placeholder="e.g. 30 min, 1 hour"
+                  className={cx("prFormInputShort")}
+                />
               </div>
 
               <div className={cx("flexRow", "gap10")}>
-                <button type="button" className={cx("prSaveBtn")} disabled={!draft.title.trim() || !draft.description.trim()} onClick={saveRequest}>
+                <button
+                  type="button"
+                  className={cx("prSaveBtn")}
+                  disabled={!draft.title.trim() || !draft.description.trim() || staff.filter((s) => s.id !== myId).length === 0}
+                  onClick={saveRequest}
+                >
                   Send request
                 </button>
                 <button type="button" className={cx("prCancelBtn")} onClick={() => setCreating(false)}>
@@ -430,110 +487,147 @@ export function PeerRequestsPage({ isActive }: { isActive: boolean }) {
             </div>
           ) : null}
 
-          {selected && !creating
-            ? (() => {
-                const ct = collabTypes[selected.type];
-                const from = staff.find((item) => item.id === selected.fromId);
-                const to = staff.find((item) => item.id === selected.toId);
-                const cl = clients.find((item) => item.id === selected.clientId);
-                const sc = statusConfig[selected.status];
-                const isIncoming = selected.toId === 1;
-                return (
-                  <div className={cx("prDetailPane")}>
-                    <div className={cx("flexRow", "gap8", "flexWrap", "mb4")}>
-                      <span className={cx("prDetailBadge", ct.badgeClass)}>{ct.icon} {ct.label}</span>
-                      <span className={cx("prDetailBadge", sc.badgeClass, "prDetailBadgeStatus")}>{sc.label}</span>
-                      <span className={cx("prDetailBadge", "prDetailBadgeNeutral", urgencyClasses[selected.urgency])}>{selected.urgency} priority</span>
-                    </div>
-                    <div className={cx("fontDisplay", "fw800", "colorText", "prDetailTitle")}>{selected.title}</div>
+          {/* Request detail */}
+          {selected && !creating ? (() => {
+            const ct         = collabTypes[selected.type];
+            const from       = staff.find((s) => s.id === selected.fromId);
+            const to         = staff.find((s) => s.id === selected.toId);
+            const cl         = clients.find((c) => c.id === selected.clientId);
+            const sc         = statusConfig[selected.status];
+            const isIncoming = selected.toId === myId;
+            return (
+              <div className={cx("prDetailPane")}>
+                <div className={cx("flexRow", "gap8", "flexWrap", "mb4")}>
+                  <span className={cx("prDetailBadge", ct.badgeClass)}>{ct.icon} {ct.label}</span>
+                  <span className={cx("prDetailBadge", sc.badgeClass, "prDetailBadgeStatus")}>{sc.label}</span>
+                  <span className={cx("prDetailBadge", "prDetailBadgeNeutral", urgencyClasses[selected.urgency])}>
+                    {selected.urgency} priority
+                  </span>
+                </div>
+                <div className={cx("fontDisplay", "fw800", "colorText", "prDetailTitle")}>{selected.title}</div>
 
-                    <div className={cx("flexRow", "gap16", "flexWrap")}>
-                      {[from, to].map((item, index) => (
-                        <div key={index} className={cx("flexRow", "gap6")}>
-                          {index === 1 ? <span className={cx("text12", "colorMuted2")}>&rarr;</span> : null}
-                          <div className={cx("prPersonAvatar", item?.surfaceClass ?? "prSurfaceMuted", item?.toneClass ?? "prToneMuted")}>{item?.avatar ?? "??"}</div>
-                          <div>
-                            <div className={cx("text11", item?.id === 1 ? "prToneAccent" : "colorText")}>{item?.name ?? "Unknown"}</div>
-                            <div className={cx("prPersonRole")}>{item?.role ?? "Unknown role"}</div>
-                          </div>
+                <div className={cx("flexRow", "gap16", "flexWrap")}>
+                  {[from, to].map((member, idx) => (
+                    <div key={idx} className={cx("flexRow", "gap6")}>
+                      {idx === 1 ? <span className={cx("text12", "colorMuted2")}>→</span> : null}
+                      <div className={cx("prPersonAvatar", member?.surfaceClass ?? "prSurfaceMuted", member?.toneClass ?? "prToneMuted")}>
+                        {member?.avatar ?? "??"}
+                      </div>
+                      <div>
+                        <div className={cx("text11", member?.id === myId ? "prToneAccent" : "colorText")}>
+                          {member?.name ?? "Unknown"}
+                        </div>
+                        <div className={cx("prPersonRole")}>{member?.role ?? "Unknown role"}</div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className={cx("prDueMeta")}>
+                    <div><div className={cx("prDueMetaLabel")}>DUE</div><div className={cx("text11", "colorMuted")}>{selected.dueBy}</div></div>
+                    <div><div className={cx("prDueMetaLabel")}>TIME NEEDED</div><div className={cx("text11", "colorMuted")}>{selected.estimatedTime}</div></div>
+                  </div>
+                </div>
+
+                {cl ? (
+                  <div className={cx("prClientBanner", cl.bannerClass)}>
+                    <div className={cx("prClientBannerAvatar", cl.surfaceClass, cl.toneClass)}>{cl.avatar}</div>
+                    <span className={cx("text11", cl.toneClass)}>{cl.name}</span>
+                  </div>
+                ) : null}
+
+                <div className={cx("prDescriptionCard")}>
+                  <div className={cx("prDescriptionLabel")}>Request details</div>
+                  <div className={cx("text13", "colorMuted", "prDescriptionText")}>{selected.description}</div>
+                </div>
+
+                {selected.attachments.length > 0 ? (
+                  <div>
+                    <div className={cx("prDescriptionLabel")}>Attachments</div>
+                    <div className={cx("flexRow", "gap8", "flexWrap")}>
+                      {selected.attachments.map((a) => (
+                        <div key={a} className={cx("prAttachment")}>
+                          <span className={cx("colorBlue")}>▪</span>{a}
                         </div>
                       ))}
-                      <div className={cx("prDueMeta")}>
-                        <div><div className={cx("prDueMetaLabel")}>DUE</div><div className={cx("text11", "colorMuted")}>{selected.dueBy}</div></div>
-                        <div><div className={cx("prDueMetaLabel")}>TIME NEEDED</div><div className={cx("text11", "colorMuted")}>{selected.estimatedTime}</div></div>
-                      </div>
-                    </div>
-
-                    <div className={cx("prClientBanner", cl?.bannerClass ?? "prClientBannerMuted")}>
-                      <div className={cx("prClientBannerAvatar", cl?.surfaceClass ?? "prSurfaceMuted", cl?.toneClass ?? "prToneMuted")}>{cl?.avatar ?? "??"}</div>
-                      <span className={cx("text11", cl?.toneClass ?? "prToneMuted")}>{cl?.name ?? "Unknown client"}</span>
-                    </div>
-
-                    <div className={cx("prDescriptionCard")}>
-                      <div className={cx("prDescriptionLabel")}>Request details</div>
-                      <div className={cx("text13", "colorMuted", "prDescriptionText")}>{selected.description}</div>
-                    </div>
-
-                    {selected.attachments.length > 0 ? (
-                      <div>
-                        <div className={cx("prDescriptionLabel")}>Attachments</div>
-                        <div className={cx("flexRow", "gap8", "flexWrap")}>
-                          {selected.attachments.map((attachment) => (
-                            <div key={attachment} className={cx("prAttachment")}>
-                              <span className={cx("colorBlue")}>&squf;</span>{attachment}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {selected.thread.length > 0 ? (
-                      <div>
-                        <div className={cx("prDescriptionLabel", "mb10")}>Thread</div>
-                        {selected.thread.map((message, index) => {
-                          const author = staff.find((item) => item.id === message.authorId);
-                          const isMe = message.authorId === 1;
-                          return (
-                            <div key={index} className={cx("prThreadRow", isMe ? "prThreadRowMe" : "prThreadRowOther")}>
-                              <div className={cx("prThreadAvatar", author?.surfaceClass ?? "prSurfaceMuted", author?.toneClass ?? "prToneMuted")}>{author?.avatar ?? "??"}</div>
-                              <div className={cx(isMe ? "prThreadBubbleMe" : "prThreadBubbleOther")}>
-                                <div className={cx("text12", "colorMuted", "prThreadText")}>{message.text}</div>
-                                <div className={cx("prThreadTime")}>{message.time}</div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-
-                    {isIncoming && selected.status === "pending" ? (
-                      <div className={cx("flexRow", "gap10")}>
-                        <button type="button" className={cx("prAcceptBtn")} onClick={() => updateStatus(selected.id, "accepted")}>
-                          &#10003; Accept
-                        </button>
-                        <button type="button" className={cx("prDeclineBtn")} onClick={() => updateStatus(selected.id, "declined")}>
-                          Decline
-                        </button>
-                      </div>
-                    ) : null}
-                    {selected.status === "accepted" ? (
-                      <div className={cx("prCompleteWrap")}>
-                        <button type="button" className={cx("prCompleteBtn")} onClick={() => updateStatus(selected.id, "completed")}>
-                          Mark as completed &rarr;
-                        </button>
-                      </div>
-                    ) : null}
-
-                    <div className={cx("prReplyRow")}>
-                      <textarea value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Reply to this request..." className={cx("prReplyInput")} />
-                      <button type="button" className={cx("prSendBtn")} onClick={() => sendReply(selected.id)}>
-                        Send
-                      </button>
                     </div>
                   </div>
-                );
-              })()
-            : null}
+                ) : null}
+
+                {selected.thread.length > 0 ? (
+                  <div>
+                    <div className={cx("prDescriptionLabel", "mb10")}>Thread</div>
+                    {selected.thread.map((msg, idx) => {
+                      const author = staff.find((s) => s.id === msg.authorId);
+                      const isMe   = msg.authorId === myId;
+                      return (
+                        <div key={idx} className={cx("prThreadRow", isMe ? "prThreadRowMe" : "prThreadRowOther")}>
+                          <div className={cx("prThreadAvatar", author?.surfaceClass ?? "prSurfaceMuted", author?.toneClass ?? "prToneMuted")}>
+                            {author?.avatar ?? "??"}
+                          </div>
+                          <div className={cx(isMe ? "prThreadBubbleMe" : "prThreadBubbleOther")}>
+                            <div className={cx("text12", "colorMuted", "prThreadText")}>{msg.text}</div>
+                            <div className={cx("prThreadTime")}>{msg.time}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
+                {isIncoming && selected.status === "pending" ? (
+                  <div className={cx("flexRow", "gap10")}>
+                    <button type="button" className={cx("prAcceptBtn")} onClick={() => updateStatus(selected.id, "accepted")}>
+                      ✓ Accept
+                    </button>
+                    <button type="button" className={cx("prDeclineBtn")} onClick={() => updateStatus(selected.id, "declined")}>
+                      Decline
+                    </button>
+                  </div>
+                ) : null}
+
+                {selected.status === "accepted" ? (
+                  <div className={cx("prCompleteWrap")}>
+                    <button
+                      type="button"
+                      className={cx("prCompleteBtn")}
+                      disabled={submitting}
+                      onClick={async () => {
+                        // If this is a real peer review from the API, submit via backend
+                        const matchingPeer = peerReviews.find((pr) => pr.id === selected.id);
+                        if (matchingPeer && session) {
+                          setSubmitting(true);
+                          const res = await submitPeerReviewWithRefresh(session, selected.id, {
+                            score: 80,
+                            feedback: selected.thread.length > 0 ? selected.thread[selected.thread.length - 1].text : "Completed",
+                          });
+                          if (res.nextSession) saveSession(res.nextSession);
+                          if (!res.error) {
+                            updateStatus(selected.id, "completed");
+                          }
+                          setSubmitting(false);
+                        } else {
+                          updateStatus(selected.id, "completed");
+                        }
+                      }}
+                    >
+                      {submitting ? "Submitting…" : "Mark as completed →"}
+                    </button>
+                  </div>
+                ) : null}
+
+                <div className={cx("prReplyRow")}>
+                  <textarea
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    placeholder="Reply to this request..."
+                    className={cx("prReplyInput")}
+                  />
+                  <button type="button" className={cx("prSendBtn")} disabled={!reply.trim()} title={!reply.trim() ? "Type a reply first" : undefined} onClick={() => sendReply(selected.id)}>
+                    Send
+                  </button>
+                </div>
+              </div>
+            );
+          })() : null}
         </div>
       </div>
     </section>

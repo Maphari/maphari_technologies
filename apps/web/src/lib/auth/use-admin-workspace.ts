@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   loadAdminSnapshotWithRefresh,
   updateLeadStatusWithRefresh,
@@ -102,17 +102,18 @@ export function useAdminWorkspace() {
 
   const session = state.session;
 
+  // Track which user ID's snapshot has been loaded so we only load it once per
+  // authenticated user — not on every refreshSnapshot call (which returns a new
+  // session object reference each time, otherwise causing an infinite loop).
+  const lastSnapshotLoadedForRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!session) return;
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      void refreshSnapshot(session);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshSnapshot, session]);
+    const userId = session.user.id;
+    if (lastSnapshotLoadedForRef.current === userId) return;
+    lastSnapshotLoadedForRef.current = userId;
+    void refreshSnapshot(session);
+  }, [session, refreshSnapshot]);
 
   const signIn = useCallback(async (email: string) => {
     setState((previous) => ({ ...previous, loading: true, error: null }));

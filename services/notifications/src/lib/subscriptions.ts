@@ -50,6 +50,9 @@ export function createNotificationEventHandler(metrics: EventMetrics, logger: Ev
       subject?: string;
       message?: string;
       tab?: "dashboard" | "projects" | "invoices" | "messages" | "settings" | "operations";
+      // fields forwarded by leads.ts for auto-reply
+      contactName?: string;
+      contactEmail?: string;
     };
     const eventClientId = event.clientId ?? payload.clientId ?? undefined;
 
@@ -73,6 +76,7 @@ export function createNotificationEventHandler(metrics: EventMetrics, logger: Ev
       });
       metrics.inc("notification_jobs_total", { service: "notifications", status: "QUEUED" });
     } else if (eventClientId) {
+      // Internal ops alert for all non-notification events
       await enqueueJob({
         clientId: eventClientId,
         channel: "EMAIL",
@@ -85,6 +89,34 @@ export function createNotificationEventHandler(metrics: EventMetrics, logger: Ev
         }
       });
       metrics.inc("notification_jobs_total", { service: "notifications", status: "QUEUED" });
+
+      // Auto-reply to contact form submitters when a lead is created with an email
+      if (event.topic === EventTopics.leadCreated && payload.contactEmail) {
+        const name = payload.contactName ?? "there";
+        await enqueueJob({
+          clientId: eventClientId,
+          channel: "EMAIL",
+          recipient: payload.contactEmail,
+          subject: "Thanks for reaching out to Maphari",
+          message: [
+            `Hi ${name},`,
+            "",
+            "Thank you for your message — we've received your inquiry and will be in touch within one business day.",
+            "",
+            "In the meantime, feel free to browse our service catalog at maphari.com.",
+            "",
+            "Best regards,",
+            "The Maphari Team"
+          ].join("\n"),
+          tab: "dashboard",
+          metadata: {
+            eventId: event.eventId,
+            topic: event.topic,
+            autoReply: true
+          }
+        });
+        metrics.inc("notification_jobs_total", { service: "notifications", status: "QUEUED" });
+      }
     }
 
     logger.info(

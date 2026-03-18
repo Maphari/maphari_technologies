@@ -1,10 +1,19 @@
+// ════════════════════════════════════════════════════════════════════════════
+// recruitment-pipeline-page.tsx — Admin Recruitment Pipeline
+// Data     : loadJobPostingsWithRefresh     → GET /job-postings
+//            loadJobApplicationsWithRefresh → GET /job-postings/:id/applications
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { AdminTabs } from "./shared";
 import { colorClass } from "./admin-page-utils";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { loadJobPostingsWithRefresh, loadJobApplicationsWithRefresh, type AdminJobPosting, type AdminJobApplication } from "../../../../lib/api/admin";
+import { saveSession } from "../../../../lib/auth/session";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
 type Candidate = {
   name: string;
   stage: string;
@@ -29,38 +38,7 @@ type Role = {
   candidates: Candidate[];
 };
 
-const roles: Role[] = [
-  {
-    id: "REC-003", title: "Senior Brand Designer", department: "Creative", priority: "high",
-    status: "active", postedDate: "Feb 5", targetDate: "Mar 15", hiringManager: "Renzo Fabbri",
-    salaryBand: "R38k-R46k", applications: 14, interviewed: 4, offered: 0,
-    candidates: [
-      { name: "Amara Osei", stage: "2nd Interview", score: 88, source: "LinkedIn", flag: null },
-      { name: "James Liu", stage: "2nd Interview", score: 81, source: "Referral", flag: null },
-      { name: "Priya Sharma", stage: "1st Interview", score: 74, source: "Pnet", flag: "Portfolio weak" },
-      { name: "Ben Kruger", stage: "Offer", score: 91, source: "Referral", flag: null }
-    ]
-  },
-  {
-    id: "REC-002", title: "Junior Copywriter", department: "Content", priority: "medium",
-    status: "active", postedDate: "Jan 22", targetDate: "Mar 1", hiringManager: "Tapiwa Moyo",
-    salaryBand: "R18k-R24k", applications: 31, interviewed: 6, offered: 1,
-    candidates: [
-      { name: "Zoe Hendricks", stage: "Offer Accepted", score: 84, source: "LinkedIn", flag: null },
-      { name: "Sipho Zulu", stage: "Offer Declined", score: 79, source: "CareerJet", flag: "Accepted competitor offer" }
-    ]
-  },
-  {
-    id: "REC-001", title: "Motion Designer", department: "Creative", priority: "low",
-    status: "on-hold", postedDate: "Dec 10", targetDate: "Apr 30", hiringManager: "Renzo Fabbri",
-    salaryBand: "R28k-R36k", applications: 8, interviewed: 2, offered: 0,
-    candidates: [
-      { name: "Lara Venter", stage: "Screen", score: 68, source: "Portfolio site", flag: null },
-      { name: "Kwame Asante", stage: "Screen", score: 72, source: "LinkedIn", flag: null }
-    ]
-  }
-];
-
+// ── Constants ──────────────────────────────────────────────────────────────────
 const stages = ["Applied", "Screen", "1st Interview", "2nd Interview", "Offer", "Offer Accepted", "Offer Declined"] as const;
 
 const stageColors: Record<string, string> = {
@@ -89,48 +67,80 @@ const statusConfig = {
 const tabs = ["pipeline", "kanban", "candidates", "analytics"] as const;
 type Tab = (typeof tabs)[number];
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function mapPriority(p: string): Role["priority"] {
+  const s = p.toLowerCase();
+  if (s === "high") return "high";
+  if (s === "medium" || s === "med") return "medium";
+  return "low";
+}
+
+function mapStatus(s: string): Role["status"] {
+  const l = s.toLowerCase();
+  if (l === "active" || l === "open") return "active";
+  if (l === "on_hold" || l === "on-hold" || l === "hold") return "on-hold";
+  if (l === "filled") return "filled";
+  return "closed";
+}
+
+function mapPosting(p: AdminJobPosting, apps: AdminJobApplication[]): Role {
+  const candidates: Candidate[] = apps.map((a) => ({
+    name: a.candidateName,
+    stage: a.stage,
+    score: a.score ?? 0,
+    source: a.source ?? "—",
+    flag: a.flag ?? null,
+  }));
+  const interviewed = candidates.filter((c) => c.stage.toLowerCase().includes("interview")).length;
+  const offered = candidates.filter((c) => c.stage.toLowerCase() === "offer").length;
+  const postedDate = new Date(p.postedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" });
+  const targetDate = p.targetDate
+    ? new Date(p.targetDate).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })
+    : "—";
+  return {
+    id: p.id.slice(0, 8).toUpperCase(),
+    title: p.title,
+    department: p.department ?? "—",
+    priority: mapPriority(p.priority),
+    status: mapStatus(p.status),
+    postedDate,
+    targetDate,
+    hiringManager: p.hiringManager ?? "—",
+    salaryBand: p.salaryBand ?? "—",
+    applications: apps.length,
+    interviewed,
+    offered,
+    candidates,
+  };
+}
+
 function tonePillClass(color: string): string {
   switch (color) {
-    case "var(--accent)":
-      return styles.rcpPillAccent;
-    case "var(--red)":
-      return styles.rcpPillRed;
-    case "var(--amber)":
-      return styles.rcpPillAmber;
-    case "var(--blue)":
-      return styles.rcpPillBlue;
-    default:
-      return styles.rcpPillMuted;
+    case "var(--accent)": return styles.rcpPillAccent;
+    case "var(--red)": return styles.rcpPillRed;
+    case "var(--amber)": return styles.rcpPillAmber;
+    case "var(--blue)": return styles.rcpPillBlue;
+    default: return styles.rcpPillMuted;
   }
 }
 
 function toneKanbanCardClass(color: string): string {
   switch (color) {
-    case "var(--accent)":
-      return styles.rcpKanbanCardAccent;
-    case "var(--red)":
-      return styles.rcpKanbanCardRed;
-    case "var(--amber)":
-      return styles.rcpKanbanCardAmber;
-    case "var(--blue)":
-      return styles.rcpKanbanCardBlue;
-    default:
-      return styles.rcpKanbanCardMuted;
+    case "var(--accent)": return styles.rcpKanbanCardAccent;
+    case "var(--red)": return styles.rcpKanbanCardRed;
+    case "var(--amber)": return styles.rcpKanbanCardAmber;
+    case "var(--blue)": return styles.rcpKanbanCardBlue;
+    default: return styles.rcpKanbanCardMuted;
   }
 }
 
 function toneFillClass(color: string): string {
   switch (color) {
-    case "var(--accent)":
-      return styles.rcpBarFillAccent;
-    case "var(--red)":
-      return styles.rcpBarFillRed;
-    case "var(--amber)":
-      return styles.rcpBarFillAmber;
-    case "var(--blue)":
-      return styles.rcpBarFillBlue;
-    default:
-      return styles.rcpBarFillMuted;
+    case "var(--accent)": return styles.rcpBarFillAccent;
+    case "var(--red)": return styles.rcpBarFillRed;
+    case "var(--amber)": return styles.rcpBarFillAmber;
+    case "var(--blue)": return styles.rcpBarFillBlue;
+    default: return styles.rcpBarFillMuted;
   }
 }
 
@@ -140,9 +150,39 @@ function scoreClass(score: number): string {
   return "colorMuted";
 }
 
-export function RecruitmentPipelinePage() {
+// ── Component ─────────────────────────────────────────────────────────────────
+export function RecruitmentPipelinePage({ session }: { session: AuthSession | null }) {
   const [activeTab, setActiveTab] = useState<Tab>("pipeline");
-  const [expanded, setExpanded] = useState<string>("REC-003");
+  const [expanded, setExpanded] = useState<string>("");
+  const [apiPostings, setApiPostings] = useState<AdminJobPosting[]>([]);
+  const [apiApps, setApiApps] = useState<Record<string, AdminJobApplication[]>>({});
+
+  useEffect(() => {
+    if (!session) return;
+    loadJobPostingsWithRefresh(session).then(async (pr) => {
+      if (pr.nextSession) saveSession(pr.nextSession);
+      if (pr.error || !pr.data) return;
+      const postings = pr.data;
+      setApiPostings(postings);
+      if (postings.length > 0) setExpanded(postings[0].id.slice(0, 8).toUpperCase());
+      // Load applications for all postings in parallel
+      const appResults = await Promise.all(
+        postings.map((p) => loadJobApplicationsWithRefresh(session, p.id))
+      );
+      const appMap: Record<string, AdminJobApplication[]> = {};
+      for (let i = 0; i < postings.length; i++) {
+        const r = appResults[i];
+        if (r.nextSession) saveSession(r.nextSession);
+        appMap[postings[i].id] = r.data ?? [];
+      }
+      setApiApps(appMap);
+    });
+  }, [session]);
+
+  const roles = useMemo<Role[]>(
+    () => apiPostings.map((p) => mapPosting(p, apiApps[p.id] ?? [])),
+    [apiPostings, apiApps]
+  );
 
   const totalActive = roles.filter((r) => r.status === "active").length;
   const totalApplications = roles.reduce((s, r) => s + r.applications, 0);
@@ -190,6 +230,9 @@ export function RecruitmentPipelinePage() {
       <div className={cx("overflowAuto", "minH0")}>
         {activeTab === "pipeline" ? (
           <div className={styles.rcpPipelineList}>
+            {roles.length === 0 ? (
+              <div className={cx("colorMuted", "text13", "py24", "textCenter")}>No job postings found.</div>
+            ) : null}
             {roles.map((role) => {
               const sc = statusConfig[role.status];
               const pc = priorityConfig[role.priority];
@@ -239,6 +282,9 @@ export function RecruitmentPipelinePage() {
                     <div className={styles.rcpExpanded}>
                       <div className={styles.rcpExpandedInner}>
                         <div className={styles.rcpShortlistTitle}>Candidate Shortlist</div>
+                        {role.candidates.length === 0 ? (
+                          <div className={cx("colorMuted", "text12", "py12")}>No candidates yet.</div>
+                        ) : null}
                         <div className={styles.rcpCandidateList}>
                           {role.candidates.map((c, i) => (
                             <div key={i} className={styles.rcpCandidateRow}>
@@ -248,11 +294,11 @@ export function RecruitmentPipelinePage() {
                               </div>
                               <div>
                                 <div className={styles.rcpLabelSmall}>Stage</div>
-                                <span className={cx(styles.rcpPill, tonePillClass(stageColors[c.stage]))}>{c.stage}</span>
+                                <span className={cx(styles.rcpPill, tonePillClass(stageColors[c.stage] ?? "var(--muted)"))}>{c.stage}</span>
                               </div>
                               <div className={styles.rcpMetricBox}>
                                 <div className={styles.rcpLabelSmall}>Score</div>
-                                <div className={cx(styles.rcpMono11, "fw700", scoreClass(c.score))}>{c.score}</div>
+                                <div className={cx(styles.rcpMono11, "fw700", scoreClass(c.score))}>{c.score || "—"}</div>
                               </div>
                               {c.flag ? <div className={styles.rcpFlag}>⚑ {c.flag}</div> : <div />}
                               <div className={styles.rcpActionRow}>
@@ -293,7 +339,7 @@ export function RecruitmentPipelinePage() {
                         <div className={styles.rcpCandMeta}>{c.role}</div>
                         <div className={styles.rcpKanbanFoot}>
                           <span className={styles.rcpCandMeta}>{c.source}</span>
-                          <span className={cx(styles.rcpMono11, "fw700", scoreClass(c.score))}>{c.score}</span>
+                          <span className={cx(styles.rcpMono11, "fw700", scoreClass(c.score))}>{c.score || "—"}</span>
                         </div>
                         {c.flag ? <div className={styles.rcpFlagMini}>⚑ {c.flag}</div> : null}
                       </div>
@@ -311,13 +357,16 @@ export function RecruitmentPipelinePage() {
             <div className={cx(styles.rcpCandHead, "fontMono", "text10", "colorMuted", "uppercase")}>
               {["Candidate", "Role", "Source", "Stage", "Score", "Flag", ""].map((h) => <span key={h}>{h}</span>)}
             </div>
+            {candidatesFlat.length === 0 ? (
+              <div className={cx("colorMuted", "text13", "py24", "textCenter")}>No candidates found.</div>
+            ) : null}
             {candidatesFlat.map((c, i) => (
               <div key={`${c.roleId}-${c.name}`} className={cx(styles.rcpCandRow, i < candidatesFlat.length - 1 && "borderB")}>
                 <span className={styles.rcpCandName}>{c.name}</span>
                 <span className={styles.rcpCandMeta}>{c.roleName}</span>
                 <span className={styles.rcpCandMeta}>{c.source}</span>
-                <span className={cx(styles.rcpPill, tonePillClass(stageColors[c.stage]))}>{c.stage}</span>
-                <span className={cx(styles.rcpMono11, "fw700", scoreClass(c.score))}>{c.score}</span>
+                <span className={cx(styles.rcpPill, tonePillClass(stageColors[c.stage] ?? "var(--muted)"))}>{c.stage}</span>
+                <span className={cx(styles.rcpMono11, "fw700", scoreClass(c.score))}>{c.score || "—"}</span>
                 <span className={cx(styles.rcpFlagGlyph, c.flag ? "colorRed" : "colorMuted")}>{c.flag ? "⚑" : "-"}</span>
                 <button type="button" className={cx("btnSm", "btnGhost")}>View</button>
               </div>
@@ -329,30 +378,28 @@ export function RecruitmentPipelinePage() {
           <div className={styles.rcpAnalyticsSplit}>
             <div className={cx("card", "p24")}>
               <div className={styles.rcpSectionTitle}>Application Sources</div>
-              {[
-                { source: "LinkedIn", count: roles.flatMap((r) => r.candidates.filter((c) => c.source === "LinkedIn")).length, color: "var(--blue)" },
-                { source: "Referral", count: roles.flatMap((r) => r.candidates.filter((c) => c.source === "Referral")).length, color: "var(--accent)" },
-                { source: "Pnet", count: roles.flatMap((r) => r.candidates.filter((c) => c.source === "Pnet")).length, color: "var(--accent)" },
-                { source: "Portfolio site", count: roles.flatMap((r) => r.candidates.filter((c) => c.source === "Portfolio site")).length, color: "var(--amber)" },
-                { source: "CareerJet", count: roles.flatMap((r) => r.candidates.filter((c) => c.source === "CareerJet")).length, color: "var(--muted)" }
-              ].map((s) => (
-                <div key={s.source} className={styles.rcpBarRow}>
-                  <span className={styles.text12}>{s.source}</span>
-                  <div className={styles.rcpTrack80}>
-                    <progress className={cx(styles.rcpBarFill, "uiProgress", toneFillClass(s.color))} max={100} value={(s.count / 8) * 100} />
+              {["LinkedIn", "Referral", "Pnet", "Portfolio site", "CareerJet"].map((source) => {
+                const count = candidatesFlat.filter((c) => c.source === source).length;
+                const colorMap: Record<string, string> = { LinkedIn: "var(--blue)", Referral: "var(--accent)", Pnet: "var(--accent)", "Portfolio site": "var(--amber)", CareerJet: "var(--muted)" };
+                const color = colorMap[source] ?? "var(--muted)";
+                return (
+                  <div key={source} className={styles.rcpBarRow}>
+                    <span className={styles.text12}>{source}</span>
+                    <div className={styles.rcpTrack80}>
+                      <progress className={cx(styles.rcpBarFill, "uiProgress", toneFillClass(color))} max={100} value={Math.min((count / Math.max(candidatesFlat.length, 1)) * 100, 100)} />
+                    </div>
+                    <span className={cx(styles.rcpCount, colorClass(color))}>{count}</span>
                   </div>
-                  <span className={cx(styles.rcpCount, colorClass(s.color))}>{s.count}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className={cx("card", "p24")}>
               <div className={styles.rcpSectionTitle}>Recruitment Funnel</div>
               {[
                 { stage: "Applications", count: totalApplications, color: "var(--muted)" },
-                { stage: "Screened", count: 18, color: "var(--blue)" },
                 { stage: "Interviewed", count: totalInterviewed, color: "var(--accent)" },
-                { stage: "Offered", count: 2, color: "var(--amber)" },
-                { stage: "Accepted", count: 1, color: "var(--accent)" }
+                { stage: "Offered", count: roles.flatMap((r) => r.candidates.filter((c) => c.stage === "Offer" || c.stage === "Offer Accepted")).length, color: "var(--amber)" },
+                { stage: "Accepted", count: roles.flatMap((r) => r.candidates.filter((c) => c.stage === "Offer Accepted")).length, color: "var(--accent)" }
               ].map((f) => (
                 <div key={f.stage} className={styles.rcpBarRow}>
                   <span className={styles.text12}>{f.stage}</span>

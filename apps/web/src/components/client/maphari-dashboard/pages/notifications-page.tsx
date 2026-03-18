@@ -1,325 +1,533 @@
 "use client";
+import { useState, useMemo, useEffect } from "react";
+import { cx } from "../style";
+import { Ic, Av } from "../ui";
+import { saveSession } from "../../../../lib/auth/session";
+import { useProjectLayer } from "../hooks/use-project-layer";
+import {
+  loadPortalNotificationsWithRefresh,
+  setPortalNotificationReadStateWithRefresh,
+  type PortalNotificationJob,
+} from "../../../../lib/api/portal";
+import {
+  getPortalPreferenceWithRefresh,
+  setPortalPreferenceWithRefresh,
+} from "../../../../lib/api/portal/settings";
 
-import { useEffect, useMemo, useState } from "react";
-import { cx, styles } from "../style";
+// ── Types ─────────────────────────────────────────────────────────────────
 
-type CommFilter =
-  | "All"
-  | "Messages"
-  | "Calls"
-  | "Approvals"
-  | "Emails"
-  | "Scope Changes"
-  | "Invoices";
+type NGroup    = "Today" | "Yesterday" | "Earlier";
+type NTab      = "all" | "approvals" | "finance" | "messages" | "projects" | "urgent";
+type NPriority = "high" | "normal";
 
-type CommType =
-  | "message"
-  | "call"
-  | "approval"
-  | "email"
-  | "scope"
-  | "mention"
-  | "invoice"
-  | "payment";
+interface Notif {
+  id:              string;
+  group:           NGroup;
+  tab:             NTab;
+  icon:            string;
+  color:           string;
+  badge:           string;
+  badgeLbl:        string;
+  title:           string;
+  body:            string;
+  detail?:         string;
+  time:            string;
+  unread:          boolean;
+  priority:        NPriority;
+  sender:          string;
+  senderInitials:  string;
+  action:          string | null;
+  actionCls:       string;
+  secondaryAction?: string;
+}
 
-type CommEntry = {
-  icon: string;
-  title: string;
-  text: string;
-  type: CommType;
-  time: string;
-  chip: "badgeGreen" | "badgeAccent" | "badgePurple" | "badgeAmber" | "badgeMuted" | "badgeBlue";
-  chipLabel: string;
+// ── Mapper: PortalNotificationJob → Notif ─────────────────────────────────
+
+function getGroup(isoDate: string | undefined): NGroup {
+  if (!isoDate) return "Earlier";
+  const diff = Math.floor((Date.now() - new Date(isoDate).getTime()) / 86400000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  return "Earlier";
+}
+
+const TAB_CFG: Record<string, { icon: string; color: string; badge: string; badgeLbl: string }> = {
+  finance:    { icon: "dollar",  color: "var(--green)",  badge: "badgeGreen",  badgeLbl: "Finance"  },
+  invoices:   { icon: "dollar",  color: "var(--green)",  badge: "badgeGreen",  badgeLbl: "Finance"  },
+  messages:   { icon: "message", color: "var(--purple)", badge: "badgePurple", badgeLbl: "Message"  },
+  projects:   { icon: "rocket",  color: "var(--lime)",   badge: "badgeAccent", badgeLbl: "Project"  },
+  operations: { icon: "layers",  color: "var(--blue)",   badge: "badgeMuted",  badgeLbl: "Update"   },
 };
 
-type CommGroup = {
-  date: string;
-  entries: CommEntry[];
-};
+function mapJobToNotif(job: PortalNotificationJob): Notif {
+  const rawTab = job.tab ?? "operations";
+  const cfg = TAB_CFG[rawTab] ?? { icon: "bell", color: "var(--muted2)", badge: "badgeMuted", badgeLbl: "Update" };
+  const ntfTab: NTab =
+    rawTab === "invoices" ? "finance" :
+    rawTab === "messages" ? "messages" :
+    rawTab === "projects" ? "projects" : "all";
+  return {
+    id:             job.id,
+    group:          getGroup(job.createdAt),
+    tab:            ntfTab,
+    icon:           cfg.icon,
+    color:          cfg.color,
+    badge:          cfg.badge,
+    badgeLbl:       cfg.badgeLbl,
+    title:          job.subject ?? "Notification",
+    body:           job.message ?? "",
+    time:           job.createdAt
+      ? new Date(job.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })
+      : "",
+    unread:         job.readAt === null,
+    priority:       "normal",
+    sender:         "System",
+    senderInitials: "SY",
+    action:         null,
+    actionCls:      "",
+  };
+}
 
-const FILTERS: CommFilter[] = [
-  "All",
-  "Messages",
-  "Calls",
-  "Approvals",
-  "Emails",
-  "Scope Changes",
-  "Invoices",
+const TABS: { id: NTab; label: string; icon: string }[] = [
+  { id: "all",       label: "All",       icon: "list"    },
+  { id: "approvals", label: "Approvals", icon: "check"   },
+  { id: "finance",   label: "Finance",   icon: "dollar"  },
+  { id: "messages",  label: "Messages",  icon: "message" },
+  { id: "projects",  label: "Projects",  icon: "layers"  },
+  { id: "urgent",    label: "Urgent",    icon: "alert"   },
 ];
 
-const TYPE_MAP: Record<CommType, CommFilter> = {
-  message: "Messages",
-  call: "Calls",
-  approval: "Approvals",
-  email: "Emails",
-  scope: "Scope Changes",
-  mention: "Messages",
-  invoice: "Invoices",
-  payment: "Invoices",
+const GROUPS: NGroup[] = ["Today", "Yesterday", "Earlier"];
+
+const CATS: Exclude<NTab, "all">[] = ["approvals", "finance", "messages", "projects", "urgent"];
+
+const CAT_COLOR: Record<Exclude<NTab, "all">, string> = {
+  approvals: "var(--lime)",
+  finance:   "var(--green)",
+  messages:  "var(--purple)",
+  projects:  "var(--blue)",
+  urgent:    "var(--red)",
 };
 
-const ALL_EVENTS: CommGroup[] = [
-  {
-    date: "Today",
-    entries: [
-      {
-        icon: "💬",
-        title: "Message from Sipho Ndlovu",
-        text: "Dashboard UI is looking great — analytics widget has been pushed. You should now see it in the portal.",
-        type: "message",
-        time: "11:34",
-        chip: "badgeAccent",
-        chipLabel: "Portal Message",
-      },
-      {
-        icon: "✅",
-        title: "You approved Homepage Design v2",
-        text: "Formal approval recorded. The team has been notified and will proceed to frontend.",
-        type: "approval",
-        time: "10:12",
-        chip: "badgeGreen",
-        chipLabel: "Approval",
-      },
-    ],
-  },
-  {
-    date: "Yesterday · Feb 20",
-    entries: [
-      {
-        icon: "📞",
-        title: "Discovery call — sprint review",
-        text: "45-minute call. Attendees: Naledi D., Sipho N., Lerato M. Decision: proceed with lime accent and defer dark mode to Phase 2.",
-        type: "call",
-        time: "14:00",
-        chip: "badgePurple",
-        chipLabel: "Call",
-      },
-      {
-        icon: "📧",
-        title: "Email: Weekly project update",
-        text: "Automated digest sent — 3 milestones completed, 2 upcoming, no blockers. Budget currently at 41%.",
-        type: "email",
-        time: "08:00",
-        chip: "badgeMuted",
-        chipLabel: "Auto-Email",
-      },
-    ],
-  },
-  {
-    date: "Feb 18",
-    entries: [
-      {
-        icon: "🔄",
-        title: "Scope change requested by Sipho Ndlovu",
-        text: "Added Zulu language support to all screens. Impact: +R 2,400 and +3 days. Awaiting your approval.",
-        type: "scope",
-        time: "16:20",
-        chip: "badgeAmber",
-        chipLabel: "Scope Change",
-      },
-      {
-        icon: "💬",
-        title: "You were mentioned in a task",
-        text: "@Naledi your brand guideline approval is needed before mobile screens can start. No rush, just flagging.",
-        type: "mention",
-        time: "11:02",
-        chip: "badgeBlue",
-        chipLabel: "Mention",
-      },
-    ],
-  },
-  {
-    date: "Feb 14",
-    entries: [
-      {
-        icon: "✅",
-        title: "You approved Brand Identity Suite",
-        text: "Logo, guidelines, and colour palette approved. Formal sign-off recorded with timestamp.",
-        type: "approval",
-        time: "15:30",
-        chip: "badgeGreen",
-        chipLabel: "Approval",
-      },
-      {
-        icon: "📧",
-        title: "Invoice #002 sent",
-        text: "Brand Identity phase invoice for R 20,000 delivered to naledi@veldt.co.za.",
-        type: "invoice",
-        time: "16:00",
-        chip: "badgeAmber",
-        chipLabel: "Invoice",
-      },
-      {
-        icon: "💳",
-        title: "Payment received — Invoice #002",
-        text: "R 20,000 received via EFT. Receipt generated and filed.",
-        type: "payment",
-        time: "17:45",
-        chip: "badgeGreen",
-        chipLabel: "Payment",
-      },
-    ],
-  },
-];
+const CAT_ICON: Record<Exclude<NTab, "all">, string> = {
+  approvals: "check",
+  finance:   "dollar",
+  messages:  "message",
+  projects:  "layers",
+  urgent:    "alert",
+};
+
+// ── Component ─────────────────────────────────────────────────────────────
 
 export function NotificationsPage() {
-  const [filter, setFilter] = useState<CommFilter>("All");
-  const [search, setSearch] = useState("");
-  const [toast, setToast] = useState<{ title: string; subtitle: string } | null>(null);
+  const { session } = useProjectLayer();
+  const [activeTab, setActiveTab] = useState<NTab>("all");
+  const [notifs,    setNotifs]    = useState<Notif[]>([]);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [snoozed,   setSnoozed]   = useState<Set<string>>(new Set());
+  const [expanded,  setExpanded]  = useState<string | null>(null);
 
   useEffect(() => {
-    if (!toast) return;
-    const timeout = window.setTimeout(() => setToast(null), 3200);
-    return () => window.clearTimeout(timeout);
-  }, [toast]);
+    if (!session) return;
+    void loadPortalNotificationsWithRefresh(session, {}).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setNotifs(r.data.map(mapJobToNotif));
+    });
+    void getPortalPreferenceWithRefresh(session, "notificationMutes").then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data?.value) {
+        try { setMuted(new Set(JSON.parse(r.data.value))); } catch { /* ignore */ }
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+  const [showPrefs, setShowPrefs] = useState(false);
+  const [muted,     setMuted]     = useState<Set<Exclude<NTab, "all">>>(new Set());
 
-  const filtered = useMemo(
-    () =>
-      ALL_EVENTS.map((group) => ({
-        ...group,
-        entries: group.entries.filter((entry) => {
-          const matchFilter = filter === "All" || TYPE_MAP[entry.type] === filter;
-          const query = search.trim().toLowerCase();
-          const matchSearch =
-            query.length === 0 ||
-            entry.title.toLowerCase().includes(query) ||
-            entry.text.toLowerCase().includes(query);
-          return matchFilter && matchSearch;
-        }),
-      })).filter((group) => group.entries.length > 0),
-    [filter, search],
+  const visible = useMemo(
+    () => notifs.filter(n => !dismissed.has(n.id) && !snoozed.has(n.id) && !muted.has(n.tab as Exclude<NTab, "all">)),
+    [notifs, dismissed, snoozed, muted],
   );
 
-  function notify(title: string, subtitle: string): void {
-    setToast({ title, subtitle });
-  }
+  const filtered = useMemo(
+    () => activeTab === "all" ? visible : visible.filter(n => n.tab === activeTab),
+    [visible, activeTab],
+  );
+
+  const unreadCount    = visible.filter(n => n.unread).length;
+  const snoozedCount   = snoozed.size;
+  const actionRequired = visible.filter(n => n.unread && n.priority === "high").length;
+  const todayCount     = visible.filter(n => n.group === "Today").length;
+
+  const tabUnread = (tab: NTab) =>
+    visible.filter(n => n.unread && (tab === "all" || n.tab === tab)).length;
+
+  const markAllRead = () => {
+    setNotifs(prev => prev.map(n => ({ ...n, unread: false })));
+    if (session) {
+      const unreadIds = notifs.filter(n => n.unread).map(n => n.id);
+      for (const id of unreadIds) {
+        void setPortalNotificationReadStateWithRefresh(session, id, true).then((r) => {
+          if (r.nextSession) saveSession(r.nextSession);
+        });
+      }
+    }
+  };
+  const markRead    = (id: string) => {
+    setNotifs(prev => prev.map(n => n.id === id ? { ...n, unread: false } : n));
+    if (session) {
+      void setPortalNotificationReadStateWithRefresh(session, id, true).then((r) => {
+        if (r.nextSession) saveSession(r.nextSession);
+      });
+    }
+  };
+  const dismiss     = (id: string) => { setDismissed(prev => new Set([...prev, id])); setExpanded(p => p === id ? null : p); };
+  const snooze      = (id: string) => { setSnoozed(prev => new Set([...prev, id])); markRead(id); };
+  const toggleMute  = (cat: Exclude<NTab, "all">) =>
+    setMuted(prev => {
+      const s = new Set(prev); s.has(cat) ? s.delete(cat) : s.add(cat);
+      if (session) {
+        void setPortalPreferenceWithRefresh(session, {
+          key: "notificationMutes",
+          value: JSON.stringify([...s]),
+        }).then((r) => { if (r.nextSession) saveSession(r.nextSession); });
+      }
+      return s;
+    });
+  const toggleExpand = (id: string) => { setExpanded(prev => prev === id ? null : id); markRead(id); };
+
+  // Category stats
+  const catCounts = CATS.map(c => ({
+    cat: c,
+    count:  visible.filter(n => n.tab === c).length,
+    unread: visible.filter(n => n.tab === c && n.unread).length,
+  }));
+  const maxCount = Math.max(...catCounts.map(c => c.count), 1);
+
+  // Top senders
+  const senderMap: Record<string, { initials: string; count: number; unread: number }> = {};
+  visible.forEach(n => {
+    if (!senderMap[n.sender]) senderMap[n.sender] = { initials: n.senderInitials, count: 0, unread: 0 };
+    senderMap[n.sender].count++;
+    if (n.unread) senderMap[n.sender].unread++;
+  });
+  const topSenders = Object.entries(senderMap).sort((a, b) => b[1].count - a[1].count).slice(0, 4);
 
   return (
-    <div className={cx("pageBody", styles.commLogRoot)}>
-      <div className={styles.commLogLayout}>
-        <aside className={styles.commLogSidebar}>
-          <div className={styles.commLogSection}>Log</div>
-          {["All", "Messages", "Calls", "Approvals"].map((item, idx) => (
-            <button
-              key={item}
-              type="button"
-              className={cx(styles.commLogSideItem, filter === item && styles.commLogSideItemActive)}
-              onClick={() => setFilter(item as CommFilter)}
-            >
-              <span
-                className={styles.commLogDot}
-                style={{
-                  background:
-                    idx === 0 ? "var(--accent)" : idx === 1 ? "var(--blue)" : idx === 2 ? "var(--purple)" : "var(--green)",
-                }}
-              />
-              <span>{item}</span>
-            </button>
-          ))}
+    <div className={cx("pageBody")}>
 
-          <div className={styles.commLogDivider} />
-          {["Emails", "Scope Changes", "Invoices"].map((item, idx) => (
-            <button
-              key={item}
-              type="button"
-              className={cx(styles.commLogSideItem, filter === item && styles.commLogSideItemActive)}
-              onClick={() => setFilter(item as CommFilter)}
-            >
-              <span
-                className={styles.commLogDot}
-                style={{ background: idx === 0 ? "var(--amber)" : idx === 1 ? "var(--red)" : "var(--muted2)" }}
-              />
-              <span>{item}</span>
-            </button>
-          ))}
-
-          <div className={styles.commLogDivider} />
-          <div className={styles.commLogHintCard}>
-            <div className={styles.commLogHintText}>
-              Complete audit trail from project start. <strong>Every interaction logged</strong>, nothing lost.
-            </div>
-          </div>
-        </aside>
-
-        <section className={styles.commLogMain}>
-          <div className={styles.commLogHeader}>
-            <div>
-              <div className={cx("pageEyebrow")}>Veldt Finance · Comms</div>
-              <h1 className={cx("pageTitle")}>Communication Log</h1>
-              <p className={cx("pageSub")}>
-                Every message, call, approval, email, and decision — timestamped and searchable.
-              </p>
-            </div>
-            <div className={styles.commLogHeaderActions}>
-              <div className={styles.commLogSearchWrap}>
-                <span className={styles.commLogSearchIcon}>🔍</span>
-                <input
-                  className={styles.commLogSearch}
-                  placeholder="Search communications..."
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </div>
-              <button
-                type="button"
-                className={cx("btnSm", "btnGhost")}
-                onClick={() => notify("Exported", "Full communication log downloaded")}
-              >
-                Export
-              </button>
-            </div>
-          </div>
-
-          <div className={styles.commLogFilterBar}>
-            {FILTERS.map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={cx(styles.commLogFilterBtn, filter === item && styles.commLogFilterBtnActive)}
-                onClick={() => setFilter(item)}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.commLogContent}>
-            <div className={styles.commLogTimeline}>
-              {filtered.map((group) => (
-                <div key={group.date} className={styles.commLogGroup}>
-                  <div className={styles.commLogDate}>{group.date}</div>
-                  {group.entries.map((entry) => (
-                    <div key={`${group.date}-${entry.title}-${entry.time}`} className={styles.commLogEntry}>
-                      <span className={styles.commLogEntryIcon}>{entry.icon}</span>
-                      <div className={styles.commLogEntryBody}>
-                        <div className={styles.commLogEntryTitle}>{entry.title}</div>
-                        <div className={styles.commLogEntryText}>{entry.text}</div>
-                        <div className={styles.commLogEntryMeta}>
-                          <span className={styles.commLogTime}>{entry.time}</span>
-                          <span className={cx("badge", entry.chip)}>{entry.chipLabel}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-
-              {filtered.length === 0 ? (
-                <div className={styles.commLogEmpty}>No results for "{search || filter}"</div>
-              ) : null}
-            </div>
-          </div>
-        </section>
+      {/* ── Page Header ───────────────────────────────────────────────── */}
+      <div className={cx("pageHeader", "mb0")}>
+        <div>
+          <div className={cx("pageEyebrow")}>Overview · Notifications</div>
+          <h1 className={cx("pageTitle")}>Notification Center</h1>
+          <p className={cx("pageSub")}>
+            Stay on top of every update, approval request, and alert from your project.
+          </p>
+        </div>
+        <div className={cx("pageActions")}>
+          {unreadCount > 0 && (
+            <span className={cx("badge", unreadCount >= 5 ? "badgeRed" : "badgeAmber")}>
+              {unreadCount} unread
+            </span>
+          )}
+          <button type="button" className={cx("btnSm", "btnGhost", "dynColor")} onClick={markAllRead}
+            disabled={unreadCount === 0} style={{ "--color": "inherit" } as React.CSSProperties}>
+            Mark all read
+          </button>
+          <button type="button" className={cx("btnSm", "btnGhost", "dynColor", "flexRow", "gap6")} onClick={() => setShowPrefs(p => !p)} style={{ "--color": "inherit" } as React.CSSProperties}>
+            <Ic n="settings" sz={13} c={showPrefs ? "var(--lime)" : "var(--muted2)"} />
+            <span className={cx("dynColor")} style={{ "--color": showPrefs ? "var(--lime)" : "inherit" } as React.CSSProperties}>Preferences</span>
+          </button>
+        </div>
       </div>
 
-      {toast ? (
-        <div className={cx("toastStack")}>
-          <div className={cx("toast", "toastSuccess")}>
-            <strong>{toast.title}</strong>
-            <div>{toast.subtitle}</div>
+      {/* ── Stat Cards ────────────────────────────────────────────────── */}
+      <div className={cx("topCardsStack", "mb20")}>
+        {[
+          { label: "Unread",           value: unreadCount,    color: unreadCount > 0 ? "statCardAmber" : "statCardAccent" },
+          { label: "Today",            value: todayCount,     color: "statCardAccent" },
+          { label: "Requiring Action", value: actionRequired, color: actionRequired > 0 ? "statCardRed" : "statCardAccent" },
+          { label: "Snoozed",          value: snoozedCount,   color: snoozedCount > 0 ? "statCardBlue" : "statCardAccent" },
+        ].map(s => (
+          <div key={s.label} className={cx("statCard", s.color)}>
+            <div className={cx("statLabel")}>{s.label}</div>
+            <div className={cx("statValue")}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Overview Row ──────────────────────────────────────────────── */}
+      <div className={cx("grid2", "mb20", "gap16")}>
+
+        {/* Category Activity */}
+        <div className={cx("card", "p0", "overflowHidden")}>
+          <div className={cx("cardHd")}>
+            <div className={cx("flexRow", "gap8")}>
+              <Ic n="activity" sz={14} c="var(--muted2)" />
+              <span className={cx("cardHdTitle")}>Activity by Category</span>
+            </div>
+            <span className={cx("text10", "colorMuted")}>{visible.length} total</span>
+          </div>
+          <div className={cx("p0x18x16")}>
+            {catCounts.map(({ cat, count, unread }, i) => (
+              <div key={cat} className={cx("py9_0", i > 0 && "borderT")}>
+                <div className={cx("flexRow", "flexCenter", "gap10", "mb7")}>
+                  <div className={cx("ntfCatIconBox", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${CAT_COLOR[cat]} 12%, var(--s2))`, "--color": `color-mix(in oklab, ${CAT_COLOR[cat]} 25%, transparent)` } as React.CSSProperties}>
+                    <Ic n={CAT_ICON[cat]} sz={12} c={CAT_COLOR[cat]} />
+                  </div>
+                  <span className={cx("text12", "fw600", "flex1", "capitalize")}>{cat}</span>
+                  <span className={cx("text11", "colorMuted")}>{count}</span>
+                  {unread > 0 && (
+                    <span className={cx("ntfUnreadBadge", "dynBgColor", "dynColor")} style={{ "--bg-color": `color-mix(in oklab, ${CAT_COLOR[cat]} 14%, var(--s3))`, "--color": CAT_COLOR[cat] } as React.CSSProperties}>{unread} new</span>
+                  )}
+                </div>
+                <div className={cx("ntfCatTrack")}>
+                  <div className={cx("ntfCatFill", "dynBgColor")} style={{ "--pct": `${(count / maxCount) * 100}%`, "--bg-color": CAT_COLOR[cat] } as React.CSSProperties} />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      ) : null}
+
+        {/* Top Senders + Quick Actions */}
+        <div className={cx("card", "p0", "overflowHidden")}>
+          <div className={cx("cardHd")}>
+            <div className={cx("flexRow", "gap8")}>
+              <Ic n="users" sz={14} c="var(--muted2)" />
+              <span className={cx("cardHdTitle")}>Top Senders</span>
+            </div>
+          </div>
+          <div className={cx("p0x18x4")}>
+            {topSenders.map(([name, info], i) => (
+              <div key={name} className={cx("flexRow", "gap12", "py9_0", i > 0 && "borderT")}>
+                <Av initials={info.initials} size={32} />
+                <div className={cx("flex1")}>
+                  <div className={cx("text12", "fw600")}>{name}</div>
+                  <div className={cx("text10", "colorMuted")}>{info.count} notification{info.count !== 1 ? "s" : ""}</div>
+                </div>
+                {info.unread > 0 && (
+                  <span className={cx("badge", "badgeAmber")}>{info.unread} unread</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className={cx("ntfQuickActions")}>
+            <div className={cx("text10", "colorMuted", "fw700", "ls006", "mb10")}>
+              QUICK ACTIONS
+            </div>
+            <div className={cx("flexRow", "gap8", "flexWrap")}>
+              <button type="button" className={cx("btnSm", "btnGhost", "dynColor", "flexRow", "gap5")} onClick={markAllRead} style={{ "--color": "inherit" } as React.CSSProperties}>
+                <Ic n="check" sz={11} c="var(--muted2)" /> Mark all read
+              </button>
+              <button type="button" className={cx("btnSm", "btnGhost", "dynColor", "flexRow", "gap5")}
+                onClick={() => setDismissed(new Set(visible.map(n => n.id)))} style={{ "--color": "inherit" } as React.CSSProperties}>
+                <Ic n="trash" sz={11} c="var(--muted2)" /> Clear all
+              </button>
+              {snoozedCount > 0 && (
+                <button type="button" className={cx("btnSm", "btnGhost", "dynColor", "flexRow", "gap5")} onClick={() => setSnoozed(new Set())} style={{ "--color": "inherit" } as React.CSSProperties}>
+                  <Ic n="refresh" sz={11} c="var(--muted2)" /> Restore snoozed ({snoozedCount})
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Preferences Panel ─────────────────────────────────────────── */}
+      {showPrefs && (
+        <div className={cx("card", "borderLeftAccent", "mb16", "p16x18")}>
+          <div className={cx("flexRow", "flexCenter", "gap8", "mb14")}>
+            <Ic n="settings" sz={14} c="var(--lime)" />
+            <span className={cx("fw700", "text13")}>Notification Preferences</span>
+            <button type="button" className={cx("btnSm", "btnGhost", "mlAuto", "colorInherit")} onClick={() => setShowPrefs(false)}>
+              Close
+            </button>
+          </div>
+          <div className={cx("grid2Cols", "gap8")}>
+            {CATS.map(cat => (
+              <div key={cat} className={cx("flexRow", "gap10", "p10x14", "rSm", "bgS3", "borderB1")}>
+                <div className={cx("ntfPrefIconBox", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${CAT_COLOR[cat]} 12%, var(--s2))` } as React.CSSProperties}>
+                  <Ic n={CAT_ICON[cat]} sz={11} c={CAT_COLOR[cat]} />
+                </div>
+                <span className={cx("text12", "flex1", "capitalize")}>{cat}</span>
+                {/* Toggle pill */}
+                <button type="button" onClick={() => toggleMute(cat)} className={cx("ntfTogglePill", "dynBgColor")} style={{ "--bg-color": muted.has(cat) ? "var(--b2)" : CAT_COLOR[cat] } as React.CSSProperties}>
+                  <div className={cx("ntfToggleThumb")} style={{ "--left": muted.has(cat) ? "2px" : "18px", "--bg-color": muted.has(cat) ? "var(--muted2)" : "var(--bg, #0a0a0a)" } as React.CSSProperties} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className={cx("text10", "colorMuted", "mt10")}>
+            Muted categories are hidden from all views until re-enabled here.
+          </div>
+        </div>
+      )}
+
+      {/* ── Priority Alert Banner ─────────────────────────────────────── */}
+      {actionRequired > 0 && (
+        <div className={cx("card", "ntfAlertCard", "dynBorderLeft3")} style={{ "--color": "var(--red)" } as React.CSSProperties}>
+          <div className={cx("flexRow", "gap12")}>
+            <div className={cx("ntfAlertIconBox")}>
+              <Ic n="alert" sz={15} c="var(--red)" />
+            </div>
+            <div className={cx("flex1")}>
+              <div className={cx("fw700", "text12", "colorRed")}>Urgent attention required</div>
+              <div className={cx("text11", "colorMuted")}>
+                {actionRequired} high-priority item{actionRequired !== 1 ? "s need" : " needs"} your immediate action
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Filter Tabs ───────────────────────────────────────────────── */}
+      <div className={cx("ntfTabRow", "mb12")}>
+        {TABS.map(tab => {
+          const count = tabUnread(tab.id);
+          return (
+            <button key={tab.id} type="button"
+              className={cx("ntfTab", activeTab === tab.id ? "ntfTabActive" : "", "dynColor")}
+              onClick={() => setActiveTab(tab.id)} style={{ "--color": "inherit" } as React.CSSProperties}>
+              <Ic n={tab.icon} sz={11} c={activeTab === tab.id ? "var(--bg)" : "var(--muted2)"} />
+              {tab.label}
+              {count > 0 && <span className={cx("ntfTabBadge")}>{count}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Notification List ─────────────────────────────────────────── */}
+      <div className={cx("card")}>
+        {filtered.length === 0 ? (
+          <div className={cx("ntfEmpty")}>
+            <div className={cx("ntfEmptyIco")}>
+              <Ic n="bell" sz={20} c="var(--muted2)" />
+            </div>
+            <div className={cx("emptyStateTitle")}>All caught up</div>
+            <div className={cx("emptyStateDesc")}>
+              No notifications in this category. We&apos;ll alert you the moment something needs attention.
+            </div>
+          </div>
+        ) : (
+          GROUPS.map(group => {
+            const rows = filtered.filter(n => n.group === group);
+            if (rows.length === 0) return null;
+            return (
+              <div key={group}>
+                <div className={cx("ntfGroupLabel")}>{group.toUpperCase()}</div>
+
+                {rows.map(n => {
+                  const isExpanded = expanded === n.id;
+                  return (
+                    <div key={n.id} className={cx("ntfRow", n.unread ? "ntfRowUnread" : "")}>
+
+                      {/* Priority / color accent bar */}
+                      <div className={cx("ntfAccent", "dynBgColor")} style={{ "--bg-color": n.color, "--op": n.priority === "high" ? 1 : 0.35 } as React.CSSProperties} />
+
+                      {/* Tinted icon box */}
+                      <div className={cx("ntfIconBox", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${n.color} 13%, var(--s2))`, "--color": `color-mix(in oklab, ${n.color} 25%, transparent)` } as React.CSSProperties}>
+                        <Ic n={n.icon} sz={15} c={n.color} />
+                      </div>
+
+                      {/* Content */}
+                      <div className={cx("ntfContent", "pointer")} onClick={() => toggleExpand(n.id)} >
+                        <div className={cx("ntfHead")}>
+                          <span className={cx("ntfTitle", !n.unread ? "ntfTitleRead" : "")}>{n.title}</span>
+                          {n.unread && <span className={cx("ntfDot")} aria-label="Unread" />}
+                          <span className={cx("badge", n.badge)}>{n.badgeLbl}</span>
+                          {n.priority === "high" && (
+                            <span className={cx("badge", "badgeRed", "flexRow", "flexCenter", "gap3")}>
+                              <Ic n="alert" sz={8} c="currentColor" /> Urgent
+                            </span>
+                          )}
+                        </div>
+
+                        <div className={cx("ntfBody")}>{n.body}</div>
+
+                        {/* Expanded detail */}
+                        {isExpanded && n.detail && (
+                          <div className={cx("mt8", "p10x12", "rSm", "bgS3", "borderB1")}>
+                            <p className={cx("text11", "colorMuted", "lineH175")}>{n.detail}</p>
+                          </div>
+                        )}
+
+                        <div className={cx("ntfMeta")}>
+                          <Av initials={n.senderInitials} size={16} />
+                          <span className={cx("ntfTime")}>{n.sender}</span>
+                          <span className={cx("ntfTime")}>·</span>
+                          <span className={cx("ntfTime")}>{n.time}</span>
+                          {n.detail && (
+                            <>
+                              <span className={cx("ntfTime")}>·</span>
+                              <span className={cx("ntfTime", "flexRow", "flexCenter", "gap2")}>
+                                <Ic n={isExpanded ? "chevronDown" : "chevronRight"} sz={9} c="var(--muted2)" />
+                                {isExpanded ? "less" : "more"}
+                              </span>
+                            </>
+                          )}
+                        </div>
+
+                        {n.action && (
+                          <div className={cx("ntfActionRow")}>
+                            <button type="button" className={cx("btnSm", n.actionCls, "dynColor")} style={{ "--color": "inherit" } as React.CSSProperties}
+                              onClick={e => { e.stopPropagation(); markRead(n.id); }}>
+                              {n.action}
+                            </button>
+                            {n.secondaryAction && (
+                              <button type="button" className={cx("btnSm", "btnGhost", "dynColor")} style={{ "--color": "inherit" } as React.CSSProperties}
+                                onClick={e => e.stopPropagation()}>
+                                {n.secondaryAction}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: dismiss + snooze */}
+                      <div className={cx("ntfRight")}>
+                        <button type="button" className={cx("ntfDismiss")} aria-label="Dismiss"
+                          onClick={e => { e.stopPropagation(); dismiss(n.id); }}>
+                          ×
+                        </button>
+                        <button type="button" aria-label="Snooze for 24h" title="Snooze"
+                          onClick={e => { e.stopPropagation(); snooze(n.id); }}
+                          className={cx("ntfSnoozeBtn")}
+                          onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                          onMouseLeave={e => (e.currentTarget.style.opacity = "0.35")}
+                        >
+                          <Ic n="clock" sz={12} c="var(--muted2)" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })
+        )}
+
+        {/* Snoozed strip */}
+        {snoozedCount > 0 && (
+          <div className={cx("p10x16", "bgS3", "flexRow", "gap8", filtered.length > 0 && "borderT")}>
+            <Ic n="clock" sz={12} c="var(--muted2)" />
+            <span className={cx("text11", "colorMuted")}>
+              {snoozedCount} notification{snoozedCount !== 1 ? "s" : ""} snoozed
+            </span>
+            <button type="button" className={cx("btnSm", "btnGhost", "mlAuto", "colorInherit")} onClick={() => setSnoozed(new Set())}>
+              Restore all
+            </button>
+          </div>
+        )}
+
+        {filtered.length > 0 && (
+          <div className={cx("ntfFooter")}>
+            <span className={cx("text11", "colorMuted")}>
+              Showing all {filtered.length} notification{filtered.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

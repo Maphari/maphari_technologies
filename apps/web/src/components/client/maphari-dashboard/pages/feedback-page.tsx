@@ -266,7 +266,7 @@ export function FeedbackPage() {
 
                 {VIDEOS.map((item) => (
                   <div key={item.title} className={styles.fbCollabVideoCard}>
-                    <button type="button" className={styles.fbCollabVideoThumb} style={{ background: item.bg }} onClick={() => setVideoModal(item)}>
+                    <button type="button" className={styles.fbCollabVideoThumb} style={{ '--bg-color': item.bg } as React.CSSProperties} onClick={() => setVideoModal(item)}>
                       <span className={styles.fbCollabVideoPlay}>▶</span>
                       <span className={styles.fbCollabVideoDur}>{item.duration}</span>
                       {item.isNew ? <span className={styles.fbCollabVideoNew}>NEW</span> : null}
@@ -306,7 +306,7 @@ export function FeedbackPage() {
 
                 {mentions.map((item) => (
                   <div key={item.id} className={cx(styles.fbCollabMentionCard, item.unread && styles.fbCollabMentionUnread)}>
-                    <div className={styles.fbCollabMentionAvatar} style={{ background: item.avColor, color: "#050508" }}>{item.av}</div>
+                    <div className={styles.fbCollabMentionAvatar} style={{ '--bg-color': item.avColor } as React.CSSProperties}>{item.av}</div>
                     <div className={styles.fbCollabGrow}>
                       <div className={styles.fbCollabMentionTitle}>{item.title}</div>
                       <div className={styles.fbCollabMentionText}>{renderMentionText(item.text)}</div>
@@ -398,7 +398,7 @@ export function FeedbackPage() {
             </div>
 
             <div className={styles.fbCollabModalBody}>
-              <div className={styles.fbCollabPlayerStub} style={{ background: videoModal.bg }}>
+              <div className={styles.fbCollabPlayerStub} style={{ '--bg-color': videoModal.bg } as React.CSSProperties}>
                 <div className={styles.fbCollabPlayerInner}>
                   <span className={styles.fbCollabPlayerPlay}>▶</span>
                   <div>Click to play · {videoModal.duration}</div>

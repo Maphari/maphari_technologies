@@ -1,7 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
+import type { PageId } from "../types";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import {
+  getStaffClients,
+  type StaffClient
+} from "../../../../lib/api/staff/clients";
+import {
+  loadClientOnboardingWithRefresh,
+  patchClientOnboardingRecordWithRefresh,
+  type ClientOnboardingRecord
+} from "../../../../lib/api/admin/onboarding";
 
 type OnboardingStatus = "complete" | "in_progress" | "stuck";
 type StepCategory = "Staff" | "Client" | "Both";
@@ -33,101 +45,96 @@ type OnboardingClient = {
   health: number;
 };
 
-const onboardingClients: OnboardingClient[] = [
-  {
-    id: 1,
-    client: "Volta Studios",
-    avatar: "VS",
-    contact: "Lena Muller",
-    project: "Brand Identity System",
-    startDate: "Jan 6, 2026",
-    status: "complete",
-    completedAt: "Jan 10, 2026",
-    daysToComplete: 4,
-    steps: [
-      { id: "welcome", label: "Welcome email sent", category: "Staff", done: true, doneAt: "Jan 6" },
-      { id: "brief", label: "Project brief shared", category: "Staff", done: true, doneAt: "Jan 6" },
-      { id: "contract", label: "Contract signed", category: "Client", done: true, doneAt: "Jan 7" },
-      { id: "deposit", label: "Deposit invoice paid", category: "Client", done: true, doneAt: "Jan 8" },
-      { id: "portal", label: "Client portal activated", category: "Staff", done: true, doneAt: "Jan 8" },
-      { id: "kickoff", label: "Kickoff call completed", category: "Both", done: true, doneAt: "Jan 9" },
-      { id: "assets", label: "Brand assets received from client", category: "Client", done: true, doneAt: "Jan 10" },
-      { id: "access", label: "Drive & tools access granted", category: "Staff", done: true, doneAt: "Jan 10" }
-    ],
-    notes: "Smooth onboarding - Lena was responsive throughout. Assets were delivered ahead of schedule.",
-    health: 95
-  },
-  {
-    id: 2,
-    client: "Sunfield Ventures",
-    avatar: "SV",
-    contact: "Tariq Osei",
-    project: "Go-to-Market Strategy",
-    startDate: "Feb 17, 2026",
-    status: "in_progress",
-    completedAt: null,
-    daysToComplete: null,
-    steps: [
-      { id: "welcome", label: "Welcome email sent", category: "Staff", done: true, doneAt: "Feb 17" },
-      { id: "brief", label: "Project brief shared", category: "Staff", done: true, doneAt: "Feb 17" },
-      { id: "contract", label: "Contract signed", category: "Client", done: true, doneAt: "Feb 18" },
-      { id: "deposit", label: "Deposit invoice paid", category: "Client", done: true, doneAt: "Feb 19" },
-      { id: "portal", label: "Client portal activated", category: "Staff", done: true, doneAt: "Feb 20" },
-      { id: "kickoff", label: "Kickoff call completed", category: "Both", done: false, doneAt: null, scheduledFor: "Feb 24" },
-      { id: "assets", label: "Brand assets received from client", category: "Client", done: false, doneAt: null },
-      { id: "access", label: "Drive & tools access granted", category: "Staff", done: false, doneAt: null }
-    ],
-    notes: "Kickoff call scheduled for Feb 24. Assets request sent but no upload yet.",
-    health: 72
-  },
-  {
-    id: 3,
-    client: "Meridian Labs",
-    avatar: "ML",
-    contact: "Priya Shenoy",
-    project: "Product UX Design",
-    startDate: "Feb 10, 2026",
-    status: "stuck",
-    completedAt: null,
-    daysToComplete: null,
-    steps: [
-      { id: "welcome", label: "Welcome email sent", category: "Staff", done: true, doneAt: "Feb 10" },
-      { id: "brief", label: "Project brief shared", category: "Staff", done: true, doneAt: "Feb 10" },
-      { id: "contract", label: "Contract signed", category: "Client", done: true, doneAt: "Feb 11" },
-      { id: "deposit", label: "Deposit invoice paid", category: "Client", done: false, doneAt: null, overdue: true, overdueDays: 5 },
-      { id: "portal", label: "Client portal activated", category: "Staff", done: false, doneAt: null, blocked: true },
-      { id: "kickoff", label: "Kickoff call completed", category: "Both", done: false, doneAt: null, blocked: true },
-      { id: "assets", label: "Brand assets received from client", category: "Client", done: false, doneAt: null, blocked: true },
-      { id: "access", label: "Drive & tools access granted", category: "Staff", done: false, doneAt: null, blocked: true }
-    ],
-    notes:
-      "Stuck on deposit payment - 5 days overdue. Portal cannot be activated until payment clears. Follow up with Priya or escalate to account manager.",
-    health: 38
-  },
-  {
-    id: 4,
-    client: "Hawthorn & Co",
-    avatar: "HC",
-    contact: "Sophie van der Berg",
-    project: "Annual Brand Refresh",
-    startDate: "Feb 20, 2026",
-    status: "in_progress",
-    completedAt: null,
-    daysToComplete: null,
-    steps: [
-      { id: "welcome", label: "Welcome email sent", category: "Staff", done: true, doneAt: "Feb 20" },
-      { id: "brief", label: "Project brief shared", category: "Staff", done: true, doneAt: "Feb 20" },
-      { id: "contract", label: "Contract signed", category: "Client", done: false, doneAt: null, scheduledFor: "Feb 23" },
-      { id: "deposit", label: "Deposit invoice paid", category: "Client", done: false, doneAt: null },
-      { id: "portal", label: "Client portal activated", category: "Staff", done: false, doneAt: null },
-      { id: "kickoff", label: "Kickoff call completed", category: "Both", done: false, doneAt: null },
-      { id: "assets", label: "Brand assets received from client", category: "Client", done: false, doneAt: null },
-      { id: "access", label: "Drive & tools access granted", category: "Staff", done: false, doneAt: null }
-    ],
-    notes: "Very early stage - started 3 days ago. Contract sent, awaiting signature by Feb 23.",
-    health: 55
+// ── Helpers: map API records to local shape ───────────────────────────────────
+
+function inferCategory(rec: ClientOnboardingRecord): StepCategory {
+  const cat = (rec.category ?? "").toLowerCase();
+  if (cat === "staff") return "Staff";
+  if (cat === "client") return "Client";
+  if (cat === "both" || cat === "joint") return "Both";
+  // owner-based fallback
+  const owner = (rec.owner ?? "").toLowerCase();
+  if (owner.includes("client")) return "Client";
+  return "Staff";
+}
+
+function inferOverdue(rec: ClientOnboardingRecord): { overdue: boolean; overdueDays: number } {
+  if (rec.status === "complete" || !rec.estimatedAt) return { overdue: false, overdueDays: 0 };
+  const est = new Date(rec.estimatedAt).getTime();
+  const now = Date.now();
+  if (est < now) {
+    const days = Math.ceil((now - est) / 86_400_000);
+    return { overdue: true, overdueDays: days };
   }
-];
+  return { overdue: false, overdueDays: 0 };
+}
+
+function buildOnboardingClient(
+  client: StaffClient,
+  records: ClientOnboardingRecord[],
+  idx: number
+): OnboardingClient {
+  const sorted = [...records].sort((a, b) => a.sortOrder - b.sortOrder);
+  const steps: OnboardingStep[] = sorted.map((rec) => {
+    const { overdue, overdueDays } = inferOverdue(rec);
+    return {
+      id: rec.id,
+      label: rec.task,
+      category: inferCategory(rec),
+      done: rec.status === "complete",
+      doneAt: rec.completedAt ? new Date(rec.completedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" }) : null,
+      scheduledFor: rec.estimatedAt ? new Date(rec.estimatedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" }) : undefined,
+      blocked: rec.status === "blocked",
+      overdue,
+      overdueDays
+    };
+  });
+
+  const allDone = steps.length > 0 && steps.every((s) => s.done);
+  const hasBlocked = steps.some((s) => s.blocked);
+  const status: OnboardingStatus = allDone ? "complete" : hasBlocked ? "stuck" : "in_progress";
+
+  const firstStep = sorted[0];
+  const startDate = firstStep
+    ? new Date(firstStep.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })
+    : "";
+
+  const completedRec = sorted.filter((r) => r.status === "complete").sort((a, b) =>
+    new Date(b.completedAt ?? 0).getTime() - new Date(a.completedAt ?? 0).getTime()
+  )[0];
+  const completedAt = allDone && completedRec?.completedAt
+    ? new Date(completedRec.completedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })
+    : null;
+
+  let daysToComplete: number | null = null;
+  if (allDone && firstStep && completedRec?.completedAt) {
+    daysToComplete = Math.max(1, Math.ceil(
+      (new Date(completedRec.completedAt).getTime() - new Date(firstStep.createdAt).getTime()) / 86_400_000
+    ));
+  }
+
+  const notesArr = sorted.map((r) => r.notes).filter(Boolean);
+  const notes = notesArr.length > 0 ? notesArr.join(" | ") : (hasBlocked ? "One or more steps are blocked." : "No notes.");
+
+  const initials = client.name.split(" ").map((w) => w[0] ?? "").slice(0, 2).join("").toUpperCase();
+
+  return {
+    id: idx + 1,
+    client: client.name,
+    avatar: initials,
+    contact: client.contactEmail ?? client.name,
+    project: `Project for ${client.name}`,
+    startDate,
+    status,
+    completedAt,
+    daysToComplete,
+    steps,
+    notes,
+    health: allDone ? 100 : Math.round((steps.filter((s) => s.done).length / Math.max(steps.length, 1)) * 100)
+  };
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
 
 function statusToneClass(status: OnboardingStatus) {
   if (status === "complete") return "coStatusComplete";
@@ -191,19 +198,122 @@ function ProgressRing({ pct, color, size = 56 }: { pct: number; color: string; s
   );
 }
 
-export function ClientOnboardingPage({ isActive }: { isActive: boolean }) {
-  const [selected, setSelected] = useState(onboardingClients[0].id);
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function ClientOnboardingPage({ isActive, session, onNavigate }: { isActive: boolean; session: AuthSession | null; onNavigate?: (page: PageId) => void }) {
+  const [onboardingClients, setOnboardingClients] = useState<OnboardingClient[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [completing, setCompleting] = useState<string | null>(null);
+  const [selected, setSelected] = useState<number | "">("");
   const [filter, setFilter] = useState<"all" | OnboardingStatus>("all");
+
+  // ── Fetch data ──────────────────────────────────────────────────────────────
+  const fetchData = useCallback(async () => {
+    if (!session) return;
+    setLoading(true);
+    try {
+      const clientsResult = await getStaffClients(session);
+      if (clientsResult.nextSession) saveSession(clientsResult.nextSession);
+      const staffClients = clientsResult.data ?? [];
+
+      // Fetch onboarding records for each client that is onboarding/active
+      const onboardingResults = await Promise.all(
+        staffClients.map((c) => loadClientOnboardingWithRefresh(session, c.id))
+      );
+
+      const mapped: OnboardingClient[] = [];
+      staffClients.forEach((client, idx) => {
+        const result = onboardingResults[idx];
+        if (result) {
+          if (result.nextSession) saveSession(result.nextSession);
+          const records = result.data ?? [];
+          if (records.length > 0) {
+            mapped.push(buildOnboardingClient(client, records, mapped.length));
+          }
+        }
+      });
+
+      setOnboardingClients(mapped);
+      if (mapped.length > 0 && (selected === "" || !mapped.some((c) => c.id === selected))) {
+        setSelected(mapped[0]!.id);
+      }
+    } catch {
+      // network error — keep previous state
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.accessToken]);
+
+  useEffect(() => { void fetchData(); }, [fetchData]);
+
+  // ── Complete step handler ───────────────────────────────────────────────────
+  const handleCompleteStep = useCallback(async (step: OnboardingStep) => {
+    if (!session || !current) return;
+    // Find the actual clientId from the staff clients API
+    // We need to look up by the OnboardingClient record
+    const clientsResult = await getStaffClients(session);
+    if (clientsResult.nextSession) saveSession(clientsResult.nextSession);
+    const staffClients = clientsResult.data ?? [];
+
+    // Match by name
+    const matchedClient = staffClients.find((c) => c.name === current.client);
+    if (!matchedClient) return;
+
+    setCompleting(step.id);
+    try {
+      const r = await patchClientOnboardingRecordWithRefresh(
+        session,
+        matchedClient.id,
+        step.id,
+        { status: "complete", completedAt: new Date().toISOString() }
+      );
+      if (r.nextSession) saveSession(r.nextSession);
+      // Refresh data after completing
+      await fetchData();
+    } catch {
+      // swallow
+    } finally {
+      setCompleting(null);
+    }
+  }, [session, fetchData]);
 
   const filtered = useMemo(
     () => onboardingClients.filter((client) => (filter === "all" ? true : client.status === filter)),
-    [filter]
+    [filter, onboardingClients]
   );
   const current = onboardingClients.find((client) => client.id === selected) ?? onboardingClients[0];
 
+  // ── Loading state ───────────────────────────────────────────────────────────
+  if (loading && onboardingClients.length === 0) {
+    return (
+      <section
+        className={cx("page", "pageBody", isActive && "pageActive")}
+        id="page-client-onboarding"
+      >
+        <div className={cx("p24", "colorMuted", "text12", "textCenter")}>
+          Loading onboarding data...
+        </div>
+      </section>
+    );
+  }
+
+  // Guard: empty state
+  if (!current) {
+    return (
+      <section
+        className={cx("page", "pageBody", isActive && "pageActive")}
+        id="page-client-onboarding"
+      >
+        <div className={cx("p24", "colorMuted", "text12", "textCenter")}>
+          No onboarding clients yet.
+        </div>
+      </section>
+    );
+  }
+
   const doneSteps = current.steps.filter((step) => step.done).length;
   const totalSteps = current.steps.length;
-  const pct = Math.round((doneSteps / totalSteps) * 100);
+  const pct = totalSteps > 0 ? Math.round((doneSteps / totalSteps) * 100) : 0;
 
   const staffSteps = current.steps.filter((step) => step.category === "Staff" || step.category === "Both");
   const clientSteps = current.steps.filter((step) => step.category === "Client" || step.category === "Both");
@@ -211,8 +321,12 @@ export function ClientOnboardingPage({ isActive }: { isActive: boolean }) {
   const clientDone = clientSteps.filter((step) => step.done).length;
 
   return (
-    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-client-onboarding">
-      <div className={cx("pageHeaderBar", "coHeaderBar")}>
+    <section
+      className={cx("page", "pageBody", isActive && "pageActive")}
+      id="page-client-onboarding"
+      style={isActive ? { height: "100%", display: "flex", flexDirection: "column", padding: 0 } : undefined}
+    >
+      <div className={cx("pageHeaderBar", "coHeaderBar", "noShrink")}>
         <div className={cx("flexBetween", "mb20", "coHeaderTop")}>
           <div>
             <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Management</div>
@@ -232,18 +346,28 @@ export function ClientOnboardingPage({ isActive }: { isActive: boolean }) {
           </div>
         </div>
 
-        <div className={cx("coFilterRow", "filterRow")}>
-          <select
-            className={cx("filterSelect")}
-            aria-label="Filter onboarding clients"
-            value={filter}
-            onChange={(event) => setFilter(event.target.value as "all" | OnboardingStatus)}
-          >
-            <option value="all">All</option>
-            <option value="in_progress">In progress</option>
-            <option value="stuck">Stuck</option>
-            <option value="complete">Complete</option>
-          </select>
+        <div className={cx("coFilterRow")}>
+          {(
+            [
+              { value: "all",         label: "All",         activeClass: "coFilterPillActiveAll",   count: onboardingClients.length },
+              { value: "in_progress", label: "In Progress", activeClass: "coFilterPillActiveBlue",  count: onboardingClients.filter((c) => c.status === "in_progress").length },
+              { value: "stuck",       label: "Stuck",       activeClass: "coFilterPillActiveRed",   count: onboardingClients.filter((c) => c.status === "stuck").length },
+              { value: "complete",    label: "Complete",    activeClass: "coFilterPillActiveGreen", count: onboardingClients.filter((c) => c.status === "complete").length },
+            ] as const
+          ).map((tab) => {
+            const active = filter === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                className={cx("coFilterBtn", "coFilterPill", active ? "coFilterPillActive" : "coFilterPillIdle", active && tab.activeClass)}
+                onClick={() => setFilter(tab.value)}
+              >
+                {tab.label}
+                <span className={cx("coFilterPillCount")}>{tab.count}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -259,7 +383,7 @@ export function ClientOnboardingPage({ isActive }: { isActive: boolean }) {
                 className={cx("coClientItem", "coClientCard", isSelected && "coClientCardSelected", statusToneClass(client.status))}
                 onClick={() => setSelected(client.id)}
               >
-                <div className={cx("coClientTop")}> 
+                <div className={cx("coClientTop")}>
                   <div className={cx("coAvatar")}>{client.avatar}</div>
                   <div className={cx("flex1", "minW0")}>
                     <div className={cx("coClientName", isSelected ? "colorText" : "colorMuted")}>{client.client}</div>
@@ -325,10 +449,11 @@ export function ClientOnboardingPage({ isActive }: { isActive: boolean }) {
                 const isLast = index === current.steps.length - 1;
                 const isBlocked = Boolean(step.blocked);
                 const isOverdue = Boolean(step.overdue);
+                const isCompleting = completing === step.id;
                 return (
                   <div key={step.id}>
                     <div className={cx("coStepRow", "coStepRowCard", isOverdue && "coStepRowOverdue")}>
-                      <div className={cx("coStepTrail")}> 
+                      <div className={cx("coStepTrail")}>
                         <div className={cx("coStepCheckbox", step.done ? "coStepDone" : isOverdue ? "coStepOverdue" : isBlocked ? "coStepBlocked" : "coStepPending")}>
                           {step.done ? "✓" : isOverdue ? "!" : ""}
                         </div>
@@ -341,6 +466,16 @@ export function ClientOnboardingPage({ isActive }: { isActive: boolean }) {
                           <span className={cx("coCatBadge", categoryToneClass(step.category))}>{categoryLabel(step.category)}</span>
                           {isBlocked && !isOverdue ? <span className={cx("coFlagBlocked")}>Blocked</span> : null}
                           {isOverdue ? <span className={cx("coFlagOverdue")}>Overdue {step.overdueDays} days</span> : null}
+                          {!step.done && !isBlocked ? (
+                            <button
+                              type="button"
+                              className={cx("coActionBtn", "coActionBtnBase", "coActionAccent", "mlAuto", "p2x10", "fs10")}
+                              disabled={isCompleting}
+                              onClick={() => void handleCompleteStep(step)}
+                            >
+                              {isCompleting ? "Saving..." : "Complete step"}
+                            </button>
+                          ) : null}
                         </div>
                         <div className={cx("text10", "colorMuted2", "mt4")}>
                           {step.done
@@ -367,15 +502,11 @@ export function ClientOnboardingPage({ isActive }: { isActive: boolean }) {
           {current.status !== "complete" ? (
             <div className={cx("coActionsWrap")}>
               <div className={cx("sectionLabel", "mb4", "wFull")}>Actions</div>
-              {current.status === "stuck" ? (
-                <button type="button" className={cx("coActionBtn", "coActionBtnBase", "coActionDanger")}>
-                  Escalate to admin
-                </button>
-              ) : null}
-              <button type="button" className={cx("coActionBtn", "coActionBtnBase", "coActionAccent")}>
-                Send reminder to client
-              </button>
-              <button type="button" className={cx("coActionBtn", "coActionBtnBase", "coActionGhost")}>
+              <button
+                type="button"
+                className={cx("coActionBtn", "coActionBtnBase", "coActionGhost")}
+                onClick={() => onNavigate?.("comms")}
+              >
                 View client portal
               </button>
             </div>

@@ -1,4 +1,4 @@
-import { FormEvent } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import styles from "../../../app/style/landing-reference.module.css";
 
 type ContactSectionProps = {
@@ -6,10 +6,17 @@ type ContactSectionProps = {
   loading: boolean;
   error: string | null;
   startedAtIso: string;
+  initialService?: string;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
-export function ContactSection({ sent, loading, error, startedAtIso, onSubmit }: ContactSectionProps) {
+export function ContactSection({ sent, loading, error, startedAtIso, initialService, onSubmit }: ContactSectionProps) {
+  const [selectedService, setSelectedService] = useState(initialService ?? "");
+
+  useEffect(() => {
+    setSelectedService(initialService ?? "");
+  }, [initialService]);
+
   return (
     <section id="contact" className={styles.contactSection}>
       <div className={styles.contactLayout}>
@@ -37,15 +44,31 @@ export function ContactSection({ sent, loading, error, startedAtIso, onSubmit }:
               <input id="email" name="email" type="email" className={styles.formInput} placeholder="you@company.com" required />
             </div>
           </div>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel} htmlFor="companyName">Business / Company name <span className={styles.formLabelOptional}>(optional)</span></label>
+              <input id="companyName" name="companyName" type="text" className={styles.formInput} placeholder="Your company" />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel} htmlFor="budgetRange">Estimated budget <span className={styles.formLabelOptional}>(optional)</span></label>
+              <select id="budgetRange" name="budgetRange" className={styles.formSelect} defaultValue="">
+                <option value="">Not sure yet</option>
+                <option value="under-10k">Under R10k</option>
+                <option value="10k-30k">R10k – R30k</option>
+                <option value="30k-80k">R30k – R80k</option>
+                <option value="80k-plus">R80k+</option>
+              </select>
+            </div>
+          </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel} htmlFor="service">Service required</label>
-            <select id="service" name="service" className={styles.formSelect} defaultValue="" required>
+            <select id="service" name="service" className={styles.formSelect} value={selectedService} onChange={(e) => setSelectedService(e.target.value)} required>
               <option value="" disabled>Select service</option>
-              <option>Web Application</option>
-              <option>Mobile System</option>
-              <option>Process Automation</option>
-              <option>Platform Redesign</option>
-              <option>Ongoing Maintenance</option>
+              <option value="Web Application">Web Application</option>
+              <option value="Mobile System">Mobile System</option>
+              <option value="Process Automation">Process Automation</option>
+              <option value="Platform Redesign">Platform Redesign</option>
+              <option value="Ongoing Maintenance">Ongoing Maintenance</option>
             </select>
           </div>
           <div className={styles.formGroup}>

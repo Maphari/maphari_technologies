@@ -24,21 +24,29 @@ enum PaymentStatus {
 }
 
 model Invoice {
-  id          String        @id @default(uuid())
-  clientId    String
-  number      String
-  amountCents BigInt
-  currency    String        @default("USD")
-  status      InvoiceStatus @default(DRAFT)
-  issuedAt    DateTime?
-  dueAt       DateTime?
-  paidAt      DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            String        @id @default(uuid())
+  clientId      String
+  projectId     String?
+  number        String
+  description   String?
+  lineItems     String?
+  billingPeriod String?
+  costCenter    String?
+  amountCents   BigInt
+  currency      String        @default("USD")
+  status        InvoiceStatus @default(DRAFT)
+  issuedAt      DateTime?
+  dueAt         DateTime?
+  paidAt        DateTime?
+  pdfFileId     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  payments Payment[]
+  payments     Payment[]
+  installments InvoiceInstallment[]
 
   @@unique([clientId, number])
+  @@index([clientId, projectId, status, issuedAt])
   @@index([clientId, status, createdAt])
   @@map("invoices")
 }
@@ -46,17 +54,139 @@ model Invoice {
 model Payment {
   id             String        @id @default(uuid())
   clientId       String
+  projectId      String?
   invoiceId      String
+  source         String?
   amountCents    BigInt
   status         PaymentStatus @default(PENDING)
   provider       String?
   transactionRef String?
   paidAt         DateTime?
+  receiptFileId  String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
+  @@index([clientId, projectId, paidAt])
   @@index([clientId, invoiceId, createdAt])
   @@map("payments")
+}
+
+// ─── Batch E: Finance Extensions ─────────────────────────────────────────────
+
+model InvoiceInstallment {
+  id          String    @id @default(uuid())
+  invoiceId   String
+  clientId    String
+  projectId   String?
+  number      Int
+  name        String
+  amountCents BigInt
+  dueAt       DateTime?
+  paidAt      DateTime?
+  status      String    @default("PENDING")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  invoice     Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([clientId, status])
+  @@map("invoice_installments")
+}
+
+model Expense {
+  id          String    @id @default(uuid())
+  clientId    String?
+  category    String
+  subcategory String?
+  description String
+  amountCents BigInt
+  submittedBy String?
+  status      String    @default("PENDING")
+  hasReceipt  Boolean   @default(false)
+  isBillable  Boolean   @default(false)
+  expenseDate DateTime
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([clientId, expenseDate])
+  @@index([status])
+  @@index([category])
+  @@map("expenses")
+}
+
+model ExpenseBudget {
+  id          String   @id @default(uuid())
+  category    String
+  budgetCents BigInt
+  spentCents  BigInt   @default(0)
+  fiscalYear  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([category, fiscalYear])
+  @@map("expense_budgets")
+}
+
+model LoyaltyAccount {
+  id             String              @id @default(uuid())
+  clientId       String              @unique
+  tier           String              @default("BRONZE")
+  balancePoints  Int                 @default(0)
+  totalEarned    Int                 @default(0)
+  lastActivityAt DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  transactions   CreditTransaction[]
+
+  @@map("loyalty_accounts")
+}
+
+model CreditTransaction {
+  id               String         @id @default(uuid())
+  loyaltyAccountId String
+  type             String         @default("EARNED")
+  points           Int
+  description      String?
+  referenceId      String?
+  createdAt        DateTime       @default(now())
+  account          LoyaltyAccount @relation(fields: [loyaltyAccountId], references: [id], onDelete: Cascade)
+
+  @@index([loyaltyAccountId, createdAt])
+  @@map("credit_transactions")
+}
+
+model Vendor {
+  id           String           @id @default(uuid())
+  name         String
+  category     String?
+  contactName  String?
+  contactEmail String?
+  status       String           @default("ACTIVE")
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  contracts    VendorContract[]
+
+  @@index([status])
+  @@map("vendors")
+}
+
+model VendorContract {
+  id         String    @id @default(uuid())
+  vendorId   String
+  startAt    DateTime
+  endAt      DateTime?
+  valueCents BigInt
+  status     String    @default("ACTIVE")
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  vendor     Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, status])
+  @@index([status])
+  @@map("vendor_contracts")
 }

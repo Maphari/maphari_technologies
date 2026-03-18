@@ -63,6 +63,38 @@ export async function login(
   return payload;
 }
 
+export async function twoFactorLogin(
+  tempToken: string,
+  totpCode: string
+): Promise<ApiResponse<AuthSession>> {
+  const { payload } = await callGateway<AuthSession>("/auth/2fa/login", {
+    method: "POST",
+    body: { tempToken, totpCode }
+  });
+  return payload;
+}
+
+export async function forgotPassword(
+  email: string
+): Promise<ApiResponse<{ sent: boolean }>> {
+  const { payload } = await callGateway<{ sent: boolean }>("/auth/password-reset/request", {
+    method: "POST",
+    body: { email }
+  });
+  return payload;
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string
+): Promise<ApiResponse<{ reset: boolean }>> {
+  const { payload } = await callGateway<{ reset: boolean }>("/auth/password-reset/confirm", {
+    method: "POST",
+    body: { token, newPassword }
+  });
+  return payload;
+}
+
 export async function registerAdmin(
   email: string,
   password: string
@@ -149,6 +181,16 @@ export async function logout(): Promise<ApiResponse<{ loggedOut: boolean }>> {
   const { payload } = await callGateway<{ loggedOut: boolean }>("/auth/logout", {
     method: "POST",
     body: {}
+  });
+  return payload;
+}
+
+export async function googleOAuthExchange(
+  code: string
+): Promise<ApiResponse<AuthSession>> {
+  const { payload } = await callGateway<AuthSession>("/auth/google/exchange", {
+    method: "POST",
+    body: { code }
   });
   return payload;
 }

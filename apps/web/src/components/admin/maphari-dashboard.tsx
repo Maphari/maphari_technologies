@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useCallback } from "react";
 import { styles, cx } from "./dashboard/style";
 import { useAdminWorkspaceContext } from "./admin-workspace-context";
 import { pageTitles, type PageId } from "./dashboard/config";
-import { AdminSidebar, AdminTopbar, AdminTourCard } from "./dashboard/chrome";
+import { AdminSidebar, AdminTopbar } from "./dashboard/chrome";
+import { DashboardTour } from "../shared/dashboard-tour";
+import { ADMIN_TOUR_STEPS } from "./dashboard/hooks/use-admin-tour";
+import { DashboardErrorBoundary } from "./dashboard/error-boundary";
 import { ClientsAndProjectsPage } from "./dashboard/pages/clients-projects-page";
 import { InvoicesPage } from "./dashboard/pages/invoices-page";
 import { LeadsPage } from "./dashboard/pages/leads-page";
@@ -82,7 +85,16 @@ import { PeerReviewQueuePage } from "./dashboard/pages/peer-review-queue-page";
 import { AutomationAuditTrailPage } from "./dashboard/pages/automation-audit-trail-page";
 import { ProjectBriefingPage } from "./dashboard/pages/project-briefing-page";
 import { ActiveHealthMonitorPage } from "./dashboard/pages/active-health-monitor-page";
+import { AnnouncementsManagerPage } from "./dashboard/pages/announcements-manager-page";
+import { LoyaltyCreditsPage } from "./dashboard/pages/loyalty-credits-page";
+import { BookingAppointmentsPage } from "./dashboard/pages/booking-appointments-page";
+import { DesignReviewAdminPage } from "./dashboard/pages/design-review-admin-page";
+import { SprintBoardAdminPage } from "./dashboard/pages/sprint-board-admin-page";
+import { ContentApprovalPage } from "./dashboard/pages/content-approval-page";
+import { MeetingArchivePage } from "./dashboard/pages/meeting-archive-page";
+import { ProspectingPage } from "./dashboard/pages/prospecting-page";
 import { createMaintenanceCheckWithRefresh, setNotificationReadStateWithRefresh } from "../../lib/api/admin";
+import { searchGlobal } from "../../lib/api/shared/search";
 import { DashboardLoadingFallback, DashboardToastStack, hasAnyDashboardData, useDashboardToasts } from "../shared/dashboard-core";
 import { ADMIN_PAGE_TO_NOTIFICATION_TAB } from "../shared/notification-routing";
 import { useMarkActiveTabNotificationsRead } from "../shared/use-mark-active-tab-notifications-read";
@@ -127,6 +139,7 @@ export function MaphariDashboard() {
   const ringRef = useRef<HTMLDivElement>(null);
 
   const { toasts, pushToast } = useDashboardToasts({ dismissMs: 3200 });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ── 1. Navigation ──────────────────────────────────────────────────────────
   const {
@@ -164,10 +177,11 @@ export function MaphariDashboard() {
   const {
     adminTourOpen,
     adminTourStep,
-    setAdminTourStep,
     completeAdminTour,
-    handleAdminTourNext
-  } = useAdminTour({ session });
+    handleAdminTourNext,
+    handleAdminTourBack,
+    resetAdminTour
+  } = useAdminTour({ session, onNavigate: setPage });
 
   // ── 4. Automation / queue ──────────────────────────────────────────────────
   const {
@@ -253,7 +267,26 @@ export function MaphariDashboard() {
     return sources;
   }, [visibleNavItems, snapshot.clients, snapshot.projects, snapshot.leads, handlePageChange]);
 
-  const commandSearch = useCommandSearch({ sources: commandSearchSources });
+  const adminAsyncSearch = useCallback(async (q: string) => {
+    if (!session) return [];
+    const res = await searchGlobal(q, session);
+    const hits = res.data?.results ?? [];
+    return hits.map((hit) => ({
+      id: `search-${hit.id}`,
+      type: hit.type.charAt(0).toUpperCase() + hit.type.slice(1),
+      label: hit.title,
+      meta: hit.subtitle ?? hit.status ?? "",
+      action: () => {
+        if (hit.type === "client") handlePageChange("clients");
+        else if (hit.type === "project" || hit.type === "task") handlePageChange("projects");
+        else if (hit.type === "lead") handlePageChange("leads");
+        else if (hit.type === "ticket") handlePageChange("supportQueue");
+        else handlePageChange("dashboard");
+      }
+    }));
+  }, [session, handlePageChange]);
+
+  const commandSearch = useCommandSearch({ sources: commandSearchSources, asyncSearch: adminAsyncSearch });
 
   // ── UX hooks: Keyboard Shortcuts ───────────────────────────────────────────
   const adminChordMap: Record<string, PageId> = useMemo(() => ({
@@ -307,20 +340,13 @@ export function MaphariDashboard() {
     snapshot.payments
   ]);
 
-  if (loading && !hasWorkspaceData) return <DashboardLoadingFallback label="Loading dashboard..." />;
+  if (loading && !hasWorkspaceData) return <DashboardLoadingFallback variant="admin" label="Loading your workspace…" />;
 
   // ── Derived display values ─────────────────────────────────────────────────
   const title = pageTitles[page];
-  const email = session?.user.email ?? "admin@maphari";
+  const email = session?.user.email ?? "";
   const isAdmin = session?.user.role === "ADMIN";
   const unreadNotificationsCount = notificationJobs.filter((job) => !job.readAt).length;
-
-  const adminTourSteps = [
-    { title: "Dashboard", detail: "Monitor business health, workload, and operational KPIs." },
-    { title: "Clients & Projects", detail: "Approve project requests, assign staff, and manage delivery pipeline." },
-    { title: "Billing", detail: "Track invoice and payment status across clients." },
-    { title: "Messages & Automation", detail: "Manage communication queues and workflow alerts." }
-  ] as const;
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -337,8 +363,29 @@ export function MaphariDashboard() {
           recentPages={recentPages}
           navBadgeCounts={navBadgeCounts}
           email={email}
-          onPageChange={handlePageChange}
+          onPageChange={(p) => { handlePageChange(p); setSidebarOpen(false); }}
+          mobileOpen={sidebarOpen}
         />
+        {sidebarOpen && (
+          <div className={styles.mobileOverlay} onClick={() => setSidebarOpen(false)} />
+        )}
+        <button
+          type="button"
+          className={styles.hamburgerBtn}
+          aria-label="Toggle navigation"
+          onClick={() => setSidebarOpen((prev) => !prev)}
+        >
+          {sidebarOpen
+            ? <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+              </svg>
+            : <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                <rect x="1" y="4"    width="16" height="1.5" rx="0.75" fill="currentColor"/>
+                <rect x="1" y="8.25" width="16" height="1.5" rx="0.75" fill="currentColor"/>
+                <rect x="1" y="12.5" width="16" height="1.5" rx="0.75" fill="currentColor"/>
+              </svg>
+          }
+        </button>
 
         <main className={styles.main}>
           <AdminTopbar
@@ -349,20 +396,22 @@ export function MaphariDashboard() {
             onOpenNotifications={() => setPage("notifications")}
             onOpenMessages={() => setPage("messages")}
             onLogout={() => void handleLogout()}
+            onMenuToggle={() => setSidebarOpen((prev) => !prev)}
           />
 
           <section className={styles.content}>
-            <AdminTourCard
+            <DashboardErrorBoundary>
+            <DashboardTour
               open={adminTourOpen}
               step={adminTourStep}
-              steps={adminTourSteps}
-              onBack={() => setAdminTourStep((value) => Math.max(0, value - 1))}
-              onNext={() => handleAdminTourNext(adminTourSteps.length)}
+              steps={ADMIN_TOUR_STEPS}
+              onBack={handleAdminTourBack}
+              onNext={handleAdminTourNext}
               onSkip={completeAdminTour}
             />
 
-            {page === "dashboard" ? <BusinessDevelopmentPage /> : null}
-            {page === "executive" ? <ExecutiveDashboardPage /> : null}
+            {page === "dashboard" ? <BusinessDevelopmentPage session={session} onNotify={pushToast} /> : null}
+            {page === "executive" ? <ExecutiveDashboardPage session={session} onNotify={pushToast} /> : null}
 
             {page === "leads" ? (
               <LeadsPage
@@ -387,49 +436,46 @@ export function MaphariDashboard() {
 
             {page === "invoices" ? (
               <InvoicesPage
-                snapshot={snapshot}
                 session={session}
-                onRefreshSnapshot={refreshSnapshot}
                 onNotify={pushToast}
-                clock={clock}
               />
             ) : null}
 
             {page === "revops" ? <RevOpsPage /> : null}
-            {page === "revenueForecasting" ? <RevenueForecastingPage /> : null}
-            {page === "profitability" ? <ProfitabilityPerClientPage /> : null}
-            {page === "projectProfitability" ? <ProfitabilityPerProjectPage /> : null}
+            {page === "revenueForecasting" ? <RevenueForecastingPage session={session} onNotify={pushToast} /> : null}
+            {page === "profitability" ? <ProfitabilityPerClientPage session={session} onNotify={pushToast} /> : null}
+            {page === "projectProfitability" ? <ProfitabilityPerProjectPage session={session} onNotify={pushToast} /> : null}
             {page === "cashflow" ? <CashFlowCalendarPage /> : null}
-            {page === "fyCloseout" ? <FinancialYearCloseoutPage /> : null}
-            {page === "expenses" ? <ExpenseTrackerPage /> : null}
-            {page === "payroll" ? <PayrollLedgerPage /> : null}
+            {page === "fyCloseout" ? <FinancialYearCloseoutPage session={session} onNotify={pushToast} /> : null}
+            {page === "expenses" ? <ExpenseTrackerPage session={session} /> : null}
+            {page === "payroll" ? <PayrollLedgerPage session={session} /> : null}
             {page === "pricing" ? <PricingPage /> : null}
-            {page === "vendors" ? <VendorCostControlPage /> : null}
-            {page === "platform" ? <PlatformInfrastructurePage /> : null}
+            {page === "vendors" ? <VendorCostControlPage session={session} /> : null}
+            {page === "platform" ? <PlatformInfrastructurePage session={session} onNotify={pushToast} /> : null}
             {page === "brand" ? <BrandControlPage /> : null}
             {page === "owner" ? <OwnersWorkspacePage /> : null}
-            {page === "market" ? <CompetitorMarketIntelPage /> : null}
+            {page === "market" ? <CompetitorMarketIntelPage session={session} /> : null}
             {page === "portfolio" ? <ProjectPortfolioPage /> : null}
-            {page === "resources" ? <ResourceAllocationPage /> : null}
+            {page === "resources" ? <ResourceAllocationPage session={session} onNotify={pushToast} /> : null}
             {page === "gantt" ? <TimelineGanttPage /> : null}
             {page === "qa" ? <QualityAssurancePage /> : null}
-            {page === "sla" ? <SlaTrackerPage /> : null}
+            {page === "sla" ? <SlaTrackerPage session={session} /> : null}
             {page === "offboarding" ? <ClientOffboardingPage /> : null}
-            {page === "onboarding" ? <ClientOnboardingPage /> : null}
-            {page === "satisfaction" ? <ClientSatisfactionPage /> : null}
-            {page === "comms" ? <CommunicationAuditPage /> : null}
-            {page === "vault" ? <DocumentVaultPage /> : null}
-            {page === "referrals" ? <ReferralTrackingPage /> : null}
-            {page === "interventions" ? <HealthInterventionsPage /> : null}
-            {page === "team" ? <TeamStructurePage /> : null}
+            {page === "onboarding" ? <ClientOnboardingPage session={session} onNotify={pushToast} /> : null}
+            {page === "satisfaction" ? <ClientSatisfactionPage session={session} /> : null}
+            {page === "comms" ? <CommunicationAuditPage session={session} /> : null}
+            {page === "vault" ? <DocumentVaultPage session={session} onNotify={pushToast} /> : null}
+            {page === "referrals" ? <ReferralTrackingPage session={session} /> : null}
+            {page === "interventions" ? <HealthInterventionsPage session={session} /> : null}
+            {page === "team" ? <TeamStructurePage session={session} onNotify={pushToast} /> : null}
             {page === "crisis" ? <CrisisCommandPage /> : null}
-            {page === "performance" ? <PerformancePage /> : null}
-            {page === "teamPerformanceReport" ? <TeamPerformanceReportPage /> : null}
-            {page === "portfolioRiskRegister" ? <PortfolioRiskRegisterPage /> : null}
+            {page === "performance" ? <PerformancePage session={session} /> : null}
+            {page === "teamPerformanceReport" ? <TeamPerformanceReportPage session={session} onNotify={pushToast} /> : null}
+            {page === "portfolioRiskRegister" ? <PortfolioRiskRegisterPage session={session} /> : null}
             {page === "legal" ? <LegalPage /> : null}
             {page === "intelligence" ? <StrategicClientIntelligencePage /> : null}
-            {page === "healthScorecard" ? <ClientHealthScorecardPage /> : null}
-            {page === "access" ? <AccessControlPage /> : null}
+            {page === "healthScorecard" ? <ClientHealthScorecardPage session={session} /> : null}
+            {page === "access" ? <AccessControlPage session={session} onNotify={pushToast} /> : null}
 
             {page === "messages" ? (
               <MessagesPage
@@ -458,12 +504,12 @@ export function MaphariDashboard() {
               />
             ) : null}
 
-            {page === "staffOnboarding" ? <StaffOnboardingPage /> : null}
-            {page === "leaveAbsence" ? <LeaveAbsencePage /> : null}
-            {page === "recruitment" ? <RecruitmentPipelinePage /> : null}
-            {page === "learningDev" ? <LearningDevelopmentPage /> : null}
+            {page === "staffOnboarding" ? <StaffOnboardingPage session={session} onNotify={pushToast} /> : null}
+            {page === "leaveAbsence" ? <LeaveAbsencePage session={session} /> : null}
+            {page === "recruitment" ? <RecruitmentPipelinePage session={session} /> : null}
+            {page === "learningDev" ? <LearningDevelopmentPage session={session} /> : null}
             {page === "staffSatisfaction" ? <StaffSatisfactionPage /> : null}
-            {page === "employmentRecords" ? <EmploymentRecordsPage /> : null}
+            {page === "employmentRecords" ? <EmploymentRecordsPage session={session} /> : null}
 
             {page === "clients" ? (
               <ClientsAndProjectsPage
@@ -528,28 +574,38 @@ export function MaphariDashboard() {
                 onNotify={pushToast}
                 currencyValue={adminDisplayCurrency}
                 onCurrencySaved={setAdminDisplayCurrency}
+                onRestartTour={resetAdminTour}
               />
             ) : null}
 
-            {page === "knowledgeBaseAdmin" ? <KnowledgeBaseAdminPage /> : null}
-            {page === "decisionRegistry" ? <DecisionRegistryPage /> : null}
-            {page === "handoverManagement" ? <HandoverManagementPage /> : null}
+            {page === "knowledgeBaseAdmin" ? <KnowledgeBaseAdminPage session={session} /> : null}
+            {page === "decisionRegistry" ? <DecisionRegistryPage session={session} /> : null}
+            {page === "handoverManagement" ? <HandoverManagementPage session={session} /> : null}
             {page === "closeoutReview" ? <CloseoutReviewPage /> : null}
             {page === "staffTransitionPlanner" ? <StaffTransitionPlannerPage /> : null}
             {page === "serviceCatalogManager" ? <ServiceCatalogManagerPage /> : null}
-            {page === "requestInbox" ? <RequestInboxPage /> : null}
-            {page === "changeRequestManager" ? <ChangeRequestManagerPage /> : null}
-            {page === "supportQueue" ? <SupportQueuePage /> : null}
-            {page === "lifecycleDashboard" ? <LifecycleDashboardPage /> : null}
-            {page === "stakeholderDirectory" ? <StakeholderDirectoryPage /> : null}
+            {page === "requestInbox" ? <RequestInboxPage session={session} onNotify={pushToast} /> : null}
+            {page === "changeRequestManager" ? <ChangeRequestManagerPage session={session} onNotify={pushToast} /> : null}
+            {page === "supportQueue" ? <SupportQueuePage session={session} onNotify={pushToast} /> : null}
+            {page === "lifecycleDashboard" ? <LifecycleDashboardPage session={session} /> : null}
+            {page === "stakeholderDirectory" ? <StakeholderDirectoryPage session={session} /> : null}
             {page === "aiActionRecommendations" ? <AIActionRecommendationsPage /> : null}
-            {page === "updateQueueManager" ? <UpdateQueueManagerPage /> : null}
-            {page === "standupFeed" ? <StandupFeedPage /> : null}
-            {page === "eodDigest" ? <EODDigestPage /> : null}
-            {page === "peerReviewQueue" ? <PeerReviewQueuePage /> : null}
-            {page === "automationAuditTrail" ? <AutomationAuditTrailPage /> : null}
-            {page === "projectBriefing" ? <ProjectBriefingPage /> : null}
-            {page === "activeHealthMonitor" ? <ActiveHealthMonitorPage /> : null}
+            {page === "updateQueueManager" ? <UpdateQueueManagerPage session={session} onNotify={pushToast} /> : null}
+            {page === "standupFeed" ? <StandupFeedPage session={session} /> : null}
+            {page === "eodDigest" ? <EODDigestPage session={session} /> : null}
+            {page === "peerReviewQueue" ? <PeerReviewQueuePage session={session} /> : null}
+            {page === "automationAuditTrail" ? <AutomationAuditTrailPage session={session} /> : null}
+            {page === "projectBriefing" ? <ProjectBriefingPage session={session} /> : null}
+            {page === "activeHealthMonitor" ? <ActiveHealthMonitorPage session={session} /> : null}
+            {page === "announcementsManager" ? <AnnouncementsManagerPage session={session} /> : null}
+            {page === "loyaltyCredits" ? <LoyaltyCreditsPage session={session} /> : null}
+            {page === "bookingAppointments" ? <BookingAppointmentsPage session={session} /> : null}
+            {page === "designReviewAdmin" ? <DesignReviewAdminPage session={session} /> : null}
+            {page === "sprintBoardAdmin" ? <SprintBoardAdminPage session={session} onNotify={pushToast} /> : null}
+            {page === "contentApproval" ? <ContentApprovalPage session={session} /> : null}
+            {page === "meetingArchive" ? <MeetingArchivePage session={session} /> : null}
+            {page === "prospecting" ? <ProspectingPage /> : null}
+            </DashboardErrorBoundary>
           </section>
         </main>
       </div>

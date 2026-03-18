@@ -140,7 +140,7 @@ export function OnboardingPage() {
                     { name: "Strategist", role: "Strategist", color: "#f5a623", initials: "ST" },
                   ].map((member) => (
                     <div key={member.name} className={styles.onboardFlowTeamCard}>
-                      <div className={styles.onboardFlowAvatar} style={{ background: member.color, color: "#050508" }}>{member.initials}</div>
+                      <div className={styles.onboardFlowAvatar} style={{ '--bg-color': member.color } as React.CSSProperties}>{member.initials}</div>
                       <div>
                         <div className={styles.onboardFlowTeamName}>{member.name}</div>
                         <div className={styles.onboardFlowTeamRole}>{member.role}</div>
@@ -360,7 +360,7 @@ export function OnboardingPage() {
                   </div>
                   <div className={styles.onboardFlowStarRow}>
                     {[1, 2, 3, 4, 5].map((value) => (
-                      <button key={value} type="button" className={styles.onboardFlowStarBtn} style={{ filter: stars >= value ? "none" : "grayscale(1) opacity(.42)", transform: stars >= value ? "scale(1.13)" : "scale(1)" }} onClick={() => setStars(value)}>⭐</button>
+                      <button key={value} type="button" className={styles.onboardFlowStarBtn} style={{ '--filter': stars >= value ? "none" : "grayscale(1) opacity(.42)", '--transform': stars >= value ? "scale(1.13)" : "scale(1)" } as React.CSSProperties} onClick={() => setStars(value)}>⭐</button>
                     ))}
                   </div>
                   <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setTestimonialModal(true)}>Write a Testimonial</button>

@@ -169,6 +169,8 @@ describe("automation billing workflow integration", () => {
       getJob: vi.fn().mockResolvedValue(null),
       listJobs: vi.fn().mockResolvedValue([]),
       listDeadLetters: vi.fn().mockResolvedValue([]),
+      acknowledgeDeadLetters: vi.fn().mockResolvedValue(0),
+      requeueFailed: vi.fn().mockResolvedValue(0),
       enqueueScheduledNotification: vi.fn().mockResolvedValue(undefined),
       claimDueScheduledNotifications: vi.fn().mockResolvedValue([]),
       markScheduledNotificationSent: vi.fn().mockResolvedValue(undefined),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createPortalMessageWithRefresh,
   loadConversationMessagesWithRefresh,
@@ -67,7 +67,7 @@ export function usePortalWorkspace() {
     sessionOverride?: AuthSession,
     options: { background?: boolean } = {}
   ) => {
-    const currentSession = sessionOverride ?? state.session;
+    const currentSession = sessionOverride ?? sessionRef.current;
     if (!currentSession) return;
 
     if (!options.background) {
@@ -97,17 +97,26 @@ export function usePortalWorkspace() {
       uploadMessage: previous.uploadMessage,
       error: result.error?.message ?? null
     }));
-  }, [applySignedOutState, state.session]);
+  }, [applySignedOutState]);
 
   const session = state.session;
   const selectedConversationId = state.selectedConversationId;
+
+  // Keep a ref so callbacks can read the latest session without being in deps
+  const sessionRef = useRef(state.session);
+  useEffect(() => { sessionRef.current = state.session; }, [state.session]);
+
+  // Guard initial snapshot + messages loads — only fire once per userId / conversationId,
+  // not on every new session object reference returned by the API
+  const lastSnapshotUserRef = useRef<string | null>(null);
+  const lastMessagesKeyRef = useRef<string | null>(null);
 
   const refreshConversationMessages = useCallback(async (
     conversationId: string,
     sessionOverride?: AuthSession,
     options: { background?: boolean } = {}
   ) => {
-    const currentSession = sessionOverride ?? state.session;
+    const currentSession = sessionOverride ?? sessionRef.current;
     if (!currentSession) return;
 
     if (!options.background) {
@@ -132,7 +141,7 @@ export function usePortalWorkspace() {
       uploadMessage: previous.uploadMessage,
       error: result.error?.message ?? null
     }));
-  }, [applySignedOutState, state.session]);
+  }, [applySignedOutState]);
 
   useEffect(() => {
     if (state.session || bootstrapAttempted) return;
@@ -158,26 +167,18 @@ export function usePortalWorkspace() {
 
   useEffect(() => {
     if (!session) return;
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      void refreshSnapshot(session);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshSnapshot, session]);
+    const userId = session.user.id;
+    if (lastSnapshotUserRef.current === userId) return;
+    lastSnapshotUserRef.current = userId;
+    void refreshSnapshot(session);
+  }, [session, refreshSnapshot]);
 
   useEffect(() => {
     if (!session || !selectedConversationId) return;
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      void refreshConversationMessages(selectedConversationId, session);
-    });
-    return () => {
-      cancelled = true;
-    };
+    const key = `${session.user.id}:${selectedConversationId}`;
+    if (lastMessagesKeyRef.current === key) return;
+    lastMessagesKeyRef.current = key;
+    void refreshConversationMessages(selectedConversationId, session);
   }, [refreshConversationMessages, session, selectedConversationId]);
 
   const signIn = useCallback(async (email: string) => {
@@ -214,7 +215,7 @@ export function usePortalWorkspace() {
   }, []);
 
   const uploadFile = useCallback(async (file: File) => {
-    const currentSession = state.session;
+    const currentSession = sessionRef.current;
     if (!currentSession) return null;
 
     setState((previous) => ({
@@ -250,10 +251,10 @@ export function usePortalWorkspace() {
     }));
     await refreshSnapshot(result.nextSession, { background: true });
     return result.data;
-  }, [applySignedOutState, refreshSnapshot, state.session]);
+  }, [applySignedOutState, refreshSnapshot]);
 
   const sendMessage = useCallback(async (conversationId: string, content: string) => {
-    const currentSession = state.session;
+    const currentSession = sessionRef.current;
     if (!currentSession) return null;
 
     const result = await createPortalMessageWithRefresh(currentSession, { conversationId, content });
@@ -280,7 +281,7 @@ export function usePortalWorkspace() {
     }));
 
     return message;
-  }, [applySignedOutState, state.session]);
+  }, [applySignedOutState]);
 
   const handleRealtimeRefresh = useCallback(() => {
     if (!session) return;

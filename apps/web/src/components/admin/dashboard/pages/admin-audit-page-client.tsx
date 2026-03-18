@@ -1,9 +1,12 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { formatMoneyCents } from "@/lib/i18n/currency";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { EmptyState, colorClass as toneClass, formatDateTime } from "./admin-page-utils";
 import { cx, styles } from "../style";
+import { loadAuditEventsWithRefresh, type AdminAuditEvent } from "../../../../lib/api/admin/governance";
+import { saveSession } from "../../../../lib/auth/session";
 
 type AuditDomain = "Client" | "Project" | "Lead" | "Invoice" | "Payment";
 type TimeFilter = "all" | "24h" | "7d" | "30d";
@@ -18,11 +21,58 @@ type AuditEntry = {
   tone: string;
 };
 
+function mapApiEventToEntry(event: AdminAuditEvent): AuditEntry {
+  const resourceType = event.resourceType ?? "System";
+  // Map resourceType to AuditDomain
+  const domainMap: Record<string, AuditDomain> = {
+    Client: "Client",
+    Project: "Project",
+    Lead: "Lead",
+    Invoice: "Invoice",
+    Payment: "Payment",
+  };
+  const domain = (domainMap[resourceType] ?? "Client") as AuditDomain;
+
+  // Determine tone from action keyword
+  const action = event.action ?? "";
+  let tone = "var(--blue)";
+  if (action.toLowerCase().includes("delet") || action.toLowerCase().includes("fail") || action.toLowerCase().includes("error")) tone = "var(--red)";
+  else if (action.toLowerCase().includes("creat") || action.toLowerCase().includes("complet") || action.toLowerCase().includes("paid")) tone = "var(--accent)";
+  else if (action.toLowerCase().includes("updat") || action.toLowerCase().includes("modif")) tone = "var(--amber)";
+
+  return {
+    id: `api:${event.id}`,
+    when: event.createdAt,
+    domain,
+    action: event.action,
+    subject: event.resourceId ? `${resourceType} #${event.resourceId.slice(0, 8)}` : resourceType,
+    detail: [event.actorName, event.details].filter(Boolean).join(" · ") || "System event",
+    tone,
+  };
+}
+
 export function AdminAuditPageClient() {
-  const { snapshot, loading } = useAdminWorkspaceContext();
+  const { snapshot, loading, session } = useAdminWorkspaceContext();
   const [domainFilter, setDomainFilter] = useState<"all" | AuditDomain>("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("7d");
   const [query, setQuery] = useState("");
+  const [apiEvents, setApiEvents] = useState<AdminAuditEvent[]>([]);
+  const [apiLoading, setApiLoading] = useState(false);
+
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    setApiLoading(true);
+    loadAuditEventsWithRefresh(session).then((result) => {
+      if (cancelled) return;
+      if (result.nextSession) saveSession(result.nextSession);
+      if (!result.error && result.data) {
+        setApiEvents(result.data);
+      }
+      setApiLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [session]);
 
   const entries = useMemo<AuditEntry[]>(() => {
     const clientsById = new Map(snapshot.clients.map((client) => [client.id, client.name]));
@@ -63,7 +113,7 @@ export function AdminAuditPageClient() {
       domain: "Invoice",
       action: `Status ${invoice.status.replaceAll("_", " ")}`,
       subject: invoice.number,
-      detail: `${clientsById.get(invoice.clientId) ?? "Unknown client"} · ${(invoice.amountCents / 100).toLocaleString("en-ZA", { style: "currency", currency: invoice.currency || "ZAR", maximumFractionDigits: 0 })}`,
+      detail: `${clientsById.get(invoice.clientId) ?? "Unknown client"} · ${formatMoneyCents(invoice.amountCents, { currency: invoice.currency, maximumFractionDigits: 0 })}`,
       tone: invoice.status === "OVERDUE" ? "var(--red)" : invoice.status === "PAID" ? "var(--accent)" : "var(--amber)"
     }));
 
@@ -73,14 +123,25 @@ export function AdminAuditPageClient() {
       domain: "Payment",
       action: `Status ${payment.status.replaceAll("_", " ")}`,
       subject: payment.transactionRef ?? payment.id.slice(0, 8).toUpperCase(),
-      detail: `${clientsById.get(payment.clientId) ?? "Unknown client"} · ${(payment.amountCents / 100).toLocaleString("en-ZA", { style: "currency", currency: "ZAR", maximumFractionDigits: 0 })}`,
+      detail: `${clientsById.get(payment.clientId) ?? "Unknown client"} · ${formatMoneyCents(payment.amountCents, { maximumFractionDigits: 0 })}`,
       tone: payment.status === "FAILED" ? "var(--red)" : payment.status === "PENDING" ? "var(--amber)" : "var(--blue)"
     }));
 
-    return [...clients, ...projects, ...leads, ...invoices, ...payments]
+    const apiEntries = apiEvents.map(mapApiEventToEntry);
+    const combined = [...clients, ...projects, ...leads, ...invoices, ...payments, ...apiEntries];
+
+    // Deduplicate by id (API events don't collide with snapshot since prefixed with "api:")
+    const seen = new Set<string>();
+    const deduped = combined.filter((e) => {
+      if (seen.has(e.id)) return false;
+      seen.add(e.id);
+      return true;
+    });
+
+    return deduped
       .sort((a, b) => Date.parse(b.when) - Date.parse(a.when))
-      .slice(0, 120);
-  }, [snapshot.clients, snapshot.invoices, snapshot.leads, snapshot.payments, snapshot.projects]);
+      .slice(0, 200);
+  }, [snapshot.clients, snapshot.invoices, snapshot.leads, snapshot.payments, snapshot.projects, apiEvents]);
 
   const filteredEntries = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -188,19 +249,19 @@ export function AdminAuditPageClient() {
           <span>Detail</span>
         </div>
 
-        {loading ? (
+        {(loading || apiLoading) ? (
           <div className={cx("p20")}>
             <EmptyState title="Loading activity..." subtitle="Fetching latest audit events." compact />
           </div>
         ) : null}
 
-        {!loading && filteredEntries.length === 0 ? (
+        {!loading && !apiLoading && filteredEntries.length === 0 ? (
           <div className={cx("p20")}>
             <EmptyState title="No audit events found" subtitle="Try widening your filters or clearing search." compact />
           </div>
         ) : null}
 
-        {!loading && filteredEntries.length > 0 ? (
+        {!loading && !apiLoading && filteredEntries.length > 0 ? (
           <>
             {filteredEntries.map((entry, index) => (
               <div key={entry.id} className={cx(styles.accessAuditRow, index === filteredEntries.length - 1 && styles.accessAuditRowLast)}>

@@ -7,9 +7,27 @@ interface ResolveAuthRedirectInput {
   role: Role | null;
 }
 
+// Login/register pages nested inside protected directories — must be treated as public.
+const NESTED_LOGIN_PATHS = [
+  "/admin/login",
+  "/staff/login",
+  "/client/login",
+  "/internal/login",
+  "/internal/register"
+];
+
 export function resolveAuthRedirect(input: ResolveAuthRedirectInput): string | null {
   const { pathname, search, role } = input;
   const authenticated = Boolean(role);
+
+  // Allow the dedicated login pages even though they live under /admin/ or /staff/
+  if (NESTED_LOGIN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    if (authenticated) {
+      // Already signed in — redirect to the appropriate home
+      return roleHomePath(role!);
+    }
+    return null;
+  }
 
   if (isClientPath(pathname) || isPortalPath(pathname) || isStaffPath(pathname) || isAdminPath(pathname)) {
     if (!authenticated) {
@@ -17,9 +35,9 @@ export function resolveAuthRedirect(input: ResolveAuthRedirectInput): string | n
       const nextPath = `${pathname}${search}`;
       loginParams.set("next", nextPath);
       if (isStaffPath(pathname) || isAdminPath(pathname)) {
-        return `/internal-login?${loginParams.toString()}`;
+        return `/internal/login?${loginParams.toString()}`;
       }
-      return `/login?${loginParams.toString()}`;
+      return `/client/login?${loginParams.toString()}`;
     }
 
     if (isAdminPath(pathname)) {
@@ -39,7 +57,7 @@ export function resolveAuthRedirect(input: ResolveAuthRedirectInput): string | n
     }
   }
 
-  if ((pathname === "/login" || pathname === "/internal-login") && role) {
+  if ((pathname === "/login" || pathname === "/client/login" || pathname === "/internal/login" || pathname === "/internal-login") && role) {
     const query = new URLSearchParams(search);
     const nextPath = sanitizeNextPath(query.get("next"));
     if (nextPath) {

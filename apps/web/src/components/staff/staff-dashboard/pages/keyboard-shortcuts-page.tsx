@@ -1,7 +1,15 @@
+// ════════════════════════════════════════════════════════════════════════════
+// keyboard-shortcuts-page.tsx — Staff Keyboard Shortcuts reference
+// Data : GET /staff/clients (for client name labels only)
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
+import { getStaffClients, type StaffClient } from "../../../../lib/api/staff/clients";
+import type { AuthSession } from "../../../../lib/auth/session";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type Shortcut = { keys: string[]; desc: string };
 type Section = {
@@ -14,50 +22,73 @@ type Section = {
   shortcuts: Shortcut[];
 };
 
-const sections: Section[] = [
-  {
-    id: "nav",
-    label: "Navigation",
-    icon: "◈",
-    toneClass: "ksToneAccent",
-    surfaceClass: "ksSurfaceAccent",
-    lineClass: "ksLineAccent",
-    shortcuts: [
-      { keys: ["G", "H"], desc: "Go to Home / Dashboard" },
-      { keys: ["G", "T"], desc: "Go to Today's tasks" },
-      { keys: ["G", "C"], desc: "Go to Client health scores" },
-      { keys: ["G", "M"], desc: "Go to Milestones" },
-      { keys: ["G", "S"], desc: "Go to Smart suggestions" },
-      { keys: ["G", "F"], desc: "Go to Focus mode" },
-      { keys: ["G", "W"], desc: "Go to Wiki / SOPs" },
-      { keys: ["G", "P"], desc: "Go to Performance dashboard" },
-      { keys: ["G", "R"], desc: "Go to Recurring tasks" },
-      { keys: ["G", "L"], desc: "Go to Decision log" },
-      { keys: ["⌘", "K"], desc: "Open command palette" },
-      { keys: ["?"], desc: "Open keyboard shortcut panel" }
-    ]
-  },
-  {
-    id: "tasks",
-    label: "Tasks",
-    icon: "◎",
-    toneClass: "ksTonePurple",
-    surfaceClass: "ksSurfacePurple",
-    lineClass: "ksLinePurple",
-    shortcuts: [
-      { keys: ["N"], desc: "New task" },
-      { keys: ["⌘", "Enter"], desc: "Save task / confirm action" },
-      { keys: ["E"], desc: "Edit selected task" },
-      { keys: ["D"], desc: "Mark task done" },
-      { keys: ["P"], desc: "Pin / unpin task" },
-      { keys: ["⌫"], desc: "Delete selected task" },
-      { keys: ["↑", "↓"], desc: "Navigate task list" },
-      { keys: ["Space"], desc: "Toggle task status" },
-      { keys: ["Tab"], desc: "Assign day / move to next field" },
-      { keys: ["Esc"], desc: "Cancel / close panel" }
-    ]
-  },
-  {
+// ── Static sections (no user data) ───────────────────────────────────────────
+
+const NAV_SECTION: Section = {
+  id: "nav",
+  label: "Navigation",
+  icon: "◈",
+  toneClass: "ksToneAccent",
+  surfaceClass: "ksSurfaceAccent",
+  lineClass: "ksLineAccent",
+  shortcuts: [
+    { keys: ["G", "H"], desc: "Go to Home / Dashboard" },
+    { keys: ["G", "T"], desc: "Go to Today's tasks" },
+    { keys: ["G", "C"], desc: "Go to Client health scores" },
+    { keys: ["G", "M"], desc: "Go to Milestones" },
+    { keys: ["G", "S"], desc: "Go to Smart suggestions" },
+    { keys: ["G", "F"], desc: "Go to Focus mode" },
+    { keys: ["G", "W"], desc: "Go to Wiki / SOPs" },
+    { keys: ["G", "P"], desc: "Go to Performance dashboard" },
+    { keys: ["G", "R"], desc: "Go to Recurring tasks" },
+    { keys: ["G", "L"], desc: "Go to Decision log" },
+    { keys: ["⌘", "K"], desc: "Open command palette" },
+    { keys: ["?"], desc: "Open keyboard shortcut panel" }
+  ]
+};
+
+const TASKS_SECTION: Section = {
+  id: "tasks",
+  label: "Tasks",
+  icon: "◎",
+  toneClass: "ksTonePurple",
+  surfaceClass: "ksSurfacePurple",
+  lineClass: "ksLinePurple",
+  shortcuts: [
+    { keys: ["N"], desc: "New task" },
+    { keys: ["⌘", "Enter"], desc: "Save task / confirm action" },
+    { keys: ["E"], desc: "Edit selected task" },
+    { keys: ["D"], desc: "Mark task done" },
+    { keys: ["P"], desc: "Pin / unpin task" },
+    { keys: ["⌫"], desc: "Delete selected task" },
+    { keys: ["↑", "↓"], desc: "Navigate task list" },
+    { keys: ["Space"], desc: "Toggle task status" },
+    { keys: ["Tab"], desc: "Assign day / move to next field" },
+    { keys: ["Esc"], desc: "Cancel / close panel" }
+  ]
+};
+
+// ── Non-numbered client shortcuts (always shown) ──────────────────────────────
+
+const CLIENT_TAIL_SHORTCUTS: Shortcut[] = [
+  { keys: ["0"], desc: "Clear client filter / show all" },
+  { keys: ["⌘", "⇧", "U"], desc: "Send client update (auto-draft)" },
+  { keys: ["⌘", "⇧", "M"], desc: "Open meeting prep for next call" }
+];
+
+// ── Fallback client shortcuts (loading / empty state) ────────────────────────
+
+const FALLBACK_CLIENT_NUMBERED: Shortcut[] = [1, 2, 3, 4, 5].map((n) => ({
+  keys: [String(n)],
+  desc: `Switch to client ${n}`
+}));
+
+function buildClientSection(clients: StaffClient[]): Section {
+  const numbered: Shortcut[] = clients.slice(0, 5).map((c, i) => ({
+    keys: [String(i + 1)],
+    desc: `Switch to client ${i + 1} (${c.name})`
+  }));
+  return {
     id: "clients",
     label: "Clients",
     icon: "◉",
@@ -65,77 +96,78 @@ const sections: Section[] = [
     surfaceClass: "ksSurfaceBlue",
     lineClass: "ksLineBlue",
     shortcuts: [
-      { keys: ["1"], desc: "Switch to client 1 (Volta Studios)" },
-      { keys: ["2"], desc: "Switch to client 2 (Kestrel Capital)" },
-      { keys: ["3"], desc: "Switch to client 3 (Mira Health)" },
-      { keys: ["4"], desc: "Switch to client 4 (Dune Collective)" },
-      { keys: ["5"], desc: "Switch to client 5 (Okafor & Sons)" },
-      { keys: ["0"], desc: "Clear client filter / show all" },
-      { keys: ["⌘", "⇧", "U"], desc: "Send client update (auto-draft)" },
-      { keys: ["⌘", "⇧", "M"], desc: "Open meeting prep for next call" }
+      ...(numbered.length > 0 ? numbered : FALLBACK_CLIENT_NUMBERED),
+      ...CLIENT_TAIL_SHORTCUTS
     ]
-  },
-  {
-    id: "comms",
-    label: "Communication",
-    icon: "✉",
-    toneClass: "ksToneAmber",
-    surfaceClass: "ksSurfaceAmber",
-    lineClass: "ksLineAmber",
-    shortcuts: [
-      { keys: ["⌘", "⇧", "N"], desc: "New message to selected client" },
-      { keys: ["R"], desc: "Reply to selected message" },
-      { keys: ["⌘", "⇧", "A"], desc: "Auto-draft update for selected client" },
-      { keys: ["⌘", "⇧", "C"], desc: "Copy last message to clipboard" },
-      { keys: ["M"], desc: "Mark thread as read" },
-      { keys: ["⌘", "⇧", "F"], desc: "Flag message for follow-up" }
-    ]
-  },
-  {
-    id: "focus",
-    label: "Focus & Time",
-    icon: "◌",
-    toneClass: "ksToneOrange",
-    surfaceClass: "ksSurfaceOrange",
-    lineClass: "ksLineOrange",
-    shortcuts: [
-      { keys: ["F"], desc: "Start focus session (25 min default)" },
-      { keys: ["⌘", "⇧", "P"], desc: "Pause / resume active focus session" },
-      { keys: ["⌘", "⇧", "S"], desc: "Submit daily standup" },
-      { keys: ["⌘", "⇧", "W"], desc: "Open end-of-day wrap" },
-      { keys: ["L"], desc: "Log hours (quick entry)" },
-      { keys: ["⌘", "⇧", "L"], desc: "Open full time log" }
-    ]
-  },
-  {
-    id: "search",
-    label: "Search & Filter",
-    icon: "⊡",
-    toneClass: "ksToneMuted",
-    surfaceClass: "ksSurfaceMuted",
-    lineClass: "ksLineMuted",
-    shortcuts: [
-      { keys: ["/"], desc: "Focus search field" },
-      { keys: ["Esc"], desc: "Clear search / close results" },
-      { keys: ["⌘", "F"], desc: "Find in current view" },
-      { keys: ["⌘", "⇧", "K"], desc: "Search across all clients" },
-      { keys: ["⌘", "⇧", "D"], desc: "Search decision log" },
-      { keys: ["⌘", "⇧", "N"], desc: "Search private notes" }
-    ]
-  }
-];
+  };
+}
+
+const COMMS_SECTION: Section = {
+  id: "comms",
+  label: "Communication",
+  icon: "✉",
+  toneClass: "ksToneAmber",
+  surfaceClass: "ksSurfaceAmber",
+  lineClass: "ksLineAmber",
+  shortcuts: [
+    { keys: ["⌘", "⇧", "N"], desc: "New message to selected client" },
+    { keys: ["R"], desc: "Reply to selected message" },
+    { keys: ["⌘", "⇧", "A"], desc: "Auto-draft update for selected client" },
+    { keys: ["⌘", "⇧", "C"], desc: "Copy last message to clipboard" },
+    { keys: ["M"], desc: "Mark thread as read" },
+    { keys: ["⌘", "⇧", "F"], desc: "Flag message for follow-up" }
+  ]
+};
+
+const FOCUS_SECTION: Section = {
+  id: "focus",
+  label: "Focus & Time",
+  icon: "◌",
+  toneClass: "ksToneOrange",
+  surfaceClass: "ksSurfaceOrange",
+  lineClass: "ksLineOrange",
+  shortcuts: [
+    { keys: ["F"], desc: "Start focus session (25 min default)" },
+    { keys: ["⌘", "⇧", "P"], desc: "Pause / resume active focus session" },
+    { keys: ["⌘", "⇧", "S"], desc: "Submit daily standup" },
+    { keys: ["⌘", "⇧", "W"], desc: "Open end-of-day wrap" },
+    { keys: ["L"], desc: "Log hours (quick entry)" },
+    { keys: ["⌘", "⇧", "L"], desc: "Open full time log" }
+  ]
+};
+
+const SEARCH_SECTION: Section = {
+  id: "search",
+  label: "Search & Filter",
+  icon: "⊡",
+  toneClass: "ksToneMuted",
+  surfaceClass: "ksSurfaceMuted",
+  lineClass: "ksLineMuted",
+  shortcuts: [
+    { keys: ["/"], desc: "Focus search field" },
+    { keys: ["Esc"], desc: "Clear search / close results" },
+    { keys: ["⌘", "F"], desc: "Find in current view" },
+    { keys: ["⌘", "⇧", "K"], desc: "Search across all clients" },
+    { keys: ["⌘", "⇧", "D"], desc: "Search decision log" },
+    { keys: ["⌘", "⇧", "N"], desc: "Search private notes" }
+  ]
+};
+
+// ── Recently used (static) ────────────────────────────────────────────────────
 
 const recentlyUsed = [
-  { keys: ["⌘", "K"], desc: "Command palette", section: "Navigation" },
-  { keys: ["D"], desc: "Mark task done", section: "Tasks" },
-  { keys: ["G", "S"], desc: "Smart suggestions", section: "Navigation" },
-  { keys: ["F"], desc: "Start focus session", section: "Focus & Time" },
-  { keys: ["N"], desc: "New task", section: "Tasks" }
+  { keys: ["⌘", "K"], desc: "Command palette",    section: "Navigation"   },
+  { keys: ["D"],       desc: "Mark task done",     section: "Tasks"        },
+  { keys: ["G", "S"],  desc: "Smart suggestions",  section: "Navigation"   },
+  { keys: ["F"],       desc: "Start focus session",section: "Focus & Time" },
+  { keys: ["N"],       desc: "New task",           section: "Tasks"        }
 ] as const;
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function Key({ k }: { k: string }) {
   const isModifier = ["⌘", "⇧", "⌃", "⌥"].includes(k);
-  const isArrow = ["↑", "↓", "←", "→"].includes(k);
+  const isArrow    = ["↑", "↓", "←", "→"].includes(k);
   return (
     <kbd className={cx("ksKey", (isModifier || isArrow) && "ksKeyWide", isModifier && "ksKeyModifier")}>
       {k}
@@ -145,9 +177,7 @@ function Key({ k }: { k: string }) {
 
 function ShortcutRow({ keys, desc, highlight }: { keys: string[]; desc: string; highlight?: boolean }) {
   return (
-    <div
-      className={cx("flexRow", "gap14", "ksShortcutRow", highlight && "ksShortcutRowHighlight")}
-    >
+    <div className={cx("flexRow", "gap14", "ksShortcutRow", highlight && "ksShortcutRowHighlight")}>
       <div className={cx("flexRow", "noShrink", "ksKeySequence")}>
         {keys.map((k, i) => (
           <span key={`${k}-${String(i)}`} className={cx("flexRow", "ksKeyPiece")}>
@@ -161,46 +191,76 @@ function ShortcutRow({ keys, desc, highlight }: { keys: string[]; desc: string; 
   );
 }
 
-export function KeyboardShortcutsPage({ isActive }: { isActive: boolean }) {
+// ── Page component ────────────────────────────────────────────────────────────
+
+type KeyboardShortcutsPageProps = {
+  isActive: boolean;
+  session:  AuthSession | null;
+};
+
+export function KeyboardShortcutsPage({ isActive, session }: KeyboardShortcutsPageProps) {
+  const [clients,  setClients]  = useState<StaffClient[]>([]);
   const [activeSection, setActiveSection] = useState<"all" | "recent" | Section["id"]>("all");
   const [search, setSearch] = useState("");
 
+  // ── Load clients for shortcut labels ────────────────────────────────────────
+  useEffect(() => {
+    if (!session || !isActive) return;
+    let cancelled = false;
+
+    void getStaffClients(session).then((result) => {
+      if (cancelled) return;
+      if (result.data) setClients(result.data);
+    });
+
+    return () => { cancelled = true; };
+  }, [session, isActive]);
+
+  // ── Compose sections (client section rebuilt when clients load) ──────────────
+  const sections = useMemo<Section[]>(() => [
+    NAV_SECTION,
+    TASKS_SECTION,
+    buildClientSection(clients),
+    COMMS_SECTION,
+    FOCUS_SECTION,
+    SEARCH_SECTION
+  ], [clients]);
+
+  // ── Derived ─────────────────────────────────────────────────────────────────
   const allShortcuts = useMemo(
     () =>
       sections.flatMap((section) =>
         section.shortcuts.map((shortcut) => ({
           ...shortcut,
-          sectionId: section.id,
-          sectionLabel: section.label,
+          sectionId:        section.id,
+          sectionLabel:     section.label,
           sectionToneClass: section.toneClass
         }))
       ),
-    []
+    [sections]
   );
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return [];
     const q = search.toLowerCase();
     return allShortcuts.filter(
-      (shortcut) =>
-        shortcut.desc.toLowerCase().includes(q) ||
-        shortcut.keys.join(" ").toLowerCase().includes(q)
+      (s) =>
+        s.desc.toLowerCase().includes(q) ||
+        s.keys.join(" ").toLowerCase().includes(q)
     );
   }, [allShortcuts, search]);
 
-  const visibleSections = activeSection === "all" ? sections : sections.filter((section) => section.id === activeSection);
+  const visibleSections = activeSection === "all"
+    ? sections
+    : sections.filter((s) => s.id === activeSection);
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-keyboard-shortcuts">
       <div className={cx("pageHeaderBar", "borderB", "ksHeaderWrap")}>
         <div className={cx("flexBetween", "mb20", "itemsStart")}>
           <div>
-            <div className={cx("pageEyebrow", "mb8")}>
-              Staff Dashboard / Help
-            </div>
-            <h1 className={cx("pageTitle")}>
-              Keyboard Shortcuts
-            </h1>
+            <div className={cx("pageEyebrow", "mb8")}>Staff Dashboard / Help</div>
+            <h1 className={cx("pageTitle")}>Keyboard Shortcuts</h1>
             <div className={cx("text12", "colorMuted2", "mt6")}>
               {allShortcuts.length} shortcuts across {sections.length} categories
             </div>
@@ -233,6 +293,8 @@ export function KeyboardShortcutsPage({ isActive }: { isActive: boolean }) {
       </div>
 
       <div className={cx("ksMainGrid")}>
+
+        {/* ── Sidebar nav ──────────────────────────────────────────────────── */}
         <div className={cx("ksSideCol")}>
           <button
             type="button"
@@ -250,11 +312,7 @@ export function KeyboardShortcutsPage({ isActive }: { isActive: boolean }) {
               key={section.id}
               type="button"
               className={cx(
-                "ksSectionBtn",
-                "wFull",
-                "flexRow",
-                "gap8",
-                "ksSideRowBtn",
+                "ksSectionBtn", "wFull", "flexRow", "gap8", "ksSideRowBtn",
                 activeSection === section.id ? "ksSectionToneActive" : "ksSectionIdle",
                 activeSection === section.id && section.surfaceClass,
                 activeSection === section.id && section.toneClass
@@ -279,7 +337,10 @@ export function KeyboardShortcutsPage({ isActive }: { isActive: boolean }) {
           </button>
         </div>
 
+        {/* ── Content area ─────────────────────────────────────────────────── */}
         <div className={cx("ksContentCol")}>
+
+          {/* Search results */}
           {search ? (
             <div>
               <div className={cx("text10", "colorMuted2", "uppercase", "mb14", "trackingWide12")}>
@@ -299,6 +360,7 @@ export function KeyboardShortcutsPage({ isActive }: { isActive: boolean }) {
             </div>
           ) : null}
 
+          {/* Recently used */}
           {!search && activeSection === "recent" ? (
             <div>
               <div className={cx("text10", "colorMuted2", "uppercase", "mb14", "trackingWide12")}>
@@ -315,6 +377,7 @@ export function KeyboardShortcutsPage({ isActive }: { isActive: boolean }) {
             </div>
           ) : null}
 
+          {/* Section shortcuts */}
           {!search && activeSection !== "recent" ? (
             <div className={cx("ksSectionsGrid", activeSection === "all" ? "ksSectionsGridAll" : "ksSectionsGridSingle")}>
               {visibleSections.map((section) => (
@@ -334,12 +397,13 @@ export function KeyboardShortcutsPage({ isActive }: { isActive: boolean }) {
             </div>
           ) : null}
 
+          {/* Tips footer */}
           {!search ? (
             <div className={cx("flexRow", "gap24", "ksTipsCard")}>
               {[
-                { label: "Quick tip", text: "Press G then a letter to jump to any screen instantly." },
+                { label: "Quick tip",      text: "Press G then a letter to jump to any screen instantly." },
                 { label: "Mac vs Windows", text: "⌘ = Cmd on Mac · Ctrl on Windows · ⇧ = Shift everywhere." },
-                { label: "Command palette", text: "Press ⌘K for fuzzy search across all actions and screens." }
+                { label: "Command palette",text: "Press ⌘K for fuzzy search across all actions and screens." }
               ].map((tip) => (
                 <div key={tip.label} className={cx("flex1")}>
                   <div className={cx("textXs", "colorAccent", "uppercase", "mb5", "trackingWide12")}>{tip.label}</div>
@@ -348,6 +412,7 @@ export function KeyboardShortcutsPage({ isActive }: { isActive: boolean }) {
               ))}
             </div>
           ) : null}
+
         </div>
       </div>
     </section>

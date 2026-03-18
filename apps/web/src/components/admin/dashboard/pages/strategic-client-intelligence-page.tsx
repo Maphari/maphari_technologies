@@ -27,108 +27,7 @@ type Client = {
   lastUpsell: string;
 };
 
-const clients: Client[] = [
-  {
-    id: 1,
-    name: "Volta Studios",
-    avatar: "VS",
-    color: "var(--accent)",
-    segment: "Champion",
-    ltv: 412000,
-    cac: 8200,
-    mrr: 28000,
-    tenure: 18,
-    health: 91,
-    churnRisk: 4,
-    upsellScore: 82,
-    retainerTier: "Growth",
-    industry: "Creative Agency",
-    revenueGrowth: +14,
-    netMargin: 64,
-    touchpoints: 12,
-    lastUpsell: "Oct 2025"
-  },
-  {
-    id: 2,
-    name: "Kestrel Capital",
-    avatar: "KC",
-    color: "var(--purple)",
-    segment: "At Risk",
-    ltv: 168000,
-    cac: 12000,
-    mrr: 21000,
-    tenure: 9,
-    health: 58,
-    churnRisk: 71,
-    upsellScore: 22,
-    retainerTier: "Core",
-    industry: "Finance",
-    revenueGrowth: -8,
-    netMargin: 52,
-    touchpoints: 4,
-    lastUpsell: "Never"
-  },
-  {
-    id: 3,
-    name: "Mira Health",
-    avatar: "MH",
-    color: "var(--blue)",
-    segment: "Growth",
-    ltv: 258000,
-    cac: 9400,
-    mrr: 21600,
-    tenure: 12,
-    health: 74,
-    churnRisk: 22,
-    upsellScore: 61,
-    retainerTier: "Core",
-    industry: "Healthcare",
-    revenueGrowth: +6,
-    netMargin: 58,
-    touchpoints: 8,
-    lastUpsell: "Dec 2025"
-  },
-  {
-    id: 4,
-    name: "Dune Collective",
-    avatar: "DC",
-    color: "var(--amber)",
-    segment: "At Risk",
-    ltv: 192000,
-    cac: 6800,
-    mrr: 16000,
-    tenure: 7,
-    health: 43,
-    churnRisk: 64,
-    upsellScore: 18,
-    retainerTier: "Core",
-    industry: "Media",
-    revenueGrowth: -12,
-    netMargin: 41,
-    touchpoints: 3,
-    lastUpsell: "Never"
-  },
-  {
-    id: 5,
-    name: "Okafor & Sons",
-    avatar: "OS",
-    color: "var(--amber)",
-    segment: "Champion",
-    ltv: 288000,
-    cac: 5200,
-    mrr: 12000,
-    tenure: 24,
-    health: 96,
-    churnRisk: 6,
-    upsellScore: 74,
-    retainerTier: "Core",
-    industry: "Professional Services",
-    revenueGrowth: +9,
-    netMargin: 71,
-    touchpoints: 10,
-    lastUpsell: "Nov 2025"
-  }
-];
+const clients: Client[] = [];
 
 const segmentConfig: Record<Segment, { color: string; icon: string; desc: string }> = {
   Champion: { color: "var(--accent)", icon: "★", desc: "High LTV, high health, low churn risk" },
@@ -198,7 +97,7 @@ export function StrategicClientIntelligencePage() {
 
   const filtered = selectedSegment === "All" ? clients : clients.filter((c) => c.segment === selectedSegment);
   const totalLTV = clients.reduce((s, c) => s + c.ltv, 0);
-  const avgCAC = Math.round(clients.reduce((s, c) => s + c.cac, 0) / clients.length);
+  const avgCAC = clients.length > 0 ? Math.round(clients.reduce((s, c) => s + c.cac, 0) / clients.length) : 0;
   const atRisk = clients.filter((c) => c.churnRisk > 50).length;
   const upsellReady = clients.filter((c) => c.upsellScore > 60).length;
 
@@ -217,7 +116,7 @@ export function StrategicClientIntelligencePage() {
 
       <div className={cx("topCardsStack", "gap16", "mb28")}>
         {[
-          { label: "Total Portfolio LTV", value: `R${(totalLTV / 1000).toFixed(0)}k`, color: "var(--accent)", sub: "Across 5 clients" },
+          { label: "Total Portfolio LTV", value: `R${(totalLTV / 1000).toFixed(0)}k`, color: "var(--accent)", sub: `Across ${clients.length} clients` },
           { label: "Avg CAC", value: `R${(avgCAC / 1000).toFixed(1)}k`, color: "var(--blue)", sub: "Cost per acquisition" },
           { label: "At-Risk Clients", value: atRisk.toString(), color: "var(--red)", sub: "Churn risk > 50%" },
           { label: "Upsell Ready", value: upsellReady.toString(), color: "var(--purple)", sub: "Score > 60" }
@@ -369,8 +268,8 @@ export function StrategicClientIntelligencePage() {
             <div className={styles.sciRiskSummary}>
               <div className={styles.sciRiskTitle}>⚠ Churn Risk Summary</div>
               <div className={styles.sciRiskBody}>
-                <div><span className={styles.sciRed}>2 clients</span> above 50% churn risk</div>
-                <div>Estimated revenue at risk: <span className={styles.sciRed}>R37,000/mo</span></div>
+                <div><span className={styles.sciRed}>{clients.filter((c) => c.churnRisk > 50).length} clients</span> above 50% churn risk</div>
+                <div>Estimated revenue at risk: <span className={styles.sciRed}>R{clients.filter((c) => c.churnRisk > 50).reduce((s, c) => s + c.mrr, 0).toLocaleString()}/mo</span></div>
                 <div>Recovery window: <span className={styles.sciAmber}>30-45 days</span></div>
               </div>
             </div>
@@ -411,17 +310,24 @@ export function StrategicClientIntelligencePage() {
           </div>
           <div className={cx("card", "p24")}>
             <div className={styles.sciSecTitle}>Overall Retention</div>
-            <div className={styles.sciRetentionWrap}>
+            {(() => {
+              const totalAcquired = cohorts.reduce((s, c) => s + c.clients, 0);
+              const totalChurned = cohorts.reduce((s, c) => s + c.churned, 0);
+              const totalActive = totalAcquired - totalChurned;
+              const retentionRate = totalAcquired > 0 ? Math.round((totalActive / totalAcquired) * 100) : 0;
+              const avgTenure = clients.length > 0 ? Math.round(clients.reduce((s, c) => s + c.tenure, 0) / clients.length) : null;
+              return (
+          <div className={styles.sciRetentionWrap}>
               <div className={styles.sciRetentionHero}>
-                <div className={styles.sciRetentionValue}>80%</div>
+                <div className={styles.sciRetentionValue}>{retentionRate}%</div>
                 <div className={styles.sciRetentionSub}>12-month client retention</div>
               </div>
               <div className={cx("grid2", "gap12")}>
                 {[
-                  { label: "Total Acquired", value: "6", color: "var(--blue)" },
-                  { label: "Currently Active", value: "5", color: "var(--accent)" },
-                  { label: "Churned", value: "1", color: "var(--red)" },
-                  { label: "Avg Tenure", value: "14mo", color: "var(--amber)" }
+                  { label: "Total Acquired", value: totalAcquired.toString(), color: "var(--blue)" },
+                  { label: "Currently Active", value: totalActive.toString(), color: "var(--accent)" },
+                  { label: "Churned", value: totalChurned.toString(), color: "var(--red)" },
+                  { label: "Avg Tenure", value: avgTenure !== null ? `${avgTenure}mo` : "—", color: "var(--amber)" }
                 ].map((s) => (
                   <div key={s.label} className={styles.sciRetentionTile}>
                     <div className={styles.sciStatLabel}>{s.label}</div>
@@ -430,6 +336,8 @@ export function StrategicClientIntelligencePage() {
                 ))}
               </div>
             </div>
+              );
+            })()}
           </div>
         </div>
       ) : null}

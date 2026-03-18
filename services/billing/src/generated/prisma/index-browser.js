@@ -124,13 +124,19 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
 exports.Prisma.InvoiceScalarFieldEnum = {
   id: 'id',
   clientId: 'clientId',
+  projectId: 'projectId',
   number: 'number',
+  description: 'description',
+  lineItems: 'lineItems',
+  billingPeriod: 'billingPeriod',
+  costCenter: 'costCenter',
   amountCents: 'amountCents',
   currency: 'currency',
   status: 'status',
   issuedAt: 'issuedAt',
   dueAt: 'dueAt',
   paidAt: 'paidAt',
+  pdfFileId: 'pdfFileId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -138,12 +144,102 @@ exports.Prisma.InvoiceScalarFieldEnum = {
 exports.Prisma.PaymentScalarFieldEnum = {
   id: 'id',
   clientId: 'clientId',
+  projectId: 'projectId',
   invoiceId: 'invoiceId',
+  source: 'source',
   amountCents: 'amountCents',
   status: 'status',
   provider: 'provider',
   transactionRef: 'transactionRef',
   paidAt: 'paidAt',
+  receiptFileId: 'receiptFileId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.InvoiceInstallmentScalarFieldEnum = {
+  id: 'id',
+  invoiceId: 'invoiceId',
+  clientId: 'clientId',
+  projectId: 'projectId',
+  number: 'number',
+  name: 'name',
+  amountCents: 'amountCents',
+  dueAt: 'dueAt',
+  paidAt: 'paidAt',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ExpenseScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  category: 'category',
+  subcategory: 'subcategory',
+  description: 'description',
+  amountCents: 'amountCents',
+  submittedBy: 'submittedBy',
+  status: 'status',
+  hasReceipt: 'hasReceipt',
+  isBillable: 'isBillable',
+  expenseDate: 'expenseDate',
+  approvedAt: 'approvedAt',
+  rejectedAt: 'rejectedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ExpenseBudgetScalarFieldEnum = {
+  id: 'id',
+  category: 'category',
+  budgetCents: 'budgetCents',
+  spentCents: 'spentCents',
+  fiscalYear: 'fiscalYear',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LoyaltyAccountScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  tier: 'tier',
+  balancePoints: 'balancePoints',
+  totalEarned: 'totalEarned',
+  lastActivityAt: 'lastActivityAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CreditTransactionScalarFieldEnum = {
+  id: 'id',
+  loyaltyAccountId: 'loyaltyAccountId',
+  type: 'type',
+  points: 'points',
+  description: 'description',
+  referenceId: 'referenceId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.VendorScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  category: 'category',
+  contactName: 'contactName',
+  contactEmail: 'contactEmail',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VendorContractScalarFieldEnum = {
+  id: 'id',
+  vendorId: 'vendorId',
+  startAt: 'startAt',
+  endAt: 'endAt',
+  valueCents: 'valueCents',
+  status: 'status',
+  notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -179,7 +275,14 @@ exports.PaymentStatus = exports.$Enums.PaymentStatus = {
 
 exports.Prisma.ModelName = {
   Invoice: 'Invoice',
-  Payment: 'Payment'
+  Payment: 'Payment',
+  InvoiceInstallment: 'InvoiceInstallment',
+  Expense: 'Expense',
+  ExpenseBudget: 'ExpenseBudget',
+  LoyaltyAccount: 'LoyaltyAccount',
+  CreditTransaction: 'CreditTransaction',
+  Vendor: 'Vendor',
+  VendorContract: 'VendorContract'
 };
 
 /**

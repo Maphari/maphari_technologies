@@ -730,6 +730,126 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
     }
   });
 
+  // ── Team Management ────────────────────────────────────────────────────────
+  // GET /clients/:clientId/team
+  // List all ClientContacts for this client, projected to PortalTeamMember shape.
+  // CLIENT role is allowed (scoped to own clientId).
+  app.get("/clients/:clientId/team", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const params = request.params as { clientId?: string };
+    if (!params.clientId) {
+      reply.status(400);
+      return { success: false, error: { code: "VALIDATION_ERROR", message: "clientId is required" } } as ApiResponse;
+    }
+
+    const effectiveClientId = resolveClientFilter(scope.role, scope.clientId);
+    if (effectiveClientId && effectiveClientId !== params.clientId) {
+      reply.status(403);
+      return { success: false, error: { code: "FORBIDDEN", message: "Forbidden client scope" } } as ApiResponse;
+    }
+
+    try {
+      const contacts = await prisma.clientContact.findMany({
+        where: { clientId: params.clientId },
+        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }]
+      });
+
+      const members = contacts.map(c => ({
+        id: c.id,
+        clientId: c.clientId,
+        name: c.name,
+        email: c.email,
+        role: c.isPrimary ? "Owner" : (c.role ?? "Viewer"),
+        status: "Active",
+        lastActiveAt: null as string | null,
+        createdAt: c.createdAt.toISOString()
+      }));
+
+      return { success: true, data: members, meta: { requestId: scope.requestId } } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "CLIENT_TEAM_FETCH_FAILED", message: "Unable to fetch team members" } } as ApiResponse;
+    }
+  });
+
+  // POST /clients/:clientId/team/invite
+  // Create a ClientContact (pending invite) and return PortalTeamInvite shape.
+  // CLIENT role is allowed (scoped to own clientId).
+  app.post("/clients/:clientId/team/invite", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const params = request.params as { clientId?: string };
+    if (!params.clientId) {
+      reply.status(400);
+      return { success: false, error: { code: "VALIDATION_ERROR", message: "clientId is required" } } as ApiResponse;
+    }
+
+    const effectiveClientId = resolveClientFilter(scope.role, scope.clientId);
+    if (effectiveClientId && effectiveClientId !== params.clientId) {
+      reply.status(403);
+      return { success: false, error: { code: "FORBIDDEN", message: "Forbidden client scope" } } as ApiResponse;
+    }
+
+    const body = request.body as Record<string, unknown>;
+    const email = typeof body?.email === "string" ? body.email.trim() : null;
+    const role  = typeof body?.role  === "string" ? body.role.trim()  : "Viewer";
+
+    if (!email || !email.includes("@")) {
+      reply.status(400);
+      return { success: false, error: { code: "VALIDATION_ERROR", message: "A valid email address is required" } } as ApiResponse;
+    }
+
+    // Derive a readable placeholder name from the email prefix
+    const prefix = email.split("@")[0];
+    const nameParts = prefix.replace(/[._\-+]/g, " ").split(" ").filter(Boolean);
+    const name = nameParts.length > 0
+      ? nameParts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(" ")
+      : email;
+
+    try {
+      const client = await prisma.client.findUnique({ where: { id: params.clientId } });
+      if (!client) {
+        reply.status(404);
+        return { success: false, error: { code: "NOT_FOUND", message: "Client not found" } } as ApiResponse;
+      }
+
+      const contact = await prisma.clientContact.create({
+        data: {
+          clientId: params.clientId,
+          name,
+          email,
+          // Prevent self-escalation: clients cannot invite an Owner via this route
+          role: role === "Owner" ? "Collaborator" : role,
+          isPrimary: false
+        }
+      });
+
+      await logClientActivity({
+        clientId: params.clientId,
+        type: "TEAM_MEMBER_INVITED",
+        message: `Team member invited: ${email} as ${contact.role}`,
+        actorId: scope.userId,
+        actorRole: scope.role
+      });
+
+      return {
+        success: true,
+        data: {
+          id: contact.id,
+          email: contact.email,
+          role: contact.role ?? "Viewer",
+          status: "Pending",
+          createdAt: contact.createdAt.toISOString()
+        },
+        meta: { requestId: scope.requestId }
+      } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "CLIENT_TEAM_INVITE_FAILED", message: "Unable to invite team member" } } as ApiResponse;
+    }
+  });
+
   app.get("/client-preferences", async (request) => {
     const scope = readScopeHeaders(request);
     const parsed = getClientPreferencesQuerySchema.safeParse(request.query ?? {});

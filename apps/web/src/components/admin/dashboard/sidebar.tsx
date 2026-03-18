@@ -14,6 +14,7 @@ export function AdminSidebar({
   navBadgeCounts,
   email,
   onPageChange,
+  mobileOpen = false,
 }: {
   grouped: Record<string, NavItem[]>;
   allItems: NavItem[];
@@ -23,6 +24,7 @@ export function AdminSidebar({
   navBadgeCounts: Partial<Record<PageId, number>>;
   email: string;
   onPageChange: (page: PageId) => void;
+  mobileOpen?: boolean;
 }) {
   const navLinkTextStyle = {
     fontSize: "var(--text-aside-link, 0.82rem)",
@@ -34,16 +36,87 @@ export function AdminSidebar({
   const OTHER_ITEMS_LIMIT = 5;
   const primaryIds: PageId[] = [
     "dashboard",
+    "executive",
     "leads",
     "clients",
     "projects",
     "invoices",
+    "experience",
     "staff",
+    "messages",
+    "notifications",
+    "analytics",
+    "performance",
+    "intelligence",
+    "market",
     "automation",
+    "access",
     "reports",
     "audit",
     "settings",
   ];
+
+  const sidebarLabel: Partial<Record<PageId, string>> = {
+    dashboard: "BizDev",
+    executive: "Executive",
+    experience: "Journey",
+    bookingAppointments: "Bookings",
+    sprintBoardAdmin: "Sprint Board",
+    gantt: "Gantt",
+    comms: "Comms Audit",
+    interventions: "Health",
+    loyaltyCredits: "Loyalty",
+    revenueForecasting: "Forecasting",
+    profitability: "Client Profit",
+    projectProfitability: "Proj Profit",
+    cashflow: "Cash Flow",
+    fyCloseout: "FY Closeout",
+    announcementsManager: "Announcements",
+    staff: "Staff",
+    staffOnboarding: "Staff Onboard",
+    leaveAbsence: "Leave",
+    recruitment: "Recruiting",
+    learningDev: "Learning",
+    contentApproval: "Content",
+    meetingArchive: "Archive",
+    staffSatisfaction: "Staff NPS",
+    employmentRecords: "Records",
+    owner: "Workspace",
+    team: "Team",
+    market: "Market",
+    healthScorecard: "Health Score",
+    performance: "Performance",
+    teamPerformanceReport: "Team Perf",
+    portfolioRiskRegister: "Risk Reg.",
+    crisis: "Crisis",
+    access: "Access",
+    audit: "Audit Log",
+    knowledgeBaseAdmin: "Knowledge",
+    decisionRegistry: "Decisions",
+    handoverManagement: "Handovers",
+    closeoutReview: "Closeout",
+    staffTransitionPlanner: "Transitions",
+    serviceCatalogManager: "Catalog",
+    requestInbox: "Req. Inbox",
+    changeRequestManager: "Changes",
+    supportQueue: "Support",
+    lifecycleDashboard: "Lifecycle",
+    stakeholderDirectory: "Stakeholders",
+    aiActionRecommendations: "AI Rec.",
+    updateQueueManager: "Updates",
+    standupFeed: "Standup",
+    eodDigest: "EOD",
+    peerReviewQueue: "Peer Review",
+    automationAuditTrail: "Auto Audit",
+    projectBriefing: "Briefing",
+    activeHealthMonitor: "Health Mon.",
+    designReviewAdmin: "Design Rev.",
+    onboarding: "Onboarding",
+    offboarding: "Offboarding",
+    satisfaction: "Satisfaction",
+    vault: "Vault",
+    intelligence: "Intel",
+  };
   const [showAllPages, setShowAllPages] = useState(false);
   const [allPagesQuery, setAllPagesQuery] = useState("");
   const allPagesInputRef = useRef<HTMLInputElement | null>(null);
@@ -197,9 +270,10 @@ export function AdminSidebar({
         className={`${styles.navItem} ${page === item.id ? styles.navItemActive : ""}`}
         style={navLinkTextStyle}
         onClick={() => onPageChange(item.id)}
+        title={item.label}
       >
         <NavIcon id={item.id} className={styles.navIcon} />
-        {item.label}
+        {sidebarLabel[item.id] ?? item.label}
         {typeof navBadgeCounts[item.id] === "number" &&
         (navBadgeCounts[item.id] ?? 0) > 0 ? (
           <span
@@ -213,7 +287,7 @@ export function AdminSidebar({
   }
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={`${styles.sidebar}${mobileOpen ? ` ${styles.sidebarMobileOpen}` : ""}`}>
       <div className={styles.sidebarLogo}>
         <div className={styles.logoMark}>M</div>
         <div className={styles.logoTextBlock}>

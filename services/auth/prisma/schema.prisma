@@ -16,9 +16,17 @@ model User {
   isActive     Boolean        @default(true)
   passwordHash String?
   passwordSalt String?
-  otpCode      String?
-  otpExpiresAt DateTime?
+  otpCode       String?
+  otpExpiresAt  DateTime?
   otpVerifiedAt DateTime?
+  totpSecret      String?
+  totpBackupCodes String?
+  totpEnabledAt   DateTime?
+  // Google OAuth — sub returned by Google userinfo endpoint
+  googleId String? @unique
+  // Password reset — token is stored as a SHA-256 hash; raw token is emailed
+  passwordResetTokenHash String?
+  passwordResetExpiresAt DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   refreshTokens RefreshToken[]

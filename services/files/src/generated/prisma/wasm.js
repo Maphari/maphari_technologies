@@ -104,6 +104,24 @@ exports.Prisma.FileRecordScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.VaultDocumentScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  category: 'category',
+  description: 'description',
+  status: 'status',
+  clientId: 'clientId',
+  fileName: 'fileName',
+  mimeType: 'mimeType',
+  sizeBytes: 'sizeBytes',
+  storageKey: 'storageKey',
+  uploadedBy: 'uploadedBy',
+  version: 'version',
+  tags: 'tags',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -114,9 +132,15 @@ exports.Prisma.QueryMode = {
   insensitive: 'insensitive'
 };
 
+exports.Prisma.NullsOrder = {
+  first: 'first',
+  last: 'last'
+};
+
 
 exports.Prisma.ModelName = {
-  FileRecord: 'FileRecord'
+  FileRecord: 'FileRecord',
+  VaultDocument: 'VaultDocument'
 };
 /**
  * Create the Client
@@ -166,13 +190,13 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel FileRecord {\n  id         String   @id @default(uuid())\n  clientId   String\n  fileName   String\n  storageKey String\n  mimeType   String\n  sizeBytes  BigInt\n  createdAt  DateTime @default(now())\n  updatedAt  DateTime @updatedAt\n\n  @@index([clientId, createdAt])\n  @@map(\"files\")\n}\n",
-  "inlineSchemaHash": "669a1c26dd9bd931dea9e602e390015de9a1647be8f3e3d78ae1e2f276817e75",
+  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel FileRecord {\n  id         String   @id @default(uuid())\n  clientId   String\n  fileName   String\n  storageKey String\n  mimeType   String\n  sizeBytes  BigInt\n  createdAt  DateTime @default(now())\n  updatedAt  DateTime @updatedAt\n\n  @@index([clientId, createdAt])\n  @@map(\"files\")\n}\n\n/// Admin Document Vault — structured metadata for uploaded company documents.\n/// Documents are stored in S3 (storageKey) and tracked here with rich metadata.\n/// clientId is optional: null means the document belongs to the company (admin-only).\nmodel VaultDocument {\n  id          String   @id @default(uuid())\n  title       String\n  category    String   @default(\"MISC\") // CONTRACT | BRIEF | DELIVERABLE | INVOICE | ASSET | TEMPLATE | MISC\n  description String?\n  status      String   @default(\"PUBLISHED\") // DRAFT | PUBLISHED | ARCHIVED\n  clientId    String? // null = company-wide doc\n  fileName    String\n  mimeType    String\n  sizeBytes   BigInt   @default(0)\n  storageKey  String\n  uploadedBy  String   @default(\"admin\")\n  version     Int      @default(1)\n  tags        String[] @default([])\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  @@index([category, status])\n  @@index([clientId, createdAt])\n  @@map(\"vault_documents\")\n}\n",
+  "inlineSchemaHash": "21a27e45b8c9e131bb9be6fd9148b263d63b6aa6b242bc3b6a4a1c53e7f4b389",
   "copyEngine": true
 }
 config.dirname = '/'
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"FileRecord\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clientId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"fileName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"storageKey\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"mimeType\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sizeBytes\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":\"files\"}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"FileRecord\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clientId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"fileName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"storageKey\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"mimeType\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sizeBytes\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":\"files\"},\"VaultDocument\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"category\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clientId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"fileName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"mimeType\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sizeBytes\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"storageKey\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"uploadedBy\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"version\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"tags\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":\"vault_documents\"}},\"enums\":{},\"types\":{}}")
 defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.engineWasm = {
   getRuntime: async () => require('./query_engine_bg.js'),

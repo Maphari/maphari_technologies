@@ -33,133 +33,7 @@ const projects: Array<{
   tasksOverdue: number;
   health: number;
   lastUpdate: string;
-}> = [
-  {
-    id: "PRJ-001",
-    client: "Volta Studios",
-    clientColor: "var(--accent)",
-    clientAvatar: "VS",
-    name: "Brand Identity System",
-    type: "Retainer",
-    status: "on-track",
-    phase: "Execution",
-    completion: 68,
-    owner: "Renzo Fabbri",
-    ownerAvatar: "RF",
-    startDate: "Jan 6",
-    dueDate: "Mar 28",
-    daysLeft: 33,
-    budget: 22000,
-    spent: 14800,
-    spentPct: 67,
-    blockers: [],
-    tasksTotal: 42,
-    tasksDone: 28,
-    tasksOverdue: 0,
-    health: 91,
-    lastUpdate: "Feb 22"
-  },
-  {
-    id: "PRJ-002",
-    client: "Kestrel Capital",
-    clientColor: "var(--purple)",
-    clientAvatar: "KC",
-    name: "Q1 Campaign Strategy",
-    type: "Project",
-    status: "at-risk",
-    phase: "Review",
-    completion: 54,
-    owner: "Nomsa Dlamini",
-    ownerAvatar: "ND",
-    startDate: "Jan 20",
-    dueDate: "Feb 28",
-    daysLeft: 5,
-    budget: 42000,
-    spent: 38200,
-    spentPct: 91,
-    blockers: ["Client hasn't approved campaign brief", "Invoice overdue blocking AM attention"],
-    tasksTotal: 31,
-    tasksDone: 17,
-    tasksOverdue: 4,
-    health: 44,
-    lastUpdate: "Feb 20"
-  },
-  {
-    id: "PRJ-003",
-    client: "Mira Health",
-    clientColor: "var(--blue)",
-    clientAvatar: "MH",
-    name: "Website Redesign",
-    type: "Project",
-    status: "on-track",
-    phase: "Design",
-    completion: 40,
-    owner: "Kira Bosman",
-    ownerAvatar: "KB",
-    startDate: "Feb 3",
-    dueDate: "Apr 18",
-    daysLeft: 54,
-    budget: 42000,
-    spent: 16400,
-    spentPct: 39,
-    blockers: ["Wireframe approval pending 4 days"],
-    tasksTotal: 58,
-    tasksDone: 23,
-    tasksOverdue: 1,
-    health: 74,
-    lastUpdate: "Feb 21"
-  },
-  {
-    id: "PRJ-004",
-    client: "Dune Collective",
-    clientColor: "var(--amber)",
-    clientAvatar: "DC",
-    name: "Editorial Design System",
-    type: "Retainer",
-    status: "off-track",
-    phase: "Execution",
-    completion: 29,
-    owner: "Renzo Fabbri",
-    ownerAvatar: "RF",
-    startDate: "Dec 1",
-    dueDate: "Mar 1",
-    daysLeft: 6,
-    budget: 48000,
-    spent: 51200,
-    spentPct: 107,
-    blockers: ["Scope creep - 3 unapproved revisions", "Budget exceeded by 7%", "Client communication breakdown"],
-    tasksTotal: 44,
-    tasksDone: 13,
-    tasksOverdue: 7,
-    health: 31,
-    lastUpdate: "Feb 19"
-  },
-  {
-    id: "PRJ-005",
-    client: "Okafor & Sons",
-    clientColor: "var(--amber)",
-    clientAvatar: "OS",
-    name: "Annual Report 2025",
-    type: "Project",
-    status: "on-track",
-    phase: "Final Review",
-    completion: 88,
-    owner: "Tapiwa Moyo",
-    ownerAvatar: "TM",
-    startDate: "Jan 13",
-    dueDate: "Mar 7",
-    daysLeft: 12,
-    budget: 12000,
-    spent: 10100,
-    spentPct: 84,
-    blockers: [],
-    tasksTotal: 24,
-    tasksDone: 21,
-    tasksOverdue: 0,
-    health: 96,
-    lastUpdate: "Feb 23"
-  }
-];
+}> = [];
 
 const statusConfig: Record<ProjectStatus, { color: string; label: string }> = {
   "on-track": { color: "var(--accent)", label: "On Track" },
@@ -257,7 +131,7 @@ export function ProjectPortfolioPage() {
   const atRisk = projects.filter((p) => p.status === "at-risk" || p.status === "off-track").length;
   const totalBudget = projects.reduce((s, p) => s + p.budget, 0);
   const totalSpent = projects.reduce((s, p) => s + p.spent, 0);
-  const avgCompletion = Math.round(projects.reduce((s, p) => s + p.completion, 0) / projects.length);
+  const avgCompletion = projects.length > 0 ? Math.round(projects.reduce((s, p) => s + p.completion, 0) / projects.length) : 0;
 
   return (
     <div className={cx(styles.pageBody, styles.pportRoot)}>
@@ -275,10 +149,10 @@ export function ProjectPortfolioPage() {
 
       <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Active Projects", value: projects.length.toString(), color: "var(--accent)", sub: "Across 5 clients" },
+          { label: "Active Projects", value: projects.length.toString(), color: "var(--accent)", sub: `Across ${new Set(projects.map((p) => p.client)).size} clients` },
           { label: "Projects At Risk", value: atRisk.toString(), color: atRisk > 0 ? "var(--red)" : "var(--accent)", sub: "Need attention" },
           { label: "Avg Completion", value: `${avgCompletion}%`, color: "var(--blue)", sub: "Portfolio progress" },
-          { label: "Budget Utilisation", value: `${Math.round((totalSpent / totalBudget) * 100)}%`, color: "var(--amber)", sub: `R${(totalSpent / 1000).toFixed(0)}k of R${(totalBudget / 1000).toFixed(0)}k` }
+          { label: "Budget Utilisation", value: `${totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0}%`, color: "var(--amber)", sub: `R${(totalSpent / 1000).toFixed(0)}k of R${(totalBudget / 1000).toFixed(0)}k` }
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.label === "Projects At Risk" && atRisk > 0 && styles.pportRiskStat)}>
             <div className={styles.statLabel}>{s.label}</div>

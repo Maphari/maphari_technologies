@@ -1,46 +1,105 @@
+// ════════════════════════════════════════════════════════════════════════════
+// eod-digest-page.tsx — Admin EOD Digest
+// Data : loadStandupFeedWithRefresh → GET /admin/standup/feed
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
+import { useEffect, useState } from "react";
 import { cx, styles } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import { loadStandupFeedWithRefresh, type AdminStandupEntry } from "../../../../lib/api/admin";
 
-const wraps = [
-  { name: "Thabo Mokoena", role: "Senior Designer", time: "17:45", completed: ["Brand guidelines pages 12-18", "Colour consistency review", "Print-ready asset prep"], hoursLogged: 7.5, mood: "Productive", carryOver: "Icon library audit" },
-  { name: "James Okonkwo", role: "Frontend Dev", time: "17:30", completed: ["Responsive navigation", "Safari bug fix", "Component library setup"], hoursLogged: 8.0, mood: "Focused", carryOver: "Form validation" },
-  { name: "Kira Bosman", role: "Designer", time: "17:15", completed: ["4 of 8 campaign assets", "Email header design"], hoursLogged: 7.0, mood: "Good", carryOver: "Remaining 4 campaign assets" },
-];
+export function EODDigestPage({ session }: { session: AuthSession | null }) {
+  const [entries, setEntries] = useState<AdminStandupEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export function EODDigestPage() {
+  useEffect(() => {
+    if (!session) { setLoading(false); return; }
+    let cancelled = false;
+    void loadStandupFeedWithRefresh(session).then((r) => {
+      if (cancelled) return;
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setEntries(r.data);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [session]);
+
+  const withBlockers = entries.filter(
+    (e) => e.blockers && e.blockers.toLowerCase() !== "none"
+  ).length;
+  const today = new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" });
+
   return (
     <div className={styles.pageBody}>
+
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
           <h1 className={styles.pageTitle}>EOD Digest</h1>
-          <div className={styles.pageSub}>Daily wrap-up summaries from all staff</div>
+          <div className={styles.pageSub}>Daily wrap-up summaries from all staff — {today}</div>
         </div>
       </div>
+
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Submitted", value: `${wraps.length}/6`, color: "var(--accent)" },
-          { label: "Avg Hours", value: (wraps.reduce((s, w) => s + w.hoursLogged, 0) / wraps.length).toFixed(1) + "h", color: "var(--accent)" },
-          { label: "Total Items Done", value: String(wraps.reduce((s, w) => s + w.completed.length, 0)), color: "var(--accent)" },
+          { label: "Submitted",     value: loading ? "…" : String(entries.length),  cls: "colorAccent" },
+          { label: "Total Entries", value: loading ? "…" : String(entries.length),  cls: "colorAccent" },
+          { label: "With Blockers", value: loading ? "…" : String(withBlockers),    cls: withBlockers > 0 ? "colorAmber" : "colorAccent" },
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue)} style={{ color: s.color }}>{s.value}</div>
+            <div className={cx(styles.statValue, s.cls)}>{s.value}</div>
           </div>
         ))}
       </div>
-      <div className={cx("flexCol", "gap16")}>
-        {wraps.map((w) => (
-          <article key={w.name} className={styles.card}>
-            <div className={styles.cardHd}><span className={styles.cardHdTitle}>{w.name} <span className={cx("text11", "colorMuted", "fw400")}>· {w.role} · {w.time}</span></span><span className={cx("fontMono", "text12")}>{w.hoursLogged}h</span></div>
-            <div className={styles.cardInner}>
-              <div className={cx("mb8")}><span className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700")}>Completed</span><ul className={cx("mt4")} style={{ paddingLeft: "16px" }}>{w.completed.map((c) => <li key={c} className={cx("text12")}>{c}</li>)}</ul></div>
-              <div><span className={cx("text10", "uppercase", "tracking", "colorAmber", "fw700")}>Carry Over</span><div className={cx("text12", "mt4")}>{w.carryOver}</div></div>
-            </div>
-          </article>
-        ))}
-      </div>
+
+      {loading ? (
+        <div className={cx("colorMuted", "text12", "py24")}>Loading digest…</div>
+      ) : entries.length === 0 ? (
+        <div className={cx("colorMuted", "text12", "textCenter", "py32")}>
+          No standup entries submitted today.
+        </div>
+      ) : (
+        <div className={cx("flexCol", "gap16")}>
+          {entries.map((e) => {
+            const name     = e.staff?.name ?? `Staff ${e.staffId.slice(0, 6)}`;
+            const role     = e.staff?.role ?? "Staff";
+            const initials = e.staff?.avatarInitials ?? name.slice(0, 2).toUpperCase();
+            const time     = new Date(e.createdAt).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+            const blockers = e.blockers && e.blockers.toLowerCase() !== "none" ? e.blockers : null;
+
+            return (
+              <article key={e.id} className={styles.card}>
+                <div className={styles.cardHd}>
+                  <span className={styles.cardHdTitle}>
+                    {name}
+                    <span className={cx("text11", "colorMuted", "fw400")}> · {role} · {time}</span>
+                  </span>
+                  <span className={cx("badge", "badgeMuted", "fontMono", "text10")}>{initials}</span>
+                </div>
+                <div className={styles.cardInner}>
+                  <div className={cx("mb8")}>
+                    <span className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700")}>Completed today</span>
+                    <div className={cx("text12", "mt4", "preWrap")}>{e.today}</div>
+                  </div>
+                  <div className={cx("mb8")}>
+                    <span className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700")}>Yesterday</span>
+                    <div className={cx("text12", "mt4")}>{e.yesterday}</div>
+                  </div>
+                  <div>
+                    <span className={cx("text10", "uppercase", "tracking", blockers ? "colorAmber" : "colorGreen", "fw700")}>
+                      {blockers ? "Carry Over / Blockers" : "No Blockers"}
+                    </span>
+                    {blockers ? <div className={cx("text12", "mt4")}>{blockers}</div> : null}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

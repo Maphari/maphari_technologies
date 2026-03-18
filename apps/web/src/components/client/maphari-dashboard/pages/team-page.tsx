@@ -150,7 +150,7 @@ export function TeamPage() {
             >
               <span
                 className={styles.teamMgmtDot}
-                style={{ background: idx === 0 ? "var(--accent)" : idx === 1 ? "var(--purple)" : "var(--blue)" }}
+                style={{ '--bg-color': idx === 0 ? "var(--accent)" : idx === 1 ? "var(--purple)" : "var(--blue)" } as React.CSSProperties}
               />
               <span>{item}</span>
               {item === "Members" ? <span className={styles.teamMgmtBadge}>{members.length}</span> : null}
@@ -161,7 +161,7 @@ export function TeamPage() {
           <div className={styles.teamMgmtUsageCard}>
             <div className={styles.teamMgmtUsageTitle}>Seat Usage</div>
             <div className={styles.teamMgmtTrack}>
-              <div className={styles.teamMgmtFill} style={{ width: `${seatUsagePct}%` }} />
+              <div className={styles.teamMgmtFill} style={{ '--pct': `${seatUsagePct}%` } as React.CSSProperties} />
             </div>
             <div className={styles.teamMgmtUsageMeta}>{members.length}/5 seats used</div>
           </div>
@@ -202,7 +202,7 @@ export function TeamPage() {
               <div className={cx("card", styles.teamMgmtCardPadZero)}>
                 {members.map((member) => (
                   <div key={member.id} className={styles.teamMgmtMemberRow}>
-                    <div className={styles.teamMgmtAvatar} style={{ background: member.color, color: "#050508" }}>
+                    <div className={styles.teamMgmtAvatar} style={{ '--bg-color': member.color } as React.CSSProperties}>
                       {member.av}
                     </div>
                     <div className={styles.teamMgmtGrow}>
@@ -261,9 +261,9 @@ export function TeamPage() {
                 <table className={styles.teamMgmtTable}>
                   <thead>
                     <tr>
-                      <th className={styles.teamMgmtHeadCellLeft}>Permission</th>
+                      <th scope="col" className={styles.teamMgmtHeadCellLeft}>Permission</th>
                       {members.map((member) => (
-                        <th key={member.id} className={styles.teamMgmtHeadCellCenter}>
+                        <th scope="col" key={member.id} className={styles.teamMgmtHeadCellCenter}>
                           {member.av}
                         </th>
                       ))}
@@ -300,7 +300,7 @@ export function TeamPage() {
               <div className={cx("card", styles.teamMgmtCardPadZero)}>
                 {ACTIVITY.map((entry) => (
                   <div key={`${entry.text}-${entry.time}`} className={styles.teamMgmtActivityRow}>
-                    <span className={styles.teamMgmtActivityDot} style={{ background: entry.dot }} />
+                    <span className={styles.teamMgmtActivityDot} style={{ '--bg-color': entry.dot } as React.CSSProperties} />
                     <span className={styles.teamMgmtActivityText}>{entry.text}</span>
                     <span className={styles.teamMgmtActivityTime}>{entry.time}</span>
                   </div>

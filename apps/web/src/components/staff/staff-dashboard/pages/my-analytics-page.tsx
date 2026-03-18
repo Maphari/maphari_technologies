@@ -1,70 +1,209 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
+import { Ic } from "../ui";
+import { getStaffAnalytics, type StaffAnalytics } from "@/lib/api/staff/profile";
+import type { AuthSession } from "@/lib/auth/session";
 
-const metrics = [
-  { label: "Tasks Completed (Feb)", value: "47", change: "+12%", changeDir: "up" as const },
-  { label: "Avg Task Duration", value: "3.2h", change: "-8%", changeDir: "up" as const },
-  { label: "On-Time Delivery Rate", value: "91%", change: "+3%", changeDir: "up" as const },
-  { label: "Client Satisfaction Avg", value: "4.2/5", change: "+0.3", changeDir: "up" as const },
-  { label: "Hours Logged (Feb)", value: "142h", change: "-5%", changeDir: "down" as const },
-  { label: "Utilization Rate", value: "85%", change: "+2%", changeDir: "up" as const },
-];
+type MyAnalyticsPageProps = {
+  isActive: boolean;
+  session:  AuthSession | null;
+};
 
-const weeklyBreakdown = [
-  { week: "W5", tasksCompleted: 10, hoursLogged: 36, utilization: 90 },
-  { week: "W6", tasksCompleted: 14, hoursLogged: 38, utilization: 95 },
-  { week: "W7", tasksCompleted: 11, hoursLogged: 34, utilization: 85 },
-  { week: "W8", tasksCompleted: 12, hoursLogged: 34, utilization: 85 },
-];
+type ChangeDir = "up" | "down";
 
-export function MyAnalyticsPage({ isActive }: { isActive: boolean }) {
+interface MetricCard {
+  label:     string;
+  value:     string;
+  change:    string;
+  changeDir: ChangeDir;
+}
+
+function buildMetrics(data: StaffAnalytics): MetricCard[] {
+  const hoursDir: ChangeDir   = data.hoursChange >= 0 ? "up" : "down";
+  const tasksDir: ChangeDir   = data.tasksChange >= 0 ? "up" : "down";
+  const utilDir:  ChangeDir   = data.utilizationRate >= 75 ? "up" : "down";
+
+  return [
+    {
+      label:     `Tasks Completed`,
+      value:     String(data.tasksCompleted),
+      change:    `${data.tasksChange >= 0 ? "+" : ""}${data.tasksChange}%`,
+      changeDir: tasksDir
+    },
+    {
+      label:     "On-Time Delivery Rate",
+      value:     "—",
+      change:    "N/A",
+      changeDir: "up" as const
+    },
+    {
+      label:     "Utilization Rate",
+      value:     `${data.utilizationRate}%`,
+      change:    data.utilizationRate >= 75 ? "On target" : "Below target",
+      changeDir: utilDir
+    },
+    {
+      label:     "Hours Logged",
+      value:     `${data.hoursLogged}h`,
+      change:    `${data.hoursChange >= 0 ? "+" : ""}${data.hoursChange}%`,
+      changeDir: hoursDir
+    },
+    {
+      label:     "Last Month Hours",
+      value:     `${data.hoursLastMonth}h`,
+      change:    "vs this month",
+      changeDir: "up" as const
+    },
+    {
+      label:     "Client Satisfaction",
+      value:     "—",
+      change:    "Requires survey data",
+      changeDir: "up" as const
+    },
+  ];
+}
+
+function changeDirCls(dir: ChangeDir): string {
+  return dir === "up" ? "anlChangeUp" : "anlChangeDown";
+}
+
+function utilizationBarCls(u: number): string {
+  return u >= 90 ? "anlBarFillGreen" : "anlBarFillAmber";
+}
+
+function utilizationValCls(u: number): string {
+  return u >= 90 ? "colorGreen" : "colorAmber";
+}
+
+function SkeletonMetricCard() {
+  return (
+    <div className={cx("anlMetricCard", "opacity50")}>
+      <div className={cx("anlMetricCardTop")}>
+        <div className={cx("skeleBlock11x60p")} />
+        <div className={cx("skeleBlock22x40p")} />
+      </div>
+      <div className={cx("anlMetricCardDivider")} />
+      <div className={cx("skeleBlock10x50p")} />
+    </div>
+  );
+}
+
+export function MyAnalyticsPage({ isActive, session }: MyAnalyticsPageProps) {
+  const [data, setData]       = useState<StaffAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!session || !isActive) return;
+    let cancelled = false;
+
+    setLoading(true);
+    void getStaffAnalytics(session).then((result) => {
+      if (cancelled) return;
+      if (result.data) setData(result.data);
+      setLoading(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [session, isActive]);
+
+  const metrics = useMemo(
+    () => (data ? buildMetrics(data) : []),
+    [data]
+  );
+
+  const weeklyBreakdown = data?.weeklyBreakdown ?? [];
+  const maxHours  = Math.max(...weeklyBreakdown.map((w) => w.hoursLogged), 1);
+
+  function hourPct(n: number): number {
+    return Math.round((n / maxHours) * 100);
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-analytics">
       <div className={cx("pageHeaderBar")}>
         <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Analytics</div>
         <h1 className={cx("pageTitleText")}>My Analytics</h1>
-        <p className={cx("pageSubtitleText", "mb20")}>Personal performance analytics dashboard</p>
+        <p className={cx("pageSubtitleText", "mb20")}>Personal performance analytics — derived from time entries &amp; task activity</p>
       </div>
 
-      <div className={cx("stats", "stats3", "mb28")}>
-        {metrics.slice(0, 3).map((m) => (
-          <div key={m.label} className={cx("card")}>
-            <div className={cx("text10", "colorMuted2", "uppercase", "tracking", "mb6")}>{m.label}</div>
-            <div className={cx("fontDisplay", "fw800", "text20", "colorAccent")}>{m.value}</div>
-            <div className={cx("text10", m.changeDir === "up" ? "colorGreen" : "colorRed")}>{m.change} vs last month</div>
+      {/* ── Metric cards ──────────────────────────────────────────────────── */}
+      <div className={cx("anlMetricGrid")}>
+        {loading
+          ? [1, 2, 3, 4, 5, 6].map((n) => <SkeletonMetricCard key={n} />)
+          : metrics.map((m) => (
+              <div key={m.label} className={cx("anlMetricCard")}>
+                <div className={cx("anlMetricCardTop")}>
+                  <div className={cx("anlMetricLabel")}>{m.label}</div>
+                  <div className={cx("anlMetricValue", "colorAccent")}>{m.value}</div>
+                </div>
+                <div className={cx("anlMetricCardDivider")} />
+                <div className={cx("anlMetricCardBottom")}>
+                  <span className={cx("anlChangeChip", changeDirCls(m.changeDir))}>
+                    {m.changeDir === "up" ? "↑" : "↓"} {m.change}
+                  </span>
+                  <span className={cx("anlChangeSuffix")}>vs last month</span>
+                </div>
+              </div>
+            ))
+        }
+      </div>
+
+      {/* ── Weekly breakdown ───────────────────────────────────────────────── */}
+      {!loading && weeklyBreakdown.length > 0 && (
+        <div className={cx("anlSection")}>
+          <div className={cx("anlSectionHeader")}>
+            <div className={cx("anlSectionTitle")}>Weekly Breakdown</div>
+            <span className={cx("anlSectionMeta")}>{weeklyBreakdown.length} WEEKS</span>
           </div>
-        ))}
-      </div>
 
-      <div className={cx("stats", "stats3", "mb28")}>
-        {metrics.slice(3).map((m) => (
-          <div key={m.label} className={cx("card")}>
-            <div className={cx("text10", "colorMuted2", "uppercase", "tracking", "mb6")}>{m.label}</div>
-            <div className={cx("fontDisplay", "fw800", "text20", "colorAccent")}>{m.value}</div>
-            <div className={cx("text10", m.changeDir === "up" ? "colorGreen" : "colorRed")}>{m.change} vs last month</div>
+          <div className={cx("anlWeekList")}>
+            {weeklyBreakdown.map((w, idx) => (
+              <div
+                key={w.week}
+                className={cx("anlWeekRow", idx === weeklyBreakdown.length - 1 && "anlWeekRowLast")}
+              >
+                <span className={cx("anlWeekLabel")}>{w.week}</span>
+
+                <div className={cx("anlBarsGroup")}>
+                  <div className={cx("anlBarItem")}>
+                    <span className={cx("anlBarLabel")}>Hours</span>
+                    <div className={cx("anlBarTrack")}>
+                      <div
+                        className={cx("anlBarFill", "anlBarFillBlue")} style={{ '--pct': `${hourPct(w.hoursLogged)}%` } as React.CSSProperties}
+                      />
+                    </div>
+                    <span className={cx("anlBarValue")}>{w.hoursLogged}h</span>
+                  </div>
+
+                  <div className={cx("anlBarItem")}>
+                    <span className={cx("anlBarLabel")}>Util.</span>
+                    <div className={cx("anlBarTrack")}>
+                      <div
+                        className={cx("anlBarFill", utilizationBarCls(w.utilization))}
+                        style={{ '--pct': `${w.utilization}%` } as React.CSSProperties}
+                      />
+                    </div>
+                    <span className={cx("anlBarValue", utilizationValCls(w.utilization))}>
+                      {w.utilization}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      <div className={cx("card")}>
-        <div className={cx("sectionLabel", "mb8")} style={{ padding: "16px 20px 0" }}>Weekly Breakdown</div>
-        <div className={cx("tableWrap")}>
-          <table className={cx("table")}>
-            <thead><tr><th>Week</th><th>Tasks Done</th><th>Hours</th><th>Utilization</th></tr></thead>
-            <tbody>
-              {weeklyBreakdown.map((w) => (
-                <tr key={w.week}>
-                  <td className={cx("fw600")}>{w.week}</td>
-                  <td className={cx("fontMono")}>{w.tasksCompleted}</td>
-                  <td className={cx("fontMono")}>{w.hoursLogged}h</td>
-                  <td className={cx("fontMono", "fw600", w.utilization >= 90 ? "colorGreen" : "colorAmber")}>{w.utilization}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
-      </div>
+      )}
+
+      {/* ── Empty state — no time entries yet ──────────────────────────────── */}
+      {!loading && weeklyBreakdown.length === 0 && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="trending-up" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>No activity this period</div>
+          <div className={cx("emptyStateSub")}>Log time entries to see your weekly breakdown here.</div>
+        </div>
+      )}
     </section>
   );
 }

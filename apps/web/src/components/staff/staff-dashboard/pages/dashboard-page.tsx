@@ -136,17 +136,19 @@ export function DashboardPage({
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-dashboard">
-      <div className={styles.pageHeader}>
-        <div>
-          <div className={styles.pageEyebrow}>{todayLabel} · Week {weekNumber}</div>
-          <div className={styles.pageTitle}>Good morning, {staffName}</div>
-          <div className={styles.pageSub}>
-            You have {openTasksCount} open tasks · {openConversationsCount} client messages · {overdueCount} deliverables overdue.
+      <div className={cx("pageHeaderBar")}>
+        <div className={cx("flexBetween", "gap24", "mb20")}>
+          <div>
+            <div className={cx("pageEyebrowText", "mb8")}>{todayLabel} · Week {weekNumber}</div>
+            <h1 className={cx("pageTitleText")}>Good morning, {staffName}</h1>
+            <p className={cx("pageSubtitleText")}>
+              You have {openTasksCount} open tasks · {openConversationsCount} client messages · {overdueCount} deliverables overdue.
+            </p>
           </div>
-        </div>
-        <div className={styles.pageActions}>
-          <button className={cx("btnSm", "btnGhost")} type="button" onClick={onGoTimeLog}>Log Time</button>
-          <button className={cx("btnSm", "btnAccent")} type="button" onClick={onGoKanban}>Open Board</button>
+          <div className={cx("pageActions")}>
+            <button className={cx("btnSm", "btnGhost")} type="button" onClick={onGoTimeLog}>Log Time</button>
+            <button className={cx("btnSm", "btnAccent")} type="button" onClick={onGoKanban}>Open Board</button>
+          </div>
         </div>
       </div>
 
@@ -197,7 +199,55 @@ export function DashboardPage({
               <tbody>
                 {priorityTasks.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className={styles.emptyState}>No priority tasks yet.</td>
+                    <td colSpan={5} style={{ padding: 0 }}>
+                      <div style={{ padding: "36px 20px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+                        {/* Gradient blob */}
+                        <div style={{
+                          position: "absolute", width: 240, height: 240, borderRadius: "50%",
+                          background: "radial-gradient(circle, rgba(200, 241, 53, 0.05) 0%, transparent 70%)",
+                          top: "50%", left: "50%", transform: "translate(-50%, -50%)", pointerEvents: "none",
+                        }} />
+                        <div style={{ position: "relative", zIndex: 1 }}>
+                          <div style={{
+                            width: 44, height: 44, borderRadius: 11, border: "1px solid rgba(200, 241, 53, 0.18)",
+                            background: "rgba(200, 241, 53, 0.03)", display: "grid", placeItems: "center",
+                            margin: "0 auto 14px",
+                          }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--lime)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M9 11l3 3L22 4"/>
+                              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                            </svg>
+                          </div>
+                          <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>
+                            No priority tasks yet
+                          </div>
+                          <div style={{ fontSize: "0.7rem", color: "var(--muted)", maxWidth: 260, margin: "0 auto 16px", lineHeight: 1.5 }}>
+                            High-priority tasks assigned to you will appear here. Head to the board to pick up work.
+                          </div>
+                          <button
+                            type="button"
+                            onClick={onGoKanban}
+                            style={{
+                              padding: "7px 16px",
+                              background: "var(--accent)",
+                              color: "var(--bg)",
+                              border: "none",
+                              borderRadius: 8,
+                              fontSize: "0.72rem",
+                              fontWeight: 700,
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                              cursor: "pointer",
+                              transition: "opacity 0.2s",
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+                            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+                          >
+                            Open Board
+                          </button>
+                        </div>
+                      </div>
+                    </td>
                   </tr>
                 ) : (
                   priorityTasks.map((task) => (

@@ -1,159 +1,146 @@
+// ════════════════════════════════════════════════════════════════════════════
+// revenue-forecasting-page.tsx — Admin revenue forecasting wired to real API
+// Data   : GET /invoices  (via loadAdminSnapshotWithRefresh)
+//          Paid invoices  → actual monthly revenue grouped by paidAt month
+//          Pending/Draft  → projected revenue grouped by dueAt month
+// ════════════════════════════════════════════════════════════════════════════
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import type { AdminInvoice } from "../../../../lib/api/admin/types";
+import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
 
-const months = ["Mar", "Apr", "May", "Jun", "Jul", "Aug"] as const;
-const currentMRR = 380600;
+// ── Types ─────────────────────────────────────────────────────────────────────
+type Tab = "6-month forecast" | "monthly breakdown" | "outstanding";
+const tabs: Tab[] = ["6-month forecast", "monthly breakdown", "outstanding"];
 
-type Scenario = "best" | "base" | "worst";
-
-type ClientRow = {
-  name: string;
-  color: string;
-  mrr: number;
-  retentionProb: number;
-  expansionPotential: number;
-  churnRisk: number;
-};
-
-const clients: ClientRow[] = [
-  { name: "Volta Studios", color: "var(--accent)", mrr: 28000, retentionProb: 97, expansionPotential: 8000, churnRisk: 4 },
-  { name: "Kestrel Capital", color: "var(--purple)", mrr: 21000, retentionProb: 38, expansionPotential: 0, churnRisk: 62 },
-  { name: "Mira Health", color: "var(--blue)", mrr: 21600, retentionProb: 78, expansionPotential: 10000, churnRisk: 22 },
-  { name: "Dune Collective", color: "var(--amber)", mrr: 16000, retentionProb: 18, expansionPotential: 0, churnRisk: 74 },
-  { name: "Okafor & Sons", color: "var(--amber)", mrr: 12000, retentionProb: 98, expansionPotential: 4000, churnRisk: 2 }
-];
-
-type PipelineRow = {
-  name: string;
-  source: string;
-  stage: string;
-  potential: number;
-  probability: number;
-  color: string;
-  expectedClose: (typeof months)[number];
-};
-
-const pipeline: PipelineRow[] = [
-  { name: "Horizon Media", source: "Volta referral", stage: "Proposal Sent", potential: 28000, probability: 55, color: "var(--accent)", expectedClose: "Mar" },
-  { name: "Apex Financial", source: "Okafor referral", stage: "Negotiation", potential: 45000, probability: 70, color: "var(--blue)", expectedClose: "Mar" },
-  { name: "SolarSense", source: "LinkedIn", stage: "Discovery", potential: 18000, probability: 30, color: "var(--purple)", expectedClose: "Apr" },
-  { name: "Pulse Clinics", source: "Mira referral", stage: "Discovery", potential: 22000, probability: 25, color: "var(--amber)", expectedClose: "May" }
-];
-
-type ForecastMonth = {
-  month: (typeof months)[number];
-  mrr: number;
-  retained: number;
-  expansion: number;
-  newBiz: number;
-};
-
-function buildForecast(scenario: Scenario): ForecastMonth[] {
-  const retentionMultiplier = scenario === "best" ? 1.1 : scenario === "worst" ? 0.6 : 1.0;
-  const expansionMultiplier = scenario === "best" ? 1.2 : scenario === "worst" ? 0 : 0.5;
-  const pipelineMultiplier = scenario === "best" ? 1.3 : scenario === "worst" ? 0.5 : 1.0;
-
-  return months.map((month, i) => {
-    const retainedMRR = clients.reduce((s, c) => {
-      const effectiveRetention = Math.min(c.retentionProb * retentionMultiplier, 99) / 100;
-      return s + c.mrr * effectiveRetention;
-    }, 0);
-
-    const expansionMRR = clients.reduce((s, c) => s + c.expansionPotential * expansionMultiplier * (i >= 2 ? 1 : 0), 0);
-
-    const newMRR = pipeline.reduce((s, p) => {
-      const prob = (p.probability * pipelineMultiplier) / 100;
-      return s + (p.expectedClose === month ? p.potential * prob : 0);
-    }, 0);
-
-    const monthMRR = Math.round(retainedMRR + expansionMRR + newMRR);
-    return {
-      month,
-      mrr: monthMRR,
-      retained: Math.round(retainedMRR),
-      expansion: Math.round(expansionMRR),
-      newBiz: Math.round(newMRR)
-    };
-  });
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function monthKey(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-const scenarios: Record<Scenario, ForecastMonth[]> = {
-  best: buildForecast("best"),
-  base: buildForecast("base"),
-  worst: buildForecast("worst")
-};
-
-const tabs = ["6-month forecast", "pipeline impact", "scenario planner", "assumptions"] as const;
-type Tab = (typeof tabs)[number];
-
-function scenarioCardClass(scenario: Scenario, activeScenario: Scenario): string {
-  if (activeScenario !== scenario) return "";
-  if (scenario === "best") return styles.revfScenarioBestActive;
-  if (scenario === "base") return styles.revfScenarioBaseActive;
-  return styles.revfScenarioWorstActive;
+function monthLabel(key: string): string {
+  if (!key) return "";
+  const [year, month] = key.split("-");
+  return new Date(Number(year), Number(month) - 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
 }
 
-function progressToneClass(value: string): string {
-  if (value === "var(--red)") return styles.revfProgressRed;
-  if (value === "var(--amber)") return styles.revfProgressAmber;
-  if (value === "var(--blue)") return styles.revfProgressBlue;
-  if (value === "var(--purple)") return styles.revfProgressPurple;
-  if (value === "var(--muted)") return styles.revfProgressMuted;
-  return styles.revfProgressAccent;
+function centsToK(cents: number): string {
+  return `R${(cents / 100_000).toFixed(0)}k`;
 }
 
-function sparkFill(scenario: Scenario, isActive: boolean): string {
-  if (scenario === "best") return isActive ? "color-mix(in srgb, var(--accent) 75%, transparent)" : "color-mix(in srgb, var(--accent) 35%, transparent)";
-  if (scenario === "base") return isActive ? "color-mix(in srgb, var(--blue) 75%, transparent)" : "color-mix(in srgb, var(--blue) 35%, transparent)";
-  return isActive ? "color-mix(in srgb, var(--red) 75%, transparent)" : "color-mix(in srgb, var(--red) 35%, transparent)";
+function buildMonthBuckets(invoices: AdminInvoice[]) {
+  const actual: Record<string, number> = {};   // paid invoices by paidAt month
+  const projected: Record<string, number> = {}; // open/draft by dueAt month
+
+  for (const inv of invoices) {
+    if (inv.status === "PAID" && inv.paidAt) {
+      const key = monthKey(inv.paidAt);
+      if (key) actual[key] = (actual[key] ?? 0) + inv.amountCents;
+    }
+    if ((inv.status === "ISSUED" || inv.status === "DRAFT" || inv.status === "OVERDUE") && inv.dueAt) {
+      const key = monthKey(inv.dueAt);
+      if (key) projected[key] = (projected[key] ?? 0) + inv.amountCents;
+    }
+  }
+
+  // Build a sorted month list spanning last 3 months + next 5 months from today
+  const now = new Date();
+  const keys = new Set<string>();
+  for (let offset = -3; offset <= 5; offset++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    keys.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  }
+  // Also include any key from real data
+  [...Object.keys(actual), ...Object.keys(projected)].forEach((k) => keys.add(k));
+
+  return [...keys]
+    .sort()
+    .map((key) => ({
+      key,
+      label: monthLabel(key),
+      actual: actual[key] ?? 0,
+      projected: projected[key] ?? 0
+    }));
 }
 
-function dotClass(value: string): string {
-  if (value === "var(--red)") return styles.revfDotRed;
-  if (value === "var(--blue)") return styles.revfDotBlue;
-  if (value === "var(--amber)") return styles.revfDotAmber;
-  if (value === "var(--purple)") return styles.revfDotPurple;
-  if (value === "var(--muted)") return styles.revfDotMuted;
-  return styles.revfDotAccent;
+// ── Props ─────────────────────────────────────────────────────────────────────
+interface Props {
+  session: AuthSession | null;
+  onNotify: (tone: "success" | "error" | "warning" | "info", msg: string) => void;
 }
 
-export function RevenueForecastingPage() {
+// ── Component ─────────────────────────────────────────────────────────────────
+export function RevenueForecastingPage({ session, onNotify }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("6-month forecast");
-  const [activeScenario, setActiveScenario] = useState<Scenario>("base");
+  const [invoices, setInvoices] = useState<AdminInvoice[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const forecast = scenarios[activeScenario];
-  const forecastEndMRR = forecast[forecast.length - 1].mrr;
-  const mrrGrowth = Math.round(((forecastEndMRR - currentMRR) / currentMRR) * 100);
-  const weightedPipelineMRR = Math.round(pipeline.reduce((s, p) => s + p.potential * (p.probability / 100), 0));
-  const maxBar = Math.max(...Object.values(scenarios).flatMap((s) => s.map((m) => m.mrr)));
+  useEffect(() => {
+    if (!session) { setLoading(false); return; }
+    let cancelled = false;
+    void (async () => {
+      const r = await loadAdminSnapshotWithRefresh(session);
+      if (cancelled) return;
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) onNotify("error", r.error.message);
+      setInvoices(r.data?.invoices ?? []);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [session, onNotify]);
+
+  const months = useMemo(() => buildMonthBuckets(invoices), [invoices]);
+
+  // KPI summary
+  const totalPaid = useMemo(() => invoices.filter((i) => i.status === "PAID").reduce((s, i) => s + i.amountCents, 0), [invoices]);
+  const totalOutstanding = useMemo(
+    () => invoices.filter((i) => i.status === "ISSUED" || i.status === "OVERDUE").reduce((s, i) => s + i.amountCents, 0),
+    [invoices]
+  );
+  const totalDraft = useMemo(() => invoices.filter((i) => i.status === "DRAFT").reduce((s, i) => s + i.amountCents, 0), [invoices]);
+  const overdueInvoices = useMemo(() => invoices.filter((i) => i.status === "OVERDUE"), [invoices]);
+
+  // Future 6-month projection window
+  const now = new Date();
+  const futureKeys = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const forecastMonths = months.filter((m) => futureKeys.includes(m.key));
+  const maxForecastBar = Math.max(...forecastMonths.map((m) => m.actual + m.projected), 1);
+
+  const outstandingInvoices = invoices.filter((i) => i.status === "ISSUED" || i.status === "OVERDUE");
 
   return (
     <div className={cx(styles.pageBody, styles.revfRoot)}>
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>ADMIN / REPORTING &amp; INTELLIGENCE</div>
           <h1 className={styles.pageTitle}>Revenue Forecasting</h1>
-          <div className={styles.pageSub}>6-month MRR projection - Pipeline impact - Retention-weighted scenarios</div>
+          <div className={styles.pageSub}>6-month MRR projection - Invoice pipeline - Collected vs outstanding</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnAccent")}>Export Forecast</button>
         </div>
       </div>
 
+      {/* ── KPI cards ── */}
       <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Current MRR", value: `R${(currentMRR / 1000).toFixed(0)}k`, color: "var(--accent)", sub: "Feb 2026 baseline" },
-          { label: "Forecast MRR (Aug)", value: `R${(forecastEndMRR / 1000).toFixed(0)}k`, color: forecastEndMRR > currentMRR ? "var(--accent)" : "var(--red)", sub: `${mrrGrowth >= 0 ? "+" : ""}${mrrGrowth}% - ${activeScenario} case` },
-          { label: "Weighted Pipeline", value: `R${(weightedPipelineMRR / 1000).toFixed(0)}k`, color: "var(--blue)", sub: "Probability-adjusted new MRR" },
-          {
-            label: "MRR at Churn Risk",
-            value: `R${(clients.filter((c) => c.churnRisk >= 50).reduce((s, c) => s + c.mrr, 0) / 1000).toFixed(0)}k`,
-            color: "var(--red)",
-            sub: "From clients at risk"
-          }
+          { label: "Total Collected", value: centsToK(totalPaid), color: "var(--accent)", sub: "Paid invoices" },
+          { label: "Outstanding", value: centsToK(totalOutstanding), color: totalOutstanding > 0 ? "var(--amber)" : "var(--accent)", sub: "Issued but unpaid" },
+          { label: "Draft Pipeline", value: centsToK(totalDraft), color: "var(--blue)", sub: "Not yet issued" },
+          { label: "Overdue", value: String(overdueInvoices.length), color: overdueInvoices.length > 0 ? "var(--red)" : "var(--accent)", sub: "Past due date" }
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}>{s.label}</div>
@@ -163,75 +150,77 @@ export function RevenueForecastingPage() {
         ))}
       </div>
 
+      {/* ── Tab bar ── */}
       <div className={styles.filterRow}>
-        <select title="View" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
-          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
+        <select
+          title="View"
+          value={activeTab}
+          onChange={(e) => setActiveTab(e.target.value as Tab)}
+          className={styles.filterSelect}
+        >
+          {tabs.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
-        {(activeTab === "6-month forecast" || activeTab === "scenario planner") && (
-          <select title="Scenario" value={activeScenario} onChange={e => setActiveScenario(e.target.value as Scenario)} className={styles.filterSelect}>
-            {(["best", "base", "worst"] as const).map(s => <option key={s} value={s}>{s} case</option>)}
-          </select>
-        )}
       </div>
 
-      {activeTab === "6-month forecast" && (
+      {loading && (
+        <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading invoices…</div>
+      )}
+
+      {/* ── 6-month forecast ── */}
+      {!loading && activeTab === "6-month forecast" && (
         <div className={styles.revfStack20}>
           <div className={styles.revfChartCard}>
-            <div className={styles.revfSectionTitle}>MRR Forecast - {activeScenario.charAt(0).toUpperCase() + activeScenario.slice(1)} Case</div>
-            <div className={cx("text11", "colorMuted", "mb24")}>Stacked: retained (lime) + expansion (blue) + new business (purple)</div>
-            <div className={styles.revfBarRow}>
-                  <div className={styles.revfBarCol}>
-                    <div className={cx("fontMono", "text10", "colorMuted")}>R{(currentMRR / 1000).toFixed(0)}k</div>
-                    <svg className={styles.revfNowBar} viewBox="0 0 10 140" preserveAspectRatio="none" aria-hidden="true">
-                      <rect x="0" y={140 - (currentMRR / maxBar) * 140} width="10" height={(currentMRR / maxBar) * 140} className={styles.revfNowRect} />
-                    </svg>
-                <span className={styles.revfBarMonth}>NOW</span>
-              </div>
-              {forecast.map((m) => {
-                const totalH = (m.mrr / maxBar) * 140;
-                const retH = (m.retained / m.mrr) * totalH;
-                const expH = (m.expansion / m.mrr) * totalH;
-                const newH = totalH - retH - expH;
-                const scenColor = activeScenario === "best" ? "var(--accent)" : activeScenario === "base" ? "var(--blue)" : "var(--red)";
-                return (
-                  <div key={m.month} className={styles.revfBarCol}>
-                    <div className={cx("fontMono", "text10", colorClass(scenColor))}>R{(m.mrr / 1000).toFixed(0)}k</div>
-                    <svg className={styles.revfStackedBar} viewBox="0 0 10 140" preserveAspectRatio="none" aria-hidden="true">
-                      {newH > 0 && <rect x="0" y={140 - newH} width="10" height={newH} className={styles.revfNewBiz} />}
-                      {expH > 0 && <rect x="0" y={140 - newH - expH} width="10" height={expH} className={styles.revfExpansion} />}
-                      <rect x="0" y={140 - totalH} width="10" height={retH} className={styles.revfRetained} />
-                    </svg>
-                    <span className={styles.revfBarMonth}>{m.month}</span>
-                  </div>
-                );
-              })}
+            <div className={styles.revfSectionTitle}>6-Month Revenue Forecast</div>
+            <div className={cx("text11", "colorMuted", "mb24")}>
+              Lime bars = collected (PAID) · Blue bars = projected (ISSUED/DRAFT)
             </div>
+            {forecastMonths.length === 0 ? (
+              <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No invoice data for forecast window.</div>
+            ) : (
+              <div className={styles.revfBarRow}>
+                {forecastMonths.map((m) => {
+                  const totalH = ((m.actual + m.projected) / maxForecastBar) * 140;
+                  const actH = m.actual > 0 ? (m.actual / (m.actual + m.projected || 1)) * totalH : 0;
+                  const projH = totalH - actH;
+                  return (
+                    <div key={m.key} className={styles.revfBarCol}>
+                      <div className={cx("fontMono", "text10", "colorAccent")}>
+                        {centsToK(m.actual + m.projected)}
+                      </div>
+                      <svg className={styles.revfStackedBar} viewBox="0 0 10 140" preserveAspectRatio="none" aria-hidden="true">
+                        {projH > 0 && (
+                          <rect x="0" y={140 - projH} width="10" height={projH} className={styles.revfExpansion} />
+                        )}
+                        {actH > 0 && (
+                          <rect x="0" y={140 - actH - projH} width="10" height={actH} className={styles.revfRetained} />
+                        )}
+                      </svg>
+                      <span className={styles.revfBarMonth}>{m.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
+          {/* ── Table ── */}
           <div className={styles.revfTableCard}>
             <div className={cx(styles.revfTableHead, "fontMono", "text10", "colorMuted", "uppercase")}>
-              {"Month|Total MRR|Retained|Expansion|New Biz|Growth".split("|").map((h) => <span key={h}>{h}</span>)}
+              {"Month|Collected|Projected|Total|Invoices".split("|").map((h) => <span key={h}>{h}</span>)}
             </div>
-            <div className={styles.revfNowRow}>
-              <span className={cx("fontMono", "text11", "colorMuted")}>NOW</span>
-              <span className={cx("fontMono", "fw700", "colorAccent")}>R{(currentMRR / 1000).toFixed(0)}k</span>
-              <span className={cx("text11", "colorMuted")}>-</span>
-              <span className={cx("text11", "colorMuted")}>-</span>
-              <span className={cx("text11", "colorMuted")}>-</span>
-              <span className={cx("text11", "colorMuted")}>Baseline</span>
-            </div>
-            {forecast.map((m, i) => {
-              const prevMRR = i === 0 ? currentMRR : forecast[i - 1].mrr;
-              const growth = Math.round(((m.mrr - prevMRR) / prevMRR) * 100);
-              const scenColor = activeScenario === "best" ? "var(--accent)" : activeScenario === "base" ? "var(--blue)" : "var(--red)";
+            {forecastMonths.map((m, i) => {
+              const total = m.actual + m.projected;
+              const invoiceCount = invoices.filter((inv) => {
+                const dateField = inv.status === "PAID" ? inv.paidAt : inv.dueAt;
+                return monthKey(dateField) === m.key;
+              }).length;
               return (
-                <div key={m.month} className={cx(styles.revfTableRow, i < forecast.length - 1 && "borderB")}>
-                  <span className={cx("fontMono", "fw700")}>{m.month}</span>
-                  <span className={cx("fontMono", "fw800", "text14", colorClass(scenColor))}>R{(m.mrr / 1000).toFixed(0)}k</span>
-                  <span className={cx("fontMono", "colorMuted")}>R{(m.retained / 1000).toFixed(0)}k</span>
-                  <span className={cx("fontMono", "colorBlue")}>{m.expansion > 0 ? `+R${(m.expansion / 1000).toFixed(0)}k` : "-"}</span>
-                  <span className={cx("fontMono", "colorPurple")}>{m.newBiz > 0 ? `+R${(m.newBiz / 1000).toFixed(0)}k` : "-"}</span>
-                  <span className={cx("text12", growth >= 0 ? "colorAccent" : "colorRed")}>{growth >= 0 ? "^" : "v"} {Math.abs(growth)}%</span>
+                <div key={m.key} className={cx(styles.revfTableRow, i < forecastMonths.length - 1 && "borderB")}>
+                  <span className={cx("fontMono", "fw700")}>{m.label}</span>
+                  <span className={cx("fontMono", "colorAccent")}>{m.actual > 0 ? centsToK(m.actual) : "—"}</span>
+                  <span className={cx("fontMono", "colorBlue")}>{m.projected > 0 ? centsToK(m.projected) : "—"}</span>
+                  <span className={cx("fontMono", "fw800", "text14", "colorAccent")}>{total > 0 ? centsToK(total) : "—"}</span>
+                  <span className={cx("text12", "colorMuted")}>{invoiceCount}</span>
                 </div>
               );
             })}
@@ -239,54 +228,44 @@ export function RevenueForecastingPage() {
         </div>
       )}
 
-      {activeTab === "pipeline impact" && (
+      {/* ── Monthly breakdown ── */}
+      {!loading && activeTab === "monthly breakdown" && (
         <div className={styles.revfStack14}>
-          <div className={styles.revfPipelineSummary}>
-            <div>
-              <div className={styles.revfSummaryTitle}>Total Pipeline Value</div>
-              <div className={cx("text11", "colorMuted")}>Probability-weighted new MRR</div>
-            </div>
-            <div className={styles.revfSummaryValue}>R{(weightedPipelineMRR / 1000).toFixed(0)}k</div>
-          </div>
-
-          {pipeline.map((p) => {
-            const weighted = Math.round(p.potential * (p.probability / 100));
+          {months.length === 0 && (
+            <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No invoice data available.</div>
+          )}
+          {months.filter((m) => m.actual + m.projected > 0).map((m) => {
+            const total = m.actual + m.projected;
+            const actPct = total > 0 ? Math.round((m.actual / total) * 100) : 0;
             return (
-              <div key={p.name} className={styles.revfPipelineCard}>
+              <div key={m.key} className={styles.revfPipelineCard}>
                 <div className={styles.revfPipelineGrid}>
                   <div>
-                    <div className={cx(styles.revfPipelineName, colorClass(p.color))}>{p.name}</div>
-                    <div className={cx("text10", "colorMuted")}>{p.source}</div>
+                    <div className={cx(styles.revfPipelineName, "colorAccent")}>{m.label}</div>
+                    <div className={cx("text10", "colorMuted")}>
+                      {invoices.filter((i) => monthKey(i.status === "PAID" ? i.paidAt : i.dueAt) === m.key).length} invoice(s)
+                    </div>
                   </div>
                   <div>
-                    <div className={styles.revfMiniLabel}>Stage</div>
-                    <span className={cx(styles.revfStageTag, p.stage === "Negotiation" ? styles.revfStageAmber : styles.revfStageBlue)}>{p.stage}</span>
+                    <div className={styles.revfMiniLabel}>Collected</div>
+                    <div className={cx("fontMono", "fw700", "colorAccent")}>{m.actual > 0 ? centsToK(m.actual) : "—"}</div>
+                  </div>
+                  <div>
+                    <div className={styles.revfMiniLabel}>Projected</div>
+                    <div className={cx("fontMono", "fw700", "colorBlue")}>{m.projected > 0 ? centsToK(m.projected) : "—"}</div>
                   </div>
                   <div>
                     <div className={styles.revfProbHead}>
-                      <span className={styles.revfMiniLabel}>Close probability</span>
-                      <span className={cx("fontMono", "text11", p.probability >= 60 ? "colorAccent" : "colorAmber")}>{p.probability}%</span>
+                      <span className={styles.revfMiniLabel}>Collected rate</span>
+                      <span className={cx("fontMono", "text11", actPct >= 60 ? "colorAccent" : "colorAmber")}>{actPct}%</span>
                     </div>
                     <progress
-                      className={cx(styles.revfProbTrack, p.probability >= 60 ? styles.revfProgressAccent : styles.revfProgressAmber)}
+                      className={cx(styles.revfProbTrack, actPct >= 60 ? styles.revfProgressAccent : styles.revfProgressAmber)}
                       max={100}
-                      value={p.probability}
-                      aria-label={`${p.name} close probability ${p.probability}%`}
+                      value={actPct}
+                      aria-label={`${m.label} collected rate ${actPct}%`}
                     />
                   </div>
-                  <div className={styles.revfCenterCol}>
-                    <div className={styles.revfTinyLabel}>Potential MRR</div>
-                    <div className={cx("fontMono", "fw700", "colorAccent")}>R{(p.potential / 1000).toFixed(0)}k</div>
-                  </div>
-                  <div className={styles.revfCenterCol}>
-                    <div className={styles.revfTinyLabel}>Weighted</div>
-                    <div className={cx("fontMono", "fw700", "colorBlue")}>R{(weighted / 1000).toFixed(0)}k</div>
-                  </div>
-                  <div className={styles.revfCenterCol}>
-                    <div className={styles.revfTinyLabel}>Expected Close</div>
-                    <div className={cx("fontMono", "fw700")}>{p.expectedClose} 2026</div>
-                  </div>
-                  <button type="button" className={cx("btnSm", "btnGhost")}>View</button>
                 </div>
               </div>
             );
@@ -294,91 +273,51 @@ export function RevenueForecastingPage() {
         </div>
       )}
 
-      {activeTab === "scenario planner" && (
-        <div className={styles.revfScenarioGrid}>
-          {(["best", "base", "worst"] as const).map((scenario) => {
-            const sc = scenarios[scenario];
-            const endMRR = sc[sc.length - 1].mrr;
-            const growth = Math.round(((endMRR - currentMRR) / currentMRR) * 100);
-            const color = scenario === "best" ? "var(--accent)" : scenario === "base" ? "var(--blue)" : "var(--red)";
-            const desc = {
-              best: "Retain all clients, expand Mira/Volta, close top 2 deals",
-              base: "Kestrel/Dune churn handled, close Apex on schedule",
-              worst: "Both at-risk clients churn, pipeline delays, no expansion"
-            }[scenario];
-            const revenue = sc.reduce((s, m) => s + m.mrr, 0);
-            return (
-              <div
-                key={scenario}
-                role="button"
-                tabIndex={0}
-                className={cx(styles.revfScenarioCard, scenarioCardClass(scenario, activeScenario))}
-                onClick={() => setActiveScenario(scenario)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setActiveScenario(scenario);
-                  }
-                }}
-              >
-                <div className={cx(styles.revfScenarioTitle, colorClass(color))}>{scenario} Case</div>
-                <div className={styles.revfScenarioDesc}>{desc}</div>
-                <div className={cx(styles.revfScenarioValue, colorClass(color))}>R{(endMRR / 1000).toFixed(0)}k</div>
-                <div className={styles.revfScenarioSub}>MRR by Aug 2026 - {growth >= 0 ? "+" : ""}{growth}% vs today</div>
-                <div className={styles.revfSparkBars}>
-                  {sc.map((m, i) => (
-                    <svg key={i} className={styles.revfSparkBar} viewBox="0 0 10 60" preserveAspectRatio="none" aria-hidden="true">
-                      <rect
-                        x="0"
-                        y={60 - (m.mrr / endMRR) * 60}
-                        width="10"
-                        height={(m.mrr / endMRR) * 60}
-                        fill={sparkFill(scenario, activeScenario === scenario)}
-                      />
-                    </svg>
-                  ))}
-                </div>
-                <div className={styles.revfScenarioFoot}>
-                  <span>6-month revenue</span>
-                  <span className={cx(styles.revfScenarioRevenue, colorClass(color))}>R{(revenue / 1000000).toFixed(2)}m</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {activeTab === "assumptions" && (
-        <div className={cx("grid2", "gap20")}>
-          <div className={cx("card", "p24")}>
-            <div className={styles.revfSectionTitle}>Retention Assumptions</div>
-            {clients.map((c) => (
-              <div key={c.name} className={styles.revfAssumeRow}>
-                <div className={cx(styles.revfColorDot, dotClass(c.color))} />
-                <span className={cx(styles.revfAssumeName, colorClass(c.color))}>{c.name.split(" ")[0]}</span>
-                <progress
-                  className={cx(styles.revfAssumeTrack, c.retentionProb >= 70 ? styles.revfProgressAccent : c.retentionProb >= 40 ? styles.revfProgressAmber : styles.revfProgressRed)}
-                  max={100}
-                  value={c.retentionProb}
-                  aria-label={`${c.name} retention probability ${c.retentionProb}%`}
-                />
-                <span className={cx(styles.revfAssumePct, c.retentionProb >= 70 ? "colorAccent" : c.retentionProb >= 40 ? "colorAmber" : "colorRed")}>{c.retentionProb}%</span>
-              </div>
-            ))}
-          </div>
-          <div className={cx("card", "p24")}>
-            <div className={styles.revfSectionTitle}>Expansion Potential</div>
-            {clients.map((c) => (
-              <div key={c.name} className={styles.revfExpandRow}>
-                <span className={cx(styles.revfAssumeName, colorClass(c.color))}>{c.name.split(" ")[0]}</span>
-                <span className={cx("fontMono", c.expansionPotential > 0 ? "colorAccent" : "colorMuted")}>{c.expansionPotential > 0 ? `+R${(c.expansionPotential / 1000).toFixed(0)}k/mo` : "-"}</span>
-              </div>
-            ))}
-            <div className={styles.revfModelNote}>
-              <div className={styles.revfModelTitle}>Model Notes</div>
-              <div className={styles.revfModelBody}>Retention probability derived from client health scorecard churn risk. Expansion revenue modelled from AM notes and growth signals. Pipeline probability from CRM stage data.</div>
+      {/* ── Outstanding ── */}
+      {!loading && activeTab === "outstanding" && (
+        <div className={styles.revfStack14}>
+          <div className={styles.revfPipelineSummary}>
+            <div>
+              <div className={styles.revfSummaryTitle}>Outstanding Receivables</div>
+              <div className={cx("text11", "colorMuted")}>Issued + overdue invoices</div>
             </div>
+            <div className={styles.revfSummaryValue}>{centsToK(totalOutstanding)}</div>
           </div>
+          {outstandingInvoices.length === 0 && (
+            <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No outstanding invoices.</div>
+          )}
+          {outstandingInvoices.map((inv) => (
+            <div key={inv.id} className={styles.revfPipelineCard}>
+              <div className={styles.revfPipelineGrid}>
+                <div>
+                  <div className={cx(styles.revfPipelineName, inv.status === "OVERDUE" ? "colorRed" : "colorAccent")}>
+                    {inv.number}
+                  </div>
+                  <div className={cx("text10", "colorMuted")}>Client: {inv.clientId}</div>
+                </div>
+                <div>
+                  <div className={styles.revfMiniLabel}>Status</div>
+                  <span className={cx(
+                    styles.revfStageTag,
+                    inv.status === "OVERDUE" ? styles.revfStageAmber : styles.revfStageBlue
+                  )}>
+                    {inv.status}
+                  </span>
+                </div>
+                <div className={styles.revfCenterCol}>
+                  <div className={styles.revfTinyLabel}>Amount</div>
+                  <div className={cx("fontMono", "fw700", "colorAccent")}>{centsToK(inv.amountCents)}</div>
+                </div>
+                <div className={styles.revfCenterCol}>
+                  <div className={styles.revfTinyLabel}>Due</div>
+                  <div className={cx("fontMono", inv.status === "OVERDUE" ? "colorRed" : "")}>
+                    {inv.dueAt ? new Date(inv.dueAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" }) : "—"}
+                  </div>
+                </div>
+                <button type="button" className={cx("btnSm", "btnGhost")}>Chase</button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

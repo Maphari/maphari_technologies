@@ -3,9 +3,24 @@ import type { ApiResponse } from "@maphari/contracts";
 import { registerServiceRateLimit, ServiceMetrics } from "@maphari/platform";
 import { registerInvoiceRoutes } from "./routes/invoices.js";
 import { registerPaymentRoutes } from "./routes/payments.js";
+import { registerPayFastRoutes } from "./routes/payfast.js";
+import { registerExpenseRoutes } from "./routes/expenses.js";
+import { registerVendorRoutes } from "./routes/vendors.js";
+import { registerLoyaltyRoutes } from "./routes/loyalty.js";
+import { registerInstallmentRoutes } from "./routes/installments.js";
 
 export async function createBillingApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
+
+  // Parse PayFast ITN webhooks (sent as application/x-www-form-urlencoded)
+  app.addContentTypeParser("application/x-www-form-urlencoded", { parseAs: "string" }, (_req, body, done) => {
+    try {
+      const parsed = Object.fromEntries(new URLSearchParams(body as string));
+      done(null, parsed);
+    } catch (err) {
+      done(err as Error);
+    }
+  });
   const metrics = new ServiceMetrics();
   const publicLimit = Number(process.env.SERVICE_RATE_LIMIT_PUBLIC_MAX ?? 120);
   const protectedLimit = Number(process.env.SERVICE_RATE_LIMIT_PROTECTED_MAX ?? 240);
@@ -52,6 +67,11 @@ export async function createBillingApp(): Promise<FastifyInstance> {
 
   await registerInvoiceRoutes(app);
   await registerPaymentRoutes(app);
+  await registerPayFastRoutes(app);
+  await registerExpenseRoutes(app);
+  await registerVendorRoutes(app);
+  await registerLoyaltyRoutes(app);
+  await registerInstallmentRoutes(app);
 
   return app;
 }

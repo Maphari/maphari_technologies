@@ -57,13 +57,19 @@ describe("billing tenant scope integration", () => {
     const createSpy = vi.spyOn(prisma.invoice, "create").mockResolvedValue({
       id: "inv-1",
       clientId: "550e8400-e29b-41d4-a716-446655440221",
+      projectId: null,
       number: "INV-001",
+      description: null,
+      lineItems: null,
+      billingPeriod: null,
+      costCenter: null,
       amountCents: BigInt(19900),
       currency: "USD",
       status: "ISSUED",
       issuedAt: new Date(),
       dueAt: null,
       paidAt: null,
+      pdfFileId: null,
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -100,13 +106,19 @@ describe("billing tenant scope integration", () => {
     vi.spyOn(prisma.invoice, "findUnique").mockResolvedValue({
       id: "inv-2",
       clientId: "550e8400-e29b-41d4-a716-446655440333",
+      projectId: null,
       number: "INV-002",
+      description: null,
+      lineItems: null,
+      billingPeriod: null,
+      costCenter: null,
       amountCents: BigInt(9900),
       currency: "USD",
       status: "ISSUED",
       issuedAt: new Date(),
       dueAt: null,
       paidAt: null,
+      pdfFileId: null,
       createdAt: new Date(),
       updatedAt: new Date()
     });

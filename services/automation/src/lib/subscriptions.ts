@@ -23,7 +23,8 @@ export type AutomationJobStatus =
   | "succeeded"
   | "failed"
   | "dead-lettered"
-  | "skipped-duplicate";
+  | "skipped-duplicate"
+  | "acknowledged";
 
 export interface AutomationJobRecord {
   jobId: string;
@@ -82,10 +83,12 @@ export const automationTopics = [
   EventTopics.fileUploaded,
   EventTopics.invoiceIssued,
   EventTopics.invoicePaid,
-  EventTopics.invoiceOverdue
+  EventTopics.invoiceOverdue,
+  EventTopics.taskAssigned,
+  EventTopics.appointmentCreated
 ] as const;
 
-function resolveWorkflow(topic: string): string {
+export function resolveWorkflow(topic: string): string {
   if (topic === EventTopics.bookingCreated) return "marketing.booking-automation-workflow";
   if (topic === EventTopics.proposalSigned) return "sales.proposal-conversion-workflow";
   if (topic === EventTopics.onboardingSubmitted) return "onboarding.submission-workflow";
@@ -109,6 +112,8 @@ function resolveWorkflow(topic: string): string {
   if (topic === EventTopics.invoiceIssued) return "billing.invoice-issue-workflow";
   if (topic === EventTopics.invoicePaid) return "billing.invoice-settlement-workflow";
   if (topic === EventTopics.invoiceOverdue) return "billing.invoice-overdue-workflow";
+  if (topic === EventTopics.taskAssigned) return "ops.task-assignment-workflow";
+  if (topic === EventTopics.appointmentCreated) return "ops.appointment-confirmation-workflow";
   return "generic.domain-workflow";
 }
 
@@ -140,7 +145,9 @@ const topicValidators: Partial<Record<(typeof automationTopics)[number], (payloa
   [EventTopics.fileUploaded]: (payload) => requireObjectPayload(payload),
   [EventTopics.invoiceIssued]: (payload) => requireObjectPayloadWithField(payload, "invoiceId"),
   [EventTopics.invoicePaid]: (payload) => requireObjectPayloadWithField(payload, "invoiceId"),
-  [EventTopics.invoiceOverdue]: (payload) => requireObjectPayloadWithField(payload, "invoiceId")
+  [EventTopics.invoiceOverdue]: (payload) => requireObjectPayloadWithField(payload, "invoiceId"),
+  [EventTopics.taskAssigned]: (payload) => requireObjectPayloadWithFields(payload, ["taskId", "assignedToId"]),
+  [EventTopics.appointmentCreated]: (payload) => requireObjectPayloadWithField(payload, "bookingId")
 };
 
 const knownTopics = new Set<string>(automationTopics);
@@ -671,6 +678,54 @@ export function createAutomationEventHandler(
           eventId: event.eventId,
           payload: event.payload
         });
+      }
+
+      // ── Task assigned → notify assigned staff member ──────────────────────
+      if (event.topic === EventTopics.taskAssigned) {
+        // Notify the assigned staff member via email
+        await adapters.notifications.send({
+          channel: "email",
+          template: "task-assigned-notification",
+          eventId: event.eventId,
+          payload: event.payload
+        });
+        // Internal dashboard notification
+        await adapters.notifications.send({
+          channel: "internal",
+          template: "task-assigned-notification",
+          eventId: event.eventId,
+          payload: event.payload
+        });
+      }
+
+      // ── Appointment created → notify attendees ────────────────────────────
+      if (event.topic === EventTopics.appointmentCreated) {
+        // Confirmation email to attendees
+        await adapters.notifications.send({
+          channel: "email",
+          template: "appointment-confirmation",
+          eventId: event.eventId,
+          payload: event.payload
+        });
+        // Internal team notification
+        await adapters.notifications.send({
+          channel: "internal",
+          template: "appointment-created-notification",
+          eventId: event.eventId,
+          payload: event.payload
+        });
+        // 24h reminder before appointment
+        const appointmentPayload = event.payload as { startsAt?: string };
+        if (appointmentPayload.startsAt) {
+          const reminderAt = new Date(new Date(appointmentPayload.startsAt).getTime() - 24 * 60 * 60 * 1000).toISOString();
+          await adapters.notifications.send({
+            channel: "email",
+            template: "appointment-reminder-24h",
+            eventId: event.eventId,
+            payload: event.payload,
+            scheduleAt: reminderAt
+          });
+        }
       }
     }
 

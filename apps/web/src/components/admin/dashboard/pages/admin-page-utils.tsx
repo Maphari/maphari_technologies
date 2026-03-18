@@ -10,12 +10,14 @@ export function EmptyState({
   title,
   subtitle,
   compact = false,
-  variant = "data"
+  variant = "data",
+  action,
 }: {
   title: string;
   subtitle?: string;
   compact?: boolean;
   variant?: "data" | "message" | "security";
+  action?: { label: string; onClick: () => void };
 }) {
   return (
     <div className={`${styles.emptyState} ${compact ? styles.emptyStateCompact : ""}`}>
@@ -42,6 +44,30 @@ export function EmptyState({
       </div>
       <div className={styles.emptyTitle}>{title}</div>
       {subtitle ? <div className={styles.emptySub}>{subtitle}</div> : null}
+      {action && (
+        <button
+          type="button"
+          onClick={action.onClick}
+          style={{
+            marginTop: 12,
+            padding: "8px 18px",
+            background: "var(--accent)",
+            color: "var(--bg)",
+            border: "none",
+            borderRadius: 8,
+            fontSize: "0.76rem",
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            cursor: "pointer",
+            transition: "opacity 0.2s",
+          }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+          onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+        >
+          {action.label}
+        </button>
+      )}
     </div>
   );
 }

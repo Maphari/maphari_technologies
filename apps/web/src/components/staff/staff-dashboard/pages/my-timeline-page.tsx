@@ -1,36 +1,124 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { cx } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import { getStaffProjects } from "../../../../lib/api/staff/projects";
+import { getStaffClients } from "../../../../lib/api/staff/clients";
 
-const timelineItems = [
-  { id: 1, project: "Brand Identity System", task: "Logo & Visual Direction", startWeek: 1, durationWeeks: 3, status: "done" as const, client: "Volta Studios" },
-  { id: 2, project: "Brand Identity System", task: "Brand Guidelines Doc", startWeek: 3, durationWeeks: 2, status: "in-progress" as const, client: "Volta Studios" },
-  { id: 3, project: "Brand Identity System", task: "Asset Exports", startWeek: 5, durationWeeks: 1, status: "upcoming" as const, client: "Volta Studios" },
-  { id: 4, project: "Q1 Campaign Strategy", task: "Strategy Deck", startWeek: 1, durationWeeks: 2, status: "done" as const, client: "Kestrel Capital" },
-  { id: 5, project: "Q1 Campaign Strategy", task: "Audience Research", startWeek: 2, durationWeeks: 2, status: "done" as const, client: "Kestrel Capital" },
-  { id: 6, project: "Q1 Campaign Strategy", task: "Content Calendar", startWeek: 3, durationWeeks: 2, status: "in-progress" as const, client: "Kestrel Capital" },
-  { id: 7, project: "Website Redesign", task: "UX Wireframes", startWeek: 1, durationWeeks: 4, status: "in-progress" as const, client: "Mira Health" },
-  { id: 8, project: "Website Redesign", task: "Component Library", startWeek: 4, durationWeeks: 3, status: "upcoming" as const, client: "Mira Health" },
-  { id: 9, project: "Annual Report 2025", task: "Data Visualisation", startWeek: 2, durationWeeks: 3, status: "in-progress" as const, client: "Okafor & Sons" },
-  { id: 10, project: "Annual Report 2025", task: "Layout & Typesetting", startWeek: 5, durationWeeks: 3, status: "upcoming" as const, client: "Okafor & Sons" },
-];
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-const weeks = ["W5", "W6", "W7", "W8", "W9", "W10", "W11", "W12"];
+type Status = "done" | "in-progress" | "upcoming";
 
-function statusColor(s: string) {
-  if (s === "done") return "progressFillGreen";
-  if (s === "in-progress") return "progressFillAmber";
-  return "progressFillPurple";
+type TimelineItem = {
+  id: string;
+  project: string;
+  task: string;
+  startWeek: number;
+  durationWeeks: number;
+  status: Status;
+  client: string;
+};
+
+// ── Week helpers (computed once at module load) ────────────────────────────────
+
+function getWeekNum(d: Date): number {
+  const start = new Date(d.getFullYear(), 0, 0);
+  return Math.ceil((d.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000));
 }
 
-function statusBadge(s: string) {
-  if (s === "done") return { label: "Done", tone: "badgeGreen" as const };
-  if (s === "in-progress") return { label: "In Progress", tone: "badgeAmber" as const };
-  return { label: "Upcoming", tone: "badge" as const };
+const CWN = getWeekNum(new Date());
+const CURRENT_WEEK_IDX = 3; // 3 past weeks + current + 4 upcoming
+const FIRST_WEEK_NUM = CWN - CURRENT_WEEK_IDX;
+const WEEKS = Array.from({ length: 8 }, (_, i) => `W${FIRST_WEEK_NUM + i}`);
+const COL_TPL = `200px repeat(8, minmax(40px, 1fr))`;
+
+// ── Status helpers ─────────────────────────────────────────────────────────────
+
+function mapStatus(status: string): Status {
+  if (status === "COMPLETED" || status === "CANCELLED") return "done";
+  if (status === "IN_PROGRESS" || status === "REVIEW")  return "in-progress";
+  return "upcoming";
 }
 
-export function MyTimelinePage({ isActive }: { isActive: boolean }) {
-  const grouped = timelineItems.reduce<Record<string, typeof timelineItems>>((acc, item) => {
+function barCls(s: Status) {
+  if (s === "done")        return "tlBarDone";
+  if (s === "in-progress") return "tlBarProgress";
+  return "tlBarUpcoming";
+}
+
+function dotCls(s: Status) {
+  if (s === "done")        return "tlDotDone";
+  if (s === "in-progress") return "tlDotProgress";
+  return "tlDotUpcoming";
+}
+
+function badgeCls(s: Status) {
+  if (s === "done")        return "tlBadgeDone";
+  if (s === "in-progress") return "tlBadgeProgress";
+  return "tlBadgeUpcoming";
+}
+
+function badgeLabel(s: Status) {
+  if (s === "done")        return "Done";
+  if (s === "in-progress") return "In Progress";
+  return "Upcoming";
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function MyTimelinePage({
+  isActive,
+  session,
+}: {
+  isActive: boolean;
+  session: AuthSession | null;
+}) {
+  const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!session) { setLoading(false); return; }
+    let cancelled = false;
+    void Promise.all([
+      getStaffProjects(session),
+      getStaffClients(session),
+    ]).then(([projRes, clientRes]) => {
+      if (cancelled) return;
+      if (projRes.nextSession) saveSession(projRes.nextSession);
+      if (clientRes.nextSession) saveSession(clientRes.nextSession);
+
+      const clientMap: Record<string, string> = {};
+      for (const c of clientRes.data ?? []) clientMap[c.id] = c.name;
+
+      const items: TimelineItem[] = (projRes.data ?? []).map((p) => {
+        const startWn      = p.startAt ? getWeekNum(new Date(p.startAt)) : CWN;
+        const endWn        = p.dueAt   ? getWeekNum(new Date(p.dueAt))   : CWN + 2;
+        const startWeek    = Math.max(1, startWn - FIRST_WEEK_NUM + 1);
+        const durationWeeks = Math.max(1, endWn - startWn + 1);
+        return {
+          id: p.id,
+          project: p.name,
+          task: p.description ?? p.name,
+          startWeek,
+          durationWeeks,
+          status: mapStatus(p.status),
+          client: clientMap[p.clientId] ?? "Unknown",
+        };
+      });
+
+      setTimelineItems(items);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [session]);
+
+  const done       = timelineItems.filter((i) => i.status === "done").length;
+  const inProgress = timelineItems.filter((i) => i.status === "in-progress").length;
+  const upcoming   = timelineItems.filter((i) => i.status === "upcoming").length;
+
+  const grouped = timelineItems.reduce<Record<string, TimelineItem[]>>((acc, item) => {
     if (!acc[item.project]) acc[item.project] = [];
     acc[item.project].push(item);
     return acc;
@@ -44,61 +132,134 @@ export function MyTimelinePage({ isActive }: { isActive: boolean }) {
         <p className={cx("pageSubtitleText", "mb20")}>Personal task timeline across all assigned projects</p>
       </div>
 
-      <div className={cx("stats", "stats3", "mb28")}>
-        {[
-          { label: "Active Tasks", value: String(timelineItems.filter((i) => i.status === "in-progress").length), tone: "colorAmber" },
-          { label: "Completed", value: String(timelineItems.filter((i) => i.status === "done").length), tone: "colorGreen" },
-          { label: "Upcoming", value: String(timelineItems.filter((i) => i.status === "upcoming").length), tone: "colorAccent" },
-        ].map((stat) => (
-          <div key={stat.label} className={cx("card")}>
-            <div className={cx("text10", "colorMuted2", "uppercase", "tracking", "mb6")}>{stat.label}</div>
-            <div className={cx("fontDisplay", "fw800", "text20", stat.tone)}>{stat.value}</div>
+      {/* ── Summary stats ────────────────────────────────────────────────── */}
+      <div className={cx("tlStatGrid")}>
+
+        <div className={cx("tlStatCard")}>
+          <div className={cx("tlStatCardTop")}>
+            <div className={cx("tlStatLabel")}>Total Tasks</div>
+            <div className={cx("tlStatValue")}>{loading ? "…" : timelineItems.length}</div>
           </div>
-        ))}
+          <div className={cx("tlStatCardDivider")} />
+          <div className={cx("tlStatCardBottom")}>
+            <span className={cx("tlStatDot", "dotBgMuted2")} />
+            <span className={cx("tlStatMeta")}>across all projects</span>
+          </div>
+        </div>
+
+        <div className={cx("tlStatCard")}>
+          <div className={cx("tlStatCardTop")}>
+            <div className={cx("tlStatLabel")}>In Progress</div>
+            <div className={cx("tlStatValue", "colorAmber")}>{loading ? "…" : inProgress}</div>
+          </div>
+          <div className={cx("tlStatCardDivider")} />
+          <div className={cx("tlStatCardBottom")}>
+            <span className={cx("tlStatDot", "dotBgAmber")} />
+            <span className={cx("tlStatMeta")}>active tasks</span>
+          </div>
+        </div>
+
+        <div className={cx("tlStatCard")}>
+          <div className={cx("tlStatCardTop")}>
+            <div className={cx("tlStatLabel")}>Completed</div>
+            <div className={cx("tlStatValue", "colorGreen")}>{loading ? "…" : done}</div>
+          </div>
+          <div className={cx("tlStatCardDivider")} />
+          <div className={cx("tlStatCardBottom")}>
+            <span className={cx("tlStatDot", "dotBgGreen")} />
+            <span className={cx("tlStatMeta")}>tasks done</span>
+          </div>
+        </div>
+
+        <div className={cx("tlStatCard")}>
+          <div className={cx("tlStatCardTop")}>
+            <div className={cx("tlStatLabel")}>Upcoming</div>
+            <div className={cx("tlStatValue", "colorAccent")}>{loading ? "…" : upcoming}</div>
+          </div>
+          <div className={cx("tlStatCardDivider")} />
+          <div className={cx("tlStatCardBottom")}>
+            <span className={cx("tlStatDot", "dotBgAccent")} />
+            <span className={cx("tlStatMeta")}>not yet started</span>
+          </div>
+        </div>
+
       </div>
 
-      {Object.entries(grouped).map(([project, tasks]) => (
-        <div key={project} className={cx("card", "cardBody", "mb16")}>
-          <div className={cx("sectionLabel", "mb4")}>{project}</div>
-          <div className={cx("text11", "colorMuted", "mb16")}>{tasks[0].client}</div>
+      {/* ── Project groups ───────────────────────────────────────────────── */}
+      {loading ? (
+        <div className={cx("colorMuted2", "text12", "mt16")}>Loading timeline…</div>
+      ) : timelineItems.length === 0 ? (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div className={cx("emptyStateTitle")}>No projects assigned</div>
+          <p className={cx("emptyStateSub")}>Your project timeline will appear here once you are assigned to active projects.</p>
+        </div>
+      ) : Object.entries(grouped).map(([project, tasks]) => (
+        <div key={project} className={cx("tlSection")}>
 
-          {/* Week header */}
-          <div style={{ display: "grid", gridTemplateColumns: `180px repeat(${weeks.length}, 1fr)`, gap: "0", marginBottom: "4px" }}>
-            <div />
-            {weeks.map((w) => (
-              <div key={w} className={cx("text10", "colorMuted2", "fontMono")} style={{ textAlign: "center" }}>{w}</div>
-            ))}
+          {/* Section header */}
+          <div className={cx("tlSectionHeader")}>
+            <div className={cx("tlSectionLeft")}>
+              <div className={cx("tlSectionTitle")}>{project}</div>
+              <span className={cx("tlClientBadge")}>{tasks[0].client}</span>
+            </div>
+            <span className={cx("tlSectionMeta")}>{tasks.length} TASK{tasks.length !== 1 ? "S" : ""}</span>
           </div>
 
-          {/* Task rows */}
-          {tasks.map((task) => {
-            const badge = statusBadge(task.status);
-            return (
-              <div key={task.id} style={{ display: "grid", gridTemplateColumns: `180px repeat(${weeks.length}, 1fr)`, gap: "0", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
-                <div className={cx("text12", "truncate")} title={task.task}>{task.task}</div>
-                {weeks.map((_, i) => {
-                  const weekIndex = i + 1;
-                  const isActive = weekIndex >= task.startWeek && weekIndex < task.startWeek + task.durationWeeks;
+          {/* Gantt */}
+          <div className={cx("tlGantt")}>
+
+            {/* Week header row */}
+            <div className={cx("tlWeekRow")} style={{ "--col-tpl": COL_TPL } as React.CSSProperties}>
+              <div className={cx("tlWeekRowSpacer")} />
+              {WEEKS.map((w, i) => (
+                <div key={w} className={cx("tlWeekLabel", i === CURRENT_WEEK_IDX && "tlWeekLabelCurrent")}>
+                  {w}
+                </div>
+              ))}
+            </div>
+
+            {/* Task rows */}
+            {tasks.map((task, tIdx) => (
+              <div
+                key={task.id}
+                className={cx("tlTaskRow", tIdx === tasks.length - 1 && "tlTaskRowLast")} style={{ "--col-tpl": COL_TPL } as React.CSSProperties}
+              >
+                {/* Task info */}
+                <div className={cx("tlTaskInfo")}>
+                  <span className={cx("tlTaskDot", dotCls(task.status))} />
+                  <span className={cx("tlTaskName")} title={task.task}>{task.task}</span>
+                  <span className={cx("tlTaskBadge", badgeCls(task.status))}>{badgeLabel(task.status)}</span>
+                </div>
+
+                {/* Week cells */}
+                {WEEKS.map((_, i) => {
+                  const wIdx    = i + 1;
+                  const active  = wIdx >= task.startWeek && wIdx < task.startWeek + task.durationWeeks;
+                  const isSolo  = task.durationWeeks === 1;
+                  const isFirst = wIdx === task.startWeek;
+                  const isLast  = wIdx === task.startWeek + task.durationWeeks - 1;
+
+                  let radius = "0";
+                  if (isSolo)       radius = "4px";
+                  else if (isFirst) radius = "4px 0 0 4px";
+                  else if (isLast)  radius = "0 4px 4px 0";
+
                   return (
-                    <div key={i} style={{ padding: "2px 1px" }}>
-                      {isActive && (
-                        <div className={cx(statusColor(task.status))} style={{ height: "16px", borderRadius: "4px", opacity: 0.7 }} />
+                    <div key={i} className={cx("tlCell", i === CURRENT_WEEK_IDX && "tlCellCurrent")}>
+                      {active && (
+                        <div className={cx("tlBar", barCls(task.status))} style={{ "--radius": radius } as React.CSSProperties} />
                       )}
                     </div>
                   );
                 })}
               </div>
-            );
-          })}
+            ))}
 
-          <div className={cx("flex", "gap12", "mt12")}>
-            {tasks.map((task) => {
-              const badge = statusBadge(task.status);
-              return <span key={task.id} className={cx("badge", badge.tone, "text10")}>{task.task}: {badge.label}</span>;
-            })}
           </div>
         </div>
       ))}
+
     </section>
   );
 }

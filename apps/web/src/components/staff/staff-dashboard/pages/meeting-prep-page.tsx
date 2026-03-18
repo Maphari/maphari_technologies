@@ -1,418 +1,448 @@
+// ════════════════════════════════════════════════════════════════════════════
+// meeting-prep-page.tsx — Meeting Prep
+// Data     : getStaffMeetingsWithRefresh → GET /meetings
+// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cx } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import { getStaffMeetingsWithRefresh, type StaffMeeting } from "../../../../lib/api/staff";
 
 type Priority = "high" | "medium" | "low";
-type MilestoneStatus = "awaiting_approval" | "in_progress" | "not_started" | "overdue" | "approved";
-type MessageFrom = "client" | "staff";
-type MainTab = "brief" | "agenda" | "thread" | "notes";
+type MainTab = "brief" | "agenda" | "notes";
 
-type Meeting = {
-  id: number;
-  client: string;
-  avatar: string;
-  contact: string;
-  contactRole: string;
-  type: string;
-  time: string;
-  duration: string;
-  platform: string;
-  link: string;
-  project: string;
-  urgent: boolean;
-  prep: {
-    lastMessages: Array<{ from: MessageFrom; text: string; time: string }>;
-    openItems: Array<{ text: string; priority: Priority }>;
-    upcomingMilestones: Array<{ name: string; due: string; status: MilestoneStatus }>;
-    blockers: string[];
-    context: string;
-    hoursThisMonth: number;
-    retainerPct: number;
-  };
-};
+// Derive avatar initials from a title or id
+function toInitials(str: string): string {
+  const words = str.trim().split(/\s+/);
+  if (words.length >= 2) return `${words[0][0]}${words[1][0]}`.toUpperCase();
+  return str.slice(0, 2).toUpperCase();
+}
 
-const meetings: Meeting[] = [
-  {
-    id: 1,
-    client: "Volta Studios",
-    avatar: "VS",
-    contact: "Lena Muller",
-    contactRole: "Creative Director",
-    type: "Milestone Review",
-    time: "Today - 2:00 PM",
-    duration: "45 min",
-    platform: "Google Meet",
-    link: "meet.google.com/volta-review",
-    project: "Brand Identity System",
-    urgent: true,
-    prep: {
-      lastMessages: [
-        { from: "client", text: "Really love the direction on B. Can we tweak the secondary colour slightly warmer?", time: "Yesterday 11:32 AM" },
-        { from: "staff", text: "Absolutely - updated version attached. The amber is warmer as discussed.", time: "Yesterday 2:05 PM" },
-        { from: "client", text: "Perfect. Let's review properly on the call tomorrow.", time: "Yesterday 3:40 PM" }
-      ],
-      openItems: [
-        { text: "Logo suite awaiting formal sign-off - present updated version B", priority: "high" },
-        { text: "Confirm brand guidelines scope and delivery timeline", priority: "medium" },
-        { text: "Animation direction: in scope or addendum?", priority: "medium" }
-      ],
-      upcomingMilestones: [
-        { name: "Logo & Visual Direction", due: "Feb 22", status: "awaiting_approval" },
-        { name: "Brand Guidelines Doc", due: "Mar 3", status: "in_progress" },
-        { name: "Animation Direction Deck", due: "Mar 10", status: "not_started" }
-      ],
-      blockers: ["Client sign-off on logo is 2 days overdue - primary goal of this call"],
-      context:
-        "Lena prefers visual references. Arrive with the updated Concept B on screen. She's the decision-maker - no need to wait for CEO input unless she brings Tobias.",
-      hoursThisMonth: 49.5,
-      retainerPct: 62
-    }
-  },
-  {
-    id: 2,
-    client: "Mira Health",
-    avatar: "MH",
-    contact: "Dr. Amara Nkosi",
-    contactRole: "Chief Digital Officer",
-    type: "UX Review",
-    time: "Tomorrow - 9:00 AM",
-    duration: "60 min",
-    platform: "Zoom",
-    link: "zoom.us/j/mira-ux",
-    project: "Website Redesign",
-    urgent: false,
-    prep: {
-      lastMessages: [
-        { from: "client", text: "Great work overall! Two things: the booking step 3 is a bit confusing, and can we simplify the nav labels?", time: "Tue 3:30 PM" },
-        { from: "staff", text: "On it - revisions underway. Will have updates by Thursday.", time: "Tue 4:00 PM" },
-        { from: "staff", text: "Revisions attached - booking flow simplified, nav labels updated to patient-friendly language.", time: "Thu 10:00 AM" }
-      ],
-      openItems: [
-        { text: "Walk through revised booking flow (4-step wizard)", priority: "high" },
-        { text: "Review updated navigation labels", priority: "high" },
-        { text: "Confirm clinical copy review timeline for patient-facing text", priority: "medium" },
-        { text: "Desktop wireframe scope - start date and delivery", priority: "low" }
-      ],
-      upcomingMilestones: [
-        { name: "Mobile Wireframes (revised)", due: "Feb 24", status: "awaiting_approval" },
-        { name: "Desktop Wireframes", due: "Feb 28", status: "not_started" },
-        { name: "Component Library", due: "Mar 7", status: "not_started" }
-      ],
-      blockers: ["Clinical review adds 5-7 business days - get confirmation of review start date on this call"],
-      context:
-        "Dr. Nkosi responds fastest before 10 AM - this call is well-timed. Keep the brief under 1 page. She needs to see the revised wireframes shared screen, not a PDF.",
-      hoursThisMonth: 61,
-      retainerPct: 61
-    }
-  },
-  {
-    id: 3,
-    client: "Kestrel Capital",
-    avatar: "KC",
-    contact: "Marcus Rehn",
-    contactRole: "Head of Marketing",
-    type: "Strategy Approval",
-    time: "Thu, Feb 26 - 3:00 PM",
-    duration: "30 min",
-    platform: "Teams",
-    link: "teams.microsoft.com/kestrel",
-    project: "Q1 Campaign Strategy",
-    urgent: true,
-    prep: {
-      lastMessages: [
-        { from: "staff", text: "Strategy deck is live - all 4 deliverables completed. Please review and approve when ready.", time: "Mon 10:00 AM" },
-        { from: "staff", text: "Following up - have you had a chance to review the deck?", time: "Wed 9:00 AM" },
-        { from: "client", text: "Sorry for the delay - AP department has been chaotic. Reviewing now.", time: "Thu 11:00 AM" }
-      ],
-      openItems: [
-        { text: "Get verbal approval on strategy deck - currently 5 days overdue", priority: "high" },
-        { text: "Invoice status - overdue 7 days, raise gently", priority: "high" },
-        { text: "Confirm channel brief delivery date (Feb 26)", priority: "medium" }
-      ],
-      upcomingMilestones: [
-        { name: "Campaign Strategy Deck", due: "Feb 17", status: "overdue" },
-        { name: "Channel Brief", due: "Feb 26", status: "in_progress" },
-        { name: "Paid Media Plan", due: "Mar 5", status: "not_started" }
-      ],
-      blockers: [
-        "Invoice 7 days overdue - escalate to account manager if not resolved on call",
-        "Strategy approval blocking downstream deliverables"
-      ],
-      context:
-        "Marcus is slow to respond but reliable when he shows up. Don't ambush him on the invoice - mention it briefly at the end. Data-first: lead with KPI framework numbers if he questions the strategy.",
-      hoursThisMonth: 58.5,
-      retainerPct: 97
-    }
-  }
-];
+// Map meeting status to a human-friendly time label
+function formatScheduledAt(scheduledAt: string): string {
+  const d = new Date(scheduledAt);
+  const now = new Date();
+  const diffDays = Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const timeStr = d.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+  const dateStr = d.toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" });
+  if (diffDays === 0)  return `Today - ${timeStr}`;
+  if (diffDays === 1)  return `Tomorrow - ${timeStr}`;
+  if (diffDays === -1) return `Yesterday - ${timeStr}`;
+  return `${dateStr} - ${timeStr}`;
+}
 
-const milestoneStatusConfig: Record<MilestoneStatus, { label: string; toneClass: string }> = {
-  awaiting_approval: { label: "Awaiting Approval", toneClass: "mpToneAmber" },
-  in_progress: { label: "In Progress", toneClass: "mpToneBlue" },
-  not_started: { label: "Not Started", toneClass: "mpToneMuted2" },
-  overdue: { label: "Overdue", toneClass: "mpToneRed" },
-  approved: { label: "Approved", toneClass: "mpToneAccent" }
-};
+function formatDuration(minutes: number | null): string {
+  if (!minutes) return "—";
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+// Parse agenda text into open items
+function agendaToOpenItems(agenda: string | null): Array<{ text: string; priority: Priority }> {
+  if (!agenda) return [];
+  return agenda
+    .split(/\n/)
+    .map((line) => line.replace(/^[-•*]\s*/, "").trim())
+    .filter(Boolean)
+    .slice(0, 6)
+    .map((text, idx) => ({
+      text,
+      priority: idx === 0 ? "high" : idx < 3 ? "medium" : "low",
+    }));
+}
 
 const priorityConfig: Record<Priority, { toneClass: string; boxClass: string }> = {
-  high: { toneClass: "mpToneRed", boxClass: "mpCheckBoxHigh" },
-  medium: { toneClass: "mpToneAmber", boxClass: "mpCheckBoxMedium" },
-  low: { toneClass: "mpToneMuted2", boxClass: "mpCheckBoxLow" }
+  high:   { toneClass: "mpToneRed",    boxClass: "mpCheckBoxHigh"   },
+  medium: { toneClass: "mpToneAmber",  boxClass: "mpCheckBoxMedium" },
+  low:    { toneClass: "mpToneMuted2", boxClass: "mpCheckBoxLow"    },
 };
 
-export function MeetingPrepPage({ isActive }: { isActive: boolean }) {
-  const [selected, setSelected] = useState(meetings[0].id);
+/* ── SVG icons ── */
+function IcoVideo() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1" y="4" width="10" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M11 6.5l4-2.5v8l-4-2.5V6.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IcoCopy() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="5" y="5" width="9" height="9" rx="1" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M11 5V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h2" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IcoSave() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M13 5l-5 5-2-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="1.5" y="1.5" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+function IcoPlus() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IcoInsight() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.22 3.22l1.41 1.41M11.37 11.37l1.41 1.41M3.22 12.78l1.41-1.41M11.37 4.63l1.41-1.41"
+        stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+export function MeetingPrepPage({
+  isActive,
+  session,
+}: {
+  isActive: boolean;
+  session: AuthSession | null;
+}) {
+  const [meetings, setMeetings]   = useState<StaffMeeting[]>([]);
+  const [loading, setLoading]     = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<MainTab>("brief");
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
-  const [noteText, setNoteText] = useState("");
+  const [checked, setChecked]     = useState<Record<string, boolean>>({});
+  const [noteText, setNoteText]   = useState("");
 
-  const meeting = meetings.find((item) => item.id === selected) ?? meetings[0];
-  const { prep } = meeting;
+  useEffect(() => {
+    if (!session || !isActive) return;
+    setLoading(true);
 
-  const toggleCheck = (key: string) => {
-    setChecked((previous) => ({ ...previous, [key]: !previous[key] }));
-  };
+    void (async () => {
+      const result = await getStaffMeetingsWithRefresh(session);
+      if (result.nextSession) saveSession(result.nextSession);
+
+      const all = (result.data ?? []).filter((m) => m.status !== "CANCELLED");
+      // Sort upcoming first, then past
+      all.sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+      setMeetings(all);
+      if (all.length > 0) setSelectedId(all[0].id);
+      setLoading(false);
+    })();
+  }, [isActive, session]);
+
+  const meeting = meetings.find((m) => m.id === selectedId) ?? null;
+  const openItems = meeting ? agendaToOpenItems(meeting.agenda) : [];
+  const doneCount = openItems.filter((_, i) => checked[`open-${i}`]).length;
+
+  const toggleCheck = (key: string) =>
+    setChecked((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const TAB_DEFS: Array<{ key: MainTab; label: string; count?: number }> = [
+    { key: "brief",  label: "Brief",      count: openItems.length },
+    { key: "agenda", label: "Agenda",     count: openItems.length },
+    { key: "notes",  label: "Call Notes"                          },
+  ];
+
+  if (!loading && meetings.length === 0) {
+    return (
+      <section
+        className={cx("page", "pageBody", isActive && "pageActive")}
+        id="page-meeting-prep"
+        style={isActive ? { height: "100%", display: "flex", flexDirection: "column", padding: 0 } : undefined}
+      >
+        <div className={cx("pageHeaderBar", "noShrink")}>
+          <div className={cx("pageEyebrow", "mb4")}>Staff Dashboard / Communication</div>
+          <h1 className={cx("pageTitle")}>Meeting Prep</h1>
+          <p className={cx("pageSubtitleText")}>Upcoming client meetings and call briefs</p>
+        </div>
+        <div className={cx("mpLayout")}>
+          <div className={cx("mpSidebar")}>
+            <div className={cx("mpSidebarLabel")}>Upcoming · 0</div>
+          </div>
+          <div className={cx("flexCol", "mpDetailWrap")}>
+            <div className={cx("mpTabContent")}>
+              <div className={cx("text13", "colorMuted2")}>No upcoming meetings.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-meeting-prep">
-      <div className={cx("pageHeaderBar", "borderB", "pb16")}>
-        <div className={cx("pageEyebrow")}>
-          Staff Dashboard / Communication
-        </div>
-        <h1 className={cx("pageTitle")}>
-          Meeting Prep
-        </h1>
+    <section
+      className={cx("page", "pageBody", isActive && "pageActive")}
+      id="page-meeting-prep"
+      style={isActive ? { height: "100%", display: "flex", flexDirection: "column", padding: 0 } : undefined}
+    >
+      <div className={cx("pageHeaderBar", "noShrink")}>
+        <div className={cx("pageEyebrow", "mb4")}>Staff Dashboard / Communication</div>
+        <h1 className={cx("pageTitle")}>Meeting Prep</h1>
+        <p className={cx("pageSubtitleText")}>Upcoming client meetings and call briefs</p>
       </div>
 
       <div className={cx("mpLayout")}>
+
+        {/* ── Left: meeting list ── */}
         <div className={cx("mpSidebar")}>
-          <div className={cx("mpSidebarLabel")}>Upcoming</div>
+          <div className={cx("mpSidebarLabel")}>
+            {loading ? "Loading…" : `Upcoming · ${meetings.length}`}
+          </div>
           {meetings.map((item) => {
-            const isSelected = selected === item.id;
+            const isSelected = selectedId === item.id;
+            const initials   = toInitials(item.title);
+            const scheduled  = formatScheduledAt(item.scheduledAt);
             return (
               <div
                 key={item.id}
+                role="button"
+                tabIndex={0}
                 className={cx("mpMeetingItem", isSelected && "mpMeetingItemActive")}
-                onClick={() => {
-                  setSelected(item.id);
-                  setActiveTab("brief");
-                  setChecked({});
+                onClick={() => { setSelectedId(item.id); setActiveTab("brief"); setChecked({}); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedId(item.id);
+                    setActiveTab("brief");
+                    setChecked({});
+                  }
                 }}
               >
+                {/* Header row: avatar + title */}
                 <div className={cx("flexRow", "gap8", "mb6")}>
-                  <div className={cx("mpAvatar24")}>
-                    {item.avatar}
-                  </div>
+                  <div className={cx("mpAvatar24")}>{initials}</div>
                   <span className={cx("mpMeetingClient", isSelected && "mpMeetingClientActive")}>
-                    {item.client}
+                    {item.title}
                   </span>
-                  {item.urgent ? <div className={cx("mpUrgentDot")} /> : null}
                 </div>
-                <div className={cx("text10", "colorMuted2", "mb4")}>{item.type}</div>
-                <div className={cx("text10", isSelected ? "mpToneAccent" : "mpToneMuted2")}>
-                  {item.time} - {item.duration}
+                {/* Status row */}
+                <div className={cx("flexRow", "gap6", "mb5")}>
+                  <span className={cx("mpMeetingType")}>{item.status}</span>
+                  {item.durationMinutes ? (
+                    <span className={cx("mpPlatformChip", "mpPlatformDefault")}>{formatDuration(item.durationMinutes)}</span>
+                  ) : null}
+                </div>
+                {/* Time row */}
+                <div className={cx("mpMeetingTime", isSelected ? "mpToneAccent" : "mpToneMuted2")}>
+                  {scheduled}
                 </div>
               </div>
             );
           })}
         </div>
 
-        <div className={cx("flexCol")}>
-          <div className={cx("mpDetailHeader")}>
-            <div className={cx("mpDetailHeaderTop")}>
-              <div>
-                <div className={cx("flexRow", "gap10", "mb6")}>
-                  <div className={cx("mpAvatar32")}>
-                    {meeting.avatar}
+        {/* ── Right: detail panel ── */}
+        {meeting ? (
+          <div className={cx("flexCol", "mpDetailWrap")}>
+
+            {/* Detail header */}
+            <div className={cx("mpDetailHeader")}>
+              <div className={cx("mpDetailHeaderTop")}>
+                <div>
+                  <div className={cx("flexRow", "gap10", "mb8")}>
+                    <div className={cx("mpAvatar32")}>{toInitials(meeting.title)}</div>
+                    <div>
+                      <div className={cx("fontDisplay", "fw800", "colorText", "mpClientName")}>{meeting.title}</div>
+                      <div className={cx("text11", "colorMuted2")}>
+                        {formatScheduledAt(meeting.scheduledAt)}{meeting.durationMinutes ? ` · ${formatDuration(meeting.durationMinutes)}` : ""}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div className={cx("fontDisplay", "fw800", "colorText", "mpClientName")}>{meeting.client}</div>
-                    <div className={cx("text11", "colorMuted2")}>
-                      {meeting.contact} - {meeting.contactRole}
+                  <div className={cx("flexRow", "gap8", "flexWrap")}>
+                    {[meeting.status, formatScheduledAt(meeting.scheduledAt), formatDuration(meeting.durationMinutes)].map((label) => (
+                      <span key={label} className={cx("mpMetaBadge")}>{label}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Join call CTA */}
+                {meeting.videoRoomUrl ? (
+                  <button
+                    type="button"
+                    className={cx("mpJoinBtn")}
+                    onClick={() => window.open(meeting.videoRoomUrl!, "_blank", "noopener,noreferrer")}
+                  >
+                    <IcoVideo />
+                    <span>Join Video Call</span>
+                  </button>
+                ) : (
+                  <div className={cx("text11", "colorMuted2", "fontItalic")}>No video link yet</div>
+                )}
+              </div>
+
+              {/* Tab bar */}
+              <div className={cx("mpTabBar")}>
+                {TAB_DEFS.map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    className={cx("mpTabBtn", activeTab === tab.key && "mpTabBtnActive")}
+                    onClick={() => setActiveTab(tab.key)}
+                  >
+                    {tab.label}
+                    {tab.count != null && tab.count > 0 ? (
+                      <span className={cx("mpTabCount")}>{tab.count}</span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Tab content ── */}
+            <div className={cx("mpTabContent")}>
+
+              {/* BRIEF TAB */}
+              {activeTab === "brief" ? (
+                <div className={cx("mpBriefGrid")}>
+                  <div className={cx("flexCol", "gap20")}>
+
+                    {/* Context box */}
+                    {meeting.notes ? (
+                      <div className={cx("mpContextBox")}>
+                        <div className={cx("mpContextLabel")}>
+                          <span className={cx("mpInsightIco")}><IcoInsight /></span>
+                          Notes
+                        </div>
+                        <div className={cx("text12", "colorMuted", "mpContextText")}>{meeting.notes}</div>
+                      </div>
+                    ) : null}
+
+                    {/* Open items from agenda */}
+                    {openItems.length > 0 ? (
+                      <div>
+                        <div className={cx("mpSectionLabelRow", "mb12")}>
+                          <span className={cx("mpSectionLabel")}>Agenda Items</span>
+                          <span className={cx("mpItemCounter")}>{doneCount}/{openItems.length} done</span>
+                        </div>
+                        {openItems.map((item, i) => (
+                          <div
+                            key={`${item.text}-${i}`}
+                            className={cx("mpCheckItem", checked[`open-${i}`] ? "mpRowDone" : "mpRowActive")}
+                            onClick={() => toggleCheck(`open-${i}`)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCheck(`open-${i}`); } }}
+                          >
+                            <div className={cx("mpCheckBox", checked[`open-${i}`] ? "mpCheckBoxChecked" : priorityConfig[item.priority].boxClass)}>
+                              {checked[`open-${i}`] ? "✓" : ""}
+                            </div>
+                            <div className={cx("flex1")}>
+                              <div className={cx("text12", "colorText", "mpItemText", checked[`open-${i}`] && "mpItemTextDone")}>
+                                {item.text}
+                              </div>
+                            </div>
+                            <span className={cx("mpPriorityLabel", priorityConfig[item.priority].toneClass)}>{item.priority}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={cx("text12", "colorMuted2")}>No agenda items set for this meeting.</div>
+                    )}
+                  </div>
+
+                  {/* Side card */}
+                  <div className={cx("flexCol", "gap16")}>
+                    <div className={cx("mpSideCard")}>
+                      <div className={cx("mpSectionLabel", "mb12")}>Meeting Details</div>
+                      <div className={cx("mpSnapshotRow")}>
+                        <span className={cx("text11", "colorMuted2")}>Scheduled</span>
+                        <span className={cx("text11", "colorMuted")}>{formatScheduledAt(meeting.scheduledAt)}</span>
+                      </div>
+                      <div className={cx("mpSnapshotRow")}>
+                        <span className={cx("text11", "colorMuted2")}>Duration</span>
+                        <span className={cx("text11", "colorMuted")}>{formatDuration(meeting.durationMinutes)}</span>
+                      </div>
+                      <div className={cx("mpSnapshotRow")}>
+                        <span className={cx("text11", "colorMuted2")}>Status</span>
+                        <span className={cx("text11", "colorMuted")}>{meeting.status}</span>
+                      </div>
+                      <div className={cx("mpSnapshotRow")}>
+                        <span className={cx("text11", "colorMuted2")}>Open items</span>
+                        <span className={cx("text11", "colorMuted")}>{openItems.length}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className={cx("flexRow", "gap16", "mt8")}>
-                  {[meeting.type, meeting.time, meeting.duration, meeting.platform].map((label) => (
-                    <span key={label} className={cx("mpMetaBadge")}>
-                      {label}
+              ) : null}
+
+              {/* AGENDA TAB */}
+              {activeTab === "agenda" ? (
+                <div className={cx("mpAgendaWrap")}>
+                  <div className={cx("mpSectionLabelRow", "mb16")}>
+                    <span className={cx("mpSectionLabel")}>
+                      Suggested Agenda · {formatDuration(meeting.durationMinutes)}
                     </span>
-                  ))}
-                </div>
-              </div>
-              <button
-                type="button"
-                className={cx("mpJoinBtn")}
-              >
-                Join call -
-              </button>
-            </div>
-
-            <div className={cx("mpTabBar")}>
-              {[
-                { key: "brief", label: "One-page brief" },
-                { key: "agenda", label: "Agenda" },
-                { key: "thread", label: "Last messages" },
-                { key: "notes", label: "Call notes" }
-              ].map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  className={cx("mpTabBtn", activeTab === tab.key && "mpTabBtnActive")}
-                  onClick={() => setActiveTab(tab.key as MainTab)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={cx("mpTabContent")}>
-            {activeTab === "brief" ? (
-              <div className={cx("mpBriefGrid")}>
-                <div className={cx("flexCol", "gap20")}>
-                  <div className={cx("mpContextBox")}>
-                    <div className={cx("mpContextLabel")}>Know before you join</div>
-                    <div className={cx("text12", "colorMuted", "mpContextText")}>{prep.context}</div>
                   </div>
-
-                  <div>
-                    <div className={cx("mpSectionLabel", "mb12")}>Open Items to Address</div>
-                    {prep.openItems.map((item, index) => (
-                      <div key={`${item.text}-${index}`} className={cx("mpCheckItem", checked[`open-${index}`] ? "mpRowDone" : "mpRowActive")} onClick={() => toggleCheck(`open-${index}`)}>
-                        <div
-                          className={cx("mpCheckBox", checked[`open-${index}`] ? "mpCheckBoxChecked" : priorityConfig[item.priority].boxClass)}
-                        >
-                          {checked[`open-${index}`] ? "\u2713" : ""}
+                  {openItems.length === 0 ? (
+                    <div className={cx("text12", "colorMuted2")}>No agenda recorded for this meeting.</div>
+                  ) : openItems.map((item, i) => {
+                    const timeSlot = meeting.durationMinutes
+                      ? Math.floor(meeting.durationMinutes / openItems.length)
+                      : 0;
+                    return (
+                      <div
+                        key={`${item.text}-${i}`}
+                        className={cx("mpAgendaItem", checked[`agenda-${i}`] ? "mpRowDone" : "mpRowActive")}
+                        onClick={() => toggleCheck(`agenda-${i}`)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCheck(`agenda-${i}`); } }}
+                      >
+                        <div className={cx("mpCheckBox", checked[`agenda-${i}`] ? "mpCheckBoxChecked" : "mpCheckBoxNeutral")}>
+                          {checked[`agenda-${i}`] ? "✓" : ""}
                         </div>
                         <div className={cx("flex1")}>
-                          <div className={cx("text12", "colorText", "mpItemText", checked[`open-${index}`] && "mpItemTextDone")}>{item.text}</div>
-                        </div>
-                        <span className={cx("mpPriorityLabel", priorityConfig[item.priority].toneClass)}>{item.priority}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {prep.blockers.length > 0 ? (
-                    <div>
-                      <div className={cx("mpSectionLabel", "mb10")}>Blockers</div>
-                      {prep.blockers.map((blocker) => (
-                        <div key={blocker} className={cx("mpBlocker")}>
-                          <span className={cx("colorRed", "text12", "noShrink")}>&#9873;</span>
-                          <span className={cx("text12", "colorRed", "mpBlockerText")}>{blocker}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className={cx("flexCol", "gap16")}>
-                  <div className={cx("mpSideCard")}>
-                    <div className={cx("mpSectionLabel", "mb12")}>Milestone Status</div>
-                    {prep.upcomingMilestones.map((milestone, index) => {
-                      const status = milestoneStatusConfig[milestone.status];
-                      const isLast = index === prep.upcomingMilestones.length - 1;
-                      return (
-                        <div key={`${milestone.name}-${index}`} className={cx("mpMilestoneRow", !isLast && "mpMilestoneRowBorder")}>
-                          <div className={cx("text11", "colorText", "mb4", "mpMilestoneName")}>{milestone.name}</div>
-                          <div className={cx("flexBetween")}>
-                            <span className={cx("text10", status.toneClass)}>{status.label}</span>
-                            <span className={cx("text10", "colorMuted2")}>{milestone.due}</span>
+                          <div className={cx("flexBetween", "mb4")}>
+                            <span className={cx("text12", "colorText", checked[`agenda-${i}`] && "mpItemTextDone")}>{item.text}</span>
+                            {timeSlot > 0 ? <span className={cx("mpTimeSlotChip")}>{timeSlot} min</span> : null}
                           </div>
+                          <span className={cx("mpPriorityLabel", priorityConfig[item.priority].toneClass)}>
+                            {item.priority} priority
+                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className={cx("mpSideCard")}>
-                    <div className={cx("mpSectionLabel", "mb12")}>Account snapshot</div>
-                    {[
-                      { label: "Hours this month", value: `${prep.hoursThisMonth}h` },
-                      { label: "Retainer burn", value: `${prep.retainerPct}%`, toneClass: prep.retainerPct > 90 ? "mpToneRed" : prep.retainerPct > 70 ? "mpToneAmber" : "mpToneAccent" },
-                      { label: "Open items", value: prep.openItems.length.toString() }
-                    ].map((item) => (
-                      <div key={item.label} className={cx("mpSnapshotRow")}>
-                        <span className={cx("text11", "colorMuted2")}>{item.label}</span>
-                        <span className={cx("text11", item.toneClass ?? "colorMuted")}>{item.value}</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            {activeTab === "agenda" ? (
-              <div className={cx("mpAgendaWrap")}>
-                <div className={cx("mpSectionLabel", "mb16")}>
-                  Suggested Agenda - {meeting.duration}
-                </div>
-                {prep.openItems.map((item, index) => {
-                  const timeSlot = Math.floor(parseInt(meeting.duration, 10) / prep.openItems.length);
-                  return (
-                    <div key={`${item.text}-${index}`} className={cx("mpAgendaItem", checked[`agenda-${index}`] ? "mpRowDone" : "mpRowActive")} onClick={() => toggleCheck(`agenda-${index}`)}>
-                      <div
-                        className={cx("mpCheckBox", checked[`agenda-${index}`] ? "mpCheckBoxChecked" : "mpCheckBoxNeutral")}
-                      >
-                        {checked[`agenda-${index}`] ? "\u2713" : ""}
-                      </div>
-                      <div className={cx("flex1")}>
-                        <div className={cx("flexBetween", "mb4")}>
-                          <span className={cx("text12", "colorText", checked[`agenda-${index}`] && "mpItemTextDone")}>{item.text}</span>
-                          <span className={cx("text10", "colorMuted2", "noShrink", "mpTimeSlot")}>{timeSlot} min</span>
-                        </div>
-                        <span className={cx("mpPriorityLabel", priorityConfig[item.priority].toneClass)}>{item.priority} priority</span>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div className={cx("mpAddAgendaBtn")}>
-                  + Add agenda item
-                </div>
-              </div>
-            ) : null}
-
-            {activeTab === "thread" ? (
-              <div className={cx("mpThreadWrap")}>
-                <div className={cx("mpSectionLabel", "mb16")}>Last 3 Messages</div>
-                <div className={cx("flexCol", "gap10")}>
-                  {prep.lastMessages.map((message, index) => (
-                    <div key={`${message.time}-${index}`} className={cx("flexCol", message.from === "staff" ? "mpMsgLeft" : "mpMsgRight")}>
-                      <div className={cx("mpBubble", message.from === "staff" ? "mpBubbleStaff" : "mpBubbleClient")}>
-                        <div className={cx("text12", "colorText", "mpBubbleText")}>{message.text}</div>
-                      </div>
-                      <div className={cx("mpBubbleMeta")}>
-                        {message.from === "staff" ? "You" : meeting.contact} - {message.time}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {activeTab === "notes" ? (
-              <div className={cx("mpNotesWrap")}>
-                <div className={cx("mpSectionLabel", "mb14")}>
-                  Call Notes - {meeting.client} - {meeting.time}
-                </div>
-                <textarea
-                  value={noteText}
-                  onChange={(event) => setNoteText(event.target.value)}
-                  placeholder={`Notes from the ${meeting.type} call...\n\n- Decisions made\n- Actions agreed\n- Follow-ups`}
-                  className={cx("mpNoteInput")}
-                />
-                <div className={cx("flexRow", "gap10", "mt12")}>
-                  <button type="button" className={cx("mpSaveBtn")}>
-                    Save to decision log
-                  </button>
-                  <button type="button" className={cx("mpCopyBtn")}>
-                    Copy notes
+                    );
+                  })}
+                  <button type="button" className={cx("mpAddAgendaBtn")}>
+                    <IcoPlus />
+                    Add agenda item
                   </button>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+
+              {/* NOTES TAB */}
+              {activeTab === "notes" ? (
+                <div className={cx("mpNotesWrap")}>
+                  <div className={cx("mpSectionLabel", "mb14")}>
+                    Call Notes · {meeting.title} · {formatScheduledAt(meeting.scheduledAt)}
+                  </div>
+                  <textarea
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    placeholder={`Notes from the meeting…\n\n- Decisions made\n- Actions agreed\n- Follow-ups`}
+                    className={cx("mpNoteInput")}
+                  />
+                  <div className={cx("flexRow", "gap10", "mt12")}>
+                    <button type="button" className={cx("mpSaveBtn")}>
+                      <IcoSave />
+                      Save to decision log
+                    </button>
+                    <button type="button" className={cx("mpCopyBtn")}>
+                      <IcoCopy />
+                      Copy notes
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+            </div>
           </div>
-        </div>
+        ) : null}
+
       </div>
     </section>
   );

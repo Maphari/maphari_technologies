@@ -199,6 +199,8 @@ exports.Prisma.ProjectMilestoneScalarFieldEnum = {
   status: 'status',
   dueAt: 'dueAt',
   fileId: 'fileId',
+  progressPercent: 'progressPercent',
+  tags: 'tags',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -244,6 +246,12 @@ exports.Prisma.ProjectTaskScalarFieldEnum = {
   title: 'title',
   assigneeName: 'assigneeName',
   status: 'status',
+  priority: 'priority',
+  estimateMinutes: 'estimateMinutes',
+  storyPoints: 'storyPoints',
+  blockedAt: 'blockedAt',
+  progressPercent: 'progressPercent',
+  sprintId: 'sprintId',
   dueAt: 'dueAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -297,6 +305,7 @@ exports.Prisma.ProjectTimeEntryScalarFieldEnum = {
   id: 'id',
   projectId: 'projectId',
   clientId: 'clientId',
+  phaseId: 'phaseId',
   staffUserId: 'staffUserId',
   staffName: 'staffName',
   taskLabel: 'taskLabel',
@@ -406,9 +415,787 @@ exports.Prisma.UserPreferenceScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.ProjectDeliverableScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  milestoneId: 'milestoneId',
+  name: 'name',
+  ownerName: 'ownerName',
+  status: 'status',
+  dueAt: 'dueAt',
+  deliveredAt: 'deliveredAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProjectRiskScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  clientId: 'clientId',
+  name: 'name',
+  detail: 'detail',
+  likelihood: 'likelihood',
+  impact: 'impact',
+  mitigation: 'mitigation',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProjectDecisionScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  clientId: 'clientId',
+  title: 'title',
+  context: 'context',
+  decidedByName: 'decidedByName',
+  decidedByRole: 'decidedByRole',
+  decidedAt: 'decidedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProjectSprintScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  clientId: 'clientId',
+  name: 'name',
+  ownerName: 'ownerName',
+  startAt: 'startAt',
+  endAt: 'endAt',
+  progressPercent: 'progressPercent',
+  totalTasks: 'totalTasks',
+  completedTasks: 'completedTasks',
+  overdueTasks: 'overdueTasks',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProjectSignOffScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  clientId: 'clientId',
+  name: 'name',
+  description: 'description',
+  status: 'status',
+  signedAt: 'signedAt',
+  signedByName: 'signedByName',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProjectPhaseScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  clientId: 'clientId',
+  name: 'name',
+  budgetedHours: 'budgetedHours',
+  loggedHours: 'loggedHours',
+  color: 'color',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProjectBriefScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  clientId: 'clientId',
+  objectives: 'objectives',
+  inScope: 'inScope',
+  outOfScope: 'outOfScope',
+  contacts: 'contacts',
+  status: 'status',
+  version: 'version',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ClientHealthScoreScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  score: 'score',
+  trend: 'trend',
+  trendValue: 'trendValue',
+  sentiment: 'sentiment',
+  lastTouched: 'lastTouched',
+  overdueTasks: 'overdueTasks',
+  unreadMessages: 'unreadMessages',
+  milestoneDelayDays: 'milestoneDelayDays',
+  retainerBurnPct: 'retainerBurnPct',
+  invoiceStatus: 'invoiceStatus',
+  recordedAt: 'recordedAt'
+};
+
+exports.Prisma.ClientHealthSignalScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  type: 'type',
+  text: 'text',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ClientInterventionScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  type: 'type',
+  description: 'description',
+  status: 'status',
+  assignedTo: 'assignedTo',
+  resolvedAt: 'resolvedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SatisfactionSurveyScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  periodStart: 'periodStart',
+  periodEnd: 'periodEnd',
+  npsScore: 'npsScore',
+  csatScore: 'csatScore',
+  status: 'status',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SatisfactionResponseScalarFieldEnum = {
+  id: 'id',
+  surveyId: 'surveyId',
+  question: 'question',
+  answer: 'answer',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ClientOnboardingRecordScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  stageLabel: 'stageLabel',
+  status: 'status',
+  sortOrder: 'sortOrder',
+  estimatedAt: 'estimatedAt',
+  completedAt: 'completedAt',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.OffboardingTaskScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  groupName: 'groupName',
+  label: 'label',
+  status: 'status',
+  actionLabel: 'actionLabel',
+  sortOrder: 'sortOrder',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CommunicationLogScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  type: 'type',
+  subject: 'subject',
+  fromName: 'fromName',
+  direction: 'direction',
+  relatedFileId: 'relatedFileId',
+  actionLabel: 'actionLabel',
+  occurredAt: 'occurredAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.SLARecordScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  tier: 'tier',
+  metric: 'metric',
+  target: 'target',
+  targetHrs: 'targetHrs',
+  actual: 'actual',
+  actualHrs: 'actualHrs',
+  variance: 'variance',
+  status: 'status',
+  periodStart: 'periodStart',
+  periodEnd: 'periodEnd',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.AppointmentScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  type: 'type',
+  scheduledAt: 'scheduledAt',
+  durationMins: 'durationMins',
+  ownerName: 'ownerName',
+  status: 'status',
+  notes: 'notes',
+  videoRoomUrl: 'videoRoomUrl',
+  videoProvider: 'videoProvider',
+  videoCallStatus: 'videoCallStatus',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ReferralScalarFieldEnum = {
+  id: 'id',
+  referredByName: 'referredByName',
+  referredByEmail: 'referredByEmail',
+  referredClientId: 'referredClientId',
+  status: 'status',
+  rewardAmountCents: 'rewardAmountCents',
+  rewardedAt: 'rewardedAt',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SupportTicketScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  title: 'title',
+  description: 'description',
+  category: 'category',
+  priority: 'priority',
+  status: 'status',
+  assignedTo: 'assignedTo',
+  resolvedAt: 'resolvedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.StaffProfileScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  role: 'role',
+  department: 'department',
+  avatarInitials: 'avatarInitials',
+  avatarColor: 'avatarColor',
+  hireDate: 'hireDate',
+  contractType: 'contractType',
+  grossSalaryCents: 'grossSalaryCents',
+  taxRatePct: 'taxRatePct',
+  uifRatePct: 'uifRatePct',
+  bankLast4: 'bankLast4',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.StaffPayslipScalarFieldEnum = {
+  id: 'id',
+  staffId: 'staffId',
+  period: 'period',
+  periodStart: 'periodStart',
+  periodEnd: 'periodEnd',
+  grossPayCents: 'grossPayCents',
+  taxCents: 'taxCents',
+  uifCents: 'uifCents',
+  medicalCents: 'medicalCents',
+  totalDeductionsCents: 'totalDeductionsCents',
+  netPayCents: 'netPayCents',
+  status: 'status',
+  paidAt: 'paidAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LeaveRequestScalarFieldEnum = {
+  id: 'id',
+  staffId: 'staffId',
+  type: 'type',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  days: 'days',
+  status: 'status',
+  approverId: 'approverId',
+  approvedAt: 'approvedAt',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.StaffOnboardingRecordScalarFieldEnum = {
+  id: 'id',
+  staffId: 'staffId',
+  stageLabel: 'stageLabel',
+  status: 'status',
+  sortOrder: 'sortOrder',
+  completedAt: 'completedAt',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.JobPostingScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  department: 'department',
+  priority: 'priority',
+  status: 'status',
+  hiringManager: 'hiringManager',
+  salaryBand: 'salaryBand',
+  postedAt: 'postedAt',
+  targetDate: 'targetDate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.JobApplicationScalarFieldEnum = {
+  id: 'id',
+  jobPostingId: 'jobPostingId',
+  candidateName: 'candidateName',
+  stage: 'stage',
+  score: 'score',
+  source: 'source',
+  flag: 'flag',
+  appliedAt: 'appliedAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TrainingRecordScalarFieldEnum = {
+  id: 'id',
+  staffId: 'staffId',
+  courseName: 'courseName',
+  category: 'category',
+  provider: 'provider',
+  status: 'status',
+  score: 'score',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.StandupEntryScalarFieldEnum = {
+  id: 'id',
+  staffId: 'staffId',
+  date: 'date',
+  yesterday: 'yesterday',
+  today: 'today',
+  blockers: 'blockers',
+  projectId: 'projectId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PeerReviewScalarFieldEnum = {
+  id: 'id',
+  reviewerId: 'reviewerId',
+  revieweeId: 'revieweeId',
+  projectId: 'projectId',
+  status: 'status',
+  score: 'score',
+  feedback: 'feedback',
+  dueAt: 'dueAt',
+  submittedAt: 'submittedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AnnouncementScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  type: 'type',
+  target: 'target',
+  reach: 'reach',
+  status: 'status',
+  publishedAt: 'publishedAt',
+  scheduledAt: 'scheduledAt',
+  authorId: 'authorId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ContentSubmissionScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  title: 'title',
+  type: 'type',
+  submittedById: 'submittedById',
+  submittedByName: 'submittedByName',
+  status: 'status',
+  approvedById: 'approvedById',
+  approvedAt: 'approvedAt',
+  rejectedAt: 'rejectedAt',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.DesignReviewScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  clientId: 'clientId',
+  round: 'round',
+  reviewerName: 'reviewerName',
+  status: 'status',
+  submittedAt: 'submittedAt',
+  resolvedAt: 'resolvedAt',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.MeetingRecordScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  title: 'title',
+  meetingAt: 'meetingAt',
+  durationMins: 'durationMins',
+  attendeeCount: 'attendeeCount',
+  hasRecording: 'hasRecording',
+  recordingFileId: 'recordingFileId',
+  actionItemStatus: 'actionItemStatus',
+  notes: 'notes',
+  clientMoodRating: 'clientMoodRating',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.KnowledgeArticleScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  category: 'category',
+  content: 'content',
+  authorId: 'authorId',
+  authorName: 'authorName',
+  status: 'status',
+  publishedAt: 'publishedAt',
+  tags: 'tags',
+  viewCount: 'viewCount',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.DecisionRecordScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  context: 'context',
+  outcome: 'outcome',
+  decidedByName: 'decidedByName',
+  decidedAt: 'decidedAt',
+  tags: 'tags',
+  projectId: 'projectId',
+  clientId: 'clientId',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.HandoverRecordScalarFieldEnum = {
+  id: 'id',
+  fromStaffName: 'fromStaffName',
+  toStaffName: 'toStaffName',
+  projectId: 'projectId',
+  clientId: 'clientId',
+  status: 'status',
+  notes: 'notes',
+  transferDate: 'transferDate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AuditEventScalarFieldEnum = {
+  id: 'id',
+  actorId: 'actorId',
+  actorRole: 'actorRole',
+  actorName: 'actorName',
+  action: 'action',
+  resourceType: 'resourceType',
+  resourceId: 'resourceId',
+  details: 'details',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.MarketIntelEntryScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  title: 'title',
+  source: 'source',
+  summary: 'summary',
+  relevance: 'relevance',
+  tags: 'tags',
+  enteredByName: 'enteredByName',
+  enteredAt: 'enteredAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.RecurringTaskScalarFieldEnum = {
+  id: 'id',
+  staffId: 'staffId',
+  clientId: 'clientId',
+  title: 'title',
+  frequency: 'frequency',
+  dayOfWeek: 'dayOfWeek',
+  estimateHours: 'estimateHours',
+  category: 'category',
+  isActive: 'isActive',
+  lastDoneAt: 'lastDoneAt',
+  nextDueAt: 'nextDueAt',
+  streak: 'streak',
+  totalDone: 'totalDone',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ClientProfileScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  companyName: 'companyName',
+  tagline: 'tagline',
+  mission: 'mission',
+  vision: 'vision',
+  description: 'description',
+  industry: 'industry',
+  website: 'website',
+  logoUrl: 'logoUrl',
+  primaryColor: 'primaryColor',
+  socialLinks: 'socialLinks',
+  yearFounded: 'yearFounded',
+  teamSize: 'teamSize',
+  hqLocation: 'hqLocation',
+  coverImageUrl: 'coverImageUrl',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.FeedbackReactionScalarFieldEnum = {
+  id: 'id',
+  ticketId: 'ticketId',
+  clientId: 'clientId',
+  emoji: 'emoji',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.FeedbackReplyScalarFieldEnum = {
+  id: 'id',
+  ticketId: 'ticketId',
+  authorId: 'authorId',
+  authorRole: 'authorRole',
+  authorName: 'authorName',
+  body: 'body',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.BrandAssetScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  type: 'type',
+  name: 'name',
+  fileId: 'fileId',
+  storageKey: 'storageKey',
+  mimeType: 'mimeType',
+  sizeBytes: 'sizeBytes',
+  value: 'value',
+  variant: 'variant',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ClientContractScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  title: 'title',
+  type: 'type',
+  ref: 'ref',
+  status: 'status',
+  signed: 'signed',
+  signedAt: 'signedAt',
+  fileId: 'fileId',
+  storageKey: 'storageKey',
+  mimeType: 'mimeType',
+  sizeBytes: 'sizeBytes',
+  notes: 'notes',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProjectCloseoutReportScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  projectName: 'projectName',
+  clientName: 'clientName',
+  submittedBy: 'submittedBy',
+  status: 'status',
+  budgetVarianceCents: 'budgetVarianceCents',
+  lessonsLearned: 'lessonsLearned',
+  lessonsCount: 'lessonsCount',
+  notes: 'notes',
+  approvedBy: 'approvedBy',
+  approvedAt: 'approvedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.FeatureFlagScalarFieldEnum = {
+  key: 'key',
+  name: 'name',
+  description: 'description',
+  enabled: 'enabled',
+  scope: 'scope',
+  updatedBy: 'updatedBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProposalScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  title: 'title',
+  summary: 'summary',
+  status: 'status',
+  amountCents: 'amountCents',
+  currency: 'currency',
+  preparedBy: 'preparedBy',
+  preparedByInitials: 'preparedByInitials',
+  validUntil: 'validUntil',
+  declinedAt: 'declinedAt',
+  declineReason: 'declineReason',
+  acceptedAt: 'acceptedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProposalItemScalarFieldEnum = {
+  id: 'id',
+  proposalId: 'proposalId',
+  description: 'description',
+  icon: 'icon',
+  amountCents: 'amountCents',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ServicePackageScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  slug: 'slug',
+  tagline: 'tagline',
+  priceMinCents: 'priceMinCents',
+  priceMaxCents: 'priceMaxCents',
+  isCustomQuote: 'isCustomQuote',
+  deliveryDays: 'deliveryDays',
+  paymentTerms: 'paymentTerms',
+  idealFor: 'idealFor',
+  features: 'features',
+  billingType: 'billingType',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ServiceAddonScalarFieldEnum = {
+  id: 'id',
+  category: 'category',
+  name: 'name',
+  description: 'description',
+  priceMinCents: 'priceMinCents',
+  priceMaxCents: 'priceMaxCents',
+  priceLabel: 'priceLabel',
+  billingType: 'billingType',
+  isActive: 'isActive',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.RetainerPlanScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  description: 'description',
+  priceMinCents: 'priceMinCents',
+  priceMaxCents: 'priceMaxCents',
+  features: 'features',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ServiceBundleScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  description: 'description',
+  discountPct: 'discountPct',
+  isActive: 'isActive',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ServiceBundlePackageScalarFieldEnum = {
+  bundleId: 'bundleId',
+  packageId: 'packageId'
+};
+
+exports.Prisma.CompetitorScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  type: 'type',
+  tier: 'tier',
+  color: 'color',
+  services: 'services',
+  strengths: 'strengths',
+  weaknesses: 'weaknesses',
+  pricing: 'pricing',
+  positioning: 'positioning',
+  beatStrategy: 'beatStrategy',
+  avgRetainer: 'avgRetainer',
+  winsCount: 'winsCount',
+  lossesCount: 'lossesCount',
+  lastUpdated: 'lastUpdated',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.WinLossEntryScalarFieldEnum = {
+  id: 'id',
+  date: 'date',
+  prospect: 'prospect',
+  outcome: 'outcome',
+  competitorId: 'competitorId',
+  reason: 'reason',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.MarketRateScalarFieldEnum = {
+  id: 'id',
+  service: 'service',
+  maphari: 'maphari',
+  marketLow: 'marketLow',
+  marketMid: 'marketMid',
+  marketHigh: 'marketHigh',
+  isActive: 'isActive',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
+};
+
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull
+};
+
+exports.Prisma.JsonNullValueInput = {
+  JsonNull: Prisma.JsonNull
 };
 
 exports.Prisma.QueryMode = {
@@ -419,6 +1206,12 @@ exports.Prisma.QueryMode = {
 exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
+};
+
+exports.Prisma.JsonNullValueFilter = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull,
+  AnyNull: Prisma.AnyNull
 };
 
 
@@ -443,7 +1236,62 @@ exports.Prisma.ModelName = {
   ProjectChangeRequest: 'ProjectChangeRequest',
   Lead: 'Lead',
   LeadActivity: 'LeadActivity',
-  UserPreference: 'UserPreference'
+  UserPreference: 'UserPreference',
+  ProjectDeliverable: 'ProjectDeliverable',
+  ProjectRisk: 'ProjectRisk',
+  ProjectDecision: 'ProjectDecision',
+  ProjectSprint: 'ProjectSprint',
+  ProjectSignOff: 'ProjectSignOff',
+  ProjectPhase: 'ProjectPhase',
+  ProjectBrief: 'ProjectBrief',
+  ClientHealthScore: 'ClientHealthScore',
+  ClientHealthSignal: 'ClientHealthSignal',
+  ClientIntervention: 'ClientIntervention',
+  SatisfactionSurvey: 'SatisfactionSurvey',
+  SatisfactionResponse: 'SatisfactionResponse',
+  ClientOnboardingRecord: 'ClientOnboardingRecord',
+  OffboardingTask: 'OffboardingTask',
+  CommunicationLog: 'CommunicationLog',
+  SLARecord: 'SLARecord',
+  Appointment: 'Appointment',
+  Referral: 'Referral',
+  SupportTicket: 'SupportTicket',
+  StaffProfile: 'StaffProfile',
+  StaffPayslip: 'StaffPayslip',
+  LeaveRequest: 'LeaveRequest',
+  StaffOnboardingRecord: 'StaffOnboardingRecord',
+  JobPosting: 'JobPosting',
+  JobApplication: 'JobApplication',
+  TrainingRecord: 'TrainingRecord',
+  StandupEntry: 'StandupEntry',
+  PeerReview: 'PeerReview',
+  Announcement: 'Announcement',
+  ContentSubmission: 'ContentSubmission',
+  DesignReview: 'DesignReview',
+  MeetingRecord: 'MeetingRecord',
+  KnowledgeArticle: 'KnowledgeArticle',
+  DecisionRecord: 'DecisionRecord',
+  HandoverRecord: 'HandoverRecord',
+  AuditEvent: 'AuditEvent',
+  MarketIntelEntry: 'MarketIntelEntry',
+  RecurringTask: 'RecurringTask',
+  ClientProfile: 'ClientProfile',
+  FeedbackReaction: 'FeedbackReaction',
+  FeedbackReply: 'FeedbackReply',
+  BrandAsset: 'BrandAsset',
+  ClientContract: 'ClientContract',
+  ProjectCloseoutReport: 'ProjectCloseoutReport',
+  FeatureFlag: 'FeatureFlag',
+  Proposal: 'Proposal',
+  ProposalItem: 'ProposalItem',
+  ServicePackage: 'ServicePackage',
+  ServiceAddon: 'ServiceAddon',
+  RetainerPlan: 'RetainerPlan',
+  ServiceBundle: 'ServiceBundle',
+  ServiceBundlePackage: 'ServiceBundlePackage',
+  Competitor: 'Competitor',
+  WinLossEntry: 'WinLossEntry',
+  MarketRate: 'MarketRate'
 };
 
 /**

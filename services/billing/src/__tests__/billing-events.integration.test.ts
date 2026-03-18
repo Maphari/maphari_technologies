@@ -14,13 +14,19 @@ describe("billing events integration", () => {
     vi.spyOn(prisma.invoice, "create").mockResolvedValue({
       id: "f65fb43e-b228-4df4-9dd8-90bb4f05358c",
       clientId: "550e8400-e29b-41d4-a716-446655440221",
+      projectId: null,
       number: "INV-1001",
+      description: null,
+      lineItems: null,
+      billingPeriod: null,
+      costCenter: null,
       amountCents: BigInt(109900),
       currency: "USD",
       status: "ISSUED",
       issuedAt: new Date("2026-02-01T10:00:00.000Z"),
       dueAt: new Date("2026-02-10T10:00:00.000Z"),
       paidAt: null,
+      pdfFileId: null,
       createdAt: new Date("2026-02-01T10:00:00.000Z"),
       updatedAt: new Date("2026-02-01T10:00:00.000Z")
     });
@@ -64,13 +70,19 @@ describe("billing events integration", () => {
     vi.spyOn(prisma.invoice, "create").mockResolvedValue({
       id: "cb35bc98-4240-44e6-a0d4-2f779f8aca22",
       clientId: "550e8400-e29b-41d4-a716-446655440221",
+      projectId: null,
       number: "INV-1002",
+      description: null,
+      lineItems: null,
+      billingPeriod: null,
+      costCenter: null,
       amountCents: BigInt(22000),
       currency: "USD",
       status: "OVERDUE",
       issuedAt: new Date("2026-01-01T10:00:00.000Z"),
       dueAt: new Date("2026-01-10T10:00:00.000Z"),
       paidAt: null,
+      pdfFileId: null,
       createdAt: new Date("2026-01-11T10:00:00.000Z"),
       updatedAt: new Date("2026-01-11T10:00:00.000Z")
     });
@@ -108,25 +120,34 @@ describe("billing events integration", () => {
     vi.spyOn(prisma.invoice, "findUnique").mockResolvedValue({
       id: "d8305e7f-61b6-4ed7-ab35-d6f60f30dc6d",
       clientId: "550e8400-e29b-41d4-a716-446655440221",
+      projectId: null,
       number: "INV-1003",
+      description: null,
+      lineItems: null,
+      billingPeriod: null,
+      costCenter: null,
       amountCents: BigInt(50000),
       currency: "USD",
       status: "ISSUED",
       issuedAt: new Date("2026-02-01T12:00:00.000Z"),
       dueAt: new Date("2026-02-20T12:00:00.000Z"),
       paidAt: null,
+      pdfFileId: null,
       createdAt: new Date("2026-02-01T12:00:00.000Z"),
       updatedAt: new Date("2026-02-01T12:00:00.000Z")
     });
     vi.spyOn(prisma.payment, "create").mockResolvedValue({
       id: "7f32a7fa-24a1-4bca-8bd2-58d1a42a2f2b",
       clientId: "550e8400-e29b-41d4-a716-446655440221",
+      projectId: null,
       invoiceId: "d8305e7f-61b6-4ed7-ab35-d6f60f30dc6d",
+      source: null,
       amountCents: BigInt(50000),
       status: "COMPLETED",
       provider: "stripe",
       transactionRef: "tx-1003",
       paidAt: new Date("2026-02-03T12:00:00.000Z"),
+      receiptFileId: null,
       createdAt: new Date("2026-02-03T12:00:00.000Z"),
       updatedAt: new Date("2026-02-03T12:00:00.000Z")
     });
