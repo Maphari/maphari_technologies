@@ -378,7 +378,7 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className={cx("msguPageRoot")}>
+    <div className={cx("msguPageRoot", "rdStudioPage")}>
       <div className={cx("msguSplit")}>
         {/* ── LEFT: Thread list ─────────────────────────────────────────── */}
         <aside className={cx("msguLeftPane")}>
@@ -416,6 +416,7 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                   type="button"
                   className={cx(
                     "msguThreadItem",
+                    "rdStudioRow",
                     activeThread?.id === thread.id ? "msguThreadItemActive" : "",
                     thread.unread ? "msguThreadItemUnread" : "",
                   )}
@@ -428,7 +429,7 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                   <div className={cx("msguThreadBody")}>
                     <div className={cx("msguThreadTop")}>
                       <span className={cx("msguThreadName")}>{thread.subject}</span>
-                      <span className={cx("msguThreadTime", "fontMono")}>{thread.time}</span>
+                      <span className={cx("msguThreadTime", "fontMono", "rdStudioLabel")}>{thread.time}</span>
                     </div>
                     <div className={cx("msguThreadPreview")}>{thread.preview}</div>
                     {thread.projectName && (
@@ -584,7 +585,7 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
           {/* ── ACTIVITY ────────────────────────────────────────────────── */}
           {activeTab === "Activity" && (
             <div className={cx("msguActivityPage")}>
-              <div className={cx("msguActivityHeader")}>
+              <div className={cx("msguActivityHeader", "rdStudioSection")}>
                 <div className={cx("pillTabs")}>
                   {ACTIVITY_FILTERS.map((f) => (
                     <button
@@ -614,7 +615,7 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                   <div className={cx("msguTimeline")}>
                     <div className={cx("msguTimelineRail")} />
                     {filteredActivity.map((item) => (
-                      <div key={item.id} className={cx("msguTimelineItem")}>
+                      <div key={item.id} className={cx("msguTimelineItem", "rdStudioRow")}>
                         <div className={cx("msguTimelineDot", TONE_DOT[item.tone])}>
                           <Ic n={item.icon as "activity"} sz={11} c="var(--dark)" />
                         </div>
@@ -622,7 +623,7 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                           <div className={cx("text13", "fw600")}>{item.title}</div>
                           <div className={cx("text11", "colorMuted")}>{item.sub}</div>
                         </div>
-                        <span className={cx("text11", "colorMuted", "fontMono")}>{item.time}</span>
+                        <span className={cx("text11", "colorMuted", "fontMono", "rdStudioLabel")}>{item.time}</span>
                       </div>
                     ))}
                   </div>

@@ -347,10 +347,10 @@ export function HomePage({
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className={cx("pageBody")}>
+    <div className={cx("pageBody", "rdStudioPage")}>
 
       {/* ══ HERO COMMAND CARD ═════════════════════════════════════════════ */}
-      <div className={cx("cmdHero")}>
+      <div className={cx("cmdHero", "rdStudioCard")}>
         <div className={cx("cmdHeroBg")} aria-hidden="true" />
         <div className={cx("cmdHeroGlow")} aria-hidden="true" />
 
@@ -623,10 +623,10 @@ export function HomePage({
       <div className={cx("cmdPods")}>
         {pods.map(p => (
           <div key={p.label} className={cx("cmdPod")}>
-            <div className={cx("cmdPodEyebrow")}>
+            <div className={cx("cmdPodEyebrow", "rdStudioLabel")}>
               <Ic n={p.icon} sz={10} c="var(--muted2)" />{p.label}
             </div>
-            <div className={cx("cmdPodValue")}>{p.value}</div>
+            <div className={cx("cmdPodValue", "rdStudioMetric")}>{p.value}</div>
             <div className={cx("cmdPodSub")}>{p.sub}</div>
             <div className={cx("cmdPodBar")}>
               <div className={cx("cmdPodBarFill", "dynBgColor", mounted ? "hxBarMounted" : "")}
@@ -638,7 +638,7 @@ export function HomePage({
       </div>
 
       {/* ══ MID ROW: Today's Focus + Phase Journey ════════════════════════ */}
-      <div className={cx("cmdMidRow")}>
+      <div className={cx("cmdMidRow", "rdStudioSection")}>
 
         {/* ── Today's Focus ── */}
         <div className={cx("cmdFocusCard")}>
@@ -749,7 +749,7 @@ export function HomePage({
       </div>
 
       {/* ══ PIPELINE + ACTIVITY ═══════════════════════════════════════════ */}
-      <div className={cx("cmdPipeActivityRow")}>
+      <div className={cx("cmdPipeActivityRow", "rdStudioSection")}>
 
         {/* ── Deliverable Pipeline ── */}
         <div className={cx("card", "p0")}>

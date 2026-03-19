@@ -99,7 +99,7 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className={cx("pageBody", styles.onboardFlowRoot)}>
+    <div className={cx("pageBody", styles.onboardFlowRoot, "rdStudioPage")}>
       <section className={styles.onboardFlowMain}>
           <div className={cx("pageHeader", "mb0")}>
             <div>
@@ -200,15 +200,15 @@ export function OnboardingPage() {
           {tab === "Onboarding Checklist" ? (
             <div className={styles.onboardFlowContent}>
               <div>
-                <div className={styles.onboardFlowHeadInline}>
+                <div className={cx(styles.onboardFlowHeadInline, "rdStudioSection")}>
                   <div className={styles.onboardFlowHeadLineWrap}>
                     <span className={styles.onboardFlowSectionTitlePlain}>Onboarding Checklist</span>
                     <div className={styles.onboardFlowHeadLine} />
                   </div>
-                  <span className={cx("badge", "badgeGreen")}>{donePct}% complete</span>
+                  <span className={cx("badge", "badgeGreen", "rdStudioMetric", "rdStudioMetricPos")}>{donePct}% complete</span>
                 </div>
 
-                <div className={cx("card", styles.onboardFlowCheckCard)}>
+                <div className={cx("card", styles.onboardFlowCheckCard, "rdStudioCard")}>
                   {checks.map((item, index) => (
                     <div key={`${item.title}-${index}`} className={styles.onboardFlowCheckRow}>
                       <button
@@ -223,7 +223,7 @@ export function OnboardingPage() {
                       </button>
 
                       <div className={styles.onboardFlowGrow}>
-                        <div className={cx(styles.onboardFlowCheckTitle, item.done && styles.onboardFlowStrike)}>{item.title}</div>
+                        <div className={cx(styles.onboardFlowCheckTitle, item.done && styles.onboardFlowStrike, "rdStudioLabel")}>{item.title}</div>
                         <div className={styles.onboardFlowCheckDesc}>{item.desc}</div>
                         {item.done ? <div className={styles.onboardFlowCheckMeta}>{item.meta}</div> : null}
                       </div>
@@ -240,7 +240,7 @@ export function OnboardingPage() {
             <div className={styles.onboardFlowContent}>
               <div>
                 <div className={styles.onboardFlowSectionTitle}>Our Process</div>
-                <div className={cx("card", styles.onboardFlowStepCard)}>
+                <div className={cx("card", styles.onboardFlowStepCard, "rdStudioCard")}>
                   {PROCESS_STEPS.map((item, index) => (
                     <div key={item.title} className={styles.onboardFlowStepRow}>
                       <div className={cx(
@@ -255,7 +255,7 @@ export function OnboardingPage() {
                       </div>
                       <div className={styles.onboardFlowGrow}>
                         <div className={styles.onboardFlowStepTitleRow}>
-                          <div className={styles.onboardFlowStepTitle}>{item.title}</div>
+                          <div className={cx(styles.onboardFlowStepTitle, "rdStudioLabel")}>{item.title}</div>
                           <span className={cx("badge", item.state === "done" ? "badgeGreen" : item.state === "active" ? "badgeAccent" : "badgeMuted")}>
                             {item.state === "done" ? "Complete" : item.state === "active" ? "Current" : "Upcoming"}
                           </span>

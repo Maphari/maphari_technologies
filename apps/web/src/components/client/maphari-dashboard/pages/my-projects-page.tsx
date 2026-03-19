@@ -60,7 +60,7 @@ export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { pro
   const filtered = useMemo(() => displayProjects.filter((p) => p.tab === tab), [displayProjects, tab]);
 
   return (
-    <div className={cx("pageBody")}>
+    <div className={cx("pageBody", "rdStudioPage")}>
       <div className={cx("pageHeader", "mb0")}>
         <div>
           <div className={cx("pageEyebrow")}>Projects · Overview</div>
@@ -108,20 +108,20 @@ export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { pro
 
       <div className={cx("grid2")}>
         {filtered.map((p) => (
-          <div key={p.id} className={cx("card", "p0", "dynBorderLeft3")} style={{ "--color": p.borderColor } as React.CSSProperties}>
+          <div key={p.id} className={cx("card", "p0", "dynBorderLeft3", "rdStudioCard")} style={{ "--color": p.borderColor } as React.CSSProperties}>
             <div className={cx("py14_px", "px16_px")}>
               {/* Header row */}
               <div className={cx("flexBetween", "mb6")}>
                 <span className={cx("fw700", "text13")}>{p.name}</span>
                 <span className={cx("dynColor", "fw700", "fs085rem")} style={{ "--color": healthColor(p.health) } as React.CSSProperties}>{p.health}</span>
               </div>
-              <span className={cx("badge", "badgeMuted", "mb10", "inlineBlock")}>{p.phase}</span>
+              <span className={cx("badge", "badgeMuted", "mb10", "inlineBlock", "rdStudioLabel")}>{p.phase}</span>
 
               {/* Progress */}
               <div className={cx("mb10")}>
                 <div className={cx("flexBetween", "mb4")}>
                   <span className={cx("text11", "colorMuted")}>Progress</span>
-                  <span className={cx("text11", "fw600")}>{p.progress}%</span>
+                  <span className={cx("text11", "fw600", "rdStudioMetric", p.progress > 80 ? "rdStudioMetricPos" : "rdStudioMetricWarn")}>{p.progress}%</span>
                 </div>
                 <div className={cx("progressTrack")}>
                   <div className={cx("progressFill")} style={{ '--pct': `${p.progress}%` } as React.CSSProperties} />

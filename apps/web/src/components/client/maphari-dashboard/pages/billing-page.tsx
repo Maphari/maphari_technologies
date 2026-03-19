@@ -600,7 +600,7 @@ export function BillingPage({ currency = "ZAR" }: { currency?: string }) {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className={cx("pageBody")}>
+    <div className={cx("pageBody", "rdStudioPage")}>
       <div className={cx("pageHeader", "mb0")}>
         <div>
           <div className={cx("pageEyebrow")}>Finance · Payments</div>
@@ -621,22 +621,22 @@ export function BillingPage({ currency = "ZAR" }: { currency?: string }) {
       </div>
 
       {/* Totals bar */}
-      <div className={cx("card", "p16", "mb16")}>
+      <div className={cx("card", "p16", "mb16", "rdStudioSection")}>
         {invoices.length === 0 ? (
           <div className={cx("text12", "colorMuted")}>No invoice data available yet.</div>
         ) : (
           <div className={cx("flexRow", "gap24")}>
             <div>
               <div className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700", "mb4")}>Paid</div>
-              <div className={cx("fw700", "colorAccent")}>{formatCurrency(paidCents)}</div>
+              <div className={cx("fw700", "colorAccent", "rdStudioMetric", "rdStudioMetricPos")}>{formatCurrency(paidCents)}</div>
             </div>
             <div>
-              <div className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700", "mb4")}>Outstanding</div>
-              <div className={cx("fw700", "colorAmber")}>{formatCurrency(outstandingCents)}</div>
+              <div className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700", "mb4", "rdStudioLabel")}>Outstanding</div>
+              <div className={cx("fw700", "colorAmber", "rdStudioMetric", "rdStudioMetricNeg")}>{formatCurrency(outstandingCents)}</div>
             </div>
             <div>
-              <div className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700", "mb4")}>Total</div>
-              <div className={cx("fw700")}>{formatCurrency(totalCents)}</div>
+              <div className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700", "mb4", "rdStudioLabel")}>Total</div>
+              <div className={cx("fw700", "rdStudioMetric")}>{formatCurrency(totalCents)}</div>
             </div>
             {paidMilestones.length > 0 && (
               <div>
@@ -680,8 +680,8 @@ export function BillingPage({ currency = "ZAR" }: { currency?: string }) {
                   ["Next Due Date",        nextInvoice ? fmtDate(nextInvoice.dueAt) : "—"],
                   ["Payment Method",       method === "eft" ? "EFT to Maphari Studio" : method === "card" ? "Card via secure gateway" : "PayFast"],
                 ] as [string, string][]).map(([label, value]) => (
-                  <div key={label} className={cx("listRow")}>
-                    <span className={cx("text12", "colorMuted")}>{label}</span>
+                  <div key={label} className={cx("listRow", "rdStudioRow")}>
+                    <span className={cx("text12", "colorMuted", "rdStudioLabel")}>{label}</span>
                     <span className={cx("fw600", "text12")}>{value}</span>
                   </div>
                 ))}
@@ -779,11 +779,11 @@ export function BillingPage({ currency = "ZAR" }: { currency?: string }) {
                 const txnRef  = payment?.transactionRef ?? inv.number ?? `TXN-${idx + 1}`;
                 const paidDate = payment?.paidAt ?? inv.paidAt;
                 return (
-                  <div key={inv.id} className={cx("listRow")}>
+                  <div key={inv.id} className={cx("listRow", "rdStudioRow")}>
                     <span className={cx("text20")}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
                     <div>
                       <div className={cx("fw600", "text12")}>{invoiceLabel(inv, idx)}</div>
-                      <div className={cx("text11", "colorMuted")}>{fmtDate(paidDate)} · Ref: {txnRef}</div>
+                      <div className={cx("text11", "colorMuted", "rdStudioLabel")}>{fmtDate(paidDate)} · Ref: {txnRef}</div>
                     </div>
                     <div className={cx("flexRow", "gap12")}>
                       <span className={cx("fw700")}>{formatCurrency(inv.amountCents)}</span>
