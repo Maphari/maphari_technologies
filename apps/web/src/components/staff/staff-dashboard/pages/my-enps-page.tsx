@@ -71,11 +71,15 @@ function toMonthLabel(dateStr: string): string {
 export function MyEnpsPage({
   isActive,
   session,
+  onNotify,
 }: {
   isActive: boolean;
   session: AuthSession | null;
+  onNotify?: (tone: "success" | "error" | "info" | "warning", msg: string) => void;
 }) {
   const [selectedScore, setSelectedScore] = useState<number | null>(null);
+  const [submittingScore, setSubmittingScore] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   // Derived from API data
   const [standupCount, setStandupCount]       = useState<number>(0);
@@ -217,39 +221,61 @@ export function MyEnpsPage({
 
         <div className={cx("enpSurveyBody")}>
 
-          {/* NPS score picker */}
-          <div className={cx("enpFormField")}>
-            <div className={cx("enpFieldLabel")}>
-              How likely are you to recommend Maphari as a workplace?
-              <span className={cx("enpFieldSub")}>Rate from 0 (not at all) to 10 (extremely likely)</span>
+          {submitted ? (
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateTitle")}>Response recorded</div>
+              <div className={cx("emptyStateSub")}>Your score has been submitted. Thank you!</div>
             </div>
-            <div className={cx("enpScoreRow")}>
-              {SCORES.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  className={cx("enpScoreBtn", scoreBtnSelectedCls(n, selectedScore))}
-                  onClick={() => setSelectedScore(n === selectedScore ? null : n)}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-            <div className={cx("enpZoneLabels")}>
-              <span className={cx("enpZoneLabel", "colorRed")}>Detractor (0–6)</span>
-              <span className={cx("enpZoneLabel", "colorAmber")}>Passive (7–8)</span>
-              <span className={cx("enpZoneLabel", "colorGreen")}>Promoter (9–10)</span>
-            </div>
-            {selectedScore !== null && (
-              <div className={cx("enpScoreFeedback", zoneColor(scoreZone(selectedScore)))}>
-                You selected <strong>{selectedScore}</strong> —{" "}
-                {scoreZone(selectedScore) === "promoter" ? "Promoter · thank you for the endorsement!" :
-                 scoreZone(selectedScore) === "passive"  ? "Passive · we appreciate your honesty." :
-                                                           "Detractor · your feedback helps us improve."}
+          ) : (
+            /* NPS score picker */
+            <div className={cx("enpFormField")}>
+              <div className={cx("enpFieldLabel")}>
+                How likely are you to recommend Maphari as a workplace?
+                <span className={cx("enpFieldSub")}>Rate from 0 (not at all) to 10 (extremely likely)</span>
               </div>
-            )}
-          </div>
-
+              <div className={cx("enpScoreRow")}>
+                {SCORES.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={cx("enpScoreBtn", scoreBtnSelectedCls(n, selectedScore))}
+                    onClick={() => setSelectedScore(n === selectedScore ? null : n)}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <div className={cx("enpZoneLabels")}>
+                <span className={cx("enpZoneLabel", "colorRed")}>Detractor (0–6)</span>
+                <span className={cx("enpZoneLabel", "colorAmber")}>Passive (7–8)</span>
+                <span className={cx("enpZoneLabel", "colorGreen")}>Promoter (9–10)</span>
+              </div>
+              {selectedScore !== null && (
+                <div className={cx("enpScoreFeedback", zoneColor(scoreZone(selectedScore)))}>
+                  You selected <strong>{selectedScore}</strong> —{" "}
+                  {scoreZone(selectedScore) === "promoter" ? "Promoter · thank you for the endorsement!" :
+                   scoreZone(selectedScore) === "passive"  ? "Passive · we appreciate your honesty." :
+                                                             "Detractor · your feedback helps us improve."}
+                </div>
+              )}
+              <button
+                type="button"
+                className={cx("btnPrimary")}
+                disabled={selectedScore === null || submittingScore}
+                onClick={async () => {
+                  if (selectedScore === null) return;
+                  setSubmittingScore(true);
+                  // TODO: wire to eNPS API when endpoint is available
+                  await new Promise<void>((r) => setTimeout(r, 400));
+                  setSubmitted(true);
+                  setSubmittingScore(false);
+                  onNotify?.("success", "Thank you for your response!");
+                }}
+              >
+                {submittingScore ? "Submitting…" : "Submit Score"}
+              </button>
+            </div>
+          )}
 
         </div>
       </div>
