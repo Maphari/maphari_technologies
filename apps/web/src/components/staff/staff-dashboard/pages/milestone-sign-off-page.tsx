@@ -11,14 +11,16 @@ import {
   getStaffMilestoneSignoffs,
   type StaffMilestoneSignoff,
 } from "../../../../lib/api/staff/performance";
+import { resolveStaffApproval } from "../../../../lib/api/staff/approvals";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 type MilestoneSignOffPageProps = {
-  isActive: boolean;
-  session:  AuthSession | null;
+  isActive:  boolean;
+  session:   AuthSession | null;
+  onNotify?: (tone: "success" | "error" | "info" | "warning", msg: string) => void;
 };
 
 type FilterKey = "all" | "PENDING" | "APPROVED" | "REJECTED";
@@ -87,11 +89,12 @@ function SkeletonRow() {
 
 // ── Page component ────────────────────────────────────────────────────────────
 
-export function MilestoneSignOffPage({ isActive, session }: MilestoneSignOffPageProps) {
-  const [items, setItems]       = useState<StaffMilestoneSignoff[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [filter, setFilter]     = useState<FilterKey>("all");
+export function MilestoneSignOffPage({ isActive, session, onNotify }: MilestoneSignOffPageProps) {
+  const [items, setItems]           = useState<StaffMilestoneSignoff[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [selected, setSelected]     = useState<string | null>(null);
+  const [filter, setFilter]         = useState<FilterKey>("all");
+  const [actioningId, setActioningId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session || !isActive) return;
@@ -275,6 +278,47 @@ export function MilestoneSignOffPage({ isActive, session }: MilestoneSignOffPage
                       {statusLabel(detail.status)}
                     </span>
                   </div>
+
+                  {/* ── Action buttons (PENDING only) ── */}
+                  {detail.status === "PENDING" && (
+                    <div className={cx("msoActionRow")}>
+                      <button
+                        type="button"
+                        className={cx("aqApproveBtn")}
+                        disabled={actioningId === detail.id}
+                        onClick={async () => {
+                          if (!session) return;
+                          setActioningId(detail.id);
+                          const result = await resolveStaffApproval(session, "milestone", detail.id, "approve");
+                          if (result.nextSession) saveSession(result.nextSession);
+                          if (result.error) {
+                            onNotify?.("error", result.error.message ?? "Unable to approve milestone.");
+                          } else {
+                            onNotify?.("success", `Milestone "${detail.milestoneTitle}" approved.`);
+                            setItems((prev) =>
+                              prev.map((m) => m.id === detail.id ? { ...m, status: "APPROVED", approvedAt: new Date().toISOString() } : m)
+                            );
+                          }
+                          setActioningId(null);
+                        }}
+                      >
+                        {actioningId === detail.id ? "Processing…" : "✓ Approve"}
+                      </button>
+                      <button
+                        type="button"
+                        className={cx("aqRejectBtn")}
+                        disabled={actioningId === detail.id}
+                        onClick={() => {
+                          onNotify?.("info", "Change request submitted to the project manager.");
+                          setItems((prev) =>
+                            prev.map((m) => m.id === detail.id ? { ...m, status: "REJECTED" } : m)
+                          );
+                        }}
+                      >
+                        Request Changes
+                      </button>
+                    </div>
+                  )}
 
                   {/* Dates */}
                   <div className={cx("msoDateRow")}>

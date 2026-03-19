@@ -1195,7 +1195,7 @@ export function MaphariStaffDashboard() {
 
             <ProjectContextPage isActive={activePage === "context"} session={session ?? null} />
 
-            <MilestoneSignOffPage isActive={activePage === "signoff"} session={session ?? null} />
+            <MilestoneSignOffPage isActive={activePage === "signoff"} session={session ?? null} onNotify={(tone, msg) => setFeedback({ tone, message: msg })} />
 
             <DailyStandupPage isActive={activePage === "standup"} session={session} />
 
