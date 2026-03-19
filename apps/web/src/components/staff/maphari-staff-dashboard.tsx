@@ -229,6 +229,10 @@ export function MaphariStaffDashboard() {
     });
   }, [session?.accessToken]);
 
+  useEffect(() => {
+    if (activePage !== "tasks") setFilterProjectId(undefined);
+  }, [activePage]);
+
   const staffName = staffProfileName ?? staffEmailFallbackName;
   const staffInitials = getInitials(staffName);
   const staffRole = session?.user.role ?? "STAFF";
@@ -1021,6 +1025,7 @@ export function MaphariStaffDashboard() {
               onTaskAction={handleTaskAction}
               onOpenTaskThread={handleOpenTaskThread}
               hasProjectThread={(projectId) => conversationByProjectId.has(projectId)}
+              initialProjectFilter={filterProjectId}
             />
 
             <KanbanPage

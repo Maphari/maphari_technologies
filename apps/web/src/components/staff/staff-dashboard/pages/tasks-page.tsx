@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cx, styles } from "../style";
 import type { TaskContext } from "../types";
 import { capitalize, formatDuration } from "../utils";
@@ -49,6 +49,7 @@ type TasksPageProps = {
   onTaskAction: (taskId: string, projectId: string, status: TaskContext["status"]) => void;
   onOpenTaskThread: (projectId: string) => void;
   hasProjectThread: (projectId: string) => boolean;
+  initialProjectFilter?: string;
 };
 
 export function TasksPage({
@@ -70,8 +71,21 @@ export function TasksPage({
   filteredTasks,
   onTaskAction,
   onOpenTaskThread,
-  hasProjectThread
+  hasProjectThread,
+  initialProjectFilter
 }: TasksPageProps) {
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+
+  useEffect(() => {
+    if (initialProjectFilter) {
+      setSelectedProjectId(initialProjectFilter);
+    }
+  }, [initialProjectFilter]);
+
+  const visibleTasks = selectedProjectId
+    ? filteredTasks.filter((task) => task.projectId === selectedProjectId)
+    : filteredTasks;
+
   return (
     <section className={cx("page", "pageBody", "tasksPage", isActive && "pageActive")} id="page-tasks">
       <div className={cx("pageHeaderBar", "tasksHeader")}>
@@ -158,6 +172,19 @@ export function TasksPage({
             </option>
           ))}
         </select>
+        <select
+          className={cx("filterSelect")}
+          aria-label="Project filter"
+          value={selectedProjectId}
+          onChange={(event) => setSelectedProjectId(event.target.value)}
+        >
+          <option value="">All Projects</option>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className={cx("card", "fullWidth", "tasksTableCard")}>
@@ -177,12 +204,12 @@ export function TasksPage({
               </tr>
             </thead>
             <tbody>
-              {filteredTasks.length === 0 ? (
+              {visibleTasks.length === 0 ? (
                 <tr>
                   <td colSpan={9} className={cx(styles.emptyState, "tasksEmptyState")}>No tasks in this view yet.</td>
                 </tr>
               ) : (
-                filteredTasks.map((task) => (
+                visibleTasks.map((task) => (
                   <tr key={task.id} className={cx("tasksTableRow")}>
                     <td className={cx("textCenter")}><div className={cx("priority", "tasksPriorityDot", `priority${capitalize(task.priority)}`)} title={capitalize(task.priority)} /></td>
                     <td>
