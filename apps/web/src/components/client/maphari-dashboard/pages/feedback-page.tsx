@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
+import { useProjectLayer } from "../hooks/use-project-layer";
+import { addPortalFeedbackReplyWithRefresh } from "../../../../lib/api/portal/feedback";
+import { saveSession } from "../../../../lib/auth/session";
 
 type FeedbackTab = "Feedback Rounds" | "Quick Reactions" | "Async Video" | "@Mentions";
 type ReactionKey = "approve" | "changes" | "question";
@@ -129,12 +132,30 @@ function renderMentionText(text: string) {
 }
 
 export function FeedbackPage() {
+  const { session } = useProjectLayer();
+
   const [tab, setTab] = useState<FeedbackTab>("Feedback Rounds");
   const [reactions, setReactions] = useState<Record<number, ReactionKey | null>>({});
   const [mentions, setMentions] = useState<Mention[]>(MENTIONS);
   const [feedbackModal, setFeedbackModal] = useState<RoundDeliverable | "new" | null>(null);
   const [videoModal, setVideoModal] = useState<VideoItem | null>(null);
   const [toast, setToast] = useState<{ title: string; subtitle: string } | null>(null);
+
+  // ── Modal form state (controlled inputs) ────────────────────────────────
+  const [modalReaction, setModalReaction] = useState<ReactionKey | null>(null);
+  const [modalText, setModalText]         = useState("");
+  const [modalPriority, setModalPriority] = useState<string | null>(null);
+  const [submitting, setSubmitting]       = useState(false);
+
+  // Reset form whenever the modal opens/closes
+  useEffect(() => {
+    if (!feedbackModal) {
+      setModalReaction(null);
+      setModalText("");
+      setModalPriority(null);
+      setSubmitting(false);
+    }
+  }, [feedbackModal]);
 
   useEffect(() => {
     if (!toast) return;
@@ -146,6 +167,47 @@ export function FeedbackPage() {
 
   function notify(title: string, subtitle: string): void {
     setToast({ title, subtitle });
+  }
+
+  // ── Submit feedback modal ────────────────────────────────────────────────
+  // TODO: Replace the stub ticketId below with a real deliverable/ticket ID
+  // once feedback rounds are backed by the database. The API endpoint is
+  // POST /feedback/:ticketId/replies (addPortalFeedbackReplyWithRefresh).
+  async function handleSubmitFeedback() {
+    if (!modalText.trim()) {
+      notify("Feedback required", "Please enter your feedback before submitting.");
+      return;
+    }
+    if (!session) {
+      notify("Not signed in", "Please refresh and try again.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Derive a stub ticket ID from the deliverable name until rounds are DB-backed
+      const deliverableName = feedbackModal !== "new" && feedbackModal !== null
+        ? feedbackModal.name
+        : "general";
+      const stubTicketId = deliverableName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+
+      const priorityNote = modalPriority ? ` [Priority: ${modalPriority}]` : "";
+      const reactionNote = modalReaction ? ` [Reaction: ${modalReaction}]` : "";
+      const body = `${modalText.trim()}${reactionNote}${priorityNote}`;
+
+      const r = await addPortalFeedbackReplyWithRefresh(session, stubTicketId, body);
+      if (r.nextSession) saveSession(r.nextSession);
+
+      setFeedbackModal(null);
+      notify("Feedback submitted", "Team will respond within 24 hours");
+    } catch {
+      notify("Submission failed", "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -354,7 +416,12 @@ export function FeedbackPage() {
               <label className={styles.fbCollabFieldLabel}>How do you feel about this?</label>
               <div className={styles.fbCollabReactionGrid}>
                 {REACTIONS.map((reaction) => (
-                  <button key={`modal-${reaction.key}`} type="button" className={styles.fbCollabReactionBtnCenter}>
+                  <button
+                    key={`modal-${reaction.key}`}
+                    type="button"
+                    className={cx(styles.fbCollabReactionBtnCenter, modalReaction === reaction.key && reaction.selectedCls)}
+                    onClick={() => setModalReaction((prev) => prev === reaction.key ? null : reaction.key)}
+                  >
                     <span className={styles.fbCollabReactionEmoji}>{reaction.emoji}</span>
                     <span className={styles.fbCollabReactionLabel}>{reaction.label}</span>
                   </button>
@@ -362,27 +429,37 @@ export function FeedbackPage() {
               </div>
 
               <label className={styles.fbCollabFieldLabel}>Your feedback</label>
-              <textarea className={styles.fbCollabFieldArea} placeholder="Be as specific as possible. What works? What needs to change?" />
+              <textarea
+                className={styles.fbCollabFieldArea}
+                placeholder="Be as specific as possible. What works? What needs to change?"
+                value={modalText}
+                onChange={(e) => setModalText(e.target.value)}
+              />
 
               <label className={styles.fbCollabFieldLabel}>Priority</label>
               <div className={styles.fbCollabPriorityGrid}>
                 {["Minor tweak", "Significant change", "Blocking issue"].map((priority) => (
-                  <button key={priority} type="button" className={styles.fbCollabPriorityBtn}>{priority}</button>
+                  <button
+                    key={priority}
+                    type="button"
+                    className={cx(styles.fbCollabPriorityBtn, modalPriority === priority && styles.fbCollabPriorityBtnActive)}
+                    onClick={() => setModalPriority((prev) => prev === priority ? null : priority)}
+                  >
+                    {priority}
+                  </button>
                 ))}
               </div>
             </div>
 
             <div className={styles.fbCollabModalFooter}>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setFeedbackModal(null)}>Cancel</button>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setFeedbackModal(null)} disabled={submitting}>Cancel</button>
               <button
                 type="button"
                 className={cx("btnSm", "btnAccent")}
-                onClick={() => {
-                  setFeedbackModal(null);
-                  notify("Feedback submitted", "Team will respond within 24 hours");
-                }}
+                onClick={() => { void handleSubmitFeedback(); }}
+                disabled={submitting}
               >
-                Submit Feedback
+                {submitting ? "Submitting…" : "Submit Feedback"}
               </button>
             </div>
           </div>
