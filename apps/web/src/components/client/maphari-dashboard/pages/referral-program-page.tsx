@@ -59,6 +59,12 @@ const HOW_IT_WORKS = [
 export function ReferralProgramPage() {
   const { session } = useProjectLayer();
 
+  // Derive a unique referral code from the client's ID (deterministic, no extra API call).
+  // Falls back to user ID if clientId is not set.
+  const referralCode = session
+    ? `MAPHARI-${(session.user.clientId ?? session.user.id).slice(-6).toUpperCase()}`
+    : "MAPHARI-REF";
+
   const [apiReferrals, setApiReferrals] = useState<PortalReferral[]>([]);
   const [dataLoading,  setDataLoading]  = useState(false);
   const [copied,       setCopied]       = useState(false);
@@ -136,13 +142,12 @@ export function ReferralProgramPage() {
       <div className={cx("card", "dynBgColor", "dynBorderColor", "mb16")} style={{ "--bg-color": "var(--lime-d)", "--border-color": "var(--lime)" } as React.CSSProperties}>
         <div className={cx("cardBodyPad", "textCenter", "p32x24")}>
           <div className={cx("fw700", "text12", "mb4")}>Your Referral Code</div>
-          <div className={cx("refCodeDisplay")}>MAPHARI-REF</div>
+          <div className={cx("refCodeDisplay")}>{referralCode}</div>
           <div className={cx("flexRow", "gap8", "justifyCenter")}>
             <button
               type="button"
               className={cx("btnSm", "btnAccent")}
               onClick={async () => {
-                const referralCode = "MAPHARI-REF";
                 try {
                   await navigator.clipboard.writeText(referralCode);
                   setCopied(true);
@@ -159,14 +164,14 @@ export function ReferralProgramPage() {
             <button
               type="button"
               className={cx("btnSm", "btnGhost")}
-              onClick={() => window.open(`mailto:?subject=Join via my referral&body=Use my code: MAPHARI-REF`, "_blank")}
+              onClick={() => window.open(`mailto:?subject=Join via my referral&body=Use my code: ${referralCode}`, "_blank")}
             >
               Share via Email
             </button>
             <button
               type="button"
               className={cx("btnSm", "btnGhost")}
-              onClick={() => window.open(`https://wa.me/?text=Join via my referral code: MAPHARI-REF`, "_blank")}
+              onClick={() => window.open(`https://wa.me/?text=Join via my referral code: ${referralCode}`, "_blank")}
             >
               Share via WhatsApp
             </button>
