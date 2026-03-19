@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { cx } from "../style";
 import { getStaffClients } from "../../../../lib/api/staff/clients";
+import {
+  loadStaffNotificationsWithRefresh,
+  setStaffNotificationReadStateWithRefresh
+} from "../../../../lib/api/staff/notifications";
 import { saveSession } from "../../../../lib/auth/session";
 import type { AuthSession } from "../../../../lib/auth/session";
 
@@ -35,6 +39,7 @@ type NotificationItem = {
   time: string;
   read: boolean;
   pinned: boolean;
+  _apiId?: string;
 };
 
 // Clients loaded from API in component
@@ -145,16 +150,29 @@ function timeGroup(value: string): "Today" | "Yesterday" | "Earlier" {
   return "Earlier";
 }
 
-function ActionBtn({ label, tone }: { label: string; tone: NotificationType }) {
+function ActionBtn({ label, tone, onClick }: { label: string; tone: NotificationType; onClick?: () => void }) {
   return (
-    <button type="button" className={cx("snActionBtn")} data-tone={tone}>
+    <button type="button" className={cx("snActionBtn")} data-tone={tone} onClick={onClick}>
       {label} →
     </button>
   );
 }
 
+function tabToType(tab: string): NotificationType {
+  const map: Record<string, NotificationType> = {
+    messages: "message",
+    projects: "milestone",
+    invoices: "invoice",
+    dashboard: "system",
+    settings: "system",
+    operations: "system"
+  };
+  return map[tab] ?? "system";
+}
+
 export function NotificationsPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
   const [notifs, setNotifs] = useState(initialNotifications);
+  const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<ClientRow[]>([{ id: 0, name: "Internal", avatar: "IN" }]);
   const [filter, setFilter] = useState<"all" | "unread" | "pinned">("all");
   const [typeFilter, setTypeFilter] = useState<"all" | NotificationType>("all");
@@ -186,6 +204,43 @@ export function NotificationsPage({ isActive, session }: { isActive: boolean; se
     });
     return () => { cancelled = true; };
   }, [session, isActive]);
+
+  useEffect(() => {
+    if (!session || !isActive) return;
+    let cancelled = false;
+    setLoading(true);
+    void loadStaffNotificationsWithRefresh(session).then((r) => {
+      if (cancelled) return;
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data) {
+        setNotifs(
+          r.data.map((job, idx) => ({
+            id: idx + 1,
+            clientId: 0,
+            type: tabToType(job.tab),
+            priority: (job.status === "FAILED" ? "critical" : "normal") as NotificationPriority,
+            title: job.subject ?? job.message.slice(0, 60),
+            body: job.message,
+            time: (() => {
+              const diffMs = Date.now() - new Date(job.createdAt).getTime();
+              const mins = Math.floor(diffMs / 60000);
+              if (mins < 60) return `${mins}min ago`;
+              const hours = Math.floor(mins / 60);
+              if (hours < 24) return `${hours}h ago`;
+              if (hours < 48) return "Yesterday";
+              return new Date(job.createdAt).toLocaleDateString();
+            })(),
+            read: job.readAt !== null,
+            pinned: false,
+            _apiId: job.id
+          })) as Array<NotificationItem & { _apiId: string }>
+        );
+      }
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [session?.accessToken, isActive]);
+
   const [pulse, setPulse] = useState(true);
 
   useEffect(() => {
@@ -215,8 +270,18 @@ export function NotificationsPage({ isActive, session }: { isActive: boolean; se
     };
   }, [typeMenuOpen]);
 
-  const markRead = (id: number) =>
-    setNotifs((prev) => prev.map((row) => (row.id === id ? { ...row, read: true } : row)));
+  const markRead = (id: number) => {
+    setNotifs((prev) => {
+      const updated = prev.map((row) => (row.id === id ? { ...row, read: true } : row));
+      const target = updated.find((row) => row.id === id);
+      if (target?._apiId && session) {
+        void setStaffNotificationReadStateWithRefresh(session, target._apiId, true).then((r) => {
+          if (r.nextSession) saveSession(r.nextSession);
+        });
+      }
+      return updated;
+    });
+  };
 
   const markAllRead = () => setNotifs((prev) => prev.map((row) => ({ ...row, read: true })));
 
@@ -443,7 +508,11 @@ export function NotificationsPage({ isActive, session }: { isActive: boolean; se
 
           {/* List pane */}
           <div className={cx("snListPane", selected && "snListPaneWithDetail")}>
-            {visible.length === 0 ? (
+            {loading ? (
+              <div className={cx("snEmptyState")}>
+                <div className={cx("snEmptyText", "colorMuted2")}>Loading notifications…</div>
+              </div>
+            ) : visible.length === 0 ? (
               <div className={cx("snEmptyState")}>
                 <div className={cx("snEmptyIcon")}>
                   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
@@ -570,13 +639,13 @@ export function NotificationsPage({ isActive, session }: { isActive: boolean; se
                 </div>
 
                 <div className={cx("snDetailActions")}>
-                  {selected.type === "message"    && <ActionBtn label="Reply to message"  tone="message"    />}
-                  {selected.type === "milestone"   && <ActionBtn label="Open milestone"    tone="milestone"  />}
-                  {selected.type === "invoice"     && <ActionBtn label="View invoice"      tone="invoice"    />}
-                  {selected.type === "overdue"     && <ActionBtn label="Escalate now"      tone="overdue"    />}
-                  {selected.type === "approval"    && <ActionBtn label="View milestone"    tone="approval"   />}
-                  {selected.type === "suggestion"  && <ActionBtn label="View suggestion"   tone="suggestion" />}
-                  {selected.type === "mention"     && <ActionBtn label="View note"         tone="mention"    />}
+                  {selected.type === "message"    && <ActionBtn label="Reply to message"  tone="message"    onClick={() => { markRead(selected.id); setSelected(null); }} />}
+                  {selected.type === "milestone"   && <ActionBtn label="Open milestone"    tone="milestone"  onClick={() => { markRead(selected.id); setSelected(null); }} />}
+                  {selected.type === "invoice"     && <ActionBtn label="View invoice"      tone="invoice"    onClick={() => { markRead(selected.id); setSelected(null); }} />}
+                  {selected.type === "overdue"     && <ActionBtn label="Escalate now"      tone="overdue"    onClick={() => { markRead(selected.id); setSelected(null); }} />}
+                  {selected.type === "approval"    && <ActionBtn label="View milestone"    tone="approval"   onClick={() => { markRead(selected.id); setSelected(null); }} />}
+                  {selected.type === "suggestion"  && <ActionBtn label="View suggestion"   tone="suggestion" onClick={() => { markRead(selected.id); setSelected(null); }} />}
+                  {selected.type === "mention"     && <ActionBtn label="View note"         tone="mention"    onClick={() => { markRead(selected.id); setSelected(null); }} />}
 
                   <button
                     type="button"
