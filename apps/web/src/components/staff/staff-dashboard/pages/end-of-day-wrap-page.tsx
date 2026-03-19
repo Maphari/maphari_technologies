@@ -75,7 +75,15 @@ const stepLabels = ["Log your day", "Set tomorrow's top 3", "Flag anything urgen
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function EndOfDayWrapPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
+export function EndOfDayWrapPage({
+  isActive,
+  session,
+  onNotify,
+}: {
+  isActive: boolean;
+  session: AuthSession | null;
+  onNotify?: (tone: "success" | "error" | "info" | "warning", msg: string) => void;
+}) {
   const [step,          setStep]          = useState(0);
   const [hoursLogged,   setHoursLogged]   = useState("");
   const [wrapNote,      setWrapNote]      = useState("");
@@ -85,6 +93,7 @@ export function EndOfDayWrapPage({ isActive, session }: { isActive: boolean; ses
   const [flaggedItems,  setFlaggedItems]  = useState<number[]>([]);
   const [additionalFlag,setAdditionalFlag]= useState("");
   const [submitted,     setSubmitted]     = useState(false);
+  const [submitting,    setSubmitting]    = useState(false);
   const [completedToday,setCompletedToday]= useState<CompletedTask[]>([]);
   const [urgentItems,   setUrgentItems]   = useState<UrgentItem[]>([]);
   const [loading,       setLoading]       = useState(true);
@@ -134,6 +143,31 @@ export function EndOfDayWrapPage({ isActive, session }: { isActive: boolean; ses
 
   const removeTask = (id: string) =>
     setTomorrowTasks((previous) => previous.filter((task) => task.id !== id));
+
+  async function handleWrapSubmit() {
+    setSubmitting(true);
+    const dateKey = new Date().toISOString().split("T")[0];
+    const wrapData = {
+      date:          dateKey,
+      hoursLogged,
+      wrapNote,
+      mood,
+      tomorrowTasks: tomorrowTasks.map((t) => ({ id: t.id, text: t.text, urgent: t.urgent })),
+      flaggedItems:  flaggedItems.map((index) => urgentItems[index]?.text ?? String(index)),
+      additionalFlag,
+      submittedAt:   new Date().toISOString(),
+    };
+    // TODO: wire to /staff/eod-wrap API when endpoint is available
+    try {
+      localStorage.setItem(`eod:${dateKey}`, JSON.stringify(wrapData));
+      setSubmitted(true);
+      onNotify?.("success", "Day wrapped successfully!");
+    } catch {
+      onNotify?.("error", "Failed to save wrap data. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -391,16 +425,18 @@ export function EndOfDayWrapPage({ isActive, session }: { isActive: boolean; ses
             <button
               type="button"
               className={cx("edwNextBtn", "edwNextBtnShell")}
-              disabled={!canProceed}
+              disabled={!canProceed || submitting}
               onClick={() => {
                 if (step < steps.length - 1) {
                   setStep((previous) => previous + 1);
                   return;
                 }
-                setSubmitted(true);
+                void handleWrapSubmit();
               }}
             >
-              {step === steps.length - 1 ? "Wrap up the day →" : "Continue →"}
+              {step === steps.length - 1
+                ? submitting ? "Saving…" : "Wrap up the day →"
+                : "Continue →"}
             </button>
           </div>
         </div>
