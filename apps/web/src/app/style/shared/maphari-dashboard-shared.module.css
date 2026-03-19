@@ -5371,3 +5371,65 @@
     min-height: 44px;
   }
 }
+
+/* ── Refined Data Studio — hero page additive classes ────────────────────── */
+/* Applied via cx() on 15 hero pages. Purely additive — no existing class     */
+/* is renamed or removed. maphari-dashboard-shared.module.css is already      */
+/* spread into all 3 style.ts files so no new imports are needed.             */
+
+/* Page root — sets tabular-nums and tighter tracking for the whole page */
+.rdStudioPage {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Data field labels, column headers, section subtitles */
+.rdStudioLabel {
+  font-family: var(--font-data);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+
+/* KPI numbers and totals — typography only, compose with a color variant */
+.rdStudioMetric {
+  font-family: var(--font-data);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Color variants — compose alongside .rdStudioMetric */
+.rdStudioMetricPos  { color: var(--green);  } /* positive / achieved */
+.rdStudioMetricNeg  { color: var(--red);    } /* negative / over-budget */
+.rdStudioMetricWarn { color: var(--amber);  } /* warning / at-risk */
+/* neutral: omit variant — inherits --text */
+
+/* Primary data cards — accent identity stripe + tighter chrome */
+.rdStudioCard {
+  border: 1px solid #2a2a42;
+  border-top: 1px solid var(--accent); /* dashboard-specific: admin=purple, staff=teal, client=lime */
+  border-radius: 0 0 var(--r-sm) var(--r-sm);
+  padding: 16px;
+}
+
+/* Table / list rows — dense, tabular */
+.rdStudioRow {
+  border-bottom: 1px solid var(--b1);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.rdStudioRow span,
+.rdStudioRow td {
+  font-family: var(--font-data);
+}
+
+/* Section header wrapper — accent left border */
+.rdStudioSection {
+  border-left: 2px solid var(--accent); /* dashboard-specific accent color */
+  padding-left: 12px;
+  margin-bottom: 16px;
+}
