@@ -192,67 +192,57 @@ export function RetainerBurnPage({ isActive, session }: RetainerBurnPageProps) {
 
       {/* ── Summary stats ────────────────────────────────────────────────── */}
       <div className={cx("rbStatGrid")}>
-        {loading ? (
-          [1, 2, 3, 4].map((n) => <SkeletonStat key={n} />)
-        ) : (
-          <>
-            <div className={cx("rbStatCard")}>
-              <div className={cx("rbStatCardTop")}>
-                <div className={cx("rbStatLabel")}>Clients</div>
-                <div className={cx("rbStatValue")}>{clients.length}</div>
-              </div>
-              <div className={cx("rbStatCardDivider")} />
-              <div className={cx("rbStatCardBottom")}>
-                <span className={cx("rbStatDot", "dotBgMuted2")} />
-                <span className={cx("rbStatMeta")}>retainer clients</span>
-              </div>
-            </div>
+        <div className={cx("rbStatCard")}>
+          <div className={cx("rbStatCardTop")}>
+            <div className={cx("rbStatLabel")}>Clients</div>
+            <div className={cx("rbStatValue")}>{clients.length}</div>
+          </div>
+          <div className={cx("rbStatCardDivider")} />
+          <div className={cx("rbStatCardBottom")}>
+            <span className={cx("rbStatDot", "dotBgMuted2")} />
+            <span className={cx("rbStatMeta")}>retainer clients</span>
+          </div>
+        </div>
 
-            <div className={cx("rbStatCard")}>
-              <div className={cx("rbStatCardTop")}>
-                <div className={cx("rbStatLabel")}>Avg Burn</div>
-                <div className={cx("rbStatValue", burnFillCls(avgBurn).replace("progressFill", "color"))}>{avgBurn}%</div>
-              </div>
-              <div className={cx("rbStatCardDivider")} />
-              <div className={cx("rbStatCardBottom")}>
-                <span className={cx("rbStatDot", "dotBgAccent")} />
-                <span className={cx("rbStatMeta")}>portfolio average</span>
-              </div>
-            </div>
+        <div className={cx("rbStatCard")}>
+          <div className={cx("rbStatCardTop")}>
+            <div className={cx("rbStatLabel")}>Avg Burn</div>
+            <div className={cx("rbStatValue", burnFillCls(avgBurn).replace("progressFill", "color"))}>{avgBurn}%</div>
+          </div>
+          <div className={cx("rbStatCardDivider")} />
+          <div className={cx("rbStatCardBottom")}>
+            <span className={cx("rbStatDot", "dotBgAccent")} />
+            <span className={cx("rbStatMeta")}>portfolio average</span>
+          </div>
+        </div>
 
-            <div className={cx("rbStatCard")}>
-              <div className={cx("rbStatCardTop")}>
-                <div className={cx("rbStatLabel")}>At Risk</div>
-                <div className={cx("rbStatValue", atRisk > 0 ? "colorAmber" : "colorGreen")}>{atRisk}</div>
-              </div>
-              <div className={cx("rbStatCardDivider")} />
-              <div className={cx("rbStatCardBottom")}>
-                <span className={cx("rbStatDot", "dynBgColor")} style={{ "--bg-color": atRisk > 0 ? "var(--amber)" : "var(--green)" } as React.CSSProperties} />
-                <span className={cx("rbStatMeta")}>≥ 85% burn</span>
-              </div>
-            </div>
+        <div className={cx("rbStatCard")}>
+          <div className={cx("rbStatCardTop")}>
+            <div className={cx("rbStatLabel")}>At Risk</div>
+            <div className={cx("rbStatValue", atRisk > 0 ? "colorAmber" : "colorGreen")}>{atRisk}</div>
+          </div>
+          <div className={cx("rbStatCardDivider")} />
+          <div className={cx("rbStatCardBottom")}>
+            <span className={cx("rbStatDot", "dynBgColor")} style={{ "--bg-color": atRisk > 0 ? "var(--amber)" : "var(--green)" } as React.CSSProperties} />
+            <span className={cx("rbStatMeta")}>≥ 85% burn</span>
+          </div>
+        </div>
 
-            <div className={cx("rbStatCard")}>
-              <div className={cx("rbStatCardTop")}>
-                <div className={cx("rbStatLabel")}>Exceeded</div>
-                <div className={cx("rbStatValue", exceeded > 0 ? "colorRed" : "colorGreen")}>{exceeded}</div>
-              </div>
-              <div className={cx("rbStatCardDivider")} />
-              <div className={cx("rbStatCardBottom")}>
-                <span className={cx("rbStatDot", "dynBgColor")} style={{ "--bg-color": exceeded > 0 ? "var(--red)" : "var(--green)" } as React.CSSProperties} />
-                <span className={cx("rbStatMeta")}>&gt; 100% burn</span>
-              </div>
-            </div>
-          </>
-        )}
+        <div className={cx("rbStatCard")}>
+          <div className={cx("rbStatCardTop")}>
+            <div className={cx("rbStatLabel")}>Exceeded</div>
+            <div className={cx("rbStatValue", exceeded > 0 ? "colorRed" : "colorGreen")}>{exceeded}</div>
+          </div>
+          <div className={cx("rbStatCardDivider")} />
+          <div className={cx("rbStatCardBottom")}>
+            <span className={cx("rbStatDot", "dynBgColor")} style={{ "--bg-color": exceeded > 0 ? "var(--red)" : "var(--green)" } as React.CSSProperties} />
+            <span className={cx("rbStatMeta")}>&gt; 100% burn</span>
+          </div>
+        </div>
       </div>
 
       {/* ── Client tabs + detail ──────────────────────────────────────────── */}
-      {loading ? (
-        <div className={cx("flexCol", "gap12")}>
-          {[1, 2, 3].map((n) => <SkeletonCard key={n} />)}
-        </div>
-      ) : clients.length === 0 ? (
+      {clients.length === 0 ? (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}><Ic n="activity" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No retainer data</div>
