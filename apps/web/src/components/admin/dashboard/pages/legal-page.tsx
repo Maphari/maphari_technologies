@@ -89,6 +89,18 @@ export function LegalPage() {
   const activeCount   = contracts.filter((c) => contractDisplayStatus(c) === "active").length;
   const highRisk      = compliance.filter((c) => c.risk === "high").length;
 
+  if (loadingContracts) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody, styles.lglRoot)}>
       <div className={styles.pageHeader}>

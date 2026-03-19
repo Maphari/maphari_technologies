@@ -232,6 +232,18 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
   const openEscalationsCount = escalations.filter((e) => e.status !== "RESOLVED").length;
   const unreadClientCount = messages.filter((m) => (m.authorRole ?? "").toUpperCase() === "CLIENT" && m.deliveryStatus !== "READ").length;
 
+  if (loadingConversations) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   async function handleCreateConversation(): Promise<void> {
     if (!session || !canEdit) return;
     if (!newConversationClientId || !newSubject.trim()) {
