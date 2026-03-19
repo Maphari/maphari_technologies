@@ -36070,3 +36070,5 @@
 .pnCatGeneral      { color: var(--muted2); border-color: var(--b2); }
 .pnSearchInput { min-width: 180px; flex: 1; max-width: 280px; }
 .pnCategoryChip { font-size: 0.65rem; padding: 2px 7px; border-radius: 10px; background: var(--s3); color: var(--text-muted); margin-right: 6px; }
+.pnNoteText { line-height: 1.6; margin: 0; }
+.aduCharCount { font-size: 0.72rem; color: var(--text-muted); text-align: right; margin-top: 4px; }

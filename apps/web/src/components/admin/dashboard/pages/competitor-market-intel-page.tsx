@@ -457,7 +457,7 @@ export function CompetitorMarketIntelPage({ session }: { session: AuthSession | 
               <input className={styles.fieldInput} value={compForm.name} onChange={(e) => setCompForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Lemon & Clay" required />
 
               <div className={cx("flexRow", "gap8")}>
-                <div style={{ flex: 1 }}>
+                <div className={cx("flex1")}>
                   <label className={styles.fieldLabel}>Type</label>
                   <select className={styles.fieldInput} value={compForm.type} onChange={(e) => setCompForm((f) => ({ ...f, type: e.target.value }))}>
                     <option>Direct</option>
@@ -465,7 +465,7 @@ export function CompetitorMarketIntelPage({ session }: { session: AuthSession | 
                     <option>Indirect</option>
                   </select>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className={cx("flex1")}>
                   <label className={styles.fieldLabel}>Tier</label>
                   <select className={styles.fieldInput} value={compForm.tier} onChange={(e) => setCompForm((f) => ({ ...f, tier: e.target.value }))}>
                     <option>Same tier</option>

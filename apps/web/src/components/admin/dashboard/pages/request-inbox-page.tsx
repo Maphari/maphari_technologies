@@ -96,21 +96,12 @@ function TriageModal({
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1000,
-        background: "rgba(0,0,0,0.55)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "16px",
-      }}
+      className={styles.modalOverlay}
     >
-      <div className={styles.card} style={{ width: "100%", maxWidth: 520, margin: 0 }}>
+      <div className={styles.modal}>
         {/* Header */}
-        <div className={styles.cardHd}>
-          <span className={styles.cardHdTitle}>Triage Request</span>
+        <div className={styles.modalHd}>
+          <span className={styles.modalTitle}>Triage Request</span>
           <button
             type="button"
             className={cx("btnSm", "btnGhost")}
@@ -121,11 +112,11 @@ function TriageModal({
           </button>
         </div>
 
-        {/* Request summary */}
-        <div className={styles.cardInner}>
-          <div style={{ marginBottom: 16 }}>
-            <div className={cx("fw600")} style={{ marginBottom: 4 }}>{request.name}</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+        {/* Request summary + form */}
+        <div className={styles.modalBody}>
+          <div className={cx("mb16")}>
+            <div className={cx("fw600", "mb4")}>{request.name}</div>
+            <div className={cx("flexRow", "flexWrap", "gap8", "mb4")}>
               <span className={cx("colorMuted", "text12")}>Client: {clientName}</span>
               <span className={cx("colorMuted", "text12")}>·</span>
               <span className={cx("fontMono", "text12")}>#{shortId(request.projectId)}</span>
@@ -136,7 +127,7 @@ function TriageModal({
               <span className={cx("badge")}>{request.requestDetails.serviceType}</span>
             )}
             {request.requestNote && (
-              <div className={cx("colorMuted", "text12")} style={{ marginTop: 8 }}>
+              <div className={cx("colorMuted", "text12", "mt8")}>
                 {request.requestNote}
               </div>
             )}
@@ -144,11 +135,11 @@ function TriageModal({
 
           <form onSubmit={handleSubmit}>
             {/* Decision */}
-            <div style={{ marginBottom: 12 }}>
-              <label className={cx("colorMuted", "text12")} style={{ display: "block", marginBottom: 6 }}>
+            <div className={cx("mb12")}>
+              <label className={cx("colorMuted", "text12", "block", "mb6")}>
                 Decision
               </label>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div className={cx("flexRow", "gap8")}>
                 {(["APPROVED", "REJECTED"] as const).map((opt) => (
                   <button
                     key={opt}
@@ -171,8 +162,8 @@ function TriageModal({
 
             {/* Owner Name (only shown for APPROVED) */}
             {decision === "APPROVED" && (
-              <div style={{ marginBottom: 12 }}>
-                <label className={cx("colorMuted", "text12")} style={{ display: "block", marginBottom: 6 }}>
+              <div className={cx("mb12")}>
+                <label className={cx("colorMuted", "text12", "block", "mb6")}>
                   Assign Owner (optional)
                 </label>
                 <input
@@ -187,23 +178,22 @@ function TriageModal({
             )}
 
             {/* Note */}
-            <div style={{ marginBottom: 16 }}>
-              <label className={cx("colorMuted", "text12")} style={{ display: "block", marginBottom: 6 }}>
+            <div className={cx("mb16")}>
+              <label className={cx("colorMuted", "text12", "block", "mb6")}>
                 Note (optional)
               </label>
               <textarea
-                className={cx("inputSm")}
+                className={cx("inputSm", "wFull", "resizeV")}
                 placeholder="Add a triage note…"
                 rows={3}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 disabled={submitting}
-                style={{ width: "100%", resize: "vertical" }}
               />
             </div>
 
             {/* Actions */}
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <div className={cx("flexEnd", "gap8")}>
               <button
                 type="button"
                 className={cx("btnSm", "btnGhost")}

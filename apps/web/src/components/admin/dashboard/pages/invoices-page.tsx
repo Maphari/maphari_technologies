@@ -498,8 +498,8 @@ export function InvoicesPage({
                       </div>
                     </div>
                     {expandedInvoiceId === inv.id && (
-                      <div className={cx(styles.cardInner)} style={{ background: "rgba(255,255,255,0.02)", borderTop: "1px solid var(--border)" }}>
-                        <div className={cx("flex", "gap20")} style={{ flexWrap: "wrap" }}>
+                      <div className={cx(styles.cardInner, styles.invcExpandedBody)}>
+                        <div className={cx("flex", "gap20", "flexWrap")}>
                           <div><div className={cx("text11", "colorMuted", "mb2")}>INVOICE</div><div className={cx("text12")}>{inv.number}</div></div>
                           <div><div className={cx("text11", "colorMuted", "mb2")}>STATUS</div><div className={cx("text12")}>{inv.status}</div></div>
                           <div><div className={cx("text11", "colorMuted", "mb2")}>AMOUNT</div><div className={cx("text12")}>{formatMoneyCents(inv.amountCents, { currency: inv.currency })}</div></div>
@@ -579,7 +579,7 @@ export function InvoicesPage({
 
               <label className={styles.fieldLabel}>Stage *</label>
               <div className={cx("flexRow", "gap16")}>
-                <label className={cx("flexRow", "gap6")} style={{ cursor: "pointer" }}>
+                <label className={cx("flexRow", "gap6")}>
                   <input
                     type="radio"
                     name="msStage"
@@ -589,7 +589,7 @@ export function InvoicesPage({
                   />
                   <span className={cx("text13")}>30% Milestone</span>
                 </label>
-                <label className={cx("flexRow", "gap6")} style={{ cursor: "pointer" }}>
+                <label className={cx("flexRow", "gap6")}>
                   <input
                     type="radio"
                     name="msStage"
@@ -602,7 +602,7 @@ export function InvoicesPage({
               </div>
 
               <label className={styles.fieldLabel}>Amount (auto-calculated)</label>
-              <div className={cx("fieldInput", styles.fieldInput)} style={{ background: "rgba(255,255,255,0.04)", cursor: "not-allowed" }}>
+              <div className={cx("fieldInput", styles.fieldInput, styles.fieldInputReadonly)}>
                 {msAmountCents > 0
                   ? formatMoneyCents(msAmountCents, { currency: "ZAR", maximumFractionDigits: 0 })
                   : msProjectId ? "Calculating…" : "Select project first"}
@@ -617,7 +617,7 @@ export function InvoicesPage({
               <input type="date" className={styles.fieldInput} value={msDueAt} onChange={(e) => setMsDueAt(e.target.value)} />
 
               <label className={styles.fieldLabel}>Description (auto-filled)</label>
-              <div className={cx(styles.fieldInput)} style={{ background: "rgba(255,255,255,0.04)", cursor: "not-allowed", fontSize: "12px" }}>
+              <div className={cx(styles.fieldInput, styles.fieldInputReadonly, "text12")}>
                 {msProjectId
                   ? `Project ${msStage === "MILESTONE_30" ? "Milestone" : "Final"} — ${msStage === "MILESTONE_30" ? "30%" : "20%"} — ${msStage}`
                   : "Select project to preview"}

@@ -732,6 +732,16 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
+.invcExpandedBody {
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--b1);
+}
+
+.fieldInputReadonly {
+  background: rgba(255, 255, 255, 0.04);
+  cursor: not-allowed;
+}
+
 .invcVatDueCard {
   border: 1px solid var(--accent-d);
   border-radius: var(--r-md);

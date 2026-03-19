@@ -278,7 +278,7 @@ export function PrivateNotesPage({ isActive, session }: { isActive: boolean; ses
                   </button>
                 </div>
               </div>
-              <p className={cx("text13", "colorMuted")} style={{ lineHeight: 1.6, margin: 0 }}>
+              <p className={cx("text13", "colorMuted", "pnNoteText")}>
                 {note.note}
               </p>
             </div>

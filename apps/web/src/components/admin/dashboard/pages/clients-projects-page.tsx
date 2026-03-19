@@ -547,7 +547,7 @@ export function ClientsAndProjectsPage({
                       const cs = contractMap.get(client.id);
                       if (!cs) return <span className={cx("text10", "colorMuted2")}>No docs</span>;
                       return (
-                        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+                        <div className={cx("flexRow", "gap4", "flexWrap")}>
                           {cs.hasNda && (
                             <span className={cx("badge", cs.ndaSigned ? "badgeGreen" : "badgeAmber")}>
                               NDA {cs.ndaSigned ? "✓" : "⚠"}
@@ -572,7 +572,7 @@ export function ClientsAndProjectsPage({
                     <span className={cx(styles.clmCellMono, toneClass(rTone))}>
                       {client.renewalDays === null ? "—" : `${client.renewalDays}d`}
                     </span>
-                    <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                    <div className={cx("flexRow", "gap4")}>
                       {contractMap.get(client.id) &&
                         (!contractMap.get(client.id)!.ndaSigned || !contractMap.get(client.id)!.sowSigned) && (
                           <button

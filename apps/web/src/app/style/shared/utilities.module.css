@@ -2372,6 +2372,7 @@
 
 /* ── Display helpers ─────────────────────────────────────────────────── */
 .block { display: block; }
+.resizeV { resize: vertical; }
 
 /* ── Comment Thread ──────────────────────────────────────────────────── */
 .ctWrap { border-top: 1px solid var(--b1); padding-top: 16px; margin-top: 16px; }
