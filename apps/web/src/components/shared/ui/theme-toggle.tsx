@@ -6,7 +6,7 @@ import { useTheme, type Theme } from "@/lib/hooks/use-theme";
 const cx = createCx(styles);
 
 const SunIcon = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
     <circle cx="8" cy="8" r="3"/>
     <line x1="8" y1="1" x2="8" y2="3"/>
     <line x1="8" y1="13" x2="8" y2="15"/>
@@ -20,13 +20,13 @@ const SunIcon = () => (
 );
 
 const MoonIcon = () => (
-  <svg viewBox="0 0 16 16" fill="currentColor">
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
     <path d="M6 2a6 6 0 1 0 8 8 5 5 0 0 1-8-8z"/>
   </svg>
 );
 
 const SystemIcon = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
     <rect x="1" y="2" width="14" height="10" rx="2"/>
     <line x1="5" y1="15" x2="11" y2="15"/>
     <line x1="8" y1="12" x2="8" y2="15"/>
