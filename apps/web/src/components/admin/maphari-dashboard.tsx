@@ -450,7 +450,7 @@ export function MaphariDashboard() {
             onOpenMessages={() => setPage("messages")}
             onLogout={() => void handleLogout()}
             onMenuToggle={() => setSidebarOpen((prev) => !prev)}
-            onOpenHelp={() => handlePageChange("knowledgeBaseAdmin")}
+            onOpenHelp={() => setPage("knowledgeBaseAdmin")}
           />
 
           <section className={styles.content}>

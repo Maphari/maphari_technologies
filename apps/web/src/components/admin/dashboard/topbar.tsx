@@ -102,7 +102,7 @@ export function AdminTopbar({
           type="button"
           className={`${styles.iconBtn} ${styles.topbarHelpBtn}`}
           aria-label="Open help center"
-          onClick={onOpenHelp}
+          onClick={() => onOpenHelp?.()}
         >
           <DashboardUtilityIcon kind="help" className={styles.topbarIcon} />
         </button>
