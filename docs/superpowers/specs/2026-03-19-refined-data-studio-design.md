@@ -6,175 +6,240 @@ A two-layer visual reskin of all 250 dashboard pages (96 admin / 82 staff / 72 c
 
 **Direction:** Refined Data Studio — near-black surfaces, monospace data density, Bloomberg-terminal confidence, minimal chrome.
 
-**Approach:** Token cascade (global lift for all 250 pages) + additive `rdStudio*` utility classes (targeted treatment for 15 hero pages).
+**Approach:** Token cascade (global lift for all 250 pages) + additive `rdStudio*` utility classes (15 hero pages).
 
 ---
 
 ## Layer 1 — Global Token Lift
 
-Applied via `apps/web/src/app/style/dashboard-token-scale.css`. Cascades to all 250 pages automatically.
+Applied via `apps/web/src/app/style/dashboard-token-scale.css`. Cascades to all 250 pages automatically. Only the `[data-theme="dark"]` block is modified — light mode is out of scope for this spec.
 
-### Surface tokens
+### Surface token changes (dark mode)
 
-| Token | Current intent | Change |
-|-------|---------------|--------|
-| `--s1` | Card background | Shift 2–3% darker, add cool blue-black tint (`#0e0e14` base) |
-| `--s2` | Hover state | Darker step, maintain contrast ratio |
-| `--s3` | Input background | Tighter, cooler |
-| `--s4` | Selected state | Cooler tint, same luminance |
+| Token | Current | New | Effect |
+|-------|---------|-----|--------|
+| `--bg-page` | `#0d0d0f` | `#0a0a0d` | Page background slightly deeper |
+| `--s1` | `#161618` | `#11111c` | Card bg — darker, cool blue-black tint |
+| `--s2` | `#1e1e22` | `#18182a` | Hover — cooler step |
+| `--s3` | `#262628` | `#1f1f2e` | Input bg — cooler |
+| `--s4` | `#2e2e32` | `#272738` | Selected — cooler tint |
 
-Goal: clear surface stratification — cards sit above page, modals above cards.
+### Border token changes (dark mode)
 
-### Border tokens
+| Token | Current | New | Effect |
+|-------|---------|-----|--------|
+| `--b1` | `#2a2a2e` | `#222230` | Dividers — slightly cooler, maintain low contrast |
+| `--b2` | `#323238` | `#2a2a42` | Card borders — colder, more defined |
+| `--b3` | `#3e3e46` | unchanged | Focus/hover — keep as-is |
 
-| Token | Change |
-|-------|--------|
-| `--b1` (dividers) | More visible — 8% white opacity vs near-invisible |
-| `--b2` (card borders) | Crisper, colder hue |
-| `--b3` (focus/hover) | Unchanged — lime accent already correct |
+### Typography token (`:root` block)
 
-### Typography token
+Add one line to the existing `:root` block (line 20–23 region, after `--font-serif`):
 
-Add `--font-data: var(--font-dm-mono)` to `:root`. Applied globally to:
-- All currency values
-- Percentages
-- Counts and totals
-- Dates and timestamps
-- Status codes
+```css
+--font-data: var(--font-mono);
+```
 
-Numbers read as numbers — not body copy.
+`--font-mono` is already defined in `:root` as `var(--font-dm-mono), monospace`. Using `--font-mono` (not `--font-dm-mono` directly) maintains the established font alias chain. Once added, `--font-data` is used by the `rdStudio*` classes below.
 
-### Density
+### Density (descoped from global layer)
 
-| Property | Before | After |
-|----------|--------|-------|
-| Card internal padding | 20px | 16px |
-| Table row height | 52px | 44px |
-| Section header margin-bottom | 24px | 16px |
-
-Still breathable. More information per viewport.
+Card padding and table row height density changes are **not** applied globally — hardcoded values are spread across too many split CSS files to change safely at global scope. Density is applied only via `rdStudioCard` and `rdStudioRow` on the 15 hero pages where the effect has been reviewed.
 
 ---
 
 ## Layer 2 — Hero Page Additive Classes
 
-Six utility classes added to `apps/web/src/app/style/shared/utilities.module.css`. Applied selectively to hero page elements via the existing `cx()` helper. No new imports required on any page.
+Seven utility classes added to `apps/web/src/app/style/shared/maphari-dashboard-shared.module.css`. This file IS already included in all three `style.ts` spreads (admin, staff, client), so no new imports are needed on any hero page.
+
+The classes are appended to the end of `maphari-dashboard-shared.module.css`.
 
 ### Class definitions
 
-**`.rdStudioLabel`**
-- Font: `var(--font-data)` (DM Mono)
-- Size: 9px
-- Case: uppercase
-- Letter-spacing: 0.18em
-- Color: `var(--muted)`
-- Use: data field labels, section subtitles, column headers
-
-**`.rdStudioMetric`**
-- Font: `var(--font-data)`
-- Size: contextual (2–3× surrounding text)
-- Weight: 600
-- Color: `var(--lime)` for positive / `var(--red)` for negative / `var(--amber)` for warning / `var(--text)` for neutral
-- Use: KPI numbers, totals, percentages, key figures
-
-**`.rdStudioCard`**
-- Border: 1px cool-toned (colder than `--b2`)
-- Border-radius: 0 on top corners, `var(--r-sm)` on bottom corners
-- Top accent stripe: 1px `var(--lime)` top border
-- Background: `var(--s1)` (inherits, no change)
-- Use: primary data cards on hero pages
-
-**`.rdStudioRow`**
-- Border-bottom: 1px `var(--b1)` (replaces gap spacing)
-- Row height: 40px
-- Font-variant-numeric: tabular-nums
-- All inline numbers: `var(--font-data)`
-- Use: table rows, list rows on hero pages
-
-**`.rdStudioSection`**
-- Left border: 2px solid `var(--lime)`
-- Padding-left: 12px
-- Label child: `rdStudioLabel` treatment
-- Title child: medium-weight DM Mono uppercase
-- Use: section header wrappers on hero pages
+---
 
 **`.rdStudioPage`**
-- Applied to the hero page root `div`
-- Sets `font-variant-numeric: tabular-nums` page-scope
-- Sets `letter-spacing: -0.01em` page-scope
-- Effect: all data in the page inherits tabular number alignment
+Applied to the hero page root `div`. Page-scope typographic defaults.
+
+```css
+.rdStudioPage {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+```
+
+---
+
+**`.rdStudioLabel`**
+Data field labels, column headers, section subtitles.
+
+```css
+.rdStudioLabel {
+  font-family: var(--font-data);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+```
+
+---
+
+**`.rdStudioMetric`**
+Typography and size only. Compose with a color variant class (below) for semantic color.
+
+```css
+.rdStudioMetric {
+  font-family: var(--font-data);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+```
+
+**Color variant classes** — compose with `.rdStudioMetric`:
+
+```css
+.rdStudioMetricPos  { color: var(--lime);   }   /* positive / achieved */
+.rdStudioMetricNeg  { color: var(--red);    }   /* negative / over-budget */
+.rdStudioMetricWarn { color: var(--amber);  }   /* warning / at-risk */
+/* neutral: use default --text, no modifier needed */
+```
+
+Usage: `cx("kpiValue", "rdStudioMetric", "rdStudioMetricPos")`
+
+---
+
+**`.rdStudioCard`**
+Applied alongside existing card classes. Tightens chrome and adds terminal identity stripe.
+
+```css
+.rdStudioCard {
+  border: 1px solid #2a2a42;          /* colder than --b2 (#323238) */
+  border-top: 1px solid var(--lime);  /* 1px lime identity stripe */
+  border-radius: 0 0 var(--r-sm) var(--r-sm); /* squared top, rounded bottom */
+  padding: 16px;                       /* density: tighter than default 20px */
+}
+```
+
+---
+
+**`.rdStudioRow`**
+Applied to table rows and list rows on hero pages.
+
+```css
+.rdStudioRow {
+  border-bottom: 1px solid var(--b1);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.rdStudioRow span,
+.rdStudioRow td {
+  font-family: var(--font-data);
+}
+```
+
+---
+
+**`.rdStudioSection`**
+Applied to section header wrapper `div`. Developer manually places `.rdStudioLabel` on the label element inside.
+
+```css
+.rdStudioSection {
+  border-left: 2px solid var(--lime);
+  padding-left: 12px;
+  margin-bottom: 16px;
+}
+```
+
+No child selectors. The label element inside gets `cx("sectionLabel", "rdStudioLabel")` applied independently by the developer.
+
+---
 
 ### Usage pattern
 
 ```tsx
-// Example: Executive Dashboard KPI block
+// Section header
 <div className={cx("pageSection", "rdStudioSection")}>
   <span className={cx("sectionLabel", "rdStudioLabel")}>Monthly Revenue</span>
-  <span className={cx("kpiValue", "rdStudioMetric")}>R 248,500</span>
+  <span className={cx("kpiValue", "rdStudioMetric", "rdStudioMetricPos")}>
+    R 248,500
+  </span>
 </div>
+
+// Table row
+<div className={cx("tableRow", "rdStudioRow")}>
+  <span>Invoice #4821</span>
+  <span className={cx("rdStudioMetric", "rdStudioMetricNeg")}>-R 12,000</span>
+</div>
+
+// Card
+<div className={cx("card", "rdStudioCard")}>...</div>
 ```
 
-No existing class is removed or renamed. `rdStudio*` classes are purely additive.
+No existing class is removed or renamed. All `rdStudio*` classes are purely additive.
 
 ---
 
 ## Hero Pages (15 total)
 
+All 15 hero pages receive `.rdStudioPage` on their root wrapper `div`. The table below lists which additional classes each page applies and where.
+
 ### Admin dashboard (5 pages)
 
-| Page | File | Key elements to elevate |
-|------|------|------------------------|
-| Executive Dashboard | `pages/executive-dashboard-page.tsx` | KPI numbers → `rdStudioMetric`, section headers → `rdStudioSection`, stat cards → `rdStudioCard` |
-| Revenue Forecasting | `pages/revenue-forecasting-page.tsx` | Forecast figures → `rdStudioMetric`, scenario rows → `rdStudioRow`, section labels → `rdStudioLabel` |
-| RevOps Dashboard | `pages/revops-dashboard-page.tsx` | Pipeline metrics → `rdStudioMetric`, conversion labels → `rdStudioLabel`, data cards → `rdStudioCard` |
-| Cash Flow Calendar | `pages/cash-flow-calendar-page.tsx` | Cashflow amounts → `rdStudioMetric`, calendar labels → `rdStudioLabel`, period cards → `rdStudioCard` |
-| Business Development | `pages/business-development-page.tsx` | Lead counts/values → `rdStudioMetric`, stage labels → `rdStudioLabel`, pipeline rows → `rdStudioRow` |
+| Page | File | `rdStudioSection` | `rdStudioMetric` | `rdStudioCard` | `rdStudioRow` | `rdStudioLabel` |
+|------|------|:-:|:-:|:-:|:-:|:-:|
+| Executive Dashboard | `pages/executive-dashboard-page.tsx` | Section wrappers | KPI numbers, revenue totals | Stat cards | — | Field labels, column headers |
+| Revenue Forecasting | `pages/revenue-forecasting-page.tsx` | Scenario sections | Forecast figures, ARR values | Scenario cards | Scenario comparison rows | Period labels |
+| RevOps Dashboard | `pages/revops-dashboard-page.tsx` | Metric sections | Pipeline value, conversion % | Metric cards | Funnel rows | Stage labels |
+| Cash Flow Calendar | `pages/cash-flow-calendar-page.tsx` | Period sections | Cashflow amounts, balances | Period summary cards | — | Month/period labels |
+| Business Development | `pages/business-development-page.tsx` | Pipeline sections | Lead values, win rate % | Stage cards | Lead rows | Stage/source labels |
 
 ### Staff dashboard (5 pages)
 
-| Page | File | Key elements to elevate |
-|------|------|------------------------|
-| My Dashboard | `pages/dashboard-page.tsx` | Today's task count → `rdStudioMetric`, priority labels → `rdStudioLabel`, task cards → `rdStudioCard` |
-| Kanban Board | `pages/kanban-page.tsx` | Column counts → `rdStudioMetric`, column headers → `rdStudioSection`, card labels → `rdStudioLabel` |
-| Sprint Planning | `pages/sprint-planning-page.tsx` | Velocity figures → `rdStudioMetric`, sprint labels → `rdStudioLabel`, task rows → `rdStudioRow` |
-| Daily Standup | `pages/daily-standup-page.tsx` | Team member sections → `rdStudioSection`, status labels → `rdStudioLabel` |
-| Deliverables | `pages/deliverables-page.tsx` | Deliverable rows → `rdStudioRow`, status labels → `rdStudioLabel`, count badges treated as metrics |
+| Page | File | `rdStudioSection` | `rdStudioMetric` | `rdStudioCard` | `rdStudioRow` | `rdStudioLabel` |
+|------|------|:-:|:-:|:-:|:-:|:-:|
+| My Dashboard | `pages/dashboard-page.tsx` | Priority sections | Task counts, completion % | Summary cards | — | Section labels |
+| Kanban Board | `pages/kanban-page.tsx` | Column headers | Column task counts | — | — | Column labels |
+| Sprint Planning | `pages/sprint-planning-page.tsx` | Sprint sections | Velocity, story points | Sprint card | Task rows | Sprint labels |
+| Daily Standup | `pages/daily-standup-page.tsx` | Team member sections | — | — | — | Status labels |
+| Deliverables | `pages/deliverables-page.tsx` | Status sections | — | — | Deliverable rows | Status/due labels |
 
 ### Client portal (5 pages)
 
-| Page | File | Key elements to elevate |
-|------|------|------------------------|
-| Home / Overview | `pages/home-page.tsx` | Active project count → `rdStudioMetric`, section headers → `rdStudioSection`, summary cards → `rdStudioCard` |
-| My Projects | `pages/my-projects-page.tsx` | Progress % → `rdStudioMetric`, project labels → `rdStudioLabel`, project cards → `rdStudioCard` |
-| Billing & Payments | `pages/billing-page.tsx` | Invoice totals → `rdStudioMetric`, invoice rows → `rdStudioRow`, balance labels → `rdStudioLabel` |
-| Messages | `pages/messages-page.tsx` | Message count → `rdStudioMetric`, thread labels → `rdStudioLabel`, thread rows → `rdStudioRow` |
-| Onboarding Hub | `pages/onboarding-page.tsx` | Progress % → `rdStudioMetric`, step labels → `rdStudioLabel`, step cards → `rdStudioCard` |
-
-All 15 hero pages also receive `.rdStudioPage` on their root wrapper.
+| Page | File | `rdStudioSection` | `rdStudioMetric` | `rdStudioCard` | `rdStudioRow` | `rdStudioLabel` |
+|------|------|:-:|:-:|:-:|:-:|:-:|
+| Home / Overview | `pages/home-page.tsx` | Summary sections | Active project count, open items | Summary cards | — | Section labels |
+| My Projects | `pages/my-projects-page.tsx` | — | Progress %, milestone count | Project cards | — | Stage labels |
+| Billing & Payments | `pages/billing-page.tsx` | Invoice sections | Invoice totals, balance due | — | Invoice rows | Date/status labels |
+| Messages | `pages/messages-page.tsx` | — | Unread count | — | Thread rows | Timestamp labels |
+| Onboarding Hub | `pages/onboarding-page.tsx` | Step sections | Completion % | Step cards | — | Step labels |
 
 ---
 
 ## File Inventory
 
-| File | Change type |
-|------|-------------|
-| `apps/web/src/app/style/dashboard-token-scale.css` | Modify — update 8 token values |
-| `apps/web/src/app/style/shared/utilities.module.css` | Modify — append 6 `rdStudio*` classes (~80 lines) |
-| `apps/web/src/components/admin/dashboard/pages/executive-dashboard-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/admin/dashboard/pages/revenue-forecasting-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/admin/dashboard/pages/revops-dashboard-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/admin/dashboard/pages/cash-flow-calendar-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/admin/dashboard/pages/business-development-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/staff/staff-dashboard/pages/dashboard-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/staff/staff-dashboard/pages/kanban-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/staff/staff-dashboard/pages/sprint-planning-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/staff/staff-dashboard/pages/daily-standup-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/staff/staff-dashboard/pages/deliverables-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/client/maphari-dashboard/pages/home-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/client/maphari-dashboard/pages/my-projects-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/client/maphari-dashboard/pages/billing-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/client/maphari-dashboard/pages/messages-page.tsx` | Modify — apply `rdStudio*` classes |
-| `apps/web/src/components/client/maphari-dashboard/pages/onboarding-page.tsx` | Modify — apply `rdStudio*` classes |
+| File | Change | Notes |
+|------|--------|-------|
+| `apps/web/src/app/style/dashboard-token-scale.css` | Modify | Update 7 token values in `[data-theme="dark"]` block; add `--font-data` to `:root` block |
+| `apps/web/src/app/style/shared/maphari-dashboard-shared.module.css` | Modify | Append 7 `rdStudio*` classes + 3 color variant classes (~90 lines) |
+| `apps/web/src/components/admin/dashboard/pages/executive-dashboard-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/admin/dashboard/pages/revenue-forecasting-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/admin/dashboard/pages/revops-dashboard-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/admin/dashboard/pages/cash-flow-calendar-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/admin/dashboard/pages/business-development-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/staff/staff-dashboard/pages/dashboard-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/staff/staff-dashboard/pages/kanban-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/staff/staff-dashboard/pages/sprint-planning-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/staff/staff-dashboard/pages/daily-standup-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/staff/staff-dashboard/pages/deliverables-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/client/maphari-dashboard/pages/home-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/client/maphari-dashboard/pages/my-projects-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/client/maphari-dashboard/pages/billing-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/client/maphari-dashboard/pages/messages-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
+| `apps/web/src/components/client/maphari-dashboard/pages/onboarding-page.tsx` | Modify | Apply `rdStudio*` classes via existing `cx()` |
 
 **Total: 17 files modified. 0 files created.**
 
@@ -185,16 +250,18 @@ All 15 hero pages also receive `.rdStudioPage` on their root wrapper.
 - No layout changes — same component structure, same grid, same responsive breakpoints
 - No API changes — no new data fetching, no new props
 - No new shared component files
-- No existing class names renamed or removed
-- `rdStudio*` classes are purely additive — zero regression risk on non-hero pages
+- No new imports on hero page files — `rdStudio*` classes come from `maphari-dashboard-shared.module.css` which is already in all `style.ts` spreads
+- No existing class names renamed or removed — `rdStudio*` classes are purely additive
+- Only `[data-theme="dark"]` token values are modified — light mode is out of scope
+- Dynamic CSS class names (badge tones: `badgeGreen`/`badgeRed` etc., progress fills, stat bars) must remain unaffected
 - TypeScript verification (`pnpm --filter @maphari/web exec tsc --noEmit`) must pass after each task
 
 ---
 
 ## Success Criteria
 
-1. All 250 pages render with tighter, darker, more data-dense surface treatment (global token lift)
-2. All 15 hero pages show monospace metrics, terminal-style section labels, and `rdStudioCard` treatment on primary cards
+1. All 250 pages render with tighter, darker, cooler surface treatment from the token lift
+2. All 15 hero pages show monospace metrics, terminal-style section labels, and identity-stripe `rdStudioCard` treatment on primary cards
 3. No TypeScript errors introduced
-4. No visual regressions on responsive breakpoints
-5. Dynamic CSS class names (badge tones, progress fills, etc.) remain unaffected
+4. No visual regressions on responsive breakpoints (≤900px, ≤480px)
+5. Dynamic CSS class names remain fully functional
