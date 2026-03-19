@@ -201,6 +201,18 @@ export function ClientHealthScorecardPage({ session }: { session: AuthSession | 
     : 0;
   const totalMRRAtRisk  = scorecardData.filter((c) => c.churnRisk >= 50).reduce((s, c) => s + c.mrr, 0);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>

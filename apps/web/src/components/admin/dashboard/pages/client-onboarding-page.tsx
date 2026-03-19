@@ -197,6 +197,18 @@ export function ClientOnboardingPage({ session, onNotify }: ClientOnboardingPage
   const avgDays = Math.round(complete.reduce((s, o) => s + o.daysElapsed, 0) / (complete.length || 1));
   const templateSource = onboardings[0]?.checklist ?? [];
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody, styles.onboardRoot)}>
       <div className={styles.pageHeader}>

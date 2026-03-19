@@ -90,6 +90,18 @@ export function CashFlowCalendarPage() {
     [cashEvents]
   );
 
+  if (loadingEvents) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody, styles.reportsRoot, "rdStudioPage")}>
       <div className={styles.pageHeader}>

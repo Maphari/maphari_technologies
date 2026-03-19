@@ -107,6 +107,18 @@ export function BookingAppointmentsPage({ session }: { session: AuthSession | nu
     : activeTab === "past"   ? meetings.filter(m => m.scheduledMs < NOW - 86_400_000)
     : [];
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody)}>
       <div className={styles.pageHeader}>

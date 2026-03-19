@@ -101,6 +101,18 @@ export function ActiveHealthMonitorPage({ session }: { session: AuthSession | nu
   const critical = alerts.filter((a) => a.severity === "Critical").length;
   const warnings = alerts.filter((a) => a.severity === "Warning").length;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
 

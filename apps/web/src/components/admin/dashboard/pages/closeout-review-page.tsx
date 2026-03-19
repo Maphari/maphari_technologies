@@ -42,6 +42,18 @@ export function CloseoutReviewPage() {
   const pending  = reports.filter((r) => r.status === "PENDING_REVIEW").length;
   const approved = reports.filter((r) => r.status === "APPROVED").length;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>

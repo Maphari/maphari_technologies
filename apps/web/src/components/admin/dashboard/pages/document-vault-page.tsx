@@ -312,6 +312,18 @@ export function DocumentVaultPage({
   const contractCount = stats.byCategory["CONTRACT"] ?? 0;
   const reviewCount   = stats.byStatus["DRAFT"] ?? 0;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody, styles.dvtRoot)}>
       <div className={styles.pageHeader}>

@@ -12,7 +12,6 @@ import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import type { CapacityForecast, ForecastPeriod, StaffForecast } from "../../../../lib/api/admin/capacity";
 import { loadCapacityForecastWithRefresh } from "../../../../lib/api/admin/capacity";
-import { SkeletonTable } from "@/components/shared/ui/page-skeleton";
 import { Alert } from "@/components/shared/ui/alert";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -86,14 +85,12 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
 
   if (loading) {
     return (
-      <div className={styles.pageBody}>
-        <div className={styles.pageHeader}>
-          <div>
-            <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
-            <h1 className={styles.pageTitle}>Capacity Forecast</h1>
-          </div>
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-        <SkeletonTable rows={4} cols={5} />
       </div>
     );
   }
