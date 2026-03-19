@@ -252,9 +252,7 @@ export function ClientHealthScorecardPage({ session }: { session: AuthSession | 
         </select>
       </div>
 
-      {loading ? (
-        <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading health scorecards…</div>
-      ) : scorecardData.length === 0 ? (
+      {scorecardData.length === 0 ? (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateTitle")}>No health score data</div>
           <p className={cx("emptyStateSub")}>Client health scorecard data will appear here once health checks are recorded.</p>

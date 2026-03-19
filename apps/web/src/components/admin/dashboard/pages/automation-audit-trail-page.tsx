@@ -265,9 +265,7 @@ export function AutomationAuditTrailPage({ session }: { session: AuthSession | n
           {!loading && <span className={cx("colorMuted", "text12")}>{entries.length} entries</span>}
         </div>
         <div className={styles.cardInner}>
-          {loading ? (
-            <div className={cx("colorMuted2", "text12", "mt16")}>Loading audit log…</div>
-          ) : entries.length === 0 ? (
+          {entries.length === 0 ? (
             <div className={cx("colorMuted2", "text13", "mt16")}>No audit events found.</div>
           ) : (
             <table className={styles.table}>

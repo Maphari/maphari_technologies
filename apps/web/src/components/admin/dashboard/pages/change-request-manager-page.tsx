@@ -129,9 +129,7 @@ export function ChangeRequestManagerPage({
           {!loading && <span className={cx("colorMuted", "text12")}>{items.length} total</span>}
         </div>
         <div className={styles.cardInner}>
-          {loading ? (
-            <div className={cx("colorMuted2", "text12", "mt16")}>Loading change requests…</div>
-          ) : items.length === 0 ? (
+          {items.length === 0 ? (
             <div className={styles.emptyState}>
                 <div className={styles.emptyIcon}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">

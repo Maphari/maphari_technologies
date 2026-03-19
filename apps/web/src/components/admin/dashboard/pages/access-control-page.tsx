@@ -195,9 +195,7 @@ export function AccessControlPage({
       </div>
 
       {activeTab === "users" && (
-        loading ? (
-          <div className={cx("text13", "colorMuted", "p20")}>Loading users…</div>
-        ) : users.length === 0 ? (
+        users.length === 0 ? (
           <div className={cx("card", "p24", "text13", "colorMuted")}>No staff users found.</div>
         ) : (
           <div className={cx("flexCol", "gap12")}>

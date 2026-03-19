@@ -172,9 +172,7 @@ export function BookingAppointmentsPage({ session }: { session: AuthSession | nu
           <span className={styles.teamSectionMeta}>{filtered.length} MEETINGS</span>
         </div>
 
-        {loading ? (
-          <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading appointments…</div>
-        ) : activeTab === "settings" ? (
+        {activeTab === "settings" ? (
           <div className={cx("p24", "colorMuted", "text12", "textCenter")}>
             Booking settings are managed in the platform configuration.
           </div>

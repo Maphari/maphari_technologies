@@ -188,9 +188,7 @@ export function BusinessDevelopmentPage({
       </div>
 
       {activeTab === "pipeline" && (
-        loading ? (
-          <div className={cx("text13", "colorMuted", "p20")}>Loading leads…</div>
-        ) : leads.length === 0 ? (
+        leads.length === 0 ? (
           <div className={cx("card", "p24", "text13", "colorMuted")}>No leads found.</div>
         ) : (
           <div>
@@ -265,10 +263,7 @@ export function BusinessDevelopmentPage({
       )}
 
       {activeTab === "analytics" && (
-        loading ? (
-          <div className={cx("text13", "colorMuted", "p20")}>Loading analytics…</div>
-        ) : (
-          <div className={styles.bdevTargetsGrid}>
+        <div className={styles.bdevTargetsGrid}>
             <div className={cx("card", "p24")}>
               <div className={cx(styles.bdevSectionTitle, "rdStudioSection")}>Pipeline by Stage</div>
               <div className={styles.bdevTargetStack}>
@@ -331,7 +326,6 @@ export function BusinessDevelopmentPage({
               </div>
             </div>
           </div>
-        )
       )}
     </div>
   );

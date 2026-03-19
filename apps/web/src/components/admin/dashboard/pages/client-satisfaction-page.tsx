@@ -290,10 +290,7 @@ export function ClientSatisfactionPage({ session }: { session: AuthSession | nul
         </select>
       </div>
 
-      {loading ? (
-        <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading satisfaction data…</div>
-      ) : (
-        <>
+      <>
           {activeTab === "satisfaction scores" && (
             clients.length === 0 ? (
               <div className={cx("emptyState")}>
@@ -429,7 +426,6 @@ export function ClientSatisfactionPage({ session }: { session: AuthSession | nul
             )
           )}
         </>
-      )}
     </div>
   );
 }

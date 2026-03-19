@@ -137,11 +137,8 @@ export function ActiveHealthMonitorPage({ session }: { session: AuthSession | nu
         ))}
       </div>
 
-      {loading ? (
-        <div className={cx("colorMuted", "text12", "py24")}>Loading health data…</div>
-      ) : (
-        <>
-          {alerts.length === 0 ? (
+      <>
+        {alerts.length === 0 ? (
             <div className={cx("colorMuted", "text12", "textCenter", "py24")}>
               No active health alerts — all clients are healthy.
             </div>
@@ -192,7 +189,6 @@ export function ActiveHealthMonitorPage({ session }: { session: AuthSession | nu
             </div>
           </article>
         </>
-      )}
     </div>
   );
 }
