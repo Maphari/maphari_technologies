@@ -2,11 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
+import { useProjectLayer } from "../hooks/use-project-layer";
+import {
+  loadPortalFilesWithRefresh,
+  getPortalFileDownloadUrlWithRefresh,
+} from "../../../../lib/api/portal/files";
+import type { PortalFile } from "../../../../lib/api/portal/files";
 
 type DocsTab = "Library" | "Version History" | "Upload Portal" | "Password Vault" | "Shared Links";
 type ViewMode = "list" | "grid";
 
 interface FileItem {
+  id: string | null;   // null for static demo items without a real API record
   icon: string;
   name: string;
   type: string;
@@ -42,15 +49,15 @@ interface ToastState {
   subtitle: string;
 }
 
-const FILES: FileItem[] = [
-  { icon: "📄", name: "Client-Proposal-v3.pdf", type: "PDF", size: "2.4 MB", date: "Feb 21", ver: "v3", cat: "Proposals", isNew: true },
-  { icon: "📊", name: "Q1-Financial-Report.xlsx", type: "Spreadsheet", size: "890 KB", date: "Feb 18", ver: "v1", cat: "Finance", isNew: false },
-  { icon: "🖼", name: "Brand-Guidelines-2026.pdf", type: "PDF", size: "14.2 MB", date: "Feb 12", ver: "v2", cat: "Brand", isNew: false },
-  { icon: "📝", name: "NDA-Veldt-Finance.pdf", type: "PDF", size: "340 KB", date: "Jan 15", ver: "v1", cat: "Legal", isNew: false },
-  { icon: "🎨", name: "Homepage-Design-v2.fig", type: "Figma", size: "28.1 MB", date: "Feb 20", ver: "v2", cat: "Designs", isNew: true },
-  { icon: "📋", name: "UAT-Checklist-Sprint4.xlsx", type: "Spreadsheet", size: "124 KB", date: "Feb 19", ver: "v1", cat: "QA", isNew: false },
-  { icon: "📹", name: "Kickoff-Recording.mp4", type: "Video", size: "312 MB", date: "Jan 10", ver: "v1", cat: "Meetings", isNew: false },
-  { icon: "📑", name: "Project-Brief-v1.docx", type: "Document", size: "1.1 MB", date: "Jan 8", ver: "v1", cat: "Strategy", isNew: false },
+const STATIC_FILES: FileItem[] = [
+  { id: null, icon: "📄", name: "Client-Proposal-v3.pdf", type: "PDF", size: "2.4 MB", date: "Feb 21", ver: "v3", cat: "Proposals", isNew: true },
+  { id: null, icon: "📊", name: "Q1-Financial-Report.xlsx", type: "Spreadsheet", size: "890 KB", date: "Feb 18", ver: "v1", cat: "Finance", isNew: false },
+  { id: null, icon: "🖼", name: "Brand-Guidelines-2026.pdf", type: "PDF", size: "14.2 MB", date: "Feb 12", ver: "v2", cat: "Brand", isNew: false },
+  { id: null, icon: "📝", name: "NDA-Veldt-Finance.pdf", type: "PDF", size: "340 KB", date: "Jan 15", ver: "v1", cat: "Legal", isNew: false },
+  { id: null, icon: "🎨", name: "Homepage-Design-v2.fig", type: "Figma", size: "28.1 MB", date: "Feb 20", ver: "v2", cat: "Designs", isNew: true },
+  { id: null, icon: "📋", name: "UAT-Checklist-Sprint4.xlsx", type: "Spreadsheet", size: "124 KB", date: "Feb 19", ver: "v1", cat: "QA", isNew: false },
+  { id: null, icon: "📹", name: "Kickoff-Recording.mp4", type: "Video", size: "312 MB", date: "Jan 10", ver: "v1", cat: "Meetings", isNew: false },
+  { id: null, icon: "📑", name: "Project-Brief-v1.docx", type: "Document", size: "1.1 MB", date: "Jan 8", ver: "v1", cat: "Strategy", isNew: false },
 ];
 
 const CATEGORIES = ["All", "Proposals", "Finance", "Brand", "Legal", "Designs", "QA", "Meetings", "Strategy"];
@@ -76,7 +83,28 @@ const SHARED_LINKS: SharedLinkItem[] = [
 
 const DOC_TABS: DocsTab[] = ["Library", "Version History", "Upload Portal", "Password Vault", "Shared Links"];
 
+/** Convert a PortalFile API record into the local FileItem shape. */
+function portalFileToItem(f: PortalFile): FileItem {
+  const ext = f.fileName.split(".").pop()?.toUpperCase() ?? "FILE";
+  const kb = Math.round(f.sizeBytes / 1024);
+  const size = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`;
+  const date = new Date(f.createdAt).toLocaleDateString("en-ZA", { day: "2-digit", month: "short" });
+  return {
+    id: f.id,
+    icon: "📄",
+    name: f.fileName,
+    type: ext,
+    size,
+    date,
+    ver: "v1",
+    cat: "Files",
+    isNew: Date.now() - new Date(f.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000,
+  };
+}
+
 export function FilesPage() {
+  const { session } = useProjectLayer();
+
   const [tab, setTab] = useState<DocsTab>("Library");
   const [category, setCategory] = useState("All");
   const [view, setView] = useState<ViewMode>("list");
@@ -86,6 +114,18 @@ export function FilesPage() {
   const [shareTarget, setShareTarget] = useState<string | null>(null);
   const [uploadDrag, setUploadDrag] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [files, setFiles] = useState<FileItem[]>(STATIC_FILES);
+
+  // Load files from API on mount when session is available
+  useEffect(() => {
+    if (!session) return;
+    loadPortalFilesWithRefresh(session).then((result) => {
+      if (result.error || !result.data) return;
+      if (result.data.length > 0) {
+        setFiles(result.data.map(portalFileToItem));
+      }
+    });
+  }, [session]);
 
   useEffect(() => {
     if (!toast) return;
@@ -93,20 +133,57 @@ export function FilesPage() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
+  /** Fetch a presigned download URL and trigger a browser download. */
+  const handleDownload = async (file: FileItem): Promise<void> => {
+    if (!file.id || !session) {
+      notify("Download unavailable", "No download URL available for this file.");
+      return;
+    }
+    notify("Preparing download", file.name);
+    const result = await getPortalFileDownloadUrlWithRefresh(session, file.id);
+    if (result.error || !result.data) {
+      notify("Download failed", result.error?.message ?? "Unable to get download URL.");
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = result.data.downloadUrl;
+    a.download = file.name;
+    a.click();
+  };
+
+  /** Copy a presigned download URL to the clipboard as a share link. */
+  const handleShare = async (file: FileItem): Promise<void> => {
+    if (!file.id || !session) {
+      notify("Share unavailable", "No link available for this file.");
+      return;
+    }
+    const result = await getPortalFileDownloadUrlWithRefresh(session, file.id);
+    if (result.error || !result.data) {
+      notify("Share failed", result.error?.message ?? "Unable to get share link.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(result.data.downloadUrl);
+      notify("Link copied", "File link copied to clipboard.");
+    } catch {
+      notify("Clipboard unavailable", "Copy the link manually.");
+    }
+  };
+
   const fileTypes = useMemo(() => {
-    const types = Array.from(new Set(FILES.map((file) => file.type)));
+    const types = Array.from(new Set(files.map((file) => file.type)));
     return ["All", ...types];
-  }, []);
+  }, [files]);
 
   const filteredFiles = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return FILES.filter((file) => {
+    return files.filter((file) => {
       const matchCategory = category === "All" || file.cat === category;
       const matchType = typeFilter === "All" || file.type === typeFilter;
       const matchSearch = !q || file.name.toLowerCase().includes(q);
       return matchCategory && matchType && matchSearch;
     });
-  }, [category, search, typeFilter]);
+  }, [files, category, search, typeFilter]);
 
   const notify = (title: string, subtitle: string): void => setToast({ title, subtitle });
 
@@ -148,7 +225,7 @@ export function FilesPage() {
             >
               <span className={cx(styles.docsDot, categoryDot(item))} />
               <span>{item}</span>
-              <span className={styles.docsSidebarCount}>{item === "All" ? FILES.length : FILES.filter((file) => file.cat === item).length}</span>
+              <span className={styles.docsSidebarCount}>{item === "All" ? files.length : files.filter((file) => file.cat === item).length}</span>
             </button>
           ))}
 
@@ -184,8 +261,8 @@ export function FilesPage() {
             <>
               <div className={styles.docsStatStrip}>
                 {[
-                  { label: "Total Files", value: String(FILES.length), sub: "Across all categories", tone: styles.docsDotAccent },
-                  { label: "New This Week", value: String(FILES.filter((file) => file.isNew).length), sub: "Added in last 7 days", tone: styles.docsDotBlue },
+                  { label: "Total Files", value: String(files.length), sub: "Across all categories", tone: styles.docsDotAccent },
+                  { label: "New This Week", value: String(files.filter((file) => file.isNew).length), sub: "Added in last 7 days", tone: styles.docsDotBlue },
                   { label: "Awaiting Review", value: "1", sub: "Dashboard UI Design", tone: styles.docsDotAmber },
                   { label: "Storage Used", value: "1.7 GB", sub: "of 5 GB included", tone: styles.docsDotPurple },
                 ].map((item) => (
@@ -260,7 +337,7 @@ export function FilesPage() {
                         <div className={styles.docsMono}>{file.date}</div>
                         <div className={styles.docsActionRow}>
                           <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setPreviewFile(file)}>Preview</button>
-                          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => notify("Downloading", file.name)}>↓</button>
+                          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => handleDownload(file)}>↓</button>
                         </div>
                       </div>
                     ))}
@@ -278,8 +355,8 @@ export function FilesPage() {
                         <div className={styles.docsCardMeta}>{file.size} · {file.ver} · {file.date}</div>
                         <div className={styles.docsCardActions}>
                           <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setPreviewFile(file)}>View</button>
-                          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => notify("Downloading", file.name)}>↓</button>
-                          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setShareTarget(file.name)}>Share</button>
+                          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => handleDownload(file)}>↓</button>
+                          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => handleShare(file)}>Share</button>
                         </div>
                       </div>
                     ))}
@@ -338,7 +415,7 @@ export function FilesPage() {
 
               <div className={styles.docsSectionTitle}>Recently Uploaded</div>
               <div className={styles.docsPanel}>
-                {FILES.filter((file) => file.isNew).map((file) => (
+                {files.filter((file) => file.isNew).map((file) => (
                   <div key={file.name} className={styles.docsRecentRow}>
                     <div>
                       <div className={styles.docsFileName}><span>{file.icon}</span><span>{file.name}</span></div>
@@ -346,7 +423,7 @@ export function FilesPage() {
                     </div>
                     <div className={styles.docsMono}>{file.size}</div>
                     <div><span className={cx("badge", "badgeAccent")}>Uploaded today</span></div>
-                    <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => notify("Downloading", file.name)}>↓</button>
+                    <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => handleDownload(file)}>↓</button>
                   </div>
                 ))}
               </div>
@@ -430,7 +507,7 @@ export function FilesPage() {
                 className={cx("btnSm", "btnAccent")}
                 onClick={() => {
                   setPreviewFile(null);
-                  notify("Downloading", previewFile.name);
+                  handleDownload(previewFile);
                 }}
               >
                 Download
