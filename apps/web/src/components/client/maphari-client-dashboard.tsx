@@ -454,7 +454,7 @@ export function MaphariClientDashboard() {
             title={title}
             onOpenApps={() => window.dispatchEvent(new CustomEvent("client:open-app-grid"))}
             onOpenNotifications={() => handleNavigate("notifications")}
-            onNewMessage={() => quickCompose.open()}
+            onNewMessage={() => handleNavigate("messages")}
             onOpenHelp={() => handleNavigate("knowledgeBase")}
             unreadCount={notifs.unreadCount}
             onLogout={handleLogout}
