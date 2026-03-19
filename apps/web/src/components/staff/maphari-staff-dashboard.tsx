@@ -1145,7 +1145,7 @@ export function MaphariStaffDashboard() {
 
             <AutoDraftUpdatesPage isActive={activePage === "autodraft"} session={session ?? null} />
 
-            <MeetingPrepPage isActive={activePage === "meetingprep"} session={session ?? null} />
+            <MeetingPrepPage isActive={activePage === "meetingprep"} session={session ?? null} onNotify={(tone, msg) => setFeedback({ tone, message: msg })} />
 
             <CommunicationHistoryPage isActive={activePage === "comms"} />
 

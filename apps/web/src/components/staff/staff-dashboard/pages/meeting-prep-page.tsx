@@ -106,9 +106,11 @@ function IcoInsight() {
 export function MeetingPrepPage({
   isActive,
   session,
+  onNotify,
 }: {
   isActive: boolean;
   session: AuthSession | null;
+  onNotify?: (tone: "success" | "error" | "info" | "warning", msg: string) => void;
 }) {
   const [meetings, setMeetings]   = useState<StaffMeeting[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -116,6 +118,7 @@ export function MeetingPrepPage({
   const [activeTab, setActiveTab] = useState<MainTab>("brief");
   const [checked, setChecked]     = useState<Record<string, boolean>>({});
   const [noteText, setNoteText]   = useState("");
+  const [extraAgendaItems, setExtraAgendaItems] = useState<string[]>([]);
 
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
@@ -419,7 +422,29 @@ export function MeetingPrepPage({
                       </div>
                     );
                   })}
-                  <button type="button" className={cx("mpAddAgendaBtn")}>
+                  {extraAgendaItems.map((item, i) => (
+                    <div key={`extra-${i}`} className={cx("mpAgendaItem", "mpRowActive")}>
+                      <div className={cx("mpCheckBox", "mpCheckBoxNeutral")} />
+                      <div className={cx("flex1")}>
+                        <input
+                          type="text"
+                          value={item}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setExtraAgendaItems((prev) => prev.map((x, j) => j === i ? val : x));
+                          }}
+                          placeholder="Agenda item…"
+                          className={cx("mpAgendaInlineInput")}
+                          autoFocus={i === extraAgendaItems.length - 1}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className={cx("mpAddAgendaBtn")}
+                    onClick={() => setExtraAgendaItems((prev) => [...prev, ""])}
+                  >
                     <IcoPlus />
                     Add agenda item
                   </button>
@@ -439,11 +464,33 @@ export function MeetingPrepPage({
                     className={cx("mpNoteInput")}
                   />
                   <div className={cx("flexRow", "gap10", "mt12")}>
-                    <button type="button" className={cx("mpSaveBtn")}>
+                    <button
+                      type="button"
+                      className={cx("mpSaveBtn")}
+                      onClick={() => {
+                        if (!noteText.trim()) { onNotify?.("error", "No notes to save."); return; }
+                        // TODO: wire to /staff/decisions API when available
+                        const existing = JSON.parse(localStorage.getItem("decision-log") ?? "[]") as Array<{ note: string; date: string }>;
+                        localStorage.setItem("decision-log", JSON.stringify([...existing, { note: noteText, date: new Date().toISOString() }]));
+                        onNotify?.("success", "Notes saved to decision log.");
+                      }}
+                    >
                       <IcoSave />
                       Save to decision log
                     </button>
-                    <button type="button" className={cx("mpCopyBtn")}>
+                    <button
+                      type="button"
+                      className={cx("mpCopyBtn")}
+                      onClick={async () => {
+                        if (!noteText.trim()) { onNotify?.("error", "No notes to copy."); return; }
+                        try {
+                          await navigator.clipboard.writeText(noteText);
+                          onNotify?.("success", "Meeting notes copied to clipboard.");
+                        } catch {
+                          onNotify?.("error", "Clipboard unavailable.");
+                        }
+                      }}
+                    >
                       <IcoCopy />
                       Copy notes
                     </button>
