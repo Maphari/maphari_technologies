@@ -217,6 +217,7 @@ export function ResourceHubPage() {
             type="button"
             className={cx("btnSm", "btnAccent")}
             disabled={loading || resources.length === 0}
+            // TODO: wire to a real download-all endpoint once the files API exposes a bulk-download URL
             onClick={() => notify("success", "Preparing download", "Your resource pack will be ready shortly.")}
           >
             <Ic n="download" sz={12} c="var(--bg)" /> Download All
@@ -336,6 +337,7 @@ export function ResourceHubPage() {
                     <button
                       type="button"
                       className={cx("btnSm", "btnGhost", "flex1")}
+                      // TODO: replace with window.open(r.url, "_blank") once ResourceItem has a url field from the API
                       onClick={() => notify("info", "Preview", `Opening preview for "${r.title}"`)}
                     >
                       <Ic n="eye" sz={14} c="var(--muted)" /> Preview
@@ -343,6 +345,7 @@ export function ResourceHubPage() {
                     <button
                       type="button"
                       className={cx("btnSm", "btnAccent", "flex1")}
+                      // TODO: replace with window.open(r.url, "_blank") for VIDEO or anchor-download for files once ResourceItem has a url field
                       onClick={() => notify("success", r.ext === "VIDEO" ? "Opening video" : "Download started", `"${r.title}" will open shortly.`)}
                     >
                       <Ic n="download" sz={14} c="var(--bg)" />

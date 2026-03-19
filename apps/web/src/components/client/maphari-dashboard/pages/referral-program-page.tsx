@@ -138,11 +138,38 @@ export function ReferralProgramPage() {
           <div className={cx("fw700", "text12", "mb4")}>Your Referral Code</div>
           <div className={cx("refCodeDisplay")}>MAPHARI-REF</div>
           <div className={cx("flexRow", "gap8", "justifyCenter")}>
-            <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
+            <button
+              type="button"
+              className={cx("btnSm", "btnAccent")}
+              onClick={async () => {
+                const referralCode = "MAPHARI-REF";
+                try {
+                  await navigator.clipboard.writeText(referralCode);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                } catch {
+                  // Clipboard unavailable — still show feedback
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }
+              }}
+            >
               {copied ? "Copied!" : "Copy Code"}
             </button>
-            <button type="button" className={cx("btnSm", "btnGhost")}>Share via Email</button>
-            <button type="button" className={cx("btnSm", "btnGhost")}>Share via WhatsApp</button>
+            <button
+              type="button"
+              className={cx("btnSm", "btnGhost")}
+              onClick={() => window.open(`mailto:?subject=Join via my referral&body=Use my code: MAPHARI-REF`, "_blank")}
+            >
+              Share via Email
+            </button>
+            <button
+              type="button"
+              className={cx("btnSm", "btnGhost")}
+              onClick={() => window.open(`https://wa.me/?text=Join via my referral code: MAPHARI-REF`, "_blank")}
+            >
+              Share via WhatsApp
+            </button>
           </div>
         </div>
       </div>

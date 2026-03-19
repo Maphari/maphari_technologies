@@ -388,7 +388,19 @@ export function ServicesGrowthPage() {
                 <div className={styles.svcGrowReferralDesc}>Share your code with qualifying businesses. Once they sign, you receive payout or service credit.</div>
                 <div className={styles.svcGrowCodeBox}>
                   <span className={styles.svcGrowCodeValue}>VELDT-2026</span>
-                  <button className={cx("btnSm", "btnAccent")} type="button" onClick={() => notify("Code copied", "VELDT-2026 copied to clipboard")}>Copy Code</button>
+                  <button
+                    className={cx("btnSm", "btnAccent")}
+                    type="button"
+                    onClick={async () => {
+                      const referralCode = "VELDT-2026";
+                      try {
+                        await navigator.clipboard.writeText(referralCode);
+                        notify("Code copied", "VELDT-2026 copied to clipboard");
+                      } catch {
+                        notify("Error", "Clipboard unavailable — please copy manually.");
+                      }
+                    }}
+                  >Copy Code</button>
                 </div>
               </div>
 
