@@ -241,6 +241,18 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
   const totalProfit = totalRevenue - totalCost;
   const avgMargin = totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 100) : 0;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody, styles.ppcRoot)}>
       {/* ── Header ── */}
@@ -305,12 +317,7 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
         <Alert variant="error" message={loadError} onRetry={() => { setLoadError(null); void loadData(); }} />
       )}
 
-      {loading && (
-        <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading data…</div>
-      )}
-
-      {!loading && (
-        <div className={cx("overflowAuto", "minH0")}>
+      <div className={cx("overflowAuto", "minH0")}>
           <AdminFilterBar panelColor="var(--surface)" borderColor="var(--border)">
             <select title="Select tab" value={activeTab} onChange={(e) => setActiveTab(e.target.value as Tab)} className={styles.formInput}>
               {tabs.map((tab) => <option key={tab} value={tab}>{tab}</option>)}
@@ -485,7 +492,6 @@ export function ProfitabilityPerClientPage({ session, onNotify }: Props) {
             </div>
           )}
         </div>
-      )}
     </div>
   );
 }

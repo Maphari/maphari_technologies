@@ -161,6 +161,18 @@ export function FinancialYearCloseoutPage({
   const overdueCount = fyInvoices.filter((i) => i.status === "OVERDUE").length;
   const collectionRate = totalInvoiced > 0 ? Math.round((totalCollected / totalInvoiced) * 100) : 0;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody, styles.fyRoot)}>
       <div className={cx("flexBetween", "mb28")}>
@@ -177,10 +189,10 @@ export function FinancialYearCloseoutPage({
 
       <div className={cx("topCardsStack", "gap16", "mb16")}>
         {[
-          { label: "Total Invoiced", value: loading ? "…" : centsTozar(totalInvoiced), color: "var(--accent)", sub: `${fyInvoices.length} invoices in ${fy.label}` },
-          { label: "Collected", value: loading ? "…" : centsTozar(totalCollected), color: totalCollected > 0 ? "var(--accent)" : "var(--muted)", sub: `${collectionRate}% collection rate` },
-          { label: "Outstanding", value: loading ? "…" : centsTozar(totalOutstanding), color: totalOutstanding > 0 ? overdueCount > 0 ? "var(--red)" : "var(--amber)" : "var(--accent)", sub: overdueCount > 0 ? `${overdueCount} overdue` : "All current" },
-          { label: "Hours Logged", value: loading ? "…" : minutesToHours(totalMinutes), color: "var(--blue)", sub: `${fyTimeEntries.length} time entries` },
+          { label: "Total Invoiced", value: centsTozar(totalInvoiced), color: "var(--accent)", sub: `${fyInvoices.length} invoices in ${fy.label}` },
+          { label: "Collected", value: centsTozar(totalCollected), color: totalCollected > 0 ? "var(--accent)" : "var(--muted)", sub: `${collectionRate}% collection rate` },
+          { label: "Outstanding", value: centsTozar(totalOutstanding), color: totalOutstanding > 0 ? overdueCount > 0 ? "var(--red)" : "var(--amber)" : "var(--accent)", sub: overdueCount > 0 ? `${overdueCount} overdue` : "All current" },
+          { label: "Hours Logged", value: minutesToHours(totalMinutes), color: "var(--blue)", sub: `${fyTimeEntries.length} time entries` },
         ].map((s) => (
           <div key={s.label} className={cx("statCard")}>
             <div className={cx("statLabel")}>{s.label}</div>
@@ -202,92 +214,84 @@ export function FinancialYearCloseoutPage({
 
       <div className={cx("overflowAuto", "minH0")}>
         {activeTab === "fy summary" && (
-          loading ? (
-            <div className={cx("text13", "colorMuted", "p20")}>Loading financial data…</div>
-          ) : (
-            <div className={cx("grid2", "gap20")}>
+          <div className={cx("grid2", "gap20")}>
+            <div className={cx("card", "p24")}>
+              <div className={cx("text13", "fw700", "mb20", "uppercase")}>{fy.label} Revenue Summary</div>
+              {[
+                { label: "Total Invoiced", value: centsTozar(totalInvoiced), color: "var(--accent)", big: true },
+                { label: "Total Collected", value: centsTozar(totalCollected), color: "var(--accent)", big: false },
+                { label: "Outstanding", value: centsTozar(totalOutstanding), color: totalOutstanding > 0 ? "var(--amber)" : "var(--accent)", big: false },
+                { label: "Collection Rate", value: `${collectionRate}%`, color: collectionRate >= 90 ? "var(--accent)" : "var(--amber)", big: false },
+                { label: "Total Invoices", value: fyInvoices.length.toString(), color: "var(--blue)", big: false },
+                { label: "Overdue Invoices", value: overdueCount.toString(), color: overdueCount > 0 ? "var(--red)" : "var(--accent)", big: false },
+              ].map((r) => (
+                <div key={r.label} className={cx("flexBetween", "borderB", "py10")}>
+                  <span className={cx("text12", "colorMuted")}>{r.label}</span>
+                  <span className={cx("fontMono", styles.fyNumStat, r.big ? styles.fyNumBig : styles.fyNumMd, styles.fyToneText, toneClass(r.color))}>
+                    {r.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className={cx("flexCol", "gap16")}>
               <div className={cx("card", "p24")}>
-                <div className={cx("text13", "fw700", "mb20", "uppercase")}>{fy.label} Revenue Summary</div>
+                <div className={cx("text13", "fw700", "mb16", "uppercase")}>Time & Operations</div>
                 {[
-                  { label: "Total Invoiced", value: centsTozar(totalInvoiced), color: "var(--accent)", big: true },
-                  { label: "Total Collected", value: centsTozar(totalCollected), color: "var(--accent)", big: false },
-                  { label: "Outstanding", value: centsTozar(totalOutstanding), color: totalOutstanding > 0 ? "var(--amber)" : "var(--accent)", big: false },
-                  { label: "Collection Rate", value: `${collectionRate}%`, color: collectionRate >= 90 ? "var(--accent)" : "var(--amber)", big: false },
-                  { label: "Total Invoices", value: fyInvoices.length.toString(), color: "var(--blue)", big: false },
-                  { label: "Overdue Invoices", value: overdueCount.toString(), color: overdueCount > 0 ? "var(--red)" : "var(--accent)", big: false },
+                  { label: "Total hours logged", value: minutesToHours(totalMinutes), color: "var(--blue)" },
+                  { label: "Time entries recorded", value: fyTimeEntries.length.toString(), color: "var(--blue)" },
+                  { label: "Payments received", value: fyPayments.filter((p) => p.status === "COMPLETED").length.toString(), color: "var(--accent)" },
+                  { label: "FY Period", value: `${fy.start.toLocaleDateString("en-ZA", { day: "2-digit", month: "short" })} – ${fy.end.toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" })}`, color: "var(--muted)" },
                 ].map((r) => (
-                  <div key={r.label} className={cx("flexBetween", "borderB", "py10")}>
-                    <span className={cx("text12", "colorMuted")}>{r.label}</span>
-                    <span className={cx("fontMono", styles.fyNumStat, r.big ? styles.fyNumBig : styles.fyNumMd, styles.fyToneText, toneClass(r.color))}>
-                      {r.value}
-                    </span>
+                  <div key={r.label} className={cx("flexBetween", "borderB", "text12", styles.fyRowPy8)}>
+                    <span className={cx("colorMuted")}>{r.label}</span>
+                    <span className={cx("fontMono", "fw700", styles.fyToneText, toneClass(r.color))}>{r.value}</span>
                   </div>
                 ))}
               </div>
-
-              <div className={cx("flexCol", "gap16")}>
-                <div className={cx("card", "p24")}>
-                  <div className={cx("text13", "fw700", "mb16", "uppercase")}>Time & Operations</div>
-                  {[
-                    { label: "Total hours logged", value: minutesToHours(totalMinutes), color: "var(--blue)" },
-                    { label: "Time entries recorded", value: fyTimeEntries.length.toString(), color: "var(--blue)" },
-                    { label: "Payments received", value: fyPayments.filter((p) => p.status === "COMPLETED").length.toString(), color: "var(--accent)" },
-                    { label: "FY Period", value: `${fy.start.toLocaleDateString("en-ZA", { day: "2-digit", month: "short" })} – ${fy.end.toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" })}`, color: "var(--muted)" },
-                  ].map((r) => (
-                    <div key={r.label} className={cx("flexBetween", "borderB", "text12", styles.fyRowPy8)}>
-                      <span className={cx("colorMuted")}>{r.label}</span>
-                      <span className={cx("fontMono", "fw700", styles.fyToneText, toneClass(r.color))}>{r.value}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className={cx("card", "p24", styles.fyProfitCard)}>
-                  <div className={cx("fontMono", "fw800", styles.fyProfitValue, "colorAccent")}>{centsTozar(totalCollected)}</div>
-                  <div className={cx("text12", "colorMuted", "mt4")}>Collected · {fy.label} · {collectionRate}% rate</div>
-                </div>
+              <div className={cx("card", "p24", styles.fyProfitCard)}>
+                <div className={cx("fontMono", "fw800", styles.fyProfitValue, "colorAccent")}>{centsTozar(totalCollected)}</div>
+                <div className={cx("text12", "colorMuted", "mt4")}>Collected · {fy.label} · {collectionRate}% rate</div>
               </div>
             </div>
-          )
+          </div>
         )}
 
         {activeTab === "key metrics" && (
-          loading ? (
-            <div className={cx("text13", "colorMuted", "p20")}>Loading metrics…</div>
-          ) : (
-            <div className={cx("card", "p24", styles.fyPLCard)}>
-              <div className={cx("text14", "fw700", "mb4", "colorAccent")}>MAPHARI CREATIVE STUDIO</div>
-              <div className={cx("text12", "colorMuted", "mb24")}>
-                Revenue Summary — {fy.label} ({fy.start.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })} to {fy.end.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })})
-              </div>
+          <div className={cx("card", "p24", styles.fyPLCard)}>
+            <div className={cx("text14", "fw700", "mb4", "colorAccent")}>MAPHARI CREATIVE STUDIO</div>
+            <div className={cx("text12", "colorMuted", "mb24")}>
+              Revenue Summary — {fy.label} ({fy.start.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })} to {fy.end.toLocaleDateString("en-ZA", { month: "long", year: "numeric" })})
+            </div>
 
-              <div className={cx("mb20")}>
-                <div className={cx("text11", "fw700", "colorMuted", "uppercase", "mb8")}>Invoiced Revenue</div>
-                {fyInvoices.slice(0, 5).map((inv) => (
-                  <div key={inv.id} className={cx("flexBetween", "text13", styles.fySubRow)}>
-                    <span className={cx("colorMuted", styles.fyPl16)}>{inv.number}</span>
-                    <span className={cx("fontMono")}>{centsTozar(inv.amountCents)}</span>
-                  </div>
-                ))}
-                {fyInvoices.length > 5 && (
-                  <div className={cx("text12", "colorMuted", styles.fyPl16)}>
-                    …and {fyInvoices.length - 5} more invoices
-                  </div>
-                )}
-                <div className={cx("flexBetween", "text14", "fw700", styles.fyRowPy10)}>
-                  <span>Total Invoiced</span>
-                  <span className={cx("fontMono", "colorAccent")}>{centsTozar(totalInvoiced)}</span>
+            <div className={cx("mb20")}>
+              <div className={cx("text11", "fw700", "colorMuted", "uppercase", "mb8")}>Invoiced Revenue</div>
+              {fyInvoices.slice(0, 5).map((inv) => (
+                <div key={inv.id} className={cx("flexBetween", "text13", styles.fySubRow)}>
+                  <span className={cx("colorMuted", styles.fyPl16)}>{inv.number}</span>
+                  <span className={cx("fontMono")}>{centsTozar(inv.amountCents)}</span>
                 </div>
-              </div>
-
-              <div className={cx("flexBetween", "fw800", styles.fyNetRow)}>
-                <span>Total Collected</span>
-                <span className={cx("fontMono", "colorAccent")}>{centsTozar(totalCollected)}</span>
-              </div>
-              <div className={cx("flexBetween", "text13", "mt8", styles.fyRowPy8)}>
-                <span className={cx("colorMuted")}>Outstanding</span>
-                <span className={cx("fontMono", totalOutstanding > 0 ? "colorAmber" : "colorAccent")}>{centsTozar(totalOutstanding)}</span>
+              ))}
+              {fyInvoices.length > 5 && (
+                <div className={cx("text12", "colorMuted", styles.fyPl16)}>
+                  …and {fyInvoices.length - 5} more invoices
+                </div>
+              )}
+              <div className={cx("flexBetween", "text14", "fw700", styles.fyRowPy10)}>
+                <span>Total Invoiced</span>
+                <span className={cx("fontMono", "colorAccent")}>{centsTozar(totalInvoiced)}</span>
               </div>
             </div>
-          )
+
+            <div className={cx("flexBetween", "fw800", styles.fyNetRow)}>
+              <span>Total Collected</span>
+              <span className={cx("fontMono", "colorAccent")}>{centsTozar(totalCollected)}</span>
+            </div>
+            <div className={cx("flexBetween", "text13", "mt8", styles.fyRowPy8)}>
+              <span className={cx("colorMuted")}>Outstanding</span>
+              <span className={cx("fontMono", totalOutstanding > 0 ? "colorAmber" : "colorAccent")}>{centsTozar(totalOutstanding)}</span>
+            </div>
+          </div>
         )}
 
         {activeTab === "fy checklist" && (

@@ -111,8 +111,12 @@ export function PerformancePage({ session }: { session: AuthSession | null }) {
 
   if (loading) {
     return (
-      <div className={cx(styles.pageBody, styles.perfRoot)}>
-        <div className={cx("text13", "colorMuted", "p24")}>Loading staff performance…</div>
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
       </div>
     );
   }

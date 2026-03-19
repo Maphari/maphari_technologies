@@ -140,6 +140,18 @@ export function HealthInterventionsPage({ session }: { session: AuthSession | nu
     : activeTab === "resolved" ? resolved
     : interventions;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -179,9 +191,7 @@ export function HealthInterventionsPage({ session }: { session: AuthSession | nu
       />
 
       {(activeTab === "all interventions" || activeTab === "open" || activeTab === "resolved") && (
-        loading ? (
-          <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading interventions…</div>
-        ) : displayList.length === 0 ? (
+        displayList.length === 0 ? (
           <div className={cx("emptyState")}>
             <div className={cx("emptyStateTitle")}>
               {activeTab === "all interventions" ? "No interventions logged" : `No ${activeTab} interventions`}

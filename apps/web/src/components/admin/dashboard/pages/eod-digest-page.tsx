@@ -31,6 +31,18 @@ export function EODDigestPage({ session }: { session: AuthSession | null }) {
   ).length;
   const today = new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" });
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
 
@@ -44,9 +56,9 @@ export function EODDigestPage({ session }: { session: AuthSession | null }) {
 
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Submitted",     value: loading ? "…" : String(entries.length),  cls: "colorAccent" },
-          { label: "Total Entries", value: loading ? "…" : String(entries.length),  cls: "colorAccent" },
-          { label: "With Blockers", value: loading ? "…" : String(withBlockers),    cls: withBlockers > 0 ? "colorAmber" : "colorAccent" },
+          { label: "Submitted",     value: String(entries.length),  cls: "colorAccent" },
+          { label: "Total Entries", value: String(entries.length),  cls: "colorAccent" },
+          { label: "With Blockers", value: String(withBlockers),    cls: withBlockers > 0 ? "colorAmber" : "colorAccent" },
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}>{s.label}</div>
@@ -55,9 +67,7 @@ export function EODDigestPage({ session }: { session: AuthSession | null }) {
         ))}
       </div>
 
-      {loading ? (
-        <div className={cx("colorMuted", "text12", "py24")}>Loading digest…</div>
-      ) : entries.length === 0 ? (
+      {entries.length === 0 ? (
         <div className={cx("colorMuted", "text12", "textCenter", "py32")}>
           No standup entries submitted today.
         </div>

@@ -83,6 +83,18 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
     ? Math.max(...data.monthlyTrend.flatMap((m) => [m.won, m.lost]), 1)
     : 1;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
 
@@ -123,13 +135,11 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
         />
       )}
 
-      {loading && <SkeletonCard rows={3} />}
-
-      {!loading && !data && (
+      {!data && (
         <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No pipeline data available.</div>
       )}
 
-      {!loading && data && (
+      {data && (
         <>
           {/* ── KPI Row ────────────────────────────────────────────────── */}
           <div className={styles.paKpiRow}>

@@ -267,6 +267,18 @@ export function RequestInboxPage({
     onNotify?.("error", message);
   }
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -279,10 +291,10 @@ export function RequestInboxPage({
 
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Total Requests",  value: loading ? "…" : String(items.length),          cls: "colorAccent" },
-          { label: "High Priority",   value: loading ? "…" : String(high),                   cls: "colorRed"    },
-          { label: "Medium Priority", value: loading ? "…" : String(medium),                 cls: "colorAmber"  },
-          { label: "Pipeline Value",  value: loading ? "…" : formatBudget(pipelineValue),    cls: "colorAccent" },
+          { label: "Total Requests",  value: String(items.length),          cls: "colorAccent" },
+          { label: "High Priority",   value: String(high),                   cls: "colorRed"    },
+          { label: "Medium Priority", value: String(medium),                 cls: "colorAmber"  },
+          { label: "Pipeline Value",  value: formatBudget(pipelineValue),    cls: "colorAccent" },
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}>{s.label}</div>
@@ -294,12 +306,10 @@ export function RequestInboxPage({
       <article className={styles.card}>
         <div className={styles.cardHd}>
           <span className={styles.cardHdTitle}>Incoming Requests</span>
-          {!loading && <span className={cx("colorMuted", "text12")}>{items.length} total</span>}
+          <span className={cx("colorMuted", "text12")}>{items.length} total</span>
         </div>
         <div className={styles.cardInner}>
-          {loading ? (
-            <div className={cx("colorMuted2", "text12", "mt16")}>Loading requests…</div>
-          ) : items.length === 0 ? (
+          {items.length === 0 ? (
             <div className={styles.emptyState}>
                 <div className={styles.emptyIcon}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">

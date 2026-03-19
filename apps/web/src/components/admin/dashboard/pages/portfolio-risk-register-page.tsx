@@ -199,6 +199,18 @@ export function PortfolioRiskRegisterPage({ session }: { session: AuthSession | 
   const totalMRRExposure = active.reduce((sum, r) => sum + r.mrrImpact, 0);
   const filtered         = filterStatus === "All" ? risks : risks.filter((r) => r.status === filterStatus);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody, styles.prrRoot)}>
       <div className={styles.pageHeader}>
@@ -215,10 +227,10 @@ export function PortfolioRiskRegisterPage({ session }: { session: AuthSession | 
 
       <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Active Risks",      value: loading ? "…" : active.length.toString(),                                         color: "var(--red)",    sub: `${critical.length} critical, ${highRisks.length} high` },
-          { label: "MRR Exposure",      value: loading ? "…" : `R${(totalMRRExposure / 1000).toFixed(0)}k`,                      color: "var(--red)",    sub: "From active client risks" },
-          { label: "Monitoring",        value: loading ? "…" : risks.filter((r) => r.status === "monitoring").length.toString(), color: "var(--amber)",  sub: "Watch-list items" },
-          { label: "Resolved (FY2026)", value: loading ? "…" : risks.filter((r) => r.status === "resolved").length.toString(),  color: "var(--accent)", sub: "Closed out this year" },
+          { label: "Active Risks",      value: active.length.toString(),                                         color: "var(--red)",    sub: `${critical.length} critical, ${highRisks.length} high` },
+          { label: "MRR Exposure",      value: `R${(totalMRRExposure / 1000).toFixed(0)}k`,                      color: "var(--red)",    sub: "From active client risks" },
+          { label: "Monitoring",        value: risks.filter((r) => r.status === "monitoring").length.toString(), color: "var(--amber)",  sub: "Watch-list items" },
+          { label: "Resolved (FY2026)", value: risks.filter((r) => r.status === "resolved").length.toString(),  color: "var(--accent)", sub: "Closed out this year" },
         ].map((stat) => (
           <div key={stat.label} className={styles.statCard}>
             <div className={styles.statLabel}>{stat.label}</div>
@@ -228,9 +240,7 @@ export function PortfolioRiskRegisterPage({ session }: { session: AuthSession | 
         ))}
       </div>
 
-      {loading ? (
-        <div className={cx("colorMuted2", "text12", "mt16")}>Loading risks…</div>
-      ) : risks.length === 0 ? (
+      {risks.length === 0 ? (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateTitle")}>No risks logged</div>
           <p className={cx("emptyStateSub")}>

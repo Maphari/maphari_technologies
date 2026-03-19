@@ -165,9 +165,11 @@ export function ReferralTrackingPage({ session }: { session: AuthSession | null 
 
   if (loading) {
     return (
-      <div className={styles.pageBody}>
-        <div className={cx("emptyState")}>
-          <div className={cx("emptyStateTitle")}>Loading referrals…</div>
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
       </div>
     );

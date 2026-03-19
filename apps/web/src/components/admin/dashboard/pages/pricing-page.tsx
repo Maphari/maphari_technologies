@@ -189,6 +189,18 @@ export function PricingPage() {
   const quoteVAT      = quoteTotal * 0.15;
   const quoteFinal    = quoteTotal + quoteVAT;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody, styles.pricRoot)}>
       <div className={styles.pageHeader}>
@@ -211,9 +223,9 @@ export function PricingPage() {
 
       <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Packages",         value: loading ? "…" : String(packages.length),  color: "var(--accent)", sub: "in catalog" },
-          { label: "Add-ons",          value: loading ? "…" : String(addons.length),    color: "var(--blue)",   sub: "available" },
-          { label: "Retainer Plans",   value: loading ? "…" : String(retainers.length), color: "var(--purple)", sub: "active tiers" },
+          { label: "Packages",         value: String(packages.length),  color: "var(--accent)", sub: "in catalog" },
+          { label: "Add-ons",          value: String(addons.length),    color: "var(--blue)",   sub: "available" },
+          { label: "Retainer Plans",   value: String(retainers.length), color: "var(--purple)", sub: "active tiers" },
           { label: "Pending Discounts",value: String(pendingDiscounts.length),           color: "var(--amber)",  sub: "needs approval" },
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
@@ -245,8 +257,6 @@ export function PricingPage() {
               </button>
             ))}
           </div>
-
-          {loading && <div className={cx("colorMuted", "text12", "mb12")}>Loading catalog…</div>}
 
           {catalogView === "packages" && (
             <div className={styles.pricTableCard}>
@@ -334,7 +344,6 @@ export function PricingPage() {
               + New Retainer Plan
             </button>
           </div>
-          {loading && <div className={cx("colorMuted", "text12", "mb12")}>Loading retainer plans…</div>}
           <div className={styles.pricTierGrid}>
             {retainers.map((plan, i) => (
               <div key={plan.id} className={cx(styles.pricTierCard, i === 1 && styles.pricTierCardPopular)}>

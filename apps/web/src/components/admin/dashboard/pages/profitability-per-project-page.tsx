@@ -22,7 +22,6 @@ import { saveSession } from "../../../../lib/auth/session";
 import type { AdminProject, AdminInvoice, ProjectTimeEntry } from "../../../../lib/api/admin/types";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
 import { loadTimeEntriesWithRefresh } from "../../../../lib/api/admin/tasks";
-import { SkeletonCard } from "@/components/shared/ui/page-skeleton";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const HOURLY_RATE_CENTS = 85000; // R850 per hour in cents (aligns with per-client page)
@@ -221,6 +220,18 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
   const totalCollected = withCalc.reduce((s, p) => s + p.collected, 0);
   const avgMargin = totalBudget > 0 ? Math.round((totalProfit / totalBudget) * 100) : 0;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody, styles.pppRoot)}>
       {/* ── Header ── */}
@@ -282,12 +293,7 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
         ))}
       </div>
 
-      {loading && (
-        <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading data…</div>
-      )}
-
-      {!loading && (
-        <div className={cx("overflowAuto", "minH0")}>
+      <div className={cx("overflowAuto", "minH0")}>
           <AdminFilterBar panelColor={"var(--surface)"} borderColor={"var(--border)"}>
             <select title="Select tab" value={activeTab} onChange={(e) => setActiveTab(e.target.value as Tab)} className={styles.formInput}>
               {tabs.map((tab) => <option key={tab} value={tab}>{tab}</option>)}
@@ -376,9 +382,7 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
                           <span className={cx(styles.pppMiniLabel, "fw700")}>Cost Breakdown by Staff Member</span>
                           <span className={cx("text11", "colorMuted")}>{p.hoursSpent}h total · R{Math.round(HOURLY_RATE_CENTS / 100)}/h rate</span>
                         </div>
-                        {loading ? (
-                          <SkeletonCard rows={2} />
-                        ) : p.staffBreakdown.length === 0 ? (
+                        {p.staffBreakdown.length === 0 ? (
                           <div className={cx("text11", "colorMuted", "p12")}>No time entries recorded for this project.</div>
                         ) : (
                           p.staffBreakdown.map((s) => (
@@ -528,7 +532,6 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
             </div>
           ) : null}
         </div>
-      )}
     </div>
   );
 }

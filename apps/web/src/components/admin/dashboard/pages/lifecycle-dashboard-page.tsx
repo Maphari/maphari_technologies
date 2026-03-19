@@ -82,6 +82,18 @@ export function LifecycleDashboardPage({ session }: { session: AuthSession | nul
   const atRisk      = clients.filter((c) => c.status === "PAUSED").length;
   const offboarding = clients.filter((c) => c.status === "CHURNED").length;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -94,10 +106,10 @@ export function LifecycleDashboardPage({ session }: { session: AuthSession | nul
 
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Onboarding",  value: loading ? "…" : String(onboarding),  cls: "colorAccent" },
-          { label: "Active",      value: loading ? "…" : String(active),      cls: "colorGreen"  },
-          { label: "At Risk",     value: loading ? "…" : String(atRisk),      cls: "colorRed"    },
-          { label: "Offboarding", value: loading ? "…" : String(offboarding), cls: "colorAmber"  },
+          { label: "Onboarding",  value: String(onboarding),  cls: "colorAccent" },
+          { label: "Active",      value: String(active),      cls: "colorGreen"  },
+          { label: "At Risk",     value: String(atRisk),      cls: "colorRed"    },
+          { label: "Offboarding", value: String(offboarding), cls: "colorAmber"  },
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}>{s.label}</div>
@@ -109,12 +121,10 @@ export function LifecycleDashboardPage({ session }: { session: AuthSession | nul
       <article className={styles.card}>
         <div className={styles.cardHd}>
           <span className={styles.cardHdTitle}>All Clients</span>
-          {!loading && <span className={cx("colorMuted", "text12")}>{clients.length} total</span>}
+          <span className={cx("colorMuted", "text12")}>{clients.length} total</span>
         </div>
         <div className={styles.cardInner}>
-          {loading ? (
-            <div className={cx("colorMuted2", "text12", "mt16")}>Loading clients…</div>
-          ) : clients.length === 0 ? (
+          {clients.length === 0 ? (
             <div className={cx("colorMuted2", "text13", "mt16")}>No clients found.</div>
           ) : (
             <table className={styles.table}>

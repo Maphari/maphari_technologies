@@ -159,14 +159,12 @@ export function ExecutiveDashboardPage({ session, onNotify }: Props) {
 
   if (loading) {
     return (
-      <div className={styles.pageBody}>
-        <div className={styles.pageHeader}>
-          <div>
-            <div className={styles.pageEyebrow}>ADMIN / REPORTING & INTELLIGENCE</div>
-            <h1 className={styles.pageTitle}>Executive Dashboard</h1>
-          </div>
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-        <div className={cx("colorMuted", "text13")}>Loading executive data…</div>
       </div>
     );
   }
