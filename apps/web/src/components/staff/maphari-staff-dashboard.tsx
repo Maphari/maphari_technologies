@@ -908,6 +908,8 @@ export function MaphariStaffDashboard() {
             staffRole={staffRole}
             isLoggingOut={loggingOut}
             onOpenHelp={() => setActivePage("knowledge")}
+            onNavigateSettings={() => { setActivePage("settings"); setSidebarOpen(false); }}
+            onNavigateProfile={() => { setActivePage("myemployment"); setSidebarOpen(false); }}
             onMenuToggle={() => setSidebarOpen((prev) => !prev)}
             onNewTask={() => {
               setActivePage("tasks");

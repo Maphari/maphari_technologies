@@ -20,6 +20,8 @@ type StaffTopbarProps = {
   staffRole: string;
   isLoggingOut?: boolean;
   onOpenHelp?: () => void;
+  onNavigateSettings?: () => void;
+  onNavigateProfile?: () => void;
   onMenuToggle?: () => void;
   onNewTask?: () => void;
   onStartTimer?: () => void;
@@ -53,6 +55,8 @@ export function StaffTopbar({
   staffRole,
   isLoggingOut = false,
   onOpenHelp,
+  onNavigateSettings,
+  onNavigateProfile,
   onMenuToggle,
   onNewTask,
   onStartTimer,
@@ -98,7 +102,9 @@ export function StaffTopbar({
 
   function handleProfileLink(label: string): void {
     setProfileMenuOpen(false);
-    if (label === "Help") { onOpenHelp?.(); return; }
+    if (label === "Settings")   { onNavigateSettings?.(); return; }
+    if (label === "My Profile") { onNavigateProfile?.();  return; }
+    if (label === "Help")       { onOpenHelp?.();         return; }
   }
 
   return (
