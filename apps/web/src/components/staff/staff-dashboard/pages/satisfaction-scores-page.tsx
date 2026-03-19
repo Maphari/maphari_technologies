@@ -60,7 +60,7 @@ export function SatisfactionScoresPage({
   session: AuthSession | null;
 }) {
   const [entries, setEntries]         = useState<StaffHealthScoreEntry[]>([]);
-  const [loading, setLoading]         = useState(false);
+  const [loading, setLoading]         = useState(true);
   const [selectedIdx, setSelectedIdx] = useState(0);
 
   useEffect(() => {
