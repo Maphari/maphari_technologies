@@ -58,6 +58,8 @@ export function LoyaltyCreditsPage() {
   const { session } = useProjectLayer();
   const [account,   setAccount]   = useState<PortalLoyaltyAccount | null>(null);
   const [redeeming, setRedeeming] = useState<string | null>(null); // holds the redemption name being processed
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState<string | null>(null);
   const notify = usePageToast();
 
   // ── Derived values (declared early so handleRedeem can capture them) ──────
@@ -73,10 +75,14 @@ export function LoyaltyCreditsPage() {
 
   // ── Load account data ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     void loadMyLoyaltyWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setAccount(r.data);
+      if (r.error) { setError(r.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (r.data) setAccount(r.data);
+      setLoading(false);
     });
   }, [session]);
 
@@ -103,6 +109,29 @@ export function LoyaltyCreditsPage() {
     } finally {
       setRedeeming(null);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -94,7 +94,9 @@ const TICKET_TYPES = ["Bug / Error", "Performance Issue", "Feature Request", "Ac
 // ── Component ─────────────────────────────────────────────────────────────────
 export function SlaEscalationPage() {
   const { session } = useProjectLayer();
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [tickets,  setTickets]  = useState<Ticket[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState<string | null>(null);
 
   // ── Form state ────────────────────────────────────────────────────────────
   const [ticketType, setTicketType] = useState("");
@@ -106,10 +108,14 @@ export function SlaEscalationPage() {
 
   // ── Fetch tickets ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     loadPortalSupportTicketsWithRefresh(session).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
       if (result.data) setTickets(result.data.map(mapTicket));
+      setLoading(false);
     });
   }, [session]);
 
@@ -142,6 +148,29 @@ export function SlaEscalationPage() {
         setPriority("Medium");
       }, 3000);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
   }
 
   return (

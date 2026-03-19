@@ -202,26 +202,27 @@ export function TimelinePage() {
   const [apiPhases, setApiPhases] = useState<Phase[]>([]);
   const [pendingCRs, setPendingCRs] = useState<PendingCR[]>([]);
   const [isSubmittingCRs, setIsSubmittingCRs] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState<string | null>(null);
 
   const { session, projectId } = useProjectLayer();
 
   useEffect(() => {
-    if (!session || !projectId) return;
-    loadPortalPhasesWithRefresh(session, projectId).then(r => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.data && r.data.length > 0) {
-        setApiPhases(r.data.map(apiToTimelinePhase));
+    if (!session || !projectId) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      loadPortalPhasesWithRefresh(session, projectId),
+      loadPortalChangeRequestsWithRefresh(session, { projectId, status: "DRAFT" }),
+    ]).then(([phasesR, crR]) => {
+      if (phasesR.nextSession) saveSession(phasesR.nextSession);
+      if (crR.nextSession) saveSession(crR.nextSession);
+      if (phasesR.error) { setError(phasesR.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (phasesR.data && phasesR.data.length > 0) {
+        setApiPhases(phasesR.data.map(apiToTimelinePhase));
       }
-    });
-  }, [session, projectId]);
-
-  // Load DRAFT change requests for the simulator
-  useEffect(() => {
-    if (!session || !projectId) return;
-    loadPortalChangeRequestsWithRefresh(session, { projectId, status: "DRAFT" }).then(r => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.data && r.data.length > 0) {
-        setPendingCRs(r.data.map(cr => ({
+      if (crR.data && crR.data.length > 0) {
+        setPendingCRs(crR.data.map(cr => ({
           id:    cr.id,
           label: cr.title,
           days:  cr.estimatedHours != null ? Math.ceil(cr.estimatedHours / 8) : 0,
@@ -229,6 +230,7 @@ export function TimelinePage() {
           scope: cr.impactSummary ?? "",
         })));
       }
+      setLoading(false);
     });
   }, [session, projectId]);
 
@@ -277,6 +279,29 @@ export function TimelinePage() {
   // Derived stats from displayPhases
   const completedPhasesDyn = displayPhases.filter(p => p.status === "Completed").length;
   const overallPctDyn      = displayPhases.length > 0 ? Math.round(displayPhases.reduce((s, p) => s + p.pct, 0) / displayPhases.length) : 0;
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

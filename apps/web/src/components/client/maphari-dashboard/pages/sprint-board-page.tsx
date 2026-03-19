@@ -182,26 +182,33 @@ export function SprintBoardPage() {
   const [TASKS,           setTasks]           = useState<STask[]>([]);
   const [apiAllSprints,   setApiAllSprints]   = useState<PortalSprint[]>([]);
   const [apiDeliverables, setApiDeliverables] = useState<PortalDeliverable[]>([]);
+  const [loading,         setLoading]         = useState(true);
+  const [error,           setError]           = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session || !projectId) return;
-    void loadPortalSprintsWithRefresh(session, projectId).then(async (sprintResult) => {
+    if (!session || !projectId) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
+    void Promise.all([
+      loadPortalSprintsWithRefresh(session, projectId),
+      loadPortalDeliverablesWithRefresh(session, projectId),
+    ]).then(async ([sprintResult, delResult]) => {
       if (sprintResult.nextSession) saveSession(sprintResult.nextSession);
+      if (delResult.nextSession) saveSession(delResult.nextSession);
+      if (sprintResult.error) { setError(sprintResult.error.message ?? "Failed to load."); setLoading(false); return; }
       const sprints = sprintResult.data ?? [];
       setApiAllSprints(sprints);
       const active = sprints.find((s) => s.status === "ACTIVE") ?? sprints[0] ?? null;
       setActiveSprint(active);
-      if (!active) return;
+      if (delResult.data) setApiDeliverables(delResult.data);
+      if (!active) { setLoading(false); return; }
 
       const taskResult = await loadPortalSprintTasksWithRefresh(session, projectId, active.id);
       if (taskResult.nextSession) saveSession(taskResult.nextSession);
       if (taskResult.data && taskResult.data.length > 0) {
         setTasks(taskResult.data.map(mapApiTask));
       }
-    });
-    void loadPortalDeliverablesWithRefresh(session, projectId).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.data) setApiDeliverables(r.data);
+      setLoading(false);
     });
   }, [session, projectId]);
 
@@ -274,6 +281,29 @@ export function SprintBoardPage() {
 
   const healthStatus = pctComplete >= 70 ? "On Track" : pctComplete >= 40 ? "At Risk" : "Behind";
   const healthBadge  = pctComplete >= 70 ? "badgeAccent" : pctComplete >= 40 ? "badgeAmber" : "badgeRed";
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

@@ -48,13 +48,19 @@ function buildGroups(tasks: PortalOffboardingTask[]): ChecklistGroup[] {
 // ── Component ─────────────────────────────────────────────────────────────────
 export function OffboardingPage() {
   const { session } = useProjectLayer();
-  const [groups, setGroups] = useState<ChecklistGroup[]>([]);
+  const [groups,   setGroups]   = useState<ChecklistGroup[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     loadPortalOffboardingWithRefresh(session, session.user.clientId ?? "").then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
       if (result.data) setGroups(buildGroups(result.data));
+      setLoading(false);
     });
   }, [session]);
 
@@ -93,6 +99,29 @@ export function OffboardingPage() {
       }
     });
   }, [session, allItems]);
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

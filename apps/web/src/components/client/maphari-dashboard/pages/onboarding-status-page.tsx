@@ -43,13 +43,19 @@ function mapRecord(r: PortalOnboardingRecord): { label: string; status: StageSta
 // ── Component ─────────────────────────────────────────────────────────────────
 export function OnboardingStatusPage() {
   const { session } = useProjectLayer();
-  const [stages, setStages] = useState<Array<{ label: string; status: StageStatus; date?: string; notes?: string }>>([]);
+  const [stages,  setStages]  = useState<Array<{ label: string; status: StageStatus; date?: string; notes?: string }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     loadPortalOnboardingWithRefresh(session, session.user.clientId ?? "").then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
       if (result.data) setStages(result.data.map(mapRecord));
+      setLoading(false);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
@@ -57,6 +63,29 @@ export function OnboardingStatusPage() {
   const completedSteps = stages.filter((s) => s.status === "done").length;
   const totalSteps = stages.length;
   const activeStage = stages.find((s) => s.status === "active");
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

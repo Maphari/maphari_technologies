@@ -90,24 +90,26 @@ export interface BudgetTrackerPageProps { invoices?: PortalInvoice[] }
 
 export function BudgetTrackerPage({ invoices = [] }: BudgetTrackerPageProps) {
   const { session, projectId } = useProjectLayer();
+  const [loading, setLoading]       = useState(true);
+  const [error,   setError]         = useState<string | null>(null);
   const [phaseRows, setPhaseRows]   = useState<BudgetPhaseRow[]>([]);
   const [pendingCRs, setPendingCRs] = useState<CrRow[]>([]);
   const [activeCRs, setActiveCRs]   = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!session || !projectId) return;
-    loadPortalPhasesWithRefresh(session, projectId).then(r => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.data) setPhaseRows(r.data.map(apiToPhaseRow));
-    });
-  }, [session, projectId]);
-
-  // Load pending change requests (status ESTIMATED = admin-costed, awaiting client decision)
-  useEffect(() => {
-    if (!session || !projectId) return;
-    loadPortalChangeRequestsWithRefresh(session, { projectId, status: "ESTIMATED" }).then(r => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.data) setPendingCRs(r.data.map(crToRow));
+    if (!session || !projectId) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      loadPortalPhasesWithRefresh(session, projectId),
+      loadPortalChangeRequestsWithRefresh(session, { projectId, status: "ESTIMATED" }),
+    ]).then(([phaseR, crR]) => {
+      if (phaseR.nextSession) saveSession(phaseR.nextSession);
+      if (crR.nextSession) saveSession(crR.nextSession);
+      if (phaseR.error) { setError(phaseR.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (phaseR.data) setPhaseRows(phaseR.data.map(apiToPhaseRow));
+      if (crR.data) setPendingCRs(crR.data.map(crToRow));
+      setLoading(false);
     });
   }, [session, projectId]);
 
@@ -143,6 +145,29 @@ export function BudgetTrackerPage({ invoices = [] }: BudgetTrackerPageProps) {
   const headroomPct      = totalBudget > 0 ? Math.round((headroom          / totalBudget) * 100) : 0;
   const crImpactPct      = totalBudget > 0 ? Math.round((crTotal           / totalBudget) * 100) : 0;
   const isOverBudget     = adjustedForecast > totalBudget;
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

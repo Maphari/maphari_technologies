@@ -76,14 +76,20 @@ const filters: Array<"all" | CommType> = ["all", "email", "meeting", "message", 
 // ── Component ─────────────────────────────────────────────────────────────────
 export function CommunicationHistoryPage() {
   const { session } = useProjectLayer();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [commHistory, setCommHistory] = useState<UiComm[]>([]);
   const [filter, setFilter] = useState<"all" | CommType>("all");
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     loadPortalCommLogsWithRefresh(session, session.user.clientId ?? "").then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
       if (result.data) setCommHistory(result.data.map(mapLog));
+      setLoading(false);
     });
   }, [session]);
 
@@ -91,6 +97,29 @@ export function CommunicationHistoryPage() {
   const meetingsCount = commHistory.filter((c) => c.type === "meeting" || c.type === "call").length;
   const docsCount = commHistory.filter((c) => c.type === "document").length;
   const filtered = filter === "all" ? commHistory : commHistory.filter((c) => c.type === filter);
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

@@ -46,19 +46,24 @@ function formatDate(iso: string | null) {
 // ── Component ─────────────────────────────────────────────────────────────────
 export function AnnouncementsPage() {
   const { session } = useProjectLayer();
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState<string | null>(null);
   const [announcements, setAnnouncements] = useState<PortalAnnouncement[]>([]);
   const [read,          setRead]          = useState<Record<string, boolean>>({});
   const [reactions,     setReactions]     = useState<Record<string, Record<EmojiKey, number>>>({});
   const [myReactions,   setMyReactions]   = useState<Record<string, Set<EmojiKey>>>({});
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     void Promise.all([
       loadPortalAnnouncementsWithRefresh(session),
       getPortalPreferenceWithRefresh(session, "readAnnouncements"),
     ]).then(([ar, pr]) => {
       if (ar.nextSession) saveSession(ar.nextSession);
       if (pr.nextSession) saveSession(pr.nextSession);
+      if (ar.error) { setError(ar.error.message ?? "Failed to load."); setLoading(false); return; }
       if (!ar.error && ar.data) setAnnouncements(ar.data);
       if (!pr.error && pr.data?.value) {
         try {
@@ -66,6 +71,7 @@ export function AnnouncementsPage() {
           setRead(Object.fromEntries(ids.map((id) => [id, true])));
         } catch { /* ignore */ }
       }
+      setLoading(false);
     });
   }, [session]);
 
@@ -100,6 +106,29 @@ export function AnnouncementsPage() {
       return { ...prev, [id]: mine };
     });
   };
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

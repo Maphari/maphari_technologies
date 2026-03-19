@@ -114,14 +114,20 @@ export function DeliverablesPage() {
   // ── Project layer: real API data ──────────────────────────────────────────
   const { session, projectId } = useProjectLayer();
   const [DATA, setData] = useState<Deliverable[]>(EMPTY_DATA);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session || !projectId) return;
+    if (!session || !projectId) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     void loadPortalDeliverablesWithRefresh(session, projectId).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
       if (result.data && result.data.length > 0) {
         setData(result.data.map((d, i) => mapApiDeliverable(d, i)));
       }
+      setLoading(false);
     });
   }, [session, projectId]);
 
@@ -177,6 +183,29 @@ export function DeliverablesPage() {
     if (revised[d.id])  return "Pending Review";
     return d.status;
   };
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

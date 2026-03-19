@@ -43,7 +43,9 @@ function statusBadge(s: string) {
 // ── Component ─────────────────────────────────────────────────────────────────
 export function ReferralPortalPage() {
   const { session } = useProjectLayer();
-  const [referrals, setReferrals] = useState<PortalReferral[]>([]);
+  const [referrals,  setReferrals]  = useState<PortalReferral[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState<string | null>(null);
 
   // Form state
   const [refName, setRefName] = useState("");
@@ -52,10 +54,14 @@ export function ReferralPortalPage() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     loadPortalReferralsWithRefresh(session).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
       if (result.data) setReferrals(result.data);
+      setLoading(false);
     });
   }, [session]);
 
@@ -81,6 +87,29 @@ export function ReferralPortalPage() {
         setRefEmail("");
       }, 3000);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -92,6 +92,8 @@ export function AIAutomationPage() {
     ? session.user.email.split("@")[0]?.split(".")[0] ?? "there"
     : "there";
 
+  const [loading,    setLoading]   = useState(true);
+  const [error,      setError]     = useState<string | null>(null);
   const [tab,        setTab]       = useState<AITab>("AI Summary");
   const [alerts,     setAlerts]    = useState<AlertItem[]>(FALLBACK_ALERTS);
   const [faqOpen,    setFaqOpen]   = useState<number | null>(null);
@@ -105,8 +107,11 @@ export function AIAutomationPage() {
     if (!session?.user?.clientId) return;
     const clientId = session.user.clientId;
 
+    setLoading(true);
+    setError(null);
     void loadPortalSlaWithRefresh(session, clientId).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) { setError(r.error.message ?? "Failed to load."); setLoading(false); return; }
       const slaRecords = r.data ?? [];
 
       const dynamicAlerts: AlertItem[] = [];
@@ -144,6 +149,7 @@ export function AIAutomationPage() {
       }
 
       setAlerts(dynamicAlerts);
+      setLoading(false);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
@@ -231,6 +237,29 @@ Answer concisely in 2-3 sentences. Focus on actionable guidance about their proj
     const reply = r.data?.output ?? FALLBACK_REPLY;
     setMessages((prev) => [...prev, { role: "bot", text: reply }]);
   }, [chatInput, botTyping, session]);
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

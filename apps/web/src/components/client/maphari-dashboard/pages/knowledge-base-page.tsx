@@ -46,12 +46,18 @@ export function KnowledgeBasePage() {
   const [articles,  setArticles]  = useState<PortalKnowledgeArticle[]>([]);
   const [category,  setCategory]  = useState("All");
   const [search,    setSearch]    = useState("");
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     void loadPortalKnowledgeArticlesWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setArticles(r.data);
+      if (r.error) { setError(r.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (r.data) setArticles(r.data);
+      setLoading(false);
     });
   }, [session]);
 
@@ -69,6 +75,29 @@ export function KnowledgeBasePage() {
     }
     return items;
   }, [articles, category, search]);
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

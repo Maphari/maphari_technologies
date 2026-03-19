@@ -61,6 +61,8 @@ export function DataPrivacyPage() {
   const [saving,         setSaving]         = useState(false);
   const [mounted,        setMounted]        = useState(false);
   const [popiaRequests,  setPopiaRequests]  = useState<PortalSupportTicket[]>([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
@@ -69,25 +71,29 @@ export function DataPrivacyPage() {
 
   // Load saved consents from preferences API on mount
   useEffect(() => {
-    if (!session) return;
-    void getPortalPreferenceWithRefresh(session, "privacyConsents").then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.data?.value) {
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
+    void Promise.all([
+      getPortalPreferenceWithRefresh(session, "privacyConsents"),
+      loadPortalSupportTicketsWithRefresh(session),
+    ]).then(([prefR, ticketR]) => {
+      if (prefR.nextSession) saveSession(prefR.nextSession);
+      if (ticketR.nextSession) saveSession(ticketR.nextSession);
+      if (prefR.error) { setError(prefR.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (prefR.data?.value) {
         try {
-          const saved = JSON.parse(r.data.value) as Array<{ id: string; enabled: boolean }>;
+          const saved = JSON.parse(prefR.data.value) as Array<{ id: string; enabled: boolean }>;
           setConsents(INITIAL_CONSENTS.map((c) => {
             const savedItem = saved.find((s) => s.id === c.id);
             return savedItem ? { ...c, enabled: c.required ? true : savedItem.enabled } : c;
           }));
         } catch { /* keep defaults */ }
       }
-    });
-    // Load POPIA request history
-    void loadPortalSupportTicketsWithRefresh(session).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) {
-        setPopiaRequests(r.data.filter((t) => t.title?.startsWith("POPIA Request:")));
+      if (!ticketR.error && ticketR.data) {
+        setPopiaRequests(ticketR.data.filter((t) => t.title?.startsWith("POPIA Request:")));
       }
+      setLoading(false);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
@@ -140,6 +146,29 @@ export function DataPrivacyPage() {
 
   const scoreColor = clampedScore >= 80 ? "var(--green)" : clampedScore >= 60 ? "var(--amber)" : "var(--red)";
   const scoreLabel = clampedScore >= 80 ? "High Privacy" : clampedScore >= 60 ? "Moderate" : "Low Privacy";
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

@@ -126,18 +126,25 @@ export function NotificationsPage() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [snoozed,   setSnoozed]   = useState<Set<string>>(new Set());
   const [expanded,  setExpanded]  = useState<string | null>(null);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
-    void loadPortalNotificationsWithRefresh(session, {}).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setNotifs(r.data.map(mapJobToNotif));
-    });
-    void getPortalPreferenceWithRefresh(session, "notificationMutes").then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.data?.value) {
-        try { setMuted(new Set(JSON.parse(r.data.value))); } catch { /* ignore */ }
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
+    void Promise.all([
+      loadPortalNotificationsWithRefresh(session, {}),
+      getPortalPreferenceWithRefresh(session, "notificationMutes"),
+    ]).then(([notifsR, prefR]) => {
+      if (notifsR.nextSession) saveSession(notifsR.nextSession);
+      if (prefR.nextSession) saveSession(prefR.nextSession);
+      if (notifsR.error) { setError(notifsR.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (notifsR.data) setNotifs(notifsR.data.map(mapJobToNotif));
+      if (prefR.data?.value) {
+        try { setMuted(new Set(JSON.parse(prefR.data.value))); } catch { /* ignore */ }
       }
+      setLoading(false);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
@@ -212,6 +219,29 @@ export function NotificationsPage() {
     if (n.unread) senderMap[n.sender].unread++;
   });
   const topSenders = Object.entries(senderMap).sort((a, b) => b[1].count - a[1].count).slice(0, 4);
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

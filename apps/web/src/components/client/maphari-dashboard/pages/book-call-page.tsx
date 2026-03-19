@@ -154,23 +154,30 @@ export function BookCallPage() {
   const [allAppts,      setAllAppts]      = useState<PortalAppointment[]>([]);
   const [upcomingStrip, setUpcomingStrip] = useState<ReturnType<typeof mapApptToStrip>[]>([]);
   const [submitting,    setSubmitting]    = useState(false);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState<string | null>(null);
 
   // ── Current week (computed once per mount) ────────────────────────────────
   const weekDays = useMemo(() => getCurrentWeekDays(), []);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     loadPortalAppointmentsWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (r.error || !r.data) return;
-      setAllAppts(r.data);
-      const now = Date.now();
-      const upcoming = r.data
-        .filter((a) => new Date(a.scheduledAt).getTime() + a.durationMins * 60_000 > now)
-        .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
-        .slice(0, 6)
-        .map(mapApptToStrip);
-      setUpcomingStrip(upcoming);
+      if (r.error) { setError(r.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (r.data) {
+        setAllAppts(r.data);
+        const now = Date.now();
+        const upcoming = r.data
+          .filter((a) => new Date(a.scheduledAt).getTime() + a.durationMins * 60_000 > now)
+          .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+          .slice(0, 6)
+          .map(mapApptToStrip);
+        setUpcomingStrip(upcoming);
+      }
+      setLoading(false);
     });
   }, [session]);
 
@@ -234,6 +241,29 @@ export function BookCallPage() {
         .slice(0, 6)
     );
     setBookStep("done");
+  }
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
   }
 
   return (

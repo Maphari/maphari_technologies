@@ -73,17 +73,23 @@ export function FeedbackSurveyPage() {
   const [comment, setComment] = useState("");
   const [pastSurveys, setPastSurveys] = useState<PastSurveyRow[]>([]);
   const [activeSurveyId, setActiveSurveyId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session || !clientId) return;
+    if (!session || !clientId) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     void loadPortalSurveysWithRefresh(session, clientId).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) {
+      if (r.error) { setError(r.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (r.data) {
         const completed = r.data.filter(s => s.status === "COMPLETED");
         const pending   = r.data.find(s => s.status === "PENDING");
         setPastSurveys(completed.map(mapSurveyRow));
         if (pending) setActiveSurveyId(pending.id);
       }
+      setLoading(false);
     });
   }, [session, clientId]);
 
@@ -91,6 +97,29 @@ export function FeedbackSurveyPage() {
 
   const dataPoints = FB_DIMS.map((dim, i) => fbPt(i, sliders[dim]));
   const polygonStr = dataPoints.map(([x, y]) => `${x},${y}`).join(" ");
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

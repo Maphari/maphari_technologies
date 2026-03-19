@@ -174,16 +174,23 @@ export function SatisfactionSurveyPage() {
   const [comment,   setComment]   = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
-    loadPortalSurveysWithRefresh(session, session.user.clientId ?? "").then((result) => {
-      if (result.nextSession) saveSession(result.nextSession);
-      if (result.data) setSurveys(result.data);
-    });
-    loadPendingNpsWithRefresh(session).then((result) => {
-      if (result.nextSession) saveSession(result.nextSession);
-      if (result.data) setPendingNps(result.data);
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
+    void Promise.all([
+      loadPortalSurveysWithRefresh(session, session.user.clientId ?? ""),
+      loadPendingNpsWithRefresh(session),
+    ]).then(([survR, npsR]) => {
+      if (survR.nextSession) saveSession(survR.nextSession);
+      if (npsR.nextSession)  saveSession(npsR.nextSession);
+      if (survR.error) { setError(survR.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (survR.data) setSurveys(survR.data);
+      if (npsR.data)  setPendingNps(npsR.data);
+      setLoading(false);
     });
   }, [session]);
 
@@ -220,6 +227,29 @@ export function SatisfactionSurveyPage() {
       ));
       setSubmitted(true);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
   }
 
   if (submitted) {

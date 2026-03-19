@@ -151,6 +151,8 @@ export function MeetingArchivePage() {
   const [gcalConnected,  setGcalConnected]  = useState(false);
   const [syncingId,      setSyncingId]      = useState<string | null>(null);
   const [syncedIds,      setSyncedIds]      = useState<Set<string>>(new Set());
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState<string | null>(null);
 
   // ── Derived stat counts from real meeting data ───────────────────────────
   const totalMeetings  = calMeetings.length + archiveMeetings.length;
@@ -192,25 +194,31 @@ export function MeetingArchivePage() {
   }
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     const now = new Date();
-    void loadPortalAppointmentsWithRefresh(session).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) {
-        const future = r.data.filter(a => new Date(a.scheduledAt) >= now);
-        const past   = r.data.filter(a => new Date(a.scheduledAt) < now);
+    void Promise.all([
+      loadPortalAppointmentsWithRefresh(session),
+      loadPortalMeetingsWithRefresh(session),
+      getGoogleCalendarStatusWithRefresh(session),
+    ]).then(([apptR, meetR, gcalR]) => {
+      if (apptR.nextSession) saveSession(apptR.nextSession);
+      if (meetR.nextSession) saveSession(meetR.nextSession);
+      if (gcalR.nextSession) saveSession(gcalR.nextSession);
+      if (apptR.error) { setError(apptR.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (!apptR.error && apptR.data) {
+        const future = apptR.data.filter(a => new Date(a.scheduledAt) >= now);
+        const past   = apptR.data.filter(a => new Date(a.scheduledAt) < now);
         setCalMeetings(future.map(apptToCalMeeting));
         setArchiveMeetings(past.map(apptToArchiveMeeting) as typeof ARCHIVE_MEETINGS);
       }
-    });
-    void loadPortalMeetingsWithRefresh(session).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) {
-        setPortalMeetings(r.data);
+      if (!meetR.error && meetR.data) {
+        setPortalMeetings(meetR.data);
         // Pre-populate mood ratings from API data
         const moods: Record<number, string> = {};
         const MOOD_EMOJIS = ["😞", "😐", "🙂", "😊", "🤩"] as const;
-        r.data.forEach(m => {
+        meetR.data.forEach(m => {
           if (m.clientMoodRating && m.clientMoodRating >= 1 && m.clientMoodRating <= 5) {
             const day = new Date(m.meetingAt).getDate();
             moods[day] = MOOD_EMOJIS[m.clientMoodRating - 1];
@@ -218,10 +226,8 @@ export function MeetingArchivePage() {
         });
         setMeetingMoods(moods);
       }
-    });
-    void getGoogleCalendarStatusWithRefresh(session).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.data?.connected) setGcalConnected(true);
+      if (gcalR.data?.connected) setGcalConnected(true);
+      setLoading(false);
     });
   }, [session]);
 
@@ -265,6 +271,29 @@ export function MeetingArchivePage() {
     : null;
 
   const UPCOMING = calMeetings.filter((m) => m.day > TODAY).slice(0, 3);
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

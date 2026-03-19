@@ -111,12 +111,18 @@ export function DecisionLogPage() {
   const [tab,      setTab]      = useState<DLTab>("All");
   const [query,    setQuery]    = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session || !projectId) return;
+    if (!session || !projectId) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     void loadPortalDecisionsWithRefresh(session, projectId).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setDecisions(r.data.map(mapApiDecision));
+      if (r.error) { setError(r.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (r.data) setDecisions(r.data.map(mapApiDecision));
+      setLoading(false);
     });
   }, [session, projectId]);
 
@@ -151,6 +157,29 @@ export function DecisionLogPage() {
 
   // Timeline: 4 most recent
   const recentFour = decisions.slice(0, 4);
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>

@@ -354,13 +354,18 @@ export function ContractsPage() {
   const [contractHtml,  setContractHtml]  = useState<string>("");
   const [loadingHtml,   setLoadingHtml]   = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState<string | null>(null);
 
   // Load contracts from backend on mount
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     void loadPortalContractsWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) {
+      if (r.error) { setError(r.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (r.data) {
         setContracts(r.data);
         const ids = new Set<string>();
         for (const c of r.data) {
@@ -368,6 +373,7 @@ export function ContractsPage() {
         }
         setSignedIds(ids);
       }
+      setLoading(false);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
@@ -586,6 +592,29 @@ export function ContractsPage() {
   const pendingDocs = displayDocs.filter((d) => !d.signed && !signedIds.has(d.id ?? ""));
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

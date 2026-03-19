@@ -135,15 +135,21 @@ const _STATIC_RISKS: Risk[] = [
 export function RiskRegisterPage() {
   // ── Project layer: real API data ──────────────────────────────────────────
   const { session, projectId } = useProjectLayer();
-  const [RISKS, setRisks] = useState<Risk[]>([]);
+  const [RISKS,   setRisks]   = useState<Risk[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session || !projectId) return;
+    if (!session || !projectId) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     void loadPortalRisksWithRefresh(session, projectId).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
       if (result.data && result.data.length > 0) {
         setRisks(result.data.map((r, i) => mapApiRisk(r, i)));
       }
+      setLoading(false);
     });
   }, [session, projectId]);
 
@@ -189,6 +195,29 @@ export function RiskRegisterPage() {
 
   // Category counts
   const catCounts = ALL_CATS.map(c => ({ cat: c, count: RISKS.filter(r => r.category === c).length })).filter(c => c.count > 0);
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("pageBody")}>
