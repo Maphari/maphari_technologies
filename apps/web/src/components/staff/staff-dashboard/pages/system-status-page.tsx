@@ -131,6 +131,18 @@ export function SystemStatusPage({ isActive, session }: { isActive: boolean; ses
 
   const empty = !loading && services.length === 0;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-system-status">
       <div className={cx("pageHeaderBar")}>
@@ -139,12 +151,8 @@ export function SystemStatusPage({ isActive, session }: { isActive: boolean; ses
         <p className={cx("pageSubtitleText", "mb20")}>Platform uptime and known issues</p>
       </div>
 
-      {/* ── Loading state ────────────────────────────────────────────────── */}
-      {loading ? (
-        <div className={cx("emptyState")}>
-          <div className={cx("emptyStateText")}>Loading system status…</div>
-        </div>
-      ) : empty ? (
+      {/* ── Empty state ────────────────────────────────────────────────── */}
+      {empty ? (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">

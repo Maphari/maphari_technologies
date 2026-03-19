@@ -53,21 +53,6 @@ function avgTaskTime(hoursThisWeek: number, tasksCompleted: number): string {
   return `${(Math.round((hoursThisWeek / tasksCompleted) * 10) / 10)}h`;
 }
 
-// ── Skeleton ──────────────────────────────────────────────────────────────────
-
-function SkeletonStat() {
-  return (
-    <div className={cx("tpmStatCard", "opacity50")}>
-      <div className={cx("tpmStatCardTop")}>
-        <div className={cx("skeleBlock10x50p")} />
-        <div className={cx("skeleBlock22x35p")} />
-      </div>
-      <div className={cx("tpmStatCardDivider")} />
-      <div className={cx("skeleBlock9x60p")} />
-    </div>
-  );
-}
-
 // ── Page component ────────────────────────────────────────────────────────────
 
 export function TeamPerformancePage({ isActive, session }: TeamPerformancePageProps) {
@@ -102,6 +87,18 @@ export function TeamPerformancePage({ isActive, session }: TeamPerformancePagePr
 
   const sorted = [...members].sort((a, b) => b.utilizationPct - a.utilizationPct);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-team-performance">
       <div className={cx("pageHeaderBar")}>
@@ -112,67 +109,61 @@ export function TeamPerformancePage({ isActive, session }: TeamPerformancePagePr
 
       {/* ── Summary stats ────────────────────────────────────────────────── */}
       <div className={cx("tpmStatGrid")}>
-        {loading ? (
-          [1, 2, 3, 4].map((n) => <SkeletonStat key={n} />)
-        ) : (
-          <>
-            <div className={cx("tpmStatCard")}>
-              <div className={cx("tpmStatCardTop")}>
-                <div className={cx("tpmStatLabel")}>Team Size</div>
-                <div className={cx("tpmStatValue", "colorAccent")}>{members.length}</div>
-              </div>
-              <div className={cx("tpmStatCardDivider")} />
-              <div className={cx("tpmStatCardBottom")}>
-                <span className={cx("tpmStatDot", "dotBgAccent")} />
-                <span className={cx("tpmStatMeta")}>members</span>
-              </div>
-            </div>
+        <div className={cx("tpmStatCard")}>
+          <div className={cx("tpmStatCardTop")}>
+            <div className={cx("tpmStatLabel")}>Team Size</div>
+            <div className={cx("tpmStatValue", "colorAccent")}>{members.length}</div>
+          </div>
+          <div className={cx("tpmStatCardDivider")} />
+          <div className={cx("tpmStatCardBottom")}>
+            <span className={cx("tpmStatDot", "dotBgAccent")} />
+            <span className={cx("tpmStatMeta")}>members</span>
+          </div>
+        </div>
 
-            <div className={cx("tpmStatCard")}>
-              <div className={cx("tpmStatCardTop")}>
-                <div className={cx("tpmStatLabel")}>Avg Tasks</div>
-                <div className={cx("tpmStatValue", "colorAccent")}>{teamAvgTasks}</div>
-              </div>
-              <div className={cx("tpmStatCardDivider")} />
-              <div className={cx("tpmStatCardBottom")}>
-                <span className={cx("tpmStatDot", "dotBgAccent")} />
-                <span className={cx("tpmStatMeta")}>per member this week</span>
-              </div>
-            </div>
+        <div className={cx("tpmStatCard")}>
+          <div className={cx("tpmStatCardTop")}>
+            <div className={cx("tpmStatLabel")}>Avg Tasks</div>
+            <div className={cx("tpmStatValue", "colorAccent")}>{teamAvgTasks}</div>
+          </div>
+          <div className={cx("tpmStatCardDivider")} />
+          <div className={cx("tpmStatCardBottom")}>
+            <span className={cx("tpmStatDot", "dotBgAccent")} />
+            <span className={cx("tpmStatMeta")}>per member this week</span>
+          </div>
+        </div>
 
-            <div className={cx("tpmStatCard")}>
-              <div className={cx("tpmStatCardTop")}>
-                <div className={cx("tpmStatLabel")}>Avg Utilization</div>
-                <div className={cx("tpmStatValue", teamAvgUtil >= 85 ? "colorGreen" : "colorAmber")}>
-                  {teamAvgUtil}%
-                </div>
-              </div>
-              <div className={cx("tpmStatCardDivider")} />
-              <div className={cx("tpmStatCardBottom")}>
-                <span className={cx("tpmStatDot", "dotBgGreen")} />
-                <span className={cx("tpmStatMeta")}>team average</span>
-              </div>
+        <div className={cx("tpmStatCard")}>
+          <div className={cx("tpmStatCardTop")}>
+            <div className={cx("tpmStatLabel")}>Avg Utilization</div>
+            <div className={cx("tpmStatValue", teamAvgUtil >= 85 ? "colorGreen" : "colorAmber")}>
+              {teamAvgUtil}%
             </div>
+          </div>
+          <div className={cx("tpmStatCardDivider")} />
+          <div className={cx("tpmStatCardBottom")}>
+            <span className={cx("tpmStatDot", "dotBgGreen")} />
+            <span className={cx("tpmStatMeta")}>team average</span>
+          </div>
+        </div>
 
-            <div className={cx("tpmStatCard")}>
-              <div className={cx("tpmStatCardTop")}>
-                <div className={cx("tpmStatLabel")}>Avg CSAT</div>
-                <div className={cx("tpmStatValue", peerRatingCls(teamAvgPeerRating))}>
-                  {teamAvgPeerRating !== null ? teamAvgPeerRating : "—"}
-                </div>
-              </div>
-              <div className={cx("tpmStatCardDivider")} />
-              <div className={cx("tpmStatCardBottom")}>
-                <span className={cx("tpmStatDot", "dotBgGreen")} />
-                <span className={cx("tpmStatMeta")}>peer rating avg</span>
-              </div>
+        <div className={cx("tpmStatCard")}>
+          <div className={cx("tpmStatCardTop")}>
+            <div className={cx("tpmStatLabel")}>Avg CSAT</div>
+            <div className={cx("tpmStatValue", peerRatingCls(teamAvgPeerRating))}>
+              {teamAvgPeerRating !== null ? teamAvgPeerRating : "—"}
             </div>
-          </>
-        )}
+          </div>
+          <div className={cx("tpmStatCardDivider")} />
+          <div className={cx("tpmStatCardBottom")}>
+            <span className={cx("tpmStatDot", "dotBgGreen")} />
+            <span className={cx("tpmStatMeta")}>peer rating avg</span>
+          </div>
+        </div>
       </div>
 
       {/* ── Member cards ──────────────────────────────────────────────────── */}
-      {!loading && members.length > 0 && (
+      {members.length > 0 && (
         <div className={cx("tpmSection")}>
           <div className={cx("tpmSectionHeader")}>
             <div className={cx("tpmSectionTitle")}>Team Members</div>
@@ -244,7 +235,7 @@ export function TeamPerformancePage({ isActive, session }: TeamPerformancePagePr
       )}
 
       {/* ── Empty state ───────────────────────────────────────────────────── */}
-      {!loading && members.length === 0 && (
+      {members.length === 0 && (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
           <div className={cx("emptyStateTitle")}>No team data available</div>

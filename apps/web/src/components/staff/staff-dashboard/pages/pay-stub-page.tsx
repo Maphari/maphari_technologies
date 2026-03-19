@@ -21,14 +21,24 @@ function fmtPaidAt(iso: string | null): string {
 
 export function PayStubPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
   const [apiPayslips, setApiPayslips] = useState<StaffPayslipRecord[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
-    loadMyPayslipsWithRefresh(session).then((r) => {
+    setLoading(true);
+    void loadMyPayslipsWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setApiPayslips(r.data);
+      if (r.error || !r.data) {
+        setError(r.error?.message ?? "Failed to load data. Please try again.");
+        setLoading(false);
+        return;
+      }
+      setApiPayslips(r.data);
+      setError(null);
+      setLoading(false);
     });
-  }, [session]);
+  }, [session?.accessToken]);
 
   const payStubs = useMemo(() =>
     apiPayslips.map((p) => ({
@@ -48,6 +58,30 @@ export function PayStubPage({ isActive, session }: { isActive: boolean; session:
   const ytdNet   = payStubs.reduce((s, p) => s + p.netPay,    0);
   const ytdTax   = payStubs.reduce((s, p) => s + p.tax,       0);
   const avgNet   = payStubs.length > 0 ? Math.round(ytdNet / payStubs.length) : 0;
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-pay-stubs">

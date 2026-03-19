@@ -170,6 +170,18 @@ export function RetainerBurnPage({ isActive, session }: RetainerBurnPageProps) {
   const exceeded    = clients.filter((c) => c.retainerBurnPct > 100).length;
   const activeClient = clients.find((c) => c.clientId === activeId) ?? clients[0] ?? null;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-retainer-burn">
       <div className={cx("pageHeaderBar")}>

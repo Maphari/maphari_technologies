@@ -46,14 +46,24 @@ function mapApiStatus(s: string): Status {
 
 export function MyLearningPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
   const [apiTraining, setApiTraining] = useState<StaffTrainingRecord[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
-    loadMyTrainingWithRefresh(session).then((r) => {
+    setLoading(true);
+    void loadMyTrainingWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setApiTraining(r.data);
+      if (r.error || !r.data) {
+        setError(r.error?.message ?? "Failed to load data. Please try again.");
+        setLoading(false);
+        return;
+      }
+      setApiTraining(r.data);
+      setError(null);
+      setLoading(false);
     });
-  }, [session]);
+  }, [session?.accessToken]);
 
   const courses = useMemo(() =>
     apiTraining.map((t, idx) => {
@@ -81,6 +91,30 @@ export function MyLearningPage({ isActive, session }: { isActive: boolean; sessi
 
   const STATUS_ORDER: Record<Status, number> = { "In Progress": 0, "Not Started": 1, "Completed": 2 };
   const sorted = [...courses].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-learning">

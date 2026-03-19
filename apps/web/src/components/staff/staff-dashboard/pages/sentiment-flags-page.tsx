@@ -156,13 +156,13 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
 
   if (loading) {
     return (
-      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-sentiment-flags">
-        <div className={cx("pageHeaderBar", "pb20")}>
-          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
-          <h1 className={cx("pageTitleText")}>Sentiment Flags</h1>
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-        <div className={cx("text12", "colorMuted2")}>Loading sentiment data…</div>
-      </section>
+      </div>
     );
   }
 

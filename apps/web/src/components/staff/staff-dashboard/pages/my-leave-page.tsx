@@ -33,14 +33,24 @@ function usedFillCls(used: number, total: number) {
 
 export function MyLeavePage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
   const [apiLeave, setApiLeave] = useState<StaffLeaveRecord[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
-    loadMyLeaveRequestsWithRefresh(session).then((r) => {
+    setLoading(true);
+    void loadMyLeaveRequestsWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setApiLeave(r.data);
+      if (r.error || !r.data) {
+        setError(r.error?.message ?? "Failed to load data. Please try again.");
+        setLoading(false);
+        return;
+      }
+      setApiLeave(r.data);
+      setError(null);
+      setLoading(false);
     });
-  }, [session]);
+  }, [session?.accessToken]);
 
   const leaveHistory = useMemo(() =>
     apiLeave.map((l) => {
@@ -61,6 +71,30 @@ export function MyLeavePage({ isActive, session }: { isActive: boolean; session:
   const totalUsed  = leaveBalances.reduce((s, lb) => s + lb.used,                           0);
   const totalPend  = leaveBalances.reduce((s, lb) => s + lb.pending,                        0);
   const totalAvail = leaveBalances.reduce((s, lb) => s + lb.total - lb.used - lb.pending,   0);
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-leave">

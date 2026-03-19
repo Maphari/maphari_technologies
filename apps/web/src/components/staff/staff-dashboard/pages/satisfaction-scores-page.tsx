@@ -113,6 +113,18 @@ export function SatisfactionScoresPage({
     return recs;
   }, [selected]);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   if (!loading && entries.length === 0) {
     return (
       <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-satisfaction-scores">

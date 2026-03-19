@@ -107,6 +107,18 @@ export function StaffHandoversPage({ isActive, session }: { isActive: boolean; s
     return true;
   });
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section
       className={cx("page", "pageBody", isActive && "pageActive")}
@@ -184,9 +196,7 @@ export function StaffHandoversPage({ isActive, session }: { isActive: boolean; s
               </div>
             );
           })}
-          {loading ? (
-            <div className={cx("shEmptyState")}>Loading handovers…</div>
-          ) : filtered.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className={cx("emptyState")}>
               <div className={cx("emptyStateIcon")}><Ic n="arrow-right-circle" sz={22} c="var(--muted2)" /></div>
               <div className={cx("emptyStateTitle")}>No handovers</div>

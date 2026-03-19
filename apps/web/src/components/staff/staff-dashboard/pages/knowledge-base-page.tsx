@@ -88,15 +88,23 @@ export function KnowledgeBasePage({ isActive, session }: { isActive: boolean; se
   const [selectedId,     setSelectedId]     = useState<string | null>(null);
   const [search,         setSearch]         = useState("");
   const [bookmarked,     setBookmarked]     = useState<string[]>([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
+    setLoading(true);
     void loadStaffKnowledgeArticlesWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) {
-        setArticles(r.data);
-        if (r.data.length > 0) setSelectedId(r.data[0]?.id ?? null);
+      if (r.error || !r.data) {
+        setError(r.error?.message ?? "Failed to load data. Please try again.");
+        setLoading(false);
+        return;
       }
+      setArticles(r.data);
+      if (r.data.length > 0) setSelectedId(r.data[0]?.id ?? null);
+      setError(null);
+      setLoading(false);
     });
   }, [session?.accessToken]);
 
@@ -167,6 +175,30 @@ export function KnowledgeBasePage({ isActive, session }: { isActive: boolean; se
         </p>
       );
     });
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section

@@ -144,6 +144,18 @@ export function ProjectDocumentsPage({
   const totalProjects = projectNames.length;
 
   // ── Render ────────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-project-documents">
       <div className={cx("pageHeaderBar")}>
@@ -204,17 +216,6 @@ export function ProjectDocumentsPage({
         </div>
 
       </div>
-
-      {/* ── Loading state ──────────────────────────────────────────────────── */}
-      {loading ? (
-        <div className={cx("pdocSection")}>
-          <div className={cx("pdocSectionHeader")}>
-            <div className={cx("pdocSectionLeft")}>
-              <div className={cx("pdocProjectName", "colorMuted2")}>Loading documents...</div>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       {/* ── Empty state ────────────────────────────────────────────────────── */}
       {!loading && docRows.length === 0 ? (

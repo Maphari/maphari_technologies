@@ -130,6 +130,8 @@ export function TriggerLogPage({ isActive, session }: { isActive: boolean; sessi
   const [intFilter, setIntFilter] = useState<"all" | Integration["id"]>("all");
   const [tab, setTab] = useState<"log" | "triggers" | "integrations">("log");
   const [apiClients, setApiClients] = useState<Array<{ id: string; name: string; avatar: string }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
@@ -143,19 +145,27 @@ export function TriggerLogPage({ isActive, session }: { isActive: boolean; sessi
         })));
       }
     });
-  }, [session]);
+  }, [session?.accessToken]);
 
   useEffect(() => {
     if (!session) return;
+    setLoading(true);
     void getAutomationJobs(session, 50).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (r.data && r.data.length > 0) {
+      if (r.error || !r.data) {
+        setError(r.error?.message ?? "Failed to load data. Please try again.");
+        setLoading(false);
+        return;
+      }
+      if (r.data.length > 0) {
         const mapped = r.data.map((job, i) => mapJobToLog(job, i));
         setLogs(mapped);
         setSelected(mapped[0] ?? null);
       }
+      setError(null);
+      setLoading(false);
     });
-  }, [session]);
+  }, [session?.accessToken]);
 
   const clientsToUse = apiClients.length > 0 ? apiClients : clients.map((c) => ({ id: String(c.id), name: c.name, avatar: c.avatar }));
 
@@ -190,6 +200,30 @@ export function TriggerLogPage({ isActive, session }: { isActive: boolean; sessi
   );
 
   const maxTriggerCount = triggerStats[0]?.count ?? 1;
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-trigger-log">

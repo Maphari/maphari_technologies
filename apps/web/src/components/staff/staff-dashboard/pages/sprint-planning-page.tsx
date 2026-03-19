@@ -269,13 +269,13 @@ export function SprintPlanningPage({
 
   if (loading) {
     return (
-      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-sprint-planning">
-        <div className={cx("pageHeaderBar")}>
-          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Planning</div>
-          <h1 className={cx("pageTitleText")}>Sprint Planning</h1>
-          <div className={cx("text12", "colorMuted2", "mt16")}>Loading sprint data...</div>
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-      </section>
+      </div>
     );
   }
 

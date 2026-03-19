@@ -33,18 +33,32 @@ function categoryCls(c: string) {
 
 export function MyOnboardingPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
   const [apiOnboarding, setApiOnboarding] = useState<StaffOnboardingRecord[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
+    setLoading(true);
     // The onboarding endpoint needs the StaffProfile.id (not userId), so resolve it first
     void getMyProfile(session).then(async (pr) => {
       if (pr.nextSession) saveSession(pr.nextSession);
-      if (pr.error || !pr.data) return;
+      if (pr.error || !pr.data) {
+        setError(pr.error?.message ?? "Failed to load data. Please try again.");
+        setLoading(false);
+        return;
+      }
       const r = await loadMyStaffOnboardingWithRefresh(session, pr.data.id);
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setApiOnboarding(r.data);
+      if (r.error || !r.data) {
+        setError(r.error?.message ?? "Failed to load data. Please try again.");
+        setLoading(false);
+        return;
+      }
+      setApiOnboarding(r.data);
+      setError(null);
+      setLoading(false);
     });
-  }, [session]);
+  }, [session?.accessToken]);
 
   const checklistItems = useMemo(() =>
     [...apiOnboarding].sort((a, b) => a.sortOrder - b.sortOrder).map((o) => ({
@@ -66,6 +80,30 @@ export function MyOnboardingPage({ isActive, session }: { isActive: boolean; ses
     if (items.length > 0) acc[phase] = items;
     return acc;
   }, {});
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-onboarding">

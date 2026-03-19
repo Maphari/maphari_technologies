@@ -250,15 +250,13 @@ export function TaskDependenciesPage({ isActive, session }: PageProps) {
 
   if (loading) {
     return (
-      <section className={cx("page", "pageBody", "pageActive")} id="page-task-dependencies">
-        <div className={cx("pageHeaderBar", "borderB", "tdHeaderBar")}>
-          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Planning</div>
-          <h1 className={cx("pageTitleText")}>Task Dependencies</h1>
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-        <div className={cx("emptyState")}>
-          <div className={cx("emptyStateText")}>Loading task dependencies…</div>
-        </div>
-      </section>
+      </div>
     );
   }
 

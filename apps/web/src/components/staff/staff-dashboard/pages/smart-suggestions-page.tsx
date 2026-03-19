@@ -380,6 +380,18 @@ export function SmartSuggestionsPage({
   const lanes: LaneKey[] = ["urgent", "followup", "proactive", "opportunity", "admin"];
   const urgentCount = active.filter((item) => item.lane === "urgent").length;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-smart-suggestions">
       <div className={cx("pageHeaderBar", "pb0")}>
@@ -439,12 +451,6 @@ export function SmartSuggestionsPage({
         </div>
       </div>
 
-      {/* ── Loading state ── */}
-      {loading ? (
-        <div className={cx("textCenter", "colorMuted2", "p40")}>
-          <div className={cx("text13")}>Analysing client signals...</div>
-        </div>
-      ) : null}
 
       {!loading ? (
         <div className={cx("ssLayout")}>

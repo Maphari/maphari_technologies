@@ -299,6 +299,18 @@ export function SprintBurndownPage({
     ? Math.round((data.completedPoints / data.totalPoints) * 100)
     : 0;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section
       className={cx("page", "pageBody", isActive && "pageActive")}

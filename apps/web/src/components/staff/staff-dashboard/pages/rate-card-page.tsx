@@ -82,6 +82,18 @@ export function RateCardPage({ isActive, session }: { isActive: boolean; session
     ? rates.find((r) => r.role.toLowerCase() === myRole.toLowerCase())
     : null;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-rate-card">
       <div className={cx("pageHeaderBar")}>
@@ -93,15 +105,8 @@ export function RateCardPage({ isActive, session }: { isActive: boolean; session
         </p>
       </div>
 
-      {/* ── Loading state ──────────────────────────────────────────────────── */}
-      {loading && (
-        <div className={cx("emptyState")}>
-          <div className={cx("emptyStateTitle")}>Loading rate card...</div>
-        </div>
-      )}
-
       {/* ── Main content ───────────────────────────────────────────────────── */}
-      {!loading && (
+      {(
         <>
           {/* ── Summary stats ──────────────────────────────────────────────── */}
           <div className={cx("rcStatGrid")}>

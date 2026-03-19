@@ -155,6 +155,30 @@ export function RequestViewerPage({ isActive, session, onNotify }: PageProps) {
 
   if (!isActive) return null;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section
       className={cx("page", "pageBody", isActive && "pageActive")}
@@ -168,27 +192,8 @@ export function RequestViewerPage({ isActive, session, onNotify }: PageProps) {
         </p>
       </div>
 
-      {/* ── Loading ───────────────────────────────────────────────────── */}
-      {loading && (
-        <div className={cx("rqvSection")}>
-          <div className={cx("emptyState")}>
-            <div className={cx("emptyStateText")}>Loading requests…</div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Error ─────────────────────────────────────────────────────── */}
-      {!loading && error && (
-        <div className={cx("rqvSection")}>
-          <div className={cx("emptyState")}>
-            <div className={cx("emptyStateTitle")}>Failed to load requests.</div>
-            <div className={cx("emptyStateSub")}>{error}</div>
-          </div>
-        </div>
-      )}
-
       {/* ── Summary stats ─────────────────────────────────────────────── */}
-      {!loading && !error && (
+      {(
         <div className={cx("rqvStatGrid")}>
 
           <div className={cx("rqvStatCard")}>
@@ -256,7 +261,7 @@ export function RequestViewerPage({ isActive, session, onNotify }: PageProps) {
       )}
 
       {/* ── Request list ──────────────────────────────────────────────── */}
-      {!loading && !error && (
+      {(
         <div className={cx("rqvSection")}>
           <div className={cx("rqvSectionHeader")}>
             <div className={cx("rqvSectionTitle")}>All Requests</div>

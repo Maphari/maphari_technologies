@@ -87,22 +87,30 @@ export function EndOfDayWrapPage({ isActive, session }: { isActive: boolean; ses
   const [submitted,     setSubmitted]     = useState(false);
   const [completedToday,setCompletedToday]= useState<CompletedTask[]>([]);
   const [urgentItems,   setUrgentItems]   = useState<UrgentItem[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState<string | null>(null);
 
   useEffect(() => {
     if (!session || !isActive) return;
     let cancelled = false;
+    setLoading(true);
     void getMyTasks(session).then((r) => {
       if (cancelled) return;
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) {
-        const { suggested, completed, urgent } = deriveFromTasks(r.data);
-        setTomorrowTasks(suggested.slice(0, 3));
-        setCompletedToday(completed);
-        setUrgentItems(urgent);
+      if (r.error || !r.data) {
+        setError(r.error?.message ?? "Failed to load data. Please try again.");
+        setLoading(false);
+        return;
       }
+      const { suggested, completed, urgent } = deriveFromTasks(r.data);
+      setTomorrowTasks(suggested.slice(0, 3));
+      setCompletedToday(completed);
+      setUrgentItems(urgent);
+      setError(null);
+      setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [session, isActive]);
+  }, [session?.accessToken, isActive]);
 
   const moodEmojis = ["", "😔", "😐", "🙂", "😄", "🔥"];
   const moodLabels = ["", "Rough", "Slow", "Okay", "Good", "Fired up"];
@@ -126,6 +134,30 @@ export function EndOfDayWrapPage({ isActive, session }: { isActive: boolean; ses
 
   const removeTask = (id: string) =>
     setTomorrowTasks((previous) => previous.filter((task) => task.id !== id));
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   if (submitted) {
     return (

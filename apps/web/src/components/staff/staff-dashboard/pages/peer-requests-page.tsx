@@ -131,9 +131,12 @@ export function PeerRequestsPage({
 
   const [submitting, setSubmitting] = useState(false);
   const [peerReviews, setPeerReviews] = useState<StaffPeerReview[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
+    setLoading(true);
     // Load profile, clients, and peer reviews in parallel
     void Promise.all([
       getMyProfile(session),
@@ -204,6 +207,8 @@ export function PeerRequestsPage({
         }));
         setRequests((prev) => [...mapped, ...prev]);
       }
+      setError(null);
+      setLoading(false);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
@@ -263,6 +268,30 @@ export function PeerRequestsPage({
     setCreating(false);
     setDraft((prev) => ({ ...prev, title: "", description: "", dueBy: "", estimatedTime: "" }));
   };
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-peer-requests">

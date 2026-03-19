@@ -59,14 +59,24 @@ export function ExpenseSubmitPage({
   const [formAmount, setFormAmount]       = useState("");
   const [formCategory, setFormCategory]   = useState<DisplayCategory>("Software");
   const [submitting, setSubmitting]       = useState(false);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
+    setLoading(true);
     void loadMyExpensesWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setApiExpenses(r.data);
+      if (r.error || !r.data) {
+        setError(r.error?.message ?? "Failed to load data. Please try again.");
+        setLoading(false);
+        return;
+      }
+      setApiExpenses(r.data);
+      setError(null);
+      setLoading(false);
     });
-  }, [session]);
+  }, [session?.accessToken]);
 
   // ── Derived display data ───────────────────────────────────────────────────
   const expenses = useMemo(() => apiExpenses.map((e) => ({
@@ -109,6 +119,30 @@ export function ExpenseSubmitPage({
       onFeedback?.("error", r.error.message ?? "Failed to submit expense. Please try again.");
     }
   };
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-expense-submit">
