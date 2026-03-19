@@ -495,7 +495,7 @@ export function MaphariClientDashboard() {
 
             {/* ── Projects ────────────────────────────────────────────── */}
             {nav.activePage === "myProjects" && <MyProjectsPage projects={clientData.projects} onNavigate={handleNavigate} />}
-            {nav.activePage === "projectRequest" && <ProjectRequestPage />}
+            {nav.activePage === "projectRequest" && <ProjectRequestPage onNavigate={handleNavigate} />}
             {nav.activePage === "timeline" && <TimelinePage />}
             {nav.activePage === "projectRoadmap" && <ProjectRoadmapPage />}
             {nav.activePage === "milestones" && <MilestonesPage />}

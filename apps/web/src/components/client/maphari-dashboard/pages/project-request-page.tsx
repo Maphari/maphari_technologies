@@ -14,6 +14,7 @@ import {
   initiatePortalPayfastWithRefresh,
 } from "../../../../lib/api/portal/projects";
 import type { PortalProjectRequestServiceOption } from "../../../../lib/api/portal/types";
+import type { PageId } from "../config";
 import { cx } from "../style";
 import { Ic } from "../ui";
 
@@ -228,7 +229,11 @@ function FormSection({ label, note }: { label: string; note?: string }) {
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-export function ProjectRequestPage() {
+export interface ProjectRequestPageProps {
+  onNavigate?: (page: PageId) => void;
+}
+
+export function ProjectRequestPage(props: ProjectRequestPageProps) {
   const { session } = useProjectLayer();
   const clientId = session?.user.clientId ?? null;
 
@@ -444,9 +449,9 @@ export function ProjectRequestPage() {
               ))}
             </div>
             <div className={cx("prqSuccessActions")}>
-              <button type="button" className={cx("btnSm", "btnAccent")}><Ic n="message" sz={12} c="var(--bg)" /> Message Your PM</button>
-              <button type="button" className={cx("btnSm", "btnGhost")}><Ic n="calendar" sz={12} c="var(--muted2)" /> Book Kickoff Call</button>
-              <button type="button" className={cx("btnSm", "btnGhost")}>View Services</button>
+              <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => props.onNavigate?.("messages")}><Ic n="message" sz={12} c="var(--bg)" /> Message Your PM</button>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => props.onNavigate?.("bookCall")}><Ic n="calendar" sz={12} c="var(--muted2)" /> Book Kickoff Call</button>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => props.onNavigate?.("serviceCatalog")}>View Services</button>
             </div>
           </div>
         </div>
