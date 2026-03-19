@@ -18,6 +18,7 @@ import {
   loadPortalProjectDetailWithRefresh,
   loadPortalChangeRequestsWithRefresh,
   updatePortalChangeRequestWithRefresh,
+  updatePortalMilestoneApprovalWithRefresh,
 } from "../../../../lib/api/portal/projects";
 import { submitApprovalDecisionWithRefresh } from "../../../../lib/api/portal/governance";
 import type { PortalProjectMilestone, PortalProjectChangeRequest } from "../../../../lib/api/portal/types";
@@ -181,6 +182,11 @@ export function ApprovalsPage() {
   // ── Approve confirm dialog state ─────────────────────────────────────────
   const [approveTarget, setApproveTarget] = useState<string | null>(null);
 
+  // ── Milestone action state ───────────────────────────────────────────────
+  const [approvingMilestoneId, setApprovingMilestoneId] = useState<string | null>(null);
+  const [requestingChangesId, setRequestingChangesId] = useState<string | null>(null);
+  const [changesNote, setChangesNote] = useState("");
+
   useEffect(() => {
     if (!session || !projectId) { setLoading(false); return; }
     setLoading(true);
@@ -269,6 +275,79 @@ export function ApprovalsPage() {
     setDeclineModalId(null);
     setDeclineNote("");
     notify("success", "Change declined", "Team has been notified");
+  }
+
+  // ── Milestone actions ───────────────────────────────────────────────────
+
+  async function approveMilestone(milestoneId: string): Promise<void> {
+    if (!session) return;
+    setApprovingMilestoneId(milestoneId);
+
+    const result = await updatePortalMilestoneApprovalWithRefresh(
+      session,
+      milestoneId,
+      { status: "APPROVED" }
+    );
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.error) {
+      notify("error", "Approval failed", result.error.message ?? "Please try again.");
+      setApprovingMilestoneId(null);
+      return;
+    }
+
+    // Update local milestone status
+    setMilestones((prev) =>
+      prev.map((m) =>
+        m.id === milestoneId
+          ? {
+              ...m,
+              status: "Approved",
+              approvedAt: new Date().toLocaleDateString("en-ZA", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              }),
+            }
+          : m
+      )
+    );
+    setApprovingMilestoneId(null);
+    notify("success", "Milestone approved", "The team has been notified.");
+  }
+
+  async function requestMilestoneChanges(milestoneId: string): Promise<void> {
+    if (!session) return;
+    if (!changesNote.trim()) {
+      notify("error", "Note required", "Please describe the changes needed.");
+      return;
+    }
+
+    setApprovingMilestoneId(milestoneId);
+
+    const result = await updatePortalMilestoneApprovalWithRefresh(
+      session,
+      milestoneId,
+      { status: "REJECTED", comment: changesNote }
+    );
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.error) {
+      notify("error", "Request failed", result.error.message ?? "Please try again.");
+      setApprovingMilestoneId(null);
+      return;
+    }
+
+    // Update local milestone status back to awaiting approval (not started)
+    setMilestones((prev) =>
+      prev.map((m) =>
+        m.id === milestoneId
+          ? { ...m, status: "Awaiting Approval", approvedAt: null }
+          : m
+      )
+    );
+    setRequestingChangesId(null);
+    setChangesNote("");
+    setApprovingMilestoneId(null);
+    notify("info", "Change request submitted", "Your project manager will review the feedback.");
   }
 
   // ── Deliverable / sign-off actions ──────────────────────────────────────
@@ -442,10 +521,69 @@ export function ApprovalsPage() {
                   </>
                 )}
                 {ms.status === "Awaiting Approval" && (
-                  <div className={cx("flex", "gap8", "mt12")}>
-                    <button type="button" className={cx("btnSm", "btnAccent")}>Approve Milestone</button>
-                    <button type="button" className={cx("btnSm", "btnGhost")}>Request Changes</button>
-                  </div>
+                  <>
+                    <div className={cx("flex", "gap8", "mt12")}>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnAccent")}
+                        disabled={approvingMilestoneId === ms.id}
+                        onClick={() => void approveMilestone(ms.id)}
+                      >
+                        {approvingMilestoneId === ms.id ? "…" : "Approve Milestone"}
+                      </button>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnGhost")}
+                        disabled={approvingMilestoneId === ms.id}
+                        onClick={() => {
+                          setRequestingChangesId(
+                            requestingChangesId === ms.id ? null : ms.id
+                          );
+                          setChangesNote("");
+                        }}
+                      >
+                        <span className={cx("apvChevron", requestingChangesId === ms.id ? "apvChevronOpen" : "")}>
+                          <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true">
+                            <path d="M2 1l4 3-4 3V1z"/>
+                          </svg>
+                        </span>
+                        Request Changes
+                      </button>
+                    </div>
+
+                    {/* Inline change request notes box */}
+                    {requestingChangesId === ms.id && (
+                      <div className={styles.approvalRevisionBox}>
+                        <div className={styles.approvalRevisionBoxTitle}>What changes are needed?</div>
+                        <textarea
+                          className={styles.approvalRevisionTextarea}
+                          placeholder="Describe the changes needed so your project manager can act quickly…"
+                          value={changesNote}
+                          onChange={(e) => setChangesNote(e.target.value)}
+                        />
+                        <div className={styles.approvalRevisionBtnRow}>
+                          <button
+                            type="button"
+                            className={cx("btnSm", "btnGhost")}
+                            onClick={() => {
+                              setRequestingChangesId(null);
+                              setChangesNote("");
+                            }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            className={cx("btnSm", "btnAccent")}
+                            disabled={approvingMilestoneId === ms.id}
+                            onClick={() => void requestMilestoneChanges(ms.id)}
+                          >
+                            {approvingMilestoneId === ms.id ? "…" : "Submit Request"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
