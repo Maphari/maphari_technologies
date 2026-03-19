@@ -76,6 +76,17 @@ export function OnboardingPage() {
   const [testimonialModal, setTestimonialModal] = useState(false);
   const [stars, setStars] = useState(0);
   const [toast, setToast] = useState<{ title: string; subtitle: string } | null>(null);
+
+  // Save Changes modal controlled fields
+  const [briefBusinessOverview, setBriefBusinessOverview] = useState("");
+  const [briefProjectGoals, setBriefProjectGoals] = useState("");
+  const [briefTargetAudience, setBriefTargetAudience] = useState("");
+  const [briefDesignReferences, setBriefDesignReferences] = useState("");
+
+  // Testimonial modal controlled fields
+  const [testimonialText, setTestimonialText] = useState("");
+  const [testimonialConsent, setTestimonialConsent] = useState("Yes — with my name and company");
+
   const [moods, setMoods] = useState<Record<string, Mood>>({
     "This week": "😊",
     "Last week": "😐",
@@ -96,6 +107,24 @@ export function OnboardingPage() {
 
   function notify(title: string, subtitle: string): void {
     setToast({ title, subtitle });
+  }
+
+  function handleSaveChanges(): void {
+    // TODO: wire to portal API when onboarding preferences endpoint is available
+    notify("Brief updated", "The team has been notified");
+    setBriefModal(false);
+  }
+
+  function handleSubmitTestimonial(): void {
+    if (!testimonialText.trim()) {
+      notify("Missing testimonial", "Please write your testimonial before submitting.");
+      return;
+    }
+    // TODO: wire to testimonial API when available
+    notify("Thank you", "Your testimonial has been submitted");
+    setTestimonialText("");
+    setTestimonialConsent("Yes — with my name and company");
+    setTestimonialModal(false);
   }
 
   return (
@@ -404,31 +433,49 @@ export function OnboardingPage() {
               <button type="button" className={styles.onboardFlowModalClose} onClick={() => setBriefModal(false)}>✕</button>
             </div>
             <div className={styles.onboardFlowModalBody}>
-              {[
-                ["Business overview", "Describe your business and what you do...", "area"],
-                ["Project goals", "What does success look like?", "area"],
-                ["Target audience", "Who are your users?", "input"],
-                ["Design references", "Link or describe what you like...", "input"],
-              ].map(([label, placeholder, type]) => (
-                <div key={String(label)} className={styles.onboardFlowFieldBlock}>
-                  <label className={styles.onboardFlowFieldLabel}>{label}</label>
-                  {type === "area" ? (
-                    <textarea className={styles.onboardFlowFieldArea} placeholder={String(placeholder)} />
-                  ) : (
-                    <input className={styles.onboardFlowFieldInput} placeholder={String(placeholder)} />
-                  )}
-                </div>
-              ))}
+              <div className={styles.onboardFlowFieldBlock}>
+                <label className={styles.onboardFlowFieldLabel}>Business overview</label>
+                <textarea
+                  className={styles.onboardFlowFieldArea}
+                  placeholder="Describe your business and what you do..."
+                  value={briefBusinessOverview}
+                  onChange={(e) => setBriefBusinessOverview(e.target.value)}
+                />
+              </div>
+              <div className={styles.onboardFlowFieldBlock}>
+                <label className={styles.onboardFlowFieldLabel}>Project goals</label>
+                <textarea
+                  className={styles.onboardFlowFieldArea}
+                  placeholder="What does success look like?"
+                  value={briefProjectGoals}
+                  onChange={(e) => setBriefProjectGoals(e.target.value)}
+                />
+              </div>
+              <div className={styles.onboardFlowFieldBlock}>
+                <label className={styles.onboardFlowFieldLabel}>Target audience</label>
+                <input
+                  className={styles.onboardFlowFieldInput}
+                  placeholder="Who are your users?"
+                  value={briefTargetAudience}
+                  onChange={(e) => setBriefTargetAudience(e.target.value)}
+                />
+              </div>
+              <div className={styles.onboardFlowFieldBlock}>
+                <label className={styles.onboardFlowFieldLabel}>Design references</label>
+                <input
+                  className={styles.onboardFlowFieldInput}
+                  placeholder="Link or describe what you like..."
+                  value={briefDesignReferences}
+                  onChange={(e) => setBriefDesignReferences(e.target.value)}
+                />
+              </div>
             </div>
             <div className={styles.onboardFlowModalFooter}>
               <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setBriefModal(false)}>Cancel</button>
               <button
                 type="button"
                 className={cx("btnSm", "btnAccent")}
-                onClick={() => {
-                  setBriefModal(false);
-                  notify("Brief updated", "The team has been notified");
-                }}
+                onClick={handleSaveChanges}
               >
                 Save Changes
               </button>
@@ -447,11 +494,20 @@ export function OnboardingPage() {
             <div className={styles.onboardFlowModalBody}>
               <div className={styles.onboardFlowFieldBlock}>
                 <label className={styles.onboardFlowFieldLabel}>Your experience</label>
-                <textarea className={styles.onboardFlowFieldAreaLg} placeholder="Tell us about working with Maphari..." />
+                <textarea
+                  className={styles.onboardFlowFieldAreaLg}
+                  placeholder="Tell us about working with Maphari..."
+                  value={testimonialText}
+                  onChange={(e) => setTestimonialText(e.target.value)}
+                />
               </div>
               <div className={styles.onboardFlowFieldBlock}>
                 <label className={styles.onboardFlowFieldLabel}>Can we use this on our website?</label>
-                <select className={styles.onboardFlowFieldSelect}>
+                <select
+                  className={styles.onboardFlowFieldSelect}
+                  value={testimonialConsent}
+                  onChange={(e) => setTestimonialConsent(e.target.value)}
+                >
                   <option>Yes — with my name and company</option>
                   <option>Yes — anonymously</option>
                   <option>No — internal use only</option>
@@ -463,10 +519,7 @@ export function OnboardingPage() {
               <button
                 type="button"
                 className={cx("btnSm", "btnAccent")}
-                onClick={() => {
-                  setTestimonialModal(false);
-                  notify("Thank you", "Your testimonial has been submitted");
-                }}
+                onClick={handleSubmitTestimonial}
               >
                 Submit Testimonial
               </button>
