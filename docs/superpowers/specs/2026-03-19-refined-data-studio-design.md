@@ -99,7 +99,7 @@ Typography and size only. Compose with a color variant class (below) for semanti
 **Color variant classes** — compose with `.rdStudioMetric`:
 
 ```css
-.rdStudioMetricPos  { color: var(--lime);   }   /* positive / achieved */
+.rdStudioMetricPos  { color: var(--green);  }   /* positive / achieved — semantic green, works across all dashboards */
 .rdStudioMetricNeg  { color: var(--red);    }   /* negative / over-budget */
 .rdStudioMetricWarn { color: var(--amber);  }   /* warning / at-risk */
 /* neutral: use default --text, no modifier needed */
@@ -114,10 +114,10 @@ Applied alongside existing card classes. Tightens chrome and adds terminal ident
 
 ```css
 .rdStudioCard {
-  border: 1px solid #2a2a42;          /* colder than --b2 (#323238) */
-  border-top: 1px solid var(--lime);  /* 1px lime identity stripe */
+  border: 1px solid #2a2a42;            /* colder than --b2 (#323238) */
+  border-top: 1px solid var(--accent);  /* 1px accent identity stripe — uses each dashboard's own accent (admin: purple, staff: teal, client: lime) */
   border-radius: 0 0 var(--r-sm) var(--r-sm); /* squared top, rounded bottom */
-  padding: 16px;                       /* density: tighter than default 20px */
+  padding: 16px;                         /* density: tighter than default 20px */
 }
 ```
 
@@ -148,7 +148,7 @@ Applied to section header wrapper `div`. Developer manually places `.rdStudioLab
 
 ```css
 .rdStudioSection {
-  border-left: 2px solid var(--lime);
+  border-left: 2px solid var(--accent); /* dashboard-specific accent — admin: purple, staff: teal, client: lime */
   padding-left: 12px;
   margin-bottom: 16px;
 }
