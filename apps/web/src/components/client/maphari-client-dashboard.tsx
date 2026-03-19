@@ -467,6 +467,7 @@ export function MaphariClientDashboard() {
             onMenuToggle={() => setSidebarOpen((v) => !v)}
             brandCompanyName={branding?.enabled ? branding.companyDisplayName : null}
             brandLogoUrl={branding?.enabled ? branding.logoUrl : null}
+            planLabel={profile?.tier ? profile.tier.charAt(0) + profile.tier.slice(1).toLowerCase().replace(/_/g, " ") : undefined}
           />
 
           <div className={styles.content} style={contentStyle}>

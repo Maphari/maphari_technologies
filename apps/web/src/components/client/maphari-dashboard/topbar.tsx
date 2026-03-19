@@ -26,6 +26,8 @@ type ClientTopbarProps = {
   brandCompanyName?: string | null;
   /** White-label: if set, shown as logo image instead of wordmark text */
   brandLogoUrl?: string | null;
+  /** Plan tier label from profile (e.g. "Retainer Pro") */
+  planLabel?: string | null;
 };
 
 const PROFILE_LINKS = [
@@ -52,6 +54,7 @@ export function ClientTopbar({
   onMenuToggle,
   brandCompanyName,
   brandLogoUrl,
+  planLabel,
 }: ClientTopbarProps) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
@@ -196,7 +199,9 @@ export function ClientTopbar({
                   </div>
                 </div>
                 <div className={styles.topbarDropdownBadgeRow}>
-                  <span className={cx("badge", "badgeAccent")}>Retainer Pro</span>
+                  {planLabel ? (
+                    <span className={cx("badge", "badgeAccent")}>{planLabel}</span>
+                  ) : null}
                   <span className={cx("badge", "badgeGreen")}>Active</span>
                 </div>
               </div>
