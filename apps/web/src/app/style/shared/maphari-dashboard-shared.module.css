@@ -4702,6 +4702,13 @@
   animation: shimmer 1.4s infinite linear;
 }
 
+/* Skeleton height utilities (used by all 3 dashboards) */
+.skeleH40  { height: 40px;  border-radius: var(--r-sm, 8px); background: var(--s3); animation: shimmer 1.4s infinite linear; }
+.skeleH44  { height: 44px;  border-radius: var(--r-sm, 8px); background: var(--s3); animation: shimmer 1.4s infinite linear; }
+.skeleH68  { height: 68px;  border-radius: var(--r-sm, 8px); background: var(--s3); animation: shimmer 1.4s infinite linear; }
+.skeleH80  { height: 80px;  border-radius: var(--r-sm, 8px); background: var(--s3); animation: shimmer 1.4s infinite linear; }
+.skeleH120 { height: 120px; border-radius: var(--r-sm, 8px); background: var(--s3); animation: shimmer 1.4s infinite linear; }
+
 /* ─── Error State ─────────────────────────────────────────────────── */
 
 .errorState {
