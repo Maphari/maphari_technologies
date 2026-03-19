@@ -324,14 +324,10 @@ export function MilestoneApprovalsPage() {
   if (loading) {
     return (
       <div className={cx("pageBody")}>
-        <div className={cx("pageHeader", "mb0")}>
-          <div>
-            <div className={cx("pageEyebrow")}>Projects · Milestones</div>
-            <h1 className={cx("pageTitle")}>Milestone Approvals</h1>
-          </div>
-        </div>
-        <div className={cx("card", "p32", "textCenter")}>
-          <span className={cx("text12", "colorMuted")}>Loading milestone approvals…</span>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
       </div>
     );

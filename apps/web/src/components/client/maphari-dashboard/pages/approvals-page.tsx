@@ -322,6 +322,18 @@ export function ApprovalsPage() {
     [pendingChanges]
   );
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx("pageBody")}>
       {/* Header */}
@@ -333,15 +345,8 @@ export function ApprovalsPage() {
         </div>
       </div>
 
-      {/* Loading indicator */}
-      {loading && (
-        <div className={cx("card", "p12")}>
-          <span className={cx("text12", "colorMuted")}>Loading approvals data…</span>
-        </div>
-      )}
-
       {/* Automation: approve minor changes in one click */}
-      {!loading && minorPendingChanges.length > 0 && (
+      {minorPendingChanges.length > 0 && (
         <AutomationBanner
           show={true}
           variant="info"
@@ -363,7 +368,7 @@ export function ApprovalsPage() {
       )}
 
       {/* Pending alert — items needing review */}
-      {!loading && totalPending > minorPendingChanges.length && (
+      {totalPending > minorPendingChanges.length && (
         <div className={cx("card", "p12", "borderLeftAmber")}>
           <span className={cx("text12", "fw600")}>
             You have {totalPending - minorPendingChanges.length} item{totalPending - minorPendingChanges.length > 1 ? "s" : ""} awaiting your review.
@@ -397,7 +402,7 @@ export function ApprovalsPage() {
       {/* ── Milestones tab ──────────────────────────────────────────────────── */}
       {topTab === "Milestones" && (
         <div className={cx("flexCol", "gap16", "apvTabContent")}>
-          {milestones.length === 0 && !loading && (
+          {milestones.length === 0 && (
             <div className={cx("card", "p24", "textCenter", "colorMuted")}>No milestones found for this project.</div>
           )}
           {milestones.map((ms) => (
@@ -469,7 +474,7 @@ export function ApprovalsPage() {
           </div>
 
           <div className={cx("flexCol", "gap16", "apvTabContent")}>
-            {filteredDeliverables.length === 0 && !loading && (
+            {filteredDeliverables.length === 0 && (
               <div className={cx("card", "p24", "textCenter", "colorMuted")}>
                 No {deliverableTab === "All" ? "" : deliverableTab.toLowerCase() + " "}deliverables found.
               </div>
@@ -675,7 +680,7 @@ export function ApprovalsPage() {
               </div>
             ))}
 
-            {filteredChanges.length === 0 && !loading && (
+            {filteredChanges.length === 0 && (
               <div className={cx("card", "p24", "textCenter", "colorMuted")}>
                 No {changeTab.toLowerCase()} change requests.
               </div>

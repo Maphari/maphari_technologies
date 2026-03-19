@@ -126,15 +126,10 @@ export function DesignReviewPage() {
   if (loading) {
     return (
       <div className={cx("pageBody")}>
-        <div className={cx("pageHeader", "mb0")}>
-          <div>
-            <div className={cx("pageEyebrow")}>Communication · Design</div>
-            <h1 className={cx("pageTitle")}>Design Review</h1>
-          </div>
-        </div>
-        <div className={cx("emptyState", "mt32")}>
-          <div className={cx("emptyStateIcon")}><Ic n="image" sz={22} c="var(--muted2)" /></div>
-          <div className={cx("emptyStateTitle")}>Loading design reviews…</div>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
       </div>
     );

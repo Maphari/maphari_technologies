@@ -168,6 +168,18 @@ export function ActivityFeedPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx("pageBody")}>
 
@@ -234,13 +246,7 @@ export function ActivityFeedPage() {
 
       {/* ── Feed ──────────────────────────────────────────────────────── */}
       <div className={cx("card")}>
-        {loading ? (
-          <div className={cx("afWrap")}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <SkeletonRow key={i} />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className={cx("ntfEmpty")}>
             <div className={cx("ntfEmptyIco")}>
               <Ic n="activity" sz={20} c="var(--muted2)" />

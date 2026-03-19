@@ -118,6 +118,18 @@ export function KnowledgeAccessPage() {
     return categories.map((c) => ({ name: c, count: map[c] ?? 0, icon: categoryIcon(c), color: categoryColor(c) }));
   }, [articles, categories]);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx("pageBody")}>
       <div className={cx("pageHeader", "mb0")}>
@@ -155,7 +167,7 @@ export function KnowledgeAccessPage() {
           <input
             type="text"
             className={cx("input", "pl36")}
-            placeholder={loading ? "Loading articles…" : `Search ${articles.length > 0 ? articles.length + " articles" : "the knowledge base"}…`}
+            placeholder={`Search ${articles.length > 0 ? articles.length + " articles" : "the knowledge base"}…`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

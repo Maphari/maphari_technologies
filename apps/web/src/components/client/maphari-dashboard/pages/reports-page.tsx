@@ -131,6 +131,18 @@ export function ReportsPage() {
     .sort((a, b) => (b.issuedAt ?? b.createdAt).localeCompare(a.issuedAt ?? a.createdAt))
     .slice(0, 8);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx("pageBody")}>
 
@@ -146,10 +158,10 @@ export function ReportsPage() {
       {/* ── Top stat cards ── */}
       <div className={cx("topCardsStack", "mb20")}>
         {[
-          { label: "Projects",          value: loading ? "…" : String(projects.length),        sub: `${activeProjects} active`,                  color: "statCardAccent" },
-          { label: "Deliverable Done",  value: loading ? "…" : `${completionPct}%`,            sub: `${acceptedCount}/${totalDeliverables} items`, color: "statCardGreen"  },
-          { label: "Total Invoiced",    value: loading ? "…" : centsToRands(totalInvoicedCents), sub: `${invoices.length} invoice${invoices.length !== 1 ? "s" : ""}`, color: "statCard" },
-          { label: "Outstanding",       value: loading ? "…" : centsToRands(outstandingCents), sub: outstandingCents === 0 ? "All clear" : "Awaiting payment", color: outstandingCents > 0 ? "statCardAmber" : "statCardGreen" },
+          { label: "Projects",          value: String(projects.length),            sub: `${activeProjects} active`,                   color: "statCardAccent" },
+          { label: "Deliverable Done",  value: `${completionPct}%`,                sub: `${acceptedCount}/${totalDeliverables} items`, color: "statCardGreen"  },
+          { label: "Total Invoiced",    value: centsToRands(totalInvoicedCents),   sub: `${invoices.length} invoice${invoices.length !== 1 ? "s" : ""}`, color: "statCard" },
+          { label: "Outstanding",       value: centsToRands(outstandingCents),     sub: outstandingCents === 0 ? "All clear" : "Awaiting payment", color: outstandingCents > 0 ? "statCardAmber" : "statCardGreen" },
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.color)}>
             <div className={cx("statLabel")}>{s.label}</div>
@@ -159,16 +171,8 @@ export function ReportsPage() {
         ))}
       </div>
 
-      {/* ── Loading ── */}
-      {loading && (
-        <div className={cx("card", "p24", "textCenter")}>
-          <div className={cx("colorMuted", "text12")}>Loading report data…</div>
-        </div>
-      )}
-
-      {!loading && (
-        <>
-          {/* ── Project overview ── */}
+      <>
+        {/* ── Project overview ── */}
           {projects.length > 0 && (
             <div className={cx("card", "mb16")}>
               <div className={cx("cardHd")}>
@@ -264,7 +268,6 @@ export function ReportsPage() {
             )}
           </div>
         </>
-      )}
     </div>
   );
 }

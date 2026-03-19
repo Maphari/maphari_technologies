@@ -57,6 +57,18 @@ export function ProjectBriefPage({ onNavigate }: { onNavigate?: (page: PageId) =
   const statusBadge  = brief ? (STATUS_BADGE[brief.status] ?? "badgeMuted") : "badgeMuted";
 
   // ── Render ────────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx("pageBody")}>
       {/* ── Header ── */}
@@ -71,15 +83,8 @@ export function ProjectBriefPage({ onNavigate }: { onNavigate?: (page: PageId) =
         </div>
       </div>
 
-      {/* ── Loading ── */}
-      {loading && (
-        <div className={cx("card", "p32", "textCenter", "colorMuted2")}>
-          Loading brief…
-        </div>
-      )}
-
       {/* ── Empty state (no brief yet) ── */}
-      {!loading && !brief && (
+      {!brief && (
         <div className={cx("emptyState", "mt32")}>
           <div className={cx("emptyStateIcon")}><Ic n="file" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No project brief yet</div>
@@ -88,7 +93,7 @@ export function ProjectBriefPage({ onNavigate }: { onNavigate?: (page: PageId) =
       )}
 
       {/* ── Brief content ── */}
-      {!loading && brief && (
+      {brief && (
         <>
           {/* ── Hero card ── */}
           <div className={cx("card", "pbrHero")}>

@@ -143,6 +143,18 @@ export function ChangeTrackerPage() {
     .filter((c) => c.status === "CLIENT_APPROVED" || c.status === "ADMIN_APPROVED")
     .reduce((s, c) => s + (c.estimatedCostCents ?? 0), 0);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx("pageBody")}>
 
@@ -158,10 +170,10 @@ export function ChangeTrackerPage() {
       {/* ── Stat strip ── */}
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Total Requests", value: loading ? "…" : String(allCrs.length), color: "statCard"       },
-          { label: "Pending",        value: loading ? "…" : String(pendingCount),   color: "statCardAmber"  },
-          { label: "Approved",       value: loading ? "…" : String(approvedCount),  color: "statCardGreen"  },
-          { label: "Approved Cost",  value: loading ? "…" : centsToRands(totalCost), color: "statCardAccent" },
+          { label: "Total Requests", value: String(allCrs.length),    color: "statCard"       },
+          { label: "Pending",        value: String(pendingCount),    color: "statCardAmber"  },
+          { label: "Approved",       value: String(approvedCount),   color: "statCardGreen"  },
+          { label: "Approved Cost",  value: centsToRands(totalCost), color: "statCardAccent" },
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.color)}>
             <div className={cx("statLabel")}>{s.label}</div>
@@ -175,7 +187,7 @@ export function ChangeTrackerPage() {
         {TABS.map((t) => (
           <button key={t} type="button" className={cx("pillTab", tab === t && "pillTabActive")} onClick={() => setTab(t)}>
             {t}
-            {t !== "All" && !loading && (
+            {t !== "All" && (
               <span className={cx("text10", "colorMuted", "ml4", "opacity60")}>
                 {t === "Pending"  ? pendingCount  :
                  t === "Approved" ? approvedCount :
@@ -187,15 +199,8 @@ export function ChangeTrackerPage() {
         ))}
       </div>
 
-      {/* ── Loading ── */}
-      {loading && (
-        <div className={cx("card", "p24", "textCenter")}>
-          <div className={cx("colorMuted", "text12")}>Loading change history…</div>
-        </div>
-      )}
-
       {/* ── Empty state ── */}
-      {!loading && filtered.length === 0 && (
+      {filtered.length === 0 && (
         <div className={cx("card", "p24", "textCenter")}>
           <Ic n="layers" sz={24} c="var(--muted2)" />
           <div className={cx("fw700", "text13", "mt12", "mb4")}>No change requests</div>
@@ -206,7 +211,7 @@ export function ChangeTrackerPage() {
       )}
 
       {/* ── Timeline grouped by month ── */}
-      {!loading && grouped.length > 0 && (
+      {grouped.length > 0 && (
         <div className={cx("flexCol", "gap24")}>
           {grouped.map(([month, crs]) => (
             <div key={month}>

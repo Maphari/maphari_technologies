@@ -58,6 +58,18 @@ export function RetainerUsagePage() {
   }));
   const grandTotal = totalByService.reduce((a, s) => a + s.total, 0);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx("pageBody")}>
       <div className={cx("pageHeader", "mb0")}>
@@ -96,8 +108,8 @@ export function RetainerUsagePage() {
         {weeklyBurn.length === 0 ? (
           <div className={cx("emptyState")}>
             <div className={cx("emptyStateIcon")}><Ic n="trending" sz={22} c="var(--muted2)" /></div>
-            <div className={cx("emptyStateTitle")}>{loading ? "Loading burn data…" : "No burn data yet"}</div>
-            <div className={cx("emptyStateSub")}>{loading ? "" : "Weekly hours will appear here once your retainer engagement starts."}</div>
+            <div className={cx("emptyStateTitle")}>No burn data yet</div>
+            <div className={cx("emptyStateSub")}>Weekly hours will appear here once your retainer engagement starts.</div>
           </div>
         ) : (
         <div className={cx("relative")}>

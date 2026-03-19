@@ -129,17 +129,10 @@ export function QuoteAcceptancePage() {
   if (loading) {
     return (
       <div className={cx("pageBody")}>
-        <div className={cx("pageHeader", "mb0")}>
-          <div>
-            <div className={cx("pageEyebrow")}>Finance · Quotes</div>
-            <h1 className={cx("pageTitle")}>Quote Acceptance</h1>
-          </div>
-        </div>
-        <div className={cx("card")}>
-          <div className={cx("emptyState")}>
-            <div className={cx("emptyStateIcon")}><Ic n="loader" sz={22} c="var(--muted2)" /></div>
-            <div className={cx("emptyStateTitle")}>Loading proposals…</div>
-          </div>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
       </div>
     );

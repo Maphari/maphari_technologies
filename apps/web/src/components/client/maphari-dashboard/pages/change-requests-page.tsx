@@ -197,6 +197,18 @@ export function ChangeRequestsPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx("pageBody")}>
 
@@ -234,7 +246,7 @@ export function ChangeRequestsPage() {
       {/* ── Stat strip ── */}
       <div className={cx("topCardsStack", "mb20")}>
         {[
-          { label: "Awaiting Decision",  value: loading ? "…" : String(undecided),                                           color: "statCardAmber"  },
+          { label: "Awaiting Decision",  value: String(undecided),                                                          color: "statCardAmber"  },
           { label: "Approved",           value: String(pendingCrs.filter((c) => decisions[c.id] === "Approve").length),     color: "statCardGreen"  },
           { label: "Budget Impact",      value: impact.cost > 0 ? `+R ${impact.cost.toLocaleString()}` : "—",               color: "statCardBlue"   },
           { label: "Hours Added",        value: impact.hours > 0 ? `+${impact.hours}h` : "—",                               color: impact.hours > 40 ? "statCardRed" : "statCardAccent" },
@@ -246,14 +258,8 @@ export function ChangeRequestsPage() {
         ))}
       </div>
 
-      {/* ── Loading / empty ── */}
-      {loading && (
-        <div className={cx("card", "p24", "textCenter")}>
-          <div className={cx("colorMuted", "text12")}>Loading change requests…</div>
-        </div>
-      )}
-
-      {!loading && pendingCrs.length === 0 && (
+      {/* ── Empty state ── */}
+      {pendingCrs.length === 0 && (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}><Ic n="edit" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No pending change requests</div>
@@ -262,7 +268,7 @@ export function ChangeRequestsPage() {
       )}
 
       {/* ── Decision action banner ── */}
-      {!loading && undecided > 0 && (
+      {undecided > 0 && (
         <div className={cx("crDecisionBanner")}>
           <Ic n="alert" sz={14} c="var(--amber)" />
           <span>
@@ -273,7 +279,7 @@ export function ChangeRequestsPage() {
       )}
 
       {/* ── Interactive CR decision cards ── */}
-      {!loading && pendingCrs.length > 0 && (
+      {pendingCrs.length > 0 && (
         <div className={cx("flexCol", "gap14", "mb16")}>
           {pendingCrs.map((cr) => {
             const d    = decisions[cr.id];

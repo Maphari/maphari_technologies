@@ -11,7 +11,6 @@ import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import { loadProjectRoadmapWithRefresh, type RoadmapProject, type RoadmapMilestone } from "../../../../lib/api/portal/project-layer";
 import { saveSession } from "../../../../lib/auth/session";
-import { SkeletonCard } from "@/components/shared/ui/page-skeleton";
 import { Alert } from "@/components/shared/ui/alert";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -135,6 +134,18 @@ export function ProjectRoadmapPage() {
     }).slice(0, 20);
   }, [projects]);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx("pageBody")}>
       {/* ── Header ────────────────────────────────────────────────────────── */}
@@ -152,14 +163,6 @@ export function ProjectRoadmapPage() {
           message={loadError}
           onRetry={() => { setLoadError(null); }}
         />
-      )}
-
-      {/* ── Loading ───────────────────────────────────────────────────────── */}
-      {loading && (
-        <>
-          <SkeletonCard rows={3} />
-          <SkeletonCard rows={3} />
-        </>
       )}
 
       {/* ── Empty state ───────────────────────────────────────────────────── */}

@@ -107,6 +107,18 @@ export function ContractsProposalsPage() {
   const pendingInvoices= invoices.filter((i) => i.status === "ISSUED" || i.status === "OVERDUE");
 
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx("pageBody")}>
 
@@ -122,10 +134,10 @@ export function ContractsProposalsPage() {
       {/* ── Stat cards ── */}
       <div className={cx("topCardsStack", "mb20")}>
         {[
-          { label: "Total Engagements", value: loading ? "…" : String(projects.length),  color: "statCardAccent" },
-          { label: "Active",            value: loading ? "…" : String(activeCount),       color: "statCardGreen"  },
-          { label: "Completed",         value: loading ? "…" : String(completedCount),    color: "statCard"       },
-          { label: "Pending Invoices",  value: loading ? "…" : String(pendingInvoices.length), color: pendingInvoices.length > 0 ? "statCardAmber" : "statCard" },
+          { label: "Total Engagements", value: String(projects.length),         color: "statCardAccent" },
+          { label: "Active",            value: String(activeCount),              color: "statCardGreen"  },
+          { label: "Completed",         value: String(completedCount),           color: "statCard"       },
+          { label: "Pending Invoices",  value: String(pendingInvoices.length),   color: pendingInvoices.length > 0 ? "statCardAmber" : "statCard" },
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.color)}>
             <div className={cx("statLabel")}>{s.label}</div>
@@ -134,15 +146,8 @@ export function ContractsProposalsPage() {
         ))}
       </div>
 
-      {/* ── Loading ── */}
-      {loading && (
-        <div className={cx("card", "p24", "textCenter")}>
-          <div className={cx("colorMuted", "text12")}>Loading contracts…</div>
-        </div>
-      )}
-
       {/* ── Pending invoice alert ── */}
-      {!loading && pendingInvoices.length > 0 && (
+      {pendingInvoices.length > 0 && (
         <div className={cx("card", "borderLeftAmber", "mb16", "p14x16")}>
           <div className={cx("flexRow", "gap12")}>
             <div className={cx("iconBox34")}
@@ -160,7 +165,7 @@ export function ContractsProposalsPage() {
       )}
 
       {/* ── Portfolio summary ── */}
-      {!loading && projects.length > 0 && totalBudget > 0 && (
+      {projects.length > 0 && totalBudget > 0 && (
         <div className={cx("card", "mb16", "p16x20")}>
           <div className={cx("flexBetween", "mb8")}>
             <span className={cx("fw600", "text12")}>Portfolio Budget</span>
@@ -182,7 +187,7 @@ export function ContractsProposalsPage() {
       )}
 
       {/* ── Project engagement list ── */}
-      {!loading && projects.length === 0 && (
+      {projects.length === 0 && (
         <div className={cx("card", "p24", "textCenter")}>
           <Ic n="file" sz={24} c="var(--muted2)" />
           <div className={cx("fw700", "text13", "mt12", "mb4")}>No engagements yet</div>
