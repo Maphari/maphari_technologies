@@ -627,12 +627,12 @@ export function BillingPage({ currency = "ZAR" }: { currency?: string }) {
         ) : (
           <div className={cx("flexRow", "gap24")}>
             <div>
-              <div className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700", "mb4")}>Paid</div>
+              <div className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700", "mb4", "rdStudioLabel")}>Paid</div>
               <div className={cx("fw700", "colorAccent", "rdStudioMetric", "rdStudioMetricPos")}>{formatCurrency(paidCents)}</div>
             </div>
             <div>
               <div className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700", "mb4", "rdStudioLabel")}>Outstanding</div>
-              <div className={cx("fw700", "colorAmber", "rdStudioMetric", "rdStudioMetricNeg")}>{formatCurrency(outstandingCents)}</div>
+              <div className={cx("fw700", "colorAmber", "rdStudioMetric")}>{formatCurrency(outstandingCents)}</div>
             </div>
             <div>
               <div className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700", "mb4", "rdStudioLabel")}>Total</div>
@@ -640,7 +640,7 @@ export function BillingPage({ currency = "ZAR" }: { currency?: string }) {
             </div>
             {paidMilestones.length > 0 && (
               <div>
-                <div className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700", "mb4")}>Milestones</div>
+                <div className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700", "mb4", "rdStudioLabel")}>Milestones</div>
                 <div className={cx("fw700")}>{paidMilestones.length} paid</div>
               </div>
             )}

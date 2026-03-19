@@ -918,8 +918,7 @@ export function PaymentsPage({ payments: apiPayments = [], invoices: apiInvoices
   const paymentData: Payment[] = useMemo(() => {
     if (apiPayments.length === 0) return [];
     const invoiceMap = new Map(apiInvoices.map((inv) => [inv.id, inv]));
-    const fmtMoney = (cents: number) => `${CURRENCY_SYMBOL} ${(cents / 100).toLocaleString(LOCALE)}`;
-    const statusMap: Record<string, PStatus> = {
+const statusMap: Record<string, PStatus> = {
       COMPLETED: "Paid", PENDING: "Pending", FAILED: "Overdue", REFUNDED: "Paid",
     };
     return apiPayments.map((pay) => {

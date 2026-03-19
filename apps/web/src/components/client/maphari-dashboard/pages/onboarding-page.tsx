@@ -126,6 +126,7 @@ export function OnboardingPage() {
               <div className={styles.onboardFlowWelcomeCard}>
                 <div className={styles.onboardFlowWelcomeEyebrow}>Welcome to Maphari</div>
                 <div className={styles.onboardFlowWelcomeTitle}>Hello, Client. Let&apos;s build something great.</div>
+                {/* TODO: Replace with real project data once portal data API is wired */}
                 <div className={styles.onboardFlowWelcomeBody}>
                   We are excited to work with you. This portal is your source of truth — project progress, approvals, files, and next actions all in one place.
                   <br /><br />
@@ -205,7 +206,7 @@ export function OnboardingPage() {
                     <span className={styles.onboardFlowSectionTitlePlain}>Onboarding Checklist</span>
                     <div className={styles.onboardFlowHeadLine} />
                   </div>
-                  <span className={cx("badge", "badgeGreen", "rdStudioMetric", "rdStudioMetricPos")}>{donePct}% complete</span>
+                  <span className={cx("badge", "badgeGreen", "rdStudioMetricPos")}>{donePct}% complete</span>
                 </div>
 
                 <div className={cx("card", styles.onboardFlowCheckCard, "rdStudioCard")}>
@@ -223,7 +224,7 @@ export function OnboardingPage() {
                       </button>
 
                       <div className={styles.onboardFlowGrow}>
-                        <div className={cx(styles.onboardFlowCheckTitle, item.done && styles.onboardFlowStrike, "rdStudioLabel")}>{item.title}</div>
+                        <div className={cx(styles.onboardFlowCheckTitle, item.done && styles.onboardFlowStrike)}>{item.title}</div>
                         <div className={styles.onboardFlowCheckDesc}>{item.desc}</div>
                         {item.done ? <div className={styles.onboardFlowCheckMeta}>{item.meta}</div> : null}
                       </div>
@@ -323,6 +324,7 @@ export function OnboardingPage() {
             <div className={styles.onboardFlowContent}>
               <div className={styles.onboardFlowOffboardingNotice}>
                 <div className={styles.onboardFlowOffboardingEyebrow}>Project Status: In Progress</div>
+                {/* TODO: Replace with real project data once portal data API is wired */}
                 <div className={styles.onboardFlowOffboardingText}>Offboarding steps unlock near final phase. Estimated completion: March 28, 2026.</div>
               </div>
 
