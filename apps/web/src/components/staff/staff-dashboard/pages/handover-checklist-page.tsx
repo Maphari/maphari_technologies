@@ -308,13 +308,13 @@ export function HandoverChecklistPage({ isActive, session }: { isActive: boolean
 
   if (loading) {
     return (
-      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-handover-checklist">
-        <div className={cx("pageHeaderBar", "borderB", "hoHeaderBar")}>
-          <div className={cx("pageEyebrow", "mb8")}>Staff Dashboard / Workflow</div>
-          <h1 className={cx("pageTitle")}>Handover Checklist</h1>
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-        <div className={cx("colorMuted2", "text12", "mt24")}>Loading clients…</div>
-      </section>
+      </div>
     );
   }
 

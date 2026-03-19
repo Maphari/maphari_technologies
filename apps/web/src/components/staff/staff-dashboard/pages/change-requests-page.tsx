@@ -80,6 +80,18 @@ export function ChangeRequestsPage({
     );
   });
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-change-requests">
       {/* ── Header ── */}
@@ -126,9 +138,7 @@ export function ChangeRequestsPage({
             <span key={h}>{h}</span>
           ))}
         </div>
-        {loading ? (
-          <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading change requests…</div>
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No change requests in this view.</div>
         ) : (
           filtered.map((r) => (

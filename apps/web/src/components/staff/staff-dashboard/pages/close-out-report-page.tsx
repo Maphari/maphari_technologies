@@ -314,6 +314,18 @@ export function CloseOutReportPage({
   const accuracy = totalEst > 0 ? Math.round((1 - Math.abs(variance) / totalEst) * 100) : 100;
   const maxBurnHours = report ? Math.max(...report.burnData.map((row) => row.hours), 1) : 1;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-closeout-report">
       <div className={cx("pageHeaderBar", "borderB", "pb0")}>
@@ -372,21 +384,14 @@ export function CloseOutReportPage({
       </div>
 
       <div className={cx("pt8", "corTopPad")}>
-        {loading && (
-          <div className={cx("emptyState")}>
-            <div className={cx("emptyStateIcon")}>...</div>
-            <div className={cx("emptyStateTitle")}>Loading close-out reports</div>
-            <div className={cx("emptyStateSub")}>Fetching project data, please wait.</div>
-          </div>
-        )}
-        {!loading && (!report || !client) && (
+        {(!report || !client) && (
           <div className={cx("emptyState")}>
             <div className={cx("emptyStateIcon")}>&#9678;</div>
             <div className={cx("emptyStateTitle")}>No close-out reports yet</div>
             <div className={cx("emptyStateSub")}>Completed projects will appear here for review and export.</div>
           </div>
         )}
-        {!loading && report && client && section === "overview" && (
+        {report && client && section === "overview" && (
           <div className={cx("corOverviewGrid")}>
             <div>
               <div className={cx("flexRow", "gap10", "mb16")}>
@@ -469,7 +474,7 @@ export function CloseOutReportPage({
           </div>
         )}
 
-        {!loading && report && client && section === "finance" && (
+        {report && client && section === "finance" && (
           <div className={cx("corFinanceWrap")}>
             <div className={cx("fontDisplay", "fw800", "colorText", "corFinanceTitle")}>Financial Summary</div>
             {[
@@ -496,7 +501,7 @@ export function CloseOutReportPage({
           </div>
         )}
 
-        {!loading && report && client && section === "milestones" && (
+        {report && client && section === "milestones" && (
           <div className={cx("corMilestonesWrap")}>
             <div className={cx("fontDisplay", "fw800", "colorText", "corFinanceTitle")}>Milestone Review</div>
             {report.milestones.length === 0 && (
@@ -540,7 +545,7 @@ export function CloseOutReportPage({
           </div>
         )}
 
-        {!loading && report && client && section === "retro" && (
+        {report && client && section === "retro" && (
           <div className={cx("corRetroGrid")}>
             <div>
               <div className={cx("flexRow", "gap8", "mb16")}>

@@ -286,14 +286,13 @@ export function ClientOnboardingPage({ isActive, session, onNavigate }: { isActi
   // ── Loading state ───────────────────────────────────────────────────────────
   if (loading && onboardingClients.length === 0) {
     return (
-      <section
-        className={cx("page", "pageBody", isActive && "pageActive")}
-        id="page-client-onboarding"
-      >
-        <div className={cx("p24", "colorMuted", "text12", "textCenter")}>
-          Loading onboarding data...
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-      </section>
+      </div>
     );
   }
 

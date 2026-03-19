@@ -128,6 +128,18 @@ export function ClientBudgetPage({ isActive, session }: ClientBudgetPageProps) {
     ? Math.round(clients.reduce((s, c) => s + c.healthScore, 0) / clients.length)
     : 0;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-client-budget">
       <div className={cx("pageHeaderBar")}>

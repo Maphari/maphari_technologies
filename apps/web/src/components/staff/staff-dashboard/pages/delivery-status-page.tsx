@@ -195,6 +195,18 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks }: P
 
   if (!isActive) return null;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section
       className={cx("page", "pageBody", isActive && "pageActive")}
@@ -208,17 +220,8 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks }: P
         </p>
       </div>
 
-      {/* ── Loading ───────────────────────────────────────────────────── */}
-      {loading && (
-        <div className={cx("dsvSection")}>
-          <div className={cx("emptyState")}>
-            <div className={cx("emptyStateText")}>Loading delivery data…</div>
-          </div>
-        </div>
-      )}
-
       {/* ── Error ─────────────────────────────────────────────────────── */}
-      {!loading && error && (
+      {error && (
         <div className={cx("dsvSection")}>
           <div className={cx("emptyState")}>
             <div className={cx("emptyStateTitle")}>Failed to load data.</div>
@@ -228,7 +231,7 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks }: P
       )}
 
       {/* ── Stats ─────────────────────────────────────────────────────── */}
-      {!loading && !error && (
+      {!error && (
         <div className={cx("dsvStatGrid")}>
 
           <div className={cx("dsvStatCard")}>
@@ -303,7 +306,7 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks }: P
       )}
 
       {/* ── Delivery list ─────────────────────────────────────────────── */}
-      {!loading && !error && (
+      {!error && (
         <div className={cx("dsvSection")}>
           <div className={cx("dsvSectionHeader")}>
             <div className={cx("dsvSectionTitle")}>All Projects</div>

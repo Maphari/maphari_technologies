@@ -95,6 +95,18 @@ export function AppointmentsPage({
   const confirmedCount = appointments.filter((a) => a.status.toUpperCase() === "CONFIRMED" && isUpcoming(a.scheduledAt)).length;
   const videoCount     = appointments.filter((a) => !!a.videoRoomUrl && isUpcoming(a.scheduledAt)).length;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-appointments">
       <div className={cx("pageHeaderBar")}>
@@ -142,10 +154,7 @@ export function AppointmentsPage({
 
       {/* ── Appointment list ────────────────────────────────────────────────── */}
       <div className={cx("apptList")}>
-        {loading && (
-          <div className={cx("apptEmpty")}>Loading appointments…</div>
-        )}
-        {!loading && filtered.length === 0 && (
+        {filtered.length === 0 && (
           <div className={cx("emptyState")}>
             <div className={cx("emptyStateIcon")}><Ic n="calendar" sz={22} c="var(--muted2)" /></div>
             <div className={cx("emptyStateTitle")}>No appointments</div>
@@ -156,7 +165,7 @@ export function AppointmentsPage({
             </div>
           </div>
         )}
-        {!loading && filtered.map((appt) => {
+        {filtered.map((appt) => {
           const upcoming = isUpcoming(appt.scheduledAt);
           const isPending = appt.status.toUpperCase() === "PENDING";
           return (

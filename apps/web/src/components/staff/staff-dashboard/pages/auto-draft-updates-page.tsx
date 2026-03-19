@@ -329,6 +329,18 @@ export function AutoDraftUpdatesPage({ isActive, session, onNotify }: PageProps)
 
   if (!isActive) return null;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-autodraft">
       <div className={cx("pageHeaderBar", "borderB", "mb16", "aduHeaderWrap")}>
@@ -366,15 +378,8 @@ export function AutoDraftUpdatesPage({ isActive, session, onNotify }: PageProps)
         </div>
       </div>
 
-      {/* ── Loading ──────────────────────────────────────────────────── */}
-      {loading && (
-        <div className={cx("flexCenter", "pt32")}>
-          <span className={cx("text12", "colorMuted2")}>Loading client data…</span>
-        </div>
-      )}
-
       {/* ── Empty (no clients) ───────────────────────────────────────── */}
-      {!loading && clientList.length === 0 && (
+      {clientList.length === 0 && (
         <div className={cx("flexCenter", "flexCol", "gap12", "aduDraftEmpty", "pt32")}>
           <div className={cx("aduDraftEmptyIcon")}>✦</div>
           <div className={cx("text12")}>No clients assigned to your account yet.</div>
@@ -382,7 +387,7 @@ export function AutoDraftUpdatesPage({ isActive, session, onNotify }: PageProps)
       )}
 
       {/* ── History tab ──────────────────────────────────────────────── */}
-      {!loading && clientList.length > 0 && view === "history" && (
+      {clientList.length > 0 && view === "history" && (
         <div className={cx("pt8")}>
           {historyLoading ? (
             <div className={cx("textCenter", "text12", "aduHistoryEmpty", "colorMuted")}>
@@ -418,7 +423,7 @@ export function AutoDraftUpdatesPage({ isActive, session, onNotify }: PageProps)
       )}
 
       {/* ── Compose tab ──────────────────────────────────────────────── */}
-      {!loading && clientList.length > 0 && view === "compose" && (
+      {clientList.length > 0 && view === "compose" && (
         <div className={cx("pt8", "aduMainGrid")}>
           {/* Left column: selectors */}
           <div className={cx("flexCol", "aduComposerCol")}>

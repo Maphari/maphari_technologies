@@ -217,6 +217,18 @@ export function DecisionLogPage({ isActive, session }: { isActive: boolean; sess
 
   const canSave = draft.title.trim() && draft.context.trim() && draft.madeBy.trim() && !saving;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-decision-log">
       <div className={cx("pageHeaderBar", "mb20")}>
@@ -277,9 +289,7 @@ export function DecisionLogPage({ isActive, session }: { isActive: boolean; sess
 
       <div className={cx("dlShell", (current || adding) && "dlShellWithPanel")}>
         <div className={cx("dlListPane", (current || adding) && "dlListPaneWithPanel")}>
-          {loading ? (
-            <div className={cx("colorMuted2", "text12")}>Loading decisions…</div>
-          ) : Object.entries(grouped).length === 0 ? (
+          {Object.entries(grouped).length === 0 ? (
             <div className={cx("dlEmpty")}>No decisions match your filters.</div>
           ) : (
             Object.entries(grouped).map(([clientName, clientDecisions]) => (

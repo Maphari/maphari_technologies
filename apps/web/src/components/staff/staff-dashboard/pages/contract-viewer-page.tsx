@@ -85,6 +85,18 @@ export function ContractViewerPage({ isActive, session, onNotify }: PageProps) {
 
   if (!isActive) return null;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section
       className={cx("page", "pageBody", isActive && "pageActive")}
@@ -99,7 +111,7 @@ export function ContractViewerPage({ isActive, session, onNotify }: PageProps) {
       </div>
 
       {/* ── Summary stats ─────────────────────────────────────────────── */}
-      {!loading && !error && (
+      {!error && (
         <div className={cx("ctrStatGrid")}>
 
           <div className={cx("ctrStatCard")}>
@@ -153,17 +165,8 @@ export function ContractViewerPage({ isActive, session, onNotify }: PageProps) {
         </div>
       )}
 
-      {/* ── Loading ───────────────────────────────────────────────────── */}
-      {loading && (
-        <div className={cx("ctrSection")}>
-          <div className={cx("emptyState")}>
-            <div className={cx("emptyStateText")}>Loading client data…</div>
-          </div>
-        </div>
-      )}
-
       {/* ── Error ─────────────────────────────────────────────────────── */}
-      {!loading && error && (
+      {error && (
         <div className={cx("ctrSection")}>
           <div className={cx("emptyState")}>
             <div className={cx("emptyStateTitle")}>Failed to load data.</div>
@@ -173,7 +176,7 @@ export function ContractViewerPage({ isActive, session, onNotify }: PageProps) {
       )}
 
       {/* ── Admin notice ──────────────────────────────────────────────── */}
-      {!loading && !error && (
+      {!error && (
         <div className={cx("ctrSection")}>
           <div className={cx("ctrSectionHeader")}>
             <div className={cx("ctrSectionTitle")}>Contract Access</div>
@@ -191,7 +194,7 @@ export function ContractViewerPage({ isActive, session, onNotify }: PageProps) {
       )}
 
       {/* ── Client + project list ─────────────────────────────────────── */}
-      {!loading && !error && clients.length > 0 && (
+      {!error && clients.length > 0 && (
         <div className={cx("ctrSection")}>
           <div className={cx("ctrSectionHeader")}>
             <div className={cx("ctrSectionTitle")}>Your Clients &amp; Projects</div>
@@ -271,7 +274,7 @@ export function ContractViewerPage({ isActive, session, onNotify }: PageProps) {
         </div>
       )}
 
-      {!loading && !error && clients.length === 0 && (
+      {!error && clients.length === 0 && (
         <div className={cx("ctrSection")}>
           <div className={cx("emptyState")}>
             <div className={cx("emptyStateIcon")}>

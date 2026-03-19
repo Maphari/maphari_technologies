@@ -51,6 +51,18 @@ export function BrandKitPage({ isActive, session }: BrandKitPageProps) {
     ? new Date(latestUpdated).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })
     : "--";
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-brand-kit">
       <div className={cx("pageHeaderBar")}>
@@ -108,13 +120,13 @@ export function BrandKitPage({ isActive, session }: BrandKitPageProps) {
       </div>
 
       {/* ── Asset list or empty state ────────────────────────────────────── */}
-      {!loading && assets.length === 0 ? (
+      {assets.length === 0 ? (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}><Ic n="palette" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No brand assets</div>
           <div className={cx("emptyStateSub")}>Brand assets will appear here once they are uploaded by an admin.</div>
         </div>
-      ) : !loading ? (
+      ) : (
         <div className={cx("bkAssetList")}>
           {assets.map((a) => (
             <div key={a.id} className={cx("bkAssetRow")}>
@@ -126,7 +138,7 @@ export function BrandKitPage({ isActive, session }: BrandKitPageProps) {
             </div>
           ))}
         </div>
-      ) : null}
+      )}
     </section>
   );
 }
