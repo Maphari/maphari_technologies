@@ -90,11 +90,11 @@ export function SprintBoardAdminPage({ session, onNotify }: Props) {
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [sprints, setSprints] = useState<ProjectSprint[]>([]);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // ── Load project list ───────────────────────────────────────────────────────
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     let cancelled = false;
     void (async () => {
       const r = await loadAdminSnapshotWithRefresh(session);

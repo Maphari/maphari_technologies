@@ -79,11 +79,11 @@ export function ContractsProposalsPage() {
 
   const [projects,  setProjects]  = useState<PortalProject[]>([]);
   const [invoices,  setInvoices]  = useState<PortalInvoice[]>([]);
-  const [loading,   setLoading]   = useState(false);
+  const [loading,   setLoading]   = useState(true);
   const [expanded,  setExpanded]  = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     Promise.all([
       loadPortalProjectsWithRefresh(session).then((r) => {

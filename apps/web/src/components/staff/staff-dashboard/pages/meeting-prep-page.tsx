@@ -111,14 +111,14 @@ export function MeetingPrepPage({
   session: AuthSession | null;
 }) {
   const [meetings, setMeetings]   = useState<StaffMeeting[]>([]);
-  const [loading, setLoading]     = useState(false);
+  const [loading, setLoading]     = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<MainTab>("brief");
   const [checked, setChecked]     = useState<Record<string, boolean>>({});
   const [noteText, setNoteText]   = useState("");
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     setLoading(true);
 
     void (async () => {

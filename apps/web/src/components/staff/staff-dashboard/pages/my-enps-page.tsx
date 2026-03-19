@@ -80,10 +80,10 @@ export function MyEnpsPage({
   // Derived from API data
   const [standupCount, setStandupCount]       = useState<number>(0);
   const [reviewScores, setReviewScores]        = useState<Array<{ month: string; score: number }>>([]);
-  const [loading, setLoading]                 = useState(false);
+  const [loading, setLoading]                 = useState(true);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     setLoading(true);
 
     void (async () => {

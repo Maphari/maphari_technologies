@@ -81,7 +81,7 @@ export function ProjectReportsPage() {
   const [sprints,       setSprints]       = useState<PortalSprint[]>([]);
   const [sprintTasks,   setSprintTasks]   = useState<Record<string, PortalSprintTask[]>>({});
   const [activeTab,     setActiveTab]     = useState<ReportTab>("Value Realized");
-  const [loading,       setLoading]       = useState(false);
+  const [loading,       setLoading]       = useState(true);
   const [loadingTasks,  setLoadingTasks]  = useState(false);
 
   // Track which sprint IDs we've already started loading (avoids duplicate fetches)
@@ -89,7 +89,7 @@ export function ProjectReportsPage() {
 
   // ── Load deliverables + sprints on mount ────────────────────────────────────
   useEffect(() => {
-    if (!session || !projectId) return;
+    if (!session || !projectId) { setLoading(false); return; }
     setLoading(true);
 
     Promise.all([

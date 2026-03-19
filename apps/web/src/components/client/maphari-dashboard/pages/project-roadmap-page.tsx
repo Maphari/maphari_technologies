@@ -92,11 +92,11 @@ function projectBadge(status: string): string {
 export function ProjectRoadmapPage() {
   const { session } = useProjectLayer();
   const [projects, setProjects] = useState<RoadmapProject[]>([]);
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading]   = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     loadProjectRoadmapWithRefresh(session)
       .then((r) => {

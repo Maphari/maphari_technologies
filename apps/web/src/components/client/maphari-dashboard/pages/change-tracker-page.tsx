@@ -100,12 +100,12 @@ export function ChangeTrackerPage() {
   const { session, projectId } = useProjectLayer();
 
   const [allCrs,  setAllCrs]  = useState<PortalProjectChangeRequest[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [tab,     setTab]     = useState<FilterTab>("All");
   const [expanded,setExpanded]= useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     void loadPortalChangeRequestsWithRefresh(session, projectId ? { projectId } : {})
       .then((r) => {

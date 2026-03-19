@@ -50,12 +50,12 @@ export function AppointmentsPage({
   session: AuthSession | null;
 }) {
   const [appointments, setAppointments] = useState<PortalAppointment[]>([]);
-  const [loading, setLoading]           = useState(false);
+  const [loading, setLoading]           = useState(true);
   const [confirming, setConfirming]     = useState<string | null>(null);
   const [filter, setFilter]             = useState<"all" | "upcoming" | "pending" | "confirmed">("all");
 
   const load = useCallback(async () => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     const r = await loadPortalAppointmentsWithRefresh(session);
     setLoading(false);

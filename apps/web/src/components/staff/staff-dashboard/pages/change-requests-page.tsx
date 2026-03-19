@@ -50,11 +50,11 @@ export function ChangeRequestsPage({
   session: AuthSession | null;
 }) {
   const [requests, setRequests] = useState<StaffChangeRequest[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("open");
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     getStaffChangeRequests(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);

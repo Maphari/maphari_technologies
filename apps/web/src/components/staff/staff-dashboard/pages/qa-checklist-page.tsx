@@ -115,14 +115,14 @@ export function QAChecklistPage({
   session: AuthSession | null;
 }) {
   const [items, setItems]         = useState<QAItem[]>([]);
-  const [loading, setLoading]     = useState(false);
+  const [loading, setLoading]     = useState(true);
   const [filter, setFilter]       = useState<FilterValue>("all");
   const [localItems, setLocalItems] = useState<QAItem[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm]     = useState(EMPTY_FORM);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     setLoading(true);
 
     void (async () => {

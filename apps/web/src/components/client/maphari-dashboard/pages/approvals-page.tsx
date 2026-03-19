@@ -167,7 +167,7 @@ export function ApprovalsPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [changes, setChanges] = useState<ChangeItem[]>([]);
   const [deliverables, setDeliverables] = useState<DeliverableItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // ── Decline/Revision modal state (change requests) ──────────────────────
   const [declineModalId, setDeclineModalId] = useState<string | null>(null);
@@ -182,7 +182,7 @@ export function ApprovalsPage() {
   const [approveTarget, setApproveTarget] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session || !projectId) return;
+    if (!session || !projectId) { setLoading(false); return; }
     setLoading(true);
     void Promise.all([
       loadPortalProjectDetailWithRefresh(session, projectId),

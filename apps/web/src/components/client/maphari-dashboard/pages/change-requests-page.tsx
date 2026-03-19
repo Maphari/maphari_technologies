@@ -94,7 +94,7 @@ export function ChangeRequestsPage() {
   const notify = usePageToast();
 
   const [allCrs,     setAllCrs]     = useState<PortalProjectChangeRequest[]>([]);
-  const [loading,    setLoading]    = useState(false);
+  const [loading,    setLoading]    = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [decisions,  setDecisions]  = useState<Record<string, Decision>>({});
   const [showNew,    setShowNew]    = useState(false);
@@ -104,7 +104,7 @@ export function ChangeRequestsPage() {
 
   // Fetch change requests from API
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     void loadPortalChangeRequestsWithRefresh(session, projectId ? { projectId } : {}).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);

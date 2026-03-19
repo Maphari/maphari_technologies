@@ -51,7 +51,7 @@ export function PrivateNotesPage({ isActive, session }: { isActive: boolean; ses
   const [notes, setNotes]                 = useState<ClientNote[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<"all" | ClientNoteCategory>("all");
   const [search, setSearch]               = useState("");
-  const [loading, setLoading]             = useState(false);
+  const [loading, setLoading]             = useState(true);
   const [composing, setComposing]         = useState(false);
   const [newNote, setNewNote]             = useState("" );
   const [newCategory, setNewCategory]     = useState<ClientNoteCategory>("general");
@@ -61,7 +61,7 @@ export function PrivateNotesPage({ isActive, session }: { isActive: boolean; ses
 
   // Load client list once
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     getStaffClients(session).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
       if (result.data && result.data.length > 0) {

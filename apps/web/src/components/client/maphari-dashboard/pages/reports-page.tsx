@@ -78,10 +78,10 @@ export function ReportsPage() {
   const [projects,     setProjects]     = useState<PortalProject[]>([]);
   const [invoices,     setInvoices]     = useState<PortalInvoice[]>([]);
   const [deliverables, setDeliverables] = useState<PortalDeliverable[]>([]);
-  const [loading,      setLoading]      = useState(false);
+  const [loading,      setLoading]      = useState(true);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
 
     const fetches: Promise<void>[] = [

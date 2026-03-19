@@ -84,13 +84,13 @@ function ProjectItem({ p, isSelected, onSelect }: { p: ProjectContext; isSelecte
 
 export function ProjectContextPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
   const [projects, setProjects] = useState<ProjectContext[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "phase">("overview");
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     getStaffProjects(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);

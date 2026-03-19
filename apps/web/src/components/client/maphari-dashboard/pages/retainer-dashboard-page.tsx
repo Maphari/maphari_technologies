@@ -32,10 +32,10 @@ const MSTATUS_ICON:  Record<MStatus, string> = { Settled: "check",       Overdue
 export function RetainerDashboardPage() {
   const { session } = useProjectLayer();
   const [weeklyBurn, setWeeklyBurn] = useState<PortalRetainerWeek[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
     void loadPortalRetainerWithRefresh(session).then((result) => {

@@ -69,7 +69,7 @@ function VerificationStepper({ status }: { status: StaffAccessRequest["status"] 
 export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
   const [requests, setRequests] = useState<StaffAccessRequest[]>([]);
   const [users, setUsers] = useState<StaffAccessUser[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("request queue");
   const [requestFilter, setRequestFilter] = useState<RequestFilter>("all");
   const [accountFilter, setAccountFilter] = useState<AccountFilter>("all");
@@ -110,7 +110,7 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
   }, [onNotify]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     const id = window.setTimeout(() => { void refreshAll(session); }, 0);
     return () => window.clearTimeout(id);
   }, [refreshAll, session]);

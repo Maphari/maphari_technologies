@@ -77,13 +77,13 @@ export function KnowledgeAccessPage() {
   const { session } = useProjectLayer();
 
   const [articles,  setArticles]  = useState<PortalKnowledgeArticle[]>([]);
-  const [loading,   setLoading]   = useState(false);
+  const [loading,   setLoading]   = useState(true);
   const [search,    setSearch]    = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [openFaq,   setOpenFaq]   = useState<number | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     void loadPortalKnowledgeArticlesWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);

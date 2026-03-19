@@ -126,10 +126,10 @@ export function TeamPerformanceReportPage({
   const [apiStandups, setApiStandups] = useState<AdminStandupEntry[]>([]);
   const [apiReviews, setApiReviews] = useState<AdminPeerReview[]>([]);
   const [selected, setSelected] = useState<StaffMember | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     Promise.all([
       loadAllStaffWithRefresh(session),

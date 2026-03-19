@@ -225,7 +225,7 @@ export function DocumentVaultPage({
   const [documents,    setDocuments]    = useState<VaultDocument[]>([]);
   const [stats,        setStats]        = useState<{ byCategory: Record<string, number>; byStatus: Record<string, number> }>({ byCategory: {}, byStatus: {} });
   const [total,        setTotal]        = useState(0);
-  const [loading,      setLoading]      = useState(false);
+  const [loading,      setLoading]      = useState(true);
   const [showUpload,   setShowUpload]   = useState(false);
   const [archivingId,  setArchivingId]  = useState<string | null>(null);
 
@@ -233,7 +233,7 @@ export function DocumentVaultPage({
 
   // ── Load documents ────────────────────────────────────────────────────────
   const loadDocs = useCallback(async () => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     try {
       const catFilter = filterCat === "All" ? undefined : filterCat.toUpperCase();
