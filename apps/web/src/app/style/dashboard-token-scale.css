@@ -20,6 +20,7 @@
   --font-display: var(--font-syne), sans-serif;
   --font-mono: var(--font-dm-mono), monospace;
   --font-serif: var(--font-instrument-serif), serif;
+  --font-data: var(--font-mono);
 
   /* Typography scale (base: 16px) */
   --text-2xs: 0.625rem;   /* 10px — stamps, mono micro-labels */
@@ -119,15 +120,15 @@
 /* ── Dark mode overrides ─────────────────────────────────────── */
 [data-theme="dark"] {
   /* Backgrounds */
-  --bg-page: #0d0d0f;
-  --s1: #161618;
-  --s2: #1e1e22;
-  --s3: #262628;
-  --s4: #2e2e32;
+  --bg-page: #0a0a0d;
+  --s1: #11111c;
+  --s2: #18182a;
+  --s3: #1f1f2e;
+  --s4: #272738;
 
   /* Borders */
-  --b1: #2a2a2e;
-  --b2: #323238;
+  --b1: #222230;
+  --b2: #2a2a42;
   --b3: #3e3e46;
 
   /* Text */
