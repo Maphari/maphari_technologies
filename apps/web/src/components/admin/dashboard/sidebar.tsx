@@ -185,10 +185,6 @@ export function AdminSidebar({
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        openAllPages();
-      }
       if (event.key === "Escape") {
         closeAllPages();
       }
