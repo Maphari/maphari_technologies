@@ -164,7 +164,7 @@ export function KanbanPage({
   const chartMax = Math.max(1, ...flowMetrics.points.map((p) => Math.max(p.created, p.completed)));
 
   return (
-    <section className={cx("page", "pageBody", "kanbanPage", isActive && "pageActive")} id="page-kanban">
+    <section className={cx("page", "pageBody", "kanbanPage", "rdStudioPage", isActive && "pageActive")} id="page-kanban">
       <div className={styles.srOnly} aria-live="polite">{announcement}</div>
 
       {/* ── Automation: escalate blocked + aging tasks ───────────────── */}
@@ -382,10 +382,10 @@ export function KanbanPage({
               <div className={cx("kbColTopStrip", colTopStrip(column.tone))} />
 
               {/* Column header */}
-              <div className={cx("kbColHeadV3")}>
+              <div className={cx("kbColHeadV3", "rdStudioSection")}>
                 <div className={cx("kbColHeadRow")}>
-                  <span className={cx("kbColTitleV3", colTitleColor(column.tone))}>{column.title}</span>
-                  <span className={cx("kbColCountV3", colCountVariant(column.countTone))}>{column.count}</span>
+                  <span className={cx("kbColTitleV3", colTitleColor(column.tone), "rdStudioLabel")}>{column.title}</span>
+                  <span className={cx("kbColCountV3", colCountVariant(column.countTone), "rdStudioMetric")}>{column.count}</span>
                 </div>
 
                 {/* WIP meter + aging */}

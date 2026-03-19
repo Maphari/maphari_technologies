@@ -243,7 +243,7 @@ export function DeliverablesPage({
   }, [deliverableFilter, deliverableGroups, deliverableSort, nowTs]);
 
   return (
-    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-deliverables">
+    <section className={cx("page", "pageBody", "rdStudioPage", isActive && "pageActive")} id="page-deliverables">
       <div className={cx("pageHeaderBar")}>
         <div className={cx("flexBetween", "gap24", "mb20")}>
           <div>
@@ -340,10 +340,10 @@ export function DeliverablesPage({
 
       {/* Stats */}
       <div className={cx("stats", "stats3", "mb20")}>
-        <div className={styles.stat}>
+        <div className={cx(styles.stat, "rdStudioCard")}>
           <div className={cx("statAccent", "statAccentRed")} />
-          <div className={styles.statLabel}>Overdue</div>
-          <div className={styles.statValue}>{milestoneStats.overdue}</div>
+          <div className={cx(styles.statLabel, "rdStudioLabel")}>Overdue</div>
+          <div className={cx(styles.statValue, "rdStudioMetric", milestoneStats.overdue > 0 ? "rdStudioMetricNeg" : "")}>{milestoneStats.overdue}</div>
           <div className={styles.statSub}>
             <span className={cx("dlStatNote", milestoneStats.overdue ? "dlStatNoteRed" : "dlStatNoteOk")}>
               {milestoneStats.overdue ? (
@@ -352,20 +352,20 @@ export function DeliverablesPage({
             </span>
           </div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx(styles.stat, "rdStudioCard")}>
           <div className={cx("statAccent", "statAccentAmber")} />
-          <div className={styles.statLabel}>Due This Week</div>
-          <div className={styles.statValue}>{milestoneStats.dueThisWeek}</div>
+          <div className={cx(styles.statLabel, "rdStudioLabel")}>Due This Week</div>
+          <div className={cx(styles.statValue, "rdStudioMetric", milestoneStats.dueThisWeek > 0 ? "rdStudioMetricWarn" : "")}>{milestoneStats.dueThisWeek}</div>
           <div className={styles.statSub}>
             <span className={cx("dlStatNote", milestoneStats.dueThisWeek ? "dlStatNoteAmber" : "dlStatNoteOk")}>
               {milestoneStats.dueThisWeek ? "In progress" : "Nothing due"}
             </span>
           </div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx(styles.stat, "rdStudioCard")}>
           <div className={cx("statAccent", "statAccentGreen")} />
-          <div className={styles.statLabel}>Delivered (Month)</div>
-          <div className={styles.statValue}>{milestoneStats.deliveredThisMonth}</div>
+          <div className={cx(styles.statLabel, "rdStudioLabel")}>Delivered (Month)</div>
+          <div className={cx(styles.statValue, "rdStudioMetric", "rdStudioMetricPos")}>{milestoneStats.deliveredThisMonth}</div>
           <div className={styles.statSub}>
             <span className={cx("dlStatNote", "dlStatNoteOk")}>On track</span>
           </div>
@@ -384,7 +384,7 @@ export function DeliverablesPage({
           const availableFiles = files.filter((file) => file.clientId === group.clientId);
           return (
             <div key={group.title} className={styles.card}>
-              <div className={styles.cardHeader}>
+              <div className={cx(styles.cardHeader, "rdStudioSection")}>
                 <span className={styles.cardHeaderTitle}>{group.title}</span>
                 <span className={cx("badge", `badge${capitalize(group.badge.tone)}`)}>{group.badge.label}</span>
               </div>
@@ -399,7 +399,7 @@ export function DeliverablesPage({
                     group.items.map((item) => {
                       const statusBadge = item.milestoneStatus ? STATUS_BADGE[item.milestoneStatus] : null;
                       return (
-                        <div key={item.title} className={styles.deliverableItem}>
+                        <div key={item.title} className={cx(styles.deliverableItem, "rdStudioRow")}>
                           <div className={cx("dlCheckIco", item.status && `deliverable${capitalize(item.status)}`)}>
                             {item.status === "done" ? <IcoDone /> : item.status === "doing" ? <IcoDoing /> : <IcoPending />}
                           </div>

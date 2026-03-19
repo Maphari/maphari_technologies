@@ -135,7 +135,7 @@ export function DashboardPage({
   const nextDueText = daysLeft !== null ? `${daysLeft} days` : nextDueLabel;
 
   return (
-    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-dashboard">
+    <section className={cx("page", "pageBody", "rdStudioPage", isActive && "pageActive")} id="page-dashboard">
       <div className={cx("pageHeaderBar")}>
         <div className={cx("flexBetween", "gap24", "mb20")}>
           <div>
@@ -153,35 +153,35 @@ export function DashboardPage({
       </div>
 
       <div className={styles.staffDashSummaryGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Open Tasks</div>
-          <div className={cx(styles.statValue, "colorAccent")}>{openTasksCount}</div>
+        <div className={cx(styles.statCard, "rdStudioCard")}>
+          <div className={cx(styles.statLabel, "rdStudioLabel")}>Open Tasks</div>
+          <div className={cx(styles.statValue, "colorAccent", "rdStudioMetric")}>{openTasksCount}</div>
           <div className={cx("text11", highPriorityTasksCount > 0 ? "colorAmber" : "colorMuted")}>
             {highPriorityTasksCount} high priority
           </div>
         </div>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Client Messages</div>
-          <div className={cx(styles.statValue, "colorBlue")}>{openConversationsCount}</div>
+        <div className={cx(styles.statCard, "rdStudioCard")}>
+          <div className={cx(styles.statLabel, "rdStudioLabel")}>Client Messages</div>
+          <div className={cx(styles.statValue, "colorBlue", "rdStudioMetric")}>{openConversationsCount}</div>
           <div className={cx("text11", "colorMuted")}>Awaiting response</div>
         </div>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Delivery Risk</div>
-          <div className={cx(styles.statValue, overdueCount > 0 ? "colorRed" : "colorAccent")}>{overdueCount}</div>
+        <div className={cx(styles.statCard, "rdStudioCard")}>
+          <div className={cx(styles.statLabel, "rdStudioLabel")}>Delivery Risk</div>
+          <div className={cx(styles.statValue, overdueCount > 0 ? "colorRed" : "colorAccent", "rdStudioMetric", overdueCount > 0 ? "rdStudioMetricNeg" : "")}>{overdueCount}</div>
           <div className={cx("text11", overdueCount > 0 ? "colorRed" : "colorMuted")}>
             {overdueCount > 0 ? "Needs attention" : "No overdue items"}
           </div>
         </div>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Hours This Week</div>
-          <div className={cx(styles.statValue, "colorAmber")}>{(weekMinutes / 60).toFixed(1)}</div>
+        <div className={cx(styles.statCard, "rdStudioCard")}>
+          <div className={cx(styles.statLabel, "rdStudioLabel")}>Hours This Week</div>
+          <div className={cx(styles.statValue, "colorAmber", "rdStudioMetric", "rdStudioMetricWarn")}>{(weekMinutes / 60).toFixed(1)}</div>
           <div className={cx("text11", "colorMuted")}>Today: {formatDuration(todayMinutes)}</div>
         </div>
       </div>
 
       <div className={styles.staffDashMainGrid}>
         <div className={styles.card}>
-          <div className={styles.cardHeader}>
+          <div className={cx(styles.cardHeader, "rdStudioSection")}>
             <span className={styles.cardHeaderTitle}>Priority Tasks Today</span>
             <button className={cx(styles.cardLinkButton, styles.staffDashLinkButton)} type="button" onClick={onGoTasks}>All tasks →</button>
           </div>
@@ -490,7 +490,7 @@ export function DashboardPage({
         </div>
 
         <div className={styles.card}>
-          <div className={styles.cardHeader}><span className={styles.cardHeaderTitle}>SLA Watchlist</span></div>
+          <div className={cx(styles.cardHeader, "rdStudioSection")}><span className={styles.cardHeaderTitle}>SLA Watchlist</span></div>
           <div className={styles.cardBody}>
             {slaWatchlist.length === 0 ? (
               <div className={styles.emptyState}>No SLA deadlines in the next 7 days.</div>
@@ -568,7 +568,7 @@ export function DashboardPage({
         </div>
 
         <div className={cx("card", "fullWidth")}>
-          <div className={styles.cardHeader}><span className={styles.cardHeaderTitle}>Recent Activity</span></div>
+          <div className={cx(styles.cardHeader, "rdStudioSection")}><span className={styles.cardHeaderTitle}>Recent Activity</span></div>
           <div className={cx("cardBody", "pt8", "pb8")}>
             <div className={styles.activityList}>
               {activityFeed.length === 0 ? (

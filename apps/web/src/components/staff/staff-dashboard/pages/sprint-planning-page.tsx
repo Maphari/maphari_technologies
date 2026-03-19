@@ -280,7 +280,7 @@ export function SprintPlanningPage({
   }
 
   return (
-    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-sprint-planning">
+    <section className={cx("page", "pageBody", "rdStudioPage", isActive && "pageActive")} id="page-sprint-planning">
       <div className={cx("pageHeaderBar", "spHeaderBar")}>
         <div className={cx("flexBetween", "mb16")}>
           <div>
@@ -293,15 +293,15 @@ export function SprintPlanningPage({
 
           <div className={cx("spTopStats")}>
             <div className={cx("textRight")}>
-              <div className={cx("statLabelNew")}>Capacity used</div>
-              <div className={cx("statValueNew", burnToneClass)}>
+              <div className={cx("statLabelNew", "rdStudioLabel")}>Capacity used</div>
+              <div className={cx("statValueNew", burnToneClass, "rdStudioMetric", burnPct > 90 ? "rdStudioMetricNeg" : burnPct > 70 ? "rdStudioMetricWarn" : "rdStudioMetricPos")}>
                 {totalEstimate}h <span className={cx("spCapacityBase")}>/ {sprintCapacity}h</span>
               </div>
               <progress className={cx("progressMeter", "spCapacityMeter", burnMeterClass)} max={100} value={Math.min(burnPct, 100)} />
             </div>
             <div className={cx("textRight")}>
-              <div className={cx("statLabelNew")}>Done</div>
-              <div className={cx("statValueNew", "spDoneValue")}>{doneCount}/{sprint.length}</div>
+              <div className={cx("statLabelNew", "rdStudioLabel")}>Done</div>
+              <div className={cx("statValueNew", "spDoneValue", "rdStudioMetric", "rdStudioMetricPos")}>{doneCount}/{sprint.length}</div>
             </div>
           </div>
         </div>
@@ -363,9 +363,9 @@ export function SprintPlanningPage({
                     }
                   }}
                 >
-                  <div className={cx("spDayHead")}>
+                  <div className={cx("spDayHead", "rdStudioSection")}>
                     <div>
-                      <div className={cx("spDayName")}>{day}</div>
+                      <div className={cx("spDayName", "rdStudioLabel")}>{day}</div>
                       <div className={cx("spDayDate")}>{formatDate(sprintStart, dayIndex)}</div>
                     </div>
                     <div className={cx("spDayHours", dayHours > 8 && "spDayHoursWarn")}>{dayHours}h</div>
@@ -438,7 +438,7 @@ export function SprintPlanningPage({
                   {tasks.map((task) => {
                     const client = clients.find((candidate) => candidate.id === task.clientId);
                     return (
-                      <div key={task.id} className={cx("spListTaskRow", task.status === "done" && "spTaskDoneRow")}>
+                      <div key={task.id} className={cx("spListTaskRow", task.status === "done" && "spTaskDoneRow", "rdStudioRow")}>
                         <button type="button" className={cx("spStatusBtn", "spStatusBtnLg", statusToneClass(task.status), task.status === "done" && "spStatusDoneFill")} onClick={() => cycleStatus(task.id)}>
                           {task.status === "done" ? "✓" : task.status === "in_progress" ? "◉" : ""}
                         </button>

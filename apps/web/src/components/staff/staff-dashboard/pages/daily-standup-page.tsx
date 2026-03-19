@@ -156,7 +156,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
   }
 
   return (
-    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-standup">
+    <section className={cx("page", "pageBody", "rdStudioPage", isActive && "pageActive")} id="page-standup">
       {/* ── Page header ── */}
       <div className={cx("pageHeaderBar", "borderB", "pb0", "mb16")}>
         <div className={cx("flexBetween", "gap24", "mb24")}>
@@ -228,7 +228,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
             ) : (
               <div className={cx("flexCol", "gap22", "dsFormWrap")}>
                 <div>
-                  <label className={cx("dsFormLabel")}>What did you complete yesterday?</label>
+                  <label className={cx("dsFormLabel", "rdStudioLabel")}>What did you complete yesterday?</label>
                   <textarea
                     value={fields.yesterday}
                     onChange={(event) => setFields((prev) => ({ ...prev, yesterday: event.target.value }))}
@@ -238,7 +238,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
                 </div>
 
                 <div>
-                  <label className={cx("dsFormLabel")}>What&apos;s your focus today?</label>
+                  <label className={cx("dsFormLabel", "rdStudioLabel")}>What&apos;s your focus today?</label>
                   <textarea
                     value={fields.today_plan}
                     onChange={(event) => setFields((prev) => ({ ...prev, today_plan: event.target.value }))}
@@ -326,7 +326,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
 
           {/* Right: tasks + week grid + mood chart */}
           <div className={cx("dsLogRight")}>
-            <div className={cx("dsSectionLabel", "mb16")}>Today&apos;s Top 3</div>
+            <div className={cx("dsSectionLabel", "mb16", "rdStudioSection")}>Today&apos;s Top 3</div>
             <div className={cx("flexCol", "gap8", "mb24")}>
               {topTaskLoading ? (
                 <div className={cx("text12", "colorMuted2")}>Loading tasks…</div>
@@ -356,7 +356,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
             </div>
 
             <div className={cx("mb24")}>
-              <div className={cx("dsSectionLabel", "mb12")}>This Week</div>
+              <div className={cx("dsSectionLabel", "mb12", "rdStudioSection")}>This Week</div>
               <div className={cx("flexRow", "gap6")}>
                 {["M", "T", "W", "T", "F"].map((label, index) => {
                   const done    = index < 4;
@@ -381,7 +381,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
             </div>
 
             <div>
-              <div className={cx("dsSectionLabel", "mb12")}>Recent Mood</div>
+              <div className={cx("dsSectionLabel", "mb12", "rdStudioSection")}>Recent Mood</div>
               <div className={cx("dsMoodChart")}>
                 {standups.map((entry, index) => (
                   <div key={index} className={cx("dsMoodChartCol")}>
@@ -467,7 +467,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
                 },
               ].map((item) => (
                 <div key={item.label}>
-                  <div className={cx("dsSectionLabel", "mb8")}>{item.label}</div>
+                  <div className={cx("dsSectionLabel", "mb8", "rdStudioLabel")}>{item.label}</div>
                   <div className={cx(item.warn ? "dsHistoryBlockerCard" : "dsHistoryTextCard")}>{item.value}</div>
                 </div>
               ))}
