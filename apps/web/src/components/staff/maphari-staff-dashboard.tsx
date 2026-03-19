@@ -1235,7 +1235,7 @@ export function MaphariStaffDashboard() {
 
             <MyOnboardingPage isActive={activePage === "myonboarding"} session={session} />
 
-            <MyLeavePage isActive={activePage === "myleave"} session={session} />
+            <MyLeavePage isActive={activePage === "myleave"} session={session} onNotify={(tone, msg) => setFeedback({ tone, message: msg })} />
 
             <AppointmentsPage isActive={activePage === "appointments"} session={session ?? null} />
 
