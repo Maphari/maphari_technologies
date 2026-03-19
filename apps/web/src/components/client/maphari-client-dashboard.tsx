@@ -113,6 +113,7 @@ import { getPortalPreferenceWithRefresh, setPortalPreferenceWithRefresh } from "
 import { inferCountryFromLocale, currencyFromCountry } from "@/lib/i18n/currency";
 import { loadPortalProfileWithRefresh, type PortalClientProfile } from "@/lib/api/portal/profile";
 import { loadPortalBrandingWithRefresh, type ClientBranding } from "@/lib/api/portal/brand";
+import { disconnectGoogleCalendarWithRefresh } from "@/lib/api/portal/integrations";
 import { saveSession } from "@/lib/auth/session";
 
 // ── Command search constants ──────────────────────────────────────────────────
@@ -562,8 +563,22 @@ export function MaphariClientDashboard() {
                 integrations={[]}
                 sessions={[]}
                 onToggleNotification={handleToggleNotification}
-                onDisconnectIntegration={() => {}}
-                onRevokeSession={() => {}}
+                onDisconnectIntegration={(id) => {
+                  if (!session) return;
+                  if (id === "google-calendar") {
+                    void disconnectGoogleCalendarWithRefresh(session).then((result) => {
+                      if (result.nextSession) saveSession(result.nextSession);
+                      if (result.data?.disconnected) {
+                        setFeedback({ tone: "success", message: "Google Calendar disconnected." });
+                      } else {
+                        setFeedback({ tone: "error", message: "Failed to disconnect integration." });
+                      }
+                    });
+                  }
+                }}
+                onRevokeSession={(_id) => {
+                  setFeedback({ tone: "info", message: "Session management is handled via your admin. Contact support to revoke a session." });
+                }}
                 theme={themeHook.theme}
                 onToggleTheme={themeHook.toggleTheme}
                 mode="security"
