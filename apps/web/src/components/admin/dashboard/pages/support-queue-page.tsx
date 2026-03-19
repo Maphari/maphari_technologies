@@ -102,6 +102,18 @@ export function SupportQueuePage({
     setSaving(false);
   }
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -160,9 +172,7 @@ export function SupportQueuePage({
       <article className={styles.card}>
         <div className={styles.cardHd}><span className={styles.cardHdTitle}>Active Tickets</span></div>
         <div className={styles.cardInner}>
-          {loading ? (
-            <div className={cx("colorMuted", "text13", "p24", "textCenter")}>Loading…</div>
-          ) : tickets.length === 0 ? (
+          {tickets.length === 0 ? (
             <div className={styles.emptyState}>
                 <div className={styles.emptyIcon}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">

@@ -149,6 +149,18 @@ export function SprintBoardAdminPage({ session, onNotify }: Props) {
   const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS");
   const doneTasks = tasks.filter((t) => t.status === "DONE");
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody)}>
       {/* ── Header ── */}
@@ -210,12 +222,8 @@ export function SprintBoardAdminPage({ session, onNotify }: Props) {
         ))}
       </div>
 
-      {loading && (
-        <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading sprints…</div>
-      )}
-
       {/* ── Sprint cards grid ── */}
-      {!loading && activeTab === "active" && (
+      {activeTab === "active" && (
         <>
           {tabSprints.length === 0 ? (
             <div className={styles.teamSection}>
@@ -294,7 +302,7 @@ export function SprintBoardAdminPage({ session, onNotify }: Props) {
         </>
       )}
 
-      {!loading && activeTab !== "active" && (
+      {activeTab !== "active" && (
         <div className={styles.teamSection}>
           <div className={styles.teamSectionHeader}>
             <span className={styles.teamSectionTitle}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>

@@ -105,14 +105,12 @@ export function TeamStructurePage({ session, onNotify, onNavigate }: Props) {
 
   if (loading) {
     return (
-      <div className={cx(styles.pageBody, styles.teamRoot)}>
-        <div className={styles.pageHeader}>
-          <div>
-            <div className={styles.pageEyebrow}>ADMIN / ORGANIZATIONAL STRUCTURE</div>
-            <h1 className={styles.pageTitle}>Team Structure</h1>
-          </div>
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-        <div className={cx("colorMuted", "text13")}>Loading team data…</div>
       </div>
     );
   }

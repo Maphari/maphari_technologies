@@ -120,6 +120,18 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
 
   const outstandingInvoices = invoices.filter((i) => i.status === "ISSUED" || i.status === "OVERDUE");
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody, styles.revfRoot, "rdStudioPage")}>
       {/* ── Header ── */}
@@ -162,12 +174,8 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
         </select>
       </div>
 
-      {loading && (
-        <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading invoices…</div>
-      )}
-
       {/* ── 6-month forecast ── */}
-      {!loading && activeTab === "6-month forecast" && (
+      {activeTab === "6-month forecast" && (
         <div className={styles.revfStack20}>
           <div className={cx(styles.revfChartCard, "rdStudioCard")}>
             <div className={cx(styles.revfSectionTitle, "rdStudioSection")}>6-Month Revenue Forecast</div>
@@ -229,7 +237,7 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
       )}
 
       {/* ── Monthly breakdown ── */}
-      {!loading && activeTab === "monthly breakdown" && (
+      {activeTab === "monthly breakdown" && (
         <div className={styles.revfStack14}>
           {months.length === 0 && (
             <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No invoice data available.</div>
@@ -274,7 +282,7 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
       )}
 
       {/* ── Outstanding ── */}
-      {!loading && activeTab === "outstanding" && (
+      {activeTab === "outstanding" && (
         <div className={styles.revfStack14}>
           <div className={styles.revfPipelineSummary}>
             <div>

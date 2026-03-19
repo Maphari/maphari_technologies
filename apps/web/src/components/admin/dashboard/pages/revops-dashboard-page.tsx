@@ -243,6 +243,18 @@ export function RevOpsPage() {
   }, [mrrHistory]);
 
   // ── JSX ───────────────────────────────────────────────────────────────────
+  if (loadingMrr) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody, "rdStudioPage")}>
       <div className={styles.pageHeader}>
@@ -313,7 +325,6 @@ export function RevOpsPage() {
         <div className={styles.revopsSplit}>
           <div className={cx("card", "p24")}>
             <div className={cx(styles.revopsSecTitle, "rdStudioSection")}>MRR Movement — 7 Months</div>
-            {loadingMrr && <div className={cx("colorMuted", "text12")}>Loading revenue data…</div>}
             <div className={styles.revopsChartBars}>
               {mrrHistory.map((m, i) => {
                 const h = (m.mrr / maxMRR) * 120;

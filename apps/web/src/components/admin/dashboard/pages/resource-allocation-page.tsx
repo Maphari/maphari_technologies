@@ -152,14 +152,12 @@ export function ResourceAllocationPage({ session, onNotify }: Props) {
 
   if (loading) {
     return (
-      <div className={styles.pageBody}>
-        <div className={styles.pageHeader}>
-          <div>
-            <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
-            <h1 className={styles.pageTitle}>Resource Allocation</h1>
-          </div>
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-        <div className={cx("colorMuted", "text13")}>Loading resource data…</div>
       </div>
     );
   }

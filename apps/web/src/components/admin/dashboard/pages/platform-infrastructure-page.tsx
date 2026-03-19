@@ -73,6 +73,8 @@ export function PlatformInfrastructurePage({
   const [flags, setFlags] = useState<FeatureFlag[]>([]);
   const [flagsLoading, setFlagsLoading] = useState(false);
   const [togglingKey, setTogglingKey] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setLastRefresh(new Date()), 30_000);
@@ -81,14 +83,17 @@ export function PlatformInfrastructurePage({
 
   // ── Load feature flags (seed defaults if empty) ────────────────────────────
   const loadFlags = useCallback(async () => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setFlagsLoading(true);
+    setError(null);
     try {
       const r = await loadFeatureFlagsWithRefresh(session);
       if (r.nextSession) saveSession(r.nextSession);
       if (r.data && r.data.length > 0) {
         setFlags(r.data);
-      } else if (!r.error) {
+      } else if (r.error) {
+        setError(r.error.message ?? "Failed to load.");
+      } else {
         // Seed defaults into DB on first visit
         const created: FeatureFlag[] = [];
         for (const def of DEFAULT_FLAGS) {
@@ -109,6 +114,7 @@ export function PlatformInfrastructurePage({
       }
     } finally {
       setFlagsLoading(false);
+      setLoading(false);
     }
   }, [session]);
 
@@ -147,6 +153,30 @@ export function PlatformInfrastructurePage({
 
   const overallHealth: ServiceStatus = downCount > 0 ? "down" : unknownCount > 0 ? "unknown" : "healthy";
   const cfg = statusConfig[overallHealth];
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx(styles.pageBody, styles.pifRoot)}>

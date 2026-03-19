@@ -177,6 +177,18 @@ export function TimelineGanttPage() {
     })
     .sort((a, b) => dayOffset(a.deadline) - dayOffset(b.deadline));
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -192,7 +204,7 @@ export function TimelineGanttPage() {
             disabled={loading}
             className={cx("btnSm", "btnGhost")}
           >
-            {loading ? "Loading…" : "↻ Refresh"}
+            ↻ Refresh
           </button>
         </div>
       </div>
@@ -213,15 +225,8 @@ export function TimelineGanttPage() {
         ))}
       </div>
 
-      {/* Loading / empty state */}
-      {loading && (
-        <article className={styles.card}>
-          <div className={cx(styles.cardHd)}><span className={styles.cardHdTitle}>Loading…</span></div>
-          <div className={cx(styles.cardInner, "text12", "colorMuted")}>Fetching project timelines…</div>
-        </article>
-      )}
-
-      {!loading && projects.length === 0 && (
+      {/* Empty state */}
+      {projects.length === 0 && (
         <div className={cx(styles.card, styles.cardInner, "textCenter")}>
           <div className={cx("text13", "mb4")}>No active projects</div>
           <div className={cx("text12", "colorMuted")}>Projects will appear here once created and scheduled.</div>
@@ -229,7 +234,7 @@ export function TimelineGanttPage() {
       )}
 
       {/* Gantt chart */}
-      {!loading && projects.length > 0 && (
+      {projects.length > 0 && (
         <div className={cx("card", styles.timelineScrollShell)}>
           <div className={styles.timelineScrollInner}>
             {/* Month header */}
@@ -341,7 +346,7 @@ export function TimelineGanttPage() {
       )}
 
       {/* Upcoming deadlines */}
-      {!loading && upcomingDeadlines.length > 0 && (
+      {upcomingDeadlines.length > 0 && (
         <div className={cx("mt24")}>
           <div className={cx("text13", "fw700", "mb16", "uppercase", "timelineTracking")}>Upcoming Deadlines — Next 30 Days</div>
           <div className={cx("flexCol", "gap10")}>

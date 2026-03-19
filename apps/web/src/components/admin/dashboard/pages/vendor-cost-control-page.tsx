@@ -26,12 +26,18 @@ export function VendorCostControlPage({ session }: { session: AuthSession | null
   const [apiVendors, setApiVendors] = useState<AdminVendor[]>([]);
   const [activeTab,  setActiveTab]  = useState<Tab>("vendor registry");
   const [filterCat,  setFilterCat]  = useState<VendorCategory | "All">("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     void loadVendorsWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setApiVendors(r.data);
+      if (r.error) setError(r.error.message ?? "Failed to load.");
+      else if (r.data) setApiVendors(r.data);
+      setLoading(false);
     });
   }, [session]);
 
@@ -70,6 +76,30 @@ export function VendorCostControlPage({ session }: { session: AuthSession | null
     if (v.renewalDate === "Per project" || v.renewalDate === "Per order") return false;
     return new Date(v.renewalDate) < new Date(Date.now() + 60 * 86_400_000);
   }).length;
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.pageBody}>

@@ -156,12 +156,17 @@ export function RecruitmentPipelinePage({ session }: { session: AuthSession | nu
   const [expanded, setExpanded] = useState<string>("");
   const [apiPostings, setApiPostings] = useState<AdminJobPosting[]>([]);
   const [apiApps, setApiApps] = useState<Record<string, AdminJobApplication[]>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     loadJobPostingsWithRefresh(session).then(async (pr) => {
       if (pr.nextSession) saveSession(pr.nextSession);
-      if (pr.error || !pr.data) return;
+      if (pr.error) { setError(pr.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (!pr.data) { setLoading(false); return; }
       const postings = pr.data;
       setApiPostings(postings);
       if (postings.length > 0) setExpanded(postings[0].id.slice(0, 8).toUpperCase());
@@ -176,6 +181,7 @@ export function RecruitmentPipelinePage({ session }: { session: AuthSession | nu
         appMap[postings[i].id] = r.data ?? [];
       }
       setApiApps(appMap);
+      setLoading(false);
     });
   }, [session]);
 
@@ -190,6 +196,30 @@ export function RecruitmentPipelinePage({ session }: { session: AuthSession | nu
   const conversionRate = Math.round((totalInterviewed / Math.max(totalApplications, 1)) * 100);
 
   const candidatesFlat = roles.flatMap((r) => r.candidates.map((c) => ({ ...c, roleName: r.title, roleId: r.id })));
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx(styles.pageBody, styles.rcpRoot)}>

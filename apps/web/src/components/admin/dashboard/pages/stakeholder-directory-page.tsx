@@ -76,6 +76,18 @@ export function StakeholderDirectoryPage({ session }: { session: AuthSession | n
 
   const totalContacts = groups.reduce((s, g) => s + g.contacts.length, 0);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
 
@@ -100,9 +112,9 @@ export function StakeholderDirectoryPage({ session }: { session: AuthSession | n
       {/* ── Stats ── */}
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Clients",         value: loading ? "…" : String(groups.length)   },
-          { label: "Total Contacts",  value: loading ? "…" : String(totalContacts)   },
-          { label: "Primary Contacts",value: loading ? "…" : String(groups.reduce((s, g) => s + g.contacts.filter((c) => c.isPrimary).length, 0)) },
+          { label: "Clients",         value: String(groups.length)   },
+          { label: "Total Contacts",  value: String(totalContacts)   },
+          { label: "Primary Contacts",value: String(groups.reduce((s, g) => s + g.contacts.filter((c) => c.isPrimary).length, 0)) },
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}>{s.label}</div>
@@ -112,9 +124,7 @@ export function StakeholderDirectoryPage({ session }: { session: AuthSession | n
       </div>
 
       {/* ── Content ── */}
-      {loading ? (
-        <div className={cx("colorMuted", "text12", "py24")}>Loading stakeholder directory…</div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className={cx("colorMuted", "text12", "textCenter", "py32")}>
           {search ? `No contacts match "${search}".` : "No clients or contacts found."}
         </div>

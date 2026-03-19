@@ -37,12 +37,18 @@ function fmtLastActivity(iso: string | null): string {
 export function LoyaltyCreditsPage({ session }: { session: AuthSession | null }) {
   const [apiAccounts, setApiAccounts] = useState<AdminLoyaltyAccount[]>([]);
   const [activeTab,   setActiveTab]   = useState<Tab>("members");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     void loadLoyaltyAccountsWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setApiAccounts(r.data);
+      if (r.error) setError(r.error.message ?? "Failed to load.");
+      else if (r.data) setApiAccounts(r.data);
+      setLoading(false);
     });
   }, [session]);
 
@@ -68,6 +74,30 @@ export function LoyaltyCreditsPage({ session }: { session: AuthSession | null })
     all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return all.slice(0, 30);
   }, [members]);
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx(styles.pageBody)}>

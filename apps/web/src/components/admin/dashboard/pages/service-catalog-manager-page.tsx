@@ -122,6 +122,18 @@ export function ServiceCatalogManagerPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
       {/* Header */}
@@ -165,10 +177,8 @@ export function ServiceCatalogManagerPage() {
         ))}
       </div>
 
-      {loading && <div className={cx("colorMuted", "text12", "mb12")}>Loading catalog…</div>}
-
       {/* ── Packages view ─────────────────────────────────────────────────────── */}
-      {!loading && view === "packages" && (
+      {view === "packages" && (
         <div className={styles.pricTableCard}>
           <div className={styles.pricTableInner}>
             <div className={cx(styles.pricTableHead, "fontMono", "text10", "colorMuted", "uppercase")}>
@@ -245,7 +255,7 @@ export function ServiceCatalogManagerPage() {
       )}
 
       {/* ── Add-ons view ──────────────────────────────────────────────────────── */}
-      {!loading && view === "addons" && (
+      {view === "addons" && (
         <div className={styles.pricTableCard}>
           <div className={styles.pricTableInner}>
             <div className={cx(styles.pricTableHead, "fontMono", "text10", "colorMuted", "uppercase")}>

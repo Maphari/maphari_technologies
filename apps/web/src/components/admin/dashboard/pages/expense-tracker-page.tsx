@@ -38,17 +38,23 @@ export function ExpenseTrackerPage({ session }: { session: AuthSession | null })
   const [apiBudgets,  setApiBudgets]    = useState<AdminExpenseBudget[]>([]);
   const [activeTab,   setActiveTab]     = useState<Tab>("expense log");
   const [filterStatus, setFilterStatus] = useState<"All" | "approved" | "pending" | "flagged">("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     void Promise.all([
       loadExpensesWithRefresh(session),
       loadExpenseBudgetsWithRefresh(session),
     ]).then(([er, br]) => {
       if (er.nextSession) saveSession(er.nextSession);
       else if (br.nextSession) saveSession(br.nextSession);
-      if (!er.error && er.data) setApiExpenses(er.data);
+      if (er.error) setError(er.error.message ?? "Failed to load.");
+      else if (er.data) setApiExpenses(er.data);
       if (!br.error && br.data) setApiBudgets(br.data);
+      setLoading(false);
     });
   }, [session]);
 
@@ -92,6 +98,30 @@ export function ExpenseTrackerPage({ session }: { session: AuthSession | null })
     if (r.nextSession) saveSession(r.nextSession);
     if (!r.error) setApiExpenses((prev) => prev.map((e) => e.id === rawId ? { ...e, status: "APPROVED" } : e));
   };
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx(styles.pageBody, styles.expenseRoot)}>

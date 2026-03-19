@@ -13,7 +13,6 @@ import {
   type UtilisationRow,
   type UtilisationSummary,
 } from "../../../../lib/api/admin/utilisation";
-import { SkeletonTable } from "@/components/shared/ui/page-skeleton";
 import { Tooltip } from "@/components/shared/ui/tooltip";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -83,6 +82,18 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
   const atTarget  = staff.filter((r) => r.utilisationRate >= r.target).length;
   const watchlist = staff.filter((r) => r.utilisationRate < 60).length;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -114,7 +125,7 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
         <div className={styles.statCard}>
           <div className={styles.statLabel}>Avg Billable Rate</div>
           <div className={cx(styles.statValue, summary && summary.avgBillableRate >= 75 ? "colorAccent" : summary && summary.avgBillableRate >= 60 ? "colorAmber" : "colorRed")}>
-            {loading ? "—" : `${summary?.avgBillableRate ?? 0}%`}
+            {`${summary?.avgBillableRate ?? 0}%`}
           </div>
           <div className={cx("text11", "colorMuted")}>Team average · Target: 75%</div>
         </div>
@@ -122,7 +133,7 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
         <div className={styles.statCard}>
           <div className={styles.statLabel}>Total Billable Hours</div>
           <div className={cx(styles.statValue, "colorBlue")}>
-            {loading ? "—" : `${summary?.totalBillableHours ?? 0}h`}
+            {`${summary?.totalBillableHours ?? 0}h`}
           </div>
           <div className={cx("text11", "colorMuted")}>{PERIOD_LABELS[period]}</div>
         </div>
@@ -130,7 +141,7 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
         <div className={styles.statCard}>
           <div className={styles.statLabel}>Team Size</div>
           <div className={cx(styles.statValue, "colorAccent")}>
-            {loading ? "—" : `${summary?.teamSize ?? 0}`}
+            {`${summary?.teamSize ?? 0}`}
           </div>
           <div className={cx("text11", "colorMuted")}>Active staff</div>
         </div>
@@ -138,7 +149,7 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
         <div className={styles.statCard}>
           <div className={styles.statLabel}>At or Above Target</div>
           <div className={cx(styles.statValue, atTarget === staff.length && staff.length > 0 ? "colorAccent" : "colorAmber")}>
-            {loading ? "—" : `${atTarget} / ${staff.length}`}
+            {`${atTarget} / ${staff.length}`}
           </div>
           <div className={cx("text11", "colorMuted")}>≥ 75% utilisation</div>
         </div>
@@ -168,11 +179,8 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
           <span className={styles.sutCell}>Trend bar</span>
         </div>
 
-        {/* Loading skeleton */}
-        {loading && <SkeletonTable rows={5} cols={6} />}
-
         {/* Empty state */}
-        {!loading && staff.length === 0 && (
+        {staff.length === 0 && (
           <div className={cx("p24", "textCenter", "colorMuted", "text13")}>
             <div className={cx("fw700", "text14", "mb8")}>No utilisation data yet</div>
             <div>Utilisation data will populate here once staff complete time entries on client projects.</div>

@@ -187,6 +187,18 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
     await refreshAll(result.nextSession);
   }
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody, styles.staffAccessRoot)}>
       <div className={styles.pageHeader}>
@@ -365,7 +377,6 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
           </div>
         ) : null}
 
-        {loading ? <div className={cx("mt12", "text12", "colorMuted", "fontMono")}>Refreshing staff access data...</div> : null}
       </div>
     </div>
   );

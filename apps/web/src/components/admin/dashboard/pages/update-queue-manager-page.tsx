@@ -99,6 +99,18 @@ export function UpdateQueueManagerPage({ session, onNotify }: Props) {
     ? Math.round(submissions.reduce((s, d) => s + confidenceBadge(d.status), 0) / submissions.length)
     : 0;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -122,9 +134,7 @@ export function UpdateQueueManagerPage({ session, onNotify }: Props) {
         ))}
       </div>
 
-      {loading && <div className={cx("colorMuted", "text13")}>Loading submissions…</div>}
-
-      {!loading && submissions.length === 0 && (
+      {submissions.length === 0 && (
         <div className={cx("card", "p24", "text13", "colorMuted")}>No content submissions found.</div>
       )}
 

@@ -166,6 +166,18 @@ export function TeamPerformanceReportPage({
   }, [staff]);
   const lowEngagement = staff.filter((m) => m.standupCount === 0).length;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -205,13 +217,7 @@ export function TeamPerformanceReportPage({
       />
 
       <div className={cx("overflowAuto", "minH0")}>
-        {loading ? (
-          <div className={cx("colorMuted", "text13", "py32", "textCenter")}>
-            Loading team data…
-          </div>
-        ) : null}
-
-        {!loading && activeTab === "team overview" ? (
+        {activeTab === "team overview" ? (
           <div className={styles.tprList10}>
             {staff.length === 0 ? (
               <div className={cx("colorMuted", "text13", "py24", "textCenter")}>No active staff found.</div>
@@ -261,7 +267,7 @@ export function TeamPerformanceReportPage({
           </div>
         ) : null}
 
-        {!loading && activeTab === "individual profiles" && selected ? (
+        {activeTab === "individual profiles" && selected ? (
           <div className={styles.tprProfileSplit}>
             <div className={styles.tprProfileNav}>
               {staff.map((m) => (
@@ -326,7 +332,7 @@ export function TeamPerformanceReportPage({
           </div>
         ) : null}
 
-        {!loading && activeTab === "utilisation" ? (
+        {activeTab === "utilisation" ? (
           <div className={styles.tprList14}>
             <div className={styles.tprUtilCard}>
               <div className={styles.tprSecTitle}>Team Standup Engagement</div>
@@ -370,7 +376,7 @@ export function TeamPerformanceReportPage({
           </div>
         ) : null}
 
-        {!loading && activeTab === "tasks & output" ? (
+        {activeTab === "tasks & output" ? (
           <div className={styles.tprTableCard}>
             <div className={styles.tprOutputHead}>
               {["Employee", "Department", "Standups", "Peer Reviews", "Avg Score", "Status"].map((h) => (

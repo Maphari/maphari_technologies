@@ -112,13 +112,18 @@ export function LeaveAbsencePage({ session }: { session: AuthSession | null }) {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("All");
   const [apiRequests, setApiRequests] = useState<AdminLeaveRequest[]>([]);
   const [staffLookup, setStaffLookup] = useState<Record<string, { name: string; initials: string; color: string }>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     Promise.all([loadLeaveRequestsWithRefresh(session), loadAllStaffWithRefresh(session)]).then(([lr, sr]) => {
       if (lr.nextSession) saveSession(lr.nextSession);
       else if (sr.nextSession) saveSession(sr.nextSession);
-      if (!lr.error && lr.data) setApiRequests(lr.data);
+      if (lr.error) setError(lr.error.message ?? "Failed to load.");
+      else if (lr.data) setApiRequests(lr.data);
       if (!sr.error && sr.data) {
         const map: Record<string, { name: string; initials: string; color: string }> = {};
         for (const s of sr.data) {
@@ -126,6 +131,7 @@ export function LeaveAbsencePage({ session }: { session: AuthSession | null }) {
         }
         setStaffLookup(map);
       }
+      setLoading(false);
     });
   }, [session]);
 
@@ -167,6 +173,30 @@ export function LeaveAbsencePage({ session }: { session: AuthSession | null }) {
   const totalDaysOut = leaveRequests.filter((r) => r.status === "approved").reduce((s, r) => s + r.days, 0);
   const lowBalance = 0; // leave balance data not available from API
   const filtered = useMemo(() => (filterStatus === "All" ? leaveRequests : leaveRequests.filter((r) => r.status === filterStatus)), [filterStatus, leaveRequests]);
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx(styles.pageBody, styles.lvaRoot)}>

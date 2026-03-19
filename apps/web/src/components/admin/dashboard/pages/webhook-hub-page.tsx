@@ -273,6 +273,18 @@ export function WebhookHubPage({
   const subscribedTopics = new Set(webhooks.flatMap((w) => w.events));
 
   // ── Render ────────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.pageBody)}>
       {/* Header */}
@@ -329,11 +341,7 @@ export function WebhookHubPage({
 
         {/* Right — webhook cards */}
         <div>
-          {loading && (
-            <div className={cx("text12", "colorMuted", "py20")}>Loading webhooks…</div>
-          )}
-
-          {!loading && webhooks.length === 0 && (
+          {webhooks.length === 0 && (
             <div className={cx(styles.emptyState)}>
               <div className={cx(styles.emptyStateTitle)}>No webhooks configured</div>
               <div className={cx(styles.emptyStateSub)}>

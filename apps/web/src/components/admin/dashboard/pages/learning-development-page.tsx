@@ -157,17 +157,23 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
   const [expanded, setExpanded] = useState<string>("");
   const [apiStaff, setApiStaff] = useState<AdminStaffProfile[]>([]);
   const [apiTraining, setApiTraining] = useState<AdminTrainingRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
     Promise.all([loadAllStaffWithRefresh(session), loadAllTrainingWithRefresh(session)]).then(([sr, tr]) => {
       if (sr.nextSession) saveSession(sr.nextSession);
       else if (tr.nextSession) saveSession(tr.nextSession);
-      if (!sr.error && sr.data) {
+      if (sr.error) setError(sr.error.message ?? "Failed to load.");
+      else if (sr.data) {
         setApiStaff(sr.data);
         setExpanded(sr.data[0]?.id ?? "");
       }
       if (!tr.error && tr.data) setApiTraining(tr.data);
+      setLoading(false);
     });
   }, [session]);
 
@@ -190,6 +196,30 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
     Object.fromEntries(staff.map((m) => [m.name, Object.fromEntries(skills.map((s) => [s, 0])) as Record<Skill, number>])),
     [staff]
   );
+
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cx(styles.pageBody, styles.lndRoot)}>
