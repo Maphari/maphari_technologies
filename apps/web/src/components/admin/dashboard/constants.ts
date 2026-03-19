@@ -18,7 +18,6 @@ export const pageTitles: Record<PageId, [string, string]> = {
   payroll: ["Finance", "Payroll Ledger"],
   pricing: ["Finance", "Pricing Control"],
   vendors: ["Finance", "Vendor & Cost Control"],
-  bizdev: ["Operations", "Business Development"],
   portfolio: ["Operations", "Project Portfolio"],
   resources: ["Operations", "Resource Allocation"],
   gantt: ["Operations", "Timeline & Gantt"],

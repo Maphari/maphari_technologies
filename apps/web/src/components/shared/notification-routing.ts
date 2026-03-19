@@ -167,7 +167,6 @@ export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotifi
   payroll: "invoices",
   pricing: "invoices",
   vendors: "invoices",
-  bizdev: "operations",
   portfolio: "projects",
   resources: "operations",
   gantt: "projects",

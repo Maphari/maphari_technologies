@@ -18,7 +18,6 @@ export type PageId =
   | "team"
   | "platform"
   | "brand"
-  | "bizdev"
   | "owner"
   | "market"
   | "portfolio"

@@ -37,7 +37,6 @@ export function NavIcon({ id, className }: { id: PageId; className: string }) {
       );
     case "projects":
     case "portfolio":
-    case "bizdev":
       return (
         <svg viewBox="0 0 16 16" fill="none" className={className}>
           <path d="M2 4.5V13h12V4.5H2Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
