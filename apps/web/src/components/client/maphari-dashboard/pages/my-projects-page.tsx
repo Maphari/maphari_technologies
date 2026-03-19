@@ -121,7 +121,7 @@ export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { pro
               <div className={cx("mb10")}>
                 <div className={cx("flexBetween", "mb4")}>
                   <span className={cx("text11", "colorMuted")}>Progress</span>
-                  <span className={cx("text11", "fw600", "rdStudioMetric", p.progress > 80 ? "rdStudioMetricPos" : "rdStudioMetricWarn")}>{p.progress}%</span>
+                  <span className={cx("text11", "fw600", "rdStudioMetric")}>{p.progress}%</span>
                 </div>
                 <div className={cx("progressTrack")}>
                   <div className={cx("progressFill")} style={{ '--pct': `${p.progress}%` } as React.CSSProperties} />
