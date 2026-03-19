@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { styles } from "./style";
-import Link from "next/link";
 import { DashboardUtilityIcon } from "@/components/shared/dashboard-utility-icon";
 import { ThemeToggle } from "@/components/shared/ui/theme-toggle";
 
@@ -15,6 +14,7 @@ export function AdminTopbar({
   onOpenMessages,
   onLogout,
   onMenuToggle,
+  onOpenHelp,
 }: {
   title: [string, string];
   unreadNotificationsCount: number;
@@ -24,6 +24,7 @@ export function AdminTopbar({
   onOpenMessages: () => void;
   onLogout: () => void;
   onMenuToggle?: () => void;
+  onOpenHelp?: () => void;
 }) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
@@ -97,15 +98,14 @@ export function AdminTopbar({
         >
           <DashboardUtilityIcon kind="messages" className={styles.topbarIcon} />
         </button>
-        <Link
-          href="https://designsystem.digital.gov/components/header/"
-          target="_blank"
-          rel="noreferrer"
+        <button
+          type="button"
           className={`${styles.iconBtn} ${styles.topbarHelpBtn}`}
-          aria-label="Open help docs"
+          aria-label="Open help center"
+          onClick={onOpenHelp}
         >
           <DashboardUtilityIcon kind="help" className={styles.topbarIcon} />
-        </Link>
+        </button>
         <div className={styles.topbarUserMenu} ref={profileMenuRef}>
           <button
             title="Open profile menu"
