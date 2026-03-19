@@ -108,6 +108,18 @@ export function ProjectContextPage({ isActive, session }: { isActive: boolean; s
   );
   const current = projects.find((p) => p.id === selected) ?? null;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-context">
       <div className={cx("pcLayout")}>
@@ -118,9 +130,7 @@ export function ProjectContextPage({ isActive, session }: { isActive: boolean; s
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search projects…" className={cx("pcSearchInput")} />
           </div>
 
-          {loading ? (
-            <div className={cx("pcSidebarSection")}><div className={cx("pcSidebarGroupLabel")}>Loading…</div></div>
-          ) : filtered.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className={cx("pcSidebarSection")}><div className={cx("pcSidebarGroupLabel")}>No projects found</div></div>
           ) : (
             <>
@@ -217,11 +227,11 @@ export function ProjectContextPage({ isActive, session }: { isActive: boolean; s
               ) : null}
             </div>
           </div>
-        ) : !loading ? (
+        ) : (
           <div className={cx("flexCol", "p24")}>
             <div className={cx("text13", "colorMuted2")}>Select a project to view context.</div>
           </div>
-        ) : null}
+        )}
       </div>
     </section>
   );

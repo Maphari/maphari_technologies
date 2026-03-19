@@ -151,15 +151,13 @@ export function MyEmploymentPage({
 
   if (loading) {
     return (
-      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-employment">
-        <div className={cx("pageHeaderBar")}>
-          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / HR</div>
-          <h1 className={cx("pageTitleText")}>My Employment</h1>
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-        <div className={cx("colorMuted", "text12", "py24_0")}>
-          Loading your employment record…
-        </div>
-      </section>
+      </div>
     );
   }
 

@@ -123,6 +123,18 @@ export function PrivateNotesPage({ isActive, session }: { isActive: boolean; ses
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-private-notes">
       {/* Private banner */}
@@ -237,12 +249,7 @@ export function PrivateNotesPage({ isActive, session }: { isActive: boolean; ses
       )}
 
       {/* Notes list */}
-      {loading ? (
-        <div className={cx("emptyState")}>
-          <div className={cx("emptyStateIcon")}><Ic n="loader" sz={20} c="var(--muted2)" /></div>
-          <div className={cx("emptyStateSub")}>Loading notes…</div>
-        </div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}><Ic n="file-text" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No notes found</div>

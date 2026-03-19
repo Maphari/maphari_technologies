@@ -120,6 +120,18 @@ export function MyAnalyticsPage({ isActive, session }: MyAnalyticsPageProps) {
     return Math.round((n / maxHours) * 100);
   }
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-analytics">
       <div className={cx("pageHeaderBar")}>
@@ -130,9 +142,7 @@ export function MyAnalyticsPage({ isActive, session }: MyAnalyticsPageProps) {
 
       {/* ── Metric cards ──────────────────────────────────────────────────── */}
       <div className={cx("anlMetricGrid")}>
-        {loading
-          ? [1, 2, 3, 4, 5, 6].map((n) => <SkeletonMetricCard key={n} />)
-          : metrics.map((m) => (
+        {metrics.map((m) => (
               <div key={m.label} className={cx("anlMetricCard")}>
                 <div className={cx("anlMetricCardTop")}>
                   <div className={cx("anlMetricLabel")}>{m.label}</div>
@@ -151,7 +161,7 @@ export function MyAnalyticsPage({ isActive, session }: MyAnalyticsPageProps) {
       </div>
 
       {/* ── Weekly breakdown ───────────────────────────────────────────────── */}
-      {!loading && weeklyBreakdown.length > 0 && (
+      {weeklyBreakdown.length > 0 && (
         <div className={cx("anlSection")}>
           <div className={cx("anlSectionHeader")}>
             <div className={cx("anlSectionTitle")}>Weekly Breakdown</div>
@@ -197,7 +207,7 @@ export function MyAnalyticsPage({ isActive, session }: MyAnalyticsPageProps) {
       )}
 
       {/* ── Empty state — no time entries yet ──────────────────────────────── */}
-      {!loading && weeklyBreakdown.length === 0 && (
+      {weeklyBreakdown.length === 0 && (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}><Ic n="trending-up" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No activity this period</div>

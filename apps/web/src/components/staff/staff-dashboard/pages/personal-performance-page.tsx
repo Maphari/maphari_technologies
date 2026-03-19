@@ -226,6 +226,18 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
     { key: "milestones", label: "Milestones" },
   ];
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-personal-performance">
       <div className={cx("pageHeaderBar")}>
@@ -251,9 +263,7 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
       {tab === "overview" && (
         <>
           <div className={cx("ppStatGrid5")}>
-            {loading ? (
-              [1, 2, 3, 4, 5].map((n) => <SkeletonStat key={n} />)
-            ) : (
+            {(
               <>
                 <StatCard
                   label="Hours This Week"
@@ -297,14 +307,14 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
             )}
           </div>
 
-          {!loading && weeks.length > 1 && (
+          {weeks.length > 1 && (
             <div className={cx("ppChartCard")}>
               <div className={cx("ppChartLabel")}>Weekly Hours Logged</div>
               <MiniLineChart data={weeks} field="hoursLogged" />
             </div>
           )}
 
-          {!loading && !perf && (
+          {!perf && (
             <div className={cx("emptyState")}>
               <div className={cx("emptyStateIcon")}><Ic n="trending-up" sz={22} c="var(--muted2)" /></div>
               <div className={cx("emptyStateTitle")}>No performance data</div>
@@ -317,11 +327,7 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
       {/* ── Time tab ─────────────────────────────────────────────────────── */}
       {tab === "time" && (
         <div className={cx("ppSection")}>
-          {loading ? (
-            <div className={cx("ppWeekList")}>
-              <SkeletonList count={5} />
-            </div>
-          ) : weeks.length === 0 ? (
+          {weeks.length === 0 ? (
             <div className={cx("emptyState")}>
               <div className={cx("emptyStateIcon")}><Ic n="clock" sz={22} c="var(--muted2)" /></div>
               <div className={cx("emptyStateTitle")}>No time data</div>
@@ -363,11 +369,7 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
       {/* ── Clients tab ──────────────────────────────────────────────────── */}
       {tab === "clients" && (
         <div className={cx("ppSection")}>
-          {loading ? (
-            <div className={cx("ppClientList")}>
-              <SkeletonList count={4} />
-            </div>
-          ) : clients.length === 0 ? (
+          {clients.length === 0 ? (
             <div className={cx("emptyState")}>
               <div className={cx("emptyStateIcon")}><Ic n="users" sz={22} c="var(--muted2)" /></div>
               <div className={cx("emptyStateTitle")}>No client breakdown</div>
@@ -400,11 +402,7 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
       {/* ── Milestones tab ───────────────────────────────────────────────── */}
       {tab === "milestones" && (
         <div className={cx("ppSection")}>
-          {loading ? (
-            <div className={cx("ppMilestoneList")}>
-              <SkeletonList count={5} />
-            </div>
-          ) : milestones.length === 0 ? (
+          {milestones.length === 0 ? (
             <div className={cx("emptyState")}>
               <div className={cx("emptyStateIcon")}><Ic n="flag" sz={22} c="var(--muted2)" /></div>
               <div className={cx("emptyStateTitle")}>No milestone history</div>

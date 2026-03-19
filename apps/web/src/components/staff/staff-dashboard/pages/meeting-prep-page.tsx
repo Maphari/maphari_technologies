@@ -147,6 +147,18 @@ export function MeetingPrepPage({
     { key: "notes",  label: "Call Notes"                          },
   ];
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   if (!loading && meetings.length === 0) {
     return (
       <section
@@ -190,7 +202,7 @@ export function MeetingPrepPage({
         {/* ── Left: meeting list ── */}
         <div className={cx("mpSidebar")}>
           <div className={cx("mpSidebarLabel")}>
-            {loading ? "Loading…" : `Upcoming · ${meetings.length}`}
+            {`Upcoming · ${meetings.length}`}
           </div>
           {meetings.map((item) => {
             const isSelected = selectedId === item.id;

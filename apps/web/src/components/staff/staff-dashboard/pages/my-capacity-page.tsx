@@ -110,6 +110,18 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
   const utilizationPct  = pct(loggedThisWeek, weeklyHours);
   const availableHours  = Math.max(0, weeklyHours - loggedThisWeek);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-capacity">
       <div className={cx("pageHeaderBar")}>
@@ -130,9 +142,7 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
 
       {/* ── Summary stats ──────────────────────────────────────────────────── */}
       <div className={cx("mcStatGrid")}>
-        {loading ? (
-          [1, 2, 3, 4].map((n) => <SkeletonStat key={n} />)
-        ) : (
+        {(
           <>
             {/* Weekly Capacity */}
             <div className={cx("mcStatCard")}>
@@ -190,7 +200,7 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
       </div>
 
       {/* ── Allocation by project ─────────────────────────────────────────── */}
-      {!loading && projects.length > 0 && (
+      {projects.length > 0 && (
         <div className={cx("mcSection")}>
           <div className={cx("mcSectionHeader")}>
             <div className={cx("mcSectionTitle")}>Time Logged by Project</div>
@@ -253,7 +263,7 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
       )}
 
       {/* ── Empty state ───────────────────────────────────────────────────── */}
-      {!loading && projects.length === 0 && (
+      {projects.length === 0 && (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}><Ic n="zap" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No time logged this week</div>
@@ -262,7 +272,7 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
       )}
 
       {/* ── Weekly trend ──────────────────────────────────────────────────── */}
-      {!loading && weekHistory.length > 0 && (
+      {weekHistory.length > 0 && (
         <div className={cx("mcSection")}>
           <div className={cx("mcSectionHeader")}>
             <div className={cx("mcSectionTitle")}>Weekly Trend</div>

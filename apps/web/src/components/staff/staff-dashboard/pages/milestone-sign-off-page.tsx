@@ -133,6 +133,18 @@ export function MilestoneSignOffPage({ isActive, session }: MilestoneSignOffPage
     { key: "REJECTED", label: "Rejected" },
   ];
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-milestone-sign-off">
       <div className={cx("pageHeaderBar")}>
@@ -161,7 +173,7 @@ export function MilestoneSignOffPage({ isActive, session }: MilestoneSignOffPage
       </div>
 
       {/* ── Filter bar ───────────────────────────────────────────────────── */}
-      {!loading && items.length > 0 && (
+      {items.length > 0 && (
         <div className={cx("msoFilterRow")}>
           {FILTERS.map((f) => (
             <button
@@ -182,7 +194,7 @@ export function MilestoneSignOffPage({ isActive, session }: MilestoneSignOffPage
       )}
 
       {/* ── Body ─────────────────────────────────────────────────────────── */}
-      {!loading && items.length === 0 ? (
+      {items.length === 0 ? (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}><Ic n="flag" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No sign-off requests</div>
@@ -193,9 +205,7 @@ export function MilestoneSignOffPage({ isActive, session }: MilestoneSignOffPage
 
           {/* ── List pane ── */}
           <div className={cx("msoListPane")}>
-            {loading
-              ? [1, 2, 3, 4].map((n) => <SkeletonRow key={n} />)
-              : filtered.length === 0
+            {filtered.length === 0
                 ? (
                   <div className={cx("emptyState")}>
                     <div className={cx("emptyStateTitle", "text13")}>No {filter.toLowerCase()} milestones</div>

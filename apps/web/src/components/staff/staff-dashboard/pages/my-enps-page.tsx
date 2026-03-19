@@ -127,6 +127,18 @@ export function MyEnpsPage({
     ? (reviewScores.reduce((s, r) => s + r.score, 0) / reviewScores.length).toFixed(1)
     : "—";
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-enps">
       <div className={cx("pageHeaderBar")}>
@@ -170,7 +182,7 @@ export function MyEnpsPage({
         <div className={cx("enpStatCard")}>
           <div className={cx("enpStatCardTop")}>
             <div className={cx("enpStatLabel")}>Responses</div>
-            <div className={cx("enpStatValue")}>{loading ? "…" : reviewScores.length}</div>
+            <div className={cx("enpStatValue")}>{reviewScores.length}</div>
           </div>
           <div className={cx("enpStatCardDivider")} />
           <div className={cx("enpStatCardBottom")}>
@@ -182,7 +194,7 @@ export function MyEnpsPage({
         <div className={cx("enpStatCard")}>
           <div className={cx("enpStatCardTop")}>
             <div className={cx("enpStatLabel")}>Standups</div>
-            <div className={cx("enpStatValue", "colorAccent")}>{loading ? "…" : standupCount}</div>
+            <div className={cx("enpStatValue", "colorAccent")}>{standupCount}</div>
           </div>
           <div className={cx("enpStatCardDivider")} />
           <div className={cx("enpStatCardBottom")}>
@@ -251,11 +263,7 @@ export function MyEnpsPage({
         </div>
 
         <div className={cx("enpHistoryList")}>
-          {loading ? (
-            <div className={cx("enpHistoryCard", "enpHistoryCardLast")}>
-              <div className={cx("enpHistHead")}><div className={cx("enpHistMonth")}>Loading…</div></div>
-            </div>
-          ) : reviewScores.length === 0 ? (
+          {reviewScores.length === 0 ? (
             <div className={cx("emptyState")}>
               <div className={cx("emptyStateIcon")}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">

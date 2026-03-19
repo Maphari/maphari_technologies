@@ -302,6 +302,18 @@ export function MyReportsPage({
 
   if (!isActive) return null;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-reports">
       <div className={cx("pageHeaderBar")}>
@@ -316,7 +328,7 @@ export function MyReportsPage({
         <div className={cx("rptStatCard")}>
           <div className={cx("rptStatCardTop")}>
             <div className={cx("rptStatLabel")}>Reports</div>
-            <div className={cx("rptStatValue", "colorAccent")}>{loading ? "\u2026" : totalReports}</div>
+            <div className={cx("rptStatValue", "colorAccent")}>{totalReports}</div>
           </div>
           <div className={cx("rptStatCardDivider")} />
           <div className={cx("rptStatCardBottom")}>
@@ -328,7 +340,7 @@ export function MyReportsPage({
         <div className={cx("rptStatCard")}>
           <div className={cx("rptStatCardTop")}>
             <div className={cx("rptStatLabel")}>This Month</div>
-            <div className={cx("rptStatValue", thisMonth > 0 ? "colorGreen" : "colorMuted2")}>{loading ? "\u2026" : thisMonth}</div>
+            <div className={cx("rptStatValue", thisMonth > 0 ? "colorGreen" : "colorMuted2")}>{thisMonth}</div>
           </div>
           <div className={cx("rptStatCardDivider")} />
           <div className={cx("rptStatCardBottom")}>
@@ -340,7 +352,7 @@ export function MyReportsPage({
         <div className={cx("rptStatCard")}>
           <div className={cx("rptStatCardTop")}>
             <div className={cx("rptStatLabel")}>Types</div>
-            <div className={cx("rptStatValue", "colorMuted2")}>{loading ? "\u2026" : typeCount}</div>
+            <div className={cx("rptStatValue", "colorMuted2")}>{typeCount}</div>
           </div>
           <div className={cx("rptStatCardDivider")} />
           <div className={cx("rptStatCardBottom")}>
@@ -352,7 +364,7 @@ export function MyReportsPage({
         <div className={cx("rptStatCard")}>
           <div className={cx("rptStatCardTop")}>
             <div className={cx("rptStatLabel")}>PDF</div>
-            <div className={cx("rptStatValue", "colorMuted2")}>{loading ? "\u2026" : pdfCount}</div>
+            <div className={cx("rptStatValue", "colorMuted2")}>{pdfCount}</div>
           </div>
           <div className={cx("rptStatCardDivider")} />
           <div className={cx("rptStatCardBottom")}>
@@ -429,15 +441,11 @@ export function MyReportsPage({
 
         <div className={cx("rptSectionHeader")}>
           <div className={cx("rptSectionTitle")}>All Reports</div>
-          <span className={cx("rptSectionMeta")}>{loading ? "\u2026" : `${reports.length} REPORTS`}</span>
+          <span className={cx("rptSectionMeta")}>{`${reports.length} REPORTS`}</span>
         </div>
 
         <div className={cx("rptList")}>
-          {loading ? (
-            <div className={cx("rptRow", "rptRowLast", "opacity50", "justifyCenter")} >
-              Loading reports\u2026
-            </div>
-          ) : sorted.length === 0 ? (
+          {sorted.length === 0 ? (
             <div className={cx("rptRow", "rptRowLast", "justifyCenter")} >
               No reports available yet. Log time and complete tasks to generate reports.
             </div>

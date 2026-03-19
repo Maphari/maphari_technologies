@@ -104,6 +104,18 @@ export function InterventionActionsPage({ isActive, session }: InterventionActio
     return (PRIORITY_ORDER[a.priority] ?? 99) - (PRIORITY_ORDER[b.priority] ?? 99);
   });
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-intervention-actions">
       <div className={cx("pageHeaderBar")}>
@@ -114,9 +126,7 @@ export function InterventionActionsPage({ isActive, session }: InterventionActio
 
       {/* ── Summary stats ────────────────────────────────────────────────── */}
       <div className={cx("iavStatGrid")}>
-        {loading ? (
-          [1, 2, 3, 4].map((n) => <SkeletonStat key={n} />)
-        ) : (
+        {(
           <>
             <div className={cx("iavStatCard")}>
               <div className={cx("iavStatCardTop")}>
@@ -170,7 +180,7 @@ export function InterventionActionsPage({ isActive, session }: InterventionActio
       </div>
 
       {/* ── Intervention list ─────────────────────────────────────────────── */}
-      {!loading && interventions.length === 0 ? (
+      {interventions.length === 0 ? (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}><Ic n="check-circle" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No interventions assigned</div>

@@ -165,6 +165,18 @@ export function ProjectBudgetPage({ isActive, session }: ProjectBudgetPageProps)
   const overBudget  = budgetItems.filter((i) => i.spent > i.budget).length;
   const burnPct     = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-project-budget">
       <div className={cx("pageHeaderBar")}>
@@ -176,15 +188,6 @@ export function ProjectBudgetPage({ isActive, session }: ProjectBudgetPageProps)
       {/* ── Summary stat cards ──────────────────────────────────────────── */}
       <div className={cx("pbStatGrid")}>
 
-        {loading ? (
-          <>
-            <SkeletonStat />
-            <SkeletonStat />
-            <SkeletonStat />
-            <SkeletonStat />
-          </>
-        ) : (
-          <>
             {/* Total Budget */}
             <div className={cx("pbStatCard")}>
               <div className={cx("pbStatCardTop")}>
@@ -240,20 +243,12 @@ export function ProjectBudgetPage({ isActive, session }: ProjectBudgetPageProps)
                 </span>
               </div>
             </div>
-          </>
-        )}
 
       </div>
 
       {/* ── Budget project cards ─────────────────────────────────────────── */}
       <div className={cx("flexCol", "gap12")}>
-        {loading ? (
-          <>
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </>
-        ) : budgetItems.length === 0 ? (
+        {budgetItems.length === 0 ? (
           <div className={cx("emptyState")}>
             <div className={cx("emptyStateIcon")}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">

@@ -244,6 +244,18 @@ export function MyIntegrationsPage({ isActive, session, onNotify }: PageProps) {
 
   if (!isActive) return null;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section
       className={cx("page", "pageBody", isActive && "pageActive")}
@@ -253,9 +265,7 @@ export function MyIntegrationsPage({ isActive, session, onNotify }: PageProps) {
         <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Settings</div>
         <h1 className={cx("pageTitleText")}>My Integrations</h1>
         <p className={cx("pageSubtitleText", "mb20")}>
-          {loading
-            ? "Manage your tool connections"
-            : `Manage your tool connections, ${firstName}`}
+          {`Manage your tool connections, ${firstName}`}
         </p>
       </div>
 

@@ -135,11 +135,13 @@ export function OffboardingTasksPage({ isActive, session }: { isActive: boolean;
   // ── Loading state ───────────────────────────────────────────────────────────
   if (loading && tasks.length === 0) {
     return (
-      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-offboarding-tasks">
-        <div className={cx("p24", "colorMuted", "text12", "textCenter")}>
-          Loading offboarding tasks...
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-      </section>
+      </div>
     );
   }
 

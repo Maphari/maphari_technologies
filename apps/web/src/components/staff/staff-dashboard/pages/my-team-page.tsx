@@ -169,6 +169,18 @@ export function MyTeamPage({ isActive, session }: MyTeamPageProps) {
   const deptCount    = new Set(team.map((m) => m.department)).size;
   const escalation   = buildEscalation(team);
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-team">
       <div className={cx("pageHeaderBar")}>
@@ -179,9 +191,7 @@ export function MyTeamPage({ isActive, session }: MyTeamPageProps) {
 
       {/* ── Summary stats ────────────────────────────────────────────────── */}
       <div className={cx("mteStatGrid")}>
-        {loading ? (
-          [1, 2, 3, 4].map((n) => <SkeletonStat key={n} />)
-        ) : (
+        {(
           <>
             <div className={cx("mteStatCard")}>
               <div className={cx("mteStatCardTop")}>
@@ -239,13 +249,11 @@ export function MyTeamPage({ isActive, session }: MyTeamPageProps) {
 
         <div className={cx("mteSectionHeader")}>
           <div className={cx("mteSectionTitle")}>Team Members</div>
-          <span className={cx("mteSectionMeta")}>{loading ? "..." : `${team.length} MEMBERS`}</span>
+          <span className={cx("mteSectionMeta")}>{`${team.length} MEMBERS`}</span>
         </div>
 
         <div className={cx("mteMemberList")}>
-          {loading ? (
-            [1, 2, 3, 4].map((n) => <SkeletonRow key={n} />)
-          ) : team.length === 0 ? (
+          {team.length === 0 ? (
             <div className={cx("mteMemberRow", "justifyCenter", "opacity55", "py32_0")} >
               No team members found
             </div>
@@ -293,21 +301,11 @@ export function MyTeamPage({ isActive, session }: MyTeamPageProps) {
 
         <div className={cx("mteSectionHeader")}>
           <div className={cx("mteSectionTitle")}>Escalation Path</div>
-          <span className={cx("mteSectionMeta")}>{loading ? "..." : `${escalation.length} LEVELS`}</span>
+          <span className={cx("mteSectionMeta")}>{`${escalation.length} LEVELS`}</span>
         </div>
 
         <div className={cx("mteEscalationList")}>
-          {loading ? (
-            [1, 2, 3].map((n) => (
-              <div key={n} className={cx("mteEscalationRow", "opacity45")}>
-                <div className={cx("skeleRect28")} />
-                <div className={cx("flex1", "flexCol", "gap6")}>
-                  <div className={cx("skeleBlock11x35p")} />
-                  <div className={cx("skeleBlock10x25p")} />
-                </div>
-              </div>
-            ))
-          ) : escalation.length === 0 ? (
+          {escalation.length === 0 ? (
             <div className={cx("mteEscalationRow", "justifyCenter", "opacity55", "py32_0")} >
               No escalation path available
             </div>

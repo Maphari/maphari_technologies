@@ -151,6 +151,18 @@ export function MyRisksPage({ isActive, session, onNotify }: PageProps) {
 
   if (!isActive) return null;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-risks">
       <div className={cx("pageHeaderBar")}>
@@ -161,17 +173,8 @@ export function MyRisksPage({ isActive, session, onNotify }: PageProps) {
         </p>
       </div>
 
-      {/* ── Loading ───────────────────────────────────────────────────── */}
-      {loading && (
-        <div className={cx("rskSection")}>
-          <div className={cx("emptyState")}>
-            <div className={cx("emptyStateText")}>Loading risk data…</div>
-          </div>
-        </div>
-      )}
-
       {/* ── Error ─────────────────────────────────────────────────────── */}
-      {!loading && error && (
+      {error && (
         <div className={cx("rskSection")}>
           <div className={cx("emptyState")}>
             <div className={cx("emptyStateTitle")}>Failed to load risks.</div>
@@ -181,7 +184,7 @@ export function MyRisksPage({ isActive, session, onNotify }: PageProps) {
       )}
 
       {/* ── Stats ─────────────────────────────────────────────────────── */}
-      {!loading && !error && (
+      {!error && (
         <div className={cx("rskStatGrid")}>
 
           <div className={cx("rskStatCard")}>
@@ -263,7 +266,7 @@ export function MyRisksPage({ isActive, session, onNotify }: PageProps) {
       )}
 
       {/* ── Risk list ─────────────────────────────────────────────────── */}
-      {!loading && !error && (
+      {!error && (
         <div className={cx("rskSection")}>
           <div className={cx("rskSectionHeader")}>
             <div className={cx("rskSectionTitle")}>All Risks</div>

@@ -227,6 +227,18 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
   const avgProgress = projects.length > 0 ? Math.round(projects.reduce((s, p) => s + p.progress, 0) / projects.length) : 0;
   const atRisk      = projects.filter((p) => p.health === "critical" || p.health === "exceeded").length;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-portfolio">
       <div className={cx("pageHeaderBar")}>
@@ -237,9 +249,7 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
 
       {/* ── Summary stats ────────────────────────────────────────────────── */}
       <div className={cx("pfStatGrid", "mb20")}>
-        {loading ? (
-          [1, 2, 3, 4].map((n) => <SkeletonStat key={n} />)
-        ) : (
+        {(
           <>
             {/* Projects */}
             <div className={cx("pfStatCard")}>
@@ -322,9 +332,7 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
 
         {/* Cards */}
         <div className={cx("pfCardList")}>
-          {loading ? (
-            [1, 2, 3].map((n) => <SkeletonCard key={n} />)
-          ) : filtered.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className={cx("pfEmpty")}>
               {projects.length === 0
                 ? "No projects are currently assigned to you."

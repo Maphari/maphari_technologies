@@ -144,6 +144,18 @@ export function PortalActivityPage({ isActive, session }: { isActive: boolean; s
   const overdueCount   = activities.filter((a) => a.type === "project_overdue").length;
   const completedCount = activities.filter((a) => a.type === "project_completed").length;
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-portal-activity">
       <div className={cx("pageHeaderBar", "borderB", "paHeaderBar")}>
@@ -160,9 +172,9 @@ export function PortalActivityPage({ isActive, session }: { isActive: boolean; s
           </div>
           <div className={cx("flexRow", "gap24", "paTopStats")}>
             {[
-              { label: "Clients",   value: loading ? "..." : clientPills.length,  toneClass: "paToneSoft"                               },
-              { label: "Overdue",   value: loading ? "..." : overdueCount,         toneClass: overdueCount   > 0 ? "paToneAmber" : "paToneMuted" },
-              { label: "Completed", value: loading ? "..." : completedCount,       toneClass: completedCount > 0 ? "paToneGreen" : "paToneMuted" },
+              { label: "Clients",   value: clientPills.length,  toneClass: "paToneSoft"                               },
+              { label: "Overdue",   value: overdueCount,         toneClass: overdueCount   > 0 ? "paToneAmber" : "paToneMuted" },
+              { label: "Completed", value: completedCount,       toneClass: completedCount > 0 ? "paToneGreen" : "paToneMuted" },
             ].map((stat) => (
               <div key={stat.label} className={cx("textRight")}>
                 <div className={cx("text11", "colorMuted2", "uppercase", "mb4", "paStatLabel")}>{stat.label}</div>
@@ -217,9 +229,7 @@ export function PortalActivityPage({ isActive, session }: { isActive: boolean; s
 
       <div className={cx("paLayout")}>
         <div className={cx("paFeedPane")}>
-          {loading ? (
-            <div className={cx("textCenter", "text12", "paEmptyState")}>Loading activity data...</div>
-          ) : filtered.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className={cx("textCenter", "text12", "paEmptyState")}>
               No activity events match your filters.
             </div>

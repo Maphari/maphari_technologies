@@ -279,6 +279,18 @@ export function LastTouchedPage({
   const dateStr = now.toLocaleDateString("en-ZA", { weekday: "long", month: "short", day: "numeric" });
   const timeStr = now.toLocaleTimeString("en-ZA", { hour: "numeric", minute: "2-digit" });
 
+  if (loading) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-last-touched">
       <div className={cx("pageHeaderBar", "borderB", "ltHeader")}>
@@ -352,22 +364,15 @@ export function LastTouchedPage({
         </div>
       </div>
 
-      {/* ── Loading state ── */}
-      {loading ? (
-        <div className={cx("textCenter", "colorMuted2", "p40")}>
-          <div className={cx("text13")}>Loading client data...</div>
-        </div>
-      ) : null}
-
       {/* ── Empty state ── */}
-      {!loading && clients.length === 0 ? (
+      {clients.length === 0 ? (
         <div className={cx("textCenter", "colorMuted2", "p40")}>
           <div className={cx("mb10")}>◎</div>
           <div className={cx("text13")}>No clients found. Data will appear once clients and communication logs are available.</div>
         </div>
       ) : null}
 
-      {!loading && clients.length > 0 ? (
+      {clients.length > 0 ? (
         <div className={cx(current ? "ltLayoutWithPanel" : "ltLayout")}>
           <div className={cx("ltListPane", current && "ltListPaneWithPanel")}>
             <div className={cx("flexCol", "gap10")}>
