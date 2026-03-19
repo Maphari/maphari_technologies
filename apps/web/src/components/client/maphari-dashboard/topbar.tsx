@@ -162,9 +162,6 @@ export function ClientTopbar({
           <Ic n="grid" sz={15} c="var(--muted)" />
         </button>
 
-        {/* Theme toggle */}
-        <ThemeToggle />
-
         {/* Separator */}
         <div className={styles.topbarSep} />
 

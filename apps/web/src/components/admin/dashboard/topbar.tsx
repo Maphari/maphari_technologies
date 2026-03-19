@@ -106,7 +106,6 @@ export function AdminTopbar({
         >
           <DashboardUtilityIcon kind="help" className={styles.topbarIcon} />
         </Link>
-        <ThemeToggle />
         <div className={styles.topbarUserMenu} ref={profileMenuRef}>
           <button
             title="Open profile menu"

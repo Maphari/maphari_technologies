@@ -211,9 +211,6 @@ export function StaffTopbar({
           <DashboardUtilityIcon kind="help" className={styles.topbarIcon} />
         </button>
 
-        {/* Theme toggle */}
-        <ThemeToggle />
-
         {/* Separator */}
         <div className={styles.topbarSep} />
 
