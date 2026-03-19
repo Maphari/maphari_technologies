@@ -126,7 +126,7 @@ export function BusinessDevelopmentPage({
   }, {});
 
   return (
-    <div className={cx(styles.pageBody, styles.bdevRoot)}>
+    <div className={cx(styles.pageBody, styles.bdevRoot, "rdStudioPage")}>
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>ADMIN / BUSINESS DEVELOPMENT</div>
@@ -145,9 +145,9 @@ export function BusinessDevelopmentPage({
           { label: "Lost", value: lost.length.toString(), color: lost.length > 0 ? "var(--red)" : "var(--muted)", sub: "Not converted" },
           { label: "Conversion Rate", value: `${conversionRate}%`, color: conversionRate >= 40 ? "var(--accent)" : "var(--amber)", sub: "Win rate" },
         ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+          <div key={s.label} className={cx(styles.statCard, "rdStudioCard")}>
+            <div className={cx(styles.statLabel, "rdStudioLabel")}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color), "rdStudioMetric", s.color === "var(--accent)" ? "rdStudioMetricPos" : s.color === "var(--red)" ? "rdStudioMetricNeg" : s.color === "var(--amber)" ? "rdStudioMetricWarn" : "")}>{s.value}</div>
             <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
@@ -192,7 +192,7 @@ export function BusinessDevelopmentPage({
                 {leads.map((lead, i) => {
                   const color = stageColors[lead.status];
                   return (
-                    <div key={lead.id} className={cx(styles.bdevTableRow, i < leads.length - 1 && "borderB")}>
+                    <div key={lead.id} className={cx(styles.bdevTableRow, i < leads.length - 1 && "borderB", "rdStudioRow")}>
                       <div>
                         <div className={cx("fw600")}>{lead.company ?? lead.title}</div>
                         <div className={cx("text11", "colorMuted")}>{clientName(lead.clientId)}</div>
@@ -258,7 +258,7 @@ export function BusinessDevelopmentPage({
         ) : (
           <div className={styles.bdevTargetsGrid}>
             <div className={cx("card", "p24")}>
-              <div className={styles.bdevSectionTitle}>Pipeline by Stage</div>
+              <div className={cx(styles.bdevSectionTitle, "rdStudioSection")}>Pipeline by Stage</div>
               <div className={styles.bdevTargetStack}>
                 {stageOrder.map((stage) => {
                   const count = leads.filter((l) => l.status === stage).length;
@@ -310,9 +310,9 @@ export function BusinessDevelopmentPage({
                 )}
               </div>
 
-              <div className={styles.bdevAnnualCard}>
-                <div className={styles.bdevAnnualTitle}>Conversion Summary</div>
-                <div className={styles.bdevAnnualValue}>{conversionRate}%</div>
+              <div className={cx(styles.bdevAnnualCard, "rdStudioCard")}>
+                <div className={cx(styles.bdevAnnualTitle, "rdStudioLabel")}>Conversion Summary</div>
+                <div className={cx(styles.bdevAnnualValue, "rdStudioMetric", conversionRate >= 40 ? "rdStudioMetricPos" : "rdStudioMetricWarn")}>{conversionRate}%</div>
                 <div className={cx("text12", "colorMuted")}>
                   {won.length} won · {lost.length} lost · {activeLeads.length} in progress
                 </div>

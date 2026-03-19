@@ -172,7 +172,7 @@ export function ExecutiveDashboardPage({ session, onNotify }: Props) {
   }
 
   return (
-    <div className={styles.pageBody}>
+    <div className={cx(styles.pageBody, "rdStudioPage")}>
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>ADMIN / REPORTING & INTELLIGENCE</div>
@@ -203,9 +203,9 @@ export function ExecutiveDashboardPage({ session, onNotify }: Props) {
         {kpis.map((k) => {
           const tone = k.color === "var(--red)" ? "var(--red)" : "var(--border)";
           return (
-            <div key={k.label} className={cx(styles.exdKpiCard, toneClass(tone))}>
-              <div className={styles.exdKpiLabel}>{k.label}</div>
-              <div className={cx(styles.exdKpiValue, colorClass(k.color))}>{k.value}</div>
+            <div key={k.label} className={cx(styles.exdKpiCard, toneClass(tone), "rdStudioCard")}>
+              <div className={cx(styles.exdKpiLabel, "rdStudioLabel")}>{k.label}</div>
+              <div className={cx(styles.exdKpiValue, colorClass(k.color), "rdStudioMetric", k.color === "var(--red)" ? "rdStudioMetricNeg" : k.color === "var(--accent)" ? "rdStudioMetricPos" : "")}>{k.value}</div>
               <div className={styles.exdKpiMeta}>
                 {k.up !== null && <span className={cx(styles.exdKpiArrow, k.up ? "colorAccent" : "colorRed")}>{k.up ? "▲" : "▼"}</span>}
                 <span className={cx("text11", k.up ? "colorAccent" : k.up === false ? "colorRed" : "colorMuted")}>{k.change}</span>
@@ -225,9 +225,9 @@ export function ExecutiveDashboardPage({ session, onNotify }: Props) {
       {activeTab === "overview" && (
         <div className={cx("grid2", "gap20")}>
           <div className={cx("card", "p24")}>
-            <div className={styles.exdCardHd}>
+            <div className={cx(styles.exdCardHd, "rdStudioSection")}>
               <div className={styles.exdSecTitle}>Revenue Trend (6mo estimate)</div>
-              <div className={styles.exdHeadValueAccent}>{centsToK(monthlyRevenue)}</div>
+              <div className={cx(styles.exdHeadValueAccent, "rdStudioMetric", "rdStudioMetricPos")}>{centsToK(monthlyRevenue)}</div>
             </div>
             <div className={styles.exdMiniBars}>
               {mrrHistory.map((v, i) => {
@@ -290,9 +290,9 @@ export function ExecutiveDashboardPage({ session, onNotify }: Props) {
               { label: "Outstanding receivables", value: centsToK(outstanding), color: outstanding > 0 ? "var(--red)" : "var(--accent)" },
               { label: "Overdue invoices", value: String(overdueInvoices.length), color: overdueInvoices.length > 0 ? "var(--red)" : "var(--accent)" },
             ].map((r, idx) => (
-              <div key={r.label} className={cx(styles.exdCashRow, idx < 2 && "borderB")}>
-                <span className={styles.exdCashLabel}>{r.label}</span>
-                <span className={cx(styles.exdCashValue, colorClass(r.color))}>{r.value}</span>
+              <div key={r.label} className={cx(styles.exdCashRow, idx < 2 && "borderB", "rdStudioRow")}>
+                <span className={cx(styles.exdCashLabel, "rdStudioLabel")}>{r.label}</span>
+                <span className={cx(styles.exdCashValue, colorClass(r.color), "rdStudioMetric", r.color === "var(--red)" ? "rdStudioMetricNeg" : "rdStudioMetricPos")}>{r.value}</span>
               </div>
             ))}
           </div>

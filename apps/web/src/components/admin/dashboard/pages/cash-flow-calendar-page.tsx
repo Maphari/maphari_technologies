@@ -91,7 +91,7 @@ export function CashFlowCalendarPage() {
   );
 
   return (
-    <div className={cx(styles.pageBody, styles.reportsRoot)}>
+    <div className={cx(styles.pageBody, styles.reportsRoot, "rdStudioPage")}>
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>ADMIN / FINANCIAL</div>
@@ -110,9 +110,9 @@ export function CashFlowCalendarPage() {
           { label: "Planned Outflows (90d)", value: `R${(totalOut / 1000).toFixed(0)}k`, color: "var(--red)", sub: "Payroll, tools, rent" },
           { label: "Overdue Receivables", value: `R${(overdue / 1000).toFixed(0)}k`, color: "var(--red)", sub: "Needs immediate chase" }
         ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, "cashFlowToneText", toneClass(s.color))}>{s.value}</div>
+          <div key={s.label} className={cx(styles.statCard, "rdStudioCard")}>
+            <div className={cx(styles.statLabel, "rdStudioLabel")}>{s.label}</div>
+            <div className={cx(styles.statValue, "cashFlowToneText", toneClass(s.color), "rdStudioMetric", s.color === "var(--accent)" ? "rdStudioMetricPos" : s.color === "var(--red)" ? "rdStudioMetricNeg" : "")}>{s.value}</div>
             <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
@@ -136,20 +136,20 @@ export function CashFlowCalendarPage() {
               {monthData.map((m, i) => {
                 const runningBal = openingBalance + monthData.slice(0, i + 1).reduce((s, md) => s + md.net, 0);
                 return (
-                  <div key={m.month} className={cx("card", "p20", styles.cashFlowToneBorder, toneClass(m.net >= 0 ? "var(--accent)" : "var(--red)"))}>
-                    <div className={cx("text13", "fw700", "mb16", "colorAccent")}>{m.month}</div>
+                  <div key={m.month} className={cx("card", "p20", styles.cashFlowToneBorder, toneClass(m.net >= 0 ? "var(--accent)" : "var(--red)"), "rdStudioCard")}>
+                    <div className={cx("text13", "fw700", "mb16", "colorAccent", "rdStudioLabel")}>{m.month}</div>
                     <div className={cx("flexCol", "gap10")}>
                       <div>
                         <div className={cx("text10", "colorMuted", "mb4")}>Inflows</div>
-                        <div className={cx("fontMono", "fw700", "colorAccent", styles.cashFlowAmount18)}>+R{(m.totalIn / 1000).toFixed(0)}k</div>
+                        <div className={cx("fontMono", "fw700", "colorAccent", styles.cashFlowAmount18, "rdStudioMetric", "rdStudioMetricPos")}>+R{(m.totalIn / 1000).toFixed(0)}k</div>
                       </div>
                       <div>
                         <div className={cx("text10", "colorMuted", "mb4")}>Outflows</div>
-                        <div className={cx("fontMono", "fw700", "colorRed", styles.cashFlowAmount18)}>-R{(m.totalOut / 1000).toFixed(0)}k</div>
+                        <div className={cx("fontMono", "fw700", "colorRed", styles.cashFlowAmount18, "rdStudioMetric", "rdStudioMetricNeg")}>-R{(m.totalOut / 1000).toFixed(0)}k</div>
                       </div>
                       <div className={styles.cashFlowNetBlock}>
                         <div className={cx("text10", "colorMuted", "mb4")}>Net Cash</div>
-                        <div className={cx("fontMono", "fw800", styles.cashFlowAmount20, styles.cashFlowToneText, toneClass(m.net >= 0 ? "var(--accent)" : "var(--red)"))}>{m.net >= 0 ? "+" : ""}R{(m.net / 1000).toFixed(0)}k</div>
+                        <div className={cx("fontMono", "fw800", styles.cashFlowAmount20, styles.cashFlowToneText, toneClass(m.net >= 0 ? "var(--accent)" : "var(--red)"), "rdStudioMetric", m.net >= 0 ? "rdStudioMetricPos" : "rdStudioMetricNeg")}>{m.net >= 0 ? "+" : ""}R{(m.net / 1000).toFixed(0)}k</div>
                       </div>
                       <div className={cx("bgBg", "p12")}>
                         <div className={cx("text10", "colorMuted", "mb3")}>Closing Balance</div>

@@ -121,7 +121,7 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
   const outstandingInvoices = invoices.filter((i) => i.status === "ISSUED" || i.status === "OVERDUE");
 
   return (
-    <div className={cx(styles.pageBody, styles.revfRoot)}>
+    <div className={cx(styles.pageBody, styles.revfRoot, "rdStudioPage")}>
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
@@ -142,9 +142,9 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
           { label: "Draft Pipeline", value: centsToK(totalDraft), color: "var(--blue)", sub: "Not yet issued" },
           { label: "Overdue", value: String(overdueInvoices.length), color: overdueInvoices.length > 0 ? "var(--red)" : "var(--accent)", sub: "Past due date" }
         ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+          <div key={s.label} className={cx(styles.statCard, "rdStudioCard")}>
+            <div className={cx(styles.statLabel, "rdStudioLabel")}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color), "rdStudioMetric", s.color === "var(--accent)" ? "rdStudioMetricPos" : s.color === "var(--red)" ? "rdStudioMetricNeg" : s.color === "var(--amber)" ? "rdStudioMetricWarn" : "")}>{s.value}</div>
             <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}
@@ -169,8 +169,8 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
       {/* ── 6-month forecast ── */}
       {!loading && activeTab === "6-month forecast" && (
         <div className={styles.revfStack20}>
-          <div className={styles.revfChartCard}>
-            <div className={styles.revfSectionTitle}>6-Month Revenue Forecast</div>
+          <div className={cx(styles.revfChartCard, "rdStudioCard")}>
+            <div className={cx(styles.revfSectionTitle, "rdStudioSection")}>6-Month Revenue Forecast</div>
             <div className={cx("text11", "colorMuted", "mb24")}>
               Lime bars = collected (PAID) · Blue bars = projected (ISSUED/DRAFT)
             </div>
@@ -215,11 +215,11 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
                 return monthKey(dateField) === m.key;
               }).length;
               return (
-                <div key={m.key} className={cx(styles.revfTableRow, i < forecastMonths.length - 1 && "borderB")}>
-                  <span className={cx("fontMono", "fw700")}>{m.label}</span>
+                <div key={m.key} className={cx(styles.revfTableRow, i < forecastMonths.length - 1 && "borderB", "rdStudioRow")}>
+                  <span className={cx("fontMono", "fw700", "rdStudioLabel")}>{m.label}</span>
                   <span className={cx("fontMono", "colorAccent")}>{m.actual > 0 ? centsToK(m.actual) : "—"}</span>
                   <span className={cx("fontMono", "colorBlue")}>{m.projected > 0 ? centsToK(m.projected) : "—"}</span>
-                  <span className={cx("fontMono", "fw800", "text14", "colorAccent")}>{total > 0 ? centsToK(total) : "—"}</span>
+                  <span className={cx("fontMono", "fw800", "text14", "colorAccent", "rdStudioMetric", "rdStudioMetricPos")}>{total > 0 ? centsToK(total) : "—"}</span>
                   <span className={cx("text12", "colorMuted")}>{invoiceCount}</span>
                 </div>
               );

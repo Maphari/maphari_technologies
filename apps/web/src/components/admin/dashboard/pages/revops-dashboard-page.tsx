@@ -244,7 +244,7 @@ export function RevOpsPage() {
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
-    <div className={styles.pageBody}>
+    <div className={cx(styles.pageBody, "rdStudioPage")}>
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>ADMIN / REVENUE OPERATIONS</div>
@@ -288,9 +288,9 @@ export function RevOpsPage() {
             subColor: "var(--muted)",
           },
         ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
+          <div key={s.label} className={cx(styles.statCard, "rdStudioCard")}>
+            <div className={cx(styles.statLabel, "rdStudioLabel")}>{s.label}</div>
+            <div className={cx(styles.statValue, colorClass(s.color), "rdStudioMetric", s.color === "var(--accent)" ? "rdStudioMetricPos" : "")}>{s.value}</div>
             <div className={cx("text11", colorClass(s.subColor ?? "var(--muted)"))}>{s.sub}</div>
           </div>
         ))}
@@ -312,7 +312,7 @@ export function RevOpsPage() {
       {activeTab === "mrr tracking" ? (
         <div className={styles.revopsSplit}>
           <div className={cx("card", "p24")}>
-            <div className={styles.revopsSecTitle}>MRR Movement — 7 Months</div>
+            <div className={cx(styles.revopsSecTitle, "rdStudioSection")}>MRR Movement — 7 Months</div>
             {loadingMrr && <div className={cx("colorMuted", "text12")}>Loading revenue data…</div>}
             <div className={styles.revopsChartBars}>
               {mrrHistory.map((m, i) => {
@@ -336,9 +336,9 @@ export function RevOpsPage() {
                 {["Month", "MRR", "New", "Expansion", "Churn"].map((h) => <span key={h}>{h}</span>)}
               </div>
               {mrrHistory.map((m, i) => (
-                <div key={m.month} className={cx(styles.revopsMrrRow, i < mrrHistory.length - 1 && "borderB")}>
-                  <span className={cx("fontMono", "colorMuted")}>{m.month}</span>
-                  <span className={cx("fontMono", "fw700", "colorAccent")}>R{(m.mrr / 1000).toFixed(0)}k</span>
+                <div key={m.month} className={cx(styles.revopsMrrRow, i < mrrHistory.length - 1 && "borderB", "rdStudioRow")}>
+                  <span className={cx("fontMono", "colorMuted", "rdStudioLabel")}>{m.month}</span>
+                  <span className={cx("fontMono", "fw700", "colorAccent", "rdStudioMetric", "rdStudioMetricPos")}>R{(m.mrr / 1000).toFixed(0)}k</span>
                   <span className={cx("fontMono", m.new > 0 ? "colorBlue" : "colorMuted")}>{m.new > 0 ? `+R${(m.new / 1000).toFixed(0)}k` : "-"}</span>
                   <span className={cx("fontMono", m.expansion > 0 ? "colorPurple" : "colorMuted")}>{m.expansion > 0 ? `+R${(m.expansion / 1000).toFixed(0)}k` : "-"}</span>
                   <span className={cx("fontMono", m.churn > 0 ? "colorRed" : "colorMuted")}>{m.churn > 0 ? `-R${(m.churn / 1000).toFixed(0)}k` : "-"}</span>
@@ -406,8 +406,8 @@ export function RevOpsPage() {
               <div className={styles.revopsSecTitle}>Pipeline Summary</div>
               <div className={cx("flexCol", "gap12")}>
                 <div>
-                  <div className={cx("text11", "colorMuted", "mb4")}>Total Pipeline Value</div>
-                  <div className={styles.revopsValue32}>R{(pipelineValue / 1000).toFixed(0)}k</div>
+                  <div className={cx("text11", "colorMuted", "mb4", "rdStudioLabel")}>Total Pipeline Value</div>
+                  <div className={cx(styles.revopsValue32, "rdStudioMetric", "rdStudioMetricPos")}>R{(pipelineValue / 1000).toFixed(0)}k</div>
                 </div>
                 <div className={styles.revopsHr} />
                 <div className={cx("grid2", "gap12")}>
