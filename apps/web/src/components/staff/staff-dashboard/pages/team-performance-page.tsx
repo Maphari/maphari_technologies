@@ -95,24 +95,24 @@ export function TeamPerformancePage({ isActive, session }: TeamPerformancePagePr
 
   if (loading) {
     return (
-      <div className={cx("pageBody")}>
+      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-team-performance">
         <div className={cx("flexCol", "gap12")}>
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-      </div>
+      </section>
     );
   }
 
   if (error) {
     return (
-      <div className={cx("pageBody")}>
+      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-team-performance">
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateTitle")}>Something went wrong</div>
           <div className={cx("emptyStateSub")}>{error}</div>
         </div>
-      </div>
+      </section>
     );
   }
 

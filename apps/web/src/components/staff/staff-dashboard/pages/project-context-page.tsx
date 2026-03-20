@@ -110,13 +110,13 @@ export function ProjectContextPage({ isActive, session }: { isActive: boolean; s
 
   if (loading) {
     return (
-      <div className={cx("pageBody")}>
+      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-context">
         <div className={cx("flexCol", "gap12")}>
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-      </div>
+      </section>
     );
   }
 

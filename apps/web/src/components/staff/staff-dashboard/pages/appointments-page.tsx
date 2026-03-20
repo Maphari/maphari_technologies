@@ -105,13 +105,13 @@ export function AppointmentsPage({
 
   if (loading) {
     return (
-      <div className={cx("pageBody")}>
+      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-appointments">
         <div className={cx("flexCol", "gap12")}>
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-      </div>
+      </section>
     );
   }
 

@@ -130,25 +130,25 @@ export function MyTimelinePage({
 
   if (loading) {
     return (
-      <div className={cx("pageBody")}>
+      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-timeline">
         <div className={cx("flexCol", "gap12")}>
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-      </div>
+      </section>
     );
   }
 
   if (error) {
     return (
-      <div className={cx("pageBody")}>
+      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-timeline">
         <div className={cx("errorState")}>
           <div className={cx("errorStateIcon")}>✕</div>
           <div className={cx("errorStateTitle")}>Failed to load</div>
           <div className={cx("errorStateSub")}>{error}</div>
         </div>
-      </div>
+      </section>
     );
   }
 

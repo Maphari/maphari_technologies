@@ -145,13 +145,13 @@ export function VendorDirectoryPage({ isActive, session, onNotify }: PageProps) 
 
   if (loading) {
     return (
-      <div className={cx("pageBody")}>
+      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-vendor-directory">
         <div className={cx("flexCol", "gap12")}>
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
         </div>
-      </div>
+      </section>
     );
   }
 
