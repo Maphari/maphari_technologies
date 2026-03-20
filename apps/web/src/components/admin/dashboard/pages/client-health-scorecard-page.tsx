@@ -152,6 +152,7 @@ type Tab = (typeof tabs)[number];
 export function ClientHealthScorecardPage({ session }: { session: AuthSession | null }) {
   const [scorecardData, setScorecardData] = useState<ScorecardClient[]>([]);
   const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState<string | null>(null);
   const [activeTab, setActiveTab]         = useState<Tab>("scorecard grid");
   const [selected, setSelected]           = useState<ScorecardClient | null>(null);
 
@@ -159,6 +160,7 @@ export function ClientHealthScorecardPage({ session }: { session: AuthSession | 
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     (async () => {
+      setError(null);
       try {
         const [hsRes, snapRes] = await Promise.all([
           loadAllHealthScoresWithRefresh(session),
@@ -167,6 +169,12 @@ export function ClientHealthScorecardPage({ session }: { session: AuthSession | 
         if (cancelled) return;
         if (hsRes.nextSession)        saveSession(hsRes.nextSession);
         else if (snapRes.nextSession) saveSession(snapRes.nextSession);
+
+        if (hsRes.error || snapRes.error) {
+          const msg = hsRes.error?.message ?? snapRes.error?.message ?? "Failed to load health data";
+          setError(msg);
+          return;
+        }
 
         const scores  = hsRes.data   ?? [];
         const clients = snapRes.data?.clients ?? [];
@@ -211,6 +219,17 @@ export function ClientHealthScorecardPage({ session }: { session: AuthSession | 
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );

@@ -86,6 +86,7 @@ function mapLog(log: AdminCommunicationLog, clientName: string, clientColor: str
 export function CommunicationAuditPage({ session }: { session: AuthSession | null }) {
   const [commsLog, setCommsLog]     = useState<CommItem[]>([]);
   const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
   const [activeTab, setActiveTab]   = useState<Tab>("all comms");
   const [filterClient, setFilterClient] = useState("All");
   const [filterType, setFilterType]     = useState<"All" | CommType>("All");
@@ -95,6 +96,7 @@ export function CommunicationAuditPage({ session }: { session: AuthSession | nul
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     (async () => {
+      setError(null);
       try {
         const [logRes, snapRes] = await Promise.all([
           loadAllCommLogsWithRefresh(session),
@@ -103,6 +105,13 @@ export function CommunicationAuditPage({ session }: { session: AuthSession | nul
         if (cancelled) return;
         if (logRes.nextSession)        saveSession(logRes.nextSession);
         else if (snapRes.nextSession)  saveSession(snapRes.nextSession);
+
+        if (logRes.error || snapRes.error) {
+          const msg = logRes.error?.message ?? snapRes.error?.message ?? "Failed to load communication data";
+          setError(msg);
+          return;
+        }
+
         // Build client color map (by index for consistency)
         const clients     = snapRes.data?.clients ?? [];
         const clientColorMap = new Map<string, { name: string; color: string }>(
@@ -140,6 +149,17 @@ export function CommunicationAuditPage({ session }: { session: AuthSession | nul
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );

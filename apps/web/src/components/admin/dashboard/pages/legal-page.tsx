@@ -70,13 +70,18 @@ export function LegalPage() {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("contracts");
   const [contracts, setContracts] = useState<LegalContract[]>([]);
   const [loadingContracts, setLoadingContracts] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadContracts = useCallback(async () => {
     if (!session) { setLoadingContracts(false); return; }
     setLoadingContracts(true);
+    setError(null);
     try {
       const result = await fetchContracts(session);
       if (result.data) setContracts(result.data);
+    } catch (err) {
+      const msg = (err as Error)?.message ?? "Failed to load legal data";
+      setError(msg);
     } finally {
       setLoadingContracts(false);
     }
@@ -99,6 +104,17 @@ export function LegalPage() {
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );

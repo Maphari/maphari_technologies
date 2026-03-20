@@ -119,6 +119,7 @@ export function InvoicesPage({
   const [clients, setClients] = useState<AdminClient[]>([]);
   const [projects, setProjects] = useState<AdminProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // ── Create invoice modal ───────────────────────────────────────────────────
   const [showCreate, setShowCreate] = useState(false);
@@ -172,11 +173,14 @@ export function InvoicesPage({
   const load = useCallback(async () => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     try {
       const r = await loadAdminSnapshotWithRefresh(session);
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error) {
-        onNotify("error", r.error.message);
+        const msg = r.error.message;
+        setError(msg);
+        onNotify("error", msg);
       } else if (r.data) {
         setInvoices(r.data.invoices as AdminInvoiceEx[]);
         setClients(r.data.clients);
@@ -361,6 +365,29 @@ export function InvoicesPage({
   const totalOutstanding = issued.reduce((s, i) => s + i.amountCents, 0) +
     overdue.reduce((s, i) => s + i.amountCents, 0);
 
+  if (loading) {
+    return (
+      <section className={cx("page", "pageBody")} id="page-invoices">
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH40")} />
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className={cx("page", "pageBody")} id="page-invoices">
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -434,13 +461,7 @@ export function InvoicesPage({
       </div>
 
       {activeTab === "invoices" && (
-        loading ? (
-          <div className={cx("flexCol", "gap12")}>
-            <div className={cx("skeletonBlock", "skeleH68")} />
-            <div className={cx("skeletonBlock", "skeleH68")} />
-            <div className={cx("skeletonBlock", "skeleH40")} />
-          </div>
-        ) : invoices.length === 0 ? (
+        invoices.length === 0 ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">

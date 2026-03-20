@@ -77,6 +77,7 @@ export function AccessControlPage({
   const [users, setUsers] = useState<StaffAccessUser[]>([]);
   const [auditEvents, setAuditEvents] = useState<AdminAuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [auditLoading, setAuditLoading] = useState(false);
   const [lockdownPending, setLockdownPending] = useState(false);
   const [selected, setSelected] = useState<StaffAccessUser | null>(null);
@@ -84,11 +85,14 @@ export function AccessControlPage({
   const load = useCallback(async () => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     try {
       const r = await loadStaffUsersWithRefresh(session);
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error) {
-        onNotify("error", r.error.message);
+        const msg = r.error.message;
+        setError(msg);
+        onNotify("error", msg);
       } else if (r.data) {
         setUsers(r.data);
       }
@@ -145,6 +149,17 @@ export function AccessControlPage({
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );
