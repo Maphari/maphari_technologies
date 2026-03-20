@@ -239,6 +239,7 @@ export function CloseOutReportPage({
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [reports, setReports] = useState<Record<string, Report>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [section, setSection] = useState<"overview" | "finance" | "milestones" | "retro">("overview");
@@ -249,6 +250,7 @@ export function CloseOutReportPage({
     let cancelled = false;
 
     void (async () => {
+      setError(null);
       try {
         const [projRes, clientRes, perfRes, signoffRes, fbRes, crRes] = await Promise.all([
           getStaffProjects(session),
@@ -298,8 +300,9 @@ export function CloseOutReportPage({
         setClients(rows);
         setReports(Object.fromEntries(reportMap));
         if (rows.length > 0 && !selectedId) setSelectedId(rows[0].id);
-      } catch {
-        // keep previous state on error
+      } catch (err) {
+        const msg = (err as Error)?.message ?? "Failed to load close-out report";
+        setError(msg);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -333,6 +336,12 @@ export function CloseOutReportPage({
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-closeout-report">
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
       <div className={cx("pageHeaderBar", "borderB", "pb0")}>
         <div className={cx("mb20")}>
           <div className={cx("pageEyebrow")}>

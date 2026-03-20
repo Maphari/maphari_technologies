@@ -70,6 +70,7 @@ function SkeletonStat() {
 export function FeedbackInboxPage({ isActive, session }: FeedbackInboxPageProps) {
   const [items, setItems]     = useState<StaffFeedbackItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
   const [acking, setAcking]   = useState<string | null>(null);
 
   useEffect(() => {
@@ -77,12 +78,14 @@ export function FeedbackInboxPage({ isActive, session }: FeedbackInboxPageProps)
     let cancelled = false;
 
     setLoading(true);
+    setError(null);
     void getStaffFeedback(session).then((result) => {
       if (cancelled) return;
       if (result.nextSession) saveSession(result.nextSession);
       if (result.data) setItems(result.data);
-    }).catch(() => {
-      // keep previous state on error
+    }).catch((err) => {
+      const msg = err?.message ?? "Failed to load feedback";
+      setError(msg);
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
@@ -132,6 +135,12 @@ export function FeedbackInboxPage({ isActive, session }: FeedbackInboxPageProps)
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-feedback-inbox">
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
       <div className={cx("pageHeaderBar")}>
         <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
         <h1 className={cx("pageTitleText")}>Feedback Inbox</h1>
@@ -140,59 +149,53 @@ export function FeedbackInboxPage({ isActive, session }: FeedbackInboxPageProps)
 
       {/* ── Summary stats ────────────────────────────────────────────────── */}
       <div className={cx("fbiStatGrid")}>
-        {loading ? (
-          [1, 2, 3, 4].map((n) => <SkeletonStat key={n} />)
-        ) : (
-          <>
-            <div className={cx("fbiStatCard")}>
-              <div className={cx("fbiStatCardTop")}>
-                <div className={cx("fbiStatLabel")}>Unread</div>
-                <div className={cx("fbiStatValue", pending.length > 0 ? "colorAmber" : "colorGreen")}>{pending.length}</div>
-              </div>
-              <div className={cx("fbiStatCardDivider")} />
-              <div className={cx("fbiStatCardBottom")}>
-                <span className={cx("fbiStatDot", "dynBgColor")} style={{ "--bg-color": pending.length > 0 ? "var(--amber)" : "var(--green)" } as React.CSSProperties} />
-                <span className={cx("fbiStatMeta")}>{pending.length > 0 ? "needs acknowledgement" : "all caught up"}</span>
-              </div>
-            </div>
+        <div className={cx("fbiStatCard")}>
+          <div className={cx("fbiStatCardTop")}>
+            <div className={cx("fbiStatLabel")}>Unread</div>
+            <div className={cx("fbiStatValue", pending.length > 0 ? "colorAmber" : "colorGreen")}>{pending.length}</div>
+          </div>
+          <div className={cx("fbiStatCardDivider")} />
+          <div className={cx("fbiStatCardBottom")}>
+            <span className={cx("fbiStatDot", "dynBgColor")} style={{ "--bg-color": pending.length > 0 ? "var(--amber)" : "var(--green)" } as React.CSSProperties} />
+            <span className={cx("fbiStatMeta")}>{pending.length > 0 ? "needs acknowledgement" : "all caught up"}</span>
+          </div>
+        </div>
 
-            <div className={cx("fbiStatCard")}>
-              <div className={cx("fbiStatCardTop")}>
-                <div className={cx("fbiStatLabel")}>Complaints</div>
-                <div className={cx("fbiStatValue", complaints > 0 ? "colorRed" : "colorGreen")}>{complaints}</div>
-              </div>
-              <div className={cx("fbiStatCardDivider")} />
-              <div className={cx("fbiStatCardBottom")}>
-                <span className={cx("fbiStatDot", "dynBgColor")} style={{ "--bg-color": complaints > 0 ? "var(--red)" : "var(--muted2)" } as React.CSSProperties} />
-                <span className={cx("fbiStatMeta")}>{complaints > 0 ? "requires action" : "none raised"}</span>
-              </div>
-            </div>
+        <div className={cx("fbiStatCard")}>
+          <div className={cx("fbiStatCardTop")}>
+            <div className={cx("fbiStatLabel")}>Complaints</div>
+            <div className={cx("fbiStatValue", complaints > 0 ? "colorRed" : "colorGreen")}>{complaints}</div>
+          </div>
+          <div className={cx("fbiStatCardDivider")} />
+          <div className={cx("fbiStatCardBottom")}>
+            <span className={cx("fbiStatDot", "dynBgColor")} style={{ "--bg-color": complaints > 0 ? "var(--red)" : "var(--muted2)" } as React.CSSProperties} />
+            <span className={cx("fbiStatMeta")}>{complaints > 0 ? "requires action" : "none raised"}</span>
+          </div>
+        </div>
 
-            <div className={cx("fbiStatCard")}>
-              <div className={cx("fbiStatCardTop")}>
-                <div className={cx("fbiStatLabel")}>Avg CSAT</div>
-                <div className={cx("fbiStatValue", "colorAccent")}>{csatAvg}</div>
-              </div>
-              <div className={cx("fbiStatCardDivider")} />
-              <div className={cx("fbiStatCardBottom")}>
-                <span className={cx("fbiStatDot", "dotBgAccent")} />
-                <span className={cx("fbiStatMeta")}>out of 5</span>
-              </div>
-            </div>
+        <div className={cx("fbiStatCard")}>
+          <div className={cx("fbiStatCardTop")}>
+            <div className={cx("fbiStatLabel")}>Avg CSAT</div>
+            <div className={cx("fbiStatValue", "colorAccent")}>{csatAvg}</div>
+          </div>
+          <div className={cx("fbiStatCardDivider")} />
+          <div className={cx("fbiStatCardBottom")}>
+            <span className={cx("fbiStatDot", "dotBgAccent")} />
+            <span className={cx("fbiStatMeta")}>out of 5</span>
+          </div>
+        </div>
 
-            <div className={cx("fbiStatCard")}>
-              <div className={cx("fbiStatCardTop")}>
-                <div className={cx("fbiStatLabel")}>Total Feedback</div>
-                <div className={cx("fbiStatValue")}>{items.length}</div>
-              </div>
-              <div className={cx("fbiStatCardDivider")} />
-              <div className={cx("fbiStatCardBottom")}>
-                <span className={cx("fbiStatDot", "dotBgMuted2")} />
-                <span className={cx("fbiStatMeta")}>across all projects</span>
-              </div>
-            </div>
-          </>
-        )}
+        <div className={cx("fbiStatCard")}>
+          <div className={cx("fbiStatCardTop")}>
+            <div className={cx("fbiStatLabel")}>Total Feedback</div>
+            <div className={cx("fbiStatValue")}>{items.length}</div>
+          </div>
+          <div className={cx("fbiStatCardDivider")} />
+          <div className={cx("fbiStatCardBottom")}>
+            <span className={cx("fbiStatDot", "dotBgMuted2")} />
+            <span className={cx("fbiStatMeta")}>across all projects</span>
+          </div>
+        </div>
       </div>
 
       {/* ── Feedback list ────────────────────────────────────────────────── */}

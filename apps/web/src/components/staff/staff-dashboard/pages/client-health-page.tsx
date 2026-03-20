@@ -219,6 +219,7 @@ function SkeletonRow() {
 export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
   const [healthData, setHealthData]   = useState<HealthClient[]>([]);
   const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState<string | null>(null);
   const [selected, setSelected]       = useState<string | null>(null);
   const [filter, setFilter]           = useState<"all" | SentimentType>("all");
   const [sortBy, setSortBy]           = useState<"score" | "name" | "trend">("score");
@@ -231,11 +232,13 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
     let cancelled = false;
 
     setLoading(true);
+    setError(null);
     void getStaffAllHealthScores(session).then((result) => {
       if (cancelled) return;
       if (result.data) setHealthData(result.data);
-    }).catch(() => {
-      // keep previous state on error
+    }).catch((err) => {
+      const msg = err?.message ?? "Failed to load client health";
+      setError(msg);
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
@@ -298,6 +301,12 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-health">
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
       <div className={cx("pageHeaderBar", "chHeaderBar")}>
         <div className={cx("flexBetween", "gap24")}>
           <div>

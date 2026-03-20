@@ -103,17 +103,20 @@ function SkeletonCard() {
 export function ClientBudgetPage({ isActive, session }: ClientBudgetPageProps) {
   const [clients, setClients] = useState<StaffClientBudget[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
+    setError(null);
     void getStaffClientBudgets(session).then((result) => {
       if (cancelled) return;
       if (result.data) setClients(result.data);
-    }).catch(() => {
-      // keep previous state on error
+    }).catch((err) => {
+      const msg = err?.message ?? "Failed to load budget";
+      setError(msg);
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
@@ -145,6 +148,12 @@ export function ClientBudgetPage({ isActive, session }: ClientBudgetPageProps) {
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-client-budget">
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
       <div className={cx("pageHeaderBar")}>
         <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Finance</div>
         <h1 className={cx("pageTitleText")}>Client Budget Awareness</h1>
@@ -153,61 +162,55 @@ export function ClientBudgetPage({ isActive, session }: ClientBudgetPageProps) {
 
       {/* ── Summary stats ────────────────────────────────────────────────── */}
       <div className={cx("cbStatGrid")}>
-        {loading ? (
-          [1, 2, 3, 4].map((n) => <SkeletonStat key={n} />)
-        ) : (
-          <>
-            <div className={cx("cbStatCard")}>
-              <div className={cx("cbStatCardTop")}>
-                <div className={cx("cbStatLabel")}>Clients</div>
-                <div className={cx("cbStatValue")}>{clients.length}</div>
-              </div>
-              <div className={cx("cbStatCardDivider")} />
-              <div className={cx("cbStatCardBottom")}>
-                <span className={cx("cbStatDot", "dotBgMuted2")} />
-                <span className={cx("cbStatMeta")}>assigned clients</span>
-              </div>
-            </div>
+        <div className={cx("cbStatCard")}>
+          <div className={cx("cbStatCardTop")}>
+            <div className={cx("cbStatLabel")}>Clients</div>
+            <div className={cx("cbStatValue")}>{clients.length}</div>
+          </div>
+          <div className={cx("cbStatCardDivider")} />
+          <div className={cx("cbStatCardBottom")}>
+            <span className={cx("cbStatDot", "dotBgMuted2")} />
+            <span className={cx("cbStatMeta")}>assigned clients</span>
+          </div>
+        </div>
 
-            <div className={cx("cbStatCard")}>
-              <div className={cx("cbStatCardTop")}>
-                <div className={cx("cbStatLabel")}>Avg Burn</div>
-                <div className={cx("cbStatValue", burnColorCls(avgBurn))}>{avgBurn}%</div>
-              </div>
-              <div className={cx("cbStatCardDivider")} />
-              <div className={cx("cbStatCardBottom")}>
-                <span className={cx("cbStatDot", "dotBgAccent")} />
-                <span className={cx("cbStatMeta")}>retainer utilised</span>
-              </div>
-            </div>
+        <div className={cx("cbStatCard")}>
+          <div className={cx("cbStatCardTop")}>
+            <div className={cx("cbStatLabel")}>Avg Burn</div>
+            <div className={cx("cbStatValue", burnColorCls(avgBurn))}>{avgBurn}%</div>
+          </div>
+          <div className={cx("cbStatCardDivider")} />
+          <div className={cx("cbStatCardBottom")}>
+            <span className={cx("cbStatDot", "dotBgAccent")} />
+            <span className={cx("cbStatMeta")}>retainer utilised</span>
+          </div>
+        </div>
 
-            <div className={cx("cbStatCard")}>
-              <div className={cx("cbStatCardTop")}>
-                <div className={cx("cbStatLabel")}>Healthy Clients</div>
-                <div className={cx("cbStatValue", "colorGreen")}>{healthyCount}</div>
-              </div>
-              <div className={cx("cbStatCardDivider")} />
-              <div className={cx("cbStatCardBottom")}>
-                <span className={cx("cbStatDot", "dotBgGreen")} />
-                <span className={cx("cbStatMeta")}>{clients.length - healthyCount} need attention</span>
-              </div>
-            </div>
+        <div className={cx("cbStatCard")}>
+          <div className={cx("cbStatCardTop")}>
+            <div className={cx("cbStatLabel")}>Healthy Clients</div>
+            <div className={cx("cbStatValue", "colorGreen")}>{healthyCount}</div>
+          </div>
+          <div className={cx("cbStatCardDivider")} />
+          <div className={cx("cbStatCardBottom")}>
+            <span className={cx("cbStatDot", "dotBgGreen")} />
+            <span className={cx("cbStatMeta")}>{clients.length - healthyCount} need attention</span>
+          </div>
+        </div>
 
-            <div className={cx("cbStatCard")}>
-              <div className={cx("cbStatCardTop")}>
-                <div className={cx("cbStatLabel")}>Avg Health Score</div>
-                <div className={cx("cbStatValue", avgScore >= 70 ? "colorGreen" : avgScore >= 50 ? "colorAmber" : "colorRed")}>
-                  {avgScore}
-                </div>
-              </div>
-              <div className={cx("cbStatCardDivider")} />
-              <div className={cx("cbStatCardBottom")}>
-                <span className={cx("cbStatDot", "dynBgColor")} style={{ "--bg-color": atRiskCount > 0 ? "var(--red)" : "var(--muted2)" } as React.CSSProperties} />
-                <span className={cx("cbStatMeta")}>{atRiskCount} at risk</span>
-              </div>
+        <div className={cx("cbStatCard")}>
+          <div className={cx("cbStatCardTop")}>
+            <div className={cx("cbStatLabel")}>Avg Health Score</div>
+            <div className={cx("cbStatValue", avgScore >= 70 ? "colorGreen" : avgScore >= 50 ? "colorAmber" : "colorRed")}>
+              {avgScore}
             </div>
-          </>
-        )}
+          </div>
+          <div className={cx("cbStatCardDivider")} />
+          <div className={cx("cbStatCardBottom")}>
+            <span className={cx("cbStatDot", "dynBgColor")} style={{ "--bg-color": atRiskCount > 0 ? "var(--red)" : "var(--muted2)" } as React.CSSProperties} />
+            <span className={cx("cbStatMeta")}>{atRiskCount} at risk</span>
+          </div>
+        </div>
       </div>
 
       {/* ── Client cards ─────────────────────────────────────────────────── */}

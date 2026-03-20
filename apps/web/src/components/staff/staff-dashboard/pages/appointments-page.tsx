@@ -51,16 +51,24 @@ export function AppointmentsPage({
 }) {
   const [appointments, setAppointments] = useState<PortalAppointment[]>([]);
   const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState<string | null>(null);
   const [confirming, setConfirming]     = useState<string | null>(null);
   const [filter, setFilter]             = useState<"all" | "upcoming" | "pending" | "confirmed">("all");
 
   const load = useCallback(async () => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
-    const r = await loadPortalAppointmentsWithRefresh(session);
-    setLoading(false);
-    if (r.nextSession) saveSession(r.nextSession);
-    if (!r.error && r.data) setAppointments(r.data);
+    setError(null);
+    try {
+      const r = await loadPortalAppointmentsWithRefresh(session);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setAppointments(r.data);
+    } catch (err) {
+      const msg = (err as Error)?.message ?? "Failed to load appointments";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   }, [session]);
 
   useEffect(() => {
@@ -109,6 +117,12 @@ export function AppointmentsPage({
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-appointments">
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
       <div className={cx("pageHeaderBar")}>
         <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Scheduling</div>
         <h1 className={cx("pageTitleText")}>Appointments</h1>

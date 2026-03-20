@@ -47,11 +47,7 @@ export function ContractViewerPage({ isActive, session, onNotify }: PageProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isActive) return;
-    if (!session) {
-      setLoading(false);
-      return;
-    }
+    if (!isActive || !session) { setLoading(false); return; }
     let cancelled = false;
 
     void Promise.all([
@@ -64,8 +60,11 @@ export function ContractViewerPage({ isActive, session, onNotify }: PageProps) {
       if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
 
       if (clientsResult.error) {
-        setError(clientsResult.error.message);
+        setError(clientsResult.error?.message ?? "Failed to load");
         onNotify?.("error", "Unable to load client data.");
+      } else if (projectsResult.error) {
+        setError(projectsResult.error?.message ?? "Failed to load");
+        onNotify?.("error", "Unable to load project data.");
       } else {
         setClients(clientsResult.data ?? []);
         setProjects(projectsResult.data ?? []);

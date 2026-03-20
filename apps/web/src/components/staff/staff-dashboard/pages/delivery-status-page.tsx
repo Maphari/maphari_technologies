@@ -105,77 +105,79 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks }: P
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isActive) return;
-    if (!session) {
-      setLoading(false);
-      return;
-    }
+    if (!isActive || !session) { setLoading(false); return; }
     let cancelled = false;
 
     const load = async () => {
-      const [projectsResult, clientsResult] = await Promise.all([
-        getStaffProjects(session),
-        getStaffClients(session),
-      ]);
+      try {
+        const [projectsResult, clientsResult] = await Promise.all([
+          getStaffProjects(session),
+          getStaffClients(session),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
-      if (clientsResult.nextSession) saveSession(clientsResult.nextSession);
+        if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
+        if (clientsResult.nextSession) saveSession(clientsResult.nextSession);
 
-      if (projectsResult.error) {
-        setError(projectsResult.error.message);
-        onNotify?.("error", "Unable to load projects.");
+        if (projectsResult.error) {
+          setError(projectsResult.error.message);
+          onNotify?.("error", "Unable to load projects.");
+          return;
+        }
+
+        const projectList = (projectsResult.data ?? []).filter(
+          (p) => p.status !== "COMPLETED" && p.status !== "DONE" && p.status !== "ARCHIVED"
+        );
+        const clientMap = new Map<string, StaffClient>(
+          (clientsResult.data ?? []).map((c) => [c.id, c])
+        );
+
+        // Fetch deliverables for each project in parallel
+        const deliverableResults = await Promise.all(
+          projectList.map((p) => getStaffDeliverables(session, p.id))
+        );
+
+        if (cancelled) return;
+
+        const built: DeliveryItem[] = projectList.map((p, i) => {
+          const dlResult = deliverableResults[i];
+          if (dlResult?.nextSession) saveSession(dlResult.nextSession);
+          const deliverables = dlResult?.data ?? [];
+
+          const readiness = computeReadiness(deliverables);
+          const status = deriveStatus(p, readiness);
+          const phase = derivePhase(p, deliverables);
+          const inReview = deliverables.filter(
+            (d) => WIP_STATUSES.has(d.status.toUpperCase())
+          ).length;
+
+          return {
+            projectId: p.id,
+            project: p.name,
+            client: clientMap.get(p.clientId)?.name ?? p.clientId,
+            phase,
+            readiness,
+            blockers: inReview,
+            launchDate: p.dueAt
+              ? new Date(p.dueAt).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "TBD",
+            status,
+          };
+        });
+
+        setItems(built);
+      } catch (err) {
+        const msg = (err as Error)?.message ?? "Failed to load delivery status";
+        setError(msg);
+        onNotify?.("error", msg);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const projectList = (projectsResult.data ?? []).filter(
-        (p) => p.status !== "COMPLETED" && p.status !== "DONE" && p.status !== "ARCHIVED"
-      );
-      const clientMap = new Map<string, StaffClient>(
-        (clientsResult.data ?? []).map((c) => [c.id, c])
-      );
-
-      // Fetch deliverables for each project in parallel
-      const deliverableResults = await Promise.all(
-        projectList.map((p) => getStaffDeliverables(session, p.id))
-      );
-
-      if (cancelled) return;
-
-      const built: DeliveryItem[] = projectList.map((p, i) => {
-        const dlResult = deliverableResults[i];
-        if (dlResult?.nextSession) saveSession(dlResult.nextSession);
-        const deliverables = dlResult?.data ?? [];
-
-        const readiness = computeReadiness(deliverables);
-        const status = deriveStatus(p, readiness);
-        const phase = derivePhase(p, deliverables);
-        const inReview = deliverables.filter(
-          (d) => WIP_STATUSES.has(d.status.toUpperCase())
-        ).length;
-
-        return {
-          projectId: p.id,
-          project: p.name,
-          client: clientMap.get(p.clientId)?.name ?? p.clientId,
-          phase,
-          readiness,
-          blockers: inReview,
-          launchDate: p.dueAt
-            ? new Date(p.dueAt).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })
-            : "TBD",
-          status,
-        };
-      });
-
-      setItems(built);
-      setLoading(false);
     };
 
     void load();

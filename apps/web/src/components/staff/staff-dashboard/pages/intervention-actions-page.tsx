@@ -77,17 +77,20 @@ function SkeletonStat() {
 export function InterventionActionsPage({ isActive, session }: InterventionActionsPageProps) {
   const [interventions, setInterventions] = useState<StaffIntervention[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
+    setError(null);
     void getStaffInterventions(session).then((result) => {
       if (cancelled) return;
       if (result.data) setInterventions(result.data);
-    }).catch(() => {
-      // keep previous state on error
+    }).catch((err) => {
+      const msg = err?.message ?? "Failed to load interventions";
+      setError(msg);
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
@@ -121,6 +124,12 @@ export function InterventionActionsPage({ isActive, session }: InterventionActio
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-intervention-actions">
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
       <div className={cx("pageHeaderBar")}>
         <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Lifecycle</div>
         <h1 className={cx("pageTitleText")}>Intervention Actions</h1>
@@ -129,57 +138,53 @@ export function InterventionActionsPage({ isActive, session }: InterventionActio
 
       {/* ── Summary stats ────────────────────────────────────────────────── */}
       <div className={cx("iavStatGrid")}>
-        {(
-          <>
-            <div className={cx("iavStatCard")}>
-              <div className={cx("iavStatCardTop")}>
-                <div className={cx("iavStatLabel")}>Open</div>
-                <div className={cx("iavStatValue", openCount > 0 ? "colorRed" : "colorGreen")}>{openCount}</div>
-              </div>
-              <div className={cx("iavStatCardDivider")} />
-              <div className={cx("iavStatCardBottom")}>
-                <span className={cx("iavStatDot", "dynBgColor")} style={{ "--bg-color": openCount > 0 ? "var(--red)" : "var(--green)" } as React.CSSProperties} />
-                <span className={cx("iavStatMeta")}>{openCount > 0 ? "needs action" : "none open"}</span>
-              </div>
-            </div>
+        <div className={cx("iavStatCard")}>
+          <div className={cx("iavStatCardTop")}>
+            <div className={cx("iavStatLabel")}>Open</div>
+            <div className={cx("iavStatValue", openCount > 0 ? "colorRed" : "colorGreen")}>{openCount}</div>
+          </div>
+          <div className={cx("iavStatCardDivider")} />
+          <div className={cx("iavStatCardBottom")}>
+            <span className={cx("iavStatDot", "dynBgColor")} style={{ "--bg-color": openCount > 0 ? "var(--red)" : "var(--green)" } as React.CSSProperties} />
+            <span className={cx("iavStatMeta")}>{openCount > 0 ? "needs action" : "none open"}</span>
+          </div>
+        </div>
 
-            <div className={cx("iavStatCard")}>
-              <div className={cx("iavStatCardTop")}>
-                <div className={cx("iavStatLabel")}>Overdue</div>
-                <div className={cx("iavStatValue", overdueCount > 0 ? "colorRed" : "colorGreen")}>{overdueCount}</div>
-              </div>
-              <div className={cx("iavStatCardDivider")} />
-              <div className={cx("iavStatCardBottom")}>
-                <span className={cx("iavStatDot", "dynBgColor")} style={{ "--bg-color": overdueCount > 0 ? "var(--red)" : "var(--green)" } as React.CSSProperties} />
-                <span className={cx("iavStatMeta")}>{overdueCount > 0 ? "past due date" : "on track"}</span>
-              </div>
-            </div>
+        <div className={cx("iavStatCard")}>
+          <div className={cx("iavStatCardTop")}>
+            <div className={cx("iavStatLabel")}>Overdue</div>
+            <div className={cx("iavStatValue", overdueCount > 0 ? "colorRed" : "colorGreen")}>{overdueCount}</div>
+          </div>
+          <div className={cx("iavStatCardDivider")} />
+          <div className={cx("iavStatCardBottom")}>
+            <span className={cx("iavStatDot", "dynBgColor")} style={{ "--bg-color": overdueCount > 0 ? "var(--red)" : "var(--green)" } as React.CSSProperties} />
+            <span className={cx("iavStatMeta")}>{overdueCount > 0 ? "past due date" : "on track"}</span>
+          </div>
+        </div>
 
-            <div className={cx("iavStatCard")}>
-              <div className={cx("iavStatCardTop")}>
-                <div className={cx("iavStatLabel")}>In Progress</div>
-                <div className={cx("iavStatValue", inProgressCount > 0 ? "colorAmber" : "colorMuted2")}>{inProgressCount}</div>
-              </div>
-              <div className={cx("iavStatCardDivider")} />
-              <div className={cx("iavStatCardBottom")}>
-                <span className={cx("iavStatDot", "dynBgColor")} style={{ "--bg-color": inProgressCount > 0 ? "var(--amber)" : "var(--muted2)" } as React.CSSProperties} />
-                <span className={cx("iavStatMeta")}>being actioned</span>
-              </div>
-            </div>
+        <div className={cx("iavStatCard")}>
+          <div className={cx("iavStatCardTop")}>
+            <div className={cx("iavStatLabel")}>In Progress</div>
+            <div className={cx("iavStatValue", inProgressCount > 0 ? "colorAmber" : "colorMuted2")}>{inProgressCount}</div>
+          </div>
+          <div className={cx("iavStatCardDivider")} />
+          <div className={cx("iavStatCardBottom")}>
+            <span className={cx("iavStatDot", "dynBgColor")} style={{ "--bg-color": inProgressCount > 0 ? "var(--amber)" : "var(--muted2)" } as React.CSSProperties} />
+            <span className={cx("iavStatMeta")}>being actioned</span>
+          </div>
+        </div>
 
-            <div className={cx("iavStatCard")}>
-              <div className={cx("iavStatCardTop")}>
-                <div className={cx("iavStatLabel")}>Done</div>
-                <div className={cx("iavStatValue", "colorGreen")}>{doneCount}</div>
-              </div>
-              <div className={cx("iavStatCardDivider")} />
-              <div className={cx("iavStatCardBottom")}>
-                <span className={cx("iavStatDot", "dotBgGreen")} />
-                <span className={cx("iavStatMeta")}>resolved</span>
-              </div>
-            </div>
-          </>
-        )}
+        <div className={cx("iavStatCard")}>
+          <div className={cx("iavStatCardTop")}>
+            <div className={cx("iavStatLabel")}>Done</div>
+            <div className={cx("iavStatValue", "colorGreen")}>{doneCount}</div>
+          </div>
+          <div className={cx("iavStatCardDivider")} />
+          <div className={cx("iavStatCardBottom")}>
+            <span className={cx("iavStatDot", "dotBgGreen")} />
+            <span className={cx("iavStatMeta")}>resolved</span>
+          </div>
+        </div>
       </div>
 
       {/* ── Intervention list ─────────────────────────────────────────────── */}
