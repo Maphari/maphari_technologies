@@ -107,6 +107,9 @@ export function SystemStatusPage({ isActive, session }: { isActive: boolean; ses
       } else {
         setServices([]);
       }
+    }).catch(() => {
+      // ignore
+    }).finally(() => {
       setLoading(false);
     });
   }, [session?.accessToken]);

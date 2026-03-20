@@ -62,23 +62,30 @@ export function PrivateNotesPage({ isActive, session }: { isActive: boolean; ses
   // Load client list once
   useEffect(() => {
     if (!session) { setLoading(false); return; }
-    getStaffClients(session).then((result) => {
-      if (result.nextSession) saveSession(result.nextSession);
-      if (result.data && result.data.length > 0) {
-        setClients(result.data);
-        setSelectedClientId(result.data[0].id);
-      }
-    });
+    getStaffClients(session)
+      .then((result) => {
+        if (result.nextSession) saveSession(result.nextSession);
+        if (result.data && result.data.length > 0) {
+          setClients(result.data);
+          setSelectedClientId(result.data[0].id);
+        }
+      })
+      .catch(() => { setLoading(false); });
   }, [session?.accessToken]);
 
   // Load notes when client selection changes
   const loadNotes = useCallback(async (clientId: string) => {
-    if (!session || !clientId) return;
+    if (!session || !clientId) { setLoading(false); return; }
     setLoading(true);
-    const result = await loadClientNotesWithRefresh(session, clientId);
-    if (result.nextSession) saveSession(result.nextSession);
-    if (result.data) setNotes(result.data);
-    setLoading(false);
+    try {
+      const result = await loadClientNotesWithRefresh(session, clientId);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.data) setNotes(result.data);
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
   }, [session?.accessToken]);
 
   useEffect(() => {

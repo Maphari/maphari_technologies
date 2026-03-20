@@ -66,7 +66,7 @@ export function StaffHandoversPage({ isActive, session }: { isActive: boolean; s
   const [acking,       setAcking]       = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
@@ -77,7 +77,10 @@ export function StaffHandoversPage({ isActive, session }: { isActive: boolean; s
         setHandovers(r.data);
         if (r.data.length > 0) setSelected(r.data[0] ?? null);
       }
-      setLoading(false);
+    }).catch(() => {
+      // ignore
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

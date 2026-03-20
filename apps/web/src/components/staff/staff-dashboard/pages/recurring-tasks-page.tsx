@@ -140,10 +140,15 @@ export function RecurringTasksPage({
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     void (async () => {
-      const r = await getRecurringTasks(session);
-      if (r.nextSession) saveSession(r.nextSession);
-      setTasks((r.data ?? []).map(apiToUi));
-      setLoading(false);
+      try {
+        const r = await getRecurringTasks(session);
+        if (r.nextSession) saveSession(r.nextSession);
+        setTasks((r.data ?? []).map(apiToUi));
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [session]);
 

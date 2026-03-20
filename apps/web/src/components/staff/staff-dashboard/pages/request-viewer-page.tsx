@@ -119,7 +119,6 @@ export function RequestViewerPage({ isActive, session, onNotify }: PageProps) {
       if (reqResult.error) {
         setError(reqResult.error.message);
         onNotify?.("error", "Unable to load change requests.");
-        setLoading(false);
         return;
       }
 
@@ -133,7 +132,13 @@ export function RequestViewerPage({ isActive, session, onNotify }: PageProps) {
       }));
 
       setRequests(items);
-      setLoading(false);
+    }).catch((err: unknown) => {
+      if (!cancelled) {
+        const msg = (err as Error)?.message ?? "Failed to load";
+        setError(msg);
+      }
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

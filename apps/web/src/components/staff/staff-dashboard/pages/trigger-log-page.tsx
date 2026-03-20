@@ -148,13 +148,12 @@ export function TriggerLogPage({ isActive, session }: { isActive: boolean; sessi
   }, [session?.accessToken]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     void getAutomationJobs(session, 50).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error || !r.data) {
         setError(r.error?.message ?? "Failed to load data. Please try again.");
-        setLoading(false);
         return;
       }
       if (r.data.length > 0) {
@@ -163,6 +162,9 @@ export function TriggerLogPage({ isActive, session }: { isActive: boolean; sessi
         setSelected(mapped[0] ?? null);
       }
       setError(null);
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load data. Please try again.");
+    }).finally(() => {
       setLoading(false);
     });
   }, [session?.accessToken]);

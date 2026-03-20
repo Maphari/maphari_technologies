@@ -145,7 +145,7 @@ export function RetainerBurnPage({ isActive, session }: RetainerBurnPageProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
@@ -156,7 +156,10 @@ export function RetainerBurnPage({ isActive, session }: RetainerBurnPageProps) {
         setClients(result.data);
         if (result.data.length > 0) setActiveId(result.data[0].clientId);
       }
-      setLoading(false);
+    }).catch(() => {
+      // ignore
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

@@ -88,7 +88,7 @@ export function ResponseTimePage({ isActive, session }: ResponseTimePageProps) {
   const [tab, setTab]         = useState<TabKey>("overview");
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
@@ -96,7 +96,10 @@ export function ResponseTimePage({ isActive, session }: ResponseTimePageProps) {
       if (cancelled) return;
       if (result.nextSession) saveSession(result.nextSession);
       if (result.data) setData(result.data);
-      setLoading(false);
+    }).catch(() => {
+      // ignore
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

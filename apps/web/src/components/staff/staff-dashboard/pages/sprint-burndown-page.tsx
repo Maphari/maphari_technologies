@@ -266,7 +266,7 @@ export function SprintBurndownPage({
 
   // Load burn-down data whenever project changes
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -275,11 +275,13 @@ export function SprintBurndownPage({
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error) {
         setError(r.error.message);
-        setLoading(false);
         return;
       }
       setData(r.data ?? null);
-      setLoading(false);
+    }).catch((err: unknown) => {
+      if (!cancelled) setError((err as Error)?.message ?? "Failed to load");
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session?.accessToken, selectedProjectId, isActive]);

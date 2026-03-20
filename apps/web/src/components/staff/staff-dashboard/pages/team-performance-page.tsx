@@ -60,14 +60,17 @@ export function TeamPerformancePage({ isActive, session }: TeamPerformancePagePr
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
     void getStaffTeamPerformance(session).then((result) => {
       if (cancelled) return;
       if (result.data) setMembers(result.data);
-      setLoading(false);
+    }).catch(() => {
+      // ignore
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

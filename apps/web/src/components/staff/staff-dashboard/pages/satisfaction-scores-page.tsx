@@ -64,18 +64,23 @@ export function SatisfactionScoresPage({
   const [selectedIdx, setSelectedIdx] = useState(0);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
 
     async function load() {
-      const result = await getStaffAllHealthScores(session!);
-      if (cancelled) return;
-      if (result.nextSession) saveSession(result.nextSession);
-      const sorted = [...(result.data ?? [])].sort((a, b) => b.score - a.score);
-      setEntries(sorted);
-      setSelectedIdx(0);
-      setLoading(false);
+      try {
+        const result = await getStaffAllHealthScores(session!);
+        if (cancelled) return;
+        if (result.nextSession) saveSession(result.nextSession);
+        const sorted = [...(result.data ?? [])].sort((a, b) => b.score - a.score);
+        setEntries(sorted);
+        setSelectedIdx(0);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
 
     void load();

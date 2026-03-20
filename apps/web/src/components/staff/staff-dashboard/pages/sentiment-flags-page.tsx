@@ -101,7 +101,7 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
   const [filter, setFilter]               = useState<"all" | UISentiment>("all");
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
@@ -112,7 +112,10 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
         setClients(r.data);
         if (r.data.length > 0) setSelected(r.data[0].clientId);
       }
-      setLoading(false);
+    }).catch(() => {
+      // ignore
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

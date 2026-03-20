@@ -56,7 +56,10 @@ export function RateCardPage({ isActive, session }: { isActive: boolean; session
       if (cancelled) return;
       if (r.nextSession) saveSession(r.nextSession);
       if (!r.error && r.data) setProfile(r.data);
-      setLoading(false);
+    }).catch(() => {
+      // ignore
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session?.accessToken]);

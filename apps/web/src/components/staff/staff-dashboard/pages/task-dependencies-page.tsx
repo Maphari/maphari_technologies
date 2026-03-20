@@ -121,59 +121,64 @@ export function TaskDependenciesPage({ isActive, session }: PageProps) {
     const load = async () => {
       setLoading(true);
 
-      // Fetch projects to build client rows
-      const projectsResult = await getStaffProjects(session);
-      if (cancelled) return;
-      if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
+      try {
+        // Fetch projects to build client rows
+        const projectsResult = await getStaffProjects(session);
+        if (cancelled) return;
+        if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
 
-      const projects: StaffProject[] = projectsResult.data ?? [];
+        const projects: StaffProject[] = projectsResult.data ?? [];
 
-      // Fetch tasks
-      const tasksResult = await getMyTasks(projectsResult.nextSession ?? session);
-      if (cancelled) return;
-      if (tasksResult.nextSession) saveSession(tasksResult.nextSession);
+        // Fetch tasks
+        const tasksResult = await getMyTasks(projectsResult.nextSession ?? session);
+        if (cancelled) return;
+        if (tasksResult.nextSession) saveSession(tasksResult.nextSession);
 
-      const apiTasks: StaffTask[] = tasksResult.data ?? [];
+        const apiTasks: StaffTask[] = tasksResult.data ?? [];
 
-      // Build unique client rows from projects
-      const clientMap = new Map<string, ClientRow>();
-      for (const p of projects) {
-        if (!clientMap.has(p.clientId)) {
-          const name = p.ownerName ?? p.name;
-          clientMap.set(p.clientId, {
-            id: p.clientId,
-            name,
-            avatar: getInitial(name)
-          });
+        // Build unique client rows from projects
+        const clientMap = new Map<string, ClientRow>();
+        for (const p of projects) {
+          if (!clientMap.has(p.clientId)) {
+            const name = p.ownerName ?? p.name;
+            clientMap.set(p.clientId, {
+              id: p.clientId,
+              name,
+              avatar: getInitial(name)
+            });
+          }
         }
+
+        // Build task rows with inferred dependency links
+        const projectIdToClientId = new Map(projects.map((p) => [p.id, p.clientId]));
+        const uniqueProjectIds = [...new Set(apiTasks.map((t) => t.projectId))];
+
+        const allBlockedByMap = new Map<string, string[]>();
+        const allBlockingMap = new Map<string, string[]>();
+
+        for (const pid of uniqueProjectIds) {
+          const { blockedByMap, blockingMap } = buildDependencyLinks(apiTasks, pid);
+          for (const [k, v] of blockedByMap) allBlockedByMap.set(k, v);
+          for (const [k, v] of blockingMap) allBlockingMap.set(k, v);
+        }
+
+        const taskRows: TaskRow[] = apiTasks.map((t) => ({
+          id: t.id,
+          clientId: projectIdToClientId.get(t.projectId) ?? t.projectId,
+          title: t.title,
+          status: mapApiStatus(t.status),
+          due: formatDate(t.dueAt),
+          blockedBy: allBlockedByMap.get(t.id) ?? [],
+          blocking: allBlockingMap.get(t.id) ?? []
+        }));
+
+        setClients(Array.from(clientMap.values()));
+        setAllTasks(taskRows);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      // Build task rows with inferred dependency links
-      const projectIdToClientId = new Map(projects.map((p) => [p.id, p.clientId]));
-      const uniqueProjectIds = [...new Set(apiTasks.map((t) => t.projectId))];
-
-      const allBlockedByMap = new Map<string, string[]>();
-      const allBlockingMap = new Map<string, string[]>();
-
-      for (const pid of uniqueProjectIds) {
-        const { blockedByMap, blockingMap } = buildDependencyLinks(apiTasks, pid);
-        for (const [k, v] of blockedByMap) allBlockedByMap.set(k, v);
-        for (const [k, v] of blockingMap) allBlockingMap.set(k, v);
-      }
-
-      const taskRows: TaskRow[] = apiTasks.map((t) => ({
-        id: t.id,
-        clientId: projectIdToClientId.get(t.projectId) ?? t.projectId,
-        title: t.title,
-        status: mapApiStatus(t.status),
-        due: formatDate(t.dueAt),
-        blockedBy: allBlockedByMap.get(t.id) ?? [],
-        blocking: allBlockingMap.get(t.id) ?? []
-      }));
-
-      setClients(Array.from(clientMap.values()));
-      setAllTasks(taskRows);
-      setLoading(false);
     };
 
     void load();

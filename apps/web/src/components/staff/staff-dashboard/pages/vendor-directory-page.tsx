@@ -102,7 +102,14 @@ export function VendorDirectoryPage({ isActive, session, onNotify }: PageProps) 
       } else {
         setVendors(result.data ?? []);
       }
-      setLoading(false);
+    }).catch((err: unknown) => {
+      if (!cancelled) {
+        const msg = (err as Error)?.message ?? "Failed to load vendors";
+        setError(msg);
+        onNotify?.("error", msg);
+      }
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

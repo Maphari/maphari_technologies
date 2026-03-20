@@ -328,23 +328,28 @@ export function SmartSuggestionsPage({
     let cancelled = false;
 
     void (async () => {
-      const [healthResult, tasksResult] = await Promise.all([
-        getStaffAllHealthScores(session),
-        getMyTasks(session),
-      ]);
+      try {
+        const [healthResult, tasksResult] = await Promise.all([
+          getStaffAllHealthScores(session),
+          getMyTasks(session),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (healthResult.nextSession) saveSession(healthResult.nextSession);
-      if (tasksResult.nextSession) saveSession(tasksResult.nextSession);
+        if (healthResult.nextSession) saveSession(healthResult.nextSession);
+        if (tasksResult.nextSession) saveSession(tasksResult.nextSession);
 
-      const healthEntries = healthResult.data ?? [];
-      const apiTasks = tasksResult.data ?? [];
+        const healthEntries = healthResult.data ?? [];
+        const apiTasks = tasksResult.data ?? [];
 
-      const { suggestions: derived, clients: derivedClients } = deriveSuggestions(healthEntries, apiTasks);
-      setSuggestions(derived);
-      setClients(derivedClients);
-      setLoading(false);
+        const { suggestions: derived, clients: derivedClients } = deriveSuggestions(healthEntries, apiTasks);
+        setSuggestions(derived);
+        setClients(derivedClients);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
 
     return () => { cancelled = true; };

@@ -83,52 +83,56 @@ export function SlaTrackerPage({
   const fetchData = useCallback(async (sess: AuthSession) => {
     setLoading(true);
 
-    // 1. Fetch all clients
-    const clientsResult = await getStaffClients(sess);
-    if (clientsResult.nextSession) saveSession(clientsResult.nextSession);
-    const clients: StaffClient[] = clientsResult.data ?? [];
+    try {
+      // 1. Fetch all clients
+      const clientsResult = await getStaffClients(sess);
+      if (clientsResult.nextSession) saveSession(clientsResult.nextSession);
+      const clients: StaffClient[] = clientsResult.data ?? [];
 
-    if (clients.length === 0) {
-      setRows([]);
-      setLoading(false);
-      return;
-    }
+      if (clients.length === 0) {
+        setRows([]);
+        return;
+      }
 
-    // 2. Fetch SLA records for each client in parallel
-    const slaResults = await Promise.all(
-      clients.map((c) =>
-        getStaffClientSla(clientsResult.nextSession ?? sess, c.id).then((r) => ({
-          client: c,
-          records: r.data ?? [],
-          nextSession: r.nextSession,
+      // 2. Fetch SLA records for each client in parallel
+      const slaResults = await Promise.all(
+        clients.map((c) =>
+          getStaffClientSla(clientsResult.nextSession ?? sess, c.id).then((r) => ({
+            client: c,
+            records: r.data ?? [],
+            nextSession: r.nextSession,
+          }))
+        )
+      );
+
+      // Save latest session from any response
+      const lastSession = slaResults.reduce<AuthSession | null>(
+        (acc, r) => r.nextSession ?? acc,
+        null,
+      );
+      if (lastSession) saveSession(lastSession);
+
+      // 3. Merge into display rows
+      const merged: SlaRow[] = slaResults.flatMap(({ client, records }) =>
+        records.map((rec: StaffSlaRecord) => ({
+          id: rec.id,
+          client: client.name,
+          tier: client.tier ?? "—",
+          metric: rec.metric,
+          targetHours: rec.targetHours,
+          actualHours: rec.actualHours,
+          status: mapStatus(rec.status),
+          periodStart: rec.periodStart,
+          periodEnd: rec.periodEnd,
         }))
-      )
-    );
+      );
 
-    // Save latest session from any response
-    const lastSession = slaResults.reduce<AuthSession | null>(
-      (acc, r) => r.nextSession ?? acc,
-      null,
-    );
-    if (lastSession) saveSession(lastSession);
-
-    // 3. Merge into display rows
-    const merged: SlaRow[] = slaResults.flatMap(({ client, records }) =>
-      records.map((rec: StaffSlaRecord) => ({
-        id: rec.id,
-        client: client.name,
-        tier: client.tier ?? "—",
-        metric: rec.metric,
-        targetHours: rec.targetHours,
-        actualHours: rec.actualHours,
-        status: mapStatus(rec.status),
-        periodStart: rec.periodStart,
-        periodEnd: rec.periodEnd,
-      }))
-    );
-
-    setRows(merged);
-    setLoading(false);
+      setRows(merged);
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {

@@ -131,72 +131,77 @@ export function SprintPlanningPage({
     setLoading(true);
 
     void (async () => {
-      // Fetch tasks + projects in parallel
-      const [tasksResult, projectsResult] = await Promise.all([
-        getMyTasks(session),
-        getStaffProjects(session),
-      ]);
-      if (cancelled) return;
-      if (tasksResult.nextSession) saveSession(tasksResult.nextSession);
-      if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
+      try {
+        // Fetch tasks + projects in parallel
+        const [tasksResult, projectsResult] = await Promise.all([
+          getMyTasks(session),
+          getStaffProjects(session),
+        ]);
+        if (cancelled) return;
+        if (tasksResult.nextSession) saveSession(tasksResult.nextSession);
+        if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
 
-      const allTasks: StaffTask[] = tasksResult.data ?? [];
-      const projects = projectsResult.data ?? [];
+        const allTasks: StaffTask[] = tasksResult.data ?? [];
+        const projects = projectsResult.data ?? [];
 
-      // Build a project → clientId map
-      const projectClientMap = new Map<string, string>();
-      projects.forEach((p) => projectClientMap.set(p.id, p.clientId));
+        // Build a project → clientId map
+        const projectClientMap = new Map<string, string>();
+        projects.forEach((p) => projectClientMap.set(p.id, p.clientId));
 
-      // Map API priority to local priority
-      const mapPriority = (p: string): Priority => {
-        if (p === "HIGH") return "high";
-        if (p === "MEDIUM") return "medium";
-        return "low";
-      };
+        // Map API priority to local priority
+        const mapPriority = (p: string): Priority => {
+          if (p === "HIGH") return "high";
+          if (p === "MEDIUM") return "medium";
+          return "low";
+        };
 
-      // Map API status to local status
-      const mapStatus = (s: TaskStatus): Status => {
-        if (s === "IN_PROGRESS") return "in_progress";
-        if (s === "DONE") return "done";
-        return "todo"; // TODO and BLOCKED both map to todo for sprint board
-      };
+        // Map API status to local status
+        const mapStatus = (s: TaskStatus): Status => {
+          if (s === "IN_PROGRESS") return "in_progress";
+          if (s === "DONE") return "done";
+          return "todo"; // TODO and BLOCKED both map to todo for sprint board
+        };
 
-      // Tasks with status TODO/BLOCKED go to backlog; IN_PROGRESS/DONE go to sprint
-      const sprintItems: SprintTask[] = [];
-      const backlogItems: BacklogItem[] = [];
+        // Tasks with status TODO/BLOCKED go to backlog; IN_PROGRESS/DONE go to sprint
+        const sprintItems: SprintTask[] = [];
+        const backlogItems: BacklogItem[] = [];
 
-      for (const task of allTasks) {
-        const clientId = projectClientMap.get(task.projectId) ?? "";
-        const priority = mapPriority(task.priority);
-        const estimate = task.estimateMinutes ? Math.round(task.estimateMinutes / 60 * 10) / 10 : 1;
+        for (const task of allTasks) {
+          const clientId = projectClientMap.get(task.projectId) ?? "";
+          const priority = mapPriority(task.priority);
+          const estimate = task.estimateMinutes ? Math.round(task.estimateMinutes / 60 * 10) / 10 : 1;
 
-        if (task.status === "IN_PROGRESS" || task.status === "DONE") {
-          sprintItems.push({
-            id: task.id,
-            clientId,
-            title: task.title,
-            estimate,
-            priority,
-            category: "Admin" as Category,
-            status: mapStatus(task.status),
-            day: null,
-            apiTaskId: task.id,
-          });
-        } else {
-          backlogItems.push({
-            id: task.id,
-            clientId,
-            title: task.title,
-            estimate,
-            priority,
-            category: "Admin" as Category,
-          });
+          if (task.status === "IN_PROGRESS" || task.status === "DONE") {
+            sprintItems.push({
+              id: task.id,
+              clientId,
+              title: task.title,
+              estimate,
+              priority,
+              category: "Admin" as Category,
+              status: mapStatus(task.status),
+              day: null,
+              apiTaskId: task.id,
+            });
+          } else {
+            backlogItems.push({
+              id: task.id,
+              clientId,
+              title: task.title,
+              estimate,
+              priority,
+              category: "Admin" as Category,
+            });
+          }
         }
-      }
 
-      setSprint(sprintItems);
-      setBacklog(backlogItems);
-      setLoading(false);
+        setSprint(sprintItems);
+        setBacklog(backlogItems);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
 
     return () => { cancelled = true; };

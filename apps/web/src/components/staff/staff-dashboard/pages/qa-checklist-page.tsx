@@ -126,31 +126,36 @@ export function QAChecklistPage({
     setLoading(true);
 
     void (async () => {
-      const projectsResult = await getStaffProjects(session);
-      if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
+      try {
+        const projectsResult = await getStaffProjects(session);
+        if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
 
-      const projects = projectsResult.data ?? [];
+        const projects = projectsResult.data ?? [];
 
-      // Load deliverables for all projects in parallel (up to 5)
-      const slice = projects.slice(0, 5);
-      const delivResults = await Promise.all(
-        slice.map((p) => getStaffDeliverables(session, p.id))
-      );
+        // Load deliverables for all projects in parallel (up to 5)
+        const slice = projects.slice(0, 5);
+        const delivResults = await Promise.all(
+          slice.map((p) => getStaffDeliverables(session, p.id))
+        );
 
-      const allItems: QAItem[] = [];
-      let globalIdx = 0;
-      for (let i = 0; i < slice.length; i++) {
-        const result = delivResults[i];
-        if (result?.nextSession) saveSession(result.nextSession);
-        const deliverables = result?.data ?? [];
-        const projectName = slice[i]?.name ?? `Project ${i + 1}`;
-        for (const d of deliverables) {
-          allItems.push(deliverableToQA(d, projectName, globalIdx++));
+        const allItems: QAItem[] = [];
+        let globalIdx = 0;
+        for (let i = 0; i < slice.length; i++) {
+          const result = delivResults[i];
+          if (result?.nextSession) saveSession(result.nextSession);
+          const deliverables = result?.data ?? [];
+          const projectName = slice[i]?.name ?? `Project ${i + 1}`;
+          for (const d of deliverables) {
+            allItems.push(deliverableToQA(d, projectName, globalIdx++));
+          }
         }
-      }
 
-      setItems(allItems);
-      setLoading(false);
+        setItems(allItems);
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [session?.accessToken, isActive]);
 

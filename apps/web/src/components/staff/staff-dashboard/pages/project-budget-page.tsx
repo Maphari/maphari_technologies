@@ -103,7 +103,7 @@ export function ProjectBudgetPage({ isActive, session }: ProjectBudgetPageProps)
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
@@ -152,7 +152,10 @@ export function ProjectBudgetPage({ isActive, session }: ProjectBudgetPageProps)
         });
 
       setBudgetItems(items);
-      setLoading(false);
+    }).catch(() => {
+      // ignore
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

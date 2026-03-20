@@ -39,7 +39,7 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
@@ -47,12 +47,14 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
       if (cancelled) return;
       if (result.error || !result.data) {
         setLoadError(result.error?.message ?? "Failed to load workload data. Please try again.");
-        setLoading(false);
         return;
       }
       setLoadError(null);
       setRows(result.data.staff);
-      setLoading(false);
+    }).catch((err: unknown) => {
+      if (!cancelled) setLoadError((err as Error)?.message ?? "Failed to load workload data. Please try again.");
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

@@ -80,56 +80,60 @@ export function ProjectDocumentsPage({
 
   // ── Fetch projects + deliverables ─────────────────────────────────────────
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
 
     let cancelled = false;
 
     async function load() {
       setLoading(true);
 
-      // 1. Fetch projects
-      const projRes = await getStaffProjects(session!);
-      if (projRes.nextSession) saveSession(projRes.nextSession);
-      if (cancelled) return;
+      try {
+        // 1. Fetch projects
+        const projRes = await getStaffProjects(session!);
+        if (projRes.nextSession) saveSession(projRes.nextSession);
+        if (cancelled) return;
 
-      const projList = projRes.data ?? [];
-      setProjects(projList);
+        const projList = projRes.data ?? [];
+        setProjects(projList);
 
-      if (projList.length === 0) {
-        setDocRows([]);
-        setLoading(false);
-        return;
-      }
-
-      // 2. Fetch deliverables for every project in parallel
-      const delivResults = await Promise.all(
-        projList.map((p) => getStaffDeliverables(session!, p.id))
-      );
-
-      if (cancelled) return;
-
-      const rows: DocRow[] = [];
-      for (let i = 0; i < projList.length; i++) {
-        const r = delivResults[i];
-        if (r.nextSession) saveSession(r.nextSession);
-        const deliverables = r.data ?? [];
-        const project = projList[i];
-        for (const d of deliverables) {
-          rows.push({
-            id:         d.id,
-            name:       d.title,
-            project:    project.name,
-            projectId:  project.id,
-            type:       inferDocType(d.title),
-            status:     d.status,
-            uploadedAt: formatShortDate(d.createdAt),
-            uploadedBy: project.ownerName ?? "Staff",
-          });
+        if (projList.length === 0) {
+          setDocRows([]);
+          return;
         }
-      }
 
-      setDocRows(rows);
-      setLoading(false);
+        // 2. Fetch deliverables for every project in parallel
+        const delivResults = await Promise.all(
+          projList.map((p) => getStaffDeliverables(session!, p.id))
+        );
+
+        if (cancelled) return;
+
+        const rows: DocRow[] = [];
+        for (let i = 0; i < projList.length; i++) {
+          const r = delivResults[i];
+          if (r.nextSession) saveSession(r.nextSession);
+          const deliverables = r.data ?? [];
+          const project = projList[i];
+          for (const d of deliverables) {
+            rows.push({
+              id:         d.id,
+              name:       d.title,
+              project:    project.name,
+              projectId:  project.id,
+              type:       inferDocType(d.title),
+              status:     d.status,
+              uploadedAt: formatShortDate(d.createdAt),
+              uploadedBy: project.ownerName ?? "Staff",
+            });
+          }
+        }
+
+        setDocRows(rows);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
 
     void load();
