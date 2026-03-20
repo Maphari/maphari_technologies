@@ -103,7 +103,23 @@ export function MeetingBookerPage() {
 
       <div className={cx("grid2", "mb16")}>
         {/* ── Booking form ── */}
-        <div className={cx("card", "p20")}>
+        <div className={cx("mbFormCard")}>
+          <div className={cx("mbStepRow")}>
+            <div className={cx("mbStep", "mbStepActive")}>
+              <span className={cx("mbStepNum")}>1</span>
+              Type
+            </div>
+            <div className={cx("mbStepConnector")} />
+            <div className={cx("mbStep", date ? "mbStepActive" : "")}>
+              <span className={cx("mbStepNum")}>2</span>
+              Date
+            </div>
+            <div className={cx("mbStepConnector")} />
+            <div className={cx("mbStep", selectedSlot ? "mbStepActive" : "")}>
+              <span className={cx("mbStepNum")}>3</span>
+              Confirm
+            </div>
+          </div>
           <div className={cx("fw700", "mb12")}>Schedule a Meeting</div>
           <div className={cx("flexCol", "gap12")}>
             <div>
@@ -147,13 +163,13 @@ export function MeetingBookerPage() {
 
             <div>
               <div className={cx("text11", "colorMuted", "mb4")}>Time Slot</div>
-              <div className={cx("flexRow", "flexWrap", "gap6", "mb12")}>
+              <div className={cx("mbSlotGrid")}>
                 {TIME_SLOTS.map((slot) => (
                   <button
                     key={slot}
                     type="button"
-                    className={cx("btnSm", selectedSlot === slot ? "btnAccent" : "btnGhost")}
-                    onClick={() => setSelectedSlot(slot)}
+                    className={cx("mbSlotBtn", selectedSlot === slot ? "mbSlotBtnSelected" : "")}
+                    onClick={() => setSelectedSlot(slot === selectedSlot ? null : slot)}
                   >
                     {slot}
                   </button>
@@ -190,22 +206,16 @@ export function MeetingBookerPage() {
             {loading ? (
               <div className={cx("text11", "colorMuted")}>Loading…</div>
             ) : upcomingMeetings.length === 0 ? (
-              <div className={cx("text11", "colorMuted")}>No upcoming meetings scheduled.</div>
+              <div className={cx("mbEmptySlate")}>No upcoming meetings</div>
             ) : (
-              upcomingMeetings.map((meeting) => (
-                <div key={meeting.id} className={cx("listRow")}>
-                  <div>
-                    <div className={cx("fw600")}>{meeting.title}</div>
-                    <div className={cx("text11", "colorMuted")}>
-                      {formatMeetingDate(meeting.meetingAt)} · {formatMeetingTime(meeting.meetingAt)}
-                    </div>
-                    <div className={cx("text11", "colorMuted")}>{meeting.durationMins} min</div>
+              upcomingMeetings.map((m) => (
+                <div key={m.id} className={cx("mbMeetingRow")}>
+                  <div className={cx("mbMeetingDot")} />
+                  <div className={cx("mbMeetingMeta")}>
+                    <div className={cx("mbMeetingTitle")}>{m.title}</div>
+                    <div className={cx("mbMeetingDate")}>{m.meetingAt ? new Date(m.meetingAt).toLocaleDateString() : ""}</div>
                   </div>
-                  <button
-                    type="button"
-                    className={cx("btnGhost")}
-                    onClick={() => notify("info", "Contact your account manager to reschedule.")}
-                  >
+                  <button type="button" className={cx("btnGhost", "text11")} onClick={() => notify("info", "Contact your account manager to reschedule.")}>
                     Reschedule
                   </button>
                 </div>
