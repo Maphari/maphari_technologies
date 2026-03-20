@@ -1,23 +1,31 @@
 # Admin Dashboard Revamp — UI Elevation & Functionality
 
 **Date:** 2026-03-20
-**Scope:** Admin dashboard — all 95 pages
-**Goal:** Two parallel tracks: (A) Executive Intelligence UI elevation across every page, (B) API wiring to replace all static placeholder data with real data.
+**Scope:** Admin dashboard — 93 pages (all files in `pages/` except `shared.tsx`, `admin-stub-page.tsx`, `admin-page-utils.tsx`)
+**Goal:** (A) Executive Intelligence UI elevation, (B) API wiring to replace all static placeholder data with real data.
 
 ---
 
 ## Background
 
-The admin dashboard has ~95 pages. Most pages currently:
-- Use `<select>` dropdowns for tabs instead of proper tab bars
+The admin dashboard has 93 pages. Most pages currently:
+- Use `<select>` dropdowns for tabs instead of proper tab bars (49 pages have `<select>`, 29 are tab-switchers)
 - Hold static empty arrays as placeholder data with no API calls
-- Lack skeleton loading states that mirror real page structure
+- Lack skeleton loading states that mirror real page structure (~30 pages)
 - Have bare empty states (plain text, no icon or context)
 - Miss NaN division guards on derived metrics
 
-This spec covers both a uniform design elevation pass (Track A) and a full data wiring pass (Track B). Both tracks run in parallel using `superpowers:subagent-driven-development`, working through the same 8 domain batches simultaneously. Track A touches CSS/layout/JSX structure. Track B touches `useEffect`, state, and API imports.
+Predecessor: `2026-03-20-staff-dashboard-ui-audit-elevation-design.md` (staff dashboard equivalent).
 
-Predecessor: `2026-03-20-staff-dashboard-ui-audit-elevation-design.md` (staff dashboard equivalent, already complete).
+---
+
+## Execution Model
+
+**One agent per batch, full ownership.** Each of the 8 batch agents handles both Track A (UI) and Track B (functionality) for their assigned pages in a single pass. This eliminates cross-track merge conflicts since no file is touched by more than one agent.
+
+The 8 batches run in parallel. Within each batch, pages are processed sequentially.
+
+**Do NOT** run a separate UI-only agent and a separate functionality-only agent against the same files simultaneously.
 
 ---
 
@@ -32,55 +40,84 @@ Predecessor: `2026-03-20-staff-dashboard-ui-audit-elevation-design.md` (staff da
 | `--b2` | `rgba(255,255,255,0.12)` | Card borders |
 | `--b3` | `rgba(255,255,255,0.16)` | Focus / hover borders |
 | `--accent` | `#8b6fff` | Admin purple |
+| `--text` | `rgba(255,255,255,0.85)` | Body text |
+| `--muted` | `rgba(255,255,255,0.35)` | Subdued text |
+| `--amber` | `#fbbf24` | Warning colour |
+| `--red` | `#ef4444` | Error / critical colour |
+| `--blue` | `#3b82f6` | Info / link colour |
 | `--font-syne` | Syne | Headings, display text |
 | `--font-dm-mono` | DM Mono | All data labels, metrics, eyebrows |
 
 No Instrument Serif — serif is client portal only.
-Topbar: 2px `--accent` top border identity stripe (per spec section 5.5).
+Topbar: 2px `--accent` top border identity stripe.
 
-CSS modules: `apps/web/src/app/style/admin/*.module.css` (7 files)
-Style util: `apps/web/src/components/admin/dashboard/style.ts`
-API clients: `apps/web/src/lib/api/admin/`
-Shared util: `apps/web/src/lib/api/admin/_shared.ts`
+**Key file paths:**
+- CSS modules: `apps/web/src/app/style/admin/*.module.css` (7 files)
+- Admin primitives CSS: `apps/web/src/app/style/admin.module.css`
+- Shared CSS: `apps/web/src/app/style/shared/maphari-dashboard-shared.module.css`
+- Style util: `apps/web/src/components/admin/dashboard/style.ts`
+- API clients: `apps/web/src/lib/api/admin/`
+- Shared API util: `apps/web/src/lib/api/admin/_shared.ts`
 
 ---
 
 ## Executive Intelligence Visual Language
 
-The admin dashboard uses a richer, more data-dense visual style than the staff dashboard ("Precision Industrial"). The key differences:
+The admin dashboard uses a richer, more data-dense visual style than the staff dashboard. Key characteristics:
 
-- **Purple gradient on primary KPI cards** — `linear-gradient(135deg, rgba(139,111,255,0.18), rgba(139,111,255,0.06))` with `border: 1px solid rgba(139,111,255,0.3)`
-- **Amber/red tinted KPI cards** for alert-state metrics — same pattern with amber/red colours
-- **Left-border alert banners** — 3px left border in accent/amber/red, tinted background, severity eyebrow label
+- **Purple gradient on primary KPI cards** — `linear-gradient(160deg, rgba(139,111,255,0.16), rgba(10,12,18,0.95))` with `border: 1px solid rgba(139,111,255,0.3)`
+- **Amber/red tinted KPI cards** for alert-state metrics — same gradient pattern with amber/red colours
+- **Left-border alert banners** — 3px left border in accent/amber/red, tinted background, monospace severity eyebrow
 - **Expandable table rows** — click to reveal nested sub-rows (e.g. projects within a client)
-- **Inline sparklines / bar charts** — revenue trends in KPI cards where relevant
-- **Donut charts** for utilisation metrics
-- **Health bars** — coloured progress bars with numeric score; green ≥70, amber 50–69, red <50
+- **Inline bar charts** — revenue bar groups or progress columns in KPI cards where relevant
+- **Donut charts** for utilisation metrics (donut CSS classes already exist in `core.module.css`)
+- **Health bars** — progress bars with numeric score; green ≥70, amber 50–69, red <50
 - **Row-level severity highlighting** — critical rows get red left border + tinted background
 
 ---
 
 ## Track A — UI Elevation
 
+### A0. Workspace-Context Pages (UI-only — do NOT add `useEffect`)
+
+These 10 pages receive data via `useAdminWorkspaceContext()` and must NOT be converted to per-page `useEffect` + API call pattern. For these pages, Track B changes are limited to using `snapshot.loading` for skeleton state and `session` for any mutation calls. Apply full Track A UI elevation normally.
+
+| Page file | Context fields used |
+|-----------|-------------------|
+| `admin-analytics-page-client.tsx` | `snapshot`, `loading` |
+| `admin-audit-page-client.tsx` | `snapshot`, `loading`, `session` |
+| `admin-automation-page-client.tsx` | `snapshot`, `session` |
+| `admin-billing-page-client.tsx` | `snapshot`, `loading` |
+| `admin-clients-page-client.tsx` | `snapshot`, `loading` |
+| `admin-integrations-page-client.tsx` | `snapshot`, `session` |
+| `admin-leads-page-client.tsx` | `snapshot`, `loading`, `moveLead`, `transitioningLeadId` |
+| `admin-projects-page-client.tsx` | `snapshot`, `loading` |
+| `admin-reports-page-client.tsx` | `snapshot`, `session` |
+| `admin-settings-page-client.tsx` | context fields — check file |
+
 ### A1. Universal Audit Checklist (every page)
 
-| Check | What to look for |
-|-------|-----------------|
-| Select-based tabs | Replace every `<select>` used as a tab switcher with a proper `.tabBar` pill component |
-| Missing skeleton | Pages that have `if (loading) return …` but the returned JSX does not approximate real page structure |
-| Missing error state | Pages with no user-visible error message — must show error card with retry option |
-| Bare empty states | Empty renders with only plain text — replace with `EmptyState` component (icon + title + subtitle) |
-| NaN display values | Bare division (e.g. `total / count`) with no zero-guard — all three forms acceptable: `count > 0 ? Math.round(total / count) : 0`, `Math.round(total / count) || 0`, `Math.round(total / (count ?? 1))` |
-| Missing `key` props | `.map()` calls rendering JSX elements without a `key` prop |
-| Missing CSS classes | Component references a class name not in any admin CSS module |
+| Severity | Check | Rule |
+|----------|-------|------|
+| Critical | Missing CSS class referenced in JSX | Look up class name in all 7 admin CSS module files + shared + admin.module.css |
+| Critical | `<select>` used as tab switcher | Replace with tab bar — but **only when the `<select>` drives `activeTab` state**. Selects that drive sort order, filter status, or form fields must remain as `<select>`. |
+| Critical | No loading state on a page with API call | Must have skeleton returning from loading branch |
+| Critical | No error state on a page with API call | Must show error card with message text + retry button |
+| Warning | Bare empty state (text only) | Use existing `EmptyState` component — see A2 |
+| Warning | NaN division — no zero guard | Three acceptable forms: `count > 0 ? Math.round(total / count) : 0`, `\|\| 0`, or `?? 1` denominator |
+| Warning | Missing `key` prop in `.map()` | All `.map()` calls rendering JSX must have `key` on the outermost element |
+| Warning | Skeleton doesn't approximate real page structure | Skeleton must mirror the KPI card count, table row count, and layout of the real page |
+| Info | Unused CSS class in module | Flag for cleanup; do not delete during this pass |
 
 ### A2. Component Patterns
 
-#### Tab Bar (replaces all `<select>` tab switchers)
+#### Tab Bar
+
+`tabBar`, `tabItem`, and `tabItemActive` are **already defined in the shared CSS** (loaded via the style spread). No new CSS needed.
 
 ```tsx
-// CSS class: .tabBar (pill container), .tabItem, .tabItemActive
-<div className={styles.tabBar}>
+// Use cx() with bare string names — they resolve via the shared spread
+<div className={cx("tabBar")}>
   {tabs.map(t => (
     <button
       key={t}
@@ -94,58 +131,87 @@ The admin dashboard uses a richer, more data-dense visual style than the staff d
 </div>
 ```
 
-CSS to add to `admin/core.module.css`:
-```css
-.tabBar { display:flex; gap:2px; background:var(--s3); border:1px solid var(--b1); border-radius:8px; padding:3px; width:fit-content; margin-bottom:16px; }
-.tabItem { padding:6px 14px; border-radius:6px; font-size:0.72rem; font-family:var(--font-syne); font-weight:600; color:var(--muted); background:transparent; border:none; cursor:pointer; transition:all 0.15s; }
-.tabItemActive { background:var(--accent); color:#fff; }
-```
+**Note:** `admin.module.css` contains a legacy `.tabShell` / `.tabNav` / `.tabButton` system with lime colours — incorrect for admin. Do not use these classes. They will be cleaned up in a future pass.
 
 #### KPI Card Variants
 
-Three variants added to admin CSS:
-- `.kpiCardPrimary` — purple gradient, accent-tinted label
-- `.kpiCardNeutral` — `--s2` surface, muted label
-- `.kpiCardAmber` — amber-tinted background/border, amber label
-- `.kpiCardRed` — red-tinted background/border, red label
+Three new variants must be added to **`admin.module.css`** adjacent to the existing `.kpiTeal`, `.kpiSlate`, `.kpiGold` definitions:
 
-#### Alert Banner
+```css
+/* Add after .kpiGold in admin.module.css */
+.kpiPurple {
+  background: linear-gradient(160deg, rgba(139, 111, 255, 0.16) 0%, rgba(10, 12, 18, 0.95) 66%);
+}
 
-```tsx
-// CSS classes: .alertBanner, .alertBannerInfo, .alertBannerWarning, .alertBannerCritical
-<div className={cx("alertBanner", "alertBannerWarning")}>
-  <div>
-    <div className={cx("fontMono", "text10", "uppercase", "tracking", "colorAmber")}>Warning</div>
-    <div className={cx("text12")}>3 invoices overdue — oldest 21 days</div>
-  </div>
-  <button type="button" className={cx("text10", "colorMuted")}>View →</button>
-</div>
+.kpiAmber {
+  background: linear-gradient(160deg, rgba(251, 191, 36, 0.16) 0%, rgba(10, 12, 18, 0.95) 66%);
+}
+
+.kpiRed {
+  background: linear-gradient(160deg, rgba(239, 68, 68, 0.16) 0%, rgba(10, 12, 18, 0.95) 66%);
+}
 ```
 
-CSS:
+Usage: `<div className={cx(styles.kpiCard, styles.kpiPurple)}>` — `kpiCard` is the base class, `kpiPurple/Amber/Red` is the modifier.
+
+For alert-bordered KPI cards (amber/red tone), add an `alertBanner*` modifier alongside.
+
+#### Alert Banners
+
+Add to `admin/core.module.css`:
+
 ```css
-.alertBanner { border-left:3px solid; border-radius:0 8px 8px 0; padding:9px 14px; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-.alertBannerInfo { background:rgba(139,111,255,0.08); border-color:var(--accent); }
-.alertBannerWarning { background:rgba(251,191,36,0.06); border-color:var(--amber); }
-.alertBannerCritical { background:rgba(239,68,68,0.06); border-color:var(--red); }
+.alertBanner {
+  border-left: 3px solid;
+  border-radius: 0 8px 8px 0;
+  padding: 9px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.alertBannerInfo    { background: rgba(139, 111, 255, 0.08); border-color: var(--accent); }
+.alertBannerWarning { background: rgba(251, 191, 36, 0.06);  border-color: var(--amber); }
+.alertBannerCritical{ background: rgba(239, 68, 68, 0.06);   border-color: var(--red); }
+```
+
+Usage:
+```tsx
+{overdueCount > 0 && (
+  <div className={cx(styles.alertBanner, styles.alertBannerWarning)}>
+    <div>
+      <div className={cx("fontMono", "text10", "uppercase", "tracking", "colorAmber")}>Warning</div>
+      <div className={cx("text12")}>{overdueCount} invoices overdue</div>
+    </div>
+    <button type="button" className={cx("text10", "colorMuted")}>View →</button>
+  </div>
+)}
 ```
 
 #### Skeleton Loading State
 
-Skeleton JSX must **approximate the real page structure** — not a full-page spinner. For a page with 4 KPI cards + a table:
+63 of 93 pages already have skeleton states. The remaining ~30 need new skeleton JSX. Skeleton must **approximate the real page structure** — mirror the KPI card count, table row count, and layout columns.
 
+Add to `admin/core.module.css` (this file is already included in the style spread in `style.ts` — no import wiring needed after adding classes):
+```css
+@keyframes adminSkeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.skeletonBlock { background: rgba(255,255,255,0.06); border-radius: 4px; animation: adminSkeletonPulse 1.5s ease-in-out infinite; }
+.skeletonCard  { animation: adminSkeletonPulse 1.5s ease-in-out infinite; }
+```
+
+Example skeleton for a 4-KPI + table page:
 ```tsx
 if (loading) return (
   <div className={styles.pageBody}>
     <div className={styles.pageHeader}>
-      <div className={cx("skeletonBlock")} style={{ width: 160, height: 12 }} />
+      <div className={cx("skeletonBlock")} style={{ width: 160, height: 10 }} />
       <div className={cx("skeletonBlock")} style={{ width: 240, height: 22, marginTop: 6 }} />
     </div>
     <div className={styles.kpiGrid}>
       {[0,1,2,3].map(i => (
         <div key={i} className={cx(styles.card, "skeletonCard")}>
-          <div className="skeletonBlock" style={{ width: '60%', height: 9 }} />
-          <div className="skeletonBlock" style={{ width: '40%', height: 22, marginTop: 10 }} />
+          <div className="skeletonBlock" style={{ width: '60%', height: 9, marginBottom: 10 }} />
+          <div className="skeletonBlock" style={{ width: '40%', height: 22 }} />
         </div>
       ))}
     </div>
@@ -158,18 +224,13 @@ if (loading) return (
 );
 ```
 
-CSS skeleton utilities (add to `admin/core.module.css`):
-```css
-@keyframes adminSkeletonPulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
-.skeletonBlock { background:rgba(255,255,255,0.06); border-radius:4px; animation:adminSkeletonPulse 1.5s ease-in-out infinite; }
-.skeletonCard { animation:adminSkeletonPulse 1.5s ease-in-out infinite; }
-```
-
 #### Empty State
 
-Use the existing `EmptyState` component from `admin-page-utils.tsx` — it already supports `title`, `subtitle`, `variant`, and `action`. Ensure every `.map()` over data arrays has an empty-state branch:
+Use the **existing** `EmptyState` component from `admin-page-utils.tsx`. Its CSS classes (`emptyState`, `emptyStateCompact`, `emptyIcon`, `emptyTitle`, `emptySub`) already exist in `admin/core.module.css`. Do not add new empty state CSS.
 
 ```tsx
+import { EmptyState } from "./admin-page-utils";
+
 {items.length === 0 ? (
   <EmptyState
     title="No records yet"
@@ -184,41 +245,59 @@ Use the existing `EmptyState` component from `admin-page-utils.tsx` — it alrea
 #### Health Bar
 
 ```tsx
-// CSS: .healthBarWrap, .healthBarBg, .healthBarFill (dynamic width via style)
-function healthColor(score: number) {
-  if (score >= 70) return 'var(--accent-green, #4ade80)';
+function healthColor(score: number): string {
+  if (score >= 70) return 'var(--green, #4ade80)';
   if (score >= 50) return 'var(--amber)';
   return 'var(--red)';
 }
+
+// Render:
+<div className={cx("flexRow", "gap8", "alignCenter")}>
+  <div className={styles.healthBarBg}>
+    <div
+      className={styles.healthBarFill}
+      style={{ width: `${Math.min(100, score)}%`, background: healthColor(score) }}
+    />
+  </div>
+  <span className={cx("fontMono", "text10", "fw700")} style={{ color: healthColor(score) }}>
+    {score}
+  </span>
+</div>
 ```
 
-### A3. Page-Specific Patterns by Batch
+Add to `admin/core.module.css`:
+```css
+.healthBarBg   { flex: 1; background: var(--b1); border-radius: 3px; height: 4px; }
+.healthBarFill { height: 4px; border-radius: 3px; transition: width 0.3s; }
+```
 
-#### Table-heavy pages (Clients, Leads, Invoices, Payroll, Recruitment, Staff, etc.)
-- 5-column KPI strip above the table
-- Search input + filter chips row
-- Tab bar above the table
-- Expandable rows for nested entities (projects under clients, line items under invoices)
-- Row-level severity highlighting (red left border for critical rows)
+### A3. Page-Specific Layout Patterns
+
+**Table-heavy pages** (Clients, Leads, Invoices, Payroll, Recruitment, Staff, etc.):
+- KPI strip (4–5 cards) above the table
+- Search input + filter chips row (filter chips drive a filter state, not tab state — keep as chips)
+- Tab bar for view switching (All / Retainer / Project / etc.)
+- Expandable rows for nested entities
+- Row-level severity: red left border + `rgba(239,68,68,0.03)` background for critical rows
 - Pagination row at bottom
 
-#### Dashboard / overview pages (Executive, Owner, RevOps, etc.)
-- Full-width KPI grid (4 cards)
+**Dashboard / overview pages** (Executive, Owner, RevOps, etc.):
+- KPI grid (4 cards) — primary card uses `kpiPurple`
 - Alert banner section (conditionally rendered when alerts exist)
 - Tab bar
-- Main split layout: chart/primary content left, entity list right
-- Bottom row of 3 cards: utilisation donut · pipeline funnel · activity feed
+- Main split: chart/primary content left + entity list right
+- Bottom 3-card row: utilisation donut · pipeline funnel · activity feed
 
-#### Form / detail pages (Settings, Onboarding, Brand Control, etc.)
+**Form / detail pages** (Settings, Onboarding, Brand Control, etc.):
 - Tab bar to separate sections
-- Section cards with clear headings
-- Form inputs styled to `--s3` background
-- Save/submit button in accent purple
+- Section cards with `pageCardTitle` heading
+- Form inputs use `--s3` background
+- Submit button uses `var(--accent)` background
 
-#### Calendar / timeline pages (Cash Flow Calendar, Timeline Gantt, Meeting Archive)
-- Month navigation with prev/next arrows
-- Calendar grid with event chips using tone colours
-- List view toggle
+**Calendar / timeline pages** (Cash Flow Calendar, Timeline Gantt, Meeting Archive, Booking Appointments):
+- Month navigation with prev/next arrow buttons
+- Calendar grid with event chips using tone CSS classes
+- List view toggle tab
 
 ---
 
@@ -226,7 +305,7 @@ function healthColor(score: number) {
 
 ### B1. API Wiring Pattern
 
-All admin pages follow this pattern (mirrors `executive-dashboard-page.tsx`):
+Standard pattern for non-workspace-context pages:
 
 ```tsx
 "use client";
@@ -238,7 +317,7 @@ import { saveSession } from "../../../../lib/auth/session";
 import { loadXWithRefresh } from "../../../../lib/api/admin/x";
 import type { PageId } from "../config";
 
-export function XPage({ session, onNavigate }: { session: AuthSession; onNavigate: (page: PageId) => void }) {
+export function XPage({ session, onNavigate }: { session: AuthSession; onNavigate?: (page: PageId) => void }) {
   const [data, setData] = useState<XType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -246,6 +325,7 @@ export function XPage({ session, onNavigate }: { session: AuthSession; onNavigat
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setError(null);
     loadXWithRefresh(session).then(result => {
       if (cancelled) return;
       if (result.nextSession) saveSession(result.nextSession);
@@ -256,226 +336,261 @@ export function XPage({ session, onNavigate }: { session: AuthSession; onNavigat
     return () => { cancelled = true; };
   }, [session]);
 
-  if (loading) return (/* skeleton JSX */);
-  if (error) return (/* error card JSX */);
+  if (loading) return (/* skeleton JSX — mirrors real layout */);
 
-  return (/* real page JSX using data */);
+  if (error) return (
+    <div className={styles.pageBody}>
+      <div className={cx(styles.card, "flexCol", "gap12", "p24")}>
+        <div className={cx("text13", "fw700", "colorRed")}>Failed to load data</div>
+        <div className={cx("text12", "colorMuted")}>{error}</div>
+        <button
+          type="button"
+          className={cx("text11", "fw700")}
+          onClick={() => setLoading(true)}
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+
+  return (/* real page JSX */);
 }
 ```
 
 Key rules:
-- Always use `cancelled` flag to prevent state updates after unmount
-- Always call `saveSession(result.nextSession)` when `nextSession` is non-null
+- Always set `cancelled = true` in the cleanup function
+- Always call `saveSession(result.nextSession)` when non-null
 - Always handle `result.error` before accessing `result.data`
-- Skeleton JSX must approximate the real page layout
-- Error card must show the error message + a retry button that re-sets `loading(true)` to re-trigger the effect
+- The retry button re-triggers by setting `loading(true)` — the effect re-fires because `loading` is not a dependency; use a separate `retryCount` state if needed: `const [retryCount, setRetryCount] = useState(0)` + `[session, retryCount]` in deps
 
 ### B2. `loadXWithRefresh` Convention
 
-Every API client function follows this signature:
-
 ```ts
+import { callGateway, isUnauthorized, toGatewayError, withAuthorizedSession } from "./_shared";
+import type { AuthorizedResult } from "./_shared";
+import type { AuthSession } from "../../auth/session";
+
 export async function loadXWithRefresh(session: AuthSession): Promise<AuthorizedResult<XType[]>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const res = await callGateway<XType[]>("/admin/x", accessToken);
     if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
-    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error.code, res.payload.error.message) };
+    if (!res.payload.success) return {
+      unauthorized: false, data: null,
+      error: toGatewayError(res.payload.error?.code ?? "FETCH_FAILED", res.payload.error?.message ?? "Request failed.")
+    };
     return { unauthorized: false, data: res.payload.data, error: null };
   });
 }
 ```
 
-For mutation endpoints (POST/PATCH/DELETE), add separate `createX`, `updateX`, `deleteX` functions using `callGateway` with `{ method: "POST", body: payload }`.
+### B3. Existing API Functions (no new files or functions needed)
 
-### B3. Missing API Clients to Build
+All API functions needed by admin pages already exist. Use the exact function names below — do not create duplicates:
 
-Pages that reference data domains not yet covered by an existing admin API client file:
+| Function | File | Used by |
+|----------|------|---------|
+| `loadAnnouncementsWithRefresh` | `governance.ts` | announcements-manager-page |
+| `loadKnowledgeArticlesWithRefresh` | `governance.ts` | knowledge-base-admin-page |
+| `loadDecisionRecordsWithRefresh` | `governance.ts` | decision-registry-page |
+| `loadHandoversWithRefresh` | `governance.ts` | handover-management-page |
+| `loadDesignReviewsWithRefresh` | `governance.ts` | design-review-admin-page |
+| `loadContentSubmissionsWithRefresh` | `governance.ts` | content-approval-page |
+| `loadAllPortfolioRisksWithRefresh` | `governance.ts` | portfolio-risk-register-page |
+| `loadAllHealthScoresWithRefresh` | `client-ops.ts` | client-health-scorecard-page, active-health-monitor-page, health-interventions-page |
+| `loadAllSatisfactionSurveysWithRefresh` | `client-ops.ts` | client-satisfaction-page, staff-satisfaction-page |
+| `loadAllCommLogsWithRefresh` | `client-ops.ts` | communication-audit-page |
+| `loadAllAppointmentsWithRefresh` | `client-ops.ts` | booking-appointments-page |
+| `loadClientBrandingWithRefresh` | `clients.ts` | brand-control-page |
+| `loadAdminPeerReviewsWithRefresh` | `hr.ts` | peer-review-queue-page |
+| `loadStandupFeedWithRefresh` | `hr.ts` | standup-feed-page |
 
-| Missing Client | File to create | Gateway routes to call |
-|---------------|---------------|----------------------|
-| `bookings.ts` | `apps/web/src/lib/api/admin/bookings.ts` | `/admin/bookings`, `/admin/appointments` |
-| `health.ts` | `apps/web/src/lib/api/admin/health.ts` | `/admin/health-scores`, `/admin/interventions` |
-| `satisfaction.ts` | `apps/web/src/lib/api/admin/satisfaction.ts` | `/admin/satisfaction`, `/admin/feedback` |
-| `communications.ts` | `apps/web/src/lib/api/admin/communications.ts` | `/admin/communication-logs` |
-| `brand.ts` | `apps/web/src/lib/api/admin/brand.ts` | `/admin/brand-assets`, `/admin/content-submissions` |
-| `knowledge.ts` | `apps/web/src/lib/api/admin/knowledge.ts` | `/admin/knowledge-articles` |
-| `handovers.ts` | `apps/web/src/lib/api/admin/handovers.ts` | `/admin/handovers` |
-| `decisions.ts` | `apps/web/src/lib/api/admin/decisions.ts` | `/admin/decisions`, `/admin/decision-records` |
-| `announcements.ts` | `apps/web/src/lib/api/admin/announcements.ts` | `/admin/announcements` |
-| `design-reviews.ts` | `apps/web/src/lib/api/admin/design-reviews.ts` | `/admin/design-reviews` |
-| `peer-reviews.ts` | `apps/web/src/lib/api/admin/peer-reviews.ts` | `/admin/peer-reviews` |
-| `standup.ts` | `apps/web/src/lib/api/admin/standup.ts` | `/admin/standup` |
-| `risks.ts` | `apps/web/src/lib/api/admin/risks.ts` | `/admin/risks` |
-
-If a gateway route doesn't exist either, add it to `services/core/src/routes/` following the existing pattern (Prisma query → `ApiResponse<T>` shape) and register it in the gateway controller.
+If a page's data need is not covered by any function in the table above or in the existing API client files, add a new function to the appropriate existing file following the B2 convention. Note the addition in the implementation log. Do not create new client files.
 
 ### B4. Derived Metrics Rules
 
-All computed metrics displayed in the UI must have zero-division guards:
-- `count > 0 ? Math.round(total / count) : 0` — preferred form (explicit intent)
-- `Math.round(total / count) || 0` — acceptable
-- `Math.round(total / (count ?? 1))` — acceptable
+- Zero-division guard required on all computed averages: `count > 0 ? Math.round(total / count) : 0`
+- Percentages must be clamped: `Math.min(100, Math.max(0, Math.round(pct)))`
+- Currency (cents): `format-money.ts` already exists at `apps/web/src/lib/utils/format-money.ts` and exports `formatMoney(amountCents, currency)` for full currency strings (e.g. "R1,500.00"). For abbreviated KPI display (e.g. "R84k"), `centsToK()` is currently defined inline in `revenue-forecasting-page.tsx`. Extract it by adding `formatMoneyK` to `format-money.ts` and replace the inline definition:
 
-Percentages must be clamped: `Math.min(100, Math.max(0, pct))`.
+```ts
+// Add to apps/web/src/lib/utils/format-money.ts
+/** Abbreviate cents to a compact KPI label — e.g. 8450000 → "R84k" */
+export function formatMoneyK(cents: number): string {
+  return `R${(cents / 100_000).toFixed(0)}k`;
+}
+```
 
-Currency values (cents) must use the existing `centsToK()` helper or `Intl.NumberFormat`.
+Then in `revenue-forecasting-page.tsx` (and any other pages that need it): `import { formatMoneyK } from "@/lib/utils/format-money"` and rename `centsToK` to `formatMoneyK`.
 
 ---
 
 ## Page Batches
 
 ### Batch 1 — Command (6 pages)
-| Page file | UI changes | API client |
-|-----------|-----------|-----------|
-| `owners-workspace-page.tsx` | Replace select tabs; skeleton; KPI cards; alert banners | `governance.ts` (decisions, notes) |
-| `executive-dashboard-page.tsx` | Already wired; add tab bar; add alert banners; add health list | Already wired via `clients.ts`, `hr.ts` |
-| `business-development-page.tsx` | Replace select tabs; skeleton; KPI strip | `pipeline.ts` |
-| `ai-action-recommendations-page.tsx` | Skeleton; empty state | `ai.ts` |
-| `decision-registry-page.tsx` | Replace select tabs; skeleton | `decisions.ts` (new) |
-| `eod-digest-page.tsx` | Skeleton; empty state | `governance.ts` |
+
+| Page | Track A changes | Track B — API function |
+|------|----------------|----------------------|
+| `owners-workspace-page.tsx` | Replace select tabs; add skeleton; KPI cards (`kpiPurple`); alert banners | `loadDecisionRecordsWithRefresh` (governance.ts) for decision journal tab |
+| `executive-dashboard-page.tsx` | Add alert banners; replace select with tab bar; upgrade KPI cards to `kpiPurple` | Already wired; ensure `saveSession` called |
+| `business-development-page.tsx` | Replace select tabs; skeleton; KPI strip | `loadAdminSnapshotWithRefresh` (clients.ts) — derive from leads + pipeline |
+| `ai-action-recommendations-page.tsx` | Skeleton; empty state | No API call needed — AI recommendations are computed client-side from snapshot |
+| `decision-registry-page.tsx` | Replace select tabs; skeleton | `loadDecisionRecordsWithRefresh` (governance.ts) |
+| `eod-digest-page.tsx` | Skeleton; empty state | `loadAnnouncementsWithRefresh` (governance.ts) + derive from snapshot |
 
 ### Batch 2 — Revenue (7 pages)
-| Page file | UI changes | API client |
-|-----------|-----------|-----------|
-| `leads-page.tsx` | Tab bar; table with severity rows; skeleton | `clients.ts` (leads) |
-| `prospecting-page.tsx` | KPI strip; table; skeleton | `prospecting.ts` |
-| `pipeline-analytics-page.tsx` | Funnel bars; tab bar; skeleton | `pipeline.ts` |
-| `revops-dashboard-page.tsx` | KPI grid; sparklines; tab bar; skeleton | `billing.ts` + `pipeline.ts` |
-| `revenue-forecasting-page.tsx` | Bar chart; KPI strip; skeleton | `billing.ts` |
-| `referral-tracking-page.tsx` | Table; KPI strip; skeleton | `clients.ts` (referrals) |
-| `invoice-chasing-page.tsx` | Alert banners; severity table; skeleton | `billing.ts` |
 
-### Batch 3 — Clients (9 pages)
-| Page file | UI changes | API client |
-|-----------|-----------|-----------|
-| `clients-projects-page.tsx` | Expandable table; KPI strip; health bars; filter chips | `clients.ts` + `project-layer.ts` |
-| `client-journey-page.tsx` | Tab bar; timeline layout; skeleton | `client-ops.ts` |
-| `client-health-scorecard-page.tsx` | Health bars; KPI strip; severity rows; skeleton | `health.ts` (new) |
-| `client-satisfaction-page.tsx` | KPI strip; chart; skeleton | `satisfaction.ts` (new) |
-| `lifecycle-dashboard-page.tsx` | Tab bar; stage funnel; skeleton | `client-ops.ts` |
-| `client-onboarding-page.tsx` | Step progress; KPI strip; skeleton | `onboarding.ts` |
-| `client-offboarding-page.tsx` | Step progress; skeleton | `closeout.ts` |
-| `loyalty-credits-page.tsx` | KPI strip; table; skeleton | `loyalty.ts` |
-| `sla-tracker-page.tsx` | Alert banners; severity table; skeleton | `billing.ts` (SLA data) |
+| Page | Track A changes | Track B — API function |
+|------|----------------|----------------------|
+| `leads-page.tsx` | Tab bar; expandable table; severity rows; skeleton | `admin-leads-page-client.tsx` uses context — UI-only |
+| `prospecting-page.tsx` | KPI strip; table; skeleton | `loadProspectingDataWithRefresh` (prospecting.ts) |
+| `pipeline-analytics-page.tsx` | Funnel bars; tab bar; skeleton | `loadPipelineSummaryWithRefresh` (pipeline.ts) |
+| `revops-dashboard-page.tsx` | KPI grid (`kpiPurple`); tab bar; alert banners; skeleton | `loadBillingSnapshotWithRefresh` (billing.ts) + pipeline |
+| `revenue-forecasting-page.tsx` | Already wired; replace select with tab bar; upgrade KPI cards | Already wired — ensure `centsToK` extracted to finance.ts |
+| `referral-tracking-page.tsx` | KPI strip; table; skeleton | `loadReferralsWithRefresh` (clients.ts — check if exists, add if not) |
+| `invoice-chasing-page.tsx` | Alert banners; severity table; filter chips; skeleton | `loadBillingSnapshotWithRefresh` (billing.ts) — filter for overdue |
+
+### Batch 3 — Clients (8 pages)
+
+| Page | Track A changes | Track B — API function |
+|------|----------------|----------------------|
+| `clients-projects-page.tsx` | Expandable table; KPI strip; health bars; filter chips; severity rows | `admin-clients-page-client.tsx` + `admin-projects-page-client.tsx` use context — UI-only |
+| `client-journey-page.tsx` | Tab bar; timeline layout; skeleton | `loadClientJourneyWithRefresh` (client-ops.ts — check, add if missing) |
+| `client-health-scorecard-page.tsx` | Health bars; KPI strip (`kpiPurple`); severity rows; skeleton | `loadAllHealthScoresWithRefresh` (client-ops.ts) |
+| `client-satisfaction-page.tsx` | KPI strip; bar chart; skeleton | `loadAllSatisfactionSurveysWithRefresh` (client-ops.ts) |
+| `lifecycle-dashboard-page.tsx` | Tab bar; stage funnel bars; skeleton | `loadClientLifecycleWithRefresh` (client-ops.ts — check, add if missing) |
+| `client-onboarding-page.tsx` | Step progress; KPI strip; skeleton | `loadOnboardingStatusWithRefresh` (onboarding.ts) |
+| `client-offboarding-page.tsx` | Step progress; alert banners; skeleton | `loadOffboardingStatusWithRefresh` (closeout.ts) |
+| `loyalty-credits-page.tsx` | KPI strip; table; skeleton | `loadLoyaltyCreditsWithRefresh` (loyalty.ts) |
+| `sla-tracker-page.tsx` | Alert banners; severity table; health bars; skeleton | `loadSLADataWithRefresh` (billing.ts — check, add if missing) |
 
 ### Batch 4 — Projects (9 pages)
-| Page file | UI changes | API client |
-|-----------|-----------|-----------|
-| `project-portfolio-page.tsx` | KPI strip; expandable table; health bars; skeleton | `project-layer.ts` |
-| `project-operations-page.tsx` | Tab bar; board + list toggle; skeleton | `project-ops.ts` |
-| `sprint-board-admin-page.tsx` | Kanban columns; skeleton | `project-ops.ts` |
-| `timeline-gantt-page.tsx` | Gantt bars; month nav; skeleton | `project-layer.ts` |
-| `capacity-forecast-page.tsx` | Utilisation donut; KPI strip; skeleton | `capacity.ts` |
-| `resource-allocation-page.tsx` | Assignment table; progress bars; skeleton | `capacity.ts` |
-| `portfolio-risk-register-page.tsx` | Severity table; KPI strip; skeleton | `risks.ts` (new) |
-| `change-request-manager-page.tsx` | Tab bar; table; skeleton | `project-ops.ts` |
-| `quality-assurance-page.tsx` | Tab bar; score cards; skeleton | `project-ops.ts` |
 
-### Batch 5 — Finance (9 pages)
-| Page file | UI changes | API client |
-|-----------|-----------|-----------|
-| `invoices-page.tsx` | KPI strip; severity table; filter chips; skeleton | `billing.ts` |
-| `payroll-ledger-page.tsx` | KPI strip; table; skeleton | `expenses.ts` |
-| `cash-flow-calendar-page.tsx` | Calendar grid; month nav; event chips; skeleton | `billing.ts` |
-| `expense-tracker-page.tsx` | KPI strip; table; category bars; skeleton | `expenses.ts` |
-| `profitability-per-client-page.tsx` | Already partially wired; add tab bar; skeleton | `billing.ts` + `clients.ts` |
-| `profitability-per-project-page.tsx` | Already partially wired; add tab bar; skeleton | `billing.ts` + `project-layer.ts` |
-| `financial-year-closeout-page.tsx` | Step progress; KPI strip; skeleton | `closeout.ts` |
-| `vendor-cost-control-page.tsx` | KPI strip; table; skeleton | `vendors.ts` |
-| `invoice-chasing-page.tsx` | (see Batch 2) | |
+| Page | Track A changes | Track B — API function |
+|------|----------------|----------------------|
+| `project-portfolio-page.tsx` | KPI strip; expandable table; health bars; skeleton | `admin-projects-page-client.tsx` uses context — UI-only |
+| `project-operations-page.tsx` | Tab bar; board + list toggle; skeleton | `loadProjectOpsDataWithRefresh` (project-ops.ts) |
+| `sprint-board-admin-page.tsx` | Kanban columns; KPI strip; skeleton | `loadSprintBoardWithRefresh` (project-ops.ts) |
+| `timeline-gantt-page.tsx` | Gantt bars; month nav buttons; skeleton | `loadProjectTimelineWithRefresh` (project-layer.ts) |
+| `capacity-forecast-page.tsx` | Donut chart; KPI strip (`kpiPurple`); skeleton | `loadCapacityForecastWithRefresh` (capacity.ts) |
+| `resource-allocation-page.tsx` | Assignment table; progress bars; skeleton | `loadResourceAllocationWithRefresh` (capacity.ts) |
+| `portfolio-risk-register-page.tsx` | Severity table; KPI strip; alert banners; skeleton | `loadAllPortfolioRisksWithRefresh` (governance.ts) |
+| `change-request-manager-page.tsx` | Tab bar; severity table; skeleton | `loadChangeRequestsWithRefresh` (project-ops.ts — check, add if missing) |
+| `quality-assurance-page.tsx` | Tab bar; score cards; skeleton | `loadQADataWithRefresh` (project-ops.ts — check, add if missing) |
+
+### Batch 5 — Finance (8 pages)
+
+| Page | Track A changes | Track B — API function |
+|------|----------------|----------------------|
+| `invoices-page.tsx` | KPI strip; severity table; filter chips; skeleton | `admin-billing-page-client.tsx` uses context — UI-only |
+| `payroll-ledger-page.tsx` | KPI strip; table; skeleton | `loadPayrollWithRefresh` (expenses.ts) |
+| `cash-flow-calendar-page.tsx` | Calendar grid; month nav; event chips; skeleton | `loadCashFlowWithRefresh` (billing.ts — check, add if missing) |
+| `expense-tracker-page.tsx` | KPI strip; category bars; table; skeleton | `loadExpensesWithRefresh` (expenses.ts) |
+| `profitability-per-client-page.tsx` | Replace select with tab bar; upgrade KPI cards | `loadProfitabilityByClientWithRefresh` (billing.ts — check if exists) |
+| `profitability-per-project-page.tsx` | Replace select with tab bar; upgrade KPI cards | `loadProfitabilityByProjectWithRefresh` (billing.ts — check if exists) |
+| `financial-year-closeout-page.tsx` | Step progress; KPI strip; alert banners; skeleton | `loadCloseoutDataWithRefresh` (closeout.ts) |
+| `vendor-cost-control-page.tsx` | KPI strip; table; skeleton | `loadVendorCostsWithRefresh` (vendors.ts) |
 
 ### Batch 6 — People (13 pages)
-| Page file | UI changes | API client |
-|-----------|-----------|-----------|
-| `staff-access-page.tsx` | Table; role badges; skeleton | `staff.ts` |
-| `employment-records-page.tsx` | Tab bar; table; skeleton | `hr.ts` |
-| `staff-satisfaction-page.tsx` | KPI strip; chart; skeleton | `satisfaction.ts` (new) |
-| `staff-utilisation-page.tsx` | Donut chart; bar chart; KPI strip; skeleton | `utilisation.ts` |
-| `staff-transition-planner-page.tsx` | Tab bar; table; skeleton | `hr.ts` |
-| `staff-onboarding-page.tsx` | Step progress; KPI strip; skeleton | `hr.ts` |
-| `peer-review-queue-page.tsx` | Tab bar; table; skeleton | `peer-reviews.ts` (new) |
-| `recruitment-pipeline-page.tsx` | Kanban columns; KPI strip; skeleton | `hr.ts` |
-| `leave-absence-page.tsx` | Calendar grid; table; skeleton | `hr.ts` |
-| `learning-development-page.tsx` | Progress bars; table; skeleton | `hr.ts` |
-| `team-structure-page.tsx` | Org chart or table; KPI strip; skeleton | `hr.ts` |
-| `team-performance-report-page.tsx` | Tab bar; score cards; skeleton | `utilisation.ts` |
-| `standup-feed-page.tsx` | Feed list; date nav; skeleton | `standup.ts` (new) |
 
-### Batch 7 — Intelligence (9 pages)
-| Page file | UI changes | API client |
-|-----------|-----------|-----------|
-| `strategic-client-intelligence-page.tsx` | Tab bar; detail split; skeleton | `client-ops.ts` |
-| `competitor-market-intel-page.tsx` | Tab bar; card grid; skeleton | `prospecting.ts` |
-| `communication-audit-page.tsx` | KPI strip; table; skeleton | `communications.ts` (new) |
-| `health-interventions-page.tsx` | Alert banners; severity table; skeleton | `health.ts` (new) |
-| `crisis-command-page.tsx` | Alert banners; severity rows; skeleton | `support.ts` |
-| `active-health-monitor-page.tsx` | KPI strip; health bars; live indicator; skeleton | `health.ts` (new) |
-| `project-briefing-page.tsx` | Detail layout; tab bar; skeleton | `project-layer.ts` |
-| `closeout-review-page.tsx` | Step progress; checklist; skeleton | `closeout.ts` |
-| `booking-appointments-page.tsx` | Calendar grid; list view; skeleton | `bookings.ts` (new) |
+| Page | Track A changes | Track B — API function |
+|------|----------------|----------------------|
+| `staff-access-page.tsx` | Table; role badges; skeleton | `loadAllStaffWithRefresh` (hr.ts) |
+| `employment-records-page.tsx` | Tab bar; table; skeleton | `loadEmploymentRecordsWithRefresh` (hr.ts — check, add if missing) |
+| `staff-satisfaction-page.tsx` | KPI strip; bar chart; skeleton | `loadAllSatisfactionSurveysWithRefresh` (client-ops.ts) — filter for staff type |
+| `staff-utilisation-page.tsx` | Donut chart; bar chart; KPI strip (`kpiPurple`); skeleton | `loadUtilisationWithRefresh` (utilisation.ts) |
+| `staff-transition-planner-page.tsx` | Tab bar; table; skeleton | `loadTransitionPlansWithRefresh` (hr.ts — check, add if missing) |
+| `staff-onboarding-page.tsx` | Step progress; KPI strip; skeleton | `loadStaffOnboardingWithRefresh` (hr.ts) |
+| `peer-review-queue-page.tsx` | Tab bar; severity table; skeleton | `loadAdminPeerReviewsWithRefresh` (hr.ts) |
+| `recruitment-pipeline-page.tsx` | Kanban columns; KPI strip; skeleton | `loadRecruitmentPipelineWithRefresh` (hr.ts — check, add if missing) |
+| `leave-absence-page.tsx` | Calendar grid; table; tab bar; skeleton | `loadLeaveRequestsWithRefresh` (hr.ts — check, add if missing) |
+| `learning-development-page.tsx` | Progress bars; table; skeleton | `loadTrainingDataWithRefresh` (hr.ts — check, add if missing) |
+| `team-structure-page.tsx` | KPI strip; table / org view; skeleton | `loadAllStaffWithRefresh` (hr.ts) |
+| `team-performance-report-page.tsx` | Tab bar; score cards; skeleton | `loadUtilisationWithRefresh` (utilisation.ts) |
+| `standup-feed-page.tsx` | Feed list; date nav buttons; skeleton | `loadStandupFeedWithRefresh` (hr.ts) |
 
-### Batch 8 — Operations (16 pages)
-| Page file | UI changes | API client |
-|-----------|-----------|-----------|
-| `messages-page.tsx` | Inbox split; thread panel; skeleton | `support.ts` |
-| `notifications-page.tsx` | Tab bar; feed list; skeleton | `notifications.ts` |
-| `announcements-manager-page.tsx` | Card list; create form; skeleton | `announcements.ts` (new) |
-| `support-queue-page.tsx` | Severity table; KPI strip; skeleton | `support.ts` |
-| `content-approval-page.tsx` | Tab bar; card grid; skeleton | `brand.ts` (new) |
-| `design-review-admin-page.tsx` | Tab bar; card grid; skeleton | `design-reviews.ts` (new) |
-| `brand-control-page.tsx` | Tab bar; asset grid; skeleton | `brand.ts` (new) |
-| `knowledge-base-admin-page.tsx` | Search; article list; skeleton | `knowledge.ts` (new) |
-| `document-vault-page.tsx` | Folder tree; file table; skeleton | `documents.ts` |
-| `automation-audit-trail-page.tsx` | Filter chips; event feed; skeleton | `automation.ts` |
-| `webhook-hub-page.tsx` | Table; status badges; skeleton | `webhooks.ts` |
-| `platform-infrastructure-page.tsx` | Status cards; KPI strip; skeleton | `governance.ts` |
-| `access-control-page.tsx` | Role table; permission grid; skeleton | `auth-2fa.ts` + `staff.ts` |
-| `legal-page.tsx` | Document list; skeleton | `contracts.ts` |
-| `admin-settings-page-client.tsx` | Tab bar; form sections; skeleton | `settings.ts` |
-| `admin-audit-page-client.tsx` | Filter chips; event feed; skeleton | `governance.ts` |
+### Batch 7 — Intelligence (10 pages)
+
+| Page | Track A changes | Track B — API function |
+|------|----------------|----------------------|
+| `strategic-client-intelligence-page.tsx` | Tab bar; detail split; skeleton | `loadClientIntelligenceWithRefresh` (client-ops.ts — check, add if missing) |
+| `competitor-market-intel-page.tsx` | Tab bar; card grid; skeleton | `loadMarketIntelWithRefresh` (prospecting.ts — check, add if missing) |
+| `communication-audit-page.tsx` | KPI strip; table; skeleton | `loadAllCommLogsWithRefresh` (client-ops.ts) |
+| `health-interventions-page.tsx` | Alert banners; severity table; skeleton | `loadAllHealthScoresWithRefresh` (client-ops.ts) — filter below threshold |
+| `crisis-command-page.tsx` | Alert banners; severity rows; skeleton | `loadSupportTicketsWithRefresh` (support.ts) |
+| `active-health-monitor-page.tsx` | KPI strip; health bars; live indicator chip; skeleton | `loadAllHealthScoresWithRefresh` (client-ops.ts) |
+| `project-briefing-page.tsx` | Detail layout; tab bar; skeleton | `loadProjectBriefsWithRefresh` (project-layer.ts — check, add if missing) |
+| `closeout-review-page.tsx` | Step progress; checklist; skeleton | `loadCloseoutReportsWithRefresh` (closeout.ts) |
+| `booking-appointments-page.tsx` | Calendar grid; list view tab; skeleton | `loadAllAppointmentsWithRefresh` (client-ops.ts) |
+| `meeting-archive-page.tsx` | Calendar grid; month nav; list toggle; skeleton | `loadMeetingArchiveWithRefresh` (support.ts — check, add if missing) |
+
+### Batch 8 — Operations (17 pages)
+
+| Page | Track A changes | Track B — API function |
+|------|----------------|----------------------|
+| `messages-page.tsx` | Inbox split; thread panel; skeleton | `loadSupportInboxWithRefresh` (support.ts) |
+| `notifications-page.tsx` | Tab bar; feed list; skeleton | `loadNotificationsWithRefresh` (notifications.ts) |
+| `announcements-manager-page.tsx` | Card list; create form section; skeleton | `loadAnnouncementsWithRefresh` (governance.ts) |
+| `support-queue-page.tsx` | Severity table; KPI strip; skeleton | `loadSupportTicketsWithRefresh` (support.ts) |
+| `content-approval-page.tsx` | Tab bar; card grid; skeleton | `loadContentSubmissionsWithRefresh` (governance.ts) |
+| `design-review-admin-page.tsx` | Tab bar; card grid; skeleton | `loadDesignReviewsWithRefresh` (governance.ts) |
+| `brand-control-page.tsx` | Tab bar; asset grid; skeleton | `loadClientBrandingWithRefresh` (clients.ts) |
+| `knowledge-base-admin-page.tsx` | Search input; article list; skeleton | `loadKnowledgeArticlesWithRefresh` (governance.ts) |
+| `document-vault-page.tsx` | Folder tree; file table; skeleton | `loadDocumentsWithRefresh` (documents.ts) |
+| `automation-audit-trail-page.tsx` | Filter chips; event feed; skeleton | `loadAutomationLogsWithRefresh` (automation.ts) |
+| `webhook-hub-page.tsx` | Table; status badges; skeleton | `loadWebhooksWithRefresh` (webhooks.ts) |
+| `platform-infrastructure-page.tsx` | Status cards; KPI strip; skeleton | `loadPlatformStatusWithRefresh` (governance.ts — check, add if missing) |
+| `access-control-page.tsx` | Role table; permission grid; skeleton | `admin-settings-page-client.tsx` uses context — UI-only for access tab |
+| `legal-page.tsx` | Document list; tab bar; skeleton | `loadContractsWithRefresh` (contracts.ts) |
+| `admin-settings-page-client.tsx` | Tab bar (replace select); form sections | Workspace context — UI-only |
+| `admin-audit-page-client.tsx` | Filter chips; event feed; tab bar | Workspace context — UI-only |
+| `admin-automation-page-client.tsx` | Tab bar; card grid; skeleton | Workspace context — UI-only |
 
 ---
 
-## Structural Audit Checklist (both tracks verify)
+## Structural Audit — Pre-Implementation Sweep
 
-| Severity | Check |
-|----------|-------|
-| Critical | Missing CSS class referenced in JSX |
-| Critical | `<select>` used as tab switcher |
-| Critical | No loading state on a page with API call |
-| Critical | No error state on a page with API call |
-| Warning | Bare empty state (text only) |
-| Warning | NaN division — no zero guard |
-| Warning | Missing `key` prop in `.map()` |
-| Warning | Skeleton doesn't approximate real page structure |
-| Info | Unused CSS class |
+Before starting each batch, run a static scan of each file in scope:
+
+1. `grep -n "<select" <file>` — identify tab-switcher selects vs filter selects
+2. `grep -n "if (loading)" <file>` — confirm skeleton exists
+3. `grep -n "error" <file>` — confirm error state exists
+4. `grep -n "\.map(" <file>` — verify key props and empty state branches
+5. `grep -n "/ " <file>` — spot bare division for NaN guard check
+
+Log findings per-file before writing any code. Fix criticals first.
 
 ---
 
 ## Out of Scope
 
 - No new pages or routes
-- No changes to `services/core` Prisma schema (only new routes if API client needs them)
-- No changes to admin shell (sidebar, topbar, `chrome.tsx`) beyond what's required for a specific page
+- Prisma schema is frozen. Gateway routes may be added only if no existing route serves the data needed by a specific page; any such addition must be noted in the implementation log with the route path and controller file.
+- No changes to admin shell (`sidebar.tsx`, `topbar.tsx`, `chrome.tsx`) beyond what a specific page requires
 - No changes to client or staff dashboards
-- No backend performance work
 - No authentication or RBAC changes
+- No deletion of the legacy `.tabShell`/`.tabNav`/`.tabButton` lime system in `admin.module.css` — that is a separate cleanup task
 
 ---
 
 ## Success Criteria
 
-**Track A (UI):**
-- Zero `<select>` tab switchers remaining across all 95 pages
-- Every page has a skeleton state that mirrors its real layout
-- Every page has an error state with a visible message
-- Every `.map()` over data has a populated empty state (icon + title + subtitle)
-- No bare division without zero-guard
-- Executive Intelligence visual system applied uniformly (KPI cards, alert banners, health bars)
+**Track A (UI) — verified by visual inspection and grep:**
+- Zero `<select>` elements driving `activeTab` state across all 93 pages
+- Every page that fetches data has a skeleton state approximating real layout
+- Every page with API calls has an error state with visible message
+- Every `.map()` over data has an empty-state branch using `EmptyState` component
+- No bare division without zero-guard (`grep -n "/ " pages/` + review)
+- `kpiPurple`, `kpiAmber`, `kpiRed` added to `admin.module.css`
+- Alert banner CSS (`alertBanner*`) added to `admin/core.module.css`
+- Skeleton CSS (`skeletonBlock`, `skeletonCard`) added to `admin/core.module.css`
+- `healthBarBg`, `healthBarFill` added to `admin/core.module.css`
 
-**Track B (Functionality):**
-- Zero static empty arrays remain as the sole data source on any page
-- Every page calls at least one API client function via `withAuthorizedSession`
-- Every page saves `nextSession` when returned
-- All 13 missing API clients created and exported from `apps/web/src/lib/api/admin/index.ts`
-- TypeScript compiles with `pnpm --filter @maphari/web exec tsc --noEmit`
+**Track B (Functionality) — verified by TypeScript and grep:**
+- Zero static empty arrays as sole data source on any non-workspace-context page
+- Every non-context page calls at least one API function via `withAuthorizedSession`
+- Every non-context page calls `saveSession(result.nextSession)` when non-null
+- `formatMoneyK` added to `apps/web/src/lib/utils/format-money.ts`; inline `centsToK` in `revenue-forecasting-page.tsx` replaced with import
+- Any new API functions added to existing client files and exported from `apps/web/src/lib/api/admin/index.ts`
+- `pnpm --filter @maphari/web exec tsc --noEmit` passes with zero errors
+- After all changes: `grep -r 'cx("' apps/web/src/components/admin/dashboard/pages/` — verify all bare string class names resolve in the merged styles object
