@@ -70,33 +70,44 @@
 
 /* ─── Calendar ──────────────────────────────────────────────────────── */
 
-.calendarGrid {
+.calWeekHd {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.calGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
 }
 
-.calendarDay {
-  padding: 8px;
-  text-align: center;
-  font-size: 0.68rem;
-  cursor: pointer;
-  transition: background 0.14s ease;
+.calDayCell {
+  min-height: 40px;
+  padding: 5px 4px;
   border-radius: var(--r-xs);
+  transition: background 0.12s ease;
+  cursor: default;
 }
 
-.calendarDay:hover {
+.calDayCellEmpty {
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.calDayCell:not(.calDayCellEmpty):hover {
   background: var(--s2);
 }
 
-.calendarDayActive {
-  background: var(--lime-d);
-  color: var(--accent);
-  font-weight: 700;
+.calDayCellToday {
+  outline: 1px solid var(--lime);
+  outline-offset: -1px;
+  border-radius: var(--r-xs);
 }
 
-.calendarDayToday {
-  border: 1px solid var(--accent);
+.calDayCellSelected {
+  background: var(--lime-d) !important;
 }
 
 /* ─── Feedback / Annotation ─────────────────────────────────────────── */
