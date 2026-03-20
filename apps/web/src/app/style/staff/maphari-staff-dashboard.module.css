@@ -36078,3 +36078,41 @@
 .pnCategoryChip { font-size: 0.65rem; padding: 2px 7px; border-radius: 10px; background: var(--s3); color: var(--text-muted); margin-right: 6px; }
 .pnNoteText { line-height: 1.6; margin: 0; }
 .aduCharCount { font-size: 0.72rem; color: var(--text-muted); text-align: right; margin-top: 4px; }
+
+/* ─── Staff Dashboard Elevation ──────────────────────────────────── */
+
+.staffKpiGlow {
+  position: relative;
+  overflow: hidden;
+}
+
+.staffKpiGlow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 100% 80% at 50% 0%, rgba(36,184,168,0.07), transparent);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.staffKpiDeliveryRisk::before {
+  background: radial-gradient(ellipse 100% 80% at 50% 0%, rgba(255,95,95,0.08), transparent);
+}
+
+.staffPriorityEmpty {
+  padding: 32px 16px;
+  text-align: center;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.35);
+}
+
+.staffPriorityEmpty::before {
+  content: "✓";
+  display: block;
+  font-size: 1.2rem;
+  margin-bottom: 8px;
+  opacity: 0.3;
+}

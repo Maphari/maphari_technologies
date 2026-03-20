@@ -153,26 +153,26 @@ export function DashboardPage({
       </div>
 
       <div className={styles.staffDashSummaryGrid}>
-        <div className={cx(styles.statCard, "rdStudioCard")}>
+        <div className={cx(styles.statCard, "rdStudioCard", "staffKpiGlow")}>
           <div className={cx(styles.statLabel, "rdStudioLabel")}>Open Tasks</div>
           <div className={cx(styles.statValue, "colorAccent", "rdStudioMetric")}>{openTasksCount}</div>
           <div className={cx("text11", highPriorityTasksCount > 0 ? "colorAmber" : "colorMuted")}>
             {highPriorityTasksCount} high priority
           </div>
         </div>
-        <div className={cx(styles.statCard, "rdStudioCard")}>
+        <div className={cx(styles.statCard, "rdStudioCard", "staffKpiGlow")}>
           <div className={cx(styles.statLabel, "rdStudioLabel")}>Client Messages</div>
           <div className={cx(styles.statValue, "colorBlue", "rdStudioMetric")}>{openConversationsCount}</div>
           <div className={cx("text11", "colorMuted")}>Awaiting response</div>
         </div>
-        <div className={cx(styles.statCard, "rdStudioCard")}>
+        <div className={cx(styles.statCard, "rdStudioCard", "staffKpiGlow", "staffKpiDeliveryRisk")}>
           <div className={cx(styles.statLabel, "rdStudioLabel")}>Delivery Risk</div>
           <div className={cx(styles.statValue, overdueCount > 0 ? "colorRed" : "colorAccent", "rdStudioMetric", overdueCount > 0 ? "rdStudioMetricNeg" : "")}>{overdueCount}</div>
           <div className={cx("text11", overdueCount > 0 ? "colorRed" : "colorMuted")}>
             {overdueCount > 0 ? "Needs attention" : "No overdue items"}
           </div>
         </div>
-        <div className={cx(styles.statCard, "rdStudioCard")}>
+        <div className={cx(styles.statCard, "rdStudioCard", "staffKpiGlow")}>
           <div className={cx(styles.statLabel, "rdStudioLabel")}>Hours This Week</div>
           <div className={cx(styles.statValue, "colorAmber", "rdStudioMetric", "rdStudioMetricWarn")}>{(weekMinutes / 60).toFixed(1)}</div>
           <div className={cx("text11", "colorMuted")}>Today: {formatDuration(todayMinutes)}</div>
@@ -200,52 +200,8 @@ export function DashboardPage({
                 {priorityTasks.length === 0 ? (
                   <tr>
                     <td colSpan={5} style={{ padding: 0 }}>
-                      <div style={{ padding: "36px 20px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-                        {/* Gradient blob */}
-                        <div style={{
-                          position: "absolute", width: 240, height: 240, borderRadius: "50%",
-                          background: "radial-gradient(circle, rgba(200, 241, 53, 0.05) 0%, transparent 70%)",
-                          top: "50%", left: "50%", transform: "translate(-50%, -50%)", pointerEvents: "none",
-                        }} />
-                        <div style={{ position: "relative", zIndex: 1 }}>
-                          <div style={{
-                            width: 44, height: 44, borderRadius: 11, border: "1px solid rgba(200, 241, 53, 0.18)",
-                            background: "rgba(200, 241, 53, 0.03)", display: "grid", placeItems: "center",
-                            margin: "0 auto 14px",
-                          }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--lime)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <path d="M9 11l3 3L22 4"/>
-                              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                            </svg>
-                          </div>
-                          <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>
-                            No priority tasks yet
-                          </div>
-                          <div style={{ fontSize: "0.7rem", color: "var(--muted)", maxWidth: 260, margin: "0 auto 16px", lineHeight: 1.5 }}>
-                            High-priority tasks assigned to you will appear here. Head to the board to pick up work.
-                          </div>
-                          <button
-                            type="button"
-                            onClick={onGoKanban}
-                            style={{
-                              padding: "7px 16px",
-                              background: "var(--accent)",
-                              color: "var(--bg)",
-                              border: "none",
-                              borderRadius: 8,
-                              fontSize: "0.72rem",
-                              fontWeight: 700,
-                              letterSpacing: "0.06em",
-                              textTransform: "uppercase",
-                              cursor: "pointer",
-                              transition: "opacity 0.2s",
-                            }}
-                            onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
-                            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
-                          >
-                            Open Board
-                          </button>
-                        </div>
+                      <div className={cx("staffPriorityEmpty")}>
+                        All tasks on track
                       </div>
                     </td>
                   </tr>
