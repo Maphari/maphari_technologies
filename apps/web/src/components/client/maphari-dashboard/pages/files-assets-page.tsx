@@ -121,6 +121,7 @@ export function FilesAssetsPage() {
 
   const [files,      setFiles]      = useState<PortalFile[]>([]);
   const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState<string | null>(null);
   const [tab,        setTab]        = useState<FTab>("All");
   const [viewMode,   setViewMode]   = useState<"list" | "grid">("list");
   const [query,      setQuery]      = useState("");
@@ -130,8 +131,10 @@ export function FilesAssetsPage() {
   // ── Load files on mount ───────────────────────────────────────────────────
   useEffect(() => {
     if (!session) { setLoading(false); return; }
+    setError(null);
     loadPortalFilesWithRefresh(session).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) { setError(result.error?.message ?? "Failed to load files"); return; }
       if (result.data) setFiles([...result.data]);
     }).finally(() => setLoading(false));
   }, [session]);
@@ -292,6 +295,13 @@ export function FilesAssetsPage() {
           </div>
         ))}
       </div>
+
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
 
       {/* ── Search ──────────────────────────────────────────────────────── */}
       <div className={cx("relative")}>

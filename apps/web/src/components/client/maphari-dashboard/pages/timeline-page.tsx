@@ -217,7 +217,7 @@ export function TimelinePage() {
     ]).then(([phasesR, crR]) => {
       if (phasesR.nextSession) saveSession(phasesR.nextSession);
       if (crR.nextSession) saveSession(crR.nextSession);
-      if (phasesR.error) { setError(phasesR.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (phasesR.error) { setError(phasesR.error.message ?? "Failed to load."); return; }
       if (phasesR.data && phasesR.data.length > 0) {
         setApiPhases(phasesR.data.map(apiToTimelinePhase));
       }
@@ -230,9 +230,12 @@ export function TimelinePage() {
           scope: cr.impactSummary ?? "",
         })));
       }
-      setLoading(false);
-    });
-  }, [session, projectId]);
+    }).catch((err: unknown) => {
+      const msg = (err as Error)?.message ?? "Failed to load timeline";
+      setError(msg);
+      notify("error", msg);
+    }).finally(() => setLoading(false));
+  }, [session, projectId, notify]);
 
   // Submit all selected (DRAFT) CRs by patching their status to SUBMITTED
   const handleSubmitCRs = async () => {

@@ -266,13 +266,16 @@ export function MilestoneApprovalsPage() {
 
   const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
   const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState<string | null>(null);
   const [localApproved, setLocalApproved] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!session || !projectId) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     void loadPortalMilestoneApprovalsWithRefresh(session, { projectId }).then(r => {
       if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) { setError(r.error?.message ?? "Failed to load milestones"); return; }
       if (r.data) setMilestones(r.data.map(apiToMilestone));
     }).finally(() => setLoading(false));
   }, [session, projectId]);
@@ -341,6 +344,13 @@ export function MilestoneApprovalsPage() {
           <p className={cx("pageSub")}>Review milestone deliverables and approve when acceptance criteria are met.</p>
         </div>
       </div>
+
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
 
       <div className={cx("topCardsStack", "mb20")}>
         {STATS.map((s) => (

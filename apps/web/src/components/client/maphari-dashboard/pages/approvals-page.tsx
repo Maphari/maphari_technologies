@@ -169,6 +169,7 @@ export function ApprovalsPage() {
   const [changes, setChanges] = useState<ChangeItem[]>([]);
   const [deliverables, setDeliverables] = useState<DeliverableItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // ── Decline/Revision modal state (change requests) ──────────────────────
   const [declineModalId, setDeclineModalId] = useState<string | null>(null);
@@ -190,6 +191,7 @@ export function ApprovalsPage() {
   useEffect(() => {
     if (!session || !projectId) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     void Promise.all([
       loadPortalProjectDetailWithRefresh(session, projectId),
       loadPortalChangeRequestsWithRefresh(session, { projectId }),
@@ -223,6 +225,8 @@ export function ApprovalsPage() {
           });
         setDeliverables(items);
       }
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load");
     }).finally(() => setLoading(false));
   }, [session, projectId]);
 
@@ -415,6 +419,13 @@ export function ApprovalsPage() {
 
   return (
     <div className={cx("pageBody")}>
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
+
       {/* Header */}
       <div className={cx("pageHeader", "mb0")}>
         <div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { cx } from "../style";
 import { Ic, Av } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
+import { usePageToast } from "../hooks/use-page-toast";
 import { loadPortalSprintsWithRefresh, loadPortalSprintTasksWithRefresh, loadPortalDeliverablesWithRefresh, type PortalSprint, type PortalSprintTask, type PortalDeliverable } from "../../../../lib/api/portal/project-layer";
 import { saveSession } from "../../../../lib/auth/session";
 
@@ -178,6 +179,7 @@ function TaskCard({ task }: { task: STask }) {
 export function SprintBoardPage() {
   // ── Project layer: real API data ──────────────────────────────────────────
   const { session, projectId } = useProjectLayer();
+  const notify = usePageToast();
   const [activeSprint,    setActiveSprint]    = useState<PortalSprint | null>(null);
   const [TASKS,           setTasks]           = useState<STask[]>([]);
   const [apiAllSprints,   setApiAllSprints]   = useState<PortalSprint[]>([]);
@@ -195,22 +197,25 @@ export function SprintBoardPage() {
     ]).then(async ([sprintResult, delResult]) => {
       if (sprintResult.nextSession) saveSession(sprintResult.nextSession);
       if (delResult.nextSession) saveSession(delResult.nextSession);
-      if (sprintResult.error) { setError(sprintResult.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (sprintResult.error) { setError(sprintResult.error.message ?? "Failed to load."); return; }
       const sprints = sprintResult.data ?? [];
       setApiAllSprints(sprints);
       const active = sprints.find((s) => s.status === "ACTIVE") ?? sprints[0] ?? null;
       setActiveSprint(active);
       if (delResult.data) setApiDeliverables(delResult.data);
-      if (!active) { setLoading(false); return; }
+      if (!active) { return; }
 
       const taskResult = await loadPortalSprintTasksWithRefresh(session, projectId, active.id);
       if (taskResult.nextSession) saveSession(taskResult.nextSession);
       if (taskResult.data && taskResult.data.length > 0) {
         setTasks(taskResult.data.map(mapApiTask));
       }
-      setLoading(false);
-    });
-  }, [session, projectId]);
+    }).catch((err: unknown) => {
+      const msg = (err as Error)?.message ?? "Failed to load sprint";
+      setError(msg);
+      notify("error", msg);
+    }).finally(() => setLoading(false));
+  }, [session, projectId, notify]);
 
   const SPRINT = activeSprint
     ? {

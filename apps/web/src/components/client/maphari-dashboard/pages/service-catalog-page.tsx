@@ -112,6 +112,7 @@ export function ServiceCatalogPage() {
   const [services, setServices]  = useState<ServiceItem[]>([]);
   const [addons,   setAddons]    = useState<ServiceAddon[]>([]);
   const [loading,  setLoading]   = useState(true);
+  const [error,    setError]     = useState<string | null>(null);
   const loaded                   = useRef(false);
 
   // ── Request modal state ───────────────────────────────────────────────────
@@ -121,21 +122,30 @@ export function ServiceCatalogPage() {
 
   // ── Load catalog ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (loaded.current || !session) return;
+    if (loaded.current) return;
+    if (!session) { setLoading(false); return; }
     loaded.current = true;
+    setError(null);
     void (async () => {
-      const result = await loadPortalServicesWithRefresh(session);
-      if (result.nextSession) saveSession(result.nextSession);
-      if (result.data) {
-        setServices([
-          ...result.data.packages.map(pkgToItem),
-          ...result.data.retainers.map(retainerToItem),
-        ]);
-        setAddons(result.data.addons);
+      try {
+        const result = await loadPortalServicesWithRefresh(session);
+        if (result.nextSession) saveSession(result.nextSession);
+        if (result.data) {
+          setServices([
+            ...result.data.packages.map(pkgToItem),
+            ...result.data.retainers.map(retainerToItem),
+          ]);
+          setAddons(result.data.addons);
+        }
+      } catch (err) {
+        const msg = (err as Error)?.message ?? "Failed to load services";
+        setError(msg);
+        notify("error", msg);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     })();
-  }, [session]);
+  }, [session, notify]);
 
   const filtered     = category === "All" ? services : services.filter((s) => s.category === category);
   const popularCount = services.filter((s) => s.popular).length;
@@ -227,8 +237,16 @@ export function ServiceCatalogPage() {
         </div>
       )}
 
+      {/* ── Error state ──────────────────────────────────────────────────────── */}
+      {!loading && error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
+
       {/* ── Empty state ──────────────────────────────────────────────────────── */}
-      {!loading && services.length === 0 && (
+      {!loading && !error && services.length === 0 && (
         <div className={cx("emptyState")}>
           <div className={cx("emptyIcon")}>📦</div>
           <div className={cx("emptyTitle")}>No services available</div>
@@ -237,7 +255,7 @@ export function ServiceCatalogPage() {
       )}
 
       {/* ── Service cards grid ───────────────────────────────────────────────── */}
-      {!loading && filtered.length > 0 && (
+      {!loading && !error && filtered.length > 0 && (
         <div className={cx("grid2Cols14Gap")}>
           {filtered.map((s) => {
             const color = CAT_COLOR[s.category];
@@ -316,7 +334,7 @@ export function ServiceCatalogPage() {
       )}
 
       {/* ── Add-ons section ──────────────────────────────────────────────────── */}
-      {!loading && addons.length > 0 && (
+      {!loading && !error && addons.length > 0 && (
         <div className={cx("mt32")}>
           <div className={cx("sectionTitle", "mb14")}>
             Available Add-ons

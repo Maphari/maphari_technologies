@@ -396,6 +396,7 @@ export function BillingPage({ currency = "ZAR" }: { currency?: string }) {
   const [invoices,          setInvoices]          = useState<PortalInvoice[]>([]);
   const [milestones,        setMilestones]        = useState<PortalProjectPaymentMilestone[]>([]);
   const [loading,           setLoading]           = useState(true);
+  const [error,             setError]             = useState<string | null>(null);
   const [tab,               setTab]               = useState<PaymentTab>("Payment Schedule");
   const [method,            setMethod]            = useState<PaymentMethod>("eft");
   const [payModal,          setPayModal]          = useState(false);
@@ -420,6 +421,7 @@ export function BillingPage({ currency = "ZAR" }: { currency?: string }) {
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
 
     const loads: Promise<void>[] = [
       loadPortalInvoicesWithRefresh(session).then((r) => {
@@ -470,7 +472,10 @@ export function BillingPage({ currency = "ZAR" }: { currency?: string }) {
       );
     }
 
-    void Promise.all(loads).finally(() => setLoading(false));
+    void Promise.all(loads).catch((err: unknown) => {
+      const msg = (err as Error)?.message ?? "Failed to load";
+      setError(msg);
+    }).finally(() => setLoading(false));
   }, [session, projectId]);
 
   // ── Derived values ──────────────────────────────────────────────────────────
@@ -619,6 +624,13 @@ export function BillingPage({ currency = "ZAR" }: { currency?: string }) {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
 
       {/* Totals bar */}
       <div className={cx("card", "p16", "mb16", "rdStudioSection")}>

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
+import { usePageToast } from "../hooks/use-page-toast";
 import { loadPortalRetainerWithRefresh, type PortalRetainerWeek } from "../../../../lib/api/portal";
 import { saveSession } from "../../../../lib/auth/session";
 
@@ -31,21 +32,30 @@ const MSTATUS_ICON:  Record<MStatus, string> = { Settled: "check",       Overdue
 
 export function RetainerDashboardPage() {
   const { session } = useProjectLayer();
+  const notify = usePageToast();
   const [weeklyBurn, setWeeklyBurn] = useState<PortalRetainerWeek[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
+    setError(null);
     void loadPortalRetainerWithRefresh(session).then((result) => {
       if (cancelled) return;
       if (result.nextSession) saveSession(result.nextSession);
       if (result.data) setWeeklyBurn(result.data);
-      setLoading(false);
+    }).catch((err: unknown) => {
+      if (cancelled) return;
+      const msg = (err as Error)?.message ?? "Failed to load";
+      setError(msg);
+      notify("error", msg);
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [session]);
+  }, [session, notify]);
 
   const todayWeek        = weeklyBurn.length;
   const weekTotals       = weeklyBurn.map((w) => w.dev + w.design + w.pm + w.qa);
@@ -93,6 +103,13 @@ export function RetainerDashboardPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
 
       {/* ── Stat cards ──────────────────────────────────────────────────── */}
       <div className={cx("topCardsStack")}>
