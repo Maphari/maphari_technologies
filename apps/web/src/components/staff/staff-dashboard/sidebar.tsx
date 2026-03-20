@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { NavIcon } from "./ui";
+// NavIcon import removed — sidebar is rebuilt in Task 1.4
 import { cx, styles } from "./style";
 import type { NavItem, PageId } from "./types";
 import { capitalize } from "./utils";
@@ -211,7 +211,7 @@ export function StaffSidebar({
                 onClick={() => onNavigate(item.id)}
                 title={collapsed ? item.label : undefined}
               >
-                <NavIcon id={item.id} className={styles.navIcon} />
+                <span className={styles.navIcon} aria-hidden />
                 <span className={styles.navLabel}>{item.label}</span>
                 {item.badge ? (
                   <span className={cx("navBadge", `navBadge${capitalize(item.badge.tone)}`)}>
@@ -405,7 +405,7 @@ export function StaffSidebar({
                           }}
                         >
                           <span className={styles.navPageTileIcon}>
-                            <NavIcon id={item.id} className={styles.navIcon} />
+                            <span className={styles.navIcon} aria-hidden />
                           </span>
                           <div>
                             <div className={styles.navPageTileLabel}>{item.label}</div>
