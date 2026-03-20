@@ -51,12 +51,11 @@ export function OnboardingStatusPage() {
     if (!session) { setLoading(false); return; }
     setLoading(true);
     setError(null);
-    loadPortalOnboardingWithRefresh(session, session.user.clientId ?? "").then((result) => {
+    void loadPortalOnboardingWithRefresh(session, session.user.clientId ?? "").then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (result.error) { setError(result.error.message ?? "Failed to load."); return; }
       if (result.data) setStages(result.data.map(mapRecord));
-      setLoading(false);
-    });
+    }).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
 

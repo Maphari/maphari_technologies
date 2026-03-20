@@ -139,13 +139,12 @@ export function NotificationsPage() {
     ]).then(([notifsR, prefR]) => {
       if (notifsR.nextSession) saveSession(notifsR.nextSession);
       if (prefR.nextSession) saveSession(prefR.nextSession);
-      if (notifsR.error) { setError(notifsR.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (notifsR.error) { setError(notifsR.error.message ?? "Failed to load."); return; }
       if (notifsR.data) setNotifs(notifsR.data.map(mapJobToNotif));
       if (prefR.data?.value) {
         try { setMuted(new Set(JSON.parse(prefR.data.value))); } catch { /* ignore */ }
       }
-      setLoading(false);
-    });
+    }).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
   const [showPrefs, setShowPrefs] = useState(false);

@@ -36,7 +36,7 @@ export function MeetingBookerPage() {
 
   // ── Load past meetings from API ────────────────────────────────────────────
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     loadPortalMeetingsWithRefresh(session).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);

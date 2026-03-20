@@ -271,11 +271,10 @@ export function MilestoneApprovalsPage() {
   useEffect(() => {
     if (!session || !projectId) { setLoading(false); return; }
     setLoading(true);
-    loadPortalMilestoneApprovalsWithRefresh(session, { projectId }).then(r => {
+    void loadPortalMilestoneApprovalsWithRefresh(session, { projectId }).then(r => {
       if (r.nextSession) saveSession(r.nextSession);
       if (r.data) setMilestones(r.data.map(apiToMilestone));
-      setLoading(false);
-    });
+    }).finally(() => setLoading(false));
   }, [session, projectId]);
 
   function handleApprove(ms: MilestoneRow) {

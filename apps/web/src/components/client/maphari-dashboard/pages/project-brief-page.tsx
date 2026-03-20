@@ -44,8 +44,7 @@ export function ProjectBriefPage({ onNavigate }: { onNavigate?: (page: PageId) =
     void loadPortalBriefWithRefresh(session, projectId).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
       setBrief(result.data ?? null);
-      setLoading(false);
-    });
+    }).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken, projectId]);
 

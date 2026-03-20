@@ -56,12 +56,11 @@ export function OffboardingPage() {
     if (!session) { setLoading(false); return; }
     setLoading(true);
     setError(null);
-    loadPortalOffboardingWithRefresh(session, session.user.clientId ?? "").then((result) => {
+    void loadPortalOffboardingWithRefresh(session, session.user.clientId ?? "").then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (result.error) { setError(result.error.message ?? "Failed to load."); return; }
       if (result.data) setGroups(buildGroups(result.data));
-      setLoading(false);
-    });
+    }).finally(() => setLoading(false));
   }, [session]);
 
   const allItems = groups.flatMap((g) => g.items);
