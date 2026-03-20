@@ -65,6 +65,7 @@ export function SupportQueuePage({
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
+    setLoading(true);
     setError(null);
     void loadSupportTicketsWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);

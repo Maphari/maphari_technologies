@@ -209,7 +209,7 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
         )}
 
         {/* Data rows */}
-        {!loading && sorted.map((row) => (
+        {sorted.map((row) => (
           <div
             key={row.staffId}
             className={styles.tableRow}

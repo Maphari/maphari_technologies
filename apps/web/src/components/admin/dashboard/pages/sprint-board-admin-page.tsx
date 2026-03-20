@@ -98,13 +98,25 @@ export function SprintBoardAdminPage({ session, onNotify }: Props) {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     void (async () => {
-      const r = await loadAdminSnapshotWithRefresh(session);
-      if (cancelled) return;
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.error) { onNotify("error", r.error.message); return; }
-      const list = r.data?.projects ?? [];
-      setProjects(list);
-      if (list.length > 0 && !selectedProjectId) setSelectedProjectId(list[0].id);
+      try {
+        const r = await loadAdminSnapshotWithRefresh(session);
+        if (cancelled) return;
+        if (r.nextSession) saveSession(r.nextSession);
+        if (r.error) {
+          onNotify("error", r.error.message);
+          if (!cancelled) setLoading(false);
+          return;
+        }
+        const list = r.data?.projects ?? [];
+        setProjects(list);
+        if (list.length > 0 && !selectedProjectId) setSelectedProjectId(list[0].id);
+      } catch (err) {
+        if (!cancelled) {
+          const msg = (err as Error)?.message ?? "Failed to load projects";
+          onNotify("error", msg);
+          setLoading(false);
+        }
+      }
     })();
     return () => { cancelled = true; };
   }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
