@@ -17,3 +17,8 @@ export function formatMoney(
     ...options
   });
 }
+
+/** Abbreviate cents to a compact KPI label — e.g. 8_400_000 → "R84k" */
+export function formatMoneyK(cents: number): string {
+  return `R${(cents / 100_000).toFixed(0)}k`;
+}

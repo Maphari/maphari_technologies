@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import { formatMoneyK } from "@/lib/utils/format-money";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import type { AdminInvoice } from "../../../../lib/api/admin/types";
@@ -33,9 +34,6 @@ function monthLabel(key: string): string {
   return new Date(Number(year), Number(month) - 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
 }
 
-function centsToK(cents: number): string {
-  return `R${(cents / 100_000).toFixed(0)}k`;
-}
 
 function buildMonthBuckets(invoices: AdminInvoice[]) {
   const actual: Record<string, number> = {};   // paid invoices by paidAt month
@@ -168,9 +166,9 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
       {/* ── KPI cards ── */}
       <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Total Collected", value: centsToK(totalPaid), color: "var(--accent)", sub: "Paid invoices" },
-          { label: "Outstanding", value: centsToK(totalOutstanding), color: totalOutstanding > 0 ? "var(--amber)" : "var(--accent)", sub: "Issued but unpaid" },
-          { label: "Draft Pipeline", value: centsToK(totalDraft), color: "var(--blue)", sub: "Not yet issued" },
+          { label: "Total Collected", value: formatMoneyK(totalPaid), color: "var(--accent)", sub: "Paid invoices" },
+          { label: "Outstanding", value: formatMoneyK(totalOutstanding), color: totalOutstanding > 0 ? "var(--amber)" : "var(--accent)", sub: "Issued but unpaid" },
+          { label: "Draft Pipeline", value: formatMoneyK(totalDraft), color: "var(--blue)", sub: "Not yet issued" },
           { label: "Overdue", value: String(overdueInvoices.length), color: overdueInvoices.length > 0 ? "var(--red)" : "var(--accent)", sub: "Past due date" }
         ].map((s) => (
           <div key={s.label} className={cx(styles.statCard, "rdStudioCard")}>
@@ -212,7 +210,7 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
                   return (
                     <div key={m.key} className={styles.revfBarCol}>
                       <div className={cx("fontMono", "text10", "colorAccent")}>
-                        {centsToK(m.actual + m.projected)}
+                        {formatMoneyK(m.actual + m.projected)}
                       </div>
                       <svg className={styles.revfStackedBar} viewBox="0 0 10 140" preserveAspectRatio="none" aria-hidden="true">
                         {projH > 0 && (
@@ -244,9 +242,9 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
               return (
                 <div key={m.key} className={cx(styles.revfTableRow, i < forecastMonths.length - 1 && "borderB", "rdStudioRow")}>
                   <span className={cx("fontMono", "fw700", "rdStudioLabel")}>{m.label}</span>
-                  <span className={cx("fontMono", "colorAccent")}>{m.actual > 0 ? centsToK(m.actual) : "—"}</span>
-                  <span className={cx("fontMono", "colorBlue")}>{m.projected > 0 ? centsToK(m.projected) : "—"}</span>
-                  <span className={cx("fontMono", "fw800", "text14", "colorAccent", "rdStudioMetric", "rdStudioMetricPos")}>{total > 0 ? centsToK(total) : "—"}</span>
+                  <span className={cx("fontMono", "colorAccent")}>{m.actual > 0 ? formatMoneyK(m.actual) : "—"}</span>
+                  <span className={cx("fontMono", "colorBlue")}>{m.projected > 0 ? formatMoneyK(m.projected) : "—"}</span>
+                  <span className={cx("fontMono", "fw800", "text14", "colorAccent", "rdStudioMetric", "rdStudioMetricPos")}>{total > 0 ? formatMoneyK(total) : "—"}</span>
                   <span className={cx("text12", "colorMuted")}>{invoiceCount}</span>
                 </div>
               );
@@ -275,11 +273,11 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
                   </div>
                   <div>
                     <div className={styles.revfMiniLabel}>Collected</div>
-                    <div className={cx("fontMono", "fw700", "colorAccent")}>{m.actual > 0 ? centsToK(m.actual) : "—"}</div>
+                    <div className={cx("fontMono", "fw700", "colorAccent")}>{m.actual > 0 ? formatMoneyK(m.actual) : "—"}</div>
                   </div>
                   <div>
                     <div className={styles.revfMiniLabel}>Projected</div>
-                    <div className={cx("fontMono", "fw700", "colorBlue")}>{m.projected > 0 ? centsToK(m.projected) : "—"}</div>
+                    <div className={cx("fontMono", "fw700", "colorBlue")}>{m.projected > 0 ? formatMoneyK(m.projected) : "—"}</div>
                   </div>
                   <div>
                     <div className={styles.revfProbHead}>
@@ -308,7 +306,7 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
               <div className={styles.revfSummaryTitle}>Outstanding Receivables</div>
               <div className={cx("text11", "colorMuted")}>Issued + overdue invoices</div>
             </div>
-            <div className={styles.revfSummaryValue}>{centsToK(totalOutstanding)}</div>
+            <div className={styles.revfSummaryValue}>{formatMoneyK(totalOutstanding)}</div>
           </div>
           {outstandingInvoices.length === 0 && (
             <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No outstanding invoices.</div>
@@ -333,7 +331,7 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
                 </div>
                 <div className={styles.revfCenterCol}>
                   <div className={styles.revfTinyLabel}>Amount</div>
-                  <div className={cx("fontMono", "fw700", "colorAccent")}>{centsToK(inv.amountCents)}</div>
+                  <div className={cx("fontMono", "fw700", "colorAccent")}>{formatMoneyK(inv.amountCents)}</div>
                 </div>
                 <div className={styles.revfCenterCol}>
                   <div className={styles.revfTinyLabel}>Due</div>

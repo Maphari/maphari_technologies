@@ -789,6 +789,18 @@
   background: linear-gradient(160deg, rgba(246, 196, 69, 0.2) 0%, rgba(10, 12, 18, 0.95) 66%);
 }
 
+.kpiPurple {
+  background: linear-gradient(160deg, rgba(139, 111, 255, 0.16) 0%, rgba(10, 12, 18, 0.95) 66%);
+}
+
+.kpiAmber {
+  background: linear-gradient(160deg, rgba(251, 191, 36, 0.16) 0%, rgba(10, 12, 18, 0.95) 66%);
+}
+
+.kpiRed {
+  background: linear-gradient(160deg, rgba(239, 68, 68, 0.16) 0%, rgba(10, 12, 18, 0.95) 66%);
+}
+
 .table {
   width: 100%;
   display: grid;
