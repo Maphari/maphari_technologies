@@ -186,24 +186,20 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
       </div>
 
       {overdueInvoices.length > 0 && (
-        <div className={styles.exdAlertStripWrap}>
-          {overdueInvoices.slice(0, 3).map((inv) => (
-            <div key={inv.id} className={cx(styles.exdAlertStrip, toneClass("var(--red)"))}>
-              <div className={styles.exdAlertLeft}>
-                <span className={styles.exdAlertIcon}>🔴</span>
-                <span className={styles.text12}>Invoice {inv.number} overdue — {centsToK(inv.amountCents)}</span>
-              </div>
-              <button type="button" className={cx(styles.exdAlertBtn, toneClass("var(--red)"))} onClick={() => onNavigate?.("invoices")}>View</button>
-            </div>
-          ))}
+        <div className={cx("exdAlertStripElevated")}>
+          <span style={{ color: "#ff5f5f" }}>⚠</span>
+          <span>{overdueInvoices.length} overdue invoice{overdueInvoices.length > 1 ? "s" : ""} require attention</span>
+          <button type="button" className={cx("btnGhost", "mlAuto", "text11")} onClick={() => onNavigate?.("invoices")}>
+            View →
+          </button>
         </div>
       )}
 
       <div className={styles.exdKpiGrid}>
-        {kpis.map((k) => {
+        {kpis.map((k, idx) => {
           const tone = k.color === "var(--red)" ? "var(--red)" : "var(--border)";
           return (
-            <div key={k.label} className={cx(styles.exdKpiCard, toneClass(tone), "rdStudioCard")}>
+            <div key={k.label} className={cx(styles.exdKpiCard, toneClass(tone), "rdStudioCard", idx === 0 ? styles.exdKpiHero : "")}>
               <div className={cx(styles.exdKpiLabel, "rdStudioLabel")}>{k.label}</div>
               <div className={cx(styles.exdKpiValue, colorClass(k.color), "rdStudioMetric", k.color === "var(--red)" ? "rdStudioMetricNeg" : k.color === "var(--accent)" ? "rdStudioMetricPos" : "")}>{k.value}</div>
               <div className={styles.exdKpiMeta}>

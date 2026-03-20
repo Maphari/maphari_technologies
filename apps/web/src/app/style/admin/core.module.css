@@ -2215,3 +2215,60 @@
   }
 }
 
+/* ─── Admin Executive Dashboard KPI Elevation ────────────────────── */
+
+.exdKpiHero {
+  position: relative;
+  overflow: hidden;
+}
+
+.exdKpiHero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80%;
+  background: radial-gradient(ellipse 120% 80% at 20% 0%, rgba(139,111,255,0.1), transparent);
+  pointer-events: none;
+}
+
+.exdKpiChangePos {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: #34d98b;
+  background: rgba(52, 217, 139, 0.1);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.exdKpiChangeNeg {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: #ff5f5f;
+  background: rgba(255, 95, 95, 0.1);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.exdAlertStripElevated {
+  border-left: 3px solid #ff5f5f;
+  background: rgba(255, 95, 95, 0.06);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.65rem;
+}
+
