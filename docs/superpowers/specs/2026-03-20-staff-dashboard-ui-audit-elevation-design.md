@@ -90,12 +90,11 @@ The following utility classes are added once and reused across all pages:
 }
 
 /* Accent top stripe on stat cards — uses position:absolute to match existing
-   stripe pattern (e.g. .staffTimerCard::before). Parent must have position:relative
-   and overflow:hidden. Do NOT use on cards that render tooltips or dropdowns that
-   overflow the card boundary. */
+   stripe pattern (e.g. .staffTimerCard::before). Parent must have position:relative.
+   Does NOT set overflow:hidden — cards with tooltips or dropdowns remain unclipped.
+   The ::before stripe is self-contained to the top edge via top/left/right:0. */
 .cardAccentStripe {
   position: relative;
-  overflow: hidden;
 }
 .cardAccentStripe::before {
   content: '';
@@ -219,7 +218,7 @@ For each of the 82 pages, apply the following changes consistently:
 | `pageSubtitleText` in JSX | Add `pageSubtitleElevated` class **alongside** the existing `pageSubtitleText` (additive) |
 | Stat cards with labels+values | Add `cardAccentStripe` to the card container; add `dataLabelMono` on the stat label; add `statValueMono` on the stat value |
 | Empty state plain text | Replace bare text with `emptyStateIconRing` (with an `<Ic>` icon inside) + `emptyStateTitleElevated` + `emptyStateSubElevated` |
-| Pages missing skeletons | Add a loading skeleton using 3 `skelePageBlock` divs sized to approximate the real layout |
+| Pages missing skeletons | Add a loading skeleton using 3 `skelePageBlock` divs sized to approximate the real layout. Set height via an inline `style` prop (e.g. `style={{ height: '68px' }}`). |
 | Cards lacking borders | Add `cardElevated` class |
 
 ### 2c. Out of Scope
@@ -245,7 +244,7 @@ For each of the 82 pages, apply the following changes consistently:
 
 - [ ] Static analysis finds zero missing CSS class references across all 82 pages
 - [ ] All `.map()` renders have `key` props
-- [ ] Static analysis confirms every division expression producing a display value has a zero-division guard (`|| 0` or `?? 0`)
+- [ ] Static analysis confirms every division expression producing a display value has a zero-division guard (`|| 0`, `?? 0`, or `/ (denominator ?? 1)`)
 - [ ] No `NaN` values visible in any stat or metric field in the browser spot-check
 - [ ] All pages have a skeleton loading state that approximates the real layout
 - [ ] All pages have an error state with a user-visible message
