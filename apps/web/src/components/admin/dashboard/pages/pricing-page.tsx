@@ -87,7 +87,7 @@ export function PricingPage() {
 
   // ── Load catalog ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (loaded.current || !session) return;
+    if (loaded.current || !session) { setLoading(false); return; }
     loaded.current = true;
     void (async () => {
       const result = await loadAdminServiceCatalogWithRefresh(session);

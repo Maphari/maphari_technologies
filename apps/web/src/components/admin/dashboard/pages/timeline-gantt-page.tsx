@@ -148,15 +148,23 @@ export function TimelineGanttPage() {
   const { session } = useAdminWorkspaceContext();
   const [snapshot, setSnapshot] = useState<AdminSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [hoveredProject, setHoveredProject] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
-    const result = await loadAdminSnapshotWithRefresh(session);
-    if (result.nextSession) saveSession(result.nextSession);
-    setSnapshot(result.data ?? null);
-    setLoading(false);
+    setError(null);
+    try {
+      const result = await loadAdminSnapshotWithRefresh(session);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) { setError(result.error.message ?? "Failed to load."); return; }
+      setSnapshot(result.data ?? null);
+    } catch (err: unknown) {
+      setError((err as Error)?.message ?? "Failed to load.");
+    } finally {
+      setLoading(false);
+    }
   }, [session]);
 
   useEffect(() => {
@@ -184,6 +192,18 @@ export function TimelineGanttPage() {
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

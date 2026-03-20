@@ -127,10 +127,12 @@ export function TeamPerformanceReportPage({
   const [apiReviews, setApiReviews] = useState<AdminPeerReview[]>([]);
   const [selected, setSelected] = useState<StaffMember | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     Promise.all([
       loadAllStaffWithRefresh(session),
       loadStandupFeedWithRefresh(session),
@@ -139,10 +141,13 @@ export function TeamPerformanceReportPage({
       if (sr.nextSession) saveSession(sr.nextSession);
       if (standup.nextSession) saveSession(standup.nextSession);
       if (reviews.nextSession) saveSession(reviews.nextSession);
-      if (sr.error) onNotify("error", sr.error.message);
-      if (!sr.error && sr.data) setApiStaff(sr.data);
+      if (sr.error) { setError(sr.error.message ?? "Failed to load."); return; }
+      if (sr.data) setApiStaff(sr.data);
       if (!standup.error && standup.data) setApiStandups(standup.data);
       if (!reviews.error && reviews.data) setApiReviews(reviews.data);
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load.");
+    }).finally(() => {
       setLoading(false);
     });
   }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -173,6 +178,18 @@ export function TeamPerformanceReportPage({
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

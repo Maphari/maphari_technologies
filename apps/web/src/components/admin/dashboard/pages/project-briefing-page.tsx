@@ -43,10 +43,12 @@ export function ProjectBriefingPage({ session }: { session: AuthSession | null }
   const [projects, setProjects] = useState<AdminProject[]>([]);
   const [clientNames, setClientNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
+    setError(null);
     void Promise.all([
       loadProjectDirectoryWithRefresh(session, { pageSize: 50 }),
       loadClientDirectoryWithRefresh(session, { pageSize: 100 }),
@@ -54,13 +56,17 @@ export function ProjectBriefingPage({ session }: { session: AuthSession | null }
       if (cancelled) return;
       if (projRes.nextSession) saveSession(projRes.nextSession);
       if (clientRes.nextSession) saveSession(clientRes.nextSession);
-      if (!projRes.error && projRes.data?.items) setProjects(projRes.data.items);
+      if (projRes.error) { setError(projRes.error.message ?? "Failed to load."); return; }
+      if (projRes.data?.items) setProjects(projRes.data.items);
       if (!clientRes.error && clientRes.data?.items) {
         const map: Record<string, string> = {};
         for (const c of clientRes.data.items) map[c.id] = c.name;
         setClientNames(map);
       }
-      setLoading(false);
+    }).catch((err: unknown) => {
+      if (!cancelled) setError((err as Error)?.message ?? "Failed to load.");
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session]);
@@ -72,6 +78,18 @@ export function ProjectBriefingPage({ session }: { session: AuthSession | null }
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

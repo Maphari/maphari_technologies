@@ -91,6 +91,7 @@ export function SprintBoardAdminPage({ session, onNotify }: Props) {
   const [sprints, setSprints] = useState<ProjectSprint[]>([]);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // ── Load project list ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -112,11 +113,12 @@ export function SprintBoardAdminPage({ session, onNotify }: Props) {
   const loadSprints = useCallback(async () => {
     if (!session || !selectedProjectId) return;
     setLoading(true);
+    setError(null);
     setSprints([]);
     setTasks([]);
     const r = await getSprints(session, selectedProjectId);
     if (r.nextSession) saveSession(r.nextSession);
-    if (r.error) { onNotify("error", r.error.message); setLoading(false); return; }
+    if (r.error) { setError(r.error.message ?? "Failed to load."); onNotify("error", r.error.message); setLoading(false); return; }
     const sprintList = r.data ?? [];
     setSprints(sprintList);
 
@@ -156,6 +158,18 @@ export function SprintBoardAdminPage({ session, onNotify }: Props) {
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

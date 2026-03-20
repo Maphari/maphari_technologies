@@ -45,15 +45,22 @@ function confidenceBadge(status: string): number {
 export function UpdateQueueManagerPage({ session, onNotify }: Props) {
   const [submissions, setSubmissions] = useState<AdminContentSubmission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!session) { setLoading(false); return; }
-    const r = await loadContentSubmissionsWithRefresh(session);
-    if (r.nextSession) saveSession(r.nextSession);
-    if (r.error) onNotify("error", r.error.message);
-    setSubmissions(r.data ?? []);
-    setLoading(false);
+    setError(null);
+    try {
+      const r = await loadContentSubmissionsWithRefresh(session);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) { setError(r.error.message ?? "Failed to load."); }
+      else setSubmissions(r.data ?? []);
+    } catch (err: unknown) {
+      setError((err as Error)?.message ?? "Failed to load.");
+    } finally {
+      setLoading(false);
+    }
   }, [session, onNotify]);
 
   useEffect(() => {
@@ -106,6 +113,18 @@ export function UpdateQueueManagerPage({ session, onNotify }: Props) {
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

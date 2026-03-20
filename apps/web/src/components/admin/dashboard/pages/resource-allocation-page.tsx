@@ -88,26 +88,33 @@ export function ResourceAllocationPage({ session, onNotify }: Props) {
   const [staff, setStaff] = useState<AdminStaffProfile[]>([]);
   const [timeEntries, setTimeEntries] = useState<ProjectTimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const weeks = useMemo(() => WEEK_OFFSETS.map((o) => weekLabel(o)), []);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
+    setError(null);
     void (async () => {
-      const from = weekStart(0);
-      const [staffRes, timeRes] = await Promise.all([
-        loadAllStaffWithRefresh(session),
-        loadTimeEntriesWithRefresh(session, { from, limit: 500 })
-      ]);
-      if (cancelled) return;
-      if (staffRes.nextSession) saveSession(staffRes.nextSession);
-      if (timeRes.nextSession) saveSession(timeRes.nextSession);
-      if (staffRes.error) onNotify("error", staffRes.error.message);
-      if (timeRes.error) onNotify("warning", "Could not load time entries.");
-      setStaff((staffRes.data ?? []).filter((s) => s.isActive));
-      setTimeEntries(timeRes.data ?? []);
-      setLoading(false);
+      try {
+        const from = weekStart(0);
+        const [staffRes, timeRes] = await Promise.all([
+          loadAllStaffWithRefresh(session),
+          loadTimeEntriesWithRefresh(session, { from, limit: 500 })
+        ]);
+        if (cancelled) return;
+        if (staffRes.nextSession) saveSession(staffRes.nextSession);
+        if (timeRes.nextSession) saveSession(timeRes.nextSession);
+        if (staffRes.error) { setError(staffRes.error.message ?? "Failed to load."); return; }
+        if (timeRes.error) onNotify("warning", "Could not load time entries.");
+        setStaff((staffRes.data ?? []).filter((s) => s.isActive));
+        setTimeEntries(timeRes.data ?? []);
+      } catch (err: unknown) {
+        if (!cancelled) setError((err as Error)?.message ?? "Failed to load.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [session, onNotify]);
@@ -157,6 +164,18 @@ export function ResourceAllocationPage({ session, onNotify }: Props) {
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

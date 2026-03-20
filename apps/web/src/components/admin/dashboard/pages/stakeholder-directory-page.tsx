@@ -27,31 +27,38 @@ type ClientGroup = {
 export function StakeholderDirectoryPage({ session }: { session: AuthSession | null }) {
   const [groups,  setGroups]  = useState<ClientGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
   const [search,  setSearch]  = useState("");
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
+    setError(null);
     void (async () => {
-      const snap = await loadAdminSnapshotWithRefresh(session);
-      if (cancelled) return;
-      if (snap.nextSession) saveSession(snap.nextSession);
-      if (snap.error || !snap.data) { setLoading(false); return; }
+      try {
+        const snap = await loadAdminSnapshotWithRefresh(session);
+        if (cancelled) return;
+        if (snap.nextSession) saveSession(snap.nextSession);
+        if (snap.error || !snap.data) { setError(snap.error?.message ?? "Failed to load."); return; }
 
-      // Batch-load contacts for all clients in parallel
-      const clients = snap.data.clients;
-      const contactResults = await Promise.all(
-        clients.map((c) => loadClientContactsWithRefresh(session, c.id))
-      );
-      if (cancelled) return;
+        // Batch-load contacts for all clients in parallel
+        const clients = snap.data.clients;
+        const contactResults = await Promise.all(
+          clients.map((c) => loadClientContactsWithRefresh(session, c.id))
+        );
+        if (cancelled) return;
 
-      const built: ClientGroup[] = clients.map((c, i) => ({
-        client:   c,
-        contacts: contactResults[i]?.data ?? [],
-      }));
+        const built: ClientGroup[] = clients.map((c, i) => ({
+          client:   c,
+          contacts: contactResults[i]?.data ?? [],
+        }));
 
-      setGroups(built);
-      setLoading(false);
+        setGroups(built);
+      } catch (err: unknown) {
+        if (!cancelled) setError((err as Error)?.message ?? "Failed to load.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [session]);
@@ -83,6 +90,18 @@ export function StakeholderDirectoryPage({ session }: { session: AuthSession | n
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

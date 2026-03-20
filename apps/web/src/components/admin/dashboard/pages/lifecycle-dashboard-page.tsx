@@ -64,15 +64,21 @@ function computeTenure(contractStartAt: string | null): string {
 export function LifecycleDashboardPage({ session }: { session: AuthSession | null }) {
   const [clients, setClients] = useState<AdminClient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
+    setError(null);
     void loadClientDirectoryWithRefresh(session, { pageSize: 100 }).then((r) => {
       if (cancelled) return;
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data?.items) setClients(r.data.items);
-      setLoading(false);
+      if (r.error) { setError(r.error.message ?? "Failed to load."); }
+      else if (r.data?.items) setClients(r.data.items);
+    }).catch((err: unknown) => {
+      if (!cancelled) setError((err as Error)?.message ?? "Failed to load.");
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session]);
@@ -89,6 +95,18 @@ export function LifecycleDashboardPage({ session }: { session: AuthSession | nul
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

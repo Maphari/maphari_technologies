@@ -156,21 +156,29 @@ function buildClientRows(records: AdminSlaRecord[], clients: AdminClient[]): Cli
 export function SlaTrackerPage({ session }: { session: AuthSession | null }) {
   const [clients, setClients]     = useState<ClientSlaRow[]>([]);
   const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("client sla scores");
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
-    (async () => {
-      const [slaRes, snapRes] = await Promise.all([
-        loadAllSlaRecordsWithRefresh(session),
-        loadAdminSnapshotWithRefresh(session),
-      ]);
-      if (cancelled) return;
-      if (slaRes.nextSession)        saveSession(slaRes.nextSession);
-      else if (snapRes.nextSession)  saveSession(snapRes.nextSession);
-      setClients(buildClientRows(slaRes.data ?? [], snapRes.data?.clients ?? []));
-      setLoading(false);
+    setError(null);
+    void (async () => {
+      try {
+        const [slaRes, snapRes] = await Promise.all([
+          loadAllSlaRecordsWithRefresh(session),
+          loadAdminSnapshotWithRefresh(session),
+        ]);
+        if (cancelled) return;
+        if (slaRes.nextSession)        saveSession(slaRes.nextSession);
+        else if (snapRes.nextSession)  saveSession(snapRes.nextSession);
+        if (slaRes.error) { setError(slaRes.error.message ?? "Failed to load."); return; }
+        setClients(buildClientRows(slaRes.data ?? [], snapRes.data?.clients ?? []));
+      } catch (err: unknown) {
+        if (!cancelled) setError((err as Error)?.message ?? "Failed to load.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [session]);
@@ -191,6 +199,18 @@ export function SlaTrackerPage({ session }: { session: AuthSession | null }) {
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

@@ -178,15 +178,21 @@ export function PortfolioRiskRegisterPage({ session }: { session: AuthSession | 
   const [expanded, setExpanded]         = useState("");
   const [apiRisks, setApiRisks]         = useState<AdminPortfolioRisk[]>([]);
   const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
+    setError(null);
     void loadAllPortfolioRisksWithRefresh(session).then((r) => {
       if (cancelled) return;
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setApiRisks(r.data);
-      setLoading(false);
+      if (r.error) { setError(r.error.message ?? "Failed to load."); }
+      else if (r.data) setApiRisks(r.data);
+    }).catch((err: unknown) => {
+      if (!cancelled) setError((err as Error)?.message ?? "Failed to load.");
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session]);
@@ -206,6 +212,18 @@ export function PortfolioRiskRegisterPage({ session }: { session: AuthSession | 
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

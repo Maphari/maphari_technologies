@@ -148,21 +148,26 @@ export function StaffOnboardingPage({ session, onNotify }: StaffOnboardingPagePr
     let cancelled = false;
     async function load() {
       setLoading(true);
-      const usersRes = await loadStaffUsersWithRefresh(session!);
-      if (cancelled) return;
-      if (usersRes.error || !usersRes.data) { onNotify("error", usersRes.error?.message ?? "Failed to load staff."); setLoading(false); return; }
-      const active = usersRes.data.filter((u) => u.isActive);
-      if (!active.length) { setOnboardings([]); setLoading(false); return; }
-      const first = active[0];
-      const firstRes = await loadStaffOnboardingWithRefresh(session!, first.id);
-      if (cancelled) return;
-      const built = active.map((u, i) => buildOnboarding(u, u.id === first.id ? (firstRes.data ?? []) : [], i));
-      setOnboardings(built);
-      setLoadedIds(new Set([first.id]));
-      if (built.length) setExpanded(built[0].id);
-      setLoading(false);
+      try {
+        const usersRes = await loadStaffUsersWithRefresh(session!);
+        if (cancelled) return;
+        if (usersRes.error || !usersRes.data) { onNotify("error", usersRes.error?.message ?? "Failed to load staff."); return; }
+        const active = usersRes.data.filter((u) => u.isActive);
+        if (!active.length) { setOnboardings([]); return; }
+        const first = active[0];
+        const firstRes = await loadStaffOnboardingWithRefresh(session!, first.id);
+        if (cancelled) return;
+        const built = active.map((u, i) => buildOnboarding(u, u.id === first.id ? (firstRes.data ?? []) : [], i));
+        setOnboardings(built);
+        setLoadedIds(new Set([first.id]));
+        if (built.length) setExpanded(built[0].id);
+      } catch (err: unknown) {
+        if (!cancelled) onNotify("error", (err as Error)?.message ?? "Failed to load staff.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
-    load();
+    void load();
     return () => { cancelled = true; };
   }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
 

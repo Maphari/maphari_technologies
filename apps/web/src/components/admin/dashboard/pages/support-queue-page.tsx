@@ -56,6 +56,7 @@ export function SupportQueuePage({
 }) {
   const [tickets, setTickets]   = useState<AdminSupportTicket[]>([]);
   const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [title, setTitle]       = useState("");
   const [priority, setPriority] = useState<"LOW" | "MEDIUM" | "HIGH" | "CRITICAL">("MEDIUM");
@@ -64,10 +65,14 @@ export function SupportQueuePage({
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
+    setError(null);
     void loadSupportTicketsWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setTickets(r.data);
-      else if (r.error) onNotify("error", r.error.message);
+      if (r.error) { setError(r.error.message ?? "Failed to load."); }
+      else if (r.data) setTickets(r.data);
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load.");
+    }).finally(() => {
       setLoading(false);
     });
   }, [session]);
@@ -109,6 +114,18 @@ export function SupportQueuePage({
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

@@ -114,11 +114,13 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
               if (r.error || !r.data) {
                 setLoadError(r.error?.message ?? "Failed to load pipeline analytics. Please try again.");
                 onNotify("error", r.error?.message ?? "Failed to load pipeline analytics.");
-                setLoading(false);
                 return;
               }
               setLoadError(null);
               setData(r.data);
+            }).catch((err: unknown) => {
+              setLoadError((err as Error)?.message ?? "Failed to load pipeline analytics.");
+            }).finally(() => {
               setLoading(false);
             });
           }}>

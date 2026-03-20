@@ -49,7 +49,7 @@ export function RevOpsPage() {
 
   // ── Load MRR series ───────────────────────────────────────────────────────
   const loadRevenueSeries = useCallback(async () => {
-    if (!session) return;
+    if (!session) { setLoadingMrr(false); return; }
     setLoadingMrr(true);
     try {
       const result = await fetchRevenueSeries(session, 7);

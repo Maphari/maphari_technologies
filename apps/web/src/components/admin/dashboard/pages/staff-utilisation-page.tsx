@@ -58,17 +58,26 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
   const [staff, setStaff]     = useState<UtilisationRow[]>([]);
   const [summary, setSummary] = useState<UtilisationSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (p: Period) => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
-    const result = await loadStaffUtilisationWithRefresh(session, p);
-    if (result.nextSession) saveSession(result.nextSession);
-    if (result.data) {
-      setStaff(result.data.staff);
-      setSummary(result.data.summary);
+    setError(null);
+    try {
+      const result = await loadStaffUtilisationWithRefresh(session, p);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        setError(result.error.message ?? "Failed to load.");
+      } else if (result.data) {
+        setStaff(result.data.staff);
+        setSummary(result.data.summary);
+      }
+    } catch (err: unknown) {
+      setError((err as Error)?.message ?? "Failed to load.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [session]);
 
   useEffect(() => { void load(period); }, [load, period]);
@@ -89,6 +98,18 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

@@ -229,11 +229,13 @@ export function RequestInboxPage({
   const [items, setItems] = useState<ProjectRequestQueueItem[]>([]);
   const [clientNames, setClientNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<ProjectRequestQueueItem | null>(null);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
+    setError(null);
     void Promise.all([
       loadProjectRequestsQueueWithRefresh(session),
       loadClientDirectoryWithRefresh(session, { pageSize: 100 }),
@@ -241,13 +243,17 @@ export function RequestInboxPage({
       if (cancelled) return;
       if (reqRes.nextSession) saveSession(reqRes.nextSession);
       if (clientRes.nextSession) saveSession(clientRes.nextSession);
-      if (!reqRes.error && reqRes.data) setItems(reqRes.data);
+      if (reqRes.error) { setError(reqRes.error.message ?? "Failed to load."); return; }
+      if (reqRes.data) setItems(reqRes.data);
       if (!clientRes.error && clientRes.data?.items) {
         const map: Record<string, string> = {};
         for (const c of clientRes.data.items) map[c.id] = c.name;
         setClientNames(map);
       }
-      setLoading(false);
+    }).catch((err: unknown) => {
+      if (!cancelled) setError((err as Error)?.message ?? "Failed to load.");
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session]);
@@ -274,6 +280,18 @@ export function RequestInboxPage({
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

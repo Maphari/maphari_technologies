@@ -64,24 +64,33 @@ export function PerformancePage({ session }: { session: AuthSession | null }) {
   const [query, setQuery] = useState("");
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadStaff = useCallback(async () => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
-    const r = await loadAdminStaffPerformanceWithRefresh(session);
-    if (r.nextSession) saveSession(r.nextSession);
-    if (r.data && r.data.length > 0) {
-      setStaff(
-        r.data.map((m, idx) => ({
-          ...m,
-          id:     idx + 1,
-          avatar: m.avatarInitials,
-          color:  m.avatarColor ?? pickColor(m.userId),
-          notes:  noteForMember(m),
-        }))
-      );
+    setError(null);
+    try {
+      const r = await loadAdminStaffPerformanceWithRefresh(session);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) {
+        setError(r.error.message ?? "Failed to load.");
+      } else if (r.data && r.data.length > 0) {
+        setStaff(
+          r.data.map((m, idx) => ({
+            ...m,
+            id:     idx + 1,
+            avatar: m.avatarInitials,
+            color:  m.avatarColor ?? pickColor(m.userId),
+            notes:  noteForMember(m),
+          }))
+        );
+      }
+    } catch (err: unknown) {
+      setError((err as Error)?.message ?? "Failed to load.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [session]);
 
   useEffect(() => { void loadStaff(); }, [loadStaff]);
@@ -116,6 +125,18 @@ export function PerformancePage({ session }: { session: AuthSession | null }) {
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

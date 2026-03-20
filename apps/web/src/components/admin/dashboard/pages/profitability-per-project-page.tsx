@@ -91,24 +91,31 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
   const [invoices, setInvoices] = useState<AdminInvoice[]>([]);
   const [timeEntries, setTimeEntries] = useState<ProjectTimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
+    setError(null);
     void (async () => {
-      const [snapshotResult, timeResult] = await Promise.all([
-        loadAdminSnapshotWithRefresh(session),
-        loadTimeEntriesWithRefresh(session)
-      ]);
-      if (cancelled) return;
-      if (snapshotResult.nextSession) saveSession(snapshotResult.nextSession);
-      if (timeResult.nextSession) saveSession(timeResult.nextSession);
-      if (snapshotResult.error) onNotify("error", snapshotResult.error.message);
-      if (timeResult.error) onNotify("error", timeResult.error.message);
-      setProjects(snapshotResult.data?.projects ?? []);
-      setInvoices(snapshotResult.data?.invoices ?? []);
-      setTimeEntries(timeResult.data ?? []);
-      setLoading(false);
+      try {
+        const [snapshotResult, timeResult] = await Promise.all([
+          loadAdminSnapshotWithRefresh(session),
+          loadTimeEntriesWithRefresh(session)
+        ]);
+        if (cancelled) return;
+        if (snapshotResult.nextSession) saveSession(snapshotResult.nextSession);
+        if (timeResult.nextSession) saveSession(timeResult.nextSession);
+        if (snapshotResult.error) { setError(snapshotResult.error.message ?? "Failed to load."); return; }
+        if (timeResult.error) onNotify("error", timeResult.error.message);
+        setProjects(snapshotResult.data?.projects ?? []);
+        setInvoices(snapshotResult.data?.invoices ?? []);
+        setTimeEntries(timeResult.data ?? []);
+      } catch (err: unknown) {
+        if (!cancelled) setError((err as Error)?.message ?? "Failed to load.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [session, onNotify]);
@@ -227,6 +234,18 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

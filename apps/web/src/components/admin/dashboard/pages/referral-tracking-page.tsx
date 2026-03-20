@@ -121,37 +121,45 @@ export function ReferralTrackingPage({ session }: { session: AuthSession | null 
   const [referrals, setReferrals]     = useState<Referral[]>([]);
   const [topReferrers, setTopReferrers] = useState<TopReferrer[]>([]);
   const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState<string | null>(null);
   const [activeTab, setActiveTab]     = useState<Tab>("referral log");
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
-    (async () => {
-      const [refRes, snapRes] = await Promise.all([
-        loadAllReferralsWithRefresh(session),
-        loadAdminSnapshotWithRefresh(session),
-      ]);
-      if (cancelled) return;
-      if (refRes.nextSession)       saveSession(refRes.nextSession);
-      else if (snapRes.nextSession) saveSession(snapRes.nextSession);
-      const clientMap = new Map<string, string>(
-        (snapRes.data?.clients ?? []).map(c => [c.id, c.name])
-      );
-      // Build a unique referrer→index map for consistent colors
-      const referrerIndexMap = new Map<string, number>();
-      let nextIdx = 0;
-      const raw  = refRes.data ?? [];
-      const mapped = raw.map(r => {
-        if (!referrerIndexMap.has(r.referredByName)) {
-          referrerIndexMap.set(r.referredByName, nextIdx++);
-        }
-        const idx        = referrerIndexMap.get(r.referredByName) ?? 0;
-        const clientName = r.referredClientId ? clientMap.get(r.referredClientId) : undefined;
-        return mapReferral(r, idx, clientName);
-      });
-      setReferrals(mapped);
-      setTopReferrers(buildTopReferrers(mapped));
-      setLoading(false);
+    setError(null);
+    void (async () => {
+      try {
+        const [refRes, snapRes] = await Promise.all([
+          loadAllReferralsWithRefresh(session),
+          loadAdminSnapshotWithRefresh(session),
+        ]);
+        if (cancelled) return;
+        if (refRes.nextSession)       saveSession(refRes.nextSession);
+        else if (snapRes.nextSession) saveSession(snapRes.nextSession);
+        if (refRes.error) { setError(refRes.error.message ?? "Failed to load."); return; }
+        const clientMap = new Map<string, string>(
+          (snapRes.data?.clients ?? []).map(c => [c.id, c.name])
+        );
+        // Build a unique referrer→index map for consistent colors
+        const referrerIndexMap = new Map<string, number>();
+        let nextIdx = 0;
+        const raw  = refRes.data ?? [];
+        const mapped = raw.map(r => {
+          if (!referrerIndexMap.has(r.referredByName)) {
+            referrerIndexMap.set(r.referredByName, nextIdx++);
+          }
+          const idx        = referrerIndexMap.get(r.referredByName) ?? 0;
+          const clientName = r.referredClientId ? clientMap.get(r.referredClientId) : undefined;
+          return mapReferral(r, idx, clientName);
+        });
+        setReferrals(mapped);
+        setTopReferrers(buildTopReferrers(mapped));
+      } catch (err: unknown) {
+        if (!cancelled) setError((err as Error)?.message ?? "Failed to load.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [session]);
@@ -170,6 +178,18 @@ export function ReferralTrackingPage({ session }: { session: AuthSession | null 
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

@@ -61,7 +61,7 @@ export function ServiceCatalogManagerPage() {
   // ── Load ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (loaded.current || !session) return;
+    if (loaded.current || !session) { setLoading(false); return; }
     loaded.current = true;
     void (async () => {
       const result = await loadAdminServiceCatalogWithRefresh(session);
