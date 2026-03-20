@@ -125,6 +125,7 @@ export function ServiceCatalogPage() {
     if (loaded.current) return;
     if (!session) { setLoading(false); return; }
     loaded.current = true;
+    setLoading(true);
     setError(null);
     void (async () => {
       try {
