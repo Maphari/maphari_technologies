@@ -93,13 +93,12 @@ export function DesignReviewPage() {
   useEffect(() => {
     if (!session || !projectId) { setLoading(false); return; }
     setLoading(true);
-    getPortalDesignReviewsWithRefresh(session, projectId).then(r => {
+    void getPortalDesignReviewsWithRefresh(session, projectId).then(r => {
       if (r.nextSession) saveSession(r.nextSession);
       if (r.data && r.data.length > 0) {
         setScreens(r.data.map(apiToScreen));
       }
-      setLoading(false);
-    });
+    }).finally(() => setLoading(false));
   }, [session, projectId]);
 
   // ── Approve handler ────────────────────────────────────────────────────────

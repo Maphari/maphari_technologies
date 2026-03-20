@@ -201,7 +201,7 @@ export function MeetingArchivePage() {
       if (apptR.nextSession) saveSession(apptR.nextSession);
       if (meetR.nextSession) saveSession(meetR.nextSession);
       if (gcalR.nextSession) saveSession(gcalR.nextSession);
-      if (apptR.error) { setError(apptR.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (apptR.error) { setError(apptR.error.message ?? "Failed to load."); return; }
       if (!apptR.error && apptR.data) {
         const future = apptR.data.filter(a => new Date(a.scheduledAt) >= now);
         const past   = apptR.data.filter(a => new Date(a.scheduledAt) < now);
@@ -222,8 +222,7 @@ export function MeetingArchivePage() {
         setMeetingMoods(moods);
       }
       if (gcalR.data?.connected) setGcalConnected(true);
-      setLoading(false);
-    });
+    }).finally(() => setLoading(false));
   }, [session]);
 
   async function handleSyncMeeting(meetingId: string): Promise<void> {

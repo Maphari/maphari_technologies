@@ -123,12 +123,11 @@ export function DeliverablesPage() {
     setError(null);
     void loadPortalDeliverablesWithRefresh(session, projectId).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (result.error) { setError(result.error.message ?? "Failed to load."); return; }
       if (result.data && result.data.length > 0) {
         setData(result.data.map((d, i) => mapApiDeliverable(d, i)));
       }
-      setLoading(false);
-    });
+    }).finally(() => setLoading(false));
   }, [session, projectId]);
 
   // ── UI state ──────────────────────────────────────────────────────────────

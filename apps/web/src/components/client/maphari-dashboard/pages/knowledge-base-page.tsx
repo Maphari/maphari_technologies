@@ -55,10 +55,9 @@ export function KnowledgeBasePage() {
     setError(null);
     void loadPortalKnowledgeArticlesWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (r.error) { setError(r.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (r.error) { setError(r.error.message ?? "Failed to load."); return; }
       if (r.data) setArticles(r.data);
-      setLoading(false);
-    });
+    }).finally(() => setLoading(false));
   }, [session]);
 
   // Derive unique categories from real data

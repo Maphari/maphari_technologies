@@ -80,10 +80,9 @@ export function LoyaltyCreditsPage() {
     setError(null);
     void loadMyLoyaltyWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (r.error) { setError(r.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (r.error) { setError(r.error.message ?? "Failed to load."); return; }
       if (r.data) setAccount(r.data);
-      setLoading(false);
-    });
+    }).finally(() => setLoading(false));
   }, [session]);
 
   // ── Redeem handler ────────────────────────────────────────────────────────

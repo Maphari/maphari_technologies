@@ -129,7 +129,7 @@ export function FilesAssetsPage() {
 
   // ── Load files on mount ───────────────────────────────────────────────────
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     loadPortalFilesWithRefresh(session).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
       if (result.data) setFiles([...result.data]);
