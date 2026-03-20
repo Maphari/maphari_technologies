@@ -222,6 +222,7 @@ export function LastTouchedPage({
 }) {
   const [clients, setClients] = useState<LastTouchedClient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [sort, setSort] = useState<"staleness" | "name" | "items">("staleness");
   const [filter, setFilter] = useState<"all" | Staleness>("all");
@@ -234,27 +235,35 @@ export function LastTouchedPage({
     let cancelled = false;
 
     void (async () => {
-      const [clientsResult, commsResult, retainerResult, tasksResult] = await Promise.all([
-        getStaffClients(session),
-        getStaffAllComms(session),
-        getStaffRetainerBurn(session),
-        getMyTasks(session),
-      ]);
+      try {
+        const [clientsResult, commsResult, retainerResult, tasksResult] = await Promise.all([
+          getStaffClients(session),
+          getStaffAllComms(session),
+          getStaffRetainerBurn(session),
+          getMyTasks(session),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (clientsResult.nextSession) saveSession(clientsResult.nextSession);
-      if (commsResult.nextSession) saveSession(commsResult.nextSession);
-      if (retainerResult.nextSession) saveSession(retainerResult.nextSession);
-      if (tasksResult.nextSession) saveSession(tasksResult.nextSession);
+        if (clientsResult.nextSession) saveSession(clientsResult.nextSession);
+        if (commsResult.nextSession) saveSession(commsResult.nextSession);
+        if (retainerResult.nextSession) saveSession(retainerResult.nextSession);
+        if (tasksResult.nextSession) saveSession(tasksResult.nextSession);
 
-      const apiClients = clientsResult.data ?? [];
-      const apiComms = commsResult.data ?? [];
-      const apiRetainer = retainerResult.data ?? [];
-      const apiTasks = tasksResult.data ?? [];
+        const apiClients = clientsResult.data ?? [];
+        const apiComms = commsResult.data ?? [];
+        const apiRetainer = retainerResult.data ?? [];
+        const apiTasks = tasksResult.data ?? [];
 
-      setClients(deriveClients(apiClients, apiComms, apiRetainer, apiTasks, now));
-      setLoading(false);
+        setClients(deriveClients(apiClients, apiComms, apiRetainer, apiTasks, now));
+      } catch (err: unknown) {
+        if (!cancelled) {
+          const msg = (err as Error)?.message ?? "Failed to load data.";
+          setError(msg);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
 
     return () => { cancelled = true; };
@@ -286,6 +295,17 @@ export function LastTouchedPage({
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );

@@ -92,20 +92,22 @@ export function KnowledgeBasePage({ isActive, session }: { isActive: boolean; se
   const [error,          setError]          = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     void loadStaffKnowledgeArticlesWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error || !r.data) {
         setError(r.error?.message ?? "Failed to load data. Please try again.");
-        setLoading(false);
         return;
       }
       setArticles(r.data);
       if (r.data.length > 0) setSelectedId(r.data[0]?.id ?? null);
       setError(null);
-      setLoading(false);
-    });
+    }).catch((err: unknown) => {
+      const msg = (err as Error)?.message ?? "Failed to load data.";
+      setError(msg);
+    }).finally(() => setLoading(false));
   }, [session?.accessToken]);
 
   // Derive unique categories from real data

@@ -114,6 +114,7 @@ export function MeetingPrepPage({
 }) {
   const [meetings, setMeetings]   = useState<StaffMeeting[]>([]);
   const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<MainTab>("brief");
   const [checked, setChecked]     = useState<Record<string, boolean>>({});
@@ -123,17 +124,25 @@ export function MeetingPrepPage({
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
 
     void (async () => {
-      const result = await getStaffMeetingsWithRefresh(session);
-      if (result.nextSession) saveSession(result.nextSession);
+      try {
+        const result = await getStaffMeetingsWithRefresh(session);
+        if (result.nextSession) saveSession(result.nextSession);
 
-      const all = (result.data ?? []).filter((m) => m.status !== "CANCELLED");
-      // Sort upcoming first, then past
-      all.sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
-      setMeetings(all);
-      if (all.length > 0) setSelectedId(all[0].id);
-      setLoading(false);
+        const all = (result.data ?? []).filter((m) => m.status !== "CANCELLED");
+        // Sort upcoming first, then past
+        all.sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+        setMeetings(all);
+        if (all.length > 0) setSelectedId(all[0].id);
+      } catch (err: unknown) {
+        const msg = (err as Error)?.message ?? "Failed to load meetings.";
+        setError(msg);
+        onNotify?.("error", msg);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [isActive, session]);
 
@@ -157,6 +166,17 @@ export function MeetingPrepPage({
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );
