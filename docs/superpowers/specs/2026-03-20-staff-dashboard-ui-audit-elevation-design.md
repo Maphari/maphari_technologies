@@ -43,11 +43,11 @@ Scan every file in `apps/web/src/components/staff/staff-dashboard/pages/` and th
 |-------|-----------------|
 | Missing CSS classes | Component references a class name that does not exist in the CSS module |
 | Missing `key` props | `.map()` calls rendering JSX elements without a `key` prop |
-| NaN display values | Calculated values (percentages, averages) that could render `NaN%` due to division by zero or undefined data |
-| Missing skeleton states | Pages that have `if (loading) return …` but the returned JSX does not match the actual page layout structure |
-| Missing error states | Pages that silently swallow errors (no error boundary, no error message shown to user) |
+| NaN display values | Division expressions that produce a display value — verify each has a zero-division guard. All three forms are acceptable: `count > 0 ? Math.round(total / count) : 0`, `Math.round(total / count) \|\| 0`, or `Math.round(total / (count ?? 1))`. Flag any bare division with no guard. |
+| Missing skeleton states | Pages that have `if (loading) return …` but the returned JSX does not approximate the real page layout |
+| Missing error states | Pages that silently swallow errors (no error boundary, no user-visible error message) |
 | Bare empty states | Empty state renders only plain text with no icon, title, or contextual message |
-| Unused CSS classes | Classes defined in the module that are never referenced (cleanup opportunity) |
+| Unused CSS classes | Classes defined in the module that are never referenced in any `.tsx` file (cleanup opportunity) |
 
 **Output:** A structured issues table grouping findings by severity — Critical (broken), Warning (poor UX), Info (cleanup).
 
@@ -59,7 +59,7 @@ Navigate to each of the following pages in Chrome and capture a screenshot. Docu
 2. My Tasks (`tasks-page.tsx`)
 3. Kanban Board (`kanban-page.tsx`)
 4. Clients (`clients-page.tsx`)
-5. Client Threads (`clients-page.tsx` messaging view)
+5. Client Threads — click sidebar "Client Threads", then select an existing conversation row to load the thread panel; capture both the list view and the expanded thread panel. Verify: message list renders, reply input bar is visible, and the "Internal Notes" + "Escalations" sections are present.
 6. Time Log (`time-log-page.tsx`)
 7. Deliverables (`deliverables-page.tsx`)
 8. Notifications (`notifications-page.tsx`)
@@ -68,7 +68,7 @@ Navigate to each of the following pages in Chrome and capture a screenshot. Docu
 11. Daily Standup (`daily-standup-page.tsx`)
 12. Delivery Status (`delivery-status-page.tsx`)
 
-**Known issue to verify:** Retainer Burn shows `NaN%` for Avg Burn — root cause to be diagnosed (likely division by zero when `retainerBurnPct` is missing from API response).
+**Known issue to verify:** Retainer Burn shows `NaN%` for Avg Burn — root cause is division by zero when `clients.length === 0` or when `retainerBurnPct` is `undefined` on an entry. Fix: add `clients.length > 0 ? Math.round(...) : 0` guard.
 
 ---
 
@@ -89,33 +89,44 @@ The following utility classes are added once and reused across all pages:
   border-radius: var(--r-md);
 }
 
-/* Accent top stripe on stat cards */
+/* Accent top stripe on stat cards — uses position:absolute to match existing
+   stripe pattern (e.g. .staffTimerCard::before). Parent must have position:relative
+   and overflow:hidden. Do NOT use on cards that render tooltips or dropdowns that
+   overflow the card boundary. */
+.cardAccentStripe {
+  position: relative;
+  overflow: hidden;
+}
 .cardAccentStripe::before {
   content: '';
-  display: block;
-  width: 100%;
+  position: absolute;
+  top: 0; left: 0; right: 0;
   height: 2px;
   background: linear-gradient(90deg, var(--accent), transparent);
-  border-radius: 2px 2px 0 0;
-  margin-bottom: 14px;
+  border-radius: 2px 2px 0 0; /* intentional pixel-precise value — not a design-token radius */
 }
 ```
 
 #### Page header
+
+The existing `.pageEyebrowText` class already renders teal, DM Mono, uppercase text. Rather than adding a new class or replacing 197 JSX usages, **update the CSS definition of `.pageEyebrowText` in-place** — no JSX changes required for the eyebrow. The following spec shows the target styles; implement by editing the existing `.pageEyebrowText` rule:
+
 ```css
-/* Teal eyebrow text (breadcrumb / section label) */
-.pageEyebrowAccent {
-  font-family: var(--font-dm-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
+/* Edit the existing .pageEyebrowText rule — do NOT add a new class */
+/* Preserve font-size as 0.6rem (matches existing rule, equivalent to ~10px at default root).
+   Only change letter-spacing (0.15em → 0.08em) and margin-bottom (6px → 4px). */
+.pageEyebrowText {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;         /* unchanged — preserve relative unit */
+  letter-spacing: 0.08em;   /* tightened from 0.15em */
   text-transform: uppercase;
   color: var(--accent);
-  margin-bottom: 4px;
+  margin-bottom: 4px;        /* reduced from 6px */
 }
 
-/* Tighter title */
+/* New class — add to JSX alongside existing pageTitleText */
 .pageTitleElevated {
-  font-family: var(--font-syne);
+  font-family: var(--font-syne), sans-serif;
   font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.3px;
@@ -123,7 +134,7 @@ The following utility classes are added once and reused across all pages:
   margin: 0;
 }
 
-/* Muted subtitle */
+/* New class — add to JSX alongside existing pageSubtitleText */
 .pageSubtitleElevated {
   font-size: 13px;
   color: var(--muted2);
@@ -167,13 +178,13 @@ The following utility classes are added once and reused across all pages:
 ```css
 /* DM Mono enforcement on all numeric stat values */
 .statValueMono {
-  font-family: var(--font-dm-mono);
+  font-family: var(--font-dm-mono), monospace;
   font-variant-numeric: tabular-nums;
 }
 
 /* Small data label (above/below a stat) */
 .dataLabelMono {
-  font-family: var(--font-dm-mono);
+  font-family: var(--font-dm-mono), monospace;
   font-size: 10px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -182,17 +193,18 @@ The following utility classes are added once and reused across all pages:
 ```
 
 #### Skeleton loaders
-```css
-/* Standard 3-block page skeleton for pages without one */
-.skelePageBlock {
-  background: var(--s2);
-  border-radius: var(--r-md);
-  animation: skeletonPulse 1.4s ease-in-out infinite;
-}
 
-@keyframes skeletonPulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+The CSS module already contains `@keyframes ppSkeleShimmer`. Do NOT add a new keyframe. Use `ppSkeleShimmer` and match the existing background value (`rgba(255,255,255,0.07)`, consistent with all other skeleton blocks):
+
+```css
+/* Generic page skeleton block — reuses existing ppSkeleShimmer keyframe.
+   Callers MUST set an explicit height (e.g. height: 80px) or the block
+   renders as 0px. Recommended defaults: 68px for stat rows, 200px for
+   content panels. */
+.skelePageBlock {
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: var(--r-md);
+  animation: ppSkeleShimmer 1.4s ease-in-out infinite;
 }
 ```
 
@@ -202,12 +214,12 @@ For each of the 82 pages, apply the following changes consistently:
 
 | Element | Change |
 |---------|--------|
-| `pageEyebrowText` class | Replace with `pageEyebrowAccent` (teal, DM Mono, uppercase) |
-| `pageTitleText` class | Add `pageTitleElevated` alongside it |
-| `pageSubtitleText` class | Add `pageSubtitleElevated` alongside it |
-| Stat cards with labels+values | Add `cardAccentStripe` + `dataLabelMono` on labels, `statValueMono` on values |
-| Empty state plain text | Replace with `emptyStateIconRing` + `emptyStateTitleElevated` + `emptyStateSubElevated` |
-| Loading skeletons | Ensure at least 3 `skelePageBlock` divs approximate the real layout |
+| `pageEyebrowText` CSS rule | **Edit CSS in-place** — update `letter-spacing` to `0.08em` and `margin-bottom` to `4px`. Zero JSX changes. |
+| `pageTitleText` in JSX | Add `pageTitleElevated` class **alongside** the existing `pageTitleText` (additive, not a replacement) |
+| `pageSubtitleText` in JSX | Add `pageSubtitleElevated` class **alongside** the existing `pageSubtitleText` (additive) |
+| Stat cards with labels+values | Add `cardAccentStripe` to the card container; add `dataLabelMono` on the stat label; add `statValueMono` on the stat value |
+| Empty state plain text | Replace bare text with `emptyStateIconRing` (with an `<Ic>` icon inside) + `emptyStateTitleElevated` + `emptyStateSubElevated` |
+| Pages missing skeletons | Add a loading skeleton using 3 `skelePageBlock` divs sized to approximate the real layout |
 | Cards lacking borders | Add `cardElevated` class |
 
 ### 2c. Out of Scope
@@ -224,8 +236,8 @@ For each of the 82 pages, apply the following changes consistently:
 
 | File | Changes |
 |------|---------|
-| `apps/web/src/app/style/staff/maphari-staff-dashboard.module.css` | Add elevation utility classes (Phase 2a) |
-| All 82 files in `apps/web/src/components/staff/staff-dashboard/pages/` | Apply elevation classes per-page (Phase 2b) |
+| `apps/web/src/app/style/staff/maphari-staff-dashboard.module.css` | Edit `.pageEyebrowText` in-place; add new elevation utility classes (Phase 2a) |
+| All 82 files in `apps/web/src/components/staff/staff-dashboard/pages/` | Apply elevation classes per-page (Phase 2b); fix NaN guards and key props (Phase 1a) |
 
 ---
 
@@ -233,11 +245,12 @@ For each of the 82 pages, apply the following changes consistently:
 
 - [ ] Static analysis finds zero missing CSS class references across all 82 pages
 - [ ] All `.map()` renders have `key` props
-- [ ] No `NaN` values rendered in any stat or metric field
+- [ ] Static analysis confirms every division expression producing a display value has a zero-division guard (`|| 0` or `?? 0`)
+- [ ] No `NaN` values visible in any stat or metric field in the browser spot-check
 - [ ] All pages have a skeleton loading state that approximates the real layout
 - [ ] All pages have an error state with a user-visible message
 - [ ] All empty states have an icon, title, and subtitle
-- [ ] All page headers use the teal eyebrow, elevated title, and muted subtitle pattern
+- [ ] All page headers use the updated eyebrow (teal, DM Mono) + elevated title + muted subtitle pattern
 - [ ] All stat/metric values use DM Mono (tabular nums)
 - [ ] Browser spot-check of 12 key pages shows no visual regressions
 
@@ -246,8 +259,8 @@ For each of the 82 pages, apply the following changes consistently:
 ## Implementation Order
 
 1. Run static analysis and produce the issues table
-2. Fix all Critical issues (missing classes, NaN values, missing keys)
-3. Browser spot-check and document remaining visual issues
-4. Add elevation utility classes to CSS module
-5. Apply elevation classes across all 82 pages (can be batched in groups of ~15)
+2. Fix all Critical issues (missing classes, NaN zero-division guards, missing keys)
+3. Browser spot-check of 12 key pages; document remaining visual issues
+4. Add elevation utility classes to CSS module (edit `.pageEyebrowText` in-place; add new classes)
+5. Apply elevation classes across all 82 pages (batch in groups of ~15)
 6. Re-run browser spot-check to verify no regressions
