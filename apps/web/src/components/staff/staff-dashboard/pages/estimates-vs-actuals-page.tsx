@@ -84,6 +84,7 @@ export function EstimatesVsActualsPage({
     setLoading(true);
 
     void (async () => {
+      try {
       const [tasksR, timeR, projectsR] = await Promise.all([
         getMyTasks(session),
         getMyTimeEntries(session),
@@ -200,8 +201,11 @@ export function EstimatesVsActualsPage({
           actual: Math.round(data.actual * 10) / 10,
         }))
       );
-
-      setLoading(false);
+      } catch {
+        // keep previous state on error
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
 
     return () => { cancelled = true; };

@@ -29,13 +29,18 @@ export function BrandKitPage({ isActive, session }: BrandKitPageProps) {
     let cancelled = false;
     setLoading(true);
     async function load() {
-      const r = await loadPortalBrandAssetsWithRefresh(session!);
-      if (cancelled) return;
-      if (r.nextSession) saveSession(r.nextSession);
-      setAssets(r.data ?? []);
-      setLoading(false);
+      try {
+        const r = await loadPortalBrandAssetsWithRefresh(session!);
+        if (cancelled) return;
+        if (r.nextSession) saveSession(r.nextSession);
+        setAssets(r.data ?? []);
+      } catch {
+        // keep previous state on error
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
-    load();
+    void load();
     return () => { cancelled = true; };
   }, [session?.accessToken]);
 

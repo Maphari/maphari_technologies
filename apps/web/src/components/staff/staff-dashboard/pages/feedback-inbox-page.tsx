@@ -73,7 +73,7 @@ export function FeedbackInboxPage({ isActive, session }: FeedbackInboxPageProps)
   const [acking, setAcking]   = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
@@ -81,7 +81,10 @@ export function FeedbackInboxPage({ isActive, session }: FeedbackInboxPageProps)
       if (cancelled) return;
       if (result.nextSession) saveSession(result.nextSession);
       if (result.data) setItems(result.data);
-      setLoading(false);
+    }).catch(() => {
+      // keep previous state on error
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

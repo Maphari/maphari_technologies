@@ -224,7 +224,7 @@ export function HandoverChecklistPage({ isActive, session }: { isActive: boolean
   }
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
 
@@ -262,7 +262,10 @@ export function HandoverChecklistPage({ isActive, session }: { isActive: boolean
         setHandoverIds(idMap);
       }
 
-      setLoading(false);
+    }).catch(() => {
+      // keep previous state on error
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session?.accessToken, isActive]);

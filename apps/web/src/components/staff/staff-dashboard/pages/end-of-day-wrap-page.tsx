@@ -100,7 +100,7 @@ export function EndOfDayWrapPage({
   const [error,         setError]         = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
     void getMyTasks(session).then((r) => {

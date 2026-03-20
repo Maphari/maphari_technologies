@@ -60,6 +60,8 @@ export function ChangeRequestsPage({
       if (r.nextSession) saveSession(r.nextSession);
       if (!r.error && r.data) setRequests(r.data);
       setLoading(false);
+    }).catch(() => {
+      setLoading(false);
     });
   }, [session]);
 

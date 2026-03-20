@@ -108,7 +108,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
 
   // ── Load top-3 tasks ──────────────────────────────────────────────────────
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setTopTaskLoading(false); return; }
     let cancelled = false;
     setTopTaskLoading(true);
     void getStaffTopTasks(session).then((r) => {
@@ -123,7 +123,10 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
           }))
         );
       }
-      setTopTaskLoading(false);
+    }).catch(() => {
+      // keep previous tasks on error
+    }).finally(() => {
+      if (!cancelled) setTopTaskLoading(false);
     });
     return () => { cancelled = true; };
   }, [session]);

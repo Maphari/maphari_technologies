@@ -120,7 +120,10 @@ export function ClientJourneyPage({ isActive, session }: { isActive: boolean; se
       if (!clientsRes.error && clientsRes.data && !projectsRes.error && projectsRes.data) {
         setJourneys(buildJourneys(clientsRes.data, projectsRes.data));
       }
-      setLoading(false);
+    }).catch(() => {
+      // keep previous state on error
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session?.accessToken]);

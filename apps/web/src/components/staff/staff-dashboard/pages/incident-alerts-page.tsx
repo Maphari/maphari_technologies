@@ -159,12 +159,12 @@ export function IncidentAlertsPage({ isActive, session }: IncidentAlertsPageProp
   const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
-    if (!session?.accessToken) return;
+    if (!session?.accessToken) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
 
-    Promise.all([
+    void Promise.all([
       getAutomationJobs(session, 50),
       getAutomationDeadLetters(session, 50),
     ]).then(([jobsResult, deadResult]) => {
@@ -186,7 +186,10 @@ export function IncidentAlertsPage({ isActive, session }: IncidentAlertsPageProp
       }
 
       setIncidents(merged.map(mapJobToIncident));
-      setLoading(false);
+    }).catch(() => {
+      // keep previous state on error
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

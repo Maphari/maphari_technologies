@@ -105,21 +105,29 @@ function isOverdue(item: StaffApprovalItem): boolean {
 export function ApprovalQueuePage({ isActive, session, onFeedback }: ApprovalQueuePageProps) {
   const [items, setItems]         = useState<StaffApprovalItem[]>([]);
   const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("All");
   const [resolving, setResolving] = useState<string | null>(null); // item.id being resolved
   const [reminding, setReminding] = useState<string | null>(null); // item.id whose reminder is in flight
 
   // ── Load approvals ──────────────────────────────────────────────────────
+
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
+    setError(null);
     void getStaffApprovals(session).then((result) => {
       if (cancelled) return;
       if (result.nextSession) saveSession(result.nextSession);
       if (result.data) setItems(result.data);
-      setLoading(false);
+    }).catch((err: unknown) => {
+      if (cancelled) return;
+      const msg = (err as Error)?.message ?? "Failed to load approvals";
+      setError(msg);
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };
@@ -188,6 +196,17 @@ export function ApprovalQueuePage({ isActive, session, onFeedback }: ApprovalQue
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );

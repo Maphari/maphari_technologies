@@ -105,14 +105,17 @@ export function ClientBudgetPage({ isActive, session }: ClientBudgetPageProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
     void getStaffClientBudgets(session).then((result) => {
       if (cancelled) return;
       if (result.data) setClients(result.data);
-      setLoading(false);
+    }).catch(() => {
+      // keep previous state on error
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

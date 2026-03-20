@@ -63,7 +63,7 @@ export function ExpenseSubmitPage({
   const [error, setError]                 = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     void loadMyExpensesWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);

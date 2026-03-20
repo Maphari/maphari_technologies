@@ -160,7 +160,7 @@ export function AutomationsPage({
   const [retrying, setRetrying]   = useState(false);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
@@ -168,7 +168,10 @@ export function AutomationsPage({
       if (cancelled) return;
       if (result.nextSession) saveSession(result.nextSession);
       setJobs(result.data ?? []);
-      setLoading(false);
+    }).catch(() => {
+      // keep previous state on error
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

@@ -227,14 +227,17 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
 
   // ── Load health scores on mount / session change ──────────────────────────
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
     void getStaffAllHealthScores(session).then((result) => {
       if (cancelled) return;
       if (result.data) setHealthData(result.data);
-      setLoading(false);
+    }).catch(() => {
+      // keep previous state on error
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

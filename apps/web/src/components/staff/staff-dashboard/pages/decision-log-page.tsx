@@ -133,7 +133,10 @@ export function DecisionLogPage({ isActive, session }: { isActive: boolean; sess
         setProjects(opts);
         if (opts[0]) setDraft((d) => ({ ...d, projectId: opts[0]!.id }));
       }
-      setLoading(false);
+    }).catch(() => {
+      // keep previous state on error
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session?.accessToken]);

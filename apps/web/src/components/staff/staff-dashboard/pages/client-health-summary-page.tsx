@@ -96,7 +96,10 @@ export function ClientHealthSummaryPage({
       if (cancelled) return;
       if (r.nextSession) saveSession(r.nextSession);
       if (!r.error && r.data) setEntries(r.data);
-      setLoading(false);
+    }).catch(() => {
+      // keep previous state on error
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session?.accessToken]);

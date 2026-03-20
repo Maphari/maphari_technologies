@@ -209,7 +209,7 @@ export function ClientOnboardingPage({ isActive, session, onNavigate }: { isActi
 
   // ── Fetch data ──────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     try {
       const clientsResult = await getStaffClients(session);

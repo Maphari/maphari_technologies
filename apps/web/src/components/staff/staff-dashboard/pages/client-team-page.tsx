@@ -87,7 +87,10 @@ export function ClientTeamPage({ isActive, session }: { isActive: boolean; sessi
       if (!r.error && r.data) {
         setTeams(buildTeams(r.data));
       }
-      setLoading(false);
+    }).catch(() => {
+      // keep previous state on error
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session?.accessToken]);

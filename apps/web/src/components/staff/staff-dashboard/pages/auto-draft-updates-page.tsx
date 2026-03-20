@@ -221,7 +221,10 @@ export function AutoDraftUpdatesPage({ isActive, session, onNotify }: PageProps)
           setSelectedClientId(newClients[0].id);
         }
       }
-      setLoading(false);
+    }).catch(() => {
+      // keep previous state on error
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };
@@ -269,10 +272,11 @@ export function AutoDraftUpdatesPage({ isActive, session, onNotify }: PageProps)
   // Load draft history from API when switching to history tab
   useEffect(() => {
     if (view !== "history" || !session) return;
+    let cancelled = false;
     setHistoryLoading(true);
     void loadAutoDraftsWithRefresh(session).then((r) => {
+      if (cancelled) return;
       if (r.nextSession) saveSession(r.nextSession);
-      setHistoryLoading(false);
       if (r.data && r.data.length > 0) {
         const apiHistory: SentItem[] = r.data.map((d) => ({
           client: d.clientId,
@@ -289,7 +293,12 @@ export function AutoDraftUpdatesPage({ isActive, session, onNotify }: PageProps)
         }));
         setSentHistory(apiHistory);
       }
+    }).catch(() => {
+      // keep previous history on error
+    }).finally(() => {
+      if (!cancelled) setHistoryLoading(false);
     });
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, session?.accessToken]);
 

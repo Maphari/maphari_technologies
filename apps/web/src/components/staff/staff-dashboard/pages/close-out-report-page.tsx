@@ -248,56 +248,61 @@ export function CloseOutReportPage({
     if (!session) { setLoading(false); return; }
     let cancelled = false;
 
-    (async () => {
-      const [projRes, clientRes, perfRes, signoffRes, fbRes, crRes] = await Promise.all([
-        getStaffProjects(session),
-        getStaffClients(session),
-        getStaffMyPerformance(session),
-        getStaffMilestoneSignoffs(session),
-        getStaffFeedback(session),
-        getStaffChangeRequests(session),
-      ]);
-      if (cancelled) return;
+    void (async () => {
+      try {
+        const [projRes, clientRes, perfRes, signoffRes, fbRes, crRes] = await Promise.all([
+          getStaffProjects(session),
+          getStaffClients(session),
+          getStaffMyPerformance(session),
+          getStaffMilestoneSignoffs(session),
+          getStaffFeedback(session),
+          getStaffChangeRequests(session),
+        ]);
+        if (cancelled) return;
 
-      // Save refreshed sessions
-      if (projRes.nextSession) saveSession(projRes.nextSession);
-      if (clientRes.nextSession) saveSession(clientRes.nextSession);
-      if (perfRes.nextSession) saveSession(perfRes.nextSession);
-      if (signoffRes.nextSession) saveSession(signoffRes.nextSession);
-      if (fbRes.nextSession) saveSession(fbRes.nextSession);
-      if (crRes.nextSession) saveSession(crRes.nextSession);
+        // Save refreshed sessions
+        if (projRes.nextSession) saveSession(projRes.nextSession);
+        if (clientRes.nextSession) saveSession(clientRes.nextSession);
+        if (perfRes.nextSession) saveSession(perfRes.nextSession);
+        if (signoffRes.nextSession) saveSession(signoffRes.nextSession);
+        if (fbRes.nextSession) saveSession(fbRes.nextSession);
+        if (crRes.nextSession) saveSession(crRes.nextSession);
 
-      const allProjects = projRes.data ?? [];
-      const allClients = clientRes.data ?? [];
-      const perf = perfRes.data ?? null;
-      const signoffs = signoffRes.data ?? [];
-      const feedback = fbRes.data ?? [];
-      const changeReqs = crRes.data ?? [];
+        const allProjects = projRes.data ?? [];
+        const allClients = clientRes.data ?? [];
+        const perf = perfRes.data ?? null;
+        const signoffs = signoffRes.data ?? [];
+        const feedback = fbRes.data ?? [];
+        const changeReqs = crRes.data ?? [];
 
-      // Only show projects that are completed or near completion
-      const closedProjects = allProjects.filter(
-        (p) =>
-          p.status === "COMPLETED" ||
-          p.status === "DELIVERED" ||
-          p.status === "CLOSED" ||
-          p.progressPercent >= 90,
-      );
-
-      const clientMap = new Map(allClients.map((c) => [c.id, c]));
-
-      const reportMap = new Map<string, Report>();
-      for (const project of closedProjects) {
-        reportMap.set(
-          project.id,
-          buildReport(project, clientMap.get(project.clientId), signoffs, perf, feedback, changeReqs),
+        // Only show projects that are completed or near completion
+        const closedProjects = allProjects.filter(
+          (p) =>
+            p.status === "COMPLETED" ||
+            p.status === "DELIVERED" ||
+            p.status === "CLOSED" ||
+            p.progressPercent >= 90,
         );
-      }
 
-      const rows = buildClientRows(closedProjects, clientMap, reportMap);
-      setClients(rows);
-      setReports(Object.fromEntries(reportMap));
-      if (rows.length > 0 && !selectedId) setSelectedId(rows[0].id);
-      setLoading(false);
+        const clientMap = new Map(allClients.map((c) => [c.id, c]));
+
+        const reportMap = new Map<string, Report>();
+        for (const project of closedProjects) {
+          reportMap.set(
+            project.id,
+            buildReport(project, clientMap.get(project.clientId), signoffs, perf, feedback, changeReqs),
+          );
+        }
+
+        const rows = buildClientRows(closedProjects, clientMap, reportMap);
+        setClients(rows);
+        setReports(Object.fromEntries(reportMap));
+        if (rows.length > 0 && !selectedId) setSelectedId(rows[0].id);
+      } catch {
+        // keep previous state on error
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
 
     return () => { cancelled = true; };
