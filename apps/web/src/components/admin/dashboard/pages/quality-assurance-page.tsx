@@ -8,7 +8,7 @@ type DeliverableStatus = "in-review" | "approved" | "changes-requested" | "rejec
 type Tab = "all deliverables" | "pending review" | "approved" | "revision history" | "qa metrics";
 type FilterStatus = "All" | DeliverableStatus;
 
-const deliverables: Array<{
+type Deliverable = {
   id: string;
   project: string;
   client: string;
@@ -24,7 +24,9 @@ const deliverables: Array<{
   revisions: Array<{ date: string; note: string; requestedBy: string }>;
   score: number | null;
   checklist: Array<{ item: string; done: boolean }>;
-}> = [];
+};
+
+const initialDeliverables: Deliverable[] = [];
 
 const statusConfig: Record<DeliverableStatus, { color: string; label: string; bg: string }> = {
   "in-review": { color: "var(--blue)", label: "In Review", bg: "color-mix(in srgb, var(--blue) 8%, transparent)" },
@@ -43,10 +45,18 @@ const typeColors: Record<string, string> = {
 
 const tabs: Tab[] = ["all deliverables", "pending review", "approved", "revision history", "qa metrics"];
 
-export function QualityAssurancePage() {
+interface Props {
+  onNotify: (tone: "success" | "error" | "warning" | "info", msg: string) => void;
+}
+
+export function QualityAssurancePage({ onNotify }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("all deliverables");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("All");
+  const [deliverables, setDeliverables] = useState<Deliverable[]>(initialDeliverables);
+  const [actioningDeliverableId, setActioningDeliverableId] = useState<string | null>(null);
+  const [requestingChangesId, setRequestingChangesId] = useState<string | null>(null);
+  const [changesNote, setChangesNote] = useState("");
 
   const pending = deliverables.filter((d) => d.status === "in-review" || d.status === "changes-requested");
   const approved = deliverables.filter((d) => d.status === "approved");
@@ -190,9 +200,91 @@ export function QualityAssurancePage() {
                       <div>
                         <div className={cx("text11", "colorMuted", "uppercase", "mb12")}>Actions</div>
                         <div className={cx("flexCol", "gap8")}>
-                          {d.status !== "approved" ? <button type="button" className={cx("btnSm", "btnAccent", styles.qaTextLeft)}>&#10003; Approve Deliverable</button> : null}
-                          <button type="button" className={cx("btnSm", "btnGhost", styles.qaTextLeft)}>&#9998; Request Changes</button>
-                          <button type="button" className={cx("btnSm", styles.qaRejectBtn, styles.qaTextLeft)}>&#10007; Reject</button>
+                          {d.status !== "approved" ? (
+                            <button
+                              type="button"
+                              className={cx("btnSm", "btnAccent", styles.qaTextLeft)}
+                              disabled={actioningDeliverableId === d.id}
+                              onClick={async () => {
+                                setActioningDeliverableId(d.id);
+                                setDeliverables((prev) =>
+                                  prev.map((item) =>
+                                    item.id === d.id ? { ...item, status: "approved" as DeliverableStatus } : item
+                                  )
+                                );
+                                onNotify("success", `Deliverable "${d.name}" approved.`);
+                                setActioningDeliverableId(null);
+                              }}
+                            >
+                              &#10003; {actioningDeliverableId === d.id ? "Approving…" : "Approve Deliverable"}
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            className={cx("btnSm", "btnGhost", styles.qaTextLeft)}
+                            onClick={() =>
+                              setRequestingChangesId(requestingChangesId === d.id ? null : d.id)
+                            }
+                          >
+                            &#9998; Request Changes
+                          </button>
+                          {requestingChangesId === d.id ? (
+                            <div className={cx("flexCol", "gap8")}>
+                              <textarea
+                                className={cx("inputSm")}
+                                rows={3}
+                                placeholder="Describe the changes needed…"
+                                value={changesNote}
+                                onChange={(e) => setChangesNote(e.target.value)}
+                              />
+                              <button
+                                type="button"
+                                className={cx("btnSm", "btnAccent", styles.qaTextLeft)}
+                                disabled={!changesNote.trim()}
+                                onClick={() => {
+                                  const note = changesNote.trim();
+                                  if (!note) return;
+                                  setDeliverables((prev) =>
+                                    prev.map((item) =>
+                                      item.id === d.id
+                                        ? {
+                                            ...item,
+                                            status: "changes-requested" as DeliverableStatus,
+                                            revisions: [
+                                              ...item.revisions,
+                                              {
+                                                date: new Date().toISOString().split("T")[0],
+                                                note,
+                                                requestedBy: "Admin",
+                                              },
+                                            ],
+                                          }
+                                        : item
+                                    )
+                                  );
+                                  onNotify("info", `Changes requested for "${d.name}".`);
+                                  setChangesNote("");
+                                  setRequestingChangesId(null);
+                                }}
+                              >
+                                Submit Changes Request
+                              </button>
+                            </div>
+                          ) : null}
+                          <button
+                            type="button"
+                            className={cx("btnSm", styles.qaRejectBtn, styles.qaTextLeft)}
+                            onClick={() => {
+                              setDeliverables((prev) =>
+                                prev.map((item) =>
+                                  item.id === d.id ? { ...item, status: "rejected" as DeliverableStatus } : item
+                                )
+                              );
+                              onNotify("error", `Deliverable "${d.name}" rejected.`);
+                            }}
+                          >
+                            &#10007; Reject
+                          </button>
                           {d.score ? (
                             <div className={cx("bgBg", "text12", styles.qaScoreBox)}>
                               Quality Score: <span className={cx("colorAccent", "fontMono", "fw700")}>{d.score}/100</span>

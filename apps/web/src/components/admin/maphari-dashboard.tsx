@@ -512,7 +512,7 @@ export function MaphariDashboard() {
             {page === "portfolio" ? <ProjectPortfolioPage /> : null}
             {page === "resources" ? <ResourceAllocationPage session={session} onNotify={pushToast} /> : null}
             {page === "gantt" ? <TimelineGanttPage /> : null}
-            {page === "qa" ? <QualityAssurancePage /> : null}
+            {page === "qa" ? <QualityAssurancePage onNotify={pushToast} /> : null}
             {page === "sla" ? <SlaTrackerPage session={session} /> : null}
             {page === "offboarding" ? <ClientOffboardingPage /> : null}
             {page === "onboarding" ? <ClientOnboardingPage session={session} onNotify={pushToast} /> : null}
