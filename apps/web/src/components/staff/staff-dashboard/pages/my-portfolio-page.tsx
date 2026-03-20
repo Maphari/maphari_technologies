@@ -149,67 +149,74 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
   const [filter, setFilter] = useState<FilterValue>("all");
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
+    setError(null);
     void (async () => {
-      const [projectsResult, tasksResult, clientsResult] = await Promise.all([
-        getStaffProjects(session),
-        getMyTasks(session),
-        getStaffClients(session),
-      ]);
+      try {
+        const [projectsResult, tasksResult, clientsResult] = await Promise.all([
+          getStaffProjects(session),
+          getMyTasks(session),
+          getStaffClients(session),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      // Persist refreshed sessions
-      if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
-      if (tasksResult.nextSession) saveSession(tasksResult.nextSession);
-      if (clientsResult.nextSession) saveSession(clientsResult.nextSession);
+        // Persist refreshed sessions
+        if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
+        if (tasksResult.nextSession) saveSession(tasksResult.nextSession);
+        if (clientsResult.nextSession) saveSession(clientsResult.nextSession);
 
-      const rawProjects = projectsResult.data ?? [];
-      const rawTasks = tasksResult.data ?? [];
-      const rawClients = clientsResult.data ?? [];
+        const rawProjects = projectsResult.data ?? [];
+        const rawTasks = tasksResult.data ?? [];
+        const rawClients = clientsResult.data ?? [];
 
-      // Build client lookup
-      const clientMap = new Map<string, StaffClient>();
-      for (const c of rawClients) clientMap.set(c.id, c);
+        // Build client lookup
+        const clientMap = new Map<string, StaffClient>();
+        for (const c of rawClients) clientMap.set(c.id, c);
 
-      // Group tasks by projectId
-      const tasksByProject = new Map<string, StaffTask[]>();
-      for (const t of rawTasks) {
-        const list = tasksByProject.get(t.projectId) ?? [];
-        list.push(t);
-        tasksByProject.set(t.projectId, list);
+        // Group tasks by projectId
+        const tasksByProject = new Map<string, StaffTask[]>();
+        for (const t of rawTasks) {
+          const list = tasksByProject.get(t.projectId) ?? [];
+          list.push(t);
+          tasksByProject.set(t.projectId, list);
+        }
+
+        // Build portfolio projects
+        const portfolio: PortfolioProject[] = rawProjects.map((p) => {
+          const projectTasks = tasksByProject.get(p.id) ?? [];
+          const doneTasks = projectTasks.filter((t) => t.status === "DONE").length;
+          const inProgressTasks = projectTasks.filter((t) => t.status === "IN_PROGRESS").length;
+          const budgetTotal = (p.budgetCents ?? 0) / 100;
+
+          // Estimate spent as proportional to progress (best effort without dedicated spend endpoint)
+          const budgetSpent = budgetTotal > 0 ? Math.round(budgetTotal * (p.progressPercent / 100)) : 0;
+
+          return {
+            id: p.id,
+            name: p.name,
+            client: clientMap.get(p.clientId)?.name ?? "Unknown Client",
+            progress: p.progressPercent,
+            health: deriveHealth(p),
+            tasks: { total: projectTasks.length, done: doneTasks, inProgress: inProgressTasks },
+            budget: { total: budgetTotal, spent: budgetSpent },
+            dueAt: formatDate(p.dueAt),
+            priority: normalizePriority(p.priority),
+          };
+        });
+
+        setProjects(portfolio);
+      } catch (err: unknown) {
+        if (!cancelled) setError((err as Error)?.message ?? "Failed to load data.");
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      // Build portfolio projects
-      const portfolio: PortfolioProject[] = rawProjects.map((p) => {
-        const projectTasks = tasksByProject.get(p.id) ?? [];
-        const doneTasks = projectTasks.filter((t) => t.status === "DONE").length;
-        const inProgressTasks = projectTasks.filter((t) => t.status === "IN_PROGRESS").length;
-        const budgetTotal = (p.budgetCents ?? 0) / 100;
-
-        // Estimate spent as proportional to progress (best effort without dedicated spend endpoint)
-        const budgetSpent = budgetTotal > 0 ? Math.round(budgetTotal * (p.progressPercent / 100)) : 0;
-
-        return {
-          id: p.id,
-          name: p.name,
-          client: clientMap.get(p.clientId)?.name ?? "Unknown Client",
-          progress: p.progressPercent,
-          health: deriveHealth(p),
-          tasks: { total: projectTasks.length, done: doneTasks, inProgress: inProgressTasks },
-          budget: { total: budgetTotal, spent: budgetSpent },
-          dueAt: formatDate(p.dueAt),
-          priority: normalizePriority(p.priority),
-        };
-      });
-
-      setProjects(portfolio);
-      setLoading(false);
     })();
 
     return () => { cancelled = true; };
@@ -234,6 +241,18 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

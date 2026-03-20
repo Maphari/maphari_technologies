@@ -236,8 +236,9 @@ export function NotificationsPage({ isActive, session }: { isActive: boolean; se
           })) as Array<NotificationItem & { _apiId: string }>
         );
       }
-      setLoading(false);
-    });
+    }).catch(() => {
+      // silently swallow — notifications are non-critical; list stays empty
+    }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [session?.accessToken, isActive]);
 

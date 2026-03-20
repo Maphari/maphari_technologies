@@ -37,27 +37,26 @@ export function MyOnboardingPage({ isActive, session }: { isActive: boolean; ses
   const [error, setError]                 = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     // The onboarding endpoint needs the StaffProfile.id (not userId), so resolve it first
     void getMyProfile(session).then(async (pr) => {
       if (pr.nextSession) saveSession(pr.nextSession);
       if (pr.error || !pr.data) {
         setError(pr.error?.message ?? "Failed to load data. Please try again.");
-        setLoading(false);
         return;
       }
       const r = await loadMyStaffOnboardingWithRefresh(session, pr.data.id);
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error || !r.data) {
         setError(r.error?.message ?? "Failed to load data. Please try again.");
-        setLoading(false);
         return;
       }
       setApiOnboarding(r.data);
-      setError(null);
-      setLoading(false);
-    });
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load data.");
+    }).finally(() => setLoading(false));
   }, [session?.accessToken]);
 
   const checklistItems = useMemo(() =>

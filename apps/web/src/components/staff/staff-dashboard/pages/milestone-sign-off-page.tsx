@@ -92,25 +92,30 @@ function SkeletonRow() {
 export function MilestoneSignOffPage({ isActive, session, onNotify }: MilestoneSignOffPageProps) {
   const [items, setItems]           = useState<StaffMilestoneSignoff[]>([]);
   const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
   const [selected, setSelected]     = useState<string | null>(null);
   const [filter, setFilter]         = useState<FilterKey>("all");
   const [actioningId, setActioningId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
+    setError(null);
     void getStaffMilestoneSignoffs(session).then((result) => {
       if (cancelled) return;
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.data) {
-        setItems(result.data);
-        const firstPending = result.data.find((i) => i.status === "PENDING");
-        setSelected(firstPending?.id ?? result.data[0]?.id ?? null);
+      if (result.error || !result.data) {
+        setError(result.error?.message ?? "Failed to load data. Please try again.");
+        return;
       }
-      setLoading(false);
-    });
+      setItems(result.data);
+      const firstPending = result.data.find((i) => i.status === "PENDING");
+      setSelected(firstPending?.id ?? result.data[0]?.id ?? null);
+    }).catch((err: unknown) => {
+      if (!cancelled) setError((err as Error)?.message ?? "Failed to load data.");
+    }).finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
   }, [session?.accessToken, isActive]);
@@ -143,6 +148,18 @@ export function MilestoneSignOffPage({ isActive, session, onNotify }: MilestoneS
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

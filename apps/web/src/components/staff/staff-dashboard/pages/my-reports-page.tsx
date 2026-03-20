@@ -170,6 +170,7 @@ export function MyReportsPage({
 }) {
   const [perf, setPerf]       = useState<StaffPerformance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
 
   // ── Scheduled reports ────────────────────────────────────────────────────
   const [scheduled, setScheduled] = useState<ScheduledReport[]>([]);
@@ -192,16 +193,22 @@ export function MyReportsPage({
 
   // Load performance data
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
+    setError(null);
     void getStaffMyPerformance(session).then((result) => {
       if (cancelled) return;
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.data) setPerf(result.data);
-      setLoading(false);
-    });
+      if (result.error || !result.data) {
+        setError(result.error?.message ?? "Failed to load data. Please try again.");
+        return;
+      }
+      setPerf(result.data);
+    }).catch((err: unknown) => {
+      if (!cancelled) setError((err as Error)?.message ?? "Failed to load data.");
+    }).finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
   }, [session?.accessToken, isActive]);
@@ -309,6 +316,18 @@ export function MyReportsPage({
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

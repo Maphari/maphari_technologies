@@ -25,19 +25,19 @@ export function PayStubPage({ isActive, session }: { isActive: boolean; session:
   const [error, setError]             = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     void loadMyPayslipsWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error || !r.data) {
         setError(r.error?.message ?? "Failed to load data. Please try again.");
-        setLoading(false);
         return;
       }
       setApiPayslips(r.data);
-      setError(null);
-      setLoading(false);
-    });
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load data.");
+    }).finally(() => setLoading(false));
   }, [session?.accessToken]);
 
   const payStubs = useMemo(() =>

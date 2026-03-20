@@ -98,41 +98,45 @@ export function MyRisksPage({ isActive, session, onNotify }: PageProps) {
     let cancelled = false;
 
     const load = async () => {
-      const projectsResult = await getStaffProjects(session);
-      if (cancelled) return;
+      try {
+        const projectsResult = await getStaffProjects(session);
+        if (cancelled) return;
 
-      if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
+        if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
 
-      if (projectsResult.error) {
-        setError(projectsResult.error.message);
-        onNotify?.("error", "Unable to load projects.");
-        setLoading(false);
-        return;
-      }
-
-      const projects = projectsResult.data ?? [];
-
-      const riskResults = await Promise.all(
-        projects.map((p) => getStaffRisks(session, p.id).then((r) => ({ ...r, projectName: p.name })))
-      );
-
-      if (cancelled) return;
-
-      const allRisks: RiskItem[] = [];
-      for (const result of riskResults) {
-        if (result.nextSession) saveSession(result.nextSession);
-        for (const risk of result.data ?? []) {
-          allRisks.push({ ...risk, projectName: result.projectName });
+        if (projectsResult.error) {
+          setError(projectsResult.error.message);
+          onNotify?.("error", "Unable to load projects.");
+          return;
         }
-      }
 
-      setRisks(allRisks);
-      setLoading(false);
+        const projects = projectsResult.data ?? [];
+
+        const riskResults = await Promise.all(
+          projects.map((p) => getStaffRisks(session, p.id).then((r) => ({ ...r, projectName: p.name })))
+        );
+
+        if (cancelled) return;
+
+        const allRisks: RiskItem[] = [];
+        for (const result of riskResults) {
+          if (result.nextSession) saveSession(result.nextSession);
+          for (const risk of result.data ?? []) {
+            allRisks.push({ ...risk, projectName: result.projectName });
+          }
+        }
+
+        setRisks(allRisks);
+      } catch (err: unknown) {
+        if (!cancelled) setError((err as Error)?.message ?? "Failed to load data.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
 
     void load();
     return () => { cancelled = true; };
-  }, [isActive, session]);
+  }, [isActive, session?.accessToken]);
 
   const totalRisks = risks.length;
   const openCount = risks.filter((r) => mapStatus(r.status) === "Open").length;

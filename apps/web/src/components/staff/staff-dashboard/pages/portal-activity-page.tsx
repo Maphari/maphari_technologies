@@ -102,6 +102,7 @@ export function PortalActivityPage({ isActive, session }: { isActive: boolean; s
   const [clientPills, setClientPills]       = useState<ClientPill[]>([]);
   const [activities,  setActivities]        = useState<ActivityRow[]>([]);
   const [loading,     setLoading]           = useState(true);
+  const [error,       setError]             = useState<string | null>(null);
   const [liveIndicator, setLiveIndicator]   = useState(true);
   const [selectedClient, setSelectedClient] = useState<"all" | string>("all");
   const [filterType, setFilterType]         = useState<ActivityType | "all">("all");
@@ -109,6 +110,8 @@ export function PortalActivityPage({ isActive, session }: { isActive: boolean; s
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
+    setLoading(true);
+    setError(null);
     void Promise.all([getStaffClients(session), getStaffProjects(session)]).then(([clientsRes, projectsRes]) => {
       if (cancelled) return;
       if (clientsRes.nextSession) saveSession(clientsRes.nextSession);
@@ -125,8 +128,9 @@ export function PortalActivityPage({ isActive, session }: { isActive: boolean; s
       if (!projectsRes.error && projectsRes.data) {
         setActivities(deriveActivities(projectsRes.data, clientMap));
       }
-      setLoading(false);
-    });
+    }).catch((err: unknown) => {
+      if (!cancelled) setError((err as Error)?.message ?? "Failed to load data.");
+    }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [session?.accessToken]);
 
@@ -151,6 +155,18 @@ export function PortalActivityPage({ isActive, session }: { isActive: boolean; s
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

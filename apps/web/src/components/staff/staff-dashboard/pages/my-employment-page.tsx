@@ -81,29 +81,37 @@ export function MyEmploymentPage({
   const [payslips, setPayslips] = useState<StaffPayslipRecord[]>([]);
   const [reviews,  setReviews]  = useState<StaffPeerReview[]>([]);
   const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     void (async () => {
-      const [profileRes, payslipsRes, reviewsRes] = await Promise.all([
-        getMyProfile(session),
-        loadMyPayslipsWithRefresh(session),
-        loadMyPeerReviewsWithRefresh(session),
-      ]);
-      if (cancelled) return;
-      if (profileRes.nextSession)  saveSession(profileRes.nextSession);
-      if (payslipsRes.nextSession) saveSession(payslipsRes.nextSession);
-      if (reviewsRes.nextSession)  saveSession(reviewsRes.nextSession);
-      if (profileRes.data)  setProfile(profileRes.data);
-      if (payslipsRes.data) setPayslips(payslipsRes.data);
-      if (reviewsRes.data)  setReviews(
-        reviewsRes.data.filter((r) => r.score !== null || r.status === "SUBMITTED")
-      );
-      setLoading(false);
+      setLoading(true);
+      setError(null);
+      try {
+        const [profileRes, payslipsRes, reviewsRes] = await Promise.all([
+          getMyProfile(session),
+          loadMyPayslipsWithRefresh(session),
+          loadMyPeerReviewsWithRefresh(session),
+        ]);
+        if (cancelled) return;
+        if (profileRes.nextSession)  saveSession(profileRes.nextSession);
+        if (payslipsRes.nextSession) saveSession(payslipsRes.nextSession);
+        if (reviewsRes.nextSession)  saveSession(reviewsRes.nextSession);
+        if (profileRes.data)  setProfile(profileRes.data);
+        if (payslipsRes.data) setPayslips(payslipsRes.data);
+        if (reviewsRes.data)  setReviews(
+          reviewsRes.data.filter((r) => r.score !== null || r.status === "SUBMITTED")
+        );
+      } catch (err: unknown) {
+        if (!cancelled) setError((err as Error)?.message ?? "Failed to load data.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
-  }, [session]);
+  }, [session?.accessToken]);
 
   // ── Derived values ────────────────────────────────────────────────────────
 
@@ -156,6 +164,18 @@ export function MyEmploymentPage({
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

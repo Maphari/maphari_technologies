@@ -85,44 +85,55 @@ export function MyEnpsPage({
   const [standupCount, setStandupCount]       = useState<number>(0);
   const [reviewScores, setReviewScores]        = useState<Array<{ month: string; score: number }>>([]);
   const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState<string | null>(null);
 
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
+    let cancelled = false;
     setLoading(true);
+    setError(null);
 
     void (async () => {
-      const [standupsResult, reviewsResult] = await Promise.all([
-        loadMyStandupsWithRefresh(session),
-        loadMyPeerReviewsWithRefresh(session),
-      ]);
+      try {
+        const [standupsResult, reviewsResult] = await Promise.all([
+          loadMyStandupsWithRefresh(session),
+          loadMyPeerReviewsWithRefresh(session),
+        ]);
+        if (cancelled) return;
 
-      if (standupsResult.nextSession) saveSession(standupsResult.nextSession);
-      if (reviewsResult.nextSession)  saveSession(reviewsResult.nextSession);
+        if (standupsResult.nextSession) saveSession(standupsResult.nextSession);
+        if (reviewsResult.nextSession)  saveSession(reviewsResult.nextSession);
 
-      // Count standups this month as engagement signal
-      const now    = new Date();
-      const thisM  = now.getMonth();
-      const thisY  = now.getFullYear();
-      const allStandups = standupsResult.data ?? [];
-      const monthStandups = allStandups.filter((s) => {
-        const d = new Date(s.createdAt);
-        return d.getMonth() === thisM && d.getFullYear() === thisY;
-      });
-      setStandupCount(monthStandups.length);
+        // Count standups this month as engagement signal
+        const now    = new Date();
+        const thisM  = now.getMonth();
+        const thisY  = now.getFullYear();
+        const allStandups = standupsResult.data ?? [];
+        const monthStandups = allStandups.filter((s) => {
+          const d = new Date(s.createdAt);
+          return d.getMonth() === thisM && d.getFullYear() === thisY;
+        });
+        setStandupCount(monthStandups.length);
 
-      // Build review history from submitted peer reviews (reviewer = me, has a score)
-      const submitted = (reviewsResult.data ?? [])
-        .filter((r) => r.status === "SUBMITTED" && r.score !== null && r.submittedAt !== null)
-        .sort((a, b) => new Date(b.submittedAt!).getTime() - new Date(a.submittedAt!).getTime())
-        .slice(0, 6)
-        .map((r) => ({
-          month: toMonthLabel(r.submittedAt!),
-          score: peerScoreToEnps(r.score),
-        }));
+        // Build review history from submitted peer reviews (reviewer = me, has a score)
+        const submittedReviews = (reviewsResult.data ?? [])
+          .filter((r) => r.status === "SUBMITTED" && r.score !== null && r.submittedAt !== null)
+          .sort((a, b) => new Date(b.submittedAt!).getTime() - new Date(a.submittedAt!).getTime())
+          .slice(0, 6)
+          .map((r) => ({
+            month: toMonthLabel(r.submittedAt!),
+            score: peerScoreToEnps(r.score),
+          }));
 
-      setReviewScores(submitted);
-      setLoading(false);
+        setReviewScores(submittedReviews);
+      } catch (err: unknown) {
+        if (!cancelled) setError((err as Error)?.message ?? "Failed to load data.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
+
+    return () => { cancelled = true; };
   }, [isActive, session?.accessToken]);
 
   const latestScore = reviewScores[0]?.score ?? null;
@@ -138,6 +149,18 @@ export function MyEnpsPage({
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </div>
     );

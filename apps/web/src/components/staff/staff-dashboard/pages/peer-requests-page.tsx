@@ -135,8 +135,9 @@ export function PeerRequestsPage({
   const [error, setError]           = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     // Load profile, clients, and peer reviews in parallel
     void Promise.all([
       getMyProfile(session),
@@ -208,8 +209,9 @@ export function PeerRequestsPage({
         setRequests((prev) => [...mapped, ...prev]);
       }
       setError(null);
-      setLoading(false);
-    });
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load data.");
+    }).finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
 
