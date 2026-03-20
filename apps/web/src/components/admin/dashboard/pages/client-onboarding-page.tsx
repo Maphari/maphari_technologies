@@ -233,9 +233,8 @@ export function ClientOnboardingPage({ session, onNotify }: ClientOnboardingPage
         title={`${overdue.length} onboarding${overdue.length > 1 ? "s" : ""} past target date`}
         description="Clients stuck in onboarding churn faster. Escalation emails will be sent to account managers and flagged in the delivery queue."
         actionLabel="Escalate all"
-        onAction={async () => {
-          await new Promise((r) => setTimeout(r, 800));
-          onNotify("success", `Escalation triggered for ${overdue.length} overdue onboarding${overdue.length > 1 ? "s" : ""}. Account managers notified.`);
+        onAction={() => {
+          onNotify("info", "Escalation requests sent to overdue onboarding clients. Account managers will be notified.");
         }}
         dismissKey={`admin:onb-escalate-banner:${overdue.map((o) => o.id).sort().join(",")}`}
         secondaryLabel="View overdue"

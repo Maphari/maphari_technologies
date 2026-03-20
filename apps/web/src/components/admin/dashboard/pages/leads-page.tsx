@@ -121,6 +121,10 @@ export function LeadsPage({
   const [qualifyingLeadId, setQualifyingLeadId] = useState<string | null>(null);
   const [aiResult, setAiResult] = useState<{ leadId: string; response: string } | null>(null);
 
+  // Lost reason modal state
+  const [lostReasonModal, setLostReasonModal] = useState<{ leadId: string; newStage: LeadPipelineStatus } | null>(null);
+  const [lostReason, setLostReason] = useState("");
+
   const rows = useMemo(() => {
     return leads.map((lead) => {
       const staleDays = Math.max(0, Math.floor((clock - new Date(lead.updatedAt).getTime()) / 86400000));
@@ -187,14 +191,18 @@ export function LeadsPage({
     }
   }
 
-  async function moveLead(id: string, status: LeadPipelineStatus): Promise<void> {
+  function moveLead(id: string, status: LeadPipelineStatus): void {
     if (isClient) return;
-    let lostReason = "";
     if (status === "LOST") {
-      lostReason = window.prompt("Reason for marking lead as LOST", "No budget / delayed decision")?.trim() ?? "";
-      if (!lostReason) return;
+      setLostReasonModal({ leadId: id, newStage: status });
+      setLostReason("");
+      return;
     }
-    const ok = await onMoveLead(id, status, status === "LOST" ? { lostReason } : undefined);
+    void moveLeadConfirmed(id, status, undefined);
+  }
+
+  async function moveLeadConfirmed(id: string, status: LeadPipelineStatus, reason: string | undefined): Promise<void> {
+    const ok = await onMoveLead(id, status, status === "LOST" ? { lostReason: reason ?? "" } : undefined);
     if (!ok) return;
     await onRefreshSnapshot(session ?? undefined);
     onNotify("success", `Lead moved to ${label(status)}.`);
@@ -530,6 +538,47 @@ export function LeadsPage({
         </div>
 
       </div>
+
+      {/* ── Lost Reason Modal ────────────────────────────────────────── */}
+      {lostReasonModal && (
+        <div className={styles.cobModalOverlay}>
+          <div className={styles.cobModal}>
+            <div className={styles.cobModalTitle}>Mark Lead as Lost</div>
+            <div className={styles.cobModalField}>
+              <label className={styles.cobModalLabel} htmlFor="lost-reason-input">Reason for losing this lead</label>
+              <textarea
+                id="lost-reason-input"
+                className={styles.cobModalInput}
+                rows={3}
+                placeholder="e.g. No budget / delayed decision"
+                value={lostReason}
+                onChange={(e) => setLostReason(e.target.value)}
+              />
+            </div>
+            <div className={styles.cobModalActions}>
+              <button
+                type="button"
+                className={cx("btnSm", "btnGhost")}
+                onClick={() => setLostReasonModal(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={cx("btnSm", "btnAccent")}
+                disabled={!lostReason.trim()}
+                onClick={() => {
+                  const { leadId, newStage } = lostReasonModal;
+                  setLostReasonModal(null);
+                  void moveLeadConfirmed(leadId, newStage, lostReason.trim());
+                }}
+              >
+                Confirm Lost
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
