@@ -465,7 +465,7 @@ export function MaphariDashboard() {
             />
 
             {page === "dashboard" ? <BusinessDevelopmentPage session={session} onNotify={pushToast} /> : null}
-            {page === "executive" ? <ExecutiveDashboardPage session={session} onNotify={pushToast} /> : null}
+            {page === "executive" ? <ExecutiveDashboardPage session={session} onNotify={pushToast} onNavigate={handlePageChange} /> : null}
 
             {page === "leads" ? (
               <LeadsPage

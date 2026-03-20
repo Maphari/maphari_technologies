@@ -14,6 +14,7 @@ import { saveSession } from "../../../../lib/auth/session";
 import type { AdminClient, AdminProject, AdminInvoice } from "../../../../lib/api/admin/types";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
 import { loadAllStaffWithRefresh } from "../../../../lib/api/admin/hr";
+import type { PageId } from "../config";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -81,11 +82,12 @@ function healthToneClass(score: number): string {
 interface Props {
   session: AuthSession | null;
   onNotify: (tone: "success" | "error" | "warning" | "info", msg: string) => void;
+  onNavigate?: (page: PageId) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function ExecutiveDashboardPage({ session, onNotify }: Props) {
+export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [clients, setClients] = useState<AdminClient[]>([]);
   const [projects, setProjects] = useState<AdminProject[]>([]);
@@ -191,7 +193,7 @@ export function ExecutiveDashboardPage({ session, onNotify }: Props) {
                 <span className={styles.exdAlertIcon}>🔴</span>
                 <span className={styles.text12}>Invoice {inv.number} overdue — {centsToK(inv.amountCents)}</span>
               </div>
-              <button type="button" className={cx(styles.exdAlertBtn, toneClass("var(--red)"))}>View</button>
+              <button type="button" className={cx(styles.exdAlertBtn, toneClass("var(--red)"))} onClick={() => onNavigate?.("invoices")}>View</button>
             </div>
           ))}
         </div>
@@ -406,7 +408,7 @@ export function ExecutiveDashboardPage({ session, onNotify }: Props) {
                   <span className={styles.text13}>Invoice {inv.number} is overdue — {centsToK(inv.amountCents)}</span>
                 </div>
               </div>
-              <button type="button" className={cx(styles.exdAlertBtnBig, toneClass("var(--red)"))}>View</button>
+              <button type="button" className={cx(styles.exdAlertBtnBig, toneClass("var(--red)"))} onClick={() => onNavigate?.("invoices")}>View</button>
             </div>
           ))}
           {atRiskClients > 0 && (
@@ -418,7 +420,7 @@ export function ExecutiveDashboardPage({ session, onNotify }: Props) {
                   <span className={styles.text13}>{atRiskClients} client{atRiskClients > 1 ? "s" : ""} at risk — review health scores.</span>
                 </div>
               </div>
-              <button type="button" className={cx(styles.exdAlertBtnBig, toneClass("var(--amber)"))}>Review</button>
+              <button type="button" className={cx(styles.exdAlertBtnBig, toneClass("var(--amber)"))} onClick={() => onNavigate?.("healthScorecard")}>Review</button>
             </div>
           )}
         </div>
