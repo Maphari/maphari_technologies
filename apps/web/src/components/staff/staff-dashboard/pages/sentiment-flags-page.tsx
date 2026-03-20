@@ -93,6 +93,7 @@ const signalColors: Record<SignalType, string> = {
 export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProps) {
   const [clients, setClients]             = useState<StaffClientSentiment[]>([]);
   const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState<string | null>(null);
   const [saving, setSaving]               = useState(false);
   const [selected, setSelected]           = useState<string | null>(null);
   const [editMode, setEditMode]           = useState(false);
@@ -105,6 +106,7 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
     let cancelled = false;
 
     setLoading(true);
+    setError(null);
     void getStaffClientSentiments(session).then((r) => {
       if (cancelled) return;
       if (r.nextSession) saveSession(r.nextSession);
@@ -112,8 +114,9 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
         setClients(r.data);
         if (r.data.length > 0) setSelected(r.data[0].clientId);
       }
-    }).catch(() => {
-      // ignore
+    }).catch((err) => {
+      const msg = (err as Error)?.message ?? "Failed to load";
+      setError(msg);
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
@@ -164,6 +167,17 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );

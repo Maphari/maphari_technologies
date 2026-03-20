@@ -58,23 +58,26 @@ function avgTaskTime(hoursThisWeek: number, tasksCompleted: number): string {
 export function TeamPerformancePage({ isActive, session }: TeamPerformancePageProps) {
   const [members, setMembers] = useState<StaffTeamMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
 
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
+    setError(null);
     void getStaffTeamPerformance(session).then((result) => {
       if (cancelled) return;
       if (result.data) setMembers(result.data);
-    }).catch(() => {
-      // ignore
+    }).catch((err) => {
+      const msg = (err as Error)?.message ?? "Failed to load";
+      setError(msg);
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };
-  }, [session, isActive]);
+  }, [session?.accessToken, isActive]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const ratedMembers = members.filter((m) => m.peerRating !== null);
@@ -97,6 +100,17 @@ export function TeamPerformancePage({ isActive, session }: TeamPerformancePagePr
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );

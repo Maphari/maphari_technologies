@@ -64,12 +64,14 @@ export function StaffHandoversPage({ isActive, session }: { isActive: boolean; s
   const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
   const [loading,      setLoading]      = useState(true);
   const [acking,       setAcking]       = useState<string | null>(null);
+  const [error,        setError]        = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) { setLoading(false); return; }
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
+    setError(null);
     void loadStaffHandoversWithRefresh(session).then((r) => {
       if (cancelled) return;
       if (r.nextSession) saveSession(r.nextSession);
@@ -77,8 +79,9 @@ export function StaffHandoversPage({ isActive, session }: { isActive: boolean; s
         setHandovers(r.data);
         if (r.data.length > 0) setSelected(r.data[0] ?? null);
       }
-    }).catch(() => {
-      // ignore
+    }).catch((err) => {
+      const msg = (err as Error)?.message ?? "Failed to load";
+      setError(msg);
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
@@ -117,6 +120,17 @@ export function StaffHandoversPage({ isActive, session }: { isActive: boolean; s
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );

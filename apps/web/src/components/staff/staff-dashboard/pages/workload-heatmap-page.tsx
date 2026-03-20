@@ -8,7 +8,6 @@ import { useEffect, useState } from "react";
 import { cx } from "../style";
 import { getWorkloadHeatmap, type StaffWorkloadRow } from "../../../../lib/api/staff/workload";
 import type { AuthSession } from "../../../../lib/auth/session";
-import { SkeletonTable } from "@/components/shared/ui/page-skeleton";
 import { Alert } from "@/components/shared/ui/alert";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -115,51 +114,47 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
         </div>
       ) : (
         <div className={cx("tableWrap", "wlhTableWrap")}>
-          {loading ? (
-            <SkeletonTable rows={5} cols={5} />
-          ) : (
-            <table className={cx("wlhTable")}>
-              <thead>
-                <tr>
-                  <th scope="col" className={cx("wlhCell", "wlhNameCell", "wlhHeaderCell")}>
-                    Team Member
+          <table className={cx("wlhTable")}>
+            <thead>
+              <tr>
+                <th scope="col" className={cx("wlhCell", "wlhNameCell", "wlhHeaderCell")}>
+                  Team Member
+                </th>
+                {weekLabels.map((label) => (
+                  <th key={label} scope="col" className={cx("wlhCell", "wlhHeaderCell")}>
+                    {label}
                   </th>
-                  {weekLabels.map((label) => (
-                    <th key={label} scope="col" className={cx("wlhCell", "wlhHeaderCell")}>
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.staffId} className={cx("staffTableRow")}>
-                    <td className={cx("wlhCell", "wlhNameCell")}>
-                      <span className={cx("wlhStaffName")}>{row.name}</span>
-                      <span className={cx("wlhStaffRole")}>{row.role}</span>
-                    </td>
-                    {row.weeks.map((week) => {
-                      const pct  = utilPct(week.allocatedHours, week.availableHours);
-                      const tone = cellTone(pct);
-                      return (
-                        <td
-                          key={week.weekLabel}
-                          className={cx("wlhCell", tone)}
-                          title={`${week.allocatedHours}h allocated of ${week.availableHours}h available`}
-                        >
-                          <span className={cx("wlhHours")}>
-                            {week.allocatedHours}h / {week.availableHours}h
-                          </span>
-                          <span className={cx("wlhPct")}>{pct}%</span>
-                          <span className={cx("wlhCellTip")}>{pct}% utilised</span>
-                        </td>
-                      );
-                    })}
-                  </tr>
                 ))}
-              </tbody>
-            </table>
-          )}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.staffId} className={cx("staffTableRow")}>
+                  <td className={cx("wlhCell", "wlhNameCell")}>
+                    <span className={cx("wlhStaffName")}>{row.name}</span>
+                    <span className={cx("wlhStaffRole")}>{row.role}</span>
+                  </td>
+                  {row.weeks.map((week) => {
+                    const pct  = utilPct(week.allocatedHours, week.availableHours);
+                    const tone = cellTone(pct);
+                    return (
+                      <td
+                        key={week.weekLabel}
+                        className={cx("wlhCell", tone)}
+                        title={`${week.allocatedHours}h allocated of ${week.availableHours}h available`}
+                      >
+                        <span className={cx("wlhHours")}>
+                          {week.allocatedHours}h / {week.availableHours}h
+                        </span>
+                        <span className={cx("wlhPct")}>{pct}%</span>
+                        <span className={cx("wlhCellTip")}>{pct}% utilised</span>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </section>

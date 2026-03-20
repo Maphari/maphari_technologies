@@ -101,12 +101,14 @@ function SkeletonCard() {
 export function ProjectBudgetPage({ isActive, session }: ProjectBudgetPageProps) {
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
+    setError(null);
     void Promise.all([
       getStaffProjects(session),
       getStaffClients(session),
@@ -152,8 +154,9 @@ export function ProjectBudgetPage({ isActive, session }: ProjectBudgetPageProps)
         });
 
       setBudgetItems(items);
-    }).catch(() => {
-      // ignore
+    }).catch((err) => {
+      const msg = (err as Error)?.message ?? "Failed to load";
+      setError(msg);
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
@@ -175,6 +178,17 @@ export function ProjectBudgetPage({ isActive, session }: ProjectBudgetPageProps)
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );

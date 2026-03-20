@@ -62,11 +62,13 @@ export function SatisfactionScoresPage({
   const [entries, setEntries]         = useState<StaffHealthScoreEntry[]>([]);
   const [loading, setLoading]         = useState(true);
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [error, setError]             = useState<string | null>(null);
 
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
+    setError(null);
 
     async function load() {
       try {
@@ -76,8 +78,9 @@ export function SatisfactionScoresPage({
         const sorted = [...(result.data ?? [])].sort((a, b) => b.score - a.score);
         setEntries(sorted);
         setSelectedIdx(0);
-      } catch {
-        // ignore
+      } catch (err) {
+        const msg = (err as Error)?.message ?? "Failed to load";
+        setError(msg);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -125,6 +128,17 @@ export function SatisfactionScoresPage({
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );
