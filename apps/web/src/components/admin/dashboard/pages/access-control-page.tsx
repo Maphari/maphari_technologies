@@ -84,14 +84,17 @@ export function AccessControlPage({
   const load = useCallback(async () => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
-    const r = await loadStaffUsersWithRefresh(session);
-    if (r.nextSession) saveSession(r.nextSession);
-    if (r.error) {
-      onNotify("error", r.error.message);
-    } else if (r.data) {
-      setUsers(r.data);
+    try {
+      const r = await loadStaffUsersWithRefresh(session);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) {
+        onNotify("error", r.error.message);
+      } else if (r.data) {
+        setUsers(r.data);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [session, onNotify]);
 
   const loadAudit = useCallback(async () => {

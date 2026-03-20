@@ -13,16 +13,19 @@ export function CloseoutReviewPage() {
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     setError(null);
-    const result = await fetchCloseoutReports(session);
-    if (result.error) {
-      setError(result.error.message);
-    } else {
-      setReports(result.data ?? []);
+    try {
+      const result = await fetchCloseoutReports(session);
+      if (result.error) {
+        setError(result.error.message);
+      } else {
+        setReports(result.data ?? []);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [session]);
 
   useEffect(() => {

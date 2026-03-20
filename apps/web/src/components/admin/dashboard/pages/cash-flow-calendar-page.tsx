@@ -49,7 +49,7 @@ export function CashFlowCalendarPage() {
   const [loadingEvents, setLoadingEvents] = useState(true);
 
   const loadCashEvents = useCallback(async () => {
-    if (!session) return;
+    if (!session) { setLoadingEvents(false); return; }
     setLoadingEvents(true);
     try {
       const result = await fetchCashFlowEvents(session);

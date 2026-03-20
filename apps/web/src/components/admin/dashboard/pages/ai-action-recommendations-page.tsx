@@ -15,21 +15,23 @@ export function AIActionRecommendationsPage() {
 
   const load = useCallback(
     async (isRefresh = false) => {
-      if (!session) return;
+      if (!session) { setLoading(false); setRefreshing(false); return; }
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
       setError(null);
 
-      const result = await fetchAiRecommendations(session);
+      try {
+        const result = await fetchAiRecommendations(session);
 
-      if (result.error) {
-        setError(result.error.message);
-      } else {
-        setRecommendations(result.data ?? []);
+        if (result.error) {
+          setError(result.error.message);
+        } else {
+          setRecommendations(result.data ?? []);
+        }
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-
-      setLoading(false);
-      setRefreshing(false);
     },
     [session]
   );

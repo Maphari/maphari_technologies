@@ -56,6 +56,9 @@ export function DesignReviewAdminPage({ session }: { session: AuthSession | null
       if (r.error) setError(r.error.message ?? "Failed to load.");
       else if (r.data) setReviews(r.data);
       setLoading(false);
+    }).catch((err: unknown) => {
+      setError(err instanceof Error ? err.message : "Failed to load.");
+      setLoading(false);
     });
   }, [session]);
 

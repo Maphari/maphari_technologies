@@ -98,15 +98,18 @@ export function BusinessDevelopmentPage({
   const load = useCallback(async () => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
-    const r = await loadAdminSnapshotWithRefresh(session);
-    if (r.nextSession) saveSession(r.nextSession);
-    if (r.error) {
-      onNotify("error", r.error.message);
-    } else if (r.data) {
-      setLeads(r.data.leads);
-      setClients(r.data.clients);
+    try {
+      const r = await loadAdminSnapshotWithRefresh(session);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) {
+        onNotify("error", r.error.message);
+      } else if (r.data) {
+        setLeads(r.data.leads);
+        setClients(r.data.clients);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [session, onNotify]);
 
   useEffect(() => { void load(); }, [load]);

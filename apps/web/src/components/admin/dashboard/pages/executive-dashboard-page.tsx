@@ -99,19 +99,22 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     void (async () => {
-      const [snap, staff] = await Promise.all([
-        loadAdminSnapshotWithRefresh(session),
-        loadAllStaffWithRefresh(session)
-      ]);
-      if (cancelled) return;
-      if (snap.nextSession) saveSession(snap.nextSession);
-      if (staff.nextSession) saveSession(staff.nextSession);
-      if (snap.error) onNotify("error", snap.error.message);
-      setClients(snap.data?.clients ?? []);
-      setProjects(snap.data?.projects ?? []);
-      setInvoices(snap.data?.invoices ?? []);
-      setStaffCount((staff.data ?? []).filter((s) => s.isActive).length);
-      setLoading(false);
+      try {
+        const [snap, staff] = await Promise.all([
+          loadAdminSnapshotWithRefresh(session),
+          loadAllStaffWithRefresh(session)
+        ]);
+        if (cancelled) return;
+        if (snap.nextSession) saveSession(snap.nextSession);
+        if (staff.nextSession) saveSession(staff.nextSession);
+        if (snap.error) onNotify("error", snap.error.message);
+        setClients(snap.data?.clients ?? []);
+        setProjects(snap.data?.projects ?? []);
+        setInvoices(snap.data?.invoices ?? []);
+        setStaffCount((staff.data ?? []).filter((s) => s.isActive).length);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [session, onNotify]);

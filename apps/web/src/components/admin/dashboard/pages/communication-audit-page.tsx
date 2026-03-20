@@ -95,25 +95,28 @@ export function CommunicationAuditPage({ session }: { session: AuthSession | nul
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     (async () => {
-      const [logRes, snapRes] = await Promise.all([
-        loadAllCommLogsWithRefresh(session),
-        loadAdminSnapshotWithRefresh(session),
-      ]);
-      if (cancelled) return;
-      if (logRes.nextSession)        saveSession(logRes.nextSession);
-      else if (snapRes.nextSession)  saveSession(snapRes.nextSession);
-      // Build client color map (by index for consistency)
-      const clients     = snapRes.data?.clients ?? [];
-      const clientColorMap = new Map<string, { name: string; color: string }>(
-        clients.map((c, i) => [c.id, { name: c.name, color: CLIENT_COLORS[i % CLIENT_COLORS.length] }])
-      );
-      setCommsLog(
-        (logRes.data ?? []).map(l => {
-          const info = clientColorMap.get(l.clientId);
-          return mapLog(l, info?.name ?? "Client", info?.color ?? "var(--accent)");
-        })
-      );
-      setLoading(false);
+      try {
+        const [logRes, snapRes] = await Promise.all([
+          loadAllCommLogsWithRefresh(session),
+          loadAdminSnapshotWithRefresh(session),
+        ]);
+        if (cancelled) return;
+        if (logRes.nextSession)        saveSession(logRes.nextSession);
+        else if (snapRes.nextSession)  saveSession(snapRes.nextSession);
+        // Build client color map (by index for consistency)
+        const clients     = snapRes.data?.clients ?? [];
+        const clientColorMap = new Map<string, { name: string; color: string }>(
+          clients.map((c, i) => [c.id, { name: c.name, color: CLIENT_COLORS[i % CLIENT_COLORS.length] }])
+        );
+        setCommsLog(
+          (logRes.data ?? []).map(l => {
+            const info = clientColorMap.get(l.clientId);
+            return mapLog(l, info?.name ?? "Client", info?.color ?? "var(--accent)");
+          })
+        );
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [session]);

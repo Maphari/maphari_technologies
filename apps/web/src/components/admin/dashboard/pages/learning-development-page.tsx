@@ -164,7 +164,7 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
     if (!session) { setLoading(false); return; }
     setLoading(true);
     setError(null);
-    Promise.all([loadAllStaffWithRefresh(session), loadAllTrainingWithRefresh(session)]).then(([sr, tr]) => {
+    void Promise.all([loadAllStaffWithRefresh(session), loadAllTrainingWithRefresh(session)]).then(([sr, tr]) => {
       if (sr.nextSession) saveSession(sr.nextSession);
       else if (tr.nextSession) saveSession(tr.nextSession);
       if (sr.error) setError(sr.error.message ?? "Failed to load.");
@@ -173,6 +173,9 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
         setExpanded(sr.data[0]?.id ?? "");
       }
       if (!tr.error && tr.data) setApiTraining(tr.data);
+      setLoading(false);
+    }).catch((err: unknown) => {
+      setError(err instanceof Error ? err.message : "Failed to load.");
       setLoading(false);
     });
   }, [session]);

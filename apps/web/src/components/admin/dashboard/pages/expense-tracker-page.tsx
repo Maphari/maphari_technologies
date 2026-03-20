@@ -55,6 +55,9 @@ export function ExpenseTrackerPage({ session }: { session: AuthSession | null })
       else if (er.data) setApiExpenses(er.data);
       if (!br.error && br.data) setApiBudgets(br.data);
       setLoading(false);
+    }).catch((err: unknown) => {
+      setError(err instanceof Error ? err.message : "Failed to load.");
+      setLoading(false);
     });
   }, [session]);
 

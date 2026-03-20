@@ -108,24 +108,27 @@ export function HealthInterventionsPage({ session }: { session: AuthSession | nu
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     (async () => {
-      const [intRes, snapRes] = await Promise.all([
-        loadAllInterventionsWithRefresh(session),
-        loadAdminSnapshotWithRefresh(session),
-      ]);
-      if (cancelled) return;
-      if (intRes.nextSession)       saveSession(intRes.nextSession);
-      else if (snapRes.nextSession) saveSession(snapRes.nextSession);
-      const clients = snapRes.data?.clients ?? [];
-      const colorMap = new Map<string, { name: string; color: string }>(
-        clients.map((c, i) => [c.id, { name: c.name, color: CLIENT_COLORS[i % CLIENT_COLORS.length] }])
-      );
-      setInterventions(
-        (intRes.data ?? []).map(a => {
-          const info = colorMap.get(a.clientId);
-          return mapIntervention(a, info?.name ?? "Client", info?.color ?? CLIENT_COLORS[0]);
-        })
-      );
-      setLoading(false);
+      try {
+        const [intRes, snapRes] = await Promise.all([
+          loadAllInterventionsWithRefresh(session),
+          loadAdminSnapshotWithRefresh(session),
+        ]);
+        if (cancelled) return;
+        if (intRes.nextSession)       saveSession(intRes.nextSession);
+        else if (snapRes.nextSession) saveSession(snapRes.nextSession);
+        const clients = snapRes.data?.clients ?? [];
+        const colorMap = new Map<string, { name: string; color: string }>(
+          clients.map((c, i) => [c.id, { name: c.name, color: CLIENT_COLORS[i % CLIENT_COLORS.length] }])
+        );
+        setInterventions(
+          (intRes.data ?? []).map(a => {
+            const info = colorMap.get(a.clientId);
+            return mapIntervention(a, info?.name ?? "Client", info?.color ?? CLIENT_COLORS[0]);
+          })
+        );
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [session]);

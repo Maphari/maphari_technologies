@@ -72,11 +72,14 @@ export function LegalPage() {
   const [loadingContracts, setLoadingContracts] = useState(true);
 
   const loadContracts = useCallback(async () => {
-    if (!session) return;
+    if (!session) { setLoadingContracts(false); return; }
     setLoadingContracts(true);
-    const result = await fetchContracts(session);
-    if (result.data) setContracts(result.data);
-    setLoadingContracts(false);
+    try {
+      const result = await fetchContracts(session);
+      if (result.data) setContracts(result.data);
+    } finally {
+      setLoadingContracts(false);
+    }
   }, [session]);
 
   useEffect(() => {

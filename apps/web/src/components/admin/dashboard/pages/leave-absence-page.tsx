@@ -119,7 +119,7 @@ export function LeaveAbsencePage({ session }: { session: AuthSession | null }) {
     if (!session) { setLoading(false); return; }
     setLoading(true);
     setError(null);
-    Promise.all([loadLeaveRequestsWithRefresh(session), loadAllStaffWithRefresh(session)]).then(([lr, sr]) => {
+    void Promise.all([loadLeaveRequestsWithRefresh(session), loadAllStaffWithRefresh(session)]).then(([lr, sr]) => {
       if (lr.nextSession) saveSession(lr.nextSession);
       else if (sr.nextSession) saveSession(sr.nextSession);
       if (lr.error) setError(lr.error.message ?? "Failed to load.");
@@ -131,6 +131,9 @@ export function LeaveAbsencePage({ session }: { session: AuthSession | null }) {
         }
         setStaffLookup(map);
       }
+      setLoading(false);
+    }).catch((err: unknown) => {
+      setError(err instanceof Error ? err.message : "Failed to load.");
       setLoading(false);
     });
   }, [session]);

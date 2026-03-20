@@ -51,6 +51,9 @@ export function HandoverManagementPage({ session }: { session: AuthSession | nul
       if (r.error) setError(r.error.message ?? "Failed to load.");
       else if (r.data) setHandovers(r.data);
       setLoading(false);
+    }).catch((err: unknown) => {
+      setError(err instanceof Error ? err.message : "Failed to load.");
+      setLoading(false);
     });
   }, [session]);
 

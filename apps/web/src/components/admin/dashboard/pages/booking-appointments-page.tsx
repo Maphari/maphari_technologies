@@ -79,18 +79,21 @@ export function BookingAppointmentsPage({ session }: { session: AuthSession | nu
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     (async () => {
-      const [apptRes, snapRes] = await Promise.all([
-        loadAllAppointmentsWithRefresh(session),
-        loadAdminSnapshotWithRefresh(session),
-      ]);
-      if (cancelled) return;
-      if (apptRes.nextSession)      saveSession(apptRes.nextSession);
-      else if (snapRes.nextSession) saveSession(snapRes.nextSession);
-      const clientMap = new Map<string, string>(
-        (snapRes.data?.clients ?? []).map(c => [c.id, c.name])
-      );
-      setMeetings((apptRes.data ?? []).map(a => mapAppt(a, clientMap.get(a.clientId) ?? "Client")));
-      setLoading(false);
+      try {
+        const [apptRes, snapRes] = await Promise.all([
+          loadAllAppointmentsWithRefresh(session),
+          loadAdminSnapshotWithRefresh(session),
+        ]);
+        if (cancelled) return;
+        if (apptRes.nextSession)      saveSession(apptRes.nextSession);
+        else if (snapRes.nextSession) saveSession(snapRes.nextSession);
+        const clientMap = new Map<string, string>(
+          (snapRes.data?.clients ?? []).map(c => [c.id, c.name])
+        );
+        setMeetings((apptRes.data ?? []).map(a => mapAppt(a, clientMap.get(a.clientId) ?? "Client")));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [session]);

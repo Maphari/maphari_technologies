@@ -159,38 +159,41 @@ export function ClientHealthScorecardPage({ session }: { session: AuthSession | 
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     (async () => {
-      const [hsRes, snapRes] = await Promise.all([
-        loadAllHealthScoresWithRefresh(session),
-        loadAdminSnapshotWithRefresh(session),
-      ]);
-      if (cancelled) return;
-      if (hsRes.nextSession)        saveSession(hsRes.nextSession);
-      else if (snapRes.nextSession) saveSession(snapRes.nextSession);
+      try {
+        const [hsRes, snapRes] = await Promise.all([
+          loadAllHealthScoresWithRefresh(session),
+          loadAdminSnapshotWithRefresh(session),
+        ]);
+        if (cancelled) return;
+        if (hsRes.nextSession)        saveSession(hsRes.nextSession);
+        else if (snapRes.nextSession) saveSession(snapRes.nextSession);
 
-      const scores  = hsRes.data   ?? [];
-      const clients = snapRes.data?.clients ?? [];
+        const scores  = hsRes.data   ?? [];
+        const clients = snapRes.data?.clients ?? [];
 
-      // Group by clientId, sort each group descending by recordedAt
-      const grouped = new Map<string, AdminHealthScore[]>();
-      for (const s of scores) {
-        const arr = grouped.get(s.clientId) ?? [];
-        arr.push(s);
-        grouped.set(s.clientId, arr);
-      }
-      for (const arr of grouped.values()) {
-        arr.sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime());
-      }
+        // Group by clientId, sort each group descending by recordedAt
+        const grouped = new Map<string, AdminHealthScore[]>();
+        for (const s of scores) {
+          const arr = grouped.get(s.clientId) ?? [];
+          arr.push(s);
+          grouped.set(s.clientId, arr);
+        }
+        for (const arr of grouped.values()) {
+          arr.sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime());
+        }
 
-      const clientMap = new Map<string, AdminClient>(clients.map(c => [c.id, c]));
-      let colorIdx = 0;
-      const list: ScorecardClient[] = [];
-      for (const [clientId, records] of grouped) {
-        const client = clientMap.get(clientId);
-        const color  = CLIENT_COLORS[colorIdx++ % CLIENT_COLORS.length];
-        list.push(mapToScorecardClient(records, client, color));
+        const clientMap = new Map<string, AdminClient>(clients.map(c => [c.id, c]));
+        let colorIdx = 0;
+        const list: ScorecardClient[] = [];
+        for (const [clientId, records] of grouped) {
+          const client = clientMap.get(clientId);
+          const color  = CLIENT_COLORS[colorIdx++ % CLIENT_COLORS.length];
+          list.push(mapToScorecardClient(records, client, color));
+        }
+        setScorecardData(list);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setScorecardData(list);
-      setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [session]);

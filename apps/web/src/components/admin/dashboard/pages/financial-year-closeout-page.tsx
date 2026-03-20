@@ -107,28 +107,29 @@ export function FinancialYearCloseoutPage({
   const load = useCallback(async () => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
+    try {
+      const [snapshotResult, timeResult] = await Promise.all([
+        loadAdminSnapshotWithRefresh(session),
+        loadTimeEntriesWithRefresh(session),
+      ]);
 
-    const [snapshotResult, timeResult] = await Promise.all([
-      loadAdminSnapshotWithRefresh(session),
-      loadTimeEntriesWithRefresh(session),
-    ]);
+      // Use the most refreshed session
+      if (snapshotResult.nextSession) saveSession(snapshotResult.nextSession);
+      if (timeResult.nextSession) saveSession(timeResult.nextSession);
 
-    // Use the most refreshed session
-    if (snapshotResult.nextSession) saveSession(snapshotResult.nextSession);
-    if (timeResult.nextSession) saveSession(timeResult.nextSession);
+      if (snapshotResult.error) onNotify("error", snapshotResult.error.message);
+      if (timeResult.error) onNotify("warning", timeResult.error.message);
 
-    if (snapshotResult.error) onNotify("error", snapshotResult.error.message);
-    if (timeResult.error) onNotify("warning", timeResult.error.message);
-
-    if (snapshotResult.data) {
-      setInvoices(snapshotResult.data.invoices);
-      setPayments(snapshotResult.data.payments);
+      if (snapshotResult.data) {
+        setInvoices(snapshotResult.data.invoices);
+        setPayments(snapshotResult.data.payments);
+      }
+      if (timeResult.data) {
+        setTimeEntries(timeResult.data);
+      }
+    } finally {
+      setLoading(false);
     }
-    if (timeResult.data) {
-      setTimeEntries(timeResult.data);
-    }
-
-    setLoading(false);
   }, [session, onNotify]);
 
   useEffect(() => { void load(); }, [load]);

@@ -233,6 +233,8 @@ export function AutomationAuditTrailPage({ session }: { session: AuthSession | n
       if (r.nextSession) saveSession(r.nextSession);
       if (!r.error && r.data) setEntries(r.data);
       setLoading(false);
+    }).catch(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session]);

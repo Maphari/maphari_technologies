@@ -214,18 +214,21 @@ export function ClientSatisfactionPage({ session }: { session: AuthSession | nul
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     (async () => {
-      const [survRes, snapRes] = await Promise.all([
-        loadAllSatisfactionSurveysWithRefresh(session),
-        loadAdminSnapshotWithRefresh(session),
-      ]);
-      if (cancelled) return;
-      if (survRes.nextSession)      saveSession(survRes.nextSession);
-      else if (snapRes.nextSession) saveSession(snapRes.nextSession);
-      const snapClients = snapRes.data?.clients ?? [];
-      const { records, schedules } = buildClientRecords(survRes.data ?? [], snapClients);
-      setClients(records);
-      setSurveySchedules(schedules);
-      setLoading(false);
+      try {
+        const [survRes, snapRes] = await Promise.all([
+          loadAllSatisfactionSurveysWithRefresh(session),
+          loadAdminSnapshotWithRefresh(session),
+        ]);
+        if (cancelled) return;
+        if (survRes.nextSession)      saveSession(survRes.nextSession);
+        else if (snapRes.nextSession) saveSession(snapRes.nextSession);
+        const snapClients = snapRes.data?.clients ?? [];
+        const { records, schedules } = buildClientRecords(survRes.data ?? [], snapClients);
+        setClients(records);
+        setSurveySchedules(schedules);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [session]);
