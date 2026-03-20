@@ -104,7 +104,7 @@ export function AIAutomationPage() {
 
   // ── Load dynamic alerts from SLA data ────────────────────────────────────
   useEffect(() => {
-    if (!session?.user?.clientId) return;
+    if (!session?.user?.clientId) { setLoading(false); return; }
     const clientId = session.user.clientId;
 
     setLoading(true);

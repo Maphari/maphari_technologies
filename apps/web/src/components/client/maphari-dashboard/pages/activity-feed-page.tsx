@@ -113,7 +113,7 @@ export function ActivityFeedPage() {
 
   const fetchFeed = useCallback(
     async (background = false) => {
-      if (!session) return;
+      if (!session) { setLoading(false); return; }
       if (!background) setLoading(true);
       const r = await loadActivityFeedWithRefresh(session);
       if (r.nextSession) saveSession(r.nextSession);

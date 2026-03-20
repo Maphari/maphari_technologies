@@ -59,7 +59,7 @@ export function CompanyProfilePage() {
   const [draft,         setDraft]         = useState<PortalClientProfilePatch>({});
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     void loadPortalProfileWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
       if (!r.error && r.data) setProfile(r.data);

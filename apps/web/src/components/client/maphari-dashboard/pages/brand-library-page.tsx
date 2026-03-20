@@ -107,7 +107,7 @@ export function BrandLibraryPage() {
 
   // ── Load brand assets ─────────────────────────────────────────────────────
   const loadAssets = useCallback(async () => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     setLoading(true);
     const r = await loadPortalBrandAssetsWithRefresh(session);
     if (r.nextSession) saveSession(r.nextSession);

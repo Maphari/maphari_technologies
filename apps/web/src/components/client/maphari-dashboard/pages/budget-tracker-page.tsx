@@ -106,11 +106,10 @@ export function BudgetTrackerPage({ invoices = [] }: BudgetTrackerPageProps) {
     ]).then(([phaseR, crR]) => {
       if (phaseR.nextSession) saveSession(phaseR.nextSession);
       if (crR.nextSession) saveSession(crR.nextSession);
-      if (phaseR.error) { setError(phaseR.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (phaseR.error) { setError(phaseR.error.message ?? "Failed to load."); return; }
       if (phaseR.data) setPhaseRows(phaseR.data.map(apiToPhaseRow));
       if (crR.data) setPendingCRs(crR.data.map(crToRow));
-      setLoading(false);
-    });
+    }).finally(() => setLoading(false));
   }, [session, projectId]);
 
   const toggleCR = (id: string) =>
