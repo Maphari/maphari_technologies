@@ -5531,3 +5531,74 @@
 .rdmMilestoneCompleted .rdmMilestoneDot { background: var(--lime, #c8f135) !important; border-color: var(--lime, #c8f135) !important; }
 .rdmMilestoneInProgress .rdmMilestoneDot { background: var(--amber, #f59e0b) !important; border-color: var(--amber, #f59e0b) !important; }
 .rdmProjectWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ─── Meeting Archive KPI Cards ───────────────────────────────────── */
+
+.maKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 640px) {
+  .maKpiGrid { grid-template-columns: 1fr; }
+}
+
+.maKpiCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-left: 3px solid var(--lime);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.maKpiCard::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(200,241,53,0.12), transparent);
+  pointer-events: none;
+}
+
+.maKpiLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.maKpiValue {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.maKpiSub {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  color: var(--muted);
+}
+
+.maKpiAccent {
+  border-left-color: var(--lime);
+}
+
+.maKpiTeal {
+  border-left-color: #3dd9d6;
+}
+
+.maKpiPurple {
+  border-left-color: #8b6fff;
+}

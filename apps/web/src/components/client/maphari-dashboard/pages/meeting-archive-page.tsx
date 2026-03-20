@@ -164,11 +164,6 @@ export function MeetingArchivePage() {
     archiveMeetings.filter(m => m.type === "Design Review").length +
     calMeetings.filter(m => m.title.toLowerCase().includes("design")).length,
   [calMeetings, archiveMeetings]);
-  const accountReviews = useMemo(() =>
-    archiveMeetings.filter(m => m.type === "Account Review").length +
-    calMeetings.filter(m => m.title.toLowerCase().includes("account") || m.title.toLowerCase().includes("budget") || m.title.toLowerCase().includes("quarterly")).length,
-  [calMeetings, archiveMeetings]);
-
   async function handleBookFollowUp(): Promise<void> {
     if (!session || bookingFollowUp) return;
     setBookingFollowUp(true);
@@ -307,19 +302,23 @@ export function MeetingArchivePage() {
         </div>
       </div>
 
-      {/* ── Stat cards — derived from real appointment data ─────────────── */}
-      <div className={cx("topCardsStack")}>
-        {[
-          { label: "Total Meetings",  value: totalMeetings  || "—", color: "statCardAccent"  },
-          { label: "Sprint Demos",    value: sprintDemos    || "—", color: "statCardGreen"   },
-          { label: "Design Reviews",  value: designReviews  || "—", color: "statCardPurple"  },
-          { label: "Account Reviews", value: accountReviews || "—", color: "statCardAmber"   },
-        ].map((s) => (
-          <div key={s.label} className={cx("statCard", s.color)}>
-            <div className={cx("statLabel")}>{s.label}</div>
-            <div className={cx("statValue")}>{s.value}</div>
-          </div>
-        ))}
+      {/* ── KPI cards — derived from real appointment data ──────────────── */}
+      <div className={cx("maKpiGrid")}>
+        <div className={cx("maKpiCard", "maKpiAccent")}>
+          <div className={cx("maKpiLabel")}>Total Meetings</div>
+          <div className={cx("maKpiValue")}>{totalMeetings}</div>
+          <div className={cx("maKpiSub")}>this month</div>
+        </div>
+        <div className={cx("maKpiCard", "maKpiTeal")}>
+          <div className={cx("maKpiLabel")}>Sprint Demos</div>
+          <div className={cx("maKpiValue")}>{sprintDemos}</div>
+          <div className={cx("maKpiSub")}>this month</div>
+        </div>
+        <div className={cx("maKpiCard", "maKpiPurple")}>
+          <div className={cx("maKpiLabel")}>Design Reviews</div>
+          <div className={cx("maKpiValue")}>{designReviews}</div>
+          <div className={cx("maKpiSub")}>this month</div>
+        </div>
       </div>
 
       {/* ── Tabs ────────────────────────────────────────────────────────── */}
