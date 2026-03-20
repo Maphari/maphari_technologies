@@ -127,7 +127,9 @@ export function StaffTopbar({
 
       {/* ── Left: breadcrumb ─────────────────────────────────────────── */}
       <div className={styles.topbarTitle}>
-        {eyebrow} <span>/ {title}</span>
+        <span className={styles.topbarLabelEyebrow}>{eyebrow}</span>
+        <span className={styles.topbarLabelSep}>/</span>
+        <span className={styles.topbarLabelPage}>{title}</span>
       </div>
 
       {/* ── Right: action strip ──────────────────────────────────────── */}

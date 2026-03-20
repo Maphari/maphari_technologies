@@ -68,7 +68,9 @@ export function AdminTopbar({
         </button>
       ) : null}
       <div className={styles.topbarTitle}>
-        {title[0]} <span>/ {title[1]}</span>
+        <span className={styles.topbarLabelEyebrow}>{title[0]}</span>
+        <span className={styles.topbarLabelSep}>/</span>
+        <span className={styles.topbarLabelPage}>{title[1]}</span>
       </div>
       <div className={styles.topbarActions}>
         <button

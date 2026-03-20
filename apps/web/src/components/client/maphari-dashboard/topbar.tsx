@@ -114,8 +114,9 @@ export function ClientTopbar({
 
       {/* ── Left: breadcrumb ─────────────────────────────────────────── */}
       <div className={styles.topbarTitle}>
-        <span className={styles.topbarLabel}>{eyebrow}</span>{" "}
-        <span className={styles.topbarLabel}>/ {title}</span>
+        <span className={styles.topbarLabelEyebrow}>{eyebrow}</span>
+        <span className={styles.topbarLabelSep}>/</span>
+        <span className={styles.topbarLabelPage}>{title}</span>
       </div>
 
       {/* ── Right: action strip ──────────────────────────────────────── */}

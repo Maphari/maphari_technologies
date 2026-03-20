@@ -5557,3 +5557,22 @@
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.5; transform: scale(0.85); }
 }
+
+/* ─── Topbar Breadcrumb Hierarchy ────────────────────────────────── */
+
+.topbarLabelEyebrow {
+  color: rgba(255,255,255,0.4);
+  font-size: 0.65rem;
+}
+
+.topbarLabelSep {
+  color: rgba(255,255,255,0.2);
+  margin: 0 4px;
+  font-size: 0.65rem;
+}
+
+.topbarLabelPage {
+  color: rgba(255,255,255,0.88);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
