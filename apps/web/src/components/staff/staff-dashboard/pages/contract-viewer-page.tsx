@@ -69,7 +69,13 @@ export function ContractViewerPage({ isActive, session, onNotify }: PageProps) {
         setClients(clientsResult.data ?? []);
         setProjects(projectsResult.data ?? []);
       }
-      setLoading(false);
+    }).catch((err) => {
+      if (cancelled) return;
+      const msg = (err as Error)?.message ?? "Failed to load contracts";
+      setError(msg);
+      onNotify?.("error", msg);
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };
