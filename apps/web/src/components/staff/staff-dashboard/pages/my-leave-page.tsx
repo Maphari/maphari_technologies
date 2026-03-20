@@ -72,7 +72,7 @@ export function MyLeavePage({ isActive, session, onNotify }: PageProps) {
   const [submittingLeave, setSubmittingLeave] = useState(false);
 
   useEffect(() => {
-    if (!session) { setLoading(false); return; }
+    if (!session || !isActive) { setLoading(false); return; }
     setLoading(true);
     setError(null);
     void loadMyLeaveRequestsWithRefresh(session).then((r) => {
@@ -85,7 +85,7 @@ export function MyLeavePage({ isActive, session, onNotify }: PageProps) {
     }).catch((err: unknown) => {
       setError((err as Error)?.message ?? "Failed to load data.");
     }).finally(() => setLoading(false));
-  }, [session?.accessToken]);
+  }, [session?.accessToken, isActive]);
 
   const leaveHistory = useMemo(() =>
     apiLeave.map((l) => {

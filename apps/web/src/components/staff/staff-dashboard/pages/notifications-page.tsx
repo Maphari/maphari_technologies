@@ -172,7 +172,7 @@ function tabToType(tab: string): NotificationType {
 
 export function NotificationsPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
   const [notifs, setNotifs] = useState(initialNotifications);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<ClientRow[]>([{ id: 0, name: "Internal", avatar: "IN" }]);
   const [filter, setFilter] = useState<"all" | "unread" | "pinned">("all");
   const [typeFilter, setTypeFilter] = useState<"all" | NotificationType>("all");
@@ -206,7 +206,7 @@ export function NotificationsPage({ isActive, session }: { isActive: boolean; se
   }, [session, isActive]);
 
   useEffect(() => {
-    if (!session || !isActive) return;
+    if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
     void loadStaffNotificationsWithRefresh(session).then((r) => {
