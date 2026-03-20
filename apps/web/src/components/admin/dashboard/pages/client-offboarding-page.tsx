@@ -42,7 +42,7 @@ type PostMortem = {
   npsScore: number;
 };
 
-const offboardings: Offboarding[] = [];
+const INITIAL_OFFBOARDINGS: Offboarding[] = [];
 
 const postMortems: PostMortem[] = [];
 
@@ -124,12 +124,71 @@ function templateCardClass(color: string): string {
   }
 }
 
-export function ClientOffboardingPage() {
+type Props = {
+  onNotify?: (type: "success" | "error" | "info", message: string) => void;
+};
+
+export function ClientOffboardingPage({ onNotify }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("active offboardings");
   const [expanded, setExpanded] = useState<string>("");
+  const [offboardings, setOffboardings] = useState<Offboarding[]>(INITIAL_OFFBOARDINGS);
+  const [startModal, setStartModal] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientReason, setNewClientReason] = useState("");
+  const [newClientReasonType, setNewClientReasonType] = useState<ReasonType>("natural");
 
   const active = offboardings.filter((o) => o.status === "in-progress");
   const complete = offboardings.filter((o) => o.status === "complete");
+
+  function handleStartOffboarding() {
+    if (!newClientName.trim()) {
+      onNotify?.("error", "Client name is required.");
+      return;
+    }
+    const id = `COB-${String(offboardings.length + 1).padStart(3, "0")}`;
+    const today = new Date().toISOString().split("T")[0];
+    const target = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const checklist: ChecklistItem[] = offboardingTemplate.flatMap((cat, ci) =>
+      cat.tasks.map((task, ti) => ({ id: ci * 100 + ti, category: cat.category, task, done: false }))
+    );
+    setOffboardings((prev) => [
+      ...prev,
+      {
+        id,
+        client: newClientName.trim(),
+        clientColor: "var(--accent)",
+        reason: newClientReason.trim() || "Offboarding initiated",
+        reasonType: newClientReasonType,
+        am: "—",
+        startedDate: today,
+        targetDate: target,
+        mrr: 0,
+        outstandingInvoice: 0,
+        status: "in-progress",
+        checklist
+      }
+    ]);
+    onNotify?.("success", `Offboarding started for ${newClientName.trim()}.`);
+    setNewClientName("");
+    setNewClientReason("");
+    setNewClientReasonType("natural");
+    setStartModal(false);
+  }
+
+  function handleMarkComplete(ofbId: string) {
+    setOffboardings((prev) =>
+      prev.map((o) => (o.id === ofbId ? { ...o, status: "complete" } : o))
+    );
+    onNotify?.("success", "Offboarding marked as complete.");
+  }
+
+  function handleUpdateProgress(ofbId: string) {
+    const ofb = offboardings.find((o) => o.id === ofbId);
+    if (!ofb) return;
+    const done = ofb.checklist.filter((t) => t.done).length;
+    const total = ofb.checklist.length;
+    onNotify?.("success", `Progress updated: ${done}/${total} tasks complete.`);
+  }
 
   return (
     <div className={cx(styles.pageBody, styles.cobRoot)}>
@@ -139,8 +198,50 @@ export function ClientOffboardingPage() {
           <h1 className={styles.pageTitle}>Client Offboarding</h1>
           <div className={styles.pageSub}>Structured exits, file handover, IP transfer, and post-mortems</div>
         </div>
-        <button type="button" className={cx("btnSm", "btnAccent")}>+ Start Offboarding</button>
+        <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setStartModal(true)}>+ Start Offboarding</button>
       </div>
+
+      {startModal ? (
+        <div className={styles.cobModalOverlay}>
+          <div className={styles.cobModal}>
+            <div className={styles.cobModalTitle}>Start Offboarding</div>
+            <div className={styles.cobModalField}>
+              <label className={styles.cobModalLabel}>Client Name</label>
+              <input
+                className={styles.cobModalInput}
+                value={newClientName}
+                onChange={(e) => setNewClientName(e.target.value)}
+                placeholder="e.g. Acme Corp"
+              />
+            </div>
+            <div className={styles.cobModalField}>
+              <label className={styles.cobModalLabel}>Reason</label>
+              <input
+                className={styles.cobModalInput}
+                value={newClientReason}
+                onChange={(e) => setNewClientReason(e.target.value)}
+                placeholder="e.g. Project complete"
+              />
+            </div>
+            <div className={styles.cobModalField}>
+              <label className={styles.cobModalLabel}>Reason Type</label>
+              <select
+                className={styles.cobModalInput}
+                value={newClientReasonType}
+                onChange={(e) => setNewClientReasonType(e.target.value as ReasonType)}
+              >
+                <option value="natural">Natural</option>
+                <option value="churn">Churn</option>
+                <option value="paused">Paused</option>
+              </select>
+            </div>
+            <div className={styles.cobModalActions}>
+              <button type="button" className={cx("btnSm", "btnAccent")} onClick={handleStartOffboarding}>Begin Offboarding</button>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setStartModal(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className={cx("topCardsStack", "mb16")}>
         {[
@@ -240,8 +341,8 @@ export function ClientOffboardingPage() {
 
                       {ofb.status === "in-progress" ? (
                         <div className={styles.cobActionRow}>
-                          <button type="button" className={cx("btnSm", "btnAccent")}>Mark Complete</button>
-                          <button type="button" className={cx("btnSm", "btnGhost")}>Update Progress</button>
+                          <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => handleMarkComplete(ofb.id)}>Mark Complete</button>
+                          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => handleUpdateProgress(ofb.id)}>Update Progress</button>
                           <button type="button" className={styles.cobPostBtn}>Start Post-Mortem</button>
                         </div>
                       ) : null}

@@ -514,7 +514,7 @@ export function MaphariDashboard() {
             {page === "gantt" ? <TimelineGanttPage /> : null}
             {page === "qa" ? <QualityAssurancePage onNotify={pushToast} /> : null}
             {page === "sla" ? <SlaTrackerPage session={session} /> : null}
-            {page === "offboarding" ? <ClientOffboardingPage /> : null}
+            {page === "offboarding" ? <ClientOffboardingPage onNotify={pushToast} /> : null}
             {page === "onboarding" ? <ClientOnboardingPage session={session} onNotify={pushToast} /> : null}
             {page === "satisfaction" ? <ClientSatisfactionPage session={session} /> : null}
             {page === "comms" ? <CommunicationAuditPage session={session} /> : null}
