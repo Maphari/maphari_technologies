@@ -1064,7 +1064,7 @@
 }
 
 .cmdPanel {
-  background: #09090f;
+  background: var(--s1);
   border: 1px solid var(--b3);
   border-radius: var(--r-lg);
   width: 620px;

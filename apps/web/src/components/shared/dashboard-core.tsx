@@ -66,10 +66,10 @@ const VARIANT_CONFIG: Record<DashboardVariant, { accent: string; bg: string; sur
     sublabel: "Loading your workspace…"
   },
   staff: {
-    accent: "#24b8a8",
-    bg: "#050508",
-    surface: "#0d0d12",
-    border: "rgba(36,184,168,0.18)",
+    accent: "#f97316",
+    bg: "#06060e",
+    surface: "#0d0d1a",
+    border: "rgba(249,115,22,0.18)",
     label: "Staff Portal",
     sublabel: "Preparing your workspace…"
   },

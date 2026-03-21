@@ -206,8 +206,8 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
   const milestones    = perf?.milestoneHistory  ?? [];
   const lastWeek      = weeks[weeks.length - 1]       ?? null;
   const prevWeek      = weeks[weeks.length - 2]       ?? null;
-  const totalHours    = weeks.reduce((s, w) => s + w.hoursLogged, 0);
-  const totalTasks    = weeks.reduce((s, w) => s + w.tasksCompleted, 0);
+  const totalHours    = weeks.reduce((s, w) => s + (w.hoursLogged ?? 0), 0);
+  const totalTasks    = weeks.reduce((s, w) => s + (w.tasksCompleted ?? 0), 0);
   const hoursThisWeek = lastWeek?.hoursLogged    ?? 0;
   const tasksThisWeek = lastWeek?.tasksCompleted ?? 0;
 
@@ -262,11 +262,11 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
       </div>
 
       {/* ── Tabs ─────────────────────────────────────────────────────────── */}
-      <div className={cx("ppTabBar")}>
+      <div className={cx("staffSegControl")}>
         {TABS.map((t) => (
           <button
             key={t.key}
-            className={cx("ppTab", tab === t.key && "ppTabActive")}
+            className={cx("staffSegBtn", tab === t.key && "staffSegBtnActive")}
             onClick={() => setTab(t.key)}
           >
             {t.label}
@@ -308,15 +308,15 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
                 />
                 <StatCard
                   label="Response Rate"
-                  value={responseTimes
-                    ? `${responseTimes.metCount}/${responseTimes.totalCount}`
+                  value={responseTimes && responseTimes.totalCount != null
+                    ? `${responseTimes.metCount ?? 0}/${responseTimes.totalCount}`
                     : "—"
                   }
-                  sub={responseTimes
-                    ? `avg ${responseTimes.avgActual}h · target ${responseTimes.avgTarget}h`
+                  sub={responseTimes && responseTimes.avgActual != null
+                    ? `avg ${responseTimes.avgActual}h · target ${responseTimes.avgTarget ?? "—"}h`
                     : "no data yet"
                   }
-                  pct={responsePct}
+                  pct={Number.isFinite(responsePct) ? responsePct : undefined}
                 />
               </>
             )}
