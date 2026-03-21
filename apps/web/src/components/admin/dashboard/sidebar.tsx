@@ -97,7 +97,7 @@ export function AdminSidebar({
 
   const sectionIcon: Record<string, React.ReactNode> = {
     Operations: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/>
         <rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/>
         <rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/>
@@ -105,29 +105,29 @@ export function AdminSidebar({
       </svg>
     ),
     Experience: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M8 13.5C8 13.5 2 9.8 2 5.5a3 3 0 0 1 6-0.5 3 3 0 0 1 6 0.5C14 9.8 8 13.5 8 13.5Z" fill="currentColor" opacity="0.9"/>
       </svg>
     ),
     Finance: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <rect x="1" y="9" width="3" height="5" rx="1" fill="currentColor" opacity="0.9"/>
         <rect x="6" y="6" width="3" height="8" rx="1" fill="currentColor" opacity="0.9"/>
         <rect x="11" y="2" width="3" height="12" rx="1" fill="currentColor" opacity="0.9"/>
       </svg>
     ),
     Communication: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 2V3Z" fill="currentColor" opacity="0.9"/>
       </svg>
     ),
     Governance: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M8 1.5L2 4v4c0 3.3 2.7 5.8 6 6.5C11.3 13.8 14 11.3 14 8V4L8 1.5Z" fill="currentColor" opacity="0.9"/>
       </svg>
     ),
     Knowledge: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M3 2h7.5L13 4.5V14H3V2Z" fill="currentColor" opacity="0.25"/>
         <path d="M3 2h7.5L13 4.5V14H3V2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
         <line x1="5.5" y1="6.5" x2="10.5" y2="6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
@@ -135,13 +135,13 @@ export function AdminSidebar({
       </svg>
     ),
     Lifecycle: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M8 2a6 6 0 1 1-4.24 1.76" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         <path d="M3 2l.76 2.76L6.5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
     "AI/ML": (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <circle cx="8" cy="8" r="2" fill="currentColor"/>
         <circle cx="8" cy="2" r="1.2" fill="currentColor" opacity="0.7"/>
         <circle cx="8" cy="14" r="1.2" fill="currentColor" opacity="0.7"/>
@@ -154,7 +154,7 @@ export function AdminSidebar({
       </svg>
     ),
     Automation: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M9.5 1.5L4 8.5h4L6.5 14.5L13 7H9L9.5 1.5Z" fill="currentColor" opacity="0.9"/>
       </svg>
     ),
