@@ -11,9 +11,9 @@
 }
 .clmKpiCard {
   position: relative;
-  background: var(--s1);
-  border: 1px solid var(--border2);
-  border-radius: var(--r-md);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
   overflow: hidden;
@@ -56,8 +56,8 @@
 }
 .clmStatusTile {
   position: relative;
-  background: var(--s1);
-  border: 1px solid var(--border2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 14px 16px;
   overflow: hidden;
@@ -105,8 +105,8 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  background: var(--s1);
-  border: 1px solid var(--border2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 10px 14px;
   margin-bottom: 4px;
@@ -122,8 +122,8 @@
 
 /* ── Section wrapper (list view) ── */
 .clmSection {
-  background: var(--s1);
-  border: 1px solid var(--border2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   overflow: hidden;
 }
@@ -282,7 +282,7 @@
 .clmPortfolioGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .clmPortfolioCard {
   position: relative;
-  background: var(--s1); border: 1px solid var(--border2);
+  background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm); padding: 16px 18px 16px 21px;
   cursor: pointer; transition: background 120ms ease, border-color 120ms ease;
   overflow: hidden;
@@ -311,7 +311,7 @@
 .clmPortfolioMetaVal.toneRed    { color: var(--red);    }
 
 /* ── Detail panel ── */
-.clmDetailPanel { background: var(--s1); border: 1px solid var(--border2); border-radius: var(--r-sm); overflow: hidden; align-self: start; position: sticky; top: 20px; }
+.clmDetailPanel { background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-sm); overflow: hidden; align-self: start; position: sticky; top: 20px; }
 .clmDetailHeader { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; border-bottom: 1px solid var(--border); }
 .clmDetailTitle  { font-family: var(--font-syne), sans-serif; font-size: 0.78rem; font-weight: 700; }
 .clmDetailId     { font-family: var(--font-dm-mono), monospace; font-size: 0.56rem; color: var(--muted); }
@@ -349,7 +349,7 @@
 .clmEmptyDetail   { font-size: 0.75rem; color: var(--muted); }
 
 /* ── Renewal queue ── */
-.clmRenewalWrap   { background: var(--s1); border: 1px solid var(--border2); border-radius: var(--r-sm); overflow: hidden; }
+.clmRenewalWrap   { background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-sm); overflow: hidden; }
 .clmRenewalHeader { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; border-bottom: 1px solid var(--border); }
 .clmRenewalTitle  { font-family: var(--font-syne), sans-serif; font-size: 0.78rem; font-weight: 700; }
 .clmRenewalMeta   { font-family: var(--font-dm-mono), monospace; font-size: 0.56rem; letter-spacing: 0.08em; color: var(--muted); }
@@ -613,14 +613,14 @@
 
 .cmpiCompItem {
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-left: 3px solid currentColor;
-  border-radius: var(--r-md);
+  border-radius: var(--r-sm);
   padding-top: 26px !important;
   padding-bottom: 26px !important;
   padding-left: 18px !important;
   padding-right: 18px !important;
-  background: var(--s1);
+  background: var(--s2);
   text-align: left;
   color: var(--text);
   transition: all 0.15s ease;
@@ -665,10 +665,10 @@
 }
 
 .cmpiCompDetail {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 28px;
-  background: var(--s1);
+  background: var(--s2);
   border-left: 3px solid currentColor;
 }
 
@@ -848,9 +848,9 @@
 
 .cmpiSecTitle {
   font-family: var(--font-syne), sans-serif;
-  font-size: 0.875rem;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
@@ -1232,9 +1232,9 @@
 }
 
 .crisCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--s1);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
+  background: var(--s2);
   overflow: hidden;
   transition: border-color 0.15s ease;
 }
@@ -1426,9 +1426,9 @@
 
 .crisSectionTitle {
   font-family: var(--font-syne), sans-serif;
-  font-size: 0.875rem;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
@@ -1512,10 +1512,10 @@
 }
 
 .crisChainCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 20px;
-  background: var(--s1);
+  background: var(--s2);
   border-left: 3px solid currentColor;
 }
 
@@ -1569,10 +1569,10 @@
 }
 
 .crisPolicyCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 24px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .crisPolicyRow {
@@ -1620,10 +1620,10 @@
 }
 
 .crisPlayCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 24px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .crisPlayTitle {
@@ -1690,9 +1690,9 @@
   gap: 14px;
   align-items: center;
   padding: 16px 20px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--s1);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
+  background: var(--s2);
 }
 
 .crisDays {
@@ -2035,9 +2035,9 @@
 
 .sciSecTitle {
   font-family: var(--font-syne), sans-serif;
-  font-size: 0.875rem;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
@@ -2121,10 +2121,10 @@
 }
 
 .sciRatioCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 16px;
-  background: var(--s1);
+  background: var(--s2);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2164,10 +2164,10 @@
 }
 
 .sciChurnCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 20px;
-  background: var(--s1);
+  background: var(--s2);
   border-left: 3px solid var(--sci-tone, var(--border));
   transition: border-color 0.15s ease;
 }
@@ -2468,8 +2468,8 @@
 /* --- Table --- */
 
 .emprTableCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   overflow: hidden;
 }
 
@@ -2596,10 +2596,10 @@
 /* --- Detail Card --- */
 
 .emprDetailCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 24px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .emprDetailCardTone {
@@ -2641,9 +2641,9 @@
 
 .emprSectionTitle {
   font-family: var(--font-syne), sans-serif;
-  font-size: 0.875rem;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
@@ -2753,10 +2753,10 @@
 }
 
 .emprPanelCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 20px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .emprComplianceRow {
@@ -2802,10 +2802,10 @@
 /* --- Org Chart --- */
 
 .emprOrgCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 32px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .emprOrgWrap {
@@ -2866,11 +2866,11 @@
 }
 
 .emprLeadCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 16px 22px;
   text-align: center;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .emprLeadCardTone {
@@ -2899,11 +2899,11 @@
 }
 
 .emprReportCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 10px 16px;
   text-align: center;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .emprReportCardTone {
@@ -3017,9 +3017,9 @@
   gap: 10px;
   padding: 12px 16px;
   align-items: center;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
-  background: var(--s1);
+  background: var(--s2);
   transition: background 120ms ease;
 }
 
@@ -3132,8 +3132,8 @@
 /* --- Leave Balances Table --- */
 
 .lvaTableCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   overflow: hidden;
 }
 
@@ -3237,9 +3237,9 @@
 
 .lvaSectionTitle {
   font-family: var(--font-syne), sans-serif;
-  font-size: 0.875rem;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
@@ -3426,8 +3426,8 @@
 }
 
 .lvaComplianceCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 18px;
   background: rgba(255, 255, 255, 0.02);
 }
@@ -3533,9 +3533,9 @@
 }
 
 .lndCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--s1);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
+  background: var(--s2);
   overflow: hidden;
 }
 
@@ -3748,9 +3748,9 @@
   gap: 16px;
   align-items: center;
   padding: 14px 18px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .lndNameCellSm {
@@ -4022,9 +4022,9 @@
 }
 
 .rcpRoleCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--s1);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
+  background: var(--s2);
   overflow: hidden;
 }
 
@@ -4275,9 +4275,9 @@
 
 .rcpSectionTitle {
   font-family: var(--font-syne), sans-serif;
-  font-size: 0.875rem;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
@@ -4570,9 +4570,9 @@
 
 .sstSectionTitle {
   font-family: var(--font-syne), sans-serif;
-  font-size: 0.875rem;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
@@ -4621,9 +4621,9 @@
 
 .sstScoreCard {
   padding: 12px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .sstScoreCardWarn {
@@ -4692,10 +4692,10 @@
 }
 
 .sstEnpsCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 20px;
-  background: var(--s1);
+  background: var(--s2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4815,9 +4815,9 @@
   gap: 16px;
   align-items: center;
   padding: 12px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .sstTrendBars {
@@ -4940,10 +4940,10 @@
 }
 
 .sstSettingsCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 20px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .sstSettingRow {
@@ -5067,9 +5067,9 @@
   gap: 14px;
   align-items: center;
   padding: 14px 18px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
-  background: var(--s1);
+  background: var(--s2);
   cursor: pointer;
   transition: background 120ms ease;
 }
@@ -5189,10 +5189,10 @@
 /* --- Profile Card --- */
 
 .tprProfileCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 24px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .tprProfileHead {
@@ -5368,17 +5368,17 @@
 }
 
 .tprUtilCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 20px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .tprSecTitle {
   font-family: var(--font-syne), sans-serif;
-  font-size: 0.875rem;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
@@ -5609,9 +5609,9 @@
 }
 
 .teamOrgCard {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--r-md);
-  background: var(--s1);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
+  background: var(--s2);
   text-align: center;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
@@ -5794,9 +5794,9 @@
 }
 .teamKpiCard {
   position: relative;
-  background: var(--s1);
-  border: 1px solid var(--border2);
-  border-radius: var(--r-md);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
 }
@@ -5828,13 +5828,13 @@
 /* ── Filter toolbar ── */
 .teamFilters {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  background: var(--s1); border: 1px solid var(--border2);
+  background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm); padding: 10px 14px;
 }
 
 /* ── Section wrapper ── */
 .teamSection {
-  background: var(--s1); border: 1px solid var(--border2);
+  background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm); overflow: hidden;
 }
 .teamSectionHeader {
