@@ -1,6 +1,86 @@
-/* Token definitions live in maphari-client-dashboard.module.css (.clientRoot).
-   core.module.css intentionally declares no token overrides to avoid
-   clobbering the Task 1 glass token values loaded before this file. */
+/* ─── Design Tokens — .clientRoot ───────────────────────────────────── */
+/* This block MUST live here because core.module.css is imported into       */
+/* style.ts and its class names are accessible as styles.clientRoot.        */
+/* maphari-client-dashboard.module.css is NOT imported — its tokens don't   */
+/* reach the component tree. Update tokens here, not in the monolith.       */
+
+.clientRoot {
+  /* ─── Background & surfaces ───────────────────────────────────────── */
+  --bg: var(--palette-bg, #04040a);
+  --s1: rgba(255, 255, 255, 0.04);
+  --s2: rgba(255, 255, 255, 0.07);
+  --s3: rgba(255, 255, 255, 0.10);
+  --s4: rgba(255, 255, 255, 0.13);
+
+  /* ─── Borders ─────────────────────────────────────────────────────── */
+  --b1: rgba(255, 255, 255, 0.06);
+  --b2: rgba(255, 255, 255, 0.10);
+  --b3: rgba(255, 255, 255, 0.16);
+  --b-top: rgba(255, 255, 255, 0.12);
+
+  /* ─── Accent palette ──────────────────────────────────────────────── */
+  --lime: var(--palette-accent, #c8f135);
+  --lime2: var(--palette-accent-2, #d6f55a);
+  --green: #4dde8f;
+  --green-d: rgba(77, 222, 143, 0.12);
+  --amber: #f5a623;
+  --amber-d: rgba(245, 166, 35, 0.12);
+  --red: #ff5f5f;
+  --red-d: rgba(255, 95, 95, 0.12);
+  --cyan: #3dd9d6;
+  --cyan-d: rgba(61, 217, 214, 0.12);
+  --purple: #8b6fff;
+  --purple-d: rgba(139, 111, 255, 0.14);
+  --blue: #5b9cf5;
+  --blue-d: rgba(91, 156, 245, 0.12);
+
+  /* ─── Text ────────────────────────────────────────────────────────── */
+  --text: var(--palette-text, #f0ede8);
+  --muted: var(--palette-muted, rgba(240, 237, 232, 0.50));
+  --muted2: var(--palette-muted-2, rgba(240, 237, 232, 0.28));
+  --muted3: rgba(240, 237, 232, 0.08);
+
+  /* ─── Accent aliases ──────────────────────────────────────────────── */
+  --accent: var(--palette-accent, var(--lime));
+  --accent2: var(--palette-accent-2, var(--lime2));
+  --accent-d: var(--palette-accent-dim, color-mix(in oklab, var(--accent) 16%, transparent));
+  --accent-g: var(--palette-accent-glow, color-mix(in oklab, var(--accent) 8%, transparent));
+  --lime-d: var(--accent-d);
+  --lime-g: var(--accent-g);
+  --accent-dim: var(--accent-d);
+  --accent-glow: var(--accent-g);
+  --purple-dim: var(--purple-d);
+  --amber-dim: var(--amber-d);
+  --red-dim: var(--red-d);
+
+  /* ─── Legacy surface/border aliases (backward compat) ────────────── */
+  --surface: var(--s1);
+  --surface2: var(--s2);
+  --border: var(--b1);
+  --border2: var(--b2);
+
+  /* ─── Shadows ─────────────────────────────────────────────────────── */
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.40), inset 0 1px 0 var(--b-top);
+  --shadow-island: 0 16px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.60);
+
+  /* ─── Radius scale (all values rounder than previous) ────────────── */
+  --r-xxs: 4px;
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+
+  /* ─── Layout ──────────────────────────────────────────────────────── */
+  --sw: 68px; /* sidebar island width */
+
+  /* ─── Ambient glow ────────────────────────────────────────────────── */
+  --glow-lime: radial-gradient(ellipse at 30% 10%, rgba(200, 241, 53, 0.07) 0%, transparent 55%);
+  --glow-page: radial-gradient(ellipse at 70% 80%, rgba(91, 156, 245, 0.04) 0%, transparent 50%);
+  background-color: var(--bg);
+  background-image: var(--glow-lime), var(--glow-page);
+}
 
 
 /* ─── Approval Card ─────────────────────────────────────────────────── */
