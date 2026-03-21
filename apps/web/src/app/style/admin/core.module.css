@@ -125,7 +125,6 @@
   width: var(--rail-w);
   min-height: 100vh;
   background: var(--rail-bg);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
   position: fixed;
   left: 0;
   top: 0;
@@ -242,8 +241,7 @@
   width: var(--flyout-w);
   min-height: 100vh;
   background: var(--flyout-bg);
-  border-right: 1px solid rgba(139, 111, 255, 0.12);
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
   position: fixed;
   left: var(--rail-w);
   top: 0;
@@ -252,7 +250,7 @@
   display: flex;
   flex-direction: column;
   padding: 10px 8px;
-  gap: 1px;
+  gap: 3px;
   overflow-y: auto;
   transform: translateX(-100%);
   opacity: 0;

@@ -417,7 +417,7 @@
   margin-top: 6px;
   border: 1px solid var(--border2);
   border-radius: var(--r-xs);
-  background: var(--s1);
+  background: var(--s2);
   color: var(--text);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.66rem;
@@ -982,7 +982,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  background: var(--s1);
+  background: var(--s2);
   border: 1px solid var(--b2);
   border-radius: var(--r-sm);
 }
@@ -1721,8 +1721,8 @@
 }
 
 .statCard {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   padding: 20px;
   position: relative;
   min-width: 0;
@@ -1829,8 +1829,8 @@
 }
 
 .card {
-  background: var(--surface);
-  border: 1px solid var(--border2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   overflow: clip;
   min-width: 0;
   border-radius: var(--r-md);
@@ -2014,7 +2014,7 @@
   text-align: left;
   padding: 12px 24px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--s2);
   font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
@@ -2042,12 +2042,12 @@
 
 .projTable tbody tr,
 .invTable tbody tr {
-  background: var(--surface);
+  background: var(--s2);
 }
 
 .projTable tbody tr:nth-child(even),
 .invTable tbody tr:nth-child(even) {
-  background: color-mix(in oklab, var(--surface) 92%, #000 8%);
+  background: color-mix(in oklab, var(--s2) 92%, #000 8%);
 }
 
 .badge {
@@ -2308,7 +2308,7 @@
 .listRow {
   padding: 12px 14px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--s2);
 }
 
 .listRow:last-child {
@@ -2404,7 +2404,7 @@
 .formInput,
 .formTextarea {
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--s3);
   color: var(--text);
   font-family: var(--font-syne), sans-serif;
   font-size: 0.78rem;
@@ -2580,7 +2580,7 @@
   grid-template-columns: 320px 1fr;
   gap: 0;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--s2);
   min-height: 520px;
   overflow: hidden;
 }
@@ -2612,7 +2612,7 @@
 
 .leadsStageItem {
   border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--surface) 92%, #000 8%);
+  background: var(--s2);
   padding: 12px;
   min-width: 0;
 }
@@ -2641,14 +2641,14 @@
 }
 
 .leadsLane {
-  background: color-mix(in oklab, var(--surface) 96%, #000 4%);
+  background: var(--s2);
 }
 
 .leadsLaneHeader {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: color-mix(in oklab, var(--surface) 94%, #000 6%);
+  background: var(--s2);
 }
 
 .leadsLaneBody {
@@ -2658,7 +2658,7 @@
 
 .leadPipelineCard {
   border-color: color-mix(in oklab, var(--border) 82%, var(--accent) 18%);
-  background: var(--surface);
+  background: var(--s2);
 }
 
 .leadPipelineCardInner {
@@ -2673,7 +2673,7 @@
 .messagesSearch {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--s2);
 }
 
 .msgItem {
@@ -2682,11 +2682,11 @@
   padding: 14px 16px;
   border-bottom: 1px solid var(--border);
   align-items: flex-start;
-  background: var(--surface);
+  background: var(--s2);
 }
 
 .msgSelected {
-  background: color-mix(in oklab, var(--accent) 12%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 12%, var(--s2));
 }
 
 .msgAv {
@@ -2807,7 +2807,7 @@
 }
 
 .chatBubble {
-  background: var(--surface);
+  background: var(--s2);
   border: 1px solid var(--border);
   padding: 12px 16px;
   font-size: 0.83rem;
@@ -2828,12 +2828,12 @@
   display: flex;
   gap: 10px;
   align-items: center;
-  background: var(--surface);
+  background: var(--s2);
 }
 
 .msgInput {
   flex: 1;
-  background: color-mix(in oklab, var(--surface) 92%, #000 8%);
+  background: var(--s3);
   border: 1px solid var(--border);
   color: var(--text);
   font-family: var(--font-syne), sans-serif;
@@ -2919,7 +2919,7 @@
 
 .toast {
   border: 1px solid var(--border2);
-  background: var(--surface);
+  background: var(--s2);
   color: var(--text);
   padding: 12px 14px;
   font-size: 0.78rem;

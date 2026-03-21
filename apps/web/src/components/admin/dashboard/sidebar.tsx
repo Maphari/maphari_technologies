@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { styles } from "./style";
 import type { NavItem, PageId } from "./config";
 import { NavIcon } from "./nav-icon";
@@ -95,16 +95,69 @@ export function AdminSidebar({
 
   const sectionList = useMemo(() => Object.keys(grouped), [grouped]);
 
-  const sectionAbbrev: Record<string, string> = {
-    Operations: "Op",
-    Experience: "Ex",
-    Finance: "Fi",
-    Communication: "Co",
-    Governance: "Go",
-    Knowledge: "Kn",
-    Lifecycle: "Lc",
-    "AI/ML": "AI",
-    Automation: "Au",
+  const sectionIcon: Record<string, React.ReactNode> = {
+    Operations: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/>
+        <rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/>
+        <rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/>
+        <rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/>
+      </svg>
+    ),
+    Experience: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 13.5C8 13.5 2 9.8 2 5.5a3 3 0 0 1 6-0.5 3 3 0 0 1 6 0.5C14 9.8 8 13.5 8 13.5Z" fill="currentColor" opacity="0.9"/>
+      </svg>
+    ),
+    Finance: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <rect x="1" y="9" width="3" height="5" rx="1" fill="currentColor" opacity="0.9"/>
+        <rect x="6" y="6" width="3" height="8" rx="1" fill="currentColor" opacity="0.9"/>
+        <rect x="11" y="2" width="3" height="12" rx="1" fill="currentColor" opacity="0.9"/>
+      </svg>
+    ),
+    Communication: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 2V3Z" fill="currentColor" opacity="0.9"/>
+      </svg>
+    ),
+    Governance: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 1.5L2 4v4c0 3.3 2.7 5.8 6 6.5C11.3 13.8 14 11.3 14 8V4L8 1.5Z" fill="currentColor" opacity="0.9"/>
+      </svg>
+    ),
+    Knowledge: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M3 2h7.5L13 4.5V14H3V2Z" fill="currentColor" opacity="0.25"/>
+        <path d="M3 2h7.5L13 4.5V14H3V2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
+        <line x1="5.5" y1="6.5" x2="10.5" y2="6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+        <line x1="5.5" y1="9" x2="9" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      </svg>
+    ),
+    Lifecycle: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 2a6 6 0 1 1-4.24 1.76" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M3 2l.76 2.76L6.5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
+    "AI/ML": (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="2" fill="currentColor"/>
+        <circle cx="8" cy="2" r="1.2" fill="currentColor" opacity="0.7"/>
+        <circle cx="8" cy="14" r="1.2" fill="currentColor" opacity="0.7"/>
+        <circle cx="2" cy="8" r="1.2" fill="currentColor" opacity="0.7"/>
+        <circle cx="14" cy="8" r="1.2" fill="currentColor" opacity="0.7"/>
+        <line x1="8" y1="3.2" x2="8" y2="6" stroke="currentColor" strokeWidth="1.1"/>
+        <line x1="8" y1="10" x2="8" y2="12.8" stroke="currentColor" strokeWidth="1.1"/>
+        <line x1="3.2" y1="8" x2="6" y2="8" stroke="currentColor" strokeWidth="1.1"/>
+        <line x1="10" y1="8" x2="12.8" y2="8" stroke="currentColor" strokeWidth="1.1"/>
+      </svg>
+    ),
+    Automation: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M9.5 1.5L4 8.5h4L6.5 14.5L13 7H9L9.5 1.5Z" fill="currentColor" opacity="0.9"/>
+      </svg>
+    ),
   };
 
   function handleSectionClick(sectionId: string): void {
@@ -272,7 +325,7 @@ export function AdminSidebar({
             aria-label={`Open ${section} navigation`}
             aria-expanded={activeSectionId === section && flyoutOpen}
           >
-            {sectionAbbrev[section] ?? section.slice(0, 2)}
+            {sectionIcon[section] ?? <span style={{fontSize: 9, fontWeight: 700}}>{section.slice(0, 2)}</span>}
             <span className={styles.railTooltip} aria-hidden="true">{section}</span>
           </button>
         ))}
@@ -314,7 +367,6 @@ export function AdminSidebar({
                 className={`${styles.flyoutItem}${page === item.id ? ` ${styles.flyoutItemActive}` : ""}`}
                 onClick={() => handlePageSelect(item.id)}
               >
-                <span className={styles.flyoutDot} aria-hidden="true" />
                 <span className={styles.flyoutItemLabel}>
                   {sidebarLabel[item.id] ?? item.label}
                 </span>
