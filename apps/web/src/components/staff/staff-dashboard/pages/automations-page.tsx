@@ -5,7 +5,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { cx, styles } from "../style";
+import { cx } from "../style";
 import {
   getAutomationJobs,
   acknowledgeAutomationFailures,
@@ -276,74 +276,74 @@ export function AutomationsPage({
 
       <div className={cx("atmStatGrid", "mb20")}>
         {/* Row 1 -- Queue health */}
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentBlue")} />
-          <div className={styles.statLabel}>Queue</div>
-          <div className={styles.statValue}>{loading ? "\u2026" : queuedNotifications}</div>
-          <div className={styles.statSub}>Pending jobs</div>
+          <div className={cx("statLabel")}>Queue</div>
+          <div className={cx("statValue")}>{loading ? "\u2026" : queuedNotifications}</div>
+          <div className={cx("statSub")}>Pending jobs</div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentRed")} />
-          <div className={styles.statLabel}>Failures</div>
-          <div className={styles.statValue}>{loading ? "\u2026" : failedNotifications}</div>
-          <div className={styles.statSub}>
-            <span className={failedNotifications > 0 ? styles.dn : styles.up}>
+          <div className={cx("statLabel")}>Failures</div>
+          <div className={cx("statValue")}>{loading ? "\u2026" : failedNotifications}</div>
+          <div className={cx("statSub")}>
+            <span className={cx(failedNotifications > 0 ? "dn" : "up")}>
               {failedNotifications > 0 ? "Needs retry" : "Healthy"}
             </span>
           </div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentGreen")} />
-          <div className={styles.statLabel}>Succeeded</div>
-          <div className={styles.statValue}>{loading ? "\u2026" : succeededCount}</div>
-          <div className={styles.statSub}>Completed jobs</div>
+          <div className={cx("statLabel")}>Succeeded</div>
+          <div className={cx("statValue")}>{loading ? "\u2026" : succeededCount}</div>
+          <div className={cx("statSub")}>Completed jobs</div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentAccent")} />
-          <div className={styles.statLabel}>Total Jobs</div>
-          <div className={styles.statValue}>{loading ? "\u2026" : jobs.length}</div>
-          <div className={styles.statSub}>All time</div>
+          <div className={cx("statLabel")}>Total Jobs</div>
+          <div className={cx("statValue")}>{loading ? "\u2026" : jobs.length}</div>
+          <div className={cx("statSub")}>All time</div>
         </div>
         {/* Row 2 -- Workflow status breakdown */}
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentGreen")} />
-          <div className={styles.statLabel}>Active</div>
-          <div className={styles.statValue}>{loading ? "\u2026" : activeWorkflows}</div>
-          <div className={styles.statSub}>Running workflows</div>
+          <div className={cx("statLabel")}>Active</div>
+          <div className={cx("statValue")}>{loading ? "\u2026" : activeWorkflows}</div>
+          <div className={cx("statSub")}>Running workflows</div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentAmber")} />
-          <div className={styles.statLabel}>Watch</div>
-          <div className={styles.statValue}>{loading ? "\u2026" : watchWorkflows}</div>
-          <div className={styles.statSub}>Needs monitoring</div>
+          <div className={cx("statLabel")}>Watch</div>
+          <div className={cx("statValue")}>{loading ? "\u2026" : watchWorkflows}</div>
+          <div className={cx("statSub")}>Needs monitoring</div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentRed")} />
-          <div className={styles.statLabel}>At Risk</div>
-          <div className={styles.statValue}>{loading ? "\u2026" : riskWorkflows}</div>
-          <div className={styles.statSub}>
-            <span className={riskWorkflows > 0 ? styles.dn : styles.up}>
+          <div className={cx("statLabel")}>At Risk</div>
+          <div className={cx("statValue")}>{loading ? "\u2026" : riskWorkflows}</div>
+          <div className={cx("statSub")}>
+            <span className={cx(riskWorkflows > 0 ? "dn" : "up")}>
               {riskWorkflows > 0 ? "Intervention needed" : "None at risk"}
             </span>
           </div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentMuted")} />
-          <div className={styles.statLabel}>Draft</div>
-          <div className={styles.statValue}>{loading ? "\u2026" : draftWorkflows}</div>
-          <div className={styles.statSub}>Unpublished</div>
+          <div className={cx("statLabel")}>Draft</div>
+          <div className={cx("statValue")}>{loading ? "\u2026" : draftWorkflows}</div>
+          <div className={cx("statSub")}>Unpublished</div>
         </div>
       </div>
 
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <span className={styles.cardHeaderTitle}>Staff Automation Board</span>
+      <div className={cx("card")}>
+        <div className={cx("cardHeader")}>
+          <span className={cx("cardHeaderTitle")}>Staff Automation Board</span>
           <span className={cx("badge", workflowRows.length ? "badgeGreen" : "badgeMuted")}>
             {loading ? "\u2026" : `${workflowRows.length} workflow${workflowRows.length !== 1 ? "s" : ""}`}
           </span>
         </div>
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
+        <div className={cx("tableWrap")}>
+          <table className={cx("table")}>
             <thead>
               <tr>
                 <th scope="col">Workflow</th>
@@ -356,11 +356,11 @@ export function AutomationsPage({
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className={styles.emptyState}>Loading automation workflows\u2026</td>
+                  <td colSpan={5} className={cx("emptyState")}>Loading automation workflows\u2026</td>
                 </tr>
               ) : workflowRows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className={styles.emptyState}>No automation workflows are configured yet.</td>
+                  <td colSpan={5} className={cx("emptyState")}>No automation workflows are configured yet.</td>
                 </tr>
               ) : (
                 workflowRows.map((item) => {
@@ -387,14 +387,14 @@ export function AutomationsPage({
       </div>
 
       <div className={cx("card", "mt16")}>
-        <div className={styles.cardHeader}>
-          <span className={styles.cardHeaderTitle}>Queue Diagnostics</span>
+        <div className={cx("cardHeader")}>
+          <span className={cx("cardHeaderTitle")}>Queue Diagnostics</span>
           <span className={cx("badge", queuedNotifications > 0 ? "badgeAmber" : "badgeGreen")}>
             {loading ? "\u2026" : queuedNotifications > 0 ? `${queuedNotifications} queued` : "Queue clear"}
           </span>
         </div>
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
+        <div className={cx("tableWrap")}>
+          <table className={cx("table")}>
             <thead>
               <tr>
                 <th scope="col">Job ID</th>
@@ -406,11 +406,11 @@ export function AutomationsPage({
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} className={styles.emptyState}>Loading jobs\u2026</td>
+                  <td colSpan={4} className={cx("emptyState")}>Loading jobs\u2026</td>
                 </tr>
               ) : recentJobs.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className={styles.emptyState}>No automation jobs yet.</td>
+                  <td colSpan={4} className={cx("emptyState")}>No automation jobs yet.</td>
                 </tr>
               ) : (
                 recentJobs.map((job) => (

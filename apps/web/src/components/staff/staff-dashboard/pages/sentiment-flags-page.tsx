@@ -6,7 +6,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { cx, styles } from "../style";
+import { cx } from "../style";
 import { Ic } from "../ui";
 import {
   getStaffClientSentiments,
@@ -225,7 +225,7 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
         </div>
 
         {/* Filter pills */}
-        <div className={styles.sfFilterPills}>
+        <div className={cx("sfFilterPills")}>
           {([
             { value: "all",      label: "All",      activeClass: "sfFilterPillActiveAll",      idleClass: "sfFilterPillIdle",        count: clients.length },
             { value: "positive", label: "Positive", activeClass: "sfFilterPillActivePositive", idleClass: "sfFilterPillIdlePositive", count: counts.positive },
@@ -237,18 +237,18 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
               <button
                 key={tab.value}
                 type="button"
-                className={`${styles.sfFilterPill} ${active ? `${styles.sfFilterPillActive} ${styles[tab.activeClass]}` : styles[tab.idleClass]}`}
+                className={cx("sfFilterPill", active ? "sfFilterPillActive" : "sfFilterPillIdle")}
                 onClick={() => setFilter(tab.value)}
               >
                 {tab.label}
-                <span className={styles.sfFilterPillCount}>{tab.count}</span>
+                <span className={cx("sfFilterPillCount")}>{tab.count}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      <div className={styles.sfLayout}>
+      <div className={cx("sfLayout")}>
         {/* ── Sidebar ── */}
         <div className={cx("flexCol", "gap8", "p16", "sfSidebar")}>
           {filtered.map((client) => {
@@ -258,7 +258,7 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
             return (
               <div
                 key={client.clientId}
-                className={cx(styles.sfClientRow, "sfClientCard", isSel ? clientCfg.portfolioClass : "sfClientCardIdle")}
+                className={cx("sfClientRow", "sfClientCard", isSel ? clientCfg.portfolioClass : "sfClientCardIdle")}
                 onClick={() => { setSelected(client.clientId); setEditMode(false); }}
               >
                 <div className={cx("flexRow", "gap10", "mb8")}>
@@ -288,7 +288,7 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
             {!editMode && (
               <button
                 type="button"
-                className={`${styles.sfEditBtn} ${cx("accentBtnBase")}`}
+                className={`${cx("sfEditBtn")} ${cx("accentBtnBase")}`}
                 onClick={() => { setDraftSentiment(currentUI); setDraftNote(""); setEditMode(true); }}
               >
                 Update flag
@@ -304,7 +304,7 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
                   <button
                     key={key}
                     type="button"
-                    className={cx(styles.sfSentimentBtn, "sfSentimentChoice", draftSentiment === key ? entryCfg.portfolioClass : "sfSentimentChoiceIdle")}
+                    className={cx("sfSentimentBtn", "sfSentimentChoice", draftSentiment === key ? entryCfg.portfolioClass : "sfSentimentChoiceIdle")}
                     onClick={() => setDraftSentiment(key as UISentiment)}
                   >
                     <span className={cx("sfChoiceIcon", entryCfg.toneClass)}>{entryCfg.icon}</span>
@@ -325,7 +325,7 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
               <div className={cx("flexRow", "gap10")}>
                 <button
                   type="button"
-                  className={`${styles.sfSaveBtn} ${cx("saveBtnBase")}`}
+                  className={`${cx("sfSaveBtn")} ${cx("saveBtnBase")}`}
                   disabled={saving}
                   onClick={() => void handleSave()}
                 >
@@ -337,7 +337,7 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
               </div>
             </div>
           ) : (
-            <div className={styles.sfDetailGrid}>
+            <div className={cx("sfDetailGrid")}>
               <div className={cx("flexCol", "gap20")}>
                 <div className={cx("sfCurrentCard", cfg.bgClass, cfg.borderClass)}>
                   <div className={cx("flexRow", "gap14", "mb14")}>
@@ -360,7 +360,7 @@ export function SentimentFlagsPage({ isActive, session }: SentimentFlagsPageProp
                     <div className={cx("flexCol", "gap6")}>
                       {current.signals.map((signal, idx) => (
                         <div key={idx} className={cx("flexRow", "gap10", "cardSurface")}>
-                          <div className={cx(styles.signalDot, signalColors[signal.type as SignalType] ?? "sfSignalNeutral")} />
+                          <div className={cx("signalDot", signalColors[signal.type as SignalType] ?? "sfSignalNeutral")} />
                           <span className={cx("text12", "colorMuted")}>{signal.text}</span>
                         </div>
                       ))}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { cx, styles } from "../style";
+import { cx } from "../style";
 import type { ClientThread } from "../types";
 import { formatRelative } from "../utils";
 
@@ -252,30 +252,30 @@ export function ClientsPage({
       </div>
 
       {/* ── Two-panel shell ─────────────────────────────────────── */}
-      <div className={styles.clv2Shell}>
+      <div className={cx("clv2Shell")}>
 
         {/* ─ Left rail — thread list ─ */}
-        <div className={styles.clv2Rail}>
-          <div className={styles.clv2RailTop}>
+        <div className={cx("clv2Rail")}>
+          <div className={cx("clv2RailTop")}>
             {/* Rail header */}
-            <div className={styles.clv2RailHeader}>
-              <span className={styles.clv2RailTitle}>Conversations</span>
+            <div className={cx("clv2RailHeader")}>
+              <span className={cx("clv2RailTitle")}>Conversations</span>
               {openConversationsCount > 0 ? (
-                <span className={styles.clv2UnreadBadge}>
+                <span className={cx("clv2UnreadBadge")}>
                   {openConversationsCount} unread
                 </span>
               ) : (
-                <span className={styles.clv2AllReadBadge}>All read</span>
+                <span className={cx("clv2AllReadBadge")}>All read</span>
               )}
             </div>
 
             {/* Search */}
-            <div className={styles.clv2SearchWrap}>
-              <span className={styles.clv2SearchIco}>
+            <div className={cx("clv2SearchWrap")}>
+              <span className={cx("clv2SearchIco")}>
                 <IcoSearch />
               </span>
               <input
-                className={styles.clv2SearchInput}
+                className={cx("clv2SearchInput")}
                 value={threadSearch}
                 onChange={(e) => onThreadSearchChange(e.target.value)}
                 placeholder="Search threads…"
@@ -283,7 +283,7 @@ export function ClientsPage({
             </div>
 
             {/* Filter pills */}
-            <div className={styles.clv2FilterPills}>
+            <div className={cx("clv2FilterPills")}>
               {THREAD_FILTER_TABS.map((tab) => {
                 const count = threadCounts[tab.value];
                 const active = threadFilter === tab.value;
@@ -292,14 +292,14 @@ export function ClientsPage({
                     key={tab.value}
                     type="button"
                     className={cx(
-                      styles.clv2FilterPill,
-                      active ? styles.clv2FilterPillActive : styles.clv2FilterPillIdle
+                      cx("clv2FilterPill"),
+                      active ? cx("clv2FilterPillActive") : cx("clv2FilterPillIdle")
                     )}
                     onClick={() => onThreadFilterChange(tab.value)}
                   >
                     {tab.label}
                     {count > 0 ? (
-                      <span className={styles.clv2FilterPillCount}>{count}</span>
+                      <span className={cx("clv2FilterPillCount")}>{count}</span>
                     ) : null}
                   </button>
                 );
@@ -310,7 +310,7 @@ export function ClientsPage({
             {!composerOpen ? (
               <button
                 type="button"
-                className={styles.clv2NewToggleBtn}
+                className={cx("clv2NewToggleBtn")}
                 onClick={() => {
                   onNewThreadSubjectChange("");
                   onNewThreadClientIdChange("");
@@ -321,9 +321,9 @@ export function ClientsPage({
                 New Thread
               </button>
             ) : (
-              <div className={styles.clv2NewThreadWrap}>
+              <div className={cx("clv2NewThreadWrap")}>
                 <select
-                  className={styles.clv2NewSelect}
+                  className={cx("clv2NewSelect")}
                   aria-label="Select client for new thread"
                   value={newThreadClientId}
                   onChange={(e) => onNewThreadClientIdChange(e.target.value)}
@@ -336,23 +336,23 @@ export function ClientsPage({
                   ))}
                 </select>
                 <input
-                  className={styles.clv2NewInput}
+                  className={cx("clv2NewInput")}
                   value={newThreadSubject}
                   onChange={(e) => onNewThreadSubjectChange(e.target.value)}
                   placeholder="Thread subject…"
                   autoFocus
                 />
-                <div className={styles.clv2NewBtnRow}>
+                <div className={cx("clv2NewBtnRow")}>
                   <button
                     type="button"
-                    className={styles.clv2NewCancelBtn}
+                    className={cx("clv2NewCancelBtn")}
                     onClick={() => setComposerOpen(false)}
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
-                    className={styles.clv2NewBtn}
+                    className={cx("clv2NewBtn")}
                     onClick={() => {
                       setComposerOpen(false);
                       onCreateThread();
@@ -370,13 +370,13 @@ export function ClientsPage({
           </div>
 
           {/* Thread items */}
-          <div className={styles.clv2ThreadScroll}>
+          <div className={cx("clv2ThreadScroll")}>
             {threadItems.length === 0 ? (
-              <div className={styles.clv2ListEmpty}>
-                <div className={styles.clv2MsgEmptyIcon}>
+              <div className={cx("clv2ListEmpty")}>
+                <div className={cx("clv2MsgEmptyIcon")}>
                   <IcoMsg />
                 </div>
-                <div className={styles.clv2ListEmptyText}>No conversations yet</div>
+                <div className={cx("clv2ListEmptyText")}>No conversations yet</div>
               </div>
             ) : (
               threadItems.map((thread) => {
@@ -385,9 +385,9 @@ export function ClientsPage({
                   <div
                     key={thread.id}
                     className={cx(
-                      styles.clv2ThreadItem,
-                      isActive && styles.clv2ThreadItemActive,
-                      !isActive && thread.unread && styles.clv2ThreadItemUnread
+                      cx("clv2ThreadItem"),
+                      isActive && cx("clv2ThreadItemActive"),
+                      !isActive && thread.unread && cx("clv2ThreadItemUnread")
                     )}
                     role="button"
                     tabIndex={0}
@@ -401,22 +401,22 @@ export function ClientsPage({
                   >
                     <div
                       className={cx(
-                        styles.clv2ItemAvatar,
+                        cx("clv2ItemAvatar"),
                         avatarToneClass(thread.avatar.color)
                       )}
                     >
                       {thread.avatar.label}
                     </div>
-                    <div className={styles.clv2ItemBody}>
-                      <div className={styles.clv2ItemTopRow}>
-                        <span className={styles.clv2ItemName}>{thread.name}</span>
-                        <span className={styles.clv2ItemTime}>{thread.time}</span>
+                    <div className={cx("clv2ItemBody")}>
+                      <div className={cx("clv2ItemTopRow")}>
+                        <span className={cx("clv2ItemName")}>{thread.name}</span>
+                        <span className={cx("clv2ItemTime")}>{thread.time}</span>
                       </div>
-                      <div className={styles.clv2ItemProject}>{thread.project}</div>
-                      <div className={styles.clv2ItemPreview}>{thread.preview}</div>
+                      <div className={cx("clv2ItemProject")}>{thread.project}</div>
+                      <div className={cx("clv2ItemPreview")}>{thread.preview}</div>
                     </div>
                     {thread.unread && !isActive ? (
-                      <div className={styles.clv2UnreadPip} />
+                      <div className={cx("clv2UnreadPip")} />
                     ) : null}
                   </div>
                 );
@@ -426,28 +426,28 @@ export function ClientsPage({
         </div>
 
         {/* ─ Main content ─ */}
-        <div className={styles.clv2Main}>
+        <div className={cx("clv2Main")}>
 
           {/* Thread header */}
-          <div className={styles.clv2ThreadHeader}>
+          <div className={cx("clv2ThreadHeader")}>
             <div
               className={cx(
-                styles.clv2ThreadAvatar,
+                cx("clv2ThreadAvatar"),
                 avatarToneClass(selectedThread?.avatar.color)
               )}
             >
               {selectedThread?.avatar.label ?? "CL"}
             </div>
-            <div className={styles.clv2ThreadInfo}>
-              <div className={styles.clv2ThreadName}>
+            <div className={cx("clv2ThreadInfo")}>
+              <div className={cx("clv2ThreadName")}>
                 {selectedThread?.name ?? "Select a conversation"}
                 {selectedThread && (
                   <span
                     className={cx(
-                      styles.clv2ThreadBadge,
+                      cx("clv2ThreadBadge"),
                       selectedConversation?.projectId
-                        ? styles.clv2BadgeGreen
-                        : styles.clv2BadgeAmber
+                        ? cx("clv2BadgeGreen")
+                        : cx("clv2BadgeAmber")
                     )}
                   >
                     {selectedConversation?.projectId ? "Project" : "General"}
@@ -456,10 +456,10 @@ export function ClientsPage({
                 {selectedThread && (
                   <span
                     className={cx(
-                      styles.clv2ThreadBadge,
+                      cx("clv2ThreadBadge"),
                       selectedConversation?.assigneeUserId
-                        ? styles.clv2BadgeBlue
-                        : styles.clv2BadgeMuted
+                        ? cx("clv2BadgeBlue")
+                        : cx("clv2BadgeMuted")
                     )}
                   >
                     {selectedConversation?.assigneeUserId
@@ -470,17 +470,17 @@ export function ClientsPage({
                   </span>
                 )}
               </div>
-              <div className={styles.clv2ThreadSub}>
+              <div className={cx("clv2ThreadSub")}>
                 {selectedConversation?.subject ?? (selectedThread ? "No subject" : "Client thread")}
                 {selectedThread?.project
                   ? ` · ${selectedThread.project}`
                   : ""}
               </div>
             </div>
-            <div className={styles.clv2HeaderActions}>
+            <div className={cx("clv2HeaderActions")}>
               <button
                 type="button"
-                className={styles.clv2ActionBtn}
+                className={cx("clv2ActionBtn")}
                 onClick={onAssignToMe}
                 disabled={
                   !selectedConversationId ||
@@ -492,7 +492,7 @@ export function ClientsPage({
               </button>
               <button
                 type="button"
-                className={styles.clv2ActionBtn}
+                className={cx("clv2ActionBtn")}
                 onClick={onUnassign}
                 disabled={!selectedConversationId || !selectedConversation?.assigneeUserId}
               >
@@ -500,7 +500,7 @@ export function ClientsPage({
               </button>
               <button
                 type="button"
-                className={cx(styles.clv2ActionBtn, styles.clv2ActionBtnAccent)}
+                className={cx("clv2ActionBtn", cx("clv2ActionBtnAccent"))}
                 onClick={onOpenThreadTask}
               >
                 <IcoTask />
@@ -510,22 +510,22 @@ export function ClientsPage({
           </div>
 
           {/* Messages */}
-          <div className={styles.clv2Messages}>
+          <div className={cx("clv2Messages")}>
             {messagesLoading ? (
-              <div className={styles.clv2MsgEmpty}>
-                <div className={styles.clv2MsgEmptyIcon}>
+              <div className={cx("clv2MsgEmpty")}>
+                <div className={cx("clv2MsgEmptyIcon")}>
                   <IcoMsg />
                 </div>
-                <div className={styles.clv2MsgEmptyTitle}>Loading…</div>
-                <div className={styles.clv2MsgEmptyBody}>Fetching messages</div>
+                <div className={cx("clv2MsgEmptyTitle")}>Loading…</div>
+                <div className={cx("clv2MsgEmptyBody")}>Fetching messages</div>
               </div>
             ) : conversationMessages.length === 0 ? (
-              <div className={styles.clv2MsgEmpty}>
-                <div className={styles.clv2MsgEmptyIcon}>
+              <div className={cx("clv2MsgEmpty")}>
+                <div className={cx("clv2MsgEmptyIcon")}>
                   <IcoMsg />
                 </div>
-                <div className={styles.clv2MsgEmptyTitle}>No messages yet</div>
-                <div className={styles.clv2MsgEmptyBody}>
+                <div className={cx("clv2MsgEmptyTitle")}>No messages yet</div>
+                <div className={cx("clv2MsgEmptyBody")}>
                   {selectedThread
                     ? "Start the conversation below."
                     : "Select a thread from the left to begin."}
@@ -545,7 +545,7 @@ export function ClientsPage({
                 return (
                   <div
                     key={msg.id}
-                    className={isStaff ? styles.messageStaff : styles.messageClient}
+                    className={isStaff ? cx("messageStaff") : cx("messageClient")}
                   >
                     <div
                       className={cx(
@@ -557,18 +557,18 @@ export function ClientsPage({
                     </div>
                     <div
                       className={cx(
-                        styles.messageContent,
-                        isStaff && styles.messageContentStaff
+                        cx("messageContent"),
+                        isStaff && cx("messageContentStaff")
                       )}
                     >
-                      <div className={styles.messageTimestamp}>
+                      <div className={cx("messageTimestamp")}>
                         {isStaff
                           ? `You · ${formatRelative(msg.createdAt)} · ${deliveryLabel}`
                           : `${selectedThread?.name ?? "Client"} · ${formatRelative(msg.createdAt)}`}
                       </div>
                       <div
                         className={
-                          isStaff ? styles.messageBubbleStaff : styles.messageBubbleClient
+                          isStaff ? cx("messageBubbleStaff") : cx("messageBubbleClient")
                         }
                       >
                         {msg.content}
@@ -581,10 +581,10 @@ export function ClientsPage({
           </div>
 
           {/* Compose bar */}
-          <div className={styles.clv2ComposeWrap}>
-            <div className={styles.clv2ComposeInner}>
+          <div className={cx("clv2ComposeWrap")}>
+            <div className={cx("clv2ComposeInner")}>
               <input
-                className={styles.clv2ComposeInput}
+                className={cx("clv2ComposeInput")}
                 placeholder={
                   selectedThread
                     ? `Reply to ${selectedThread.name}…`
@@ -599,10 +599,10 @@ export function ClientsPage({
                   }
                 }}
               />
-              <div className={styles.clv2ComposeActions}>
+              <div className={cx("clv2ComposeActions")}>
                 <button
                   type="button"
-                  className={styles.clv2ComposeIconBtn}
+                  className={cx("clv2ComposeIconBtn")}
                   title="Attach file"
                   onClick={onOpenThreadFiles}
                 >
@@ -610,7 +610,7 @@ export function ClientsPage({
                 </button>
                 <button
                   type="button"
-                  className={styles.clv2ComposeIconBtn}
+                  className={cx("clv2ComposeIconBtn")}
                   title="Create task from thread"
                   onClick={onCreateTaskFromThread}
                 >
@@ -619,7 +619,7 @@ export function ClientsPage({
                 </button>
                 <button
                   type="button"
-                  className={styles.clv2SendBtn}
+                  className={cx("clv2SendBtn")}
                   onClick={onSendMessage}
                   disabled={!selectedConversationId || !composeMessage.trim()}
                 >
@@ -628,48 +628,48 @@ export function ClientsPage({
                 </button>
               </div>
             </div>
-            <div className={styles.clv2ComposeMeta}>
+            <div className={cx("clv2ComposeMeta")}>
               <span>↵ Enter to send</span>
             </div>
           </div>
 
           {/* Internal Notes */}
-          <div className={styles.clv2SidePanel}>
-            <div className={styles.clv2SidePanelHeader}>
-              <span className={cx(styles.clv2SidePanelIco, styles.clv2SidePanelIcoNote)}>
+          <div className={cx("clv2SidePanel")}>
+            <div className={cx("clv2SidePanelHeader")}>
+              <span className={cx("clv2SidePanelIco", cx("clv2SidePanelIcoNote"))}>
                 <IcoNote />
               </span>
-              <span className={styles.clv2SidePanelTitle}>Internal Notes</span>
-              <span className={styles.clv2SidePanelCount}>{conversationNotes.length}</span>
+              <span className={cx("clv2SidePanelTitle")}>Internal Notes</span>
+              <span className={cx("clv2SidePanelCount")}>{conversationNotes.length}</span>
             </div>
-            <div className={styles.clv2NoteList}>
+            <div className={cx("clv2NoteList")}>
               {conversationNotes.length === 0 ? (
-                <div className={styles.clv2PanelEmpty}>
+                <div className={cx("clv2PanelEmpty")}>
                   <div className={cx("emptyState")}>
                     <div className={cx("emptyStateSub")}>No notes on this thread.</div>
                   </div>
                 </div>
               ) : (
                 conversationNotes.slice(-4).map((note) => (
-                  <div key={note.id} className={styles.clv2NoteRow}>
-                    <span className={styles.clv2NoteText}>{note.content}</span>
-                    <span className={styles.clv2NoteAuthor}>
+                  <div key={note.id} className={cx("clv2NoteRow")}>
+                    <span className={cx("clv2NoteText")}>{note.content}</span>
+                    <span className={cx("clv2NoteAuthor")}>
                       {note.authorRole ?? "STAFF"}
                     </span>
                   </div>
                 ))
               )}
             </div>
-            <div className={styles.clv2PanelCompose}>
+            <div className={cx("clv2PanelCompose")}>
               <input
-                className={styles.clv2PanelInput}
+                className={cx("clv2PanelInput")}
                 placeholder="Add internal note…"
                 value={noteText}
                 onChange={(e) => onNoteTextChange(e.target.value)}
               />
               <button
                 type="button"
-                className={styles.clv2PanelSaveBtn}
+                className={cx("clv2PanelSaveBtn")}
                 onClick={onAddNote}
                 disabled={!selectedConversationId || !noteText.trim()}
               >
@@ -679,50 +679,49 @@ export function ClientsPage({
           </div>
 
           {/* Escalations */}
-          <div className={styles.clv2SidePanel}>
-            <div className={styles.clv2SidePanelHeader}>
-              <span className={cx(styles.clv2SidePanelIco, styles.clv2SidePanelIcoEsc)}>
+          <div className={cx("clv2SidePanel")}>
+            <div className={cx("clv2SidePanelHeader")}>
+              <span className={cx("clv2SidePanelIco", cx("clv2SidePanelIcoEsc"))}>
                 <IcoEscalate />
               </span>
-              <span className={styles.clv2SidePanelTitle}>Escalations</span>
-              <span className={styles.clv2SidePanelCount}>{conversationEscalations.length}</span>
+              <span className={cx("clv2SidePanelTitle")}>Escalations</span>
+              <span className={cx("clv2SidePanelCount")}>{conversationEscalations.length}</span>
             </div>
-            <div className={styles.clv2EscList}>
+            <div className={cx("clv2EscList")}>
               {conversationEscalations.length === 0 ? (
-                <div className={styles.clv2PanelEmpty}>
+                <div className={cx("clv2PanelEmpty")}>
                   <div className={cx("emptyState")}>
                     <div className={cx("emptyStateSub")}>No escalations on this thread.</div>
                   </div>
                 </div>
               ) : (
                 conversationEscalations.slice(0, 4).map((item) => (
-                  <div key={item.id} className={styles.clv2EscRow}>
-                    <span className={styles.clv2EscReason}>{item.reason}</span>
-                    <div className={styles.clv2EscRight}>
+                  <div key={item.id} className={cx("clv2EscRow")}>
+                    <span className={cx("clv2EscReason")}>{item.reason}</span>
+                    <div className={cx("clv2EscRight")}>
                       <span
                         className={cx(
-                          styles.clv2EscSev,
-                          styles[`clv2EscSev${item.severity}` as keyof typeof styles]
+                          "clv2EscSev",
+                          `clv2EscSev${item.severity}`
                         )}
                       >
                         {item.severity}
                       </span>
-                      <span className={styles.clv2EscStatus}>{item.status}</span>
+                      <span className={cx("clv2EscStatus")}>{item.status}</span>
                     </div>
                   </div>
                 ))
               )}
             </div>
-            <div className={styles.clv2EscCompose}>
-              <div className={styles.clv2SevPills}>
+            <div className={cx("clv2EscCompose")}>
+              <div className={cx("clv2SevPills")}>
                 {SEVERITY_OPTS.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
                     className={cx(
-                      styles.clv2SevPill,
-                      escalationSeverity === opt.value &&
-                        styles[`clv2SevActive${opt.value}` as keyof typeof styles]
+                      "clv2SevPill",
+                      escalationSeverity === opt.value && `clv2SevActive${opt.value}`
                     )}
                     onClick={() => onEscalationSeverityChange(opt.value)}
                   >
@@ -730,16 +729,16 @@ export function ClientsPage({
                   </button>
                 ))}
               </div>
-              <div className={styles.clv2EscInputRow}>
+              <div className={cx("clv2EscInputRow")}>
                 <input
-                  className={styles.clv2PanelInput}
+                  className={cx("clv2PanelInput")}
                   placeholder="Escalation reason…"
                   value={escalationReason}
                   onChange={(e) => onEscalationReasonChange(e.target.value)}
                 />
                 <button
                   type="button"
-                  className={styles.clv2EscalateBtn}
+                  className={cx("clv2EscalateBtn")}
                   onClick={onEscalate}
                   disabled={!selectedConversationId || !escalationReason.trim()}
                 >

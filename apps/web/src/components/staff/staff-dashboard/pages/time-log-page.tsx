@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { TimeEntry } from "../ui";
-import { cx, styles } from "../style";
+import { cx } from "../style";
 import { AutomationBanner } from "../../../shared/automation-banner";
 import type { TimeEntrySummary } from "../types";
 import { formatDateShort, formatDuration } from "../utils";
@@ -251,46 +251,46 @@ export function TimeLogPage({
 
       {/* ── 4-stat grid ── */}
       <div className={cx("tlv2StatGrid")}>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentAccent")} />
-          <div className={styles.statLabel}>Today</div>
-          <div className={styles.statValue}>{formatDuration(todayMinutes)}</div>
-          <div className={styles.statSub}>
+          <div className={cx("statLabel")}>Today</div>
+          <div className={cx("statValue")}>{formatDuration(todayMinutes)}</div>
+          <div className={cx("statSub")}>
             <span className={cx("tlv2StatBar")}>
               <span className={cx("tlv2StatFill", "tlv2StatFillAccent")} style={{ '--pct': `${todayPct}%` } as React.CSSProperties} />
             </span>
           </div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentBlue")} />
-          <div className={styles.statLabel}>This Week</div>
-          <div className={styles.statValue}>{formatDuration(weekMinutes)}</div>
-          <div className={styles.statSub}>
+          <div className={cx("statLabel")}>This Week</div>
+          <div className={cx("statValue")}>{formatDuration(weekMinutes)}</div>
+          <div className={cx("statSub")}>
             <span className={cx("tlv2StatBar")}>
               <span className={cx("tlv2StatFill", "tlv2StatFillBlue")} style={{ '--pct': `${weekPct}%` } as React.CSSProperties} />
             </span>
           </div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentGreen")} />
-          <div className={styles.statLabel}>Daily Goal</div>
-          <div className={styles.statValue}>{todayPct}<span className={cx("tlv2StatSuffix")}>%</span></div>
-          <div className={styles.statSub}>
-            <span className={todayPct >= 100 ? styles.up : styles.dn}>
+          <div className={cx("statLabel")}>Daily Goal</div>
+          <div className={cx("statValue")}>{todayPct}<span className={cx("tlv2StatSuffix")}>%</span></div>
+          <div className={cx("statSub")}>
+            <span className={todayPct >= 100 ? cx("up") : cx("dn")}>
               {todayPct >= 100 ? "Target hit" : `${formatDuration(dailyTargetMinutes)} target`}
             </span>
           </div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentAmber")} />
-          <div className={styles.statLabel}>
+          <div className={cx("statLabel")}>
             <span className={cx("inlineFlex", "gap5")}>
               <IcoTarget /> Weekly Goal
             </span>
           </div>
-          <div className={styles.statValue}>{weekPct}<span className={cx("tlv2StatSuffix")}>%</span></div>
-          <div className={styles.statSub}>
-            <span className={weekPct >= 100 ? styles.up : styles.dn}>
+          <div className={cx("statValue")}>{weekPct}<span className={cx("tlv2StatSuffix")}>%</span></div>
+          <div className={cx("statSub")}>
+            <span className={weekPct >= 100 ? cx("up") : cx("dn")}>
               {weekPct >= 100 ? "Target hit" : `${formatDuration(weeklyTargetMinutes)} target`}
             </span>
           </div>
@@ -301,12 +301,12 @@ export function TimeLogPage({
       <div className={cx("tlv2ContentGrid")}>
 
         {/* LEFT — This Week chart + breakdown */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <span className={styles.cardHeaderTitle}>This Week</span>
+        <div className={cx("card")}>
+          <div className={cx("cardHeader")}>
+            <span className={cx("cardHeaderTitle")}>This Week</span>
             <span className={cx("tlv2WeekTotal")}>{formatDuration(weekMinutes)}</span>
           </div>
-          <div className={styles.cardBody}>
+          <div className={cx("cardBody")}>
 
             {/* Bar chart */}
             <div className={cx("tlv2ChartArea")}>
@@ -332,13 +332,13 @@ export function TimeLogPage({
               })}
             </div>
 
-            <div className={styles.divider} />
+            <div className={cx("divider")} />
 
             {/* Project breakdown */}
             <div className={cx("tlv2Breakdown")}>
               <div className={cx("tlv2BrkHeading")}>By Project</div>
               {projectTimeBreakdown.length === 0 ? (
-                <div className={styles.emptyState}>No time logged yet.</div>
+                <div className={cx("emptyState")}>No time logged yet.</div>
               ) : (
                 projectTimeBreakdown.map(([project, minutes], i) => {
                   const pct  = Math.round((minutes / Math.max(1, weekMinutes)) * 100);
@@ -363,9 +363,9 @@ export function TimeLogPage({
         </div>
 
         {/* RIGHT — Recent entries with filter + search */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <span className={styles.cardHeaderTitle}>Recent Entries</span>
+        <div className={cx("card")}>
+          <div className={cx("cardHeader")}>
+            <span className={cx("cardHeaderTitle")}>Recent Entries</span>
             <span className={cx("tlv2EntryCount")}>
               {filteredEntries.length} entr{filteredEntries.length !== 1 ? "ies" : "y"}
             </span>
@@ -397,9 +397,9 @@ export function TimeLogPage({
           </div>
 
           <div className={cx("cardBody", "pt0", "pb8")}>
-            <div className={styles.timeEntries}>
+            <div className={cx("timeEntries")}>
               {filteredEntries.length === 0 ? (
-                <div className={styles.emptyState}>No entries match.</div>
+                <div className={cx("emptyState")}>No entries match.</div>
               ) : (
                 filteredEntries.map((entry) => (
                   <TimeEntry

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { cx, styles } from "../style";
+import { cx } from "../style";
 import {
   getStaffApprovals,
   resolveStaffApproval,
@@ -222,40 +222,40 @@ export function ApprovalQueuePage({ isActive, session, onFeedback }: ApprovalQue
 
       {/* ── 4-stat grid ────────────────────────────────────────────────── */}
       <div className={cx("aqStatGrid", "mb20")}>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentAmber")} />
-          <div className={styles.statLabel}>Pending</div>
-          <div className={styles.statValue}>{loading ? "…" : pending.length}</div>
-          <div className={styles.statSub}>Awaiting action</div>
+          <div className={cx("statLabel")}>Pending</div>
+          <div className={cx("statValue")}>{loading ? "…" : pending.length}</div>
+          <div className={cx("statSub")}>Awaiting action</div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentRed")} />
-          <div className={styles.statLabel}>Urgent</div>
-          <div className={styles.statValue}>{loading ? "…" : urgent.length}</div>
-          <div className={styles.statSub}>
-            <span className={urgent.length > 0 ? styles.dn : styles.up}>
+          <div className={cx("statLabel")}>Urgent</div>
+          <div className={cx("statValue")}>{loading ? "…" : urgent.length}</div>
+          <div className={cx("statSub")}>
+            <span className={urgent.length > 0 ? cx("dn") : cx("up")}>
               {urgent.length > 0 ? "Act now" : "None urgent"}
             </span>
           </div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentGreen")} />
-          <div className={styles.statLabel}>Approved</div>
-          <div className={styles.statValue}>{loading ? "…" : approved}</div>
-          <div className={styles.statSub}>Processed</div>
+          <div className={cx("statLabel")}>Approved</div>
+          <div className={cx("statValue")}>{loading ? "…" : approved}</div>
+          <div className={cx("statSub")}>Processed</div>
         </div>
-        <div className={styles.stat}>
+        <div className={cx("stat")}>
           <div className={cx("statAccent", "statAccentMuted")} />
-          <div className={styles.statLabel}>Rejected</div>
-          <div className={styles.statValue}>{loading ? "…" : rejected}</div>
-          <div className={styles.statSub}>Declined</div>
+          <div className={cx("statLabel")}>Rejected</div>
+          <div className={cx("statValue")}>{loading ? "…" : rejected}</div>
+          <div className={cx("statSub")}>Declined</div>
         </div>
       </div>
 
       {/* ── Pending Review card ─────────────────────────────────────────── */}
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <span className={styles.cardHeaderTitle}>Pending Review</span>
+      <div className={cx("card")}>
+        <div className={cx("cardHeader")}>
+          <span className={cx("cardHeaderTitle")}>Pending Review</span>
           {!loading && (
             <span className={cx("badge", pending.length > 0 ? "badgeAmber" : "badgeGreen")}>
               {pending.length > 0 ? `${pending.length} pending` : "Queue clear"}
@@ -277,8 +277,8 @@ export function ApprovalQueuePage({ isActive, session, onFeedback }: ApprovalQue
           ))}
         </div>
 
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
+        <div className={cx("tableWrap")}>
+          <table className={cx("table")}>
             <thead>
               <tr>
                 <th scope="col">Item</th>
@@ -294,7 +294,7 @@ export function ApprovalQueuePage({ isActive, session, onFeedback }: ApprovalQue
               {filteredPending.length === 0 ? (
                 typeFilter === "All" ? (
                   <tr>
-                    <td colSpan={7} className={styles.emptyState}>
+                    <td colSpan={7} className={cx("emptyState")}>
                       <div className={cx("emptyState")}>
                         <div className={cx("emptyStateIcon")}>
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -309,7 +309,7 @@ export function ApprovalQueuePage({ isActive, session, onFeedback }: ApprovalQue
                   </tr>
                 ) : (
                   <tr>
-                    <td colSpan={7} className={styles.emptyState}>
+                    <td colSpan={7} className={cx("emptyState")}>
                       <div className={cx("emptyState")}>
                         <div className={cx("emptyStateSub")}>No items match the selected filter.</div>
                       </div>
@@ -388,12 +388,12 @@ export function ApprovalQueuePage({ isActive, session, onFeedback }: ApprovalQue
       {/* ── History card ────────────────────────────────────────────────── */}
       {!loading && processed.length > 0 && (
         <div className={cx("card", "mt16")}>
-          <div className={styles.cardHeader}>
-            <span className={styles.cardHeaderTitle}>History</span>
+          <div className={cx("cardHeader")}>
+            <span className={cx("cardHeaderTitle")}>History</span>
             <span className={cx("badge", "badgeMuted")}>{processed.length} processed</span>
           </div>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
+          <div className={cx("tableWrap")}>
+            <table className={cx("table")}>
               <thead>
                 <tr>
                   <th scope="col">Item</th>

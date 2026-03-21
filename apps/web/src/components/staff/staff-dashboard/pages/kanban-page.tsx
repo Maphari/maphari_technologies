@@ -1,6 +1,6 @@
 "use client";
 
-import { cx, styles } from "../style";
+import { cx } from "../style";
 import { AutomationBanner } from "../../../shared/automation-banner";
 import type { KanbanColumn } from "../types";
 
@@ -165,7 +165,7 @@ export function KanbanPage({
 
   return (
     <section className={cx("page", "pageBody", "kanbanPage", "rdStudioPage", isActive && "pageActive")} id="page-kanban">
-      <div className={styles.srOnly} aria-live="polite">{announcement}</div>
+      <div className={cx("srOnly")} aria-live="polite">{announcement}</div>
 
       {/* ── Automation: escalate blocked + aging tasks ───────────────── */}
       <AutomationBanner
@@ -338,12 +338,12 @@ export function KanbanPage({
             <div className={cx("kbBlockFormGrid")}>
               <div className={cx("kbBlockFieldWrap")}>
                 <label className={cx("kbBlockLabel")}>Block reason</label>
-                <input className={styles.fieldInput} placeholder="Describe why this task is blocked…"
+                <input className={cx("fieldInput")} placeholder="Describe why this task is blocked…"
                   value={blockReason} onChange={(e) => onBlockReasonChange(e.target.value)} />
               </div>
               <div className={cx("kbBlockFieldWrap")}>
                 <label className={cx("kbBlockLabel")}>Severity</label>
-                <select className={styles.fieldInput} aria-label="Blocker severity"
+                <select className={cx("fieldInput")} aria-label="Blocker severity"
                   value={blockSeverity} onChange={(e) => onBlockSeverityChange(e.target.value as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL")}>
                   <option value="LOW">Low</option>
                   <option value="MEDIUM">Medium</option>
@@ -353,7 +353,7 @@ export function KanbanPage({
               </div>
               <div className={cx("kbBlockFieldWrap")}>
                 <label className={cx("kbBlockLabel")}>Est. resolution</label>
-                <input className={styles.fieldInput} type="datetime-local"
+                <input className={cx("fieldInput")} type="datetime-local"
                   value={blockEta} onChange={(e) => onBlockEtaChange(e.target.value)} />
               </div>
             </div>

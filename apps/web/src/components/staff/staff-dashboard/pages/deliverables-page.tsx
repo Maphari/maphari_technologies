@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { cx, styles } from "../style";
+import { cx } from "../style";
 import { Ic } from "../ui";
 import type { DeliverableGroup } from "../types";
 import { capitalize } from "../utils";
@@ -292,13 +292,13 @@ export function DeliverablesPage({
       {/* Composer */}
       {showComposer ? (
         <div className={cx("card", "mb12")}>
-          <div className={styles.cardHeader}>
-            <span className={styles.cardHeaderTitle}>Create Deliverable</span>
+          <div className={cx("cardHeader")}>
+            <span className={cx("cardHeaderTitle")}>Create Deliverable</span>
           </div>
-          <div className={styles.cardBody}>
-            <div className={styles.formGrid2}>
+          <div className={cx("cardBody")}>
+            <div className={cx("formGrid2")}>
               <select
-                className={styles.fieldInput}
+                className={cx("fieldInput")}
                 aria-label="Project for new deliverable"
                 value={newDeliverable.projectId}
                 onChange={(event) => onNewDeliverableChange({ projectId: event.target.value })}
@@ -311,19 +311,19 @@ export function DeliverablesPage({
                 ))}
               </select>
               <input
-                className={styles.fieldInput}
+                className={cx("fieldInput")}
                 placeholder="Deliverable title"
                 value={newDeliverable.title}
                 onChange={(event) => onNewDeliverableChange({ title: event.target.value })}
               />
               <input
-                className={styles.fieldInput}
+                className={cx("fieldInput")}
                 type="datetime-local"
                 value={newDeliverable.dueAt}
                 onChange={(event) => onNewDeliverableChange({ dueAt: event.target.value })}
               />
             </div>
-            <div className={styles.dlComposerSubmit}>
+            <div className={cx("dlComposerSubmit")}>
               <button
                 className={cx("button", "buttonBlue", "dlAddBtn")}
                 type="button"
@@ -340,11 +340,11 @@ export function DeliverablesPage({
 
       {/* Stats */}
       <div className={cx("stats", "stats3", "mb20")}>
-        <div className={cx(styles.stat, "rdStudioCard")}>
+        <div className={cx("stat", "rdStudioCard")}>
           <div className={cx("statAccent", "statAccentRed")} />
-          <div className={cx(styles.statLabel, "rdStudioLabel")}>Overdue</div>
-          <div className={cx(styles.statValue, "rdStudioMetric", milestoneStats.overdue > 0 ? "rdStudioMetricNeg" : "")}>{milestoneStats.overdue}</div>
-          <div className={styles.statSub}>
+          <div className={cx("statLabel", "rdStudioLabel")}>Overdue</div>
+          <div className={cx("statValue", "rdStudioMetric", milestoneStats.overdue > 0 ? "rdStudioMetricNeg" : "")}>{milestoneStats.overdue}</div>
+          <div className={cx("statSub")}>
             <span className={cx("dlStatNote", milestoneStats.overdue ? "dlStatNoteRed" : "dlStatNoteOk")}>
               {milestoneStats.overdue ? (
                 <><span className={cx("dlStatIco")}><IcoWarning /></span>Immediate attention</>
@@ -352,28 +352,28 @@ export function DeliverablesPage({
             </span>
           </div>
         </div>
-        <div className={cx(styles.stat, "rdStudioCard")}>
+        <div className={cx("stat", "rdStudioCard")}>
           <div className={cx("statAccent", "statAccentAmber")} />
-          <div className={cx(styles.statLabel, "rdStudioLabel")}>Due This Week</div>
-          <div className={cx(styles.statValue, "rdStudioMetric", milestoneStats.dueThisWeek > 0 ? "rdStudioMetricWarn" : "")}>{milestoneStats.dueThisWeek}</div>
-          <div className={styles.statSub}>
+          <div className={cx("statLabel", "rdStudioLabel")}>Due This Week</div>
+          <div className={cx("statValue", "rdStudioMetric", milestoneStats.dueThisWeek > 0 ? "rdStudioMetricWarn" : "")}>{milestoneStats.dueThisWeek}</div>
+          <div className={cx("statSub")}>
             <span className={cx("dlStatNote", milestoneStats.dueThisWeek ? "dlStatNoteAmber" : "dlStatNoteOk")}>
               {milestoneStats.dueThisWeek ? "In progress" : "Nothing due"}
             </span>
           </div>
         </div>
-        <div className={cx(styles.stat, "rdStudioCard")}>
+        <div className={cx("stat", "rdStudioCard")}>
           <div className={cx("statAccent", "statAccentGreen")} />
-          <div className={cx(styles.statLabel, "rdStudioLabel")}>Delivered (Month)</div>
-          <div className={cx(styles.statValue, "rdStudioMetric", "rdStudioMetricPos")}>{milestoneStats.deliveredThisMonth}</div>
-          <div className={styles.statSub}>
+          <div className={cx("statLabel", "rdStudioLabel")}>Delivered (Month)</div>
+          <div className={cx("statValue", "rdStudioMetric", "rdStudioMetricPos")}>{milestoneStats.deliveredThisMonth}</div>
+          <div className={cx("statSub")}>
             <span className={cx("dlStatNote", "dlStatNoteOk")}>On track</span>
           </div>
         </div>
       </div>
 
       {/* Deliverable groups grid */}
-      <div className={styles.grid2}>
+      <div className={cx("grid2")}>
         {visibleGroups.length === 0 ? (
           <div className={cx("emptyState")}>
             <div className={cx("emptyStateIcon")}><Ic n="check-square" sz={22} c="var(--muted2)" /></div>
@@ -383,13 +383,13 @@ export function DeliverablesPage({
         ) : visibleGroups.map((group) => {
           const availableFiles = files.filter((file) => file.clientId === group.clientId);
           return (
-            <div key={group.title} className={styles.card}>
-              <div className={cx(styles.cardHeader, "rdStudioSection")}>
-                <span className={styles.cardHeaderTitle}>{group.title}</span>
+            <div key={group.title} className={cx("card")}>
+              <div className={cx("cardHeader", "rdStudioSection")}>
+                <span className={cx("cardHeaderTitle")}>{group.title}</span>
                 <span className={cx("badge", `badge${capitalize(group.badge.tone)}`)}>{group.badge.label}</span>
               </div>
               <div className={cx("cardBody", "pt8", "pb8")}>
-                <div className={styles.deliverableList}>
+                <div className={cx("deliverableList")}>
                   {group.items.length === 0 ? (
                     <div className={cx("emptyState")}>
                       <div className={cx("emptyStateTitle", "text12")}>No deliverables</div>
@@ -399,11 +399,11 @@ export function DeliverablesPage({
                     group.items.map((item) => {
                       const statusBadge = item.milestoneStatus ? STATUS_BADGE[item.milestoneStatus] : null;
                       return (
-                        <div key={item.title} className={cx(styles.deliverableItem, "rdStudioRow")}>
+                        <div key={item.title} className={cx("deliverableItem", "rdStudioRow")}>
                           <div className={cx("dlCheckIco", item.status && `deliverable${capitalize(item.status)}`)}>
                             {item.status === "done" ? <IcoDone /> : item.status === "doing" ? <IcoDoing /> : <IcoPending />}
                           </div>
-                          <div className={styles.flex1}>
+                          <div className={cx("flex1")}>
                             <div className={cx("dlItemHeader")}>
                               <span className={cx("deliverableTitle", item.titleTone === "var(--muted)" && "dlTitleMuted", item.status === "done" && "dlTitleDone")}>
                                 {item.title}
@@ -436,7 +436,7 @@ export function DeliverablesPage({
                               ))}
                             </select>
                             {item.projectId && item.milestoneId ? (
-                              <div className={styles.dlActionRow}>
+                              <div className={cx("dlActionRow")}>
                                 {item.milestoneStatus !== "PENDING" ? (
                                   <button
                                     type="button"
@@ -480,24 +480,24 @@ export function DeliverablesPage({
 
       {/* Change Request Queue */}
       <div className={cx("card", "mt20")}>
-        <div className={styles.cardHeader}>
-          <span className={styles.cardHeaderTitle}>Change Request Queue</span>
+        <div className={cx("cardHeader")}>
+          <span className={cx("cardHeaderTitle")}>Change Request Queue</span>
           <span className={cx("badge", pendingRequests.length ? "badgeAmber" : "badgeMuted")}>
             {pendingRequests.length} pending
           </span>
         </div>
-        <div className={styles.cardBody}>
+        <div className={cx("cardBody")}>
           {pendingRequests.length === 0 ? (
-            <div className={styles.emptyState}>No pending change requests.</div>
+            <div className={cx("emptyState")}>No pending change requests.</div>
           ) : (
-            <div className={styles.deliverableList}>
+            <div className={cx("deliverableList")}>
               {pendingRequests.map((request) => {
                 const draft = estimateDrafts[request.id] ?? { hours: "", costCents: "", assessment: "" };
                 return (
                   <div key={request.id} className={cx("deliverableItem", "dlItemStart")}>
-                    <div className={styles.flex1}>
-                      <div className={styles.deliverableTitle}>{request.title}</div>
-                      <div className={styles.deliverableMeta}>
+                    <div className={cx("flex1")}>
+                      <div className={cx("deliverableTitle")}>{request.title}</div>
+                      <div className={cx("deliverableMeta")}>
                         {request.reason ?? request.description ?? "No request details supplied."}
                       </div>
                       <div className={cx("deliverableMeta", "mt4")}>
@@ -505,13 +505,13 @@ export function DeliverablesPage({
                       </div>
                       <div className={cx("dlEstimateGrid", "mt8")}>
                         <input
-                          className={styles.fieldInput}
+                          className={cx("fieldInput")}
                           placeholder="Estimated hours"
                           value={draft.hours}
                           onChange={(event) => onEstimateDraftChange(request.id, "hours", event.target.value)}
                         />
                         <input
-                          className={styles.fieldInput}
+                          className={cx("fieldInput")}
                           placeholder="Cost estimate (cents)"
                           value={draft.costCents}
                           onChange={(event) => onEstimateDraftChange(request.id, "costCents", event.target.value)}
@@ -523,7 +523,7 @@ export function DeliverablesPage({
                         value={draft.assessment}
                         onChange={(event) => onEstimateDraftChange(request.id, "assessment", event.target.value)}
                       />
-                      <div className={styles.dlSubmitRow}>
+                      <div className={cx("dlSubmitRow")}>
                         <button
                           type="button"
                           className={cx("button", "buttonBlue", "dlSubmitBtn")}
@@ -544,9 +544,9 @@ export function DeliverablesPage({
 
       {/* Client Handoff Exports */}
       <div className={cx("card", "mt20")}>
-        <div className={styles.cardHeader}>
-          <span className={styles.cardHeaderTitle}>Client Handoff Exports</span>
-          <div className={styles.dlExportActions}>
+        <div className={cx("cardHeader")}>
+          <span className={cx("cardHeaderTitle")}>Client Handoff Exports</span>
+          <div className={cx("dlExportActions")}>
             <button
               type="button"
               className={cx("button", "buttonGhost", "dlExportBtn")}
@@ -567,12 +567,12 @@ export function DeliverablesPage({
             </button>
           </div>
         </div>
-        <div className={styles.cardBody}>
+        <div className={cx("cardBody")}>
           {handoffExports.length === 0 ? (
-            <div className={styles.emptyState}>No handoff exports yet. Generate one above.</div>
+            <div className={cx("emptyState")}>No handoff exports yet. Generate one above.</div>
           ) : (
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
+            <div className={cx("tableWrap")}>
+              <table className={cx("table")}>
                 <thead>
                   <tr>
                     <th scope="col">File</th>
