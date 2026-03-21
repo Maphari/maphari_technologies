@@ -13,7 +13,9 @@ import { useProjectLayer } from "../hooks/use-project-layer";
 import {
   loadPortalAppointmentsWithRefresh,
   createPortalAppointmentWithRefresh,
-  type PortalAppointment
+  loadPortalMeetingsWithRefresh,
+  type PortalAppointment,
+  type PortalMeeting,
 } from "../../../../lib/api/portal";
 import { saveSession } from "../../../../lib/auth/session";
 import { createInstantVideoRoomWithRefresh, type InstantVideoRoom } from "../../../../lib/api/portal/video";
@@ -112,6 +114,20 @@ const PAST_TYPE_BADGE: Record<string, string> = {
   "Account Review": "badgeAmber",
 };
 
+function buildGoogleCalendarUrl(appt: PortalAppointment): string {
+  const start = new Date(appt.scheduledAt);
+  const end   = new Date(start.getTime() + appt.durationMins * 60_000);
+  const fmt   = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const params = new URLSearchParams({
+    text:    `Meeting with ${appt.ownerName ?? "Maphari"}`,
+    dates:   `${fmt(start)}/${fmt(end)}`,
+    details: appt.notes ?? "",
+    sf:      "true",
+    output:  "xml",
+  });
+  return `https://calendar.google.com/calendar/r/eventedit?${params.toString()}`;
+}
+
 type BookStep = 0 | 1 | 2 | "done";
 
 function fmtTime(secs: number): string {
@@ -160,6 +176,8 @@ export function BookCallPage() {
   const [instantRoom,        setInstantRoom]        = useState<InstantVideoRoom | null>(null);
   const [instantLoading,     setInstantLoading]     = useState(false);
   const [instantError,       setInstantError]       = useState<string | null>(null);
+  const [meetings,           setMeetings]           = useState<PortalMeeting[] | null>(null);
+  const [bookedAppt,         setBookedAppt]         = useState<PortalAppointment | null>(null);
 
   // ── Current week (computed once per mount) ────────────────────────────────
   const weekDays = useMemo(() => getCurrentWeekDays(), []);
@@ -168,18 +186,27 @@ export function BookCallPage() {
     if (!session) { setLoading(false); return; }
     setLoading(true);
     setError(null);
-    loadPortalAppointmentsWithRefresh(session).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.error) { setError(r.error.message ?? "Failed to load."); setLoading(false); return; }
-      if (r.data) {
-        setAllAppts(r.data);
+    Promise.all([
+      loadPortalAppointmentsWithRefresh(session),
+      loadPortalMeetingsWithRefresh(session),
+    ]).then(([apptRes, meetRes]) => {
+      if (apptRes.nextSession) saveSession(apptRes.nextSession);
+      if (meetRes.nextSession) saveSession(meetRes.nextSession);
+      if (apptRes.error) { setError(apptRes.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (apptRes.data) {
+        setAllAppts(apptRes.data);
         const now = Date.now();
-        const upcoming = r.data
+        const upcoming = apptRes.data
           .filter((a) => new Date(a.scheduledAt).getTime() + a.durationMins * 60_000 > now)
           .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
           .slice(0, 6)
           .map(mapApptToStrip);
         setUpcomingStrip(upcoming);
+      }
+      if (meetRes.data) {
+        setMeetings(
+          [...meetRes.data].sort((a, b) => new Date(b.meetingAt).getTime() - new Date(a.meetingAt).getTime())
+        );
       }
       setLoading(false);
     });
@@ -198,6 +225,18 @@ export function BookCallPage() {
       upcomingCount:  upcomingStrip.length,
     };
   }, [allAppts, upcomingStrip]);
+
+  const pendingActionItems = useMemo(
+    () => meetings?.filter((m) => m.actionItemStatus === "PENDING").length ?? 0,
+    [meetings]
+  );
+
+  const nextApptRaw = useMemo(
+    () => allAppts
+      .filter((a) => new Date(a.scheduledAt).getTime() + a.durationMins * 60_000 > Date.now())
+      .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())[0] ?? null,
+    [allAppts]
+  );
 
   // ── Next meeting + call participants from session ─────────────────────────
   const nextMeeting = upcomingStrip[0] ?? null;
@@ -235,8 +274,9 @@ export function BookCallPage() {
     if (r.nextSession) saveSession(r.nextSession);
     if (r.error || !r.data) return; // silent fail — wizard stays open so user can retry
 
-    // Capture video URL from newly created appointment
+    // Capture video URL and appointment from newly created booking
     setBookedVideoUrl(r.data.videoRoomUrl ?? null);
+    setBookedAppt(r.data);
 
     // Append new appointment to the upcoming strip
     setUpcomingStrip((prev) =>
@@ -418,7 +458,7 @@ export function BookCallPage() {
           { label: "Total This Month", value: statsData.totalThisMonth > 0 ? String(statsData.totalThisMonth) : "—", color: "statCardAccent"  },
           { label: "Hours in Calls",   value: statsData.hoursThisMonth > 0 ? `${statsData.hoursThisMonth}h` : "—",    color: "statCardPurple"  },
           { label: "Upcoming Calls",   value: statsData.upcomingCount  > 0 ? String(statsData.upcomingCount)  : "—", color: "statCardGreen"   },
-          { label: "Action Items",     value: "—",                                                                     color: "statCardAmber"   },
+          { label: "Action Items",     value: String(pendingActionItems),                                               color: "statCardAmber"   },
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.color)}>
             <div className={cx("statLabel")}>{s.label}</div>
@@ -542,7 +582,12 @@ export function BookCallPage() {
                     <div className={cx("textCenter")}>
                       <div className={cx("fontMono", "fw700", "text13", "colorAccent")}>Upcoming</div>
                     </div>
-                    <button type="button" className={cx("btnSm", "btnGhost", "noWrap")}>
+                    <button
+                      type="button"
+                      className={cx("btnSm", "btnGhost", "noWrap")}
+                      disabled={!nextApptRaw}
+                      onClick={() => nextApptRaw && window.open(buildGoogleCalendarUrl(nextApptRaw), "_blank", "noopener,noreferrer")}
+                    >
                       <Ic n="calendar" sz={12} c="var(--muted)" /> Add to Calendar
                     </button>
                   </>
@@ -836,7 +881,12 @@ export function BookCallPage() {
                   </div>
                 )}
                 <div className={cx("flexRow", "justifyCenter", "gap8")}>
-                  <button type="button" className={cx("btnSm", "btnGhost")}>
+                  <button
+                    type="button"
+                    className={cx("btnSm", "btnGhost")}
+                    disabled={!bookedAppt}
+                    onClick={() => bookedAppt && window.open(buildGoogleCalendarUrl(bookedAppt), "_blank", "noopener,noreferrer")}
+                  >
                     <Ic n="calendar" sz={12} c="var(--muted)" /> Add to Calendar
                   </button>
                   <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => { setBookStep(0); setSelectedType(null); setSelectedSlot(null); setBookingNotes(""); setBookedVideoUrl(null); }}>
@@ -857,46 +907,55 @@ export function BookCallPage() {
             <span className={cx("cardHdTitle")}>Past Meetings</span>
           </div>
         </div>
-        {PAST_MEETINGS.length === 0 ? (
+        {(!meetings || meetings.length === 0) ? (
           <div className={cx("emptyState")}>
             <div className={cx("emptyStateIcon")}><Ic n="calendar" sz={22} c="var(--muted2)" /></div>
             <div className={cx("emptyStateTitle")}>No past meetings yet</div>
             <div className={cx("emptyStateSub")}>Your meeting history will appear here once you&apos;ve had calls with your team.</div>
           </div>
-        ) : PAST_MEETINGS.map((m) => (
-          <div key={m.id} className={cx("borderTopDivider", "dynBorderLeft3")} style={{ "--color": m.color } as React.CSSProperties}>
-            <button
-              type="button"
-              className={cx("listRowBtn")}
-              onClick={() => setExpandedPast(expandedPast === m.id ? null : m.id)}
-            >
-              <div className={cx("phaseIconBox34", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${m.color} 12%, var(--s2))`, "--color": `color-mix(in oklab, ${m.color} 25%, transparent)` } as React.CSSProperties}>
-                <Ic n={m.icon} sz={14} c={m.color} />
-              </div>
-              <div className={cx("flex1", "minW0")}>
-                <div className={cx("flexRow", "gap7", "mb3", "flexWrap")}>
-                  <span className={cx("fw600", "text12")}>{m.title}</span>
-                  <span className={cx("badge", PAST_TYPE_BADGE[m.type] ?? "badgeMuted")}>{m.type}</span>
+        ) : meetings.map((m) => {
+          const actionBadge =
+            m.actionItemStatus === "PENDING"     ? "badgeAmber"  :
+            m.actionItemStatus === "IN_PROGRESS" ? "badgePurple" : "badgeGreen";
+          const actionLabel =
+            m.actionItemStatus === "PENDING"     ? "Action needed" :
+            m.actionItemStatus === "IN_PROGRESS" ? "In progress"   : "Done";
+          const dateLabel = new Date(m.meetingAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+          const durLabel  = `${m.durationMins} min`;
+          return (
+            <div key={m.id} className={cx("borderTopDivider")}>
+              <button
+                type="button"
+                className={cx("listRowBtn")}
+                onClick={() => setExpandedPast(expandedPast === m.id ? null : m.id)}
+              >
+                <div className={cx("iconBox34")}>
+                  <Ic n="calendar" sz={14} c="var(--muted2)" />
                 </div>
-                <div className={cx("flexRow", "gap8")}>
-                  <Av initials={m.hostAv} size={18} />
-                  <span className={cx("text10", "colorMuted")}>{m.host} · {m.date} · {m.duration}</span>
-                </div>
-              </div>
-              <Ic n={expandedPast === m.id ? "chevronDown" : "chevronRight"} sz={14} c="var(--muted2)" />
-            </button>
-            {expandedPast === m.id && (
-              <div className={cx("p0x18x14x64")}>
-                <div className={cx("pastMeetingNotes")}>
-                  <div className={cx("fw700", "text11", "flexRow", "flexCenter", "gap5", "mb8")}>
-                    <Ic n="zap" sz={11} c="var(--lime)" /> Meeting Notes
+                <div className={cx("flex1", "minW0")}>
+                  <div className={cx("flexRow", "gap7", "mb3", "flexWrap")}>
+                    <span className={cx("fw600", "text12")}>{m.title}</span>
+                    <span className={cx("badge", actionBadge)}>{actionLabel}</span>
                   </div>
-                  <div className={cx("text12", "colorMuted", "lineH165")}>{m.notes}</div>
+                  <div className={cx("text10", "colorMuted")}>
+                    {dateLabel} · {durLabel} · {m.attendeeCount} attendee{m.attendeeCount !== 1 ? "s" : ""}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+                <Ic n={expandedPast === m.id ? "chevronDown" : "chevronRight"} sz={14} c="var(--muted2)" />
+              </button>
+              {expandedPast === m.id && m.notes && (
+                <div className={cx("p0x18x14x64")}>
+                  <div className={cx("pastMeetingNotes")}>
+                    <div className={cx("fw700", "text11", "flexRow", "flexCenter", "gap5", "mb8")}>
+                      <Ic n="zap" sz={11} c="var(--lime)" /> Meeting Notes
+                    </div>
+                    <div className={cx("text12", "colorMuted", "lineH165")}>{m.notes}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
     </div>
