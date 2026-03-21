@@ -20,6 +20,7 @@
   border-radius: var(--r-md);
   overflow: hidden;
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .healthIntvHeadGrid {
@@ -95,6 +96,7 @@
 .healthIntvTimelineCard {
   border-radius: var(--r-sm);
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .healthIntvNextStep {
@@ -630,6 +632,7 @@
   border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 .msgKpiCard.toneAccent { border-left-color: var(--accent); }
 .msgKpiCard.toneBlue   { border-left-color: var(--blue);   }
@@ -865,6 +868,7 @@
   border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 .notifKpiCard.toneAccent { border-left-color: var(--accent); }
 .notifKpiCard.toneBlue   { border-left-color: var(--blue);   }
@@ -1242,6 +1246,7 @@
   border-radius: var(--r-sm);
   line-height: 1.6;
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .ownerAddPrivateBtn {
@@ -1452,6 +1457,7 @@
   border-radius: var(--r-sm);
   background: var(--s2);
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .pifServiceRowAlert {
@@ -1885,6 +1891,7 @@
   border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.02);
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .prrLevelRed { border-left-color: var(--red); }
@@ -2079,6 +2086,7 @@
   padding: 20px;
   background: var(--s2);
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .prrCategoryCardAccent { border-left-color: var(--accent); }
@@ -2121,6 +2129,7 @@
   justify-content: space-between;
   gap: 10px;
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .prrCategoryRowAccent { border-left-color: var(--accent); }
@@ -2973,6 +2982,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .qaCardTone {
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 .qaCardTone.toneRed    { border-left-color: var(--red);    }
 .qaCardTone.toneAmber  { border-left-color: var(--amber);  }
@@ -3312,6 +3322,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .resAllocProjectCard {
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 .resAllocProjectCard.toneAccent { border-left-color: var(--accent); }
 .resAllocProjectCard.toneBlue   { border-left-color: var(--blue);   }
@@ -4420,6 +4431,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: var(--r-md);
   padding: 20px;
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .dvtClientCardAccent { border-left-color: var(--accent); }
@@ -4695,6 +4707,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   padding: 16px 18px;
   background: var(--s2);
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .exdKpiLabel {
@@ -4978,6 +4991,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: var(--r-md);
   background: var(--s2);
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .exdClientName {
@@ -5080,6 +5094,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: var(--r-md);
   background: var(--s2);
   border-left: 3px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .exdAlertLeftBig {

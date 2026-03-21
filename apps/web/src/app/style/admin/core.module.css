@@ -1089,13 +1089,14 @@
 
 .statCard {
   background: var(--s2);
-  border: 1px solid rgba(139, 111, 255, 0.1); /* intentionally subtler than --glow-purple */
+  border: 1px solid rgba(139, 111, 255, 0.12);
   border-top: 2px solid var(--accent);
   border-radius: var(--r-sm);
   padding: 14px 16px;
   position: relative;
   min-width: 0;
   overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .statCard::after {
@@ -1234,15 +1235,16 @@
 
 .card {
   background: var(--s2);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgba(139, 111, 255, 0.12);
   border-radius: var(--r-md);
   overflow: clip;
   min-width: 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
   transition: border-color 0.15s ease;
 }
 
 .card:hover {
-  border-color: var(--border2);
+  border-color: rgba(139, 111, 255, 0.24);
 }
 
 .cardHd {

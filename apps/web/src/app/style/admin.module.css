@@ -1159,7 +1159,7 @@
 
 /* ── Capacity Forecast ───────────────────────────────────────────────────── */
 .cfPeriodGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
-.cfPeriodCard { background: var(--s2); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 20px; border-left-width: 3px; }
+.cfPeriodCard { background: var(--s2); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 20px; border-left-width: 3px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset; }
 .cfPeriodCardGreen { border-left-color: var(--green, #24b8a8); }
 .cfPeriodCardAmber { border-left-color: var(--amber, #f59e0b); }
 .cfPeriodCardRed   { border-left-color: var(--red, #ef4444); }
