@@ -3,11 +3,6 @@
             Task Dependencies, Notifications, Approval Queue
    ─────────────────────────────────────────────────────────────── */
 
-/* ── Shared page utilities (missing from core / shared) ─────────── */
-
-.page { display: flex; flex-direction: column; gap: 16px; }
-.pageBody { display: none; }
-.pageActive { display: flex !important; flex-direction: column; gap: 16px; }
 
 .pageHeaderBar {
   display: flex;

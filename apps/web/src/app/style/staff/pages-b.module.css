@@ -3050,9 +3050,7 @@
 .dsHistoryDetail { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 16px; display: flex; flex-direction: column; gap: 14px; }
 .dsHistoryDetailTitle { font-size: 15px; }
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   CLIENT HEALTH — cv*/ch* extended classes
-   ══════════════════════════════════════════════════════════════════════════════ */
+/* ── CLIENT HEALTH — cv + ch extended classes ── */
 
 .chLayout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; align-items: start; }
 .chListPane { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); overflow: hidden; display: flex; flex-direction: column; }
