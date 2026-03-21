@@ -207,7 +207,7 @@
 
 .cbStatValue {
   font-family: var(--font-syne), sans-serif;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 800;
   line-height: 1;
   color: var(--text);
@@ -528,7 +528,7 @@
 
 .rbStatValue {
   font-family: var(--font-syne), sans-serif;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 800;
   line-height: 1;
   color: var(--text);
@@ -777,7 +777,7 @@
 
 .ctmStatValue {
   font-family: var(--font-syne), sans-serif;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 800;
   line-height: 1;
   color: var(--text);
@@ -978,7 +978,7 @@
 
 .obtStatValue {
   font-family: var(--font-syne), sans-serif;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 800;
   line-height: 1;
   color: var(--text);
@@ -1177,7 +1177,7 @@
 }
 
 .hoStatValue {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
@@ -1661,7 +1661,7 @@
   border-top: 1px solid var(--b1);
 }
 
-.corHourlyValue { font-size: 1.4rem; margin-top: 4px; }
+.corHourlyValue { font-size: 1.5rem; margin-top: 4px; }
 
 /* Milestones wrap */
 .corMilestonesWrap {
