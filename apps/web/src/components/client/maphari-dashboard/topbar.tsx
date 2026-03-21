@@ -5,6 +5,7 @@ import { cx, styles } from "./style";
 import { DashboardUtilityIcon } from "@/components/shared/dashboard-utility-icon";
 import { Ic } from "./ui";
 import { ThemeToggle } from "@/components/shared/ui/theme-toggle";
+import { ProjectSwitcher } from "./components/project-switcher";
 
 type ClientTopbarProps = {
   eyebrow: string;
@@ -28,6 +29,14 @@ type ClientTopbarProps = {
   brandLogoUrl?: string | null;
   /** Plan tier label from profile (e.g. "Retainer Pro") */
   planLabel?: string | null;
+  /** List of projects for the switcher (shown if length > 1) */
+  projects?: Array<{ id: string; name: string; status: string }>;
+  /** Currently selected project id */
+  selectedProjectId?: string | null;
+  /** Called when user selects a different project */
+  onProjectSelect?: (id: string) => void;
+  /** Called when user clicks "View all projects" in switcher */
+  onViewAllProjects?: () => void;
 };
 
 const PROFILE_LINKS = [
@@ -55,6 +64,10 @@ export function ClientTopbar({
   brandCompanyName,
   brandLogoUrl,
   planLabel,
+  projects,
+  selectedProjectId,
+  onProjectSelect,
+  onViewAllProjects,
 }: ClientTopbarProps) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
@@ -118,6 +131,16 @@ export function ClientTopbar({
         <span className={styles.topbarLabelSep}>/</span>
         <span className={styles.topbarLabelPage}>{title}</span>
       </div>
+
+      {/* ── Project switcher (multi-project clients) ─────────────────── */}
+      {projects && projects.length > 0 && onProjectSelect && onViewAllProjects ? (
+        <ProjectSwitcher
+          projects={projects}
+          selectedProjectId={selectedProjectId ?? null}
+          onSelect={onProjectSelect}
+          onViewAll={onViewAllProjects}
+        />
+      ) : null}
 
       {/* ── Right: action strip ──────────────────────────────────────── */}
       <div className={styles.topbarActions}>
