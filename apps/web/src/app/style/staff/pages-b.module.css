@@ -3881,13 +3881,17 @@
 .apptKpiCard {
   padding: 14px 16px;
   border: 1px solid var(--b2);
+  border-top-color: rgba(255,255,255,0.12);
   border-radius: var(--r-md);
-  background: var(--s1);
+  background: var(--glass-card);
+  backdrop-filter: blur(var(--glass-sm));
+  -webkit-backdrop-filter: blur(var(--glass-sm));
   display: flex;
   flex-direction: column;
   gap: 6px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 .apptKpiLabel {
   font-size: 10px;

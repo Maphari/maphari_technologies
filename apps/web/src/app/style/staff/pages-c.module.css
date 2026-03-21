@@ -807,13 +807,17 @@
 .dsvStatGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 
 .dsvStatCard {
-  background: var(--s1);
+  background: var(--glass-card);
+  backdrop-filter: blur(var(--glass-sm));
+  -webkit-backdrop-filter: blur(var(--glass-sm));
   border: 1px solid var(--b2);
+  border-top-color: rgba(255,255,255,0.12);
   border-radius: var(--r-md);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
 .dsvStatCardTop { font-size: 22px; font-weight: 800; font-family: var(--font-syne); color: var(--text); line-height: 1; }

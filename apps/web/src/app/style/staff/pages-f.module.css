@@ -833,10 +833,14 @@
 .stgv2Content { display: flex; flex-direction: column; gap: 16px; }
 
 .stgv2Panel {
-  background: var(--s1);
+  background: var(--glass-card);
+  backdrop-filter: blur(var(--glass-sm));
+  -webkit-backdrop-filter: blur(var(--glass-sm));
   border: 1px solid var(--b2);
+  border-top-color: rgba(255,255,255,0.12);
   border-radius: var(--r-md);
   overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
 .stgv2PanelHead {
@@ -1391,13 +1395,17 @@
 }
 
 .ppStatCard {
-  background: var(--s1);
+  background: var(--glass-card);
+  backdrop-filter: blur(var(--glass-sm));
+  -webkit-backdrop-filter: blur(var(--glass-sm));
   border: 1px solid var(--b2);
+  border-top-color: rgba(255,255,255,0.12);
   border-radius: var(--r-md);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
 .ppStatCardTop {

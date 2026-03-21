@@ -59,8 +59,8 @@ const roleConfig: Record<LoginRole, RoleConfig> = {
     activeClass: "activeClient"
   },
   staff: {
-    color: "#4f9eff",
-    colorD: "rgba(79,158,255,0.10)",
+    color: "#f97316",
+    colorD: "rgba(249,115,22,0.10)",
     eyebrow: "Staff Workspace",
     title: "Build faster,",
     em: "ship with clarity.",

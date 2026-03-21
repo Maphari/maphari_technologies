@@ -2787,13 +2787,13 @@
 /* KPI strip primitives */
 .staffKpiStrip { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
 .staffKpiStripFour { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-.staffKpiCell { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.staffKpiCell { background: var(--glass-card); backdrop-filter: blur(var(--glass-sm)); -webkit-backdrop-filter: blur(var(--glass-sm)); border: 1px solid var(--b2); border-top-color: rgba(255,255,255,0.12); border-radius: var(--r-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04); }
 .staffKpiLabel { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
 .staffKpiValue { font-family: var(--font-syne), sans-serif; font-size: 1.5rem; font-weight: 800; line-height: 1; color: var(--text); }
 .staffKpiSub { font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 2px; }
 
 /* Card primitive */
-.staffCard { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 20px; }
+.staffCard { background: var(--glass-card); backdrop-filter: blur(var(--glass-sm)); -webkit-backdrop-filter: blur(var(--glass-sm)); border: 1px solid var(--b2); border-top-color: rgba(255,255,255,0.12); border-radius: var(--r-md); padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04); }
 .staffCardMetricGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .staffCardMetricCell { display: flex; flex-direction: column; gap: 4px; }
 .staffCardMetricLabel { font-size: 0.5625rem; letter-spacing: 0.10em; text-transform: uppercase; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }

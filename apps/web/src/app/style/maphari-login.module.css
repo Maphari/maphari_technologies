@@ -5,8 +5,8 @@
   --border2: rgba(255, 255, 255, 0.15);
   --client: #c8f135;
   --client-d: rgba(200, 241, 53, 0.1);
-  --staff: #4f9eff;
-  --staff-d: rgba(79, 158, 255, 0.1);
+  --staff: #f97316;
+  --staff-d: rgba(249, 115, 22, 0.1);
   --admin: #a78bfa;
   --admin-d: rgba(167, 139, 250, 0.1);
   --active: var(--client);
