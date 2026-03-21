@@ -71,6 +71,7 @@
   white-space: nowrap;
   overflow: hidden;
   min-width: 0;
+  flex: 1;
 }
 
 .topbarSection { color: var(--muted); }
@@ -78,36 +79,44 @@
 .topbarPage { color: var(--text); }
 
 .topbarSearch {
-  width: 220px;
-  flex-shrink: 0;
-  background: var(--s2);
-  border: 1px solid var(--b2);
-  border-radius: var(--r-md);
-  height: 32px;
   display: flex;
   align-items: center;
-  padding: 0 10px;
-  gap: 6px;
+  gap: 7px;
+  height: 30px;
+  padding: 0 10px 0 9px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: 100px;
   cursor: pointer;
-  transition: border-color 150ms;
+  transition: border-color 150ms, background 150ms, box-shadow 150ms;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.topbarSearch:hover { border-color: var(--b3); }
+.topbarSearch:hover {
+  border-color: var(--b3);
+  background: var(--s3);
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.06);
+}
 
 .topbarSearchText {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted2);
-  flex: 1;
   font-family: var(--font-dm-mono), monospace;
+  letter-spacing: 0.01em;
 }
 
 .topbarSearchKbd {
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
   font-family: var(--font-dm-mono), monospace;
   color: var(--muted2);
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--b2);
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: 4px;
+  line-height: 1.4;
 }
 
 .topbarActions {
@@ -115,7 +124,6 @@
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  margin-left: auto;
 }
 
 .topbarIconBtn {
@@ -837,6 +845,238 @@
   font-size: 11px;
   color: var(--muted);
 }
+
+/* ── Command Palette — full redesign ─────────────────────────────────── */
+
+.cmdOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 4, 10, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 11vh;
+  animation: cmdFadeIn 100ms ease-out both;
+}
+
+@keyframes cmdFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.cmdPanel {
+  background: #09090f;
+  border: 1px solid var(--b3);
+  border-radius: var(--r-lg);
+  width: 620px;
+  max-height: 540px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 28px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04);
+  animation: cmdSlideIn 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cmdSlideIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Input header row ── */
+.cmdHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+
+.cmdSearchIcon {
+  color: var(--muted);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.cmdInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  font-family: var(--font-syne), sans-serif;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  padding: 0;
+  caret-color: var(--accent);
+  letter-spacing: -0.01em;
+}
+
+.cmdInput::placeholder {
+  color: var(--muted2);
+  font-weight: 400;
+}
+
+.cmdEscHint {
+  font-size: 9px;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--muted2);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--b2);
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* ── Results ── */
+.cmdResults {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.cmdResults::-webkit-scrollbar { width: 3px; }
+.cmdResults::-webkit-scrollbar-track { background: transparent; }
+.cmdResults::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 2px; }
+
+.cmdSectionLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  padding: 10px 18px 4px;
+}
+
+.cmdItem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 7px 18px;
+  cursor: pointer;
+  border: none;
+  border-left: 2px solid transparent;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+  transition: background 60ms;
+}
+
+.cmdItem:hover { background: rgba(255,255,255,0.025); }
+
+.cmdItemActive {
+  background: rgba(249,115,22,0.07) !important;
+  border-left-color: var(--accent) !important;
+}
+
+.cmdTypeIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  background: var(--cmd-ic-bg, var(--s2));
+  border: 1px solid var(--b1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cmdItemLabel {
+  font-size: 13px;
+  font-family: var(--font-syne), sans-serif;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmdItemMeta {
+  font-size: 10px;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--muted2);
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.04);
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--b1);
+}
+
+/* ── Empty state ── */
+.cmdEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 24px;
+  gap: 6px;
+}
+
+.cmdEmptyIcon {
+  color: var(--muted2);
+  margin-bottom: 4px;
+}
+
+.cmdEmptyText {
+  font-size: 13px;
+  font-family: var(--font-syne), sans-serif;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.cmdEmptySub {
+  font-size: 11px;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--muted2);
+}
+
+/* ── Footer hints ── */
+.cmdFooter {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 18px;
+  border-top: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+
+.cmdFooterHint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--muted2);
+}
+
+.cmdKbd {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--b2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 9px;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.cmdFooterDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--b2);
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
   .rail { display: none; }

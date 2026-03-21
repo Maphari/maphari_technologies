@@ -46,23 +46,23 @@ export function Topbar({
         <span className={cx("topbarPage")}>{pageName}</span>
       </div>
 
-      {/* Search trigger */}
-      <button
-        type="button"
-        className={cx("topbarSearch")}
-        onClick={onSearch}
-        aria-label="Search or jump to…"
-      >
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-          <circle cx="5.5" cy="5.5" r="4"/>
-          <path d="M9 9l2.5 2.5"/>
-        </svg>
-        <span className={cx("topbarSearchText")}>Search or jump to…</span>
-        <kbd className={cx("topbarSearchKbd")}>⌘K</kbd>
-      </button>
-
-      {/* Right actions */}
+      {/* Right actions — search pill + bell + Add */}
       <div className={cx("topbarActions")}>
+        {/* Search trigger pill (right-aligned) */}
+        <button
+          type="button"
+          className={cx("topbarSearch")}
+          onClick={onSearch}
+          aria-label="Search or jump to… (⌘K)"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+            <circle cx="5" cy="5" r="3.5"/>
+            <path d="M8 8l2 2" strokeLinecap="round"/>
+          </svg>
+          <span className={cx("topbarSearchText")}>Search…</span>
+          <kbd className={cx("topbarSearchKbd")}>⌘K</kbd>
+        </button>
+
         {/* Notification bell */}
         <button
           type="button"

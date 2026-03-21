@@ -1421,57 +1421,104 @@ export function MaphariStaffDashboard() {
             aria-label="Command search"
             onClick={(e) => e.stopPropagation()}
           >
-            <input
-              className={styles.cmdInput}
-              type="text"
-              placeholder="Search pages, projects, threads..."
-              value={commandSearch.query}
-              onChange={(e) => commandSearch.setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") commandSearch.close();
-                if (e.key === "Enter") commandSearch.executeActive();
-                if (e.key === "ArrowUp") {
-                  e.preventDefault();
-                  commandSearch.moveUp();
-                }
-                if (e.key === "ArrowDown") {
-                  e.preventDefault();
-                  commandSearch.moveDown();
-                }
-              }}
-              autoFocus
-            />
+            {/* Header — icon + input + esc hint */}
+            <div className={styles.cmdHeader}>
+              <span className={styles.cmdSearchIcon} aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <circle cx="6.5" cy="6.5" r="4.5"/>
+                  <path d="M10.5 10.5l2.5 2.5" strokeLinecap="round"/>
+                </svg>
+              </span>
+              <input
+                className={styles.cmdInput}
+                type="text"
+                placeholder="Search pages, projects, threads…"
+                value={commandSearch.query}
+                onChange={(e) => commandSearch.setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") commandSearch.close();
+                  if (e.key === "Enter") commandSearch.executeActive();
+                  if (e.key === "ArrowUp") { e.preventDefault(); commandSearch.moveUp(); }
+                  if (e.key === "ArrowDown") { e.preventDefault(); commandSearch.moveDown(); }
+                }}
+                autoFocus
+              />
+              <button type="button" className={styles.cmdEscHint} onClick={commandSearch.close} aria-label="Close">esc</button>
+            </div>
+
+            {/* Results list */}
             <div className={styles.cmdResults}>
-              {commandSearch.results.map((result, i) => (
-                <button
-                  key={result.id}
-                  type="button"
-                  className={cx(
-                    "cmdItem",
-                    i === commandSearch.activeIndex && "cmdItemActive",
-                  )}
-                  onClick={() => { result.action(); commandSearch.close(); }}
-                >
-                  {/* Colored icon chip */}
-                  <span
-                    className={styles.cmdTypeIcon}
-                    style={{ "--cmd-ic-bg": STAFF_CMD_TYPE_BG[result.type] ?? "var(--s2)" } as React.CSSProperties}
-                  >
-                    <Ic
-                      n={STAFF_CMD_TYPE_ICON[result.type] ?? "file"}
-                      sz={14}
-                      c={STAFF_CMD_TYPE_COLOR[result.type] ?? "var(--muted2)"}
-                    />
+              {commandSearch.results.length > 0 ? (
+                <>
+                  <div className={styles.cmdSectionLabel}>Results</div>
+                  {commandSearch.results.map((result, i) => (
+                    <button
+                      key={result.id}
+                      type="button"
+                      className={cx(
+                        "cmdItem",
+                        i === commandSearch.activeIndex && "cmdItemActive",
+                      )}
+                      onClick={() => { result.action(); commandSearch.close(); }}
+                    >
+                      <span
+                        className={styles.cmdTypeIcon}
+                        style={{ "--cmd-ic-bg": STAFF_CMD_TYPE_BG[result.type] ?? "var(--s2)" } as React.CSSProperties}
+                      >
+                        <Ic
+                          n={STAFF_CMD_TYPE_ICON[result.type] ?? "file"}
+                          sz={13}
+                          c={STAFF_CMD_TYPE_COLOR[result.type] ?? "var(--muted2)"}
+                        />
+                      </span>
+                      <span className={styles.cmdItemLabel}>{result.label}</span>
+                      {result.meta ? (
+                        <span className={styles.cmdItemMeta}>{result.meta}</span>
+                      ) : null}
+                    </button>
+                  ))}
+                </>
+              ) : commandSearch.query ? (
+                <div className={styles.cmdEmpty}>
+                  <span className={styles.cmdEmptyIcon} aria-hidden="true">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <circle cx="11" cy="11" r="7"/><path d="M16.5 16.5l4 4" strokeLinecap="round"/>
+                      <path d="M8 11h6M11 8v6" strokeLinecap="round"/>
+                    </svg>
                   </span>
-                  <span className={styles.cmdItemLabel}>{result.label}</span>
-                  {result.meta ? (
-                    <span className={styles.cmdItemMeta}>{result.meta}</span>
-                  ) : null}
-                </button>
-              ))}
-              {commandSearch.query && commandSearch.results.length === 0 && (
-                <div className={styles.cmdEmpty}>No results found</div>
+                  <span className={styles.cmdEmptyText}>No results for &ldquo;{commandSearch.query}&rdquo;</span>
+                  <span className={styles.cmdEmptySub}>Try a different search term</span>
+                </div>
+              ) : (
+                <div className={styles.cmdEmpty}>
+                  <span className={styles.cmdEmptyIcon} aria-hidden="true">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <circle cx="11" cy="11" r="7"/><path d="M16.5 16.5l4 4" strokeLinecap="round"/>
+                    </svg>
+                  </span>
+                  <span className={styles.cmdEmptyText}>Jump anywhere</span>
+                  <span className={styles.cmdEmptySub}>Type to search pages, projects, or threads</span>
+                </div>
               )}
+            </div>
+
+            {/* Footer — keyboard hints */}
+            <div className={styles.cmdFooter}>
+              <span className={styles.cmdFooterHint}>
+                <kbd className={styles.cmdKbd}>↑</kbd>
+                <kbd className={styles.cmdKbd}>↓</kbd>
+                navigate
+              </span>
+              <span className={styles.cmdFooterDot} />
+              <span className={styles.cmdFooterHint}>
+                <kbd className={styles.cmdKbd}>↵</kbd>
+                open
+              </span>
+              <span className={styles.cmdFooterDot} />
+              <span className={styles.cmdFooterHint}>
+                <kbd className={styles.cmdKbd}>esc</kbd>
+                close
+              </span>
             </div>
           </div>
         </div>
