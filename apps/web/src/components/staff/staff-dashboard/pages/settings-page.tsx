@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { ToggleRow } from "../ui";
-import { cx, styles } from "../style";
+import { cx } from "../style";
 
 type ProjectOption = { id: string; name: string };
 
@@ -392,7 +392,7 @@ export function SettingsPage({
                   ref={photoInputRef}
                   type="file"
                   accept="image/*"
-                  className={styles.hidden}
+                  className={cx("hidden")}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -419,29 +419,29 @@ export function SettingsPage({
 
               {/* Fields */}
               <div className={cx("stgv2FieldGrid")}>
-                <div className={styles.field}>
-                  <label className={styles.fieldLabel} htmlFor="stgv2-name">Full Name</label>
+                <div className={cx("field")}>
+                  <label className={cx("fieldLabel")} htmlFor="stgv2-name">Full Name</label>
                   <input
                     id="stgv2-name"
-                    className={styles.fieldInput}
+                    className={cx("fieldInput")}
                     value={profileName}
                     onChange={(e) => onProfileNameChange(e.target.value)}
                     placeholder={staffName}
                   />
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.fieldLabel} htmlFor="stgv2-email">Email Address</label>
+                <div className={cx("field")}>
+                  <label className={cx("fieldLabel")} htmlFor="stgv2-email">Email Address</label>
                   <input
                     id="stgv2-email"
-                    className={styles.fieldInput}
+                    className={cx("fieldInput")}
                     value={profileEmail}
                     onChange={(e) => onProfileEmailChange(e.target.value)}
                     placeholder={staffEmail}
                     type="email"
                   />
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.fieldLabel} htmlFor="stgv2-role">Role</label>
+                <div className={cx("field")}>
+                  <label className={cx("fieldLabel")} htmlFor="stgv2-role">Role</label>
                   <input
                     id="stgv2-role"
                     className={cx("fieldInput", "colorMuted")}
@@ -450,14 +450,14 @@ export function SettingsPage({
                     tabIndex={-1}
                   />
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.fieldLabel} htmlFor="stgv2-hours">
+                <div className={cx("field")}>
+                  <label className={cx("fieldLabel")} htmlFor="stgv2-hours">
                     Weekly Hour Target
                     <span className={cx("stgv2FieldHint")}>{weeklyTargetHours}h / week</span>
                   </label>
                   <input
                     id="stgv2-hours"
-                    className={styles.fieldInput}
+                    className={cx("fieldInput")}
                     value={String(weeklyTargetHours)}
                     onChange={(e) => onWeeklyTargetHoursChange(Math.max(1, Number(e.target.value) || 0))}
                     type="number"
@@ -607,7 +607,7 @@ export function SettingsPage({
                     <input
                       id="stgv2-start"
                       aria-label="Work start time"
-                      className={styles.fieldInput}
+                      className={cx("fieldInput")}
                       value={workspace.workStart}
                       type="time"
                       onChange={(e) => onWorkspaceChange("workStart", e.target.value)}
@@ -621,7 +621,7 @@ export function SettingsPage({
                     <input
                       id="stgv2-end"
                       aria-label="Work end time"
-                      className={styles.fieldInput}
+                      className={cx("fieldInput")}
                       value={workspace.workEnd}
                       type="time"
                       onChange={(e) => onWorkspaceChange("workEnd", e.target.value)}

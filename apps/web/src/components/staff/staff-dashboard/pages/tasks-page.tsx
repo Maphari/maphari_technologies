@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cx, styles } from "../style";
+import { cx } from "../style";
 import type { TaskContext } from "../types";
 import { capitalize, formatDuration } from "../utils";
 import type { AuthSession } from "../../../../lib/auth/session";
@@ -108,13 +108,13 @@ export function TasksPage({
 
       {showComposer ? (
         <div className={cx("card", "mb12", "tasksComposerCard")}>
-          <div className={styles.cardHeader}>
-            <span className={styles.cardHeaderTitle}>Create Task</span>
+          <div className={cx("cardHeader")}>
+            <span className={cx("cardHeaderTitle")}>Create Task</span>
           </div>
-          <div className={styles.cardBody}>
-            <div className={cx(styles.formGrid2, "tasksComposerGrid")}>
+          <div className={cx("cardBody")}>
+            <div className={cx("formGrid2", "tasksComposerGrid")}>
               <select
-                className={cx(styles.fieldInput, "tasksComposerField")}
+                className={cx("fieldInput", "tasksComposerField")}
                 aria-label="Project for new task"
                 value={newTask.projectId}
                 onChange={(event) => onNewTaskChange({ projectId: event.target.value })}
@@ -127,19 +127,19 @@ export function TasksPage({
                 ))}
               </select>
               <input
-                className={cx(styles.fieldInput, "tasksComposerField")}
+                className={cx("fieldInput", "tasksComposerField")}
                 placeholder="Assignee name"
                 value={newTask.assigneeName}
                 onChange={(event) => onNewTaskChange({ assigneeName: event.target.value })}
               />
               <input
-                className={cx(styles.fieldInput, "tasksComposerField")}
+                className={cx("fieldInput", "tasksComposerField")}
                 placeholder="Task title"
                 value={newTask.title}
                 onChange={(event) => onNewTaskChange({ title: event.target.value })}
               />
               <input
-                className={cx(styles.fieldInput, "tasksComposerField")}
+                className={cx("fieldInput", "tasksComposerField")}
                 type="datetime-local"
                 value={newTask.dueAt}
                 onChange={(event) => onNewTaskChange({ dueAt: event.target.value })}
@@ -188,8 +188,8 @@ export function TasksPage({
       </div>
 
       <div className={cx("card", "fullWidth", "tasksTableCard")}>
-        <div className={styles.tableWrap}>
-          <table className={cx(styles.table, "tasksTable")}>
+        <div className={cx("tableWrap")}>
+          <table className={cx("table", "tasksTable")}>
             <thead>
               <tr>
                 <th className={cx("textCenter")} scope="col">Priority</th>
@@ -206,15 +206,15 @@ export function TasksPage({
             <tbody>
               {visibleTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className={cx(styles.emptyState, "tasksEmptyState")}>No tasks in this view yet.</td>
+                  <td colSpan={9} className={cx("emptyState", "tasksEmptyState")}>No tasks in this view yet.</td>
                 </tr>
               ) : (
                 visibleTasks.map((task) => (
                   <tr key={task.id} className={cx("tasksTableRow")}>
                     <td className={cx("textCenter")}><div className={cx("priority", "tasksPriorityDot", `priority${capitalize(task.priority)}`)} title={capitalize(task.priority)} /></td>
                     <td>
-                      <div className={styles.tableName}>{task.title}</div>
-                      <div className={styles.tableSub}>{task.subtitle}</div>
+                      <div className={cx("tableName")}>{task.title}</div>
+                      <div className={cx("tableSub")}>{task.subtitle}</div>
                     </td>
                     <td><span className={cx("badge", "tasksProjectBadge", badgeToneClass(task.badgeTone))}>{task.projectName}</span></td>
                     <td><span className={cx("textSm", "colorMuted")}>{task.clientName}</span></td>
