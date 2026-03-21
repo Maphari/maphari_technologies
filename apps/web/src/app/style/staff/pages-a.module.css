@@ -378,6 +378,7 @@
 .tasksTable { width: 100%; }
 .tasksTableRow { }
 .tasksEmptyState { text-align: center; color: var(--muted); padding: 24px; }
+.tasksEmptyCell { text-align: center; padding: 8px 0; }
 .tasksStatusBadge { }
 .tasksProjectBadge { }
 .tasksDueLabel { }
@@ -2346,6 +2347,11 @@
 .snRowSelected { border-color: var(--accent); background: var(--accent-g); }
 .snRowUnread { border-left: 2px solid var(--accent); }
 .snRowRead { }
+/* Shared unread-row state used by notifications-page + communication-history-page */
+.staffNotifUnread {
+  border-left: 2px solid rgba(200, 241, 53, 0.5);
+  background: rgba(200, 241, 53, 0.03);
+}
 
 /* Priority dot */
 .snPriorityDot {
@@ -2593,6 +2599,7 @@
 
 .aqFilterPillActive { background: var(--s2); color: var(--text); border-color: var(--b2); }
 .aqFilterPillIdle:hover { background: var(--s2); }
+.aqEmptyCell { text-align: center; padding: 8px 0; }
 
 /* Item details */
 .aqItemTitle { font-size: 13px; font-weight: 500; color: var(--text); }
@@ -2811,8 +2818,26 @@
 /* Button primitives */
 .staffBtnSm { padding: 6px 14px; border-radius: var(--r-sm); font-size: 0.6875rem; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); background: var(--s2); color: var(--text); transition: all 0.12s; }
 .staffBtnSm:hover { background: var(--s3); border-color: var(--b3); }
-.staffBtnPrimary { background: var(--accent); color: var(--bg); border-color: transparent; }
-.staffBtnPrimary:hover { opacity: 0.88; }
+.staffBtnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-family: var(--font-syne), sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  transition: opacity 0.12s, transform 0.1s;
+  letter-spacing: -0.01em;
+}
+.staffBtnPrimary:hover:not(:disabled) { opacity: 0.88; }
+.staffBtnPrimary:active:not(:disabled) { transform: scale(0.98); }
+.staffBtnPrimary:disabled { opacity: 0.4; cursor: not-allowed; }
 .staffBtnSmAccent { background: var(--accent-d); color: var(--accent); border-color: transparent; }
 .staffBtnSmAccent:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
 
