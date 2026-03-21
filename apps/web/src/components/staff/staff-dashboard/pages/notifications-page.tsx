@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cx } from "../style";
+import { StaffEmptyState, EmptyIcons } from "../empty-state";
 import { getStaffClients } from "../../../../lib/api/staff/clients";
 import {
   loadStaffNotificationsWithRefresh,
@@ -514,15 +515,7 @@ export function NotificationsPage({ isActive, session }: { isActive: boolean; se
                 <div className={cx("snEmptyText", "colorMuted2")}>Loading notifications…</div>
               </div>
             ) : visible.length === 0 ? (
-              <div className={cx("snEmptyState")}>
-                <div className={cx("snEmptyIcon")}>
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                    <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="1.5" opacity="0.25"/>
-                    <path d="M11 16.5l3.5 3.5 6.5-7" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <div className={cx("snEmptyText")}>All caught up</div>
-              </div>
+              <StaffEmptyState icon={EmptyIcons.bell} title="All caught up" sub="No notifications match the current filter." />
             ) : null}
 
             {(["Today", "Yesterday", "Earlier"] as const).map((group) => {
@@ -531,9 +524,8 @@ export function NotificationsPage({ isActive, session }: { isActive: boolean; se
 
               return (
                 <div key={group} className={cx("snGroup")}>
-                  <div className={cx("snGroupHeader")}>
-                    <span className={cx("snGroupLabel")}>{group}</span>
-                    <div className={cx("snGroupLine")} />
+                  <div className={cx("staffSectionHd", "snGroupHeader")}>
+                    <span className={cx("staffSectionTitle", "snGroupLabel")}>{group}</span>
                   </div>
 
                   <div className={cx("snGroupList")}>
@@ -546,7 +538,14 @@ export function NotificationsPage({ isActive, session }: { isActive: boolean; se
                       return (
                         <div
                           key={row.id}
-                          className={cx("snNotifRow", "snRowCard", isSelected && "snRowSelected", isNew ? "snRowUnread" : "snRowRead")}
+                          className={cx(
+                            "staffListRow",
+                            "snNotifRow",
+                            "snRowCard",
+                            isSelected && "snRowSelected",
+                            isNew ? "snRowUnread" : "snRowRead",
+                            isNew && "staffNotifUnread"
+                          )}
                           data-priority={row.priority}
                           data-pinned={row.pinned ? "true" : "false"}
                           role="button"

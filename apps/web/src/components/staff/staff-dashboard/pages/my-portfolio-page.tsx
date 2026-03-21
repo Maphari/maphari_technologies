@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cx } from "../style";
+import { StaffEmptyState, EmptyIcons } from "../empty-state";
 import { getStaffProjects, type StaffProject } from "@/lib/api/staff/projects";
 import { getMyTasks, type StaffTask } from "@/lib/api/staff/tasks";
 import { getStaffClients, type StaffClient } from "@/lib/api/staff/clients";
@@ -266,63 +267,28 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
         <p className={cx("pageSubtitleText", "mb20")}>Aggregated view of all your assigned projects</p>
       </div>
 
-      {/* ── Summary stats ────────────────────────────────────────────────── */}
-      <div className={cx("pfStatGrid", "mb20")}>
-        {(
-          <>
-            {/* Projects */}
-            <div className={cx("pfStatCard")}>
-              <div className={cx("pfStatCardTop")}>
-                <div className={cx("pfStatLabel")}>Projects</div>
-                <div className={cx("pfStatValue", "colorAccent")}>{projects.length}</div>
-              </div>
-              <div className={cx("pfStatCardDivider")} />
-              <div className={cx("pfStatCardBottom")}>
-                <span className={cx("pfStatDot", "dotBgAccent")} />
-                <span className={cx("pfStatMeta")}>assigned to you</span>
-              </div>
-            </div>
-
-            {/* Avg Progress */}
-            <div className={cx("pfStatCard")}>
-              <div className={cx("pfStatCardTop")}>
-                <div className={cx("pfStatLabel")}>Avg Progress</div>
-                <div className={cx("pfStatValue", "colorGreen")}>{avgProgress}%</div>
-              </div>
-              <div className={cx("pfStatCardDivider")} />
-              <div className={cx("pfStatCardBottom")}>
-                <span className={cx("pfStatDot", "dotBgGreen")} />
-                <span className={cx("pfStatMeta")}>across all projects</span>
-              </div>
-            </div>
-
-            {/* Tasks Done */}
-            <div className={cx("pfStatCard")}>
-              <div className={cx("pfStatCardTop")}>
-                <div className={cx("pfStatLabel")}>Tasks Done</div>
-                <div className={cx("pfStatValue")}>{doneTasks}<span className={cx("pfStatSuffix")}>/{totalTasks}</span></div>
-              </div>
-              <div className={cx("pfStatCardDivider")} />
-              <div className={cx("pfStatCardBottom")}>
-                <span className={cx("pfStatDot", "dotBgMuted2")} />
-                <span className={cx("pfStatMeta")}>completed tasks</span>
-              </div>
-            </div>
-
-            {/* At Risk */}
-            <div className={cx("pfStatCard")}>
-              <div className={cx("pfStatCardTop")}>
-                <div className={cx("pfStatLabel")}>At Risk</div>
-                <div className={cx("pfStatValue", atRisk > 0 ? "colorRed" : "colorGreen")}>{atRisk}</div>
-              </div>
-              <div className={cx("pfStatCardDivider")} />
-              <div className={cx("pfStatCardBottom")}>
-                <span className={cx("pfStatDot", "dynBgColor")} style={{ "--bg-color": atRisk > 0 ? "var(--red)" : "var(--muted2)" } as React.CSSProperties} />
-                <span className={cx("pfStatMeta")}>{atRisk > 0 ? "needs attention" : "all clear"}</span>
-              </div>
-            </div>
-          </>
-        )}
+      {/* ── Summary strip ────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip", "mb20")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Projects</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{projects.length}</div>
+          <div className={cx("staffKpiSub")}>assigned to you</div>
+        </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Avg Progress</div>
+          <div className={cx("staffKpiValue", "colorGreen")}>{avgProgress}%</div>
+          <div className={cx("staffKpiSub")}>across all projects</div>
+        </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Tasks Done</div>
+          <div className={cx("staffKpiValue")}>{doneTasks}<span style={{ fontSize: "0.7em", opacity: 0.6 }}>/{totalTasks}</span></div>
+          <div className={cx("staffKpiSub")}>completed tasks</div>
+        </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>At Risk</div>
+          <div className={cx("staffKpiValue", atRisk > 0 ? "colorRed" : "colorGreen")}>{atRisk}</div>
+          <div className={cx("staffKpiSub")}>{atRisk > 0 ? "needs attention" : "all clear"}</div>
+        </div>
       </div>
 
       {/* ── Project list section ──────────────────────────────────────────── */}
@@ -352,11 +318,7 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
         {/* Cards */}
         <div className={cx("pfCardList")}>
           {filtered.length === 0 ? (
-            <div className={cx("pfEmpty")}>
-              {projects.length === 0
-                ? "No projects are currently assigned to you."
-                : "No projects match the selected filter."}
-            </div>
+            <StaffEmptyState icon={EmptyIcons.building} title={projects.length === 0 ? "No projects assigned" : "No projects match this filter"} sub={projects.length === 0 ? "Projects assigned to you will appear here." : "Try a different filter tab."} />
           ) : (
             filtered.map((project) => {
               const health = healthCfg(project.health);

@@ -14,22 +14,49 @@ interface SidebarProps {
   mobileOpen?: boolean;
 }
 
-// Simple placeholder SVG icons — one per section index, cycles through shapes
-const SECTION_ICONS = [
-  <svg key="0" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>,
-  <svg key="1" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L14 4.5V11.5L8 15L2 11.5V4.5L8 1Z" fillOpacity="0.8"/></svg>,
-  <svg key="2" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="6" fillOpacity="0.8"/></svg>,
-  <svg key="3" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2.5" width="12" height="1.5" rx="0.75"/><rect x="2" y="7.5" width="12" height="1.5" rx="0.75"/><rect x="2" y="12.5" width="8" height="1.5" rx="0.75"/></svg>,
-  <svg key="4" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2L9.5 6H14L10.5 8.5L12 13L8 10.5L4 13L5.5 8.5L2 6H6.5L8 2Z"/></svg>,
-  <svg key="5" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="14" height="10" rx="2" fillOpacity="0.8"/><path d="M5 14h6M8 11v3"/></svg>,
-  <svg key="6" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4l3 2"/></svg>,
-  <svg key="7" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3" width="12" height="2" rx="1" fillOpacity="0.6"/><rect x="2" y="7" width="8" height="2" rx="1" fillOpacity="0.6"/><rect x="2" y="11" width="10" height="2" rx="1" fillOpacity="0.6"/></svg>,
-  <svg key="8" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2C5.8 2 4 3.8 4 6c0 3.5 4 8 4 8s4-4.5 4-8c0-2.2-1.8-4-4-4zm0 5.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>,
-  <svg key="9" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13 2H3a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1V3a1 1 0 00-1-1z"/></svg>,
-  <svg key="10" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 8a6 6 0 1012 0A6 6 0 002 8zm5-1h2v4H7zm0-2.5h2V7H7z" fillRule="evenodd"/></svg>,
-  <svg key="11" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="12" height="5" rx="1"/></svg>,
-  <svg key="12" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM7 4h2v5H7zm0 6h2v2H7z"/></svg>,
-];
+// Semantic SVG icons mapped to each section name — stroke-based, familiar shapes
+const S = (path: React.ReactNode, key: string) => (
+  <svg key={key} width="16" height="16" viewBox="0 0 16 16" fill="none"
+    stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    {path}
+  </svg>
+);
+
+const SECTION_ICON_MAP: Record<string, React.ReactNode> = {
+  // Workspace — grid of 4 squares (dashboard)
+  "Workspace": S(<><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></>, "workspace"),
+  // Client Work — speech bubble (communication)
+  "Client Work": S(<path d="M14 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3l3 3 3-3h3a1 1 0 001-1V3a1 1 0 00-1-1z"/>, "client-work"),
+  // Tracking — clock (time)
+  "Tracking": S(<><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></>, "tracking"),
+  // Workflow — checkbox with check (approvals)
+  "Workflow": S(<><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5.5 8l2 2 3-3"/></>, "workflow"),
+  // Project Management — briefcase
+  "Project Management": S(<><rect x="1" y="5" width="14" height="9" rx="1.5"/><path d="M5.5 5V3.5A1.5 1.5 0 017 2h2a1.5 1.5 0 011.5 1.5V5"/><line x1="1" y1="9" x2="15" y2="9"/></>, "project-mgmt"),
+  // Client Lifecycle — user with arrow (onboarding/offboarding)
+  "Client Lifecycle": S(<><circle cx="6" cy="5" r="2.5"/><path d="M1 14c0-3 2.2-5 5-5"/><path d="M11 10l3 2-3 2M14 12h-4"/></>, "client-lifecycle"),
+  // Governance — shield (oversight)
+  "Governance": S(<path d="M8 1.5L2 4v4.5c0 3.2 2.5 5.8 6 7 3.5-1.2 6-3.8 6-7V4L8 1.5z"/>, "governance"),
+  // Analytics — bar chart
+  "Analytics": S(<><rect x="1.5" y="8" width="3" height="6.5" rx="0.75"/><rect x="6.5" y="4.5" width="3" height="10" rx="0.75"/><rect x="11.5" y="1.5" width="3" height="13" rx="0.75"/></>, "analytics"),
+  // Settings — gear/cog
+  "Settings": S(<><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></>, "settings"),
+  // Account — user silhouette
+  "Account": S(<><circle cx="8" cy="5.5" r="3"/><path d="M2 14.5c0-3.3 2.7-6 6-6s6 2.7 6 6"/></>, "account"),
+  // HR — people/users
+  "HR": S(<><circle cx="5.5" cy="5" r="2.5"/><path d="M1 13.5c0-2.5 2-4.5 4.5-4.5"/><circle cx="11" cy="5" r="2"/><path d="M15 13.5c0-2.2-1.8-4-4-4"/></>, "hr"),
+  // Knowledge — book
+  "Knowledge": S(<><path d="M3 2h9a1 1 0 011 1v11a1 1 0 01-1 1H3"/><path d="M3 2a1 1 0 00-1 1v11a1 1 0 001 1"/><path d="M7 6h5M7 9h5M7 12h3"/></>, "knowledge"),
+  // Finance — dollar in circle
+  "Client Finance": S(<><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v7M9.5 6H7a1.5 1.5 0 000 3h2a1.5 1.5 0 010 3H6.5"/></>, "client-finance"),
+  // Personal Finance — wallet
+  "Personal Finance": S(<><rect x="1.5" y="4" width="13" height="10" rx="1.5"/><path d="M1.5 7h13"/><circle cx="11" cy="10.5" r="1"/></>, "personal-finance"),
+  // Quality — target/badge
+  "Quality": S(<><circle cx="8" cy="8" r="6.5"/><circle cx="8" cy="8" r="3.5"/><circle cx="8" cy="8" r="1"/></>, "quality"),
+};
+
+// Fallback for unmapped sections
+const FALLBACK_ICON = S(<><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="12" height="5" rx="1"/></>, "fallback");
 
 function SidebarInner({
   activePage,
@@ -121,7 +148,7 @@ function SidebarInner({
         <div className={cx("railSectionDivider")} />
 
         {/* Section icons */}
-        {navSections.map(([sectionId, pages], index) => {
+        {navSections.map(([sectionId, pages]) => {
           const hasNotif = pages.some(
             p => (notificationCounts[p.id] ?? 0) > 0
           );
@@ -130,7 +157,7 @@ function SidebarInner({
             <NavIcon
               key={sectionId}
               sectionId={sectionId}
-              icon={SECTION_ICONS[index % SECTION_ICONS.length]}
+              icon={SECTION_ICON_MAP[sectionId] ?? FALLBACK_ICON}
               label={sectionId}
               isActive={isSectionActive}
               hasNotification={hasNotif}

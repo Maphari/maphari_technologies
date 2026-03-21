@@ -615,14 +615,56 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
-  gap: 10px;
+  padding: 56px 24px;
+  gap: 12px;
   text-align: center;
+  min-height: 200px;
 }
 
-.emptyStateIcon { color: var(--muted2); }
-.emptyStateTitle { font-size: 14px; font-weight: 600; color: var(--muted); }
-.emptyStateSub { font-size: 12px; color: var(--muted2); }
+.emptyStateIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted2);
+  margin-bottom: 4px;
+}
+
+.emptyStateTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  font-family: var(--font-syne), sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.emptyStateSub {
+  font-size: 12px;
+  color: var(--muted2);
+  font-family: var(--font-dm-mono), monospace;
+  max-width: 280px;
+  line-height: 1.6;
+}
+
+.emptyStateAction {
+  margin-top: 4px;
+  height: 30px;
+  padding: 0 14px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms;
+}
+
+.emptyStateAction:hover { opacity: 0.88; }
 
 .skeleton {
   background: linear-gradient(90deg, var(--s2) 25%, var(--s3) 50%, var(--s2) 75%);
