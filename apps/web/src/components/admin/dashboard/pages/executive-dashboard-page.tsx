@@ -2,6 +2,7 @@
 // executive-dashboard-page.tsx — Admin executive dashboard wired to real API
 // Data   : loadAdminSnapshotWithRefresh → clients, projects, invoices, payments
 //          loadAllStaffWithRefresh       → staff headcount
+// Layout : Command Brief — hero strip / KPI row / activity feed + tabbed detail
 // ════════════════════════════════════════════════════════════════════════════
 
 "use client";
@@ -162,6 +163,37 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
   const totalMRR = useMemo(() => clients.reduce((s) => s + 1, 0), [clients]);
   const _ = totalMRR; // suppress unused
 
+  // ── Alert feed items derived from real data ───────────────────────────────
+  const alertFeedItems = useMemo(() => {
+    const items: { iconClass: string; text: string }[] = [];
+    if (overdueInvoices.length > 0) {
+      items.push({ iconClass: styles.execAlertIconRed, text: `${overdueInvoices.length} overdue invoice${overdueInvoices.length > 1 ? "s" : ""}` });
+    }
+    if (atRiskClients > 0) {
+      items.push({ iconClass: styles.execAlertIconAmber, text: `${atRiskClients} client${atRiskClients > 1 ? "s" : ""} at risk` });
+    }
+    if (items.length === 0) {
+      items.push({ iconClass: styles.execAlertIconGreen, text: "No critical alerts" });
+    }
+    return items;
+  }, [overdueInvoices, atRiskClients]);
+
+  // ── Recent activity from clients + projects ───────────────────────────────
+  const recentActivity = useMemo(() => {
+    const items: { colorClass: string; desc: string; time: string }[] = [];
+    clients.slice(0, 3).forEach((c) => {
+      const cc = c.status === "ACTIVE" ? "colorAccent" : c.status === "AT_RISK" ? "colorAmber" : "colorMuted";
+      items.push({ colorClass: cc, desc: `Client ${c.name} — ${c.status}`, time: "—" });
+    });
+    projects.slice(0, 3).forEach((p) => {
+      items.push({ colorClass: "colorAccent", desc: `Project "${p.name}" — ${p.status}`, time: `${p.progressPercent}%` });
+    });
+    if (items.length === 0) {
+      items.push({ colorClass: "colorMuted", desc: "No recent activity", time: "—" });
+    }
+    return items.slice(0, 6);
+  }, [clients, projects]);
+
   if (loading) {
     return (
       <div className={cx("pageBody")}>
@@ -188,32 +220,79 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
         </div>
       </div>
 
-      {overdueInvoices.length > 0 && (
-        <div className={cx("exdAlertStripElevated")}>
-          <span style={{ color: "#ff5f5f" }}>⚠</span>
-          <span>{overdueInvoices.length} overdue invoice{overdueInvoices.length > 1 ? "s" : ""} require attention</span>
-          <button type="button" className={cx("btnGhost", "mlAuto", "text11")} onClick={() => onNavigate?.("invoices")}>
-            View →
-          </button>
-        </div>
-      )}
+      {/* ── Command Brief layout ──────────────────────────────────────────── */}
+      <div className={styles.execLayout}>
 
-      <div className={styles.exdKpiGrid}>
-        {kpis.map((k, idx) => {
-          const tone = k.color === "var(--red)" ? "var(--red)" : "var(--border)";
-          return (
-            <div key={k.label} className={cx(styles.exdKpiCard, toneClass(tone), "rdStudioCard", idx === 0 ? styles.exdKpiHero : "")}>
-              <div className={cx(styles.exdKpiLabel, "rdStudioLabel")}>{k.label}</div>
-              <div className={cx(styles.exdKpiValue, colorClass(k.color), "rdStudioMetric", k.color === "var(--red)" ? "rdStudioMetricNeg" : k.color === "var(--accent)" ? "rdStudioMetricPos" : "")}>{k.value}</div>
-              <div className={styles.exdKpiMeta}>
-                {k.up !== null && <span className={cx(styles.exdKpiArrow, k.up ? "colorAccent" : "colorRed")}>{k.up ? "▲" : "▼"}</span>}
-                <span className={cx("text11", k.up ? "colorAccent" : k.up === false ? "colorRed" : "colorMuted")}>{k.change}</span>
-                <span className={styles.exdKpiPrev}>vs {k.prev}</span>
+        {/* Row 1: Hero strip */}
+        <div className={styles.execHeroStrip}>
+          <div className={styles.execHeroPrimary}>
+            <div className={styles.execHeroLabel}>Monthly Revenue</div>
+            <div className={styles.execHeroValue}>{centsToK(monthlyRevenue)}</div>
+            {outstanding > 0 && (
+              <div className={styles.execHeroDelta}>
+                {centsToK(outstanding)} outstanding
               </div>
+            )}
+          </div>
+
+          <div className={styles.execHeroMiniStats}>
+            <div className={styles.execHeroMiniStat}>
+              <div className={styles.statCardLabel}>Active Clients</div>
+              <div className={styles.statCardValue}>{activeClients}</div>
             </div>
-          );
-        })}
+            <div className={styles.execHeroMiniStat}>
+              <div className={styles.statCardLabel}>Active Projects</div>
+              <div className={styles.statCardValue}>{activeProjects}</div>
+            </div>
+          </div>
+
+          <div className={styles.execAlertFeed}>
+            <div className={styles.execAlertFeedTitle}>Alerts</div>
+            {alertFeedItems.map((item, idx) => (
+              <div key={idx} className={styles.execAlertItem}>
+                <div className={cx(styles.execAlertIcon, item.iconClass)} />
+                <span className={styles.execAlertText}>{item.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Row 2: KPI strip — 3 stat cards */}
+        <div className={styles.execKpiStrip}>
+          <div className={cx(styles.statCard)}>
+            <div className={styles.statCardValue}>{String(staffCount)}</div>
+            <div className={styles.statCardLabel}>Staff Headcount</div>
+          </div>
+          <div className={cx(styles.statCard, outstanding > 0 ? styles.statCardAmber : "")}>
+            <div className={styles.statCardValue}>{centsToK(outstanding)}</div>
+            <div className={styles.statCardLabel}>Outstanding Receivables</div>
+            {outstanding > 0 && <div className={cx(styles.statCardDelta, styles.statCardDeltaNeg)}>{overdueInvoices.length} overdue</div>}
+          </div>
+          <div className={cx(styles.statCard, atRiskClients > 0 ? styles.statCardAmber : "")}>
+            <div className={styles.statCardValue}>{String(atRiskClients)}</div>
+            <div className={styles.statCardLabel}>Clients at Risk</div>
+          </div>
+        </div>
+
+        {/* Row 3: Recent activity feed */}
+        <div className={styles.execActivityCard}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionHeaderLabel}>Recent Activity</span>
+            <span className={styles.sectionHeaderRule} />
+          </div>
+          <div className={styles.execActivityList}>
+            {recentActivity.map((item, idx) => (
+              <div key={idx} className={styles.execActivityItem}>
+                <div className={cx(styles.execActivityIcon, item.colorClass)} />
+                <span className={styles.execActivityDesc}>{item.desc}</span>
+                <span className={styles.execActivityTime}>{item.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </div>
+      {/* ── End Command Brief layout ──────────────────────────────────────── */}
 
       <div className={styles.filterRow}>
         <select title="Filter by tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>

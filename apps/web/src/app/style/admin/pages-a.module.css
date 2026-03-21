@@ -7691,3 +7691,208 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .ppcMarginBar { height: 6px; border-radius: 3px; background: var(--green, #24b8a8); transition: width 0.3s ease; }
 .ppcMarginBarWrap { background: var(--s3); border-radius: 3px; height: 6px; overflow: hidden; margin-top: 4px; width: 100%; }
 .ppcBarFill { width: var(--bar-w, 0%); height: 6px; border-radius: 3px; background: var(--green, #24b8a8); transition: width 0.3s ease; }
+
+/* ─── Executive Page — Command Brief Layout ───────────────── */
+
+.execLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+/* Row 1: Hero strip */
+.execHeroStrip {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: stretch;
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.12);
+  border-radius: 8px;
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.execHeroStrip::after {
+  content: "";
+  position: absolute;
+  bottom: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--glow-purple);
+  filter: blur(20px);
+  pointer-events: none;
+}
+
+.execHeroPrimary {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.execHeroLabel {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: var(--font-syne), sans-serif;
+}
+
+.execHeroValue {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--text);
+  line-height: 1;
+}
+
+.execHeroDelta {
+  font-size: 11px;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--green);
+  margin-top: 2px;
+}
+
+.execHeroMiniStats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+.execHeroMiniStat {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 8px 14px;
+  min-width: 100px;
+}
+
+.execAlertFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+  min-width: 180px;
+}
+
+.execAlertFeedTitle {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.2);
+  margin-bottom: 4px;
+}
+
+.execAlertItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.execAlertIcon {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.execAlertIconAmber { background: rgba(245, 166, 35, 0.2); }
+.execAlertIconRed   { background: rgba(255, 95, 95, 0.2); }
+.execAlertIconGreen { background: rgba(52, 217, 139, 0.15); }
+.execAlertIconPurple { background: rgba(139, 111, 255, 0.2); }
+
+.execAlertText {
+  font-size: 11px;
+  color: var(--muted);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Row 2: Secondary KPI strip */
+.execKpiStrip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* Row 3: Activity feed card */
+.execActivityCard {
+  background: var(--s2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+
+.execActivityList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.execActivityItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.execActivityItem:last-child {
+  border-bottom: none;
+}
+
+.execActivityIcon {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  background: rgba(139, 111, 255, 0.25);
+}
+
+.execActivityDesc {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.execActivityTime {
+  font-size: 10px;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .execHeroStrip {
+    grid-template-columns: 1fr;
+  }
+  .execHeroMiniStats {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .execKpiStrip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .execKpiStrip {
+    grid-template-columns: 1fr;
+  }
+  .execLayout {
+    padding: 12px 16px;
+  }
+}
