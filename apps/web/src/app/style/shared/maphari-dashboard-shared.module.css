@@ -1053,25 +1053,56 @@
   overflow: hidden;
 }
 
+/* ─── Topbar — Glass Pill ───────────────────────────────────────────── */
+
 .topbar {
-  height: var(--layout-topbar-h, 60px);
-  border: 1px solid var(--border);
-  border-top: 2px solid var(--accent);
+  height: 56px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08); /* no accent stripe */
   position: fixed;
-  top: var(--layout-edge-gap, 16px);
-  left: calc(var(--sw) + var(--layout-rail-gap, 32px));
-  right: var(--layout-edge-gap, 16px);
+  top: 12px;
+  left: calc(var(--sw) + 28px); /* island width + gap */
+  right: 12px;
   z-index: 15;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 0 var(--layout-topbar-pad-r, 12px) 0 var(--layout-topbar-pad-l, 20px);
-  background: var(--surface);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
-  border-radius: var(--r-md);
+  gap: 12px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
 }
 
+/* Top shimmer */
+.topbar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 18px;
+  right: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.11), transparent);
+  pointer-events: none;
+}
+
+/* Eyebrow label above the page title */
+.topbarEyebrow {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(240, 237, 232, 0.28);
+  line-height: 1;
+}
+
+/* Title block (eyebrow stacked above title) */
 .topbarTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   font-size: 0.95rem;
   font-weight: 800;
   flex: 1;
@@ -1079,6 +1110,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: -0.02em;
 }
 
 .topbarTitle span {
@@ -1088,37 +1120,10 @@
   color: var(--muted);
 }
 
-.searchBar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: var(--layout-search-w, 280px);
-  border: 1px solid var(--border);
-  background: var(--bg);
-  padding: var(--layout-search-pad, 8px 14px);
-  border-radius: var(--r-sm);
-}
-
-.searchBar input {
-  width: 100%;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--text);
-  font-family: var(--font-dm-mono), monospace;
-  font-size: 0.72rem;
-}
-
-.searchIcon,
-.searchBarIcon {
-  color: var(--muted2);
-}
-
 .topbarActions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-left: auto;
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -1142,93 +1147,133 @@
 }
 
 .topbarIcon {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.78;
-  display: block;
-  margin: 0;
-  flex: 0 0 16px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  color: rgba(240, 237, 232, 0.5);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
+.topbarIcon:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(240, 237, 232, 0.8);
+}
+
+/* Search bar pill */
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 120px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.searchBar:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.searchBar input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: rgba(240, 237, 232, 0.25);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+}
+
+.searchBar input::placeholder {
+  color: rgba(240, 237, 232, 0.25);
+}
+
+.searchIcon,
+.searchBarIcon {
+  color: var(--muted2);
+}
+
+/* User avatar in topbar */
 .topbarUserMenu {
   position: relative;
 }
 
 .topbarUserBtn {
-  height: 36px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text);
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 10px;
-  border-radius: var(--r-sm);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
 .topbarUserAvatar {
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: var(--accent);
-  color: #050508;
-  display: grid;
-  place-items: center;
-  font-size: 0.62rem;
-  font-weight: 800;
+  background: rgba(200, 241, 53, 0.12);
+  border: 1.5px solid rgba(200, 241, 53, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lime);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 9px;
+  font-weight: 500;
 }
 
 .topbarUserLabel {
-  font-family: var(--font-dm-mono), monospace;
-  font-size: 0.66rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  display: none; /* icon-only topbar */
 }
 
+/* Dropdown */
 .topbarUserDropdown {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  min-width: 230px;
-  border: 1px solid var(--border2);
-  background: var(--surface);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
-  z-index: 20;
+  min-width: 220px;
+  background: rgba(14, 14, 24, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: var(--r-md);
+  box-shadow: var(--shadow-modal);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 50;
   overflow: hidden;
 }
 
 .topbarUserEmail {
   font-family: var(--font-dm-mono), monospace;
-  font-size: 0.62rem;
-  color: var(--muted);
-  padding: 6px 8px;
+  font-size: 10px;
+  color: var(--muted2);
 }
 
 .topbarUserItem {
-  width: 100%;
-  text-align: left;
-  border: none;
-  background: transparent;
-  color: var(--text);
-  padding: 8px 10px;
-  font-family: var(--font-syne), sans-serif;
-  font-size: 0.78rem;
-  font-weight: 400;
-  border-radius: var(--r-sm);
   display: flex;
   align-items: center;
-  gap: 9px;
-  transition: background 0.1s ease;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.85rem;
+  transition: background 0.12s ease;
 }
 
 .topbarUserItem:hover {
   background: var(--s2);
+  color: var(--text);
 }
 
 /* ── Topbar profile dropdown — structured content ─────────────────── */
@@ -3007,7 +3052,7 @@
 
   .topbar {
     top: 8px;
-    left: 8px;
+    left: 60px; /* hamburger offset */
     right: 8px;
     padding: 0 10px 0 12px;
   }
@@ -4956,7 +5001,7 @@
 .topbarSep {
   width: 1px;
   height: 20px;
-  background: var(--border2);
+  background: rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
   margin: 0 2px;
 }
