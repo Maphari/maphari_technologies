@@ -1247,18 +1247,19 @@
 }
 
 .topbarUserAvatar {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: rgba(200, 241, 53, 0.12);
-  border: 1.5px solid rgba(200, 241, 53, 0.25);
+  background: rgba(200, 241, 53, 0.15);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--lime);
   font-family: var(--font-dm-mono), monospace;
   font-size: 9px;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .topbarUserLabel {

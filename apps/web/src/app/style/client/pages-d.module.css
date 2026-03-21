@@ -11,6 +11,8 @@
 .svcGrowSidebar {
   background: var(--surface);
   border-right: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 18px 0;
   display: flex;
   flex-direction: column;
@@ -4306,6 +4308,8 @@
   padding: 20px 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .progKnowSection {
@@ -4831,6 +4835,8 @@
   padding: 20px 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .projBriefSection {
@@ -5190,6 +5196,8 @@
   padding: 20px 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .teamMgmtSection {
@@ -5750,6 +5758,8 @@
   padding: 20px 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .timeTrackSection {
@@ -6193,6 +6203,8 @@
   padding: 20px 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .budgetTransSection {
@@ -6648,6 +6660,8 @@
   padding: 20px 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .commLogSection {
@@ -6975,6 +6989,8 @@
   padding: 20px 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .changeHistSection {

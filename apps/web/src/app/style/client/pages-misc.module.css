@@ -1679,8 +1679,8 @@
 .fullscreenDark { position: fixed; inset: 0; background: #101010; z-index: 100; display: flex; flex-direction: column; }
 .fullscreenPanel { position: fixed; inset: 0; background: var(--s1); z-index: 100; display: flex; flex-direction: column; }
 .fixedOverlay9999 { position: fixed; inset: 0; z-index: 9999; }
-.slidePanel    { position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100vw); background: var(--s1); border-left: 1px solid var(--b2); display: flex; flex-direction: column; z-index: 60; }
-.slidePanel480 { position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100vw); background: var(--s1); border-left: 1px solid var(--b2); display: flex; flex-direction: column; z-index: 60; }
+.slidePanel    { position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100vw); background: var(--s1); border-left: 1px solid var(--b2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; z-index: 60; }
+.slidePanel480 { position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100vw); background: var(--s1); border-left: 1px solid var(--b2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; z-index: 60; }
 
 /* ── Absolute position helpers ───────────────────────────────────────────── */
 .absInset    { position: absolute; inset: 0; }
@@ -2772,6 +2772,7 @@
 .slidePanel {
   position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100vw);
   background: var(--s1); border-left: 1px solid var(--b2);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   z-index: 50; display: flex; flex-direction: column; overflow: hidden;
 }
 
@@ -5486,6 +5487,8 @@
   height: 100dvh;
   background: var(--s1);
   border-left: 1px solid var(--b2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   box-shadow: -8px 0 32px rgba(0, 0, 0, 0.3);
   z-index: 120;
   display: flex;

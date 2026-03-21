@@ -83,6 +83,41 @@
 }
 
 
+/* ─── Pill Tabs (used as page-level filter tabs across all pages) ────── */
+/* cx("pillTab") falls back to raw string if not in spread — defined here */
+
+.pillTabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.pillTab {
+  border-radius: 999px;
+  border: 1px solid var(--b2);
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 14px;
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 140ms ease;
+  cursor: pointer;
+}
+
+.pillTab:hover {
+  border-color: var(--b3);
+  color: var(--text);
+}
+
+.pillTabActive {
+  border-color: rgba(200, 241, 53, 0.40);
+  background: rgba(200, 241, 53, 0.10);
+  color: var(--lime);
+}
+
 /* ─── Approval Card ─────────────────────────────────────────────────── */
 
 .approvalCard {

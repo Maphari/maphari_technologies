@@ -786,6 +786,8 @@
 .msguRightCol {
   border-left: 1px solid var(--border);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   overflow-y: auto;
   min-height: 0;
   display: flex;
@@ -1161,6 +1163,8 @@
 .msguLeftPane {
   border-right: 1px solid var(--b1);
   background: var(--s1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
   min-height: 0;
