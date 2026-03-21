@@ -40,32 +40,41 @@
 ### Text
 ```css
 --text:   #f0ede8
---muted:  rgba(240,237,232, 0.50)     /* bumped up from 0.45 */
---muted2: rgba(240,237,232, 0.28)
+--muted:  rgba(240,237,232, 0.50)     /* changed from 0.45 — update in .clientRoot */
+--muted2: rgba(240,237,232, 0.28)     /* changed from 0.22 — update in .clientRoot */
 ```
 
-### Radius Scale (rounder than current)
+### Radius Scale (intentionally rounder — all values increase)
 ```css
---r-xs:  8px    /* chips, badges */
---r-sm:  12px   /* buttons, inputs */
---r-md:  16px   /* cards */
---r-lg:  20px   /* sidebar island, modals */
---r-xl:  28px   /* home hero card */
+/* OLD → NEW (update all 5 in .clientRoot) */
+--r-xs:  8px    /* was 6px  — chips, badges */
+--r-sm:  12px   /* was 8px  — buttons, inputs */
+--r-md:  16px   /* was 12px — cards */
+--r-lg:  20px   /* was 16px — sidebar island, modals */
+--r-xl:  28px   /* NEW — home hero card (add to .clientRoot) */
 ```
+**Note:** These are value changes, not renames. Every page using `var(--r-md)` will get 4px rounder — this is intentional.
 
-### Shadows
+### Shadows (add all three to `.clientRoot`)
 ```css
 --shadow-card:    0 8px 32px rgba(0,0,0,0.40), inset 0 1px 0 var(--b-top)
 --shadow-island:  0 16px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)
 --shadow-modal:   0 24px 64px rgba(0,0,0,0.60)
 ```
+`--shadow-island` and `--shadow-modal` are new tokens — add them alongside the existing `--shadow-card`.
 
-### Ambient Glow (new)
+### Ambient Glow (new — add to `.clientRoot`)
 ```css
 --glow-lime: radial-gradient(ellipse at 30% 10%, rgba(200,241,53,0.07) 0%, transparent 55%)
 --glow-page: radial-gradient(ellipse at 70% 80%, rgba(91,156,245,0.04) 0%, transparent 50%)
 ```
-Applied as `background-image` on `.clientRoot` or page-level containers. Lime top-left, blue bottom-right.
+Apply as `background-image` on `.clientRoot`:
+```css
+.clientRoot {
+  background-image: var(--glow-lime), var(--glow-page);
+}
+```
+Lime top-left, blue bottom-right.
 
 ### Typography
 ```
@@ -137,10 +146,16 @@ Every card across all 72 pages uses this surface pattern:
 }
 ```
 
-**Accent-tinted cards** (lime, green, amber, red, purple, blue):
-- Border becomes `rgba(<color>, 0.17–0.18)`
-- `::before` shimmer becomes `rgba(<color>, 0.25–0.28)`
-- Optional: very subtle `rgba(<color>, 0.03–0.05)` background tint
+**Accent-tinted cards** — exact values per tone:
+
+| Tone | Border | Shimmer (`::before`) | Bg tint |
+|------|--------|----------------------|---------|
+| lime | `rgba(200,241,53, 0.18)` | `rgba(200,241,53, 0.28)` | `rgba(200,241,53, 0.04)` |
+| green | `rgba(77,222,143, 0.18)` | `rgba(77,222,143, 0.25)` | none |
+| amber | `rgba(245,166,35, 0.17)` | `rgba(245,166,35, 0.24)` | none |
+| red | `rgba(255,95,95, 0.17)` | `rgba(255,95,95, 0.22)` | none |
+| purple | `rgba(139,111,255, 0.17)` | `rgba(139,111,255, 0.24)` | none |
+| blue | `rgba(91,156,245, 0.17)` | `rgba(91,156,245, 0.24)` | none |
 
 ---
 
@@ -165,10 +180,18 @@ Every card across all 72 pages uses this surface pattern:
 ```
 Structure: pip dot (5px circle with glow) + DM Mono 9px text
 Radius: 8px (--r-xs)
-Border: 1px solid rgba(<color>, 0.22)
-Background: rgba(<color>, 0.10)
 ```
-Tones: `lime` `green` `amber` `red` `purple` `muted`
+
+| CSS Class | Background | Border | Text | Pip glow |
+|-----------|-----------|--------|------|----------|
+| `badgeAccent` / `badgeLime` | `rgba(200,241,53,0.10)` | `rgba(200,241,53,0.22)` | `#c8f135` | `rgba(200,241,53,0.6)` |
+| `badgeGreen` | `rgba(77,222,143,0.10)` | `rgba(77,222,143,0.22)` | `#4dde8f` | `rgba(77,222,143,0.6)` |
+| `badgeAmber` | `rgba(245,166,35,0.10)` | `rgba(245,166,35,0.22)` | `#f5a623` | none |
+| `badgeRed` | `rgba(255,95,95,0.10)` | `rgba(255,95,95,0.22)` | `#ff5f5f` | none |
+| `badgePurple` | `rgba(139,111,255,0.10)` | `rgba(139,111,255,0.22)` | `#a78bff` | none |
+| `badgeMuted` | `rgba(255,255,255,0.05)` | `rgba(255,255,255,0.10)` | `--muted` | none |
+
+Note: `badgeAccent` and `badgeLime` are the same style — `badgeAccent` is the existing dynamic class name, `badgeLime` may be used in new code. `badgeBlue` and `badgeCyan` exist in the codebase — style them as: blue `rgba(91,156,245,...)` / cyan `rgba(61,217,214,...)` using the same pattern.
 
 ### Buttons
 - **Primary:** `background: #c8f135`, `color: #07100a`, Syne 700 11px, 12px radius, lime glow shadow
@@ -228,7 +251,7 @@ Five zones stacked vertically inside the shell:
 └──────────────────────────┴──────────────────────┘
 ```
 
-- **Hero:** `border-radius: 18px (--r-xl)`, lime tinted border + shimmer, glow dot, DM Mono eyebrow, Syne 800 title, solid lime CTA
+- **Hero:** `border-radius: var(--r-xl)` (28px), lime tinted border + shimmer, glow dot, DM Mono eyebrow, Syne 800 title, solid lime CTA
 - **KPI row:** 4 equal-width glass cards, accent-tinted border matching metric color
 - **Activity feed:** `flex: 1.4`, scrollable, 5 most recent events
 - **Approvals:** `flex: 1`, lime accent border, red count badge, inline approve/decline
@@ -240,8 +263,7 @@ Five zones stacked vertically inside the shell:
 
 | File | Change Type | Notes |
 |------|-------------|-------|
-| `maphari-dashboard-shared.module.css` | Full rewrite | New shell tokens, island sidebar, glass topbar |
-| `shell.module.css` | Full rewrite | Shell layout, sidebar, topbar, mobile overlay |
+| `maphari-dashboard-shared.module.css` | Full rewrite | New shell tokens, island sidebar, glass topbar, mobile overlay. **Note:** `shell.module.css` is a shared file not imported by the client dashboard — all client shell classes live here instead. |
 | `core.module.css` | Restyle | Command search, tour, session warning, loading |
 | `pages-home.module.css` | Full rewrite | New 5-zone home page layout |
 | `pages-a.module.css` | Token update | Surface/border/radius vars → new system |
@@ -275,6 +297,15 @@ Five zones stacked vertically inside the shell:
 - [ ] Ambient glow visible on all page backgrounds
 - [ ] All accent colors retained and correctly tinted
 - [ ] All dynamic CSS class names present and functional
-- [ ] No TypeScript errors introduced
-- [ ] No visual regressions on existing responsive breakpoints
+- [ ] No TypeScript errors (`pnpm --filter @maphari/web exec tsc --noEmit`)
 - [ ] Home page renders all 5 zones correctly
+
+**Visual regression spot-check** — manually verify at 1280px, 900px, and 480px for these representative pages:
+- `home` — 5-zone layout, hero, KPI row
+- `dashboard` — phase/milestone grid
+- `kanban` (sprint board) — board columns
+- `invoices` — table/list layout
+- `project-request` — multi-step form stepper
+- `settings` — form fields and toggles
+- `files-assets` — grid/list view
+- `notifications` — feed list
