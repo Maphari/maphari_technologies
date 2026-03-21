@@ -215,8 +215,8 @@
 }
 
 .pricTableCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   overflow: hidden;
 }
 
@@ -262,18 +262,18 @@
 }
 
 .pricQuoteCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 20px;
-  background: var(--s1);
+  background: var(--s2);
   margin-bottom: 16px;
 }
 
 .pricSectionTitle {
   font-family: var(--font-syne), sans-serif;
-  font-size: 0.875rem;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
@@ -400,10 +400,10 @@
 }
 
 .pricTierCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 28px 24px;
-  background: var(--s1);
+  background: var(--s2);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -523,10 +523,10 @@
 }
 
 .pricDiscountCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 20px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .pricDiscountGrid {
@@ -632,10 +632,10 @@
   grid-template-columns: 1.5fr 1fr 1fr auto auto;
   gap: 16px;
   align-items: center;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 16px 20px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .invcAmount22 {
@@ -778,10 +778,10 @@
   grid-template-columns: 1.2fr 0.8fr 1.5fr auto auto;
   gap: 16px;
   align-items: center;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 16px 20px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .invcWriteoffAmount {
@@ -878,8 +878,8 @@
 .bdevSegmentCardMuted { border-left: 3px solid var(--muted); }
 
 .bdevTableCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   overflow: hidden;
 }
 
@@ -938,10 +938,10 @@
 }
 
 .bdevDealCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 14px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .bdevDealName {
@@ -1005,10 +1005,10 @@
   grid-template-columns: 1.5fr 0.8fr auto 1fr auto;
   gap: 16px;
   align-items: center;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 16px 20px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .bdevPartnerRowExploring {
@@ -1065,10 +1065,10 @@
 }
 
 .bdevSegmentCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 20px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .bdevSegmentHead {
@@ -1144,9 +1144,9 @@
 
 .bdevSectionTitle {
   font-family: var(--font-syne), sans-serif;
-  font-size: 0.875rem;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
@@ -1380,10 +1380,10 @@
 }
 
 .healthSelectCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 12px 14px;
-  background: var(--s1);
+  background: var(--s2);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1622,9 +1622,9 @@
 }
 
 .cobCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--s1);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
+  background: var(--s2);
   overflow: hidden;
 }
 
@@ -1842,10 +1842,10 @@
 }
 
 .cobPmCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 24px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .cobPmHead {
@@ -1983,10 +1983,10 @@
 }
 
 .cobTemplateCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 20px;
-  background: var(--s1);
+  background: var(--s2);
 }
 
 .cobTemplateTitle {
@@ -2022,9 +2022,9 @@
 
 .cobSectionTitle {
   font-family: var(--font-syne), sans-serif;
-  font-size: 0.875rem;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
@@ -2086,9 +2086,9 @@
   z-index: 200;
 }
 .cobModal {
-  background: var(--s1);
-  border: 1px solid var(--b2);
-  border-radius: var(--r-md);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 28px 24px 24px;
   width: 100%;
   max-width: 420px;
@@ -2148,8 +2148,8 @@
 }
 
 .pricModalBox {
-  background: var(--s1);
-  border: 1px solid var(--b2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: 14px;
   box-shadow: var(--shadow-modal);
   width: 100%;
@@ -2158,8 +2158,8 @@
 }
 
 .pricModalBoxSm {
-  background: var(--s1);
-  border: 1px solid var(--b2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: 14px;
   box-shadow: var(--shadow-modal);
   width: 100%;

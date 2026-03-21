@@ -34,8 +34,8 @@
 
 .ldrRailCard {
   position: relative;
-  background: var(--s1);
-  border: 1px solid var(--border2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 14px 16px;
   overflow: hidden;
@@ -89,8 +89,8 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  background: var(--s1);
-  border: 1px solid var(--border2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 10px 14px;
 }
@@ -102,8 +102,8 @@
 
 /* ── Section wrapper (list view) ── */
 .ldrSection {
-  background: var(--s1);
-  border: 1px solid var(--border2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   overflow: hidden;
 }
@@ -294,8 +294,8 @@
 }
 
 .ldrLane {
-  background: var(--s1);
-  border: 1px solid var(--border2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   overflow: hidden;
 }
@@ -441,8 +441,8 @@
 
 /* ── Detail Panel ── */
 .ldrDetailPanel {
-  background: var(--s1);
-  border: 1px solid var(--border2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   overflow: hidden;
   align-self: start;
@@ -724,9 +724,9 @@
 /* ─── Client Satisfaction Page ────────────────────────────────────────────── */
 
 .csatScoreCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--s1);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
+  background: var(--s2);
   padding: 20px;
   border-left: 3px solid var(--csat-tone, var(--border));
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -742,9 +742,9 @@
   grid-template-columns: 1.2fr 1fr 0.8fr auto auto;
   gap: 16px;
   align-items: center;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
-  background: var(--s1);
+  background: var(--s2);
   padding: 14px 20px;
   border-left: 3px solid var(--csat-tone, var(--border));
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -1283,9 +1283,9 @@
 
 .cjKpiCard {
   position: relative;
-  background: var(--s1);
-  border: 1px solid var(--border2);
-  border-radius: var(--r-md);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
   overflow: hidden;
@@ -1337,8 +1337,8 @@
 
 .cjStageTile {
   position: relative;
-  background: var(--s1);
-  border: 1px solid var(--border2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 12px 14px;
   overflow: hidden;
@@ -1388,8 +1388,8 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  background: var(--s1);
-  border: 1px solid var(--border2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 10px 14px;
   margin-bottom: 4px;
@@ -1397,8 +1397,8 @@
 
 /* ── Section wrapper (Journey Map + Stage Aging tabs) ── */
 .cjSection {
-  background: var(--s1);
-  border: 1px solid var(--border2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   overflow: hidden;
 }
@@ -2444,9 +2444,9 @@
 }
 
 .modal {
-  background: var(--s1);
-  border: 1px solid var(--b2);
-  border-radius: var(--r-md, 12px);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm, 8px);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   width: 100%;
   max-width: 480px;
@@ -2482,11 +2482,11 @@
 /* ─── Webhook Hub (wh) ────────────────────────────────────────────────────── */
 
 .whLayout { display: grid; grid-template-columns: 220px 1fr; gap: 24px; }
-.whEventPanel { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 16px; height: fit-content; }
+.whEventPanel { background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-sm); padding: 16px; height: fit-content; }
 .whEventGroup { margin-bottom: 12px; }
 .whEventGroupTitle { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
 .whEventRow { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; font-size: 0.78rem; color: var(--text); }
-.whCard { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 18px 20px; margin-bottom: 12px; }
+.whCard { background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-sm); padding: 18px 20px; margin-bottom: 12px; }
 .whCardHeader { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .whCardUrl { font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-dm-mono, monospace); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
 .whFailBadge { background: color-mix(in srgb, var(--red) 15%, transparent); color: var(--red); font-size: 0.65rem; padding: 2px 6px; border-radius: 8px; font-weight: 700; }
@@ -2518,7 +2518,7 @@
 .whActiveLabel { font-size: 0.82rem; }
 .whEventsHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .whSelectAllBtn { font-size: 0.7rem; }
-.whEventsScrollBox { max-height: 260px; overflow-y: auto; border: 1px solid var(--b2); border-radius: var(--r-sm); padding: 10px 12px; background: var(--s1); }
+.whEventsScrollBox { max-height: 260px; overflow-y: auto; border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-sm); padding: 10px 12px; background: var(--s2); }
 .whEventsModalGroup { margin-bottom: 12px; }
 .whEventCheckLabel { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; font-size: 0.78rem; }
 .whEventCheckbox { accent-color: var(--accent, #8b6fff); }
@@ -2531,8 +2531,8 @@
    ================================================================ */
 
 .cbLayout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
-.cbForm { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 24px; }
-.cbPreviewPanel { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 20px; height: fit-content; position: sticky; top: 80px; }
+.cbForm { background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-sm); padding: 24px; }
+.cbPreviewPanel { background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-sm); padding: 20px; height: fit-content; position: sticky; top: 80px; }
 .cbPreviewTitle { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
 .cbPreviewTopbar { height: 48px; background: var(--s2); border-radius: var(--r-sm); display: flex; align-items: center; padding: 0 16px; gap: 10px; margin-bottom: 8px; }
 .cbPreviewLogo { width: 24px; height: 24px; border-radius: 4px; object-fit: contain; flex-shrink: 0; }

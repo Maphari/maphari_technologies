@@ -15,6 +15,7 @@ export function AdminSidebar({
   email,
   onPageChange,
   mobileOpen = false,
+  onFlyoutChange,
 }: {
   grouped: Record<string, NavItem[]>;
   allItems: NavItem[];
@@ -25,37 +26,8 @@ export function AdminSidebar({
   email: string;
   onPageChange: (page: PageId) => void;
   mobileOpen?: boolean;
+  onFlyoutChange?: (open: boolean) => void;
 }) {
-  const navLinkTextStyle = {
-    fontSize: "var(--text-aside-link, 0.82rem)",
-    lineHeight: 1.2,
-    fontFamily: "var(--font-syne), sans-serif",
-    fontWeight: 600,
-  } as const;
-
-  const OTHER_ITEMS_LIMIT = 5;
-  const primaryIds: PageId[] = [
-    "dashboard",
-    "executive",
-    "leads",
-    "clients",
-    "projects",
-    "invoices",
-    "experience",
-    "staff",
-    "messages",
-    "notifications",
-    "analytics",
-    "performance",
-    "intelligence",
-    "market",
-    "automation",
-    "access",
-    "reports",
-    "audit",
-    "settings",
-  ];
-
   const sidebarLabel: Partial<Record<PageId, string>> = {
     dashboard: "BizDev",
     executive: "Executive",
@@ -117,36 +89,52 @@ export function AdminSidebar({
     vault: "Vault",
     intelligence: "Intel",
   };
+
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const [flyoutOpen, setFlyoutOpen] = useState(false);
+
+  const sectionList = useMemo(() => Object.keys(grouped), [grouped]);
+
+  const sectionAbbrev: Record<string, string> = {
+    Operations: "Op",
+    Experience: "Ex",
+    Finance: "Fi",
+    Communication: "Co",
+    Governance: "Go",
+    Knowledge: "Kn",
+    Lifecycle: "Lc",
+    "AI/ML": "AI",
+    Automation: "Au",
+  };
+
+  function handleSectionClick(sectionId: string): void {
+    if (activeSectionId === sectionId && flyoutOpen) {
+      setFlyoutOpen(false);
+      setActiveSectionId(null);
+      onFlyoutChange?.(false);
+    } else {
+      setActiveSectionId(sectionId);
+      setFlyoutOpen(true);
+      onFlyoutChange?.(true);
+    }
+  }
+
+  function closeFlyout(): void {
+    setFlyoutOpen(false);
+    setActiveSectionId(null);
+    onFlyoutChange?.(false);
+  }
+
+  function handlePageSelect(id: PageId): void {
+    onPageChange(id);
+    closeFlyout();
+  }
+
   const [showAllPages, setShowAllPages] = useState(false);
   const [allPagesQuery, setAllPagesQuery] = useState("");
   const allPagesInputRef = useRef<HTMLInputElement | null>(null);
   const popupPanelRef = useRef<HTMLDivElement | null>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
-
-  const primaryItems = useMemo(
-    () =>
-      primaryIds
-        .map((id) => allItems.find((item) => item.id === id))
-        .filter((item): item is NavItem => Boolean(item)),
-    [allItems],
-  );
-
-  const otherItems = useMemo(() => {
-    const primarySet = new Set(primaryItems.map((item) => item.id));
-    const candidates = allItems.filter(
-      (item) => !primarySet.has(item.id),
-    );
-    const limited = candidates.slice(0, OTHER_ITEMS_LIMIT);
-    const active = candidates.find((item) => item.id === page);
-    if (
-      active &&
-      !limited.some((item) => item.id === active.id) &&
-      limited.length > 0
-    ) {
-      return [...limited.slice(0, OTHER_ITEMS_LIMIT - 1), active];
-    }
-    return limited;
-  }, [allItems, primaryItems, page]);
 
   const allPagesFiltered = useMemo(() => {
     const query = allPagesQuery.trim().toLowerCase();
@@ -258,57 +246,93 @@ export function AdminSidebar({
     };
   }, [showAllPages]);
 
-  function renderNavItem(item: NavItem) {
-    return (
-      <button
-        key={item.id}
-        type="button"
-        className={`${styles.navItem} ${page === item.id ? styles.navItemActive : ""}`}
-        style={navLinkTextStyle}
-        onClick={() => onPageChange(item.id)}
-        title={item.label}
-      >
-        <NavIcon id={item.id} className={styles.navIcon} />
-        {sidebarLabel[item.id] ?? item.label}
-        {typeof navBadgeCounts[item.id] === "number" &&
-        (navBadgeCounts[item.id] ?? 0) > 0 ? (
-          <span
-            className={`${styles.navBadge} ${item.badgeRed ? styles.navBadgeRed : ""}`}
-          >
-            {navBadgeCounts[item.id]}
-          </span>
-        ) : null}
-      </button>
-    );
-  }
-
   return (
-    <aside className={`${styles.sidebar}${mobileOpen ? ` ${styles.sidebarMobileOpen}` : ""}`}>
-      <div className={styles.sidebarLogo}>
-        <div className={styles.logoMark}>M</div>
-        <div className={styles.logoTextBlock}>
-          <div className={styles.logoText}>
-            Maph<span>a</span>ri
-          </div>
-          <div className={styles.adminChip}>Admin</div>
+    <>
+      {/* Backdrop — click outside closes fly-out */}
+      <div
+        className={`${styles.flyoutBackdrop}${flyoutOpen ? ` ${styles.flyoutBackdropVisible}` : ""}`}
+        onClick={closeFlyout}
+        aria-hidden="true"
+      />
+
+      <aside
+        className={`${styles.rail}${mobileOpen ? ` ${styles.sidebarMobileOpen}` : ""}`}
+        aria-label="Section navigation"
+      >
+        {/* Logo */}
+        <div className={styles.railLogo} aria-hidden="true">M</div>
+
+        {/* Section icons */}
+        {sectionList.map((section) => (
+          <button
+            key={section}
+            type="button"
+            className={`${styles.railSectionIcon}${activeSectionId === section && flyoutOpen ? ` ${styles.railSectionActive}` : ""}`}
+            onClick={() => handleSectionClick(section)}
+            aria-label={`Open ${section} navigation`}
+            aria-expanded={activeSectionId === section && flyoutOpen}
+          >
+            {sectionAbbrev[section] ?? section.slice(0, 2)}
+            <span className={styles.railTooltip} aria-hidden="true">{section}</span>
+          </button>
+        ))}
+
+        {/* Footer */}
+        <div className={styles.railFooter}>
+          <button
+            type="button"
+            className={styles.railSectionIcon}
+            onClick={openAllPages}
+            aria-label="Browse all pages"
+            title="All pages"
+          >
+            ⊞
+          </button>
+          <button
+            type="button"
+            className={styles.railAvatar}
+            aria-label={`User: ${email}`}
+            title={email}
+          >
+            {email[0]?.toUpperCase() ?? "A"}
+          </button>
         </div>
+      </aside>
+
+      {/* Fly-out panel */}
+      <div
+        className={`${styles.flyout}${flyoutOpen ? ` ${styles.flyoutOpen}` : ""}`}
+        aria-hidden={!flyoutOpen}
+      >
+        {activeSectionId && grouped[activeSectionId] ? (
+          <>
+            <div className={styles.flyoutSectionLabel}>{activeSectionId}</div>
+            {grouped[activeSectionId].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`${styles.flyoutItem}${page === item.id ? ` ${styles.flyoutItemActive}` : ""}`}
+                onClick={() => handlePageSelect(item.id)}
+              >
+                <span className={styles.flyoutDot} aria-hidden="true" />
+                <span className={styles.flyoutItemLabel}>
+                  {sidebarLabel[item.id] ?? item.label}
+                </span>
+                {typeof navBadgeCounts[item.id] === "number" &&
+                (navBadgeCounts[item.id] ?? 0) > 0 ? (
+                  <span
+                    className={`${styles.flyoutBadge}${item.badgeRed ? ` ${styles.flyoutBadgeRed}` : ""}`}
+                  >
+                    {navBadgeCounts[item.id]}
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </>
+        ) : null}
       </div>
 
-      <nav className={styles.sidebarNav}>
-        <div>
-          <div className={styles.navSectionLabel}>Primary</div>
-          {primaryItems.map((item) => renderNavItem(item))}
-        </div>
-
-        {otherItems.length > 0 ? (
-          <div>
-            <div className={styles.navSectionLabel}>Other</div>
-            {otherItems.map((item) => renderNavItem(item))}
-          </div>
-        ) : null}
-
-      </nav>
-
+      {/* All Pages modal — preserved from original */}
       {showAllPages ? (
         <div className={styles.navPopupBackdrop} onClick={closeAllPages}>
           <div
@@ -322,23 +346,12 @@ export function AdminSidebar({
           >
             <div className={styles.navPopupHeader}>
               <div>
-                <div id="admin-app-grid-title" className={styles.navPopupTitle}>
-                  All Pages
-                </div>
-                <div
-                  id="admin-app-grid-desc"
-                  className={styles.navPopupSubtitle}
-                >
-                  Use search and section grouping to jump directly to any admin
-                  page. Press Esc to close.
+                <div id="admin-app-grid-title" className={styles.navPopupTitle}>All Pages</div>
+                <div id="admin-app-grid-desc" className={styles.navPopupSubtitle}>
+                  Use search and section grouping to jump directly to any admin page. Press Esc to close.
                 </div>
               </div>
-              <button
-                type="button"
-                className={styles.navPopupClose}
-                onClick={closeAllPages}
-                aria-label="Close all pages dialog"
-              >
+              <button type="button" className={styles.navPopupClose} onClick={closeAllPages} aria-label="Close all pages dialog">
                 Close
               </button>
             </div>
@@ -354,60 +367,40 @@ export function AdminSidebar({
               <button
                 type="button"
                 className={styles.navPopupClear}
-                onClick={() => {
-                  setAllPagesQuery("");
-                  allPagesInputRef.current?.focus();
-                }}
+                onClick={() => { setAllPagesQuery(""); allPagesInputRef.current?.focus(); }}
                 disabled={!allPagesQuery}
               >
                 Clear
               </button>
             </div>
             <div className={styles.navPopupMeta}>
-              <span>
-                {allPagesFiltered.length} pages ·{" "}
-                {Object.keys(groupedPageResults).length} sections
-              </span>
+              <span>{allPagesFiltered.length} pages · {Object.keys(groupedPageResults).length} sections</span>
               <span>Enter to open</span>
             </div>
-
             {allPagesFiltered.length === 0 ? (
-              <div className={styles.navPopupEmpty}>
-                No pages match your search. Try a broader term.
-              </div>
+              <div className={styles.navPopupEmpty}>No pages match your search. Try a broader term.</div>
             ) : (
               <div className={styles.navPopupSections}>
                 {Object.entries(groupedPageResults).map(([section, items]) => (
                   <section key={section} className={styles.navPopupSection}>
                     <div className={styles.navPopupSectionHeader}>
-                      <div className={styles.navPopupSectionTitle}>
-                        {section}
-                      </div>
-                      <div className={styles.navPopupSectionCount}>
-                        {items.length}
-                      </div>
+                      <div className={styles.navPopupSectionTitle}>{section}</div>
+                      <div className={styles.navPopupSectionCount}>{items.length}</div>
                     </div>
                     <div className={styles.navPageGrid}>
                       {items.map((item) => (
                         <button
                           key={item.id}
                           type="button"
-                          className={`${styles.navPageTile} ${page === item.id ? styles.navPageTileActive : ""}`}
-                          onClick={() => {
-                            onPageChange(item.id);
-                            closeAllPages();
-                          }}
+                          className={`${styles.navPageTile}${page === item.id ? ` ${styles.navPageTileActive}` : ""}`}
+                          onClick={() => { onPageChange(item.id); closeAllPages(); }}
                         >
                           <span className={styles.navPageTileIcon}>
                             <NavIcon id={item.id} className={styles.navIcon} />
                           </span>
                           <div>
-                            <div className={styles.navPageTileLabel}>
-                              {item.label}
-                            </div>
-                            <div className={styles.navPageTileMeta}>
-                              {item.id}
-                            </div>
+                            <div className={styles.navPageTileLabel}>{item.label}</div>
+                            <div className={styles.navPageTileMeta}>{item.id}</div>
                           </div>
                         </button>
                       ))}
@@ -419,32 +412,6 @@ export function AdminSidebar({
           </div>
         </div>
       ) : null}
-
-      <div className={styles.sidebarFooter}>
-        <div className={styles.userCard}>
-          <div className={`${styles.userAvatar} ${styles.userAvatarAdmin}`}>
-            {email[0]?.toUpperCase() ?? "A"}
-          </div>
-          <div className={styles.userInfo}>
-            <div className={styles.userName}>{email}</div>
-            <div className={styles.userRole}>Admin · Maphari</div>
-          </div>
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 16 16"
-            fill="none"
-            className={styles.navChevronIcon}
-          >
-            <path
-              d="M6 12l4-4-4-4"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      </div>
-    </aside>
+    </>
   );
 }

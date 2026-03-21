@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { styles } from "./style";
 import { DashboardUtilityIcon } from "@/components/shared/dashboard-utility-icon";
-import { ThemeToggle } from "@/components/shared/ui/theme-toggle";
 
 export function AdminTopbar({
   title,
@@ -14,7 +13,7 @@ export function AdminTopbar({
   onOpenMessages,
   onLogout,
   onMenuToggle,
-  onOpenHelp,
+  statusBar,
 }: {
   title: [string, string];
   unreadNotificationsCount: number;
@@ -24,7 +23,7 @@ export function AdminTopbar({
   onOpenMessages: () => void;
   onLogout: () => void;
   onMenuToggle?: () => void;
-  onOpenHelp?: () => void;
+  statusBar?: { clientsActive: number; blockers: number; atRisk: number };
 }) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
@@ -47,9 +46,10 @@ export function AdminTopbar({
     };
   }, []);
 
-  function openAppGrid(): void {
-    window.dispatchEvent(new CustomEvent("admin:open-app-grid"));
-  }
+  const periodLabel = new Date().toLocaleDateString("en-GB", {
+    month: "short",
+    year: "numeric",
+  });
 
   return (
     <header className={styles.topbar}>
@@ -60,27 +60,55 @@ export function AdminTopbar({
           aria-label="Toggle navigation"
           onClick={onMenuToggle}
         >
-          <svg width="26" height="26" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 18 18" fill="none" aria-hidden="true">
             <rect x="1" y="4"    width="16" height="1.5" rx="0.75" fill="currentColor"/>
             <rect x="1" y="8.25" width="16" height="1.5" rx="0.75" fill="currentColor"/>
             <rect x="1" y="12.5" width="16" height="1.5" rx="0.75" fill="currentColor"/>
           </svg>
         </button>
       ) : null}
-      <div className={styles.topbarTitle}>
-        <span className={styles.topbarLabelEyebrow}>{title[0]}</span>
-        <span className={styles.topbarLabelSep}>/</span>
-        <span className={styles.topbarLabelPage}>{title[1]}</span>
+
+      {/* Breadcrumb */}
+      <div className={styles.topbarBreadcrumb}>
+        <span className={styles.topbarBcSection}>{title[0]}</span>
+        <span className={styles.topbarBcSep}>/</span>
+        <span className={styles.topbarBcPage}>{title[1]}</span>
       </div>
+
+      {/* Status pills */}
+      {statusBar && (statusBar.clientsActive > 0 || statusBar.blockers > 0 || statusBar.atRisk > 0) ? (
+        <>
+          <div className={styles.topbarDivider} aria-hidden="true" />
+          <div className={styles.topbarStatusPills}>
+            {statusBar.clientsActive > 0 ? (
+              <span className={`${styles.topbarPill} ${styles.topbarPillGreen}`}>
+                <span className={styles.topbarPillPip} aria-hidden="true" />
+                {statusBar.clientsActive} active
+              </span>
+            ) : null}
+            {statusBar.blockers > 0 ? (
+              <span className={`${styles.topbarPill} ${styles.topbarPillAmber}`}>
+                <span className={styles.topbarPillPip} aria-hidden="true" />
+                {statusBar.blockers} blockers
+              </span>
+            ) : null}
+            {statusBar.atRisk > 0 ? (
+              <span className={`${styles.topbarPill} ${styles.topbarPillRed}`}>
+                <span className={styles.topbarPillPip} aria-hidden="true" />
+                {statusBar.atRisk} at risk
+              </span>
+            ) : null}
+          </div>
+        </>
+      ) : null}
+
+      <div className={styles.topbarSpacer} />
+
+      {/* Period chip */}
+      <span className={styles.topbarPeriodChip}>{periodLabel}</span>
+
+      {/* Actions */}
       <div className={styles.topbarActions}>
-        <button
-          type="button"
-          className={`${styles.iconBtn} ${styles.topbarAppsBtn}`}
-          onClick={openAppGrid}
-          aria-label="Open app grid"
-        >
-          <DashboardUtilityIcon kind="apps" className={styles.topbarIcon} />
-        </button>
         <button
           type="button"
           className={styles.iconBtn}
@@ -100,26 +128,17 @@ export function AdminTopbar({
         >
           <DashboardUtilityIcon kind="messages" className={styles.topbarIcon} />
         </button>
-        <button
-          type="button"
-          className={`${styles.iconBtn} ${styles.topbarHelpBtn}`}
-          aria-label="Open help center"
-          onClick={() => onOpenHelp?.()}
-        >
-          <DashboardUtilityIcon kind="help" className={styles.topbarIcon} />
-        </button>
         <div className={styles.topbarUserMenu} ref={profileMenuRef}>
           <button
             title="Open profile menu"
             type="button"
             className={styles.topbarUserBtn}
-            onClick={() => setProfileMenuOpen((value) => !value)}
+            onClick={() => setProfileMenuOpen((v) => !v)}
             aria-expanded={profileMenuOpen}
           >
             <span className={styles.topbarUserAvatar}>
               {email[0]?.toUpperCase() ?? "A"}
             </span>
-            <span className={`${styles.topbarUserLabel} ${styles.topbarLabel}`}>Admin</span>
           </button>
           {profileMenuOpen ? (
             <div className={styles.topbarUserDropdown}>

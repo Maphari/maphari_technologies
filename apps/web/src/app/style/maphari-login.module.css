@@ -498,10 +498,24 @@
   border-radius: 8px;
 }
 
-.fieldInput:focus {
+.fieldInput:focus,
+.fieldInput:focus-visible {
   border-color: var(--active);
   background: rgba(255, 255, 255, 0.025);
   box-shadow: 0 0 0 3px rgba(200, 241, 53, 0.12), 0 0 12px rgba(200, 241, 53, 0.06);
+  outline: none;
+}
+
+/* Prevent browser autofill from overriding the dark input background */
+.fieldInput:-webkit-autofill,
+.fieldInput:-webkit-autofill:hover,
+.fieldInput:-webkit-autofill:focus,
+.fieldInput:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset !important;
+  -webkit-text-fill-color: var(--text) !important;
+  caret-color: var(--text);
+  border-color: var(--border) !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 .fieldInput::placeholder {

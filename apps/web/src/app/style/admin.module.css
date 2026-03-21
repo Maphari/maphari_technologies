@@ -764,6 +764,7 @@
   padding: 20px;
   display: grid;
   gap: 6px;
+  background: var(--s2);
 }
 
 .kpiCard p {
@@ -779,26 +780,32 @@
 
 .kpiTeal {
   background: linear-gradient(160deg, rgba(18, 214, 197, 0.16) 0%, rgba(10, 12, 18, 0.95) 66%);
+  border-top: 2px solid var(--green);
 }
 
 .kpiSlate {
   background: linear-gradient(160deg, rgba(110, 130, 170, 0.18) 0%, rgba(10, 12, 18, 0.95) 66%);
+  border-top: 2px solid var(--accent);
 }
 
 .kpiGold {
   background: linear-gradient(160deg, rgba(246, 196, 69, 0.2) 0%, rgba(10, 12, 18, 0.95) 66%);
+  border-top: 2px solid var(--amber);
 }
 
 .kpiPurple {
   background: linear-gradient(160deg, rgba(139, 111, 255, 0.16) 0%, rgba(10, 12, 18, 0.95) 66%);
+  border-top: 2px solid var(--accent);
 }
 
 .kpiAmber {
   background: linear-gradient(160deg, rgba(251, 191, 36, 0.16) 0%, rgba(10, 12, 18, 0.95) 66%);
+  border-top: 2px solid var(--amber);
 }
 
 .kpiRed {
   background: linear-gradient(160deg, rgba(239, 68, 68, 0.16) 0%, rgba(10, 12, 18, 0.95) 66%);
+  border-top: 2px solid var(--red);
 }
 
 .table {
@@ -1196,9 +1203,9 @@
 
 /* ── Row interactions ────────────────────────────────────────── */
 .tableRow { transition: background 0.12s; }
-.tableRow:hover { background: var(--s2); }
+.tableRow:hover { background: rgba(255, 255, 255, 0.02); }
 .tableRowClickable { cursor: pointer; }
-.tableRowClickable:hover { background: var(--s2); }
+.tableRowClickable:hover { background: rgba(255, 255, 255, 0.02); }
 
 /* ── Expandable chevron ──────────────────────────────────────── */
 .expandChevron { display: inline-flex; align-items: center; transition: transform 0.2s ease; color: var(--text-muted); margin-right: 6px; }

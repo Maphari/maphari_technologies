@@ -193,6 +193,7 @@ export function MaphariDashboard() {
 
   const { toasts, pushToast } = useDashboardToasts({ dismissMs: 3200 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [flyoutIsOpen, setFlyoutIsOpen] = useState(false);
 
   // ── 1. Navigation ──────────────────────────────────────────────────────────
   const {
@@ -204,6 +205,7 @@ export function MaphariDashboard() {
     pinnedPages,
     grouped,
     navBadgeCounts,
+    statusBar,
     handlePageChange,
     handleLogout
   } = useAdminNavigation({
@@ -403,7 +405,7 @@ export function MaphariDashboard() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className={`${styles.dashboardRoot} ${styles.root} dashboardScale dashboardThemeAdmin`}>
+    <div className={`${styles.dashboardRoot} ${styles.root} dashboardScale dashboardThemeAdmin${flyoutIsOpen ? ` ${styles.flyoutIsOpen}` : ""}`}>
       <div className={styles.cursor} ref={cursorRef} />
       <div className={styles.cursorRing} ref={ringRef} />
 
@@ -418,6 +420,7 @@ export function MaphariDashboard() {
           email={email}
           onPageChange={(p) => { handlePageChange(p); setSidebarOpen(false); }}
           mobileOpen={sidebarOpen}
+          onFlyoutChange={setFlyoutIsOpen}
         />
         {sidebarOpen && (
           <div className={styles.mobileOverlay} onClick={() => setSidebarOpen(false)} />
@@ -450,7 +453,7 @@ export function MaphariDashboard() {
             onOpenMessages={() => setPage("messages")}
             onLogout={() => void handleLogout()}
             onMenuToggle={() => setSidebarOpen((prev) => !prev)}
-            onOpenHelp={() => setPage("knowledgeBaseAdmin")}
+            statusBar={statusBar}
           />
 
           <section className={styles.content}>
