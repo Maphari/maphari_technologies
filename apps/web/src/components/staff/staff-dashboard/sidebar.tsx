@@ -245,6 +245,7 @@ interface StaffSidebarProps {
   staffName: string;
   staffRole: string;
   mobileOpen?: boolean;
+  onMobileClose?: () => void;
   quickActionProjects?: Array<{ id: string; name: string }>;
   onQuickLogTime?: (projectId: string, minutes: number, label: string) => Promise<void>;
   onQuickAddTask?: () => void;
@@ -256,6 +257,7 @@ export function StaffSidebar({
   onNavigate,
   staffInitials,
   mobileOpen,
+  onMobileClose,
 }: StaffSidebarProps) {
   return (
     <Sidebar
@@ -264,6 +266,7 @@ export function StaffSidebar({
       onNavigate={onNavigate}
       userInitials={staffInitials}
       mobileOpen={mobileOpen}
+      onMobileClose={onMobileClose}
     />
   );
 }

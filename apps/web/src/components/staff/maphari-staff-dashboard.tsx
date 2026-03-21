@@ -851,86 +851,67 @@ export function MaphariStaffDashboard() {
   }
 
   return (
-    <div className={`${styles.staffRoot} ${styles.root} dashboardScale dashboardBlendAdmin dashboardThemeStaff`}>
+    <div className={cx("staffRoot")}>
       <div className={styles.cursor} ref={cursorRef} />
       <div className={styles.cursorRing} ref={ringRef} />
 
-      <div className={styles.shell}>
-        <StaffSidebar
-          navSections={navSections}
-          allPagesSections={allNavSections}
-          activePage={activePage}
-          onNavigate={(p) => { setActivePage(p); setSidebarOpen(false); }}
+      <div className={cx("shell")}>
+        <StaffTopbar
+          eyebrow={topbarEyebrow}
+          title={topbarTitle}
+          onOpenApps={() => window.dispatchEvent(new CustomEvent("staff:open-app-grid"))}
+          onOpenNotifications={() => setActivePage("notifications")}
+          onOpenMessages={() => setActivePage("comms")}
+          unreadNotificationsCount={totalUnreadNotifications}
+          onLogout={() => void handleLogout()}
           staffInitials={staffInitials}
           staffName={staffName}
+          staffEmail={staffEmail}
           staffRole={staffRole}
-          mobileOpen={sidebarOpen}
-          quickActionProjects={projects.map((p) => ({ id: p.id, name: p.name }))}
-          onQuickAddTask={() => {
+          isLoggingOut={loggingOut}
+          onOpenHelp={() => setActivePage("knowledge")}
+          onNavigateSettings={() => { setActivePage("settings"); setSidebarOpen(false); }}
+          onNavigateProfile={() => { setActivePage("myemployment"); setSidebarOpen(false); }}
+          onMenuToggle={() => setSidebarOpen((prev) => !prev)}
+          onNewTask={() => {
             setActivePage("tasks");
             setSidebarOpen(false);
             setShowTaskComposer(true);
           }}
-          onQuickLogTime={async (projectId, minutes, label) => {
-            await addTimeEntry({ projectId, minutes, taskLabel: label, staffName });
-            setFeedback({ tone: "success", message: `${minutes}m logged to ${projectById.get(projectId)?.name ?? "project"}.` });
+          onStartTimer={() => {
+            setActivePage("timelog");
+            setSidebarOpen(false);
+          }}
+          onOpenFiles={() => {
+            setActivePage("projectdocuments");
+            setSidebarOpen(false);
           }}
         />
-        {sidebarOpen && (
-          <div className={styles.mobileOverlay} onClick={() => setSidebarOpen(false)} />
-        )}
-        <button
-          type="button"
-          className={styles.hamburgerBtn}
-          aria-label="Toggle navigation"
-          onClick={() => setSidebarOpen((prev) => !prev)}
-        >
-          {sidebarOpen
-            ? <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
-              </svg>
-            : <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                <rect x="1" y="4"    width="16" height="1.5" rx="0.75" fill="currentColor"/>
-                <rect x="1" y="8.25" width="16" height="1.5" rx="0.75" fill="currentColor"/>
-                <rect x="1" y="12.5" width="16" height="1.5" rx="0.75" fill="currentColor"/>
-              </svg>
-          }
-        </button>
 
-        <div className={styles.main}>
-          <StaffTopbar
-            eyebrow={topbarEyebrow}
-            title={topbarTitle}
-            onOpenApps={() => window.dispatchEvent(new CustomEvent("staff:open-app-grid"))}
-            onOpenNotifications={() => setActivePage("notifications")}
-            onOpenMessages={() => setActivePage("comms")}
-            unreadNotificationsCount={totalUnreadNotifications}
-            onLogout={() => void handleLogout()}
+        <div className={cx("body")}>
+          <StaffSidebar
+            navSections={navSections}
+            allPagesSections={allNavSections}
+            activePage={activePage}
+            onNavigate={(p) => { setActivePage(p); setSidebarOpen(false); }}
             staffInitials={staffInitials}
             staffName={staffName}
-            staffEmail={staffEmail}
             staffRole={staffRole}
-            isLoggingOut={loggingOut}
-            onOpenHelp={() => setActivePage("knowledge")}
-            onNavigateSettings={() => { setActivePage("settings"); setSidebarOpen(false); }}
-            onNavigateProfile={() => { setActivePage("myemployment"); setSidebarOpen(false); }}
-            onMenuToggle={() => setSidebarOpen((prev) => !prev)}
-            onNewTask={() => {
+            mobileOpen={sidebarOpen}
+            onMobileClose={() => setSidebarOpen(false)}
+            quickActionProjects={projects.map((p) => ({ id: p.id, name: p.name }))}
+            onQuickAddTask={() => {
               setActivePage("tasks");
               setSidebarOpen(false);
               setShowTaskComposer(true);
             }}
-            onStartTimer={() => {
-              setActivePage("timelog");
-              setSidebarOpen(false);
-            }}
-            onOpenFiles={() => {
-              setActivePage("projectdocuments");
-              setSidebarOpen(false);
+            onQuickLogTime={async (projectId, minutes, label) => {
+              await addTimeEntry({ projectId, minutes, taskLabel: label, staffName });
+              setFeedback({ tone: "success", message: `${minutes}m logged to ${projectById.get(projectId)?.name ?? "project"}.` });
             }}
           />
 
-          <div className={styles.content}>
+          <main className={cx("main")}>
             <DashboardToastStack toasts={toasts} />
             <DashboardErrorBoundary>
             <DashboardTour
@@ -1426,7 +1407,7 @@ export function MaphariStaffDashboard() {
               onRestartTour={resetStaffTour}
             />
             </DashboardErrorBoundary>
-          </div>
+          </main>
         </div>
       </div>
 
