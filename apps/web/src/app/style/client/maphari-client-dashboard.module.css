@@ -81,10 +81,24 @@
 /* ─── Approval Card ─────────────────────────────────────────────────── */
 
 .approvalCard {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   padding: 16px 20px;
   border-radius: var(--r-md);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.approvalCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.09), transparent);
 }
 
 .approvalActions {
