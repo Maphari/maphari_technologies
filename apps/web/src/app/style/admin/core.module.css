@@ -137,7 +137,6 @@
   padding: 14px 0;
   gap: 2px;
   border-radius: 14px;
-  border: 1px solid rgba(139, 111, 255, 0.16);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
@@ -230,7 +229,6 @@
   top: 50%;
   transform: translateY(-50%);
   background: #1a1a2e;
-  border: 1px solid rgba(139, 111, 255, 0.2);
   color: var(--text);
   font-size: 11px;
   font-family: var(--font-syne), sans-serif;
@@ -270,7 +268,6 @@
   bottom: 16px;
   z-index: 29;
   border-radius: 12px;
-  border: 1px solid rgba(139, 111, 255, 0.13);
   display: flex;
   flex-direction: column;
   padding: 12px 8px;
