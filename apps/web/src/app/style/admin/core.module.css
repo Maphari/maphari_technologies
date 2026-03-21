@@ -1,66 +1,86 @@
 @import "../dashboard-token-scale.css";
 
 .dashboardRoot {
-  --bg: var(--palette-bg, #050508);
-  --s1: var(--palette-surface, #0d0d14);
-  --s2: var(--palette-surface-2, #13131e);
-  --s3: var(--palette-surface-3, #171726);
-  --border: var(--palette-border, rgba(255, 255, 255, 0.07));
-  --border2: var(--palette-border-strong, rgba(255, 255, 255, 0.12));
-  --accent: var(--palette-accent, #8b6fff);
-  --accent2: var(--palette-accent-2, #a989ff);
-  --accent-d: var(--palette-accent-dim, rgba(139, 111, 255, 0.16));
-  --accent-g: var(--palette-accent-glow, rgba(139, 111, 255, 0.08));
-  --green: #34d98b;
-  --green-d: rgba(52, 217, 139, 0.12);
-  --amber: #f5a623;
-  --amber-d: rgba(245, 166, 35, 0.12);
-  --red: #ff5f5f;
-  --red-d: rgba(255, 95, 95, 0.12);
-  --purple: #8b6fff;
-  --purple-d: rgba(139, 111, 255, 0.14);
-  --text: var(--palette-text, #f0ede8);
-  --muted: var(--palette-muted, rgba(240, 237, 232, 0.45));
-  --muted2: var(--palette-muted-2, rgba(240, 237, 232, 0.25));
-  --surface: var(--s1);
-  --b1: var(--border);
-  --b2: var(--border2);
-  --b3: rgba(255, 255, 255, 0.16);
-  --blue: #60a5fa;
-  --blue-d: rgba(91, 156, 245, 0.12);
-  --r-xxs: 6px;
-  --r-xs: 6px;
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  /* Rail & fly-out */
-  --rail-w: 52px;
-  --flyout-w: 200px;
-  --rail-bg: #09090f;
-  --flyout-bg: #0e0e1a;
+  /* ── Background ── */
+  --bg: #04040a;
 
-  /* Sidebar width aliases — keeps shared/shell.module.css intact */
+  /* ── Surfaces — white-glass (same pattern as staff) ── */
+  --s1: rgba(255, 255, 255, 0.04);
+  --s2: rgba(255, 255, 255, 0.07);
+  --s3: rgba(255, 255, 255, 0.10);
+  --s4: rgba(255, 255, 255, 0.14);
+
+  /* ── Borders ── */
+  --b1: rgba(255, 255, 255, 0.06);
+  --b2: rgba(255, 255, 255, 0.10);
+  --b3: rgba(255, 255, 255, 0.16);
+  --b-top: rgba(255, 255, 255, 0.10);
+  --border:  var(--b1);
+  --border2: var(--b2);
+
+  /* ── Accent — admin purple identity ── */
+  --accent:   var(--palette-accent,   #8b6fff);
+  --accent2:  var(--palette-accent-2, #a989ff);
+  --accent-d: rgba(139, 111, 255, 0.14);
+  --accent-g: rgba(139, 111, 255, 0.07);
+
+  /* ── Semantic palette ── */
+  --green:  #34d98b;  --green-d:  rgba(52,  217, 139, 0.12);
+  --amber:  #f5a623;  --amber-d:  rgba(245, 166,  35, 0.12);
+  --red:    #ff5f5f;  --red-d:    rgba(255,  95,  95, 0.12);
+  --purple: #8b6fff;  --purple-d: rgba(139, 111, 255, 0.14);
+  --blue:   #60a5fa;  --blue-d:   rgba(91,  156, 245, 0.12);
+
+  /* ── Text ── */
+  --text:  var(--palette-text,   #f0ede8);
+  --muted: var(--palette-muted,  rgba(240, 237, 232, 0.45));
+  --muted2:var(--palette-muted-2,rgba(240, 237, 232, 0.25));
+
+  /* ── Radius — rounder, matching staff ── */
+  --r-xxs: 4px;
+  --r-xs:  8px;
+  --r-sm:  12px;
+  --r-md:  16px;
+  --r-lg:  20px;
+  --r-xl:  28px;
+
+  /* ── Shadows ── */
+  --shadow-card:   0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 var(--b-top);
+  --shadow-island: 0 16px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+  --shadow-modal:  0 24px 64px rgba(0,0,0,0.65);
+
+  /* ── Layout ── */
+  --rail-w:   52px;
+  --flyout-w: 200px;
+  --topbar-h: 44px;
   --sw: var(--rail-w);
   --sidebar-w: var(--sw);
 
-  /* Topbar height (changes from 64px) */
-  --topbar-h: 44px;
+  /* ── Glass blur scale ── */
+  --glass-sm:  8px;
+  --glass-md: 16px;
+  --glass-lg: 20px;
 
-  /* Corner glows for stat cards */
+  /* ── Corner glows ── */
   --glow-purple: rgba(139, 111, 255, 0.18);
-  --glow-green:  rgba(52, 217, 139, 0.15);
-  --glow-amber:  rgba(245, 166, 35, 0.15);
-  --glow-blue:   rgba(96, 165, 250, 0.15);
+  --glow-green:  rgba(52,  217, 139, 0.15);
+  --glow-amber:  rgba(245, 166,  35, 0.15);
+  --glow-blue:   rgba(96,  165, 250, 0.15);
 
-  /* legacy aliases kept for admin-specific classes */
-  --surface2: var(--s2);
-  --sidebar-w: var(--sw);
+  /* ── Legacy aliases ── */
+  --surface:    var(--s1);
+  --surface2:   var(--s2);
   --accent-dim: var(--accent-d);
-  --accent-glow: var(--accent-g);
+  --accent-glow:var(--accent-g);
   --purple-dim: var(--purple-d);
-  --amber-dim: var(--amber-d);
-  --red-dim: var(--red-d);
-  background: var(--bg);
+  --amber-dim:  var(--amber-d);
+  --red-dim:    var(--red-d);
+
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 800px 600px at 10% 30%, rgba(139, 111, 255, 0.09) 0%, transparent 60%),
+    radial-gradient(ellipse 700px 500px at 92% 85%, rgba(91, 156, 245, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 500px 400px at 55% 105%, rgba(139, 111, 255, 0.04) 0%, transparent 55%);
   color: var(--text);
   height: 100vh;
   overflow: hidden;
@@ -123,9 +143,9 @@
 
 .rail {
   width: var(--rail-w);
-  background: rgba(9, 9, 15, 0.84);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--s2);
+  backdrop-filter: blur(var(--glass-md));
+  -webkit-backdrop-filter: blur(var(--glass-md));
   position: fixed;
   left: 16px;
   top: 16px;
@@ -136,8 +156,17 @@
   align-items: center;
   padding: 14px 0;
   gap: 2px;
-  border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border-radius: var(--r-lg);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.rail::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 10px; right: 10px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(139, 111, 255, 0.22), transparent);
+  pointer-events: none;
 }
 
 .railLogo {
@@ -258,16 +287,17 @@
 
 .flyout {
   width: var(--flyout-w);
-  background: rgba(14, 14, 26, 0.86);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  background: var(--s2);
+  backdrop-filter: blur(var(--glass-md));
+  -webkit-backdrop-filter: blur(var(--glass-md));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   position: fixed;
   left: calc(16px + var(--rail-w) + 8px);
   top: 16px;
   bottom: 16px;
   z-index: 29;
-  border-radius: 12px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   padding: 12px 8px;
@@ -277,6 +307,15 @@
   opacity: 0;
   transition: transform 200ms cubic-bezier(0.32, 0, 0.15, 1), opacity 200ms ease;
   pointer-events: none;
+}
+
+.flyout::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 14px; right: 14px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(139, 111, 255, 0.18), transparent);
+  pointer-events: none;
+  flex-shrink: 0;
 }
 
 .flyoutOpen {
@@ -643,14 +682,22 @@
   align-items: center;
   gap: 0;
   padding: 0 16px;
-  background: rgba(8, 8, 14, 0.84);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(139, 111, 255, 0.15);
+  background: var(--s2);
+  backdrop-filter: blur(var(--glass-lg));
+  -webkit-backdrop-filter: blur(var(--glass-lg));
   border-top: 2px solid var(--accent);
   border-radius: var(--r-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  overflow: hidden;
   transition: left 200ms cubic-bezier(0.32, 0, 0.15, 1);
+}
+
+.topbar::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 20px; right: 20px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(139, 111, 255, 0.20), transparent);
+  pointer-events: none;
 }
 
 .topbarBreadcrumb {
