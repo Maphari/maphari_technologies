@@ -80,11 +80,11 @@
   position: relative;
 }
 
-/* Body — floating island area below topbar */
+/* Body — floating island area below topbar, right of rail */
 .body {
   position: fixed;
   top: calc(var(--edge) + var(--topbar-h) + var(--gap));
-  left: var(--edge);
+  left: calc(var(--edge) + var(--rail-w) + var(--gap));
   right: var(--edge);
   bottom: var(--edge);
   display: flex;
@@ -317,10 +317,13 @@
   border: 1.5px solid var(--bg);
 }
 
-/* ── 4. Sidebar rail — floating island pill ───────────────────────────── */
+/* ── 4. Sidebar rail — full-height fixed island (like client sidebar) ──── */
 .rail {
+  position: fixed;
+  top: var(--edge);
+  left: var(--edge);
+  bottom: var(--edge);
   width: var(--rail-w);
-  flex-shrink: 0;
   background: var(--s2);
   backdrop-filter: blur(var(--glass-md));
   -webkit-backdrop-filter: blur(var(--glass-md));
@@ -332,7 +335,6 @@
   padding: 10px 0 14px;
   gap: 2px;
   z-index: 20;
-  position: relative;
   overflow: hidden;
 }
 
