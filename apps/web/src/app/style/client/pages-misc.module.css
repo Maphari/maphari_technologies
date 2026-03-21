@@ -9,6 +9,8 @@
 }
 .obsKpiCard {
   background: var(--s1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--b2);
   border-left: 3px solid var(--accent);
   border-radius: var(--r-md);
@@ -66,6 +68,8 @@
   font-size: 0.7rem;
   font-weight: 700;
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 2px solid var(--b2);
   color: var(--muted);
   flex-shrink: 0;
@@ -125,6 +129,8 @@
 }
 .cohKpiCard {
   background: var(--s1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--b2);
   border-left: 3px solid var(--accent);
   border-radius: var(--r-md);
@@ -202,6 +208,8 @@
   display: flex; align-items: center; justify-content: center;
   font-size: 0.62rem; font-weight: 700;
   background: var(--s2); border: 2px solid var(--b2); color: var(--muted);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .pbrMilestoneNodeDone { background: color-mix(in oklab, var(--accent) 15%, transparent); border-color: var(--accent); color: var(--accent); }
 .pbrDeliverable { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; font-size: 0.82rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
@@ -217,6 +225,8 @@
 }
 .obdKpiCard {
   background: var(--s1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--b2);
   border-left: 3px solid var(--accent);
   border-radius: var(--r-md);
@@ -547,6 +557,8 @@
   padding: 8px 14px;
   border-radius: var(--r-sm);
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--muted);
   border: 1px solid var(--b2);
   cursor: pointer;
@@ -573,6 +585,8 @@
 }
 .cmdPod {
   background: var(--s1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--b1);
   border-radius: var(--r-md);
   padding: 16px 16px 14px;
@@ -695,6 +709,8 @@
   padding: 5px 10px;
   border-radius: var(--r-xs);
   background: var(--s3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--b2);
   color: var(--muted);
   cursor: pointer;
@@ -735,6 +751,8 @@
   height: 13px;
   border-radius: 50%;
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 2px solid var(--b2);
   position: relative;
   z-index: 1;
@@ -918,6 +936,8 @@
   font-size: 1.5rem;
   border-radius: var(--r-md);
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid transparent;
   cursor: pointer;
   transition: background 0.14s, border-color 0.14s, transform 0.12s;
@@ -1060,6 +1080,8 @@
   font-size: 1.2rem;
   border-radius: var(--r-sm);
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid transparent;
   cursor: pointer;
   transition: background 0.14s, border-color 0.14s, transform 0.12s;
@@ -1217,6 +1239,8 @@
 
 .modal {
   background: var(--s1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--b2);
   border-radius: var(--r-md);
   padding: 24px;
@@ -1642,9 +1666,9 @@
 
 /* ── Tag / Pill components ───────────────────────────────────────────────── */
 .tagWrapRow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 14px; background: var(--s2); border-radius: 10px; border: 1px solid var(--b1); }
-.tagPill    { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 700; background: var(--s3); border: 1px solid var(--b2); color: var(--muted2); }
-.tagPillS3  { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 700; background: var(--s3); border: 1px solid var(--b2); color: var(--text); }
-.tagPillSm  { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 20px; font-size: 0.55rem; font-weight: 700; background: var(--s3); border: 1px solid var(--b2); }
+.tagPill    { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 700; background: var(--s3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b2); color: var(--muted2); }
+.tagPillS3  { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 700; background: var(--s3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b2); color: var(--text); }
+.tagPillSm  { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 20px; font-size: 0.55rem; font-weight: 700; background: var(--s3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b2); }
 .zonePill   { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 0.55rem; font-weight: 700; color: var(--color, var(--text)); background: var(--bg-color, var(--s3)); }
 .scorePill  { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 800; color: var(--color, var(--text)); background: var(--bg-color, var(--s3)); }
 .comboPill  { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 0.575rem; font-weight: 700; }
@@ -1692,11 +1716,11 @@
 
 /* ── Card surface helpers ────────────────────────────────────────────────── */
 .cardRowS1 { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-sm); }
-.cardS1    { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); }
-.cardS1v2  { background: var(--s1); border: 1px solid var(--b1); border-radius: var(--r-sm); }
-.cardS2    { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r-sm); }
-.cardS2v2  { background: var(--s2); border: 1px solid var(--b2); border-radius: var(--r-md); }
-.cardS3    { background: var(--s3); border: 1px solid var(--b1); border-radius: var(--r-sm); }
+.cardS1    { background: var(--s1); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b2); border-radius: var(--r-md); }
+.cardS1v2  { background: var(--s1); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b1); border-radius: var(--r-sm); }
+.cardS2    { background: var(--s2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b1); border-radius: var(--r-sm); }
+.cardS2v2  { background: var(--s2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b2); border-radius: var(--r-md); }
+.cardS3    { background: var(--s3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b1); border-radius: var(--r-sm); }
 .bgS3      { background: var(--s3); }
 .darkBorderB { border-bottom: 1px solid var(--b1); }
 .accentInfoCard { background: var(--lime-g); border: 1px solid color-mix(in oklab, var(--lime) 25%, transparent); border-radius: var(--r-sm); }
@@ -2312,9 +2336,9 @@
 .list      { display: flex; flex-direction: column; }
 .listGroup { display: flex; flex-direction: column; gap: 2px; }
 .listRow   { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--b1); }
-.listChip  { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: var(--r-xs); background: var(--s3); border: 1px solid var(--b2); font-size: 0.65rem; }
+.listChip  { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: var(--r-xs); background: var(--s3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b2); font-size: 0.65rem; }
 .infoChip  { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: var(--r-xs); background: var(--lime-g); border: 1px solid color-mix(in oklab, var(--lime) 25%, transparent); font-size: 0.65rem; color: var(--lime); }
-.infoChipSm { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: var(--r-xs); background: var(--s3); border: 1px solid var(--b2); font-size: 0.6rem; }
+.infoChipSm { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: var(--r-xs); background: var(--s3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b2); font-size: 0.6rem; }
 .cardMeta   { display: flex; align-items: center; gap: 8px; font-size: 0.65rem; color: var(--muted2); }
 .cardChipAmber { background: color-mix(in oklab, var(--amber) 12%, var(--s2)); border: 1px solid color-mix(in oklab, var(--amber) 22%, transparent); color: var(--amber); padding: 2px 8px; border-radius: var(--r-xs); font-size: 0.6rem; font-weight: 700; }
 .chevronIcon { color: var(--muted2); transition: transform 0.2s ease; }
@@ -2947,6 +2971,8 @@
 .mb0    { margin-bottom: 0; }
 .faqAccordionItem {
   border-radius: var(--r-sm); background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--b1); overflow: hidden;
   transition: background 0.15s, border-color 0.15s;
 }
@@ -4132,6 +4158,8 @@
 }
 .sprintColumn {
   background: var(--s2); border-radius: var(--r-md); border: 1px solid var(--b2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
 }
 .sprintColHd {
@@ -4142,6 +4170,8 @@
 .sprintCard {
   padding: 10px 12px; border-radius: var(--r-sm); cursor: pointer;
   background: var(--s1); border: 1px solid var(--b2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transition: box-shadow 0.12s;
 }
 .sprintPriorityBar { width: 3px; height: 36px; border-radius: 2px; flex-shrink: 0; background: var(--bg-color, var(--lime)); }
@@ -4253,6 +4283,8 @@
 .profileStatBox {
   flex: 1; padding: 12px 14px; border-radius: var(--r-sm); text-align: center;
   background: var(--s2); border: 1px solid var(--b2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .profileKvRow { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--b1); }
 
@@ -4488,6 +4520,8 @@
 .integrationCard {
   padding: 16px; border-radius: var(--r-md); cursor: pointer; transition: box-shadow 0.12s;
   background: var(--s1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1.5px solid var(--color, var(--b2));
 }
 
@@ -4745,7 +4779,7 @@
 .caExpandGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
 .caRevisionNote { background: color-mix(in oklab, var(--amber) 6%, transparent); border: 1px solid color-mix(in oklab, var(--amber) 20%, transparent); border-radius: var(--r-sm); padding: 10px 12px; font-size: 0.75rem; }
 .caRevisionForm { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; background: var(--s2); border-top: 1px solid var(--b1); }
-.caCommentBubble { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r-sm); padding: 8px 10px; font-size: 0.75rem; line-height: 1.5; }
+.caCommentBubble { background: var(--s2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b1); border-radius: var(--r-sm); padding: 8px 10px; font-size: 0.75rem; line-height: 1.5; }
 .gap6_14 { display: flex; gap: 6px 14px; flex-wrap: wrap; }
 
 /* ════════════════════════════════════════════════════════ */
@@ -4767,7 +4801,7 @@
 /* ── Meeting Archive page extras (ma*) ───────────────── */
 /* ════════════════════════════════════════════════════════ */
 .maArchiveRowBtn { display: flex; align-items: center; gap: 12px; padding: 12px 16px; width: 100%; background: none; border: none; cursor: pointer; text-align: left; }
-.maMetaCard { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r-sm); padding: 12px 14px; margin-bottom: 14px; }
+.maMetaCard { background: var(--s2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b1); border-radius: var(--r-sm); padding: 12px 14px; margin-bottom: 14px; }
 .maHostAv { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-color, var(--s3)); border: 1.5px solid var(--color, var(--b2)); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; color: var(--color, var(--muted2)); flex-shrink: 0; }
 .maActionRow { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: var(--r-sm); cursor: pointer; background: var(--s2); border: 1px solid var(--b1); }
 .maCheckbox { width: 18px; height: 18px; border-radius: 4px; background: var(--bg-color, transparent); border: 1.5px solid var(--border-color, var(--b3)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, border-color 0.15s; }
@@ -4810,7 +4844,7 @@
 .qaExpiredBanner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: var(--r-sm); background: color-mix(in oklab, var(--red) 8%, transparent); border: 1px solid color-mix(in oklab, var(--red) 22%, transparent); margin-bottom: 12px; }
 .qaDeclineBtn { color: var(--muted2); border-color: var(--b2); }
 .qaConfirmBox { padding: 14px 16px; border-radius: var(--r-sm); background: color-mix(in oklab, var(--lime) 6%, transparent); border: 1px solid color-mix(in oklab, var(--lime) 20%, transparent); margin-bottom: 12px; }
-.qaDeclBox { padding: 14px 16px; border-radius: var(--r-sm); background: var(--s2); border: 1px solid var(--b1); margin-bottom: 12px; }
+.qaDeclBox { padding: 14px 16px; border-radius: var(--r-sm); background: var(--s2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b1); margin-bottom: 12px; }
 .qaDeclineConfirmBtn { color: var(--muted2); border-color: var(--b2); margin-top: 8px; }
 
 /* ════════════════════════════════════════════════════════ */
@@ -4846,7 +4880,7 @@
 .dlUnderReviewAlert { margin-bottom: 16px; padding: 12px 16px; border-radius: var(--r-md); border: 1px solid color-mix(in oklab, var(--amber) 25%, transparent); border-left: 3px solid var(--amber); background: color-mix(in oklab, var(--amber) 6%, transparent); display: flex; align-items: center; gap: 10px; }
 .dlColHd { display: grid; grid-template-columns: 44px 1fr 80px 120px 130px 32px; gap: 0 12px; padding: 8px 20px; border-bottom: 1px solid var(--b2); background: var(--s2); }
 .p14x20x16x17 { padding: 14px 20px 16px 17px; }
-.dlDeciderChip { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 6px; border-radius: 20px; background: var(--s1); border: 1px solid var(--b1); }
+.dlDeciderChip { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 6px; border-radius: 20px; background: var(--s1); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b1); }
 .dlReviewBadge { display: flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; background: color-mix(in oklab, var(--amber) 10%, var(--s2)); border: 1px solid color-mix(in oklab, var(--amber) 20%, transparent); }
 .dlSectionIconBox { width: 20px; height: 20px; border-radius: var(--r-xs); background: var(--bg-color, var(--s2)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
@@ -4857,7 +4891,7 @@
 /* ── Change Requests page (cr*) ──────────────────────── */
 /* ════════════════════════════════════════════════════════ */
 .crImpactCard { background: var(--s2); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--b2); }
-.crCascadeCard { padding: 12px 14px; border-radius: 8px; background: var(--s2); border: 1px solid var(--b2); transition: all 0.25s; }
+.crCascadeCard { padding: 12px 14px; border-radius: 8px; background: var(--s2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid var(--b2); transition: all 0.25s; }
 .crCascadeCardChanged { background: color-mix(in oklab, var(--lime) 8%, transparent); border-color: color-mix(in oklab, var(--lime) 22%, transparent); }
 
 /* ════════════════════════════════════════════════════════ */
@@ -5472,7 +5506,7 @@
 /* ─── Project Roadmap ────────────────────────────────────────────────────── */
 
 .rdmWrap { padding: 0 0 32px; }
-.rdmProjectBlock { margin-bottom: 32px; border: 1px solid var(--b2); border-radius: var(--r-md); padding: 20px; background: var(--s1); }
+.rdmProjectBlock { margin-bottom: 32px; border: 1px solid var(--b2); border-radius: var(--r-md); padding: 20px; background: var(--s1); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .rdmProjectHeader { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .rdmTrackOuter { position: relative; height: 40px; background: var(--s2); border-radius: 20px; overflow: visible; margin: 8px 0 28px; }
 .rdmTrackBar { position: absolute; top: 12px; height: 16px; background: var(--lime-g); border-radius: 8px; border: 1px solid var(--lime); }
@@ -5497,7 +5531,7 @@
 /* ─── E-Signature Canvas Pad ─────────────────────────────────────────────── */
 
 .sigModal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px; }
-.sigModalBox { background: var(--s1); border-radius: var(--r-lg); padding: 28px; width: 100%; max-width: 540px; border: 1px solid var(--b2); }
+.sigModalBox { background: var(--s1); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: var(--r-lg); padding: 28px; width: 100%; max-width: 540px; border: 1px solid var(--b2); }
 .sigModalTitle { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
 .sigModalSub { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px; }
 .sigNameInput { width: 100%; padding: 10px 14px; border: 1px solid var(--b2); border-radius: var(--r-sm); background: var(--s2); color: var(--text); font-size: 0.85rem; margin-bottom: 16px; box-sizing: border-box; }
@@ -5547,6 +5581,8 @@
 
 .maKpiCard {
   background: var(--s1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--b2);
   border-left: 3px solid var(--lime);
   border-radius: var(--r-md);

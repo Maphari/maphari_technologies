@@ -550,8 +550,8 @@
 
 .cmdHero {
   position: relative;
-  background: var(--s1);
-  border: 1px solid var(--b2);
+  background: rgba(200, 241, 53, 0.04);
+  border: 1px solid rgba(200, 241, 53, 0.16);
   border-radius: var(--r-lg);
   padding: 28px 28px 24px;
   overflow: hidden;
@@ -559,6 +559,9 @@
   align-items: center;
   gap: 28px;
   margin-bottom: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(200, 241, 53, 0.12);
 }
 
 .cmdHeroBg {
@@ -1194,6 +1197,8 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .cmdCelebStrip {
@@ -1205,6 +1210,8 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .cmdDismissBtn {

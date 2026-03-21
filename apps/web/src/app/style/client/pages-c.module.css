@@ -81,6 +81,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -111,6 +113,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
 }
 
@@ -442,6 +446,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 14px 16px;
 }
 
@@ -473,6 +479,8 @@
   color: var(--muted);
   border: 1px solid var(--border);
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: var(--r-xs);
   padding: 5px 8px;
 }
@@ -532,6 +540,8 @@
   border: 1px solid var(--border);
   border-bottom: none;
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: var(--r-sm) var(--r-sm) 0 0;
   padding: 8px 10px;
 }
@@ -622,6 +632,8 @@
   border: 1px solid var(--border);
   border-bottom: none;
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: var(--r-sm) var(--r-sm) 0 0;
   padding: 8px 10px;
 }
@@ -685,6 +697,8 @@
   border: 1px solid var(--b3);
   border-radius: var(--r-md);
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   box-shadow: var(--shadow-modal);
   color: inherit;
 }
@@ -1429,6 +1443,8 @@
 .aiAutoSummaryCard {
   border: 1px solid color-mix(in oklab, var(--purple) 48%, var(--border));
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: var(--r-md);
   padding: 18px 18px 14px;
   position: relative;
@@ -1548,6 +1564,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -1703,6 +1721,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .aiAutoFaqQ {
@@ -1741,6 +1761,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 14px;
 }
 
@@ -1830,6 +1852,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 12px 14px;
 }
 
@@ -1862,6 +1886,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -2384,6 +2410,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 14px;
 }
 
@@ -2635,6 +2663,8 @@
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
 }
 

@@ -222,6 +222,8 @@
   border-radius: var(--r-sm);
   padding: 9px 12px;
   background: var(--s3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transition: border-color 0.14s ease;
 }
 
@@ -600,6 +602,8 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -792,6 +796,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 14px;
   margin: 16px;
 }
@@ -1066,6 +1072,8 @@
   border: 1px solid var(--accent);
   border-radius: var(--r-md);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -1272,6 +1280,8 @@
   font-size: 0.58rem;
   color: var(--muted2);
   background: var(--s3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--b1);
   border-radius: 99px;
   padding: 1px 7px;
@@ -1548,6 +1558,8 @@
 .msguAiBubbleAi {
   border-radius: 4px 16px 16px 16px;
   background: var(--s3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--b1);
   color: var(--text);
 }
@@ -1966,6 +1978,8 @@
   border-left: 3px solid transparent;
   border-radius: var(--r-md);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
   transition: border-color 0.16s ease, transform 0.16s ease;
 }
@@ -2427,6 +2441,8 @@
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .mileModalHeader {
@@ -2563,6 +2579,8 @@
   border: 1px solid var(--accent);
   border-radius: var(--r-md);
   background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 12px 16px;
   display: flex;
   align-items: center;
