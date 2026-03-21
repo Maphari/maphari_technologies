@@ -187,6 +187,7 @@
 .logoText,
 .dashboardChip,
 .adminChip,
+.portalChip,
 .staffChip {
   display: none;
 }
@@ -388,6 +389,660 @@
     max-height: 100dvh;
   }
 }
+
+/* ─── Restored shared sidebar classes (admin + client) ──────────────── */
+
+/* Project switcher */
+
+.projectSwitcherWrap,
+.statusBar {
+  margin: 6px 12px 2px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--s2) 88%, var(--accent) 12%);
+}
+
+.projectSwitcherLabel,
+.statusText {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.projectSwitcher {
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid var(--border2);
+  border-radius: var(--r-xs);
+  background: var(--s1);
+  color: var(--text);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  padding: 7px 10px;
+}
+
+/* Chip styles (shown in full sidebar, hidden in icon rail via display:none above) */
+
+.dashboardChip,
+.adminChip,
+.portalChip,
+.staffChip {
+  align-self: flex-end;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid color-mix(in oklab, var(--accent) 35%, transparent);
+  border-radius: var(--r-xs);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 2px 7px;
+}
+
+/* Sidebar footer + user card */
+
+.sidebarFooter {
+  border-top: none;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.userCard,
+.userRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in oklab, var(--accent) 24%, var(--border));
+  background: color-mix(in oklab, var(--surface) 88%, var(--accent) 12%);
+}
+
+.userAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--accent) 88%, #fff 12%);
+  color: #050508;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.userAvatarAdmin {
+  background: var(--accent);
+  color: #050508;
+}
+
+.userInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.userName {
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userRole {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  color: color-mix(in oklab, var(--accent) 64%, var(--muted));
+  text-transform: uppercase;
+}
+
+/* Nav chevron */
+
+.navChevron {
+  width: 12px;
+  height: 12px;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.navChevronExpanded {
+  transform: rotate(180deg);
+}
+
+/* navChevronIcon — alias used by admin sidebar SVG */
+.navChevronIcon {
+  width: 14px;
+  height: 14px;
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+/* Nav divider */
+
+.navDivider {
+  margin: 10px 20px;
+  border: none;
+  border-top: 1px dashed var(--border2);
+  opacity: 0.5;
+}
+
+/* Nav sub-group */
+
+.navSubGroup {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+}
+
+/* ─── Nav Popup (All Pages Dialog) ──────────────────────────────────── */
+
+.navPopupBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(6px) saturate(1.05);
+  backdrop-filter: blur(6px) saturate(1.05);
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+@keyframes popupSlideUp {
+  from {
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navPopupPanel {
+    animation: none;
+  }
+}
+
+.navPopupPanel {
+  width: min(1040px, calc(100vw - 40px));
+  max-height: min(88vh, 840px);
+  background: var(--s1);
+  color: var(--text);
+  border: 1px solid var(--b2);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 24px 80px rgba(0, 0, 0, 0.48);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-lg);
+  opacity: 1;
+  animation: popupSlideUp 0.22s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+}
+
+.navPopupPanel::before,
+.navPopupPanel::after {
+  display: none;
+}
+
+.navPopupHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 20px 16px;
+  gap: 14px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--b1);
+}
+
+.navPopupTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.navPopupSubtitle {
+  margin-top: 4px;
+  color: var(--muted2);
+  font-size: 0.72rem;
+  max-width: 60ch;
+  line-height: 1.5;
+}
+
+.navPopupClose {
+  border: 1px solid var(--b2);
+  background: var(--s2);
+  color: var(--muted2);
+  padding: 6px 14px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  min-height: 32px;
+  border-radius: var(--r-sm);
+  transition: border-color var(--duration-base) ease, color var(--duration-base) ease, background var(--duration-base) ease;
+}
+
+.navPopupClose:hover {
+  border-color: var(--b3);
+  color: var(--text);
+  background: var(--s3);
+}
+
+.navPopupSearchRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px 0;
+  flex-shrink: 0;
+}
+
+.navPopupSearch {
+  width: 100%;
+  border: 1px solid var(--b2);
+  background: var(--s3);
+  color: var(--text);
+  font-size: 0.78rem;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  transition: border-color var(--duration-base) ease, box-shadow var(--duration-base) ease;
+}
+
+.navPopupSearch:focus {
+  border-color: var(--b3);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--lime) 12%, transparent);
+  outline: none;
+}
+
+.navPopupSearch::placeholder {
+  color: var(--muted2);
+}
+
+.navPopupSearchWrap {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.navPopupSearchWrap .navPopupSearch {
+  padding-left: 36px;
+  width: 100%;
+}
+
+.navPopupClear {
+  border: 1px solid var(--b2);
+  background: var(--s2);
+  color: var(--muted2);
+  padding: 0 13px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-radius: var(--r-sm);
+  min-height: 38px;
+  transition: border-color var(--duration-base) ease, color var(--duration-base) ease, background var(--duration-base) ease;
+}
+
+.navPopupClear:hover {
+  border-color: var(--b3);
+  color: var(--text);
+  background: var(--s3);
+}
+
+.navPopupMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted2);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.57rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 10px 20px;
+  margin-top: 12px;
+  background: var(--s2);
+  border-top: 1px solid var(--b1);
+  border-bottom: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+
+.navPopupMetaHints {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.navKbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 5px;
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  color: var(--muted2);
+  line-height: 1;
+}
+
+.navPopupCloseKbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-radius: 4px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+  margin-left: 5px;
+  line-height: 1.4;
+}
+
+.navPopupSections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  flex: 1;
+  padding: 16px 20px 20px;
+}
+
+.navPopupSection {
+  padding-top: 2px;
+}
+
+.navPopupSection+.navPopupSection {
+  border-top: 1px solid var(--b1);
+  padding-top: 16px;
+}
+
+.navPopupSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 11px;
+}
+
+.navPopupSectionTitle {
+  color: var(--muted2);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.navPopupSectionTitle::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--b3);
+  flex-shrink: 0;
+}
+
+.navPopupSectionCount {
+  color: var(--muted2);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--b2);
+  border-radius: 999px;
+  background: var(--s2);
+  padding: 2px 8px;
+}
+
+.navPageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.navPageTile {
+  border: 1px solid var(--b1);
+  border-left-width: 2px;
+  border-left-color: transparent;
+  background: var(--s2);
+  color: var(--text);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  min-height: 64px;
+  border-radius: var(--r-sm);
+  transition: border-color var(--duration-base) ease, background var(--duration-base) ease, box-shadow var(--duration-base) ease;
+}
+
+.navPageTileIcon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--b1);
+  background: var(--s3);
+  color: var(--muted2);
+  flex-shrink: 0;
+  transition: color var(--duration-base) ease, border-color var(--duration-base) ease;
+}
+
+.navPageTile .navIcon {
+  width: 15px;
+  height: 15px;
+  transition: opacity var(--duration-base) ease;
+}
+
+.navPageTile:hover {
+  border-color: var(--b2);
+  border-left-color: var(--b3);
+  background: var(--s3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.navPageTile:hover .navPageTileIcon {
+  color: var(--text);
+  border-color: var(--b2);
+}
+
+.navPageTile:hover .navIcon {
+  opacity: 1;
+}
+
+.navPageTileActive {
+  border-color: var(--b2);
+  border-left-color: var(--lime);
+  background: color-mix(in oklab, var(--lime) 6%, var(--s2));
+}
+
+.navPageTileActive .navPageTileIcon {
+  background: color-mix(in oklab, var(--lime) 12%, var(--s3));
+  border-color: color-mix(in oklab, var(--lime) 24%, var(--b1));
+  color: var(--lime);
+}
+
+.navPageTileActive .navIcon {
+  opacity: 1;
+}
+
+.navPageTileLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.navPageTileMeta {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.55rem;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 3px;
+}
+
+.navPageTile:focus-visible,
+.navPopupClose:focus-visible,
+.navPopupClear:focus-visible,
+.navPopupSearch:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 2px;
+}
+
+.navPopupEmpty {
+  border: 1px dashed var(--b2);
+  background: var(--s2);
+  color: var(--muted2);
+  padding: 32px 20px;
+  text-align: center;
+  font-size: 0.76rem;
+  border-radius: var(--r-md);
+  line-height: 1.5;
+}
+
+/* ── Quick Actions section in ⌘K drawer ─────────────────────────── */
+
+.navQuickActions {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--b1);
+  margin-bottom: 0;
+}
+
+.navQuickActionsLabel {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted2);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.navQuickActionsList {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.navQuickActionBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--b2);
+  background: var(--s2);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.navQuickActionBtn:hover {
+  border-color: var(--accent);
+  background: color-mix(in oklab, var(--s2) 80%, var(--accent) 20%);
+  color: var(--text);
+}
+
+.navQuickActionBtnActive {
+  border-color: var(--accent);
+  background: color-mix(in oklab, var(--s2) 70%, var(--accent) 30%);
+  color: var(--accent);
+}
+
+.navQuickActionIcon {
+  font-style: normal;
+  line-height: 1;
+}
+
+/* ── Log time form ───────────────────────────────────────────────── */
+
+.navLogTimeForm {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+}
+
+.navLogTimeSelect {
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-xs);
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.navLogTimeRow {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.navLogTimeInput,
+.navLogTimeLabelInput {
+  padding: 6px 10px;
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-xs);
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.navLogTimeInput:focus,
+.navLogTimeLabelInput:focus,
+.navLogTimeSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.navLogTimeSubmit {
+  padding: 6px 12px;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--r-xs);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.navLogTimeSubmit:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.navLogTimeSubmit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
 
 .main {
   height: 100%;
@@ -4218,10 +4873,11 @@
 .mobileOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 19;
   backdrop-filter: blur(2px);
-  z-index: 149;
   cursor: pointer;
+  animation: overlayFadeIn 0.2s ease forwards;
 }
 
 /* Floating hamburger FAB — hidden on desktop, shown on mobile */
@@ -4672,39 +5328,4 @@
 @keyframes overlayFadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
-}
-
-.mobileOverlay {
-  animation: overlayFadeIn 0.2s ease forwards;
-}
-
-/* ─── Nav item tooltip for collapsed sidebar ─────────────────────── */
-
-.navItem {
-  position: relative;
-}
-
-.sidebarCollapsed .navItem::after {
-  content: attr(data-label);
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--s3, rgba(255,255,255,0.08));
-  border: 1px solid var(--border2, rgba(255,255,255,0.12));
-  color: var(--text);
-  font-family: var(--font-dm-mono), monospace;
-  font-size: 0.62rem;
-  font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 6px;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.12s;
-  z-index: 200;
-}
-
-.sidebarCollapsed .navItem:hover::after {
-  opacity: 1;
 }
