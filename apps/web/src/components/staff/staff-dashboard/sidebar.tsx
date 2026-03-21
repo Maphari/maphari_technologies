@@ -143,8 +143,7 @@ function SidebarInner({
       >
         {/* Logo */}
         <div className={cx("railLogo")} aria-label="Maphari Technologies">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/MAT_logo.png" alt="Maphari Technologies" className={cx("railLogoImg")} />
+          M
         </div>
 
         {/* Section divider */}
