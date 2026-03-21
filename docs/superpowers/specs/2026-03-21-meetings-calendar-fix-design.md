@@ -85,11 +85,18 @@ Client-side only — no API call.
 
 **File:** `apps/web/src/components/client/maphari-dashboard/pages/meeting-archive-page.tsx`
 
-In the Archive List tab, for each `PortalMeeting` row, add a "▶ Watch Recording" button when `meeting.hasRecording === true`:
+**Context:** The archive list tab renders appointments-derived rows (`apptToArchiveMeeting()` mapping), which have no `hasRecording`/`recordingFileId` fields. `PortalMeeting[]` is already loaded into `portalMeetings` state but is only used for mood ratings and insights.
 
-- If `recordingFileId` is non-null: button is enabled. On click, call `getPortalFileDownloadUrlWithRefresh(session, recordingFileId)` → open `downloadUrl` in a new tab.
-- If `recordingFileId` is null: button is rendered but disabled with `title="Recording being processed"`.
-- Loading state per-row: `downloadingRecordingId: string | null` state, button shows `"Loading…"` while fetching.
+**Approach:** Add a **Recordings section** below the tab panel that renders directly from `portalMeetings.filter(m => m.hasRecording)`. This avoids any data-matching complexity and is cleaner UX.
+
+The Recordings section:
+- Hidden if `portalMeetings.filter(m => m.hasRecording).length === 0`
+- Section heading: `"Recordings"` with `pageEyebrow` style
+- Each row: meeting title + date (`meetingAt`) + duration + a "▶ Watch Recording" button
+  - If `recordingFileId` is non-null: button enabled. On click, call `getPortalFileDownloadUrlWithRefresh(session, recordingFileId)` → `window.open(downloadUrl, "_blank", "noopener,noreferrer")`
+  - If `recordingFileId` is null: button disabled with `title="Recording being processed"`
+- Loading state per-row: `downloadingRecordingId: string | null` state; button shows `"…"` while fetching
+- Uses existing `ctCard` / `ctCardBody` / `ctCardActions` classes (already imported via style spread)
 
 Import `getPortalFileDownloadUrlWithRefresh` from `../../../../lib/api/portal/files`.
 
@@ -119,5 +126,5 @@ All existing, no new endpoints:
 2. Book a Call → Action Items stat shows correct count of `PENDING` meetings (not `"—"`)
 3. Book a Call → "Add to Calendar" on next meeting opens Google Calendar pre-filled with meeting details
 4. Meeting Archive → archive list rows with `hasRecording: true` show "▶ Watch Recording" button; clicking fetches download URL and opens in new tab
-5. Meeting Archive → rows with `hasRecording: true` but `recordingFileId: null` show disabled button with tooltip
+5. Meeting Archive → Recordings section hidden when no recordings; when recordings exist, rows with `recordingFileId: null` show disabled button with `title="Recording being processed"`
 6. `pnpm --filter @maphari/web exec tsc --noEmit` → 0 errors
