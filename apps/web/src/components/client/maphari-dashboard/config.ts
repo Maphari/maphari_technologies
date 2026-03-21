@@ -41,6 +41,7 @@ export type PageId =
   | "healthScore"
   | "performanceDashboard"
   | "executiveSummary"
+  | "aiInsights"
   // Growth
   | "serviceCatalog"
   | "referralProgram"
@@ -134,6 +135,7 @@ export const navSections: NavSection[] = [
       { id: "healthScore", label: "Health Score" },
       { id: "performanceDashboard", label: "Performance" },
       { id: "executiveSummary", label: "Executive View" },
+      { id: "aiInsights", label: "AI Insights" },
     ],
   },
   {

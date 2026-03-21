@@ -76,6 +76,7 @@ import { ProjectReportsPage } from "./maphari-dashboard/pages/project-reports-pa
 import { HealthScorePage } from "./maphari-dashboard/pages/health-score-page";
 import { PerformanceDashboardPage } from "./maphari-dashboard/pages/performance-dashboard-page";
 import { ExecutiveSummaryPage } from "./maphari-dashboard/pages/executive-summary-page";
+import { AiInsightsPage } from "./maphari-dashboard/pages/ai-insights-page";
 // Growth
 import { ServiceCatalogPage } from "./maphari-dashboard/pages/service-catalog-page";
 import { ReferralProgramPage } from "./maphari-dashboard/pages/referral-program-page";
@@ -542,6 +543,18 @@ export function MaphariClientDashboard() {
             {nav.activePage === "healthScore" && <HealthScorePage invoices={snapshot.invoices} projects={snapshot.projects} />}
             {nav.activePage === "performanceDashboard" && <PerformanceDashboardPage invoices={snapshot.invoices} projects={snapshot.projects} />}
             {nav.activePage === "executiveSummary" && <ExecutiveSummaryPage onNavigate={handleNavigate} />}
+            {nav.activePage === "aiInsights" && (
+              <AiInsightsPage
+                projects={snapshot.projects.map((p) => ({
+                  id: p.id,
+                  name: p.name,
+                  progress: p.progressPercent ?? 0,
+                  riskLevel: p.riskLevel ?? "LOW",
+                  status: p.status,
+                }))}
+                invoices={snapshot.invoices}
+              />
+            )}
 
             {/* ── Growth ──────────────────────────────────────────────── */}
             {nav.activePage === "serviceCatalog" && <ServiceCatalogPage />}
