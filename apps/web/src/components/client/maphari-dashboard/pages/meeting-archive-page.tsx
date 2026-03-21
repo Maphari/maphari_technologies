@@ -9,6 +9,7 @@ import {
   loadPortalMeetingsWithRefresh,
   ratePortalMeetingWithRefresh,
   createPortalSupportTicketWithRefresh,
+  getPortalFileDownloadUrlWithRefresh,
   type PortalAppointment,
   type PortalMeeting,
 } from "../../../../lib/api/portal";
@@ -153,6 +154,7 @@ export function MeetingArchivePage() {
   const [syncedIds,      setSyncedIds]      = useState<Set<string>>(new Set());
   const [loading,        setLoading]        = useState(true);
   const [error,          setError]          = useState<string | null>(null);
+  const [downloadingRecordingId, setDownloadingRecordingId] = useState<string | null>(null);
 
   // ── Derived stat counts from real meeting data ───────────────────────────
   const totalMeetings  = calMeetings.length + archiveMeetings.length;
@@ -185,6 +187,20 @@ export function MeetingArchivePage() {
       notify("error", "Request failed", "Could not send your meeting request. Please try again.");
     } finally {
       setBookingFollowUp(false);
+    }
+  }
+
+  async function handleWatchRecording(meetingId: string, fileId: string) {
+    if (!session) return;
+    setDownloadingRecordingId(meetingId);
+    try {
+      const r = await getPortalFileDownloadUrlWithRefresh(session, fileId);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data?.downloadUrl) {
+        window.open(r.data.downloadUrl, "_blank", "noopener,noreferrer");
+      }
+    } finally {
+      setDownloadingRecordingId(null);
     }
   }
 
@@ -717,6 +733,44 @@ export function MeetingArchivePage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Recordings ───────────────────────────────────────────────────── */}
+      {portalMeetings.filter((m) => m.hasRecording).length > 0 && (
+        <div>
+          <p className={cx("pageEyebrow")}>Recordings</p>
+          <div className={cx("card", "p0", "overflowHidden")}>
+            {portalMeetings
+              .filter((m) => m.hasRecording)
+              .map((m) => {
+                const dateLabel = new Date(m.meetingAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+                const durLabel  = `${m.durationMins} min`;
+                const isDownloading = downloadingRecordingId === m.id;
+                return (
+                  <div key={m.id} className={cx("borderTopDivider")}>
+                    <div className={cx("listRowBtn")}>
+                      <div className={cx("iconBox34")}>
+                        <Ic n="video" sz={14} c="var(--muted2)" />
+                      </div>
+                      <div className={cx("flex1", "minW0")}>
+                        <div className={cx("fw600", "text12", "mb2")}>{m.title}</div>
+                        <div className={cx("text10", "colorMuted")}>{dateLabel} · {durLabel}</div>
+                      </div>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnGhost")}
+                        disabled={!m.recordingFileId || isDownloading}
+                        title={!m.recordingFileId ? "Recording being processed" : undefined}
+                        onClick={() => m.recordingFileId && void handleWatchRecording(m.id, m.recordingFileId)}
+                      >
+                        {isDownloading ? "…" : "▶ Watch Recording"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
         </div>
       )}
     </div>
