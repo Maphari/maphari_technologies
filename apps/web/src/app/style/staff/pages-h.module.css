@@ -2865,7 +2865,7 @@
   max-width: min(560px, 85%);
   padding: 8px 10px;
   border: 1px solid var(--b2);
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
 }
 .prThreadBubbleMe {
   background: color-mix(in srgb, var(--accent) 8%, transparent);

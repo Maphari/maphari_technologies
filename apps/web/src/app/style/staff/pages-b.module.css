@@ -3052,7 +3052,7 @@
 
 /* ── CLIENT HEALTH — cv + ch extended classes ── */
 
-.chLayout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; align-items: start; }
+.chLayout { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
 .chListPane { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); overflow: hidden; display: flex; flex-direction: column; }
 .chTopStats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
 .chFilterPills { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
@@ -3572,13 +3572,10 @@
   border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 .chRowCard {
-  display: grid;
-  grid-template-columns: 96px 1fr auto;
-  gap: 24px;
-  align-items: center;
+  display: block;
   padding: 20px 24px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   background: rgba(255, 255, 255, 0.01);
 }
 .chScoreRingTrack {
@@ -3593,7 +3590,7 @@
   gap: 12px;
   padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   background: rgba(255, 255, 255, 0.01);
   text-align: left;
   width: 100%;
@@ -3646,7 +3643,7 @@
 }
 .coClientCard {
   padding: 14px;
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(255, 255, 255, 0.01);
 }
@@ -3681,7 +3678,7 @@
 .coActionBtnBase {
   min-height: 36px;
   padding: 0 16px;
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   font-size: 0.6875rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -3716,7 +3713,7 @@
 .ssClientCard {
   padding: 14px;
   border: 1px solid var(--b2);
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   background: var(--s1);
 }
 .ssClientCardIdle {
@@ -3726,7 +3723,7 @@
 .ssScoreClientAvatar {
   width: 22px;
   height: 22px;
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   font-size: 0.5rem;
   font-weight: 700;
 }
@@ -3737,7 +3734,7 @@
 .ssRiskBadge,
 .ssRiskChip {
   padding: 2px 6px;
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   letter-spacing: 0.06em;
   border: 1px solid transparent;
 }
@@ -3769,17 +3766,17 @@
   flex: 1;
   height: 5px;
   border: none;
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   background: rgba(255, 255, 255, 0.06);
   overflow: hidden;
 }
 .ssDimensionMeter::-webkit-progress-bar {
   background: rgba(255, 255, 255, 0.06);
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
 }
 .ssDimensionMeter::-webkit-progress-value,
 .ssDimensionMeter::-moz-progress-bar {
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   transition: width 0.5s ease;
 }
 .ssSignalRow {
@@ -3796,7 +3793,7 @@
 .ssCriticalAlert {
   padding: 12px 14px;
   border: 1px solid rgba(255, 68, 68, 0.25);
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   background: rgba(255, 68, 68, 0.06);
 }
   .ssMainGrid {
@@ -3849,7 +3846,7 @@
 .apptKpiCard {
   padding: 16px 20px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   background: rgba(255, 255, 255, 0.015);
   display: flex;
   flex-direction: column;
@@ -3886,7 +3883,7 @@
   gap: 16px;
   padding: 16px 20px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   background: rgba(255, 255, 255, 0.015);
   transition: background 0.12s ease;
 }
@@ -3950,7 +3947,7 @@
 }
 .apptBtn {
   padding: 6px 14px;
-  border-radius: var(--r-xxs);
+  border-radius: var(--r-xs);
   font-size: 0.6875rem;
   font-family: var(--font-dm-mono), monospace;
   letter-spacing: 0.06em;
