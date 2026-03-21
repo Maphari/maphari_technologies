@@ -1,22 +1,8 @@
 "use client";
 
-import { ActivityRow } from "../ui";
-import { cx, styles } from "../style";
+import { cx } from "../style";
 import type { ActivityItem, ClientThread, DashboardDigestItem, DashboardFocusItem, DashboardInboxItem, SlaWatchItem, TaskContext } from "../types";
-import { capitalize, formatDateShort, formatDuration } from "../utils";
-
-function dueToneClass(tone: string) {
-  if (tone === "var(--red)") return "colorRed";
-  if (tone === "var(--amber)") return "colorAmber";
-  return "colorMuted";
-}
-
-function avatarToneClass(color: string) {
-  if (color === "var(--amber)") return "clientAvatarToneAmber";
-  if (color === "var(--purple)") return "clientAvatarTonePurple";
-  if (color === "var(--green)") return "clientAvatarToneGreen";
-  return "clientAvatarToneAccent";
-}
+import { formatDuration } from "../utils";
 
 type DashboardPageProps = {
   isActive: boolean;
@@ -83,6 +69,16 @@ type DashboardPageProps = {
   };
 };
 
+function healthDotClass(thread: ClientThread): string {
+  if (thread.unread) return "homeHealthWarn";
+  return "homeHealthGood";
+}
+
+function healthLabel(thread: ClientThread): string {
+  if (thread.unread) return "Needs reply";
+  return "On track";
+}
+
 export function DashboardPage({
   isActive,
   todayLabel,
@@ -128,421 +124,136 @@ export function DashboardPage({
   digestItems,
   dashboardLastSeenAt,
   slaBurn,
-  flowHealth
+  flowHealth,
 }: DashboardPageProps) {
-  const urgentFocusCount = focusQueue.filter((item) => item.urgency === "high").length;
-  const actionInboxCount = actionInbox.reduce((sum, item) => sum + item.count, 0);
-  const nextDueText = daysLeft !== null ? `${daysLeft} days` : nextDueLabel;
+  // Derived values
+  const urgentCount = overdueCount + highPriorityTasksCount;
+  const hasUrgentItems = urgentCount > 0;
+
+  // Focus hero: first high-priority task, or first task, or null
+  const focusTask =
+    priorityTasks.find((t) => t.priority === "high") ??
+    priorityTasks[0] ??
+    null;
+
+  const progress = focusTask?.progress ?? 0;
+
+  // Today's task list (up to 6)
+  const todayTasks = priorityTasks.slice(0, 6);
+
+  // Hours logged today
+  const hoursToday = todayMinutes > 0 ? formatDuration(todayMinutes) : "—";
+
+  // Client count from thread items (unique client names as proxy)
+  const clientCount = threadItems.length > 0 ? threadItems.length : projectsCount;
 
   return (
-    <section className={cx("page", "pageBody", "rdStudioPage", isActive && "pageActive")} id="page-dashboard">
-      <div className={cx("pageHeaderBar")}>
-        <div className={cx("flexBetween", "gap24", "mb20")}>
-          <div>
-            <div className={cx("pageEyebrowText", "mb8")}>{todayLabel} · Week {weekNumber}</div>
-            <h1 className={cx("pageTitleText")}>Good morning, {staffName}</h1>
-            <p className={cx("pageSubtitleText")}>
-              You have {openTasksCount} open tasks · {openConversationsCount} client messages · {overdueCount} deliverables overdue.
-            </p>
-          </div>
-          <div className={cx("pageActions")}>
-            <button className={cx("btnSm", "btnGhost")} type="button" onClick={onGoTimeLog}>Log Time</button>
-            <button className={cx("btnSm", "btnAccent")} type="button" onClick={onGoKanban}>Open Board</button>
-          </div>
-        </div>
-      </div>
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-dashboard">
+      <div className={cx("homePage")}>
+        {/* Header */}
+        <p className={cx("pageEyebrow")}>{todayLabel} · Week {weekNumber}</p>
+        <h1 className={cx("pageTitle")}>Good morning, {staffName}</h1>
 
-      <div className={styles.staffDashSummaryGrid}>
-        <div className={cx(styles.statCard, "rdStudioCard", "staffKpiGlow")}>
-          <div className={cx(styles.statLabel, "rdStudioLabel")}>Open Tasks</div>
-          <div className={cx(styles.statValue, "colorAccent", "rdStudioMetric")}>{openTasksCount}</div>
-          <div className={cx("text11", highPriorityTasksCount > 0 ? "colorAmber" : "colorMuted")}>
-            {highPriorityTasksCount} high priority
+        {/* 1. Alert strip */}
+        {hasUrgentItems && (
+          <div className={cx("homeAlertStrip")}>
+            <div>
+              <div className={cx("homeAlertText")}>{urgentCount} task{urgentCount === 1 ? "" : "s"} need attention</div>
+              <div className={cx("homeAlertMeta")}>Due today or overdue · {overdueCount} overdue, {highPriorityTasksCount} high priority</div>
+            </div>
+            <div className={cx("homeAlertJoin")}>
+              <button className={cx("homeFocusOpenBtn")} type="button" onClick={onGoTasks}>Review</button>
+            </div>
           </div>
-        </div>
-        <div className={cx(styles.statCard, "rdStudioCard", "staffKpiGlow")}>
-          <div className={cx(styles.statLabel, "rdStudioLabel")}>Client Messages</div>
-          <div className={cx(styles.statValue, "colorBlue", "rdStudioMetric")}>{openConversationsCount}</div>
-          <div className={cx("text11", "colorMuted")}>Awaiting response</div>
-        </div>
-        <div className={cx(styles.statCard, "rdStudioCard", "staffKpiGlow", "staffKpiDeliveryRisk")}>
-          <div className={cx(styles.statLabel, "rdStudioLabel")}>Delivery Risk</div>
-          <div className={cx(styles.statValue, overdueCount > 0 ? "colorRed" : "colorAccent", "rdStudioMetric", overdueCount > 0 ? "rdStudioMetricNeg" : "")}>{overdueCount}</div>
-          <div className={cx("text11", overdueCount > 0 ? "colorRed" : "colorMuted")}>
-            {overdueCount > 0 ? "Needs attention" : "No overdue items"}
-          </div>
-        </div>
-        <div className={cx(styles.statCard, "rdStudioCard", "staffKpiGlow")}>
-          <div className={cx(styles.statLabel, "rdStudioLabel")}>Hours This Week</div>
-          <div className={cx(styles.statValue, "colorAmber", "rdStudioMetric", "rdStudioMetricWarn")}>{(weekMinutes / 60).toFixed(1)}</div>
-          <div className={cx("text11", "colorMuted")}>Today: {formatDuration(todayMinutes)}</div>
-        </div>
-      </div>
+        )}
 
-      <div className={styles.staffDashMainGrid}>
-        <div className={styles.card}>
-          <div className={cx(styles.cardHeader, "rdStudioSection")}>
-            <span className={styles.cardHeaderTitle}>Priority Tasks Today</span>
-            <button className={cx(styles.cardLinkButton, styles.staffDashLinkButton)} type="button" onClick={onGoTasks}>All tasks →</button>
+        {/* 2. Focus Hero card */}
+        <div className={cx("homeFocusCard")}>
+          <div className={cx("homeFocusLabel")}>⚡ FOCUS NOW</div>
+          <div className={cx("homeFocusClient")}>{focusTask?.clientName ?? "—"}</div>
+          <div className={cx("homeFocusTitle")}>{focusTask?.title ?? "No tasks today"}</div>
+          <div className={cx("homeFocusProgress")}>
+            <div className={cx("homeFocusProgressBar")}>
+              <div className={cx("homeFocusProgressFill")} style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
+            </div>
+            <div className={cx("homeFocusProgressMeta")}>
+              <span>{progress}% complete</span>
+              <span>{focusTask?.dueLabel ? focusTask.dueLabel : ""}</span>
+            </div>
           </div>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={cx("textCenter")} scope="col">Priority</th>
-                  <th scope="col">Task</th>
-                  <th scope="col">Project</th>
-                  <th className={cx("textCenter")} scope="col">Status</th>
-                  <th className={cx("textRight")} scope="col">Due</th>
-                </tr>
-              </thead>
-              <tbody>
-                {priorityTasks.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{ padding: 0 }}>
-                      <div className={cx("staffPriorityEmpty")}>
-                        All tasks on track
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  priorityTasks.map((task) => (
-                    <tr key={`${task.id}-${task.title}`}>
-                      <td className={cx("textCenter")}><div className={cx("priority", `priority${capitalize(task.priority)}`)} /></td>
-                      <td>
-                        <div className={styles.tableName}>{task.title}</div>
-                        <div className={styles.tableSub}>{task.subtitle}</div>
-                      </td>
-                      <td><span className={cx("textSm", "colorMuted")}>{task.projectName}</span></td>
-                      <td className={cx("textCenter")}><span className={cx("badge", `badge${capitalize(task.badgeTone)}`)}>{task.statusLabel}</span></td>
-                      <td className={cx("textRight")}><span className={cx("mono", "text11", dueToneClass(task.dueTone))}>{task.dueLabel}</span></td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className={cx("homeFocusActions")}>
+            <button className={cx("homeFocusTimerBtn")} type="button" onClick={onTimerToggle}>
+              {timerRunning ? "⏸ Pause Timer" : "▶ Start Timer"}
+            </button>
+            <button className={cx("homeFocusOpenBtn")} type="button" onClick={onGoTasks}>Open Task</button>
           </div>
         </div>
 
-        <div className={styles.staffDashRail}>
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <span className={styles.cardHeaderTitle}>Operations Snapshot</span>
-              <button className={cx(styles.cardLinkButton, styles.staffDashLinkButton)} type="button" onClick={onGoKanban}>Open board →</button>
-            </div>
-            <div className={styles.cardBody}>
-              <div className={styles.timeSummary}>
-                <span>Live timer</span>
-                <span className={cx(styles.timeSummaryValue, "colorAccent")}>{timerDisplay}</span>
-              </div>
-              <div className={styles.timeBars}>
-                <div className={styles.timeRow}>
-                  <span>Current project</span>
-                  <span className={styles.timeRowValue}>{timerRunning ? timerProjectName : "No active session"}</span>
-                </div>
-                <div className={styles.timeRow}>
-                  <span>Next due milestone</span>
-                  <span className={styles.timeRowValue}>{nextDueText}</span>
-                </div>
-                <div className={styles.timeRow}>
-                  <span>Action inbox</span>
-                  <span className={styles.timeRowValue}>{actionInboxCount} pending</span>
-                </div>
-                <div className={styles.timeRow}>
-                  <span>Avg project progress</span>
-                  <span className={styles.timeRowValue}>{averageProgress}%</span>
-                </div>
-                <div className={styles.timeBar}>
-                  <progress className={cx("progressMeter", "progressMeterAccent")} max={100} value={Math.max(0, Math.min(100, averageProgress))} />
-                </div>
-              </div>
-              <div className={styles.staffDashOpsGrid}>
-                <button className={cx("button", "buttonGhost", styles.staffDashButtonGhost)} type="button" onClick={() => onRunDashboardAction("tasks")}>Tasks</button>
-                <button className={cx("button", "buttonGhost", styles.staffDashButtonGhost)} type="button" onClick={() => onRunDashboardAction("clients")}>Clients</button>
-                <button className={cx("button", "buttonGhost", styles.staffDashButtonGhost)} type="button" onClick={() => onRunDashboardAction("deliverables")}>Deliverables</button>
-                <button className={cx("button", "buttonGhost", styles.staffDashButtonGhost)} type="button" onClick={() => onRunDashboardAction("timelog")}>Time Log</button>
-              </div>
-            </div>
+        {/* 3. Three-stat row */}
+        <div className={cx("homeStats")}>
+          <div className={cx("homeStatCard")}>
+            <div className={cx("homeStatNum")}>{openTasksCount}</div>
+            <div className={cx("homeStatLabel")}>Open Tasks</div>
           </div>
-
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <span className={styles.cardHeaderTitle}>Today Focus</span>
-              <button className={cx(styles.cardLinkButton, styles.staffDashLinkButton)} type="button" onClick={onGoTasks}>Open queue →</button>
-            </div>
-            <div className={styles.cardBody}>
-              {focusQueue.length === 0 ? (
-                <div className={styles.emptyState}>No urgent focus items right now.</div>
-              ) : (
-                <div className={styles.staffDashFocusList}>
-                  {focusQueue.slice(0, 4).map((item) => (
-                    <div key={item.id} className={styles.staffDashFocusRow}>
-                      <div className={styles.staffDashFocusMeta}>
-                        <div className={styles.tableName}>{item.title}</div>
-                        <div className={styles.tableSub}>{item.detail}</div>
-                      </div>
-                      <div className={styles.staffDashFocusActions}>
-                        <span className={cx("badge", `badge${capitalize(item.urgency === "high" ? "red" : item.urgency === "med" ? "amber" : "green")}`)}>
-                          {item.urgency}
-                        </span>
-                        <button
-                          className={cx("button", "buttonGhost", styles.staffDashButtonGhost)}
-                          type="button"
-                          onClick={() => onRunDashboardAction(item.action, item.threadId)}
-                        >
-                          {item.actionLabel}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className={cx("text11", "colorMuted", "mt10")}>{urgentFocusCount} urgent items flagged</div>
-            </div>
+          <div className={cx("homeStatCard")}>
+            <div className={cx("homeStatNum")}>{hoursToday}</div>
+            <div className={cx("homeStatLabel")}>Logged Today</div>
           </div>
-        </div>
-      </div>
-
-      <div className={styles.dashboardInsightsGrid}>
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <span className={styles.cardHeaderTitle}>SLA Burn Alerts</span>
-            <button className={cx(styles.cardLinkButton, styles.staffDashLinkButton)} type="button" onClick={onGoDeliverables}>Open deliverables →</button>
-          </div>
-          <div className={styles.cardBody}>
-            <div className={styles.timeSummary}>
-              <span>{slaBurn.statusLabel}</span>
-              <span className={cx("badge", `badge${capitalize(slaBurn.tone)}`)}>{slaBurn.riskCount + slaBurn.watchCount}</span>
-            </div>
-            <div className={cx("pageSub", "mt8")}>{slaBurn.detail}</div>
-            <div className={cx("timeBars", "mt12")}>
-              <div className={styles.timeRow}>
-                <span>Immediate risk</span>
-                <span className={styles.timeRowValue}>{slaBurn.riskCount}</span>
-              </div>
-              <div className={styles.timeBar}>
-                <progress
-                  className={cx("progressMeter", "progressMeterRed")}
-                  max={100}
-                  value={Math.min(100, slaBurn.riskCount * 20)}
-                />
-              </div>
-              <div className={styles.timeRow}>
-                <span>Watch next 7 days</span>
-                <span className={styles.timeRowValue}>{slaBurn.watchCount}</span>
-              </div>
-              <div className={styles.timeBar}>
-                <progress
-                  className={cx("progressMeter", "progressMeterAmber")}
-                  max={100}
-                  value={Math.min(100, slaBurn.watchCount * 20)}
-                />
-              </div>
-            </div>
+          <div className={cx("homeStatCard")}>
+            <div className={cx("homeStatNum")}>{clientCount > 0 ? clientCount : "—"}</div>
+            <div className={cx("homeStatLabel")}>Clients</div>
           </div>
         </div>
 
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <span className={styles.cardHeaderTitle}>Flow Health</span>
-            <button className={cx(styles.cardLinkButton, styles.staffDashLinkButton)} type="button" onClick={onGoTasks}>Open tasks →</button>
-          </div>
-          <div className={styles.cardBody}>
-            <div className={styles.staffDashFlowGrid}>
-              <div className={cx("stat", "mb0")}>
-                <div className={styles.statLabel}>WIP</div>
-                <div className={styles.statValue}>{flowHealth.wipCount}</div>
-                <div className={styles.statSub}>Open tasks</div>
+        {/* 4. Two-column body: today tasks + client pulse */}
+        <div className={cx("homeBody")}>
+          {/* Left: today's task list */}
+          <div className={cx("homeTodayTasks")}>
+            {todayTasks.length === 0 ? (
+              <div className={cx("homeTodayTask")}>
+                <div className={cx("homeTodayTaskText")}>All tasks on track</div>
               </div>
-              <div className={cx("stat", "mb0")}>
-                <div className={styles.statLabel}>Blocked</div>
-                <div className={styles.statValue}>{flowHealth.blockedPercent}%</div>
-                <div className={styles.statSub}>Of WIP</div>
-              </div>
-              <div className={cx("stat", "mb0")}>
-                <div className={styles.statLabel}>Throughput</div>
-                <div className={styles.statValue}>{flowHealth.throughput7d}</div>
-                <div className={styles.statSub}>Done in 7 days</div>
-              </div>
-              <div className={cx("stat", "mb0")}>
-                <div className={styles.statLabel}>Cycle Time</div>
-                <div className={styles.statValue}>{flowHealth.avgCycleDays.toFixed(1)}d</div>
-                <div className={styles.statSub}>Avg completed</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.staffDashSupportGrid}>
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <span className={styles.cardHeaderTitle}>Client Messages</span>
-            <button className={cx(styles.cardLinkButton, styles.staffDashLinkButton)} type="button" onClick={onGoClients}>Open →</button>
-          </div>
-          <div>
-            {threadItems.length === 0 ? (
-              <div className={styles.emptyState}>No client messages yet.</div>
             ) : (
-              threadItems.slice(0, 3).map((thread, index) => (
+              todayTasks.map((task) => (
                 <div
-                  key={thread.id}
-                  className={cx("clientItem", index === 0 && "clientItemActive")}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onOpenThread(thread.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      onOpenThread(thread.id);
-                    }
-                  }}
+                  key={`${task.id}-${task.title}`}
+                  className={cx("homeTodayTask", task.status === "DONE" && "homeTodayTaskDone")}
                 >
-                  <div className={cx("clientAvatar", avatarToneClass(thread.avatar.color))}>{thread.avatar.label}</div>
-                  <div className={styles.clientBody}>
-                    <div className={styles.clientMeta}>
-                      <span className={styles.clientName}>{thread.name}</span>
-                      <span className={styles.clientTime}>{thread.time}</span>
-                    </div>
-                    <div className={styles.clientProject}>{thread.project}</div>
-                    <div className={styles.clientPreview}>{thread.preview}</div>
-                  </div>
-                  {thread.unread ? <div className={styles.clientUnread} /> : null}
+                  <div className={cx("homeTodayTaskCheck")} />
+                  <div className={cx("homeTodayTaskText")}>{task.title}</div>
+                  <div className={cx("homeTodayTaskDue")}>{task.dueLabel}</div>
                 </div>
               ))
             )}
           </div>
-        </div>
 
-        <div className={styles.card}>
-          <div className={styles.cardHeader}><span className={styles.cardHeaderTitle}>Today&apos;s Time</span></div>
-          <div className={styles.cardBody}>
-            <div className={styles.timeSummary}>
-              <span>Total logged</span>
-              <span className={styles.timeSummaryValue}>{formatDuration(todayMinutes)}</span>
-            </div>
-            <div className={styles.timeBars}>
-              {projectTimeBreakdown.length === 0 ? (
-                <div className={styles.emptyState}>No time logged yet.</div>
-              ) : (
-                projectTimeBreakdown.slice(0, 3).map(([project, minutes]) => (
-                  <div key={project}>
-                    <div className={styles.timeRow}>
-                      <span>{project}</span>
-                      <span className={styles.timeRowValue}>{formatDuration(minutes)}</span>
-                    </div>
-                    <div className={styles.timeBar}>
-                      <progress
-                        className={cx("progressMeter", "progressMeterAccent")}
-                        max={100}
-                        value={maxProjectMinutes ? Math.round((minutes / maxProjectMinutes) * 100) : 0}
-                      />
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.card}>
-          <div className={cx(styles.cardHeader, "rdStudioSection")}><span className={styles.cardHeaderTitle}>SLA Watchlist</span></div>
-          <div className={styles.cardBody}>
-            {slaWatchlist.length === 0 ? (
-              <div className={styles.emptyState}>No SLA deadlines in the next 7 days.</div>
-            ) : (
-              <div className={styles.timeBars}>
-                {slaWatchlist.map((project) => (
-                  <div key={project.id}>
-                    <div className={styles.timeRow}>
-                      <span>{project.name}</span>
-                      <span className={styles.timeRowValue}>{formatDateShort(project.slaDueAt)}</span>
-                    </div>
-                    <div className={cx("timeRow", "text11", "colorMuted")}>
-                      <span>{project.clientName}</span>
-                      <span>{project.statusLabel}</span>
-                    </div>
-                  </div>
-                ))}
+          {/* Right: client pulse */}
+          <div className={cx("homeClientPulse")}>
+            {threadItems.length === 0 ? (
+              <div className={cx("homeClientRow")}>
+                <div className={cx("homeClientName")}>No client activity</div>
               </div>
-            )}
-          </div>
-        </div>
-
-        <div className={styles.card}>
-          <div className={styles.cardHeader}><span className={styles.cardHeaderTitle}>Team Collaboration</span></div>
-          <div className={styles.cardBody}>
-            {collaborationRows.length === 0 ? (
-              <div className={styles.emptyState}>No collaboration assignments yet.</div>
             ) : (
-              <div className={styles.timeBars}>
-                {collaborationRows.slice(0, 4).map((entry) => (
-                  <div key={`${entry.projectName}-${entry.name}`}>
-                    <div className={styles.timeRow}>
-                      <span>{entry.name}</span>
-                      <span className={styles.timeRowValue}>{entry.activeSessions > 0 ? "Active" : entry.role}</span>
-                    </div>
-                    <div className={cx("timeRow", "text11", "colorMuted")}>
-                      <span>{entry.projectName}</span>
-                      <span>{entry.taskCount} task{entry.taskCount === 1 ? "" : "s"}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              threadItems.slice(0, 6).map((thread) => (
+                <div
+                  key={thread.id}
+                  className={cx("homeClientRow")}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onOpenThread(thread.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onOpenThread(thread.id);
+                    }
+                  }}
+                >
+                  <div className={cx("homeHealthDot", healthDotClass(thread))} />
+                  <div className={cx("homeClientName")}>{thread.name}</div>
+                  <div className={cx("homeClientScore")}>{healthLabel(thread)}</div>
+                </div>
+              ))
             )}
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.staffDashActivityGrid}>
-        <div className={cx("card", "fullWidth")}>
-          <div className={styles.cardHeader}>
-            <span className={styles.cardHeaderTitle}>Since Last Login</span>
-            <span className={cx("mono", "textXs", "colorMuted2")}>
-              {dashboardLastSeenAt ? `Since ${formatDateShort(dashboardLastSeenAt)}` : "First session"}
-            </span>
-          </div>
-          <div className={cx("cardBody", "pt8", "pb8")}>
-            {digestItems.length === 0 ? (
-              <div className={styles.emptyState}>No updates since your last login.</div>
-            ) : (
-              <div className={styles.activityList} aria-live="polite">
-                {digestItems.map((digest) => (
-                  <ActivityRow
-                    key={digest.id}
-                    icon="•"
-                    tone="var(--accent-d)"
-                    color="var(--accent)"
-                    text={digest.title}
-                    detail={digest.detail}
-                    time={formatDateShort(digest.occurredAt)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className={cx("card", "fullWidth")}>
-          <div className={cx(styles.cardHeader, "rdStudioSection")}><span className={styles.cardHeaderTitle}>Recent Activity</span></div>
-          <div className={cx("cardBody", "pt8", "pb8")}>
-            <div className={styles.activityList}>
-              {activityFeed.length === 0 ? (
-                <div className={styles.emptyState}>No activity logged yet.</div>
-              ) : (
-                activityFeed.map((activity) => (
-                  <ActivityRow
-                    key={activity.id}
-                    icon={activity.icon}
-                    tone={activity.tone}
-                    color={activity.color}
-                    text={activity.text}
-                    detail={activity.detail}
-                    time={activity.time}
-                  />
-                ))
-              )}
-            </div>
           </div>
         </div>
       </div>
