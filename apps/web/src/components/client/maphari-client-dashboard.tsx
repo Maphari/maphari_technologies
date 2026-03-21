@@ -541,7 +541,7 @@ export function MaphariClientDashboard() {
             {nav.activePage === "projectReports" && <ProjectReportsPage />}
             {nav.activePage === "healthScore" && <HealthScorePage invoices={snapshot.invoices} projects={snapshot.projects} />}
             {nav.activePage === "performanceDashboard" && <PerformanceDashboardPage invoices={snapshot.invoices} projects={snapshot.projects} />}
-            {nav.activePage === "executiveSummary" && <ExecutiveSummaryPage />}
+            {nav.activePage === "executiveSummary" && <ExecutiveSummaryPage onNavigate={handleNavigate} />}
 
             {/* ── Growth ──────────────────────────────────────────────── */}
             {nav.activePage === "serviceCatalog" && <ServiceCatalogPage />}

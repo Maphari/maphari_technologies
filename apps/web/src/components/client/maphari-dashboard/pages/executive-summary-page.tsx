@@ -9,6 +9,8 @@ import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import { saveSession } from "../../../../lib/auth/session";
+import { Alert } from "@/components/shared/ui/alert";
+import type { PageId } from "../config";
 import {
   loadPortalSurveysWithRefresh,
   type PortalSurvey,
@@ -128,7 +130,11 @@ function pendingSignOffCount(crs: PortalProjectChangeRequest[]): number {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export function ExecutiveSummaryPage() {
+interface ExecutiveSummaryPageProps {
+  onNavigate?: (page: PageId) => void;
+}
+
+export function ExecutiveSummaryPage({ onNavigate }: ExecutiveSummaryPageProps) {
   const { session, projectId } = useProjectLayer();
 
   // ── Data state ──────────────────────────────────────────────────────────────
@@ -138,6 +144,7 @@ export function ExecutiveSummaryPage() {
   const [changeReqs,   setChangeReqs]   = useState<PortalProjectChangeRequest[]>([]);
   const [invoices,     setInvoices]     = useState<PortalInvoice[]>([]);
   const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState<string | null>(null);
   const [lastUpdated,  setLastUpdated]  = useState<Date | null>(null);
   const [refreshKey,   setRefreshKey]   = useState(0);
   const [mounted,      setMounted]      = useState(false);
@@ -151,8 +158,14 @@ export function ExecutiveSummaryPage() {
   useEffect(() => {
     if (!session) return;
     setLoading(true);
+    setError(null);
 
     const loads: Promise<void>[] = [];
+    let hasError = false;
+
+    function markError() {
+      hasError = true;
+    }
 
     // Surveys: requires clientId from session user
     const clientId = (session.user as { clientId?: string })?.clientId ?? session.user?.id ?? "";
@@ -160,6 +173,7 @@ export function ExecutiveSummaryPage() {
       loads.push(
         loadPortalSurveysWithRefresh(session, clientId).then(result => {
           if (result.nextSession) saveSession(result.nextSession);
+          if (result.error) { markError(); return; }
           if (result.data) setSurveys(result.data);
         })
       );
@@ -169,6 +183,7 @@ export function ExecutiveSummaryPage() {
     loads.push(
       loadPortalInvoicesWithRefresh(session).then(result => {
         if (result.nextSession) saveSession(result.nextSession);
+        if (result.error) { markError(); return; }
         if (result.data) setInvoices(result.data);
       })
     );
@@ -177,6 +192,7 @@ export function ExecutiveSummaryPage() {
     loads.push(
       loadPortalChangeRequestsWithRefresh(session, projectId ? { projectId } : {}).then(result => {
         if (result.nextSession) saveSession(result.nextSession);
+        if (result.error) { markError(); return; }
         if (result.data) setChangeReqs(result.data);
       })
     );
@@ -186,12 +202,14 @@ export function ExecutiveSummaryPage() {
       loads.push(
         loadPortalDeliverablesWithRefresh(session, projectId).then(result => {
           if (result.nextSession) saveSession(result.nextSession);
+          if (result.error) { markError(); return; }
           if (result.data) setDeliverables(result.data);
         })
       );
       loads.push(
         loadPortalRisksWithRefresh(session, projectId).then(result => {
           if (result.nextSession) saveSession(result.nextSession);
+          if (result.error) { markError(); return; }
           if (result.data) setRisks(result.data);
         })
       );
@@ -200,6 +218,9 @@ export function ExecutiveSummaryPage() {
     Promise.all(loads).finally(() => {
       setLoading(false);
       setLastUpdated(new Date());
+      if (hasError) {
+        setError("Failed to load executive summary data. Please try again.");
+      }
     });
   }, [session, projectId, refreshKey]);
 
@@ -223,8 +244,8 @@ export function ExecutiveSummaryPage() {
   const dashOffset = mounted && healthScore > 0 ? CIRC * (1 - healthScore / 100) : CIRC;
 
   // ── Navigate helper ─────────────────────────────────────────────────────────
-  function navTo(page: string) {
-    window.dispatchEvent(new CustomEvent("client:navigate", { detail: { page } }));
+  function navTo(page: PageId) {
+    onNavigate?.(page);
   }
 
   return (
@@ -252,6 +273,14 @@ export function ExecutiveSummaryPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <Alert
+          variant="error"
+          message={error}
+          onRetry={() => { setError(null); setRefreshKey(k => k + 1); }}
+        />
+      )}
 
       {/* ── KPI tiles ───────────────────────────────────────────────────────── */}
       <div className={cx("topCardsStack", "mb20")}>
@@ -450,6 +479,7 @@ export function ExecutiveSummaryPage() {
           <button
             className={cx("btnSm", "btnGhost")}
             onClick={() => navTo("budgetTracker")}
+            disabled={!onNavigate}
           >
             View Full Budget
             <Ic n="chevronRight" sz={12} />
@@ -457,6 +487,7 @@ export function ExecutiveSummaryPage() {
           <button
             className={cx("btnSm", "btnGhost")}
             onClick={() => navTo("milestones")}
+            disabled={!onNavigate}
           >
             View Milestones
             <Ic n="chevronRight" sz={12} />
@@ -464,6 +495,7 @@ export function ExecutiveSummaryPage() {
           <button
             className={cx("btnSm", "btnGhost")}
             onClick={() => navTo("riskRegister")}
+            disabled={!onNavigate}
           >
             View Risk Register
             <Ic n="chevronRight" sz={12} />
