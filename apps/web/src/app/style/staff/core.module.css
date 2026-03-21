@@ -433,6 +433,33 @@
 
 .pageHeaderLeft { display: flex; flex-direction: column; }
 
+/* ── Page show/hide system (overrides shared so core hash wins) ──
+   .page hides all page sections by default.
+   .pageBody must NOT have a display property here — visibility is
+   controlled by .page and .pageActive only.
+   .pageActive reveals the active page.
+   These definitions ensure core's hashed class names replace shared's,
+   preventing shared's .pageBody { display: grid } from overriding
+   .page { display: none } via source-order cascade. */
+.page {
+  display: none !important;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pageBody {
+  /* No display property — controlled by .page / .pageActive */
+  gap: 24px;
+  min-width: 0;
+}
+
+.pageActive {
+  display: flex !important;
+  flex: 1;
+  animation: fadeIn 0.25s ease;
+}
+
 .card {
   background: var(--s1);
   border: 1px solid var(--b2);
