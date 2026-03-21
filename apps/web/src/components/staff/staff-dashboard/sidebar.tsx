@@ -169,8 +169,8 @@ function SidebarInner({
         ref={flyoutRef}
         className={cx("flyout", (!activeSectionId || collapsed) && "flyoutHidden")}
         aria-hidden={!activeSectionId || collapsed}
-        role="navigation"
-        aria-label={`${flyoutName} pages`}
+        role={activeSectionId && !collapsed ? "navigation" : undefined}
+        aria-label={activeSectionId && !collapsed ? `${flyoutName} pages` : undefined}
       >
         {flyoutName && (
           <div className={cx("flyoutSectionName")}>{flyoutName}</div>
@@ -198,7 +198,6 @@ function SidebarInner({
       {mobileOpen && (
         <div
           className={cx("drawerBackdrop")}
-          style={{ display: "block" }}
           onClick={onMobileClose}
           aria-hidden
         />
