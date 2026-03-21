@@ -3039,10 +3039,6 @@
 }
 
 @media (max-width: 900px) {
-  .sidebar {
-    display: none;
-  }
-
   .main {
     margin-left: 0;
     padding-top: 72px;
