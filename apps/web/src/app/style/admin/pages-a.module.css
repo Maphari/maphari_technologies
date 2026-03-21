@@ -4514,7 +4514,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .dvtUploadBox {
   background: var(--s2);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-lg);
   border: 1px solid rgba(139, 111, 255, 0.1);
   box-shadow: var(--shadow-modal);
   width: 100%;
@@ -6808,10 +6808,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pppPortfolioCard {
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 18px 20px;
-  background: var(--s1);
+  background: var(--s2);
   border-top: 2px solid var(--accent);
 }
 

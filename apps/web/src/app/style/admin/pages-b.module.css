@@ -2086,9 +2086,9 @@
   z-index: 200;
 }
 .cobModal {
-  background: var(--s1);
-  border: 1px solid var(--b2);
-  border-radius: var(--r-md);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-radius: var(--r-sm);
   padding: 28px 24px 24px;
   width: 100%;
   max-width: 420px;
@@ -2148,8 +2148,8 @@
 }
 
 .pricModalBox {
-  background: var(--s1);
-  border: 1px solid var(--b2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: 14px;
   box-shadow: var(--shadow-modal);
   width: 100%;
@@ -2158,8 +2158,8 @@
 }
 
 .pricModalBoxSm {
-  background: var(--s1);
-  border: 1px solid var(--b2);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: 14px;
   box-shadow: var(--shadow-modal);
   width: 100%;
