@@ -164,7 +164,10 @@
   cursor: pointer;
   border: none;
   outline: none;
-  color: rgba(255, 255, 255, 0.35);
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.55);
   transition: background 120ms ease, color 120ms ease;
   position: relative;
   flex-shrink: 0;
@@ -213,6 +216,10 @@
   color: #fff;
   cursor: pointer;
   border: none;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: none;
 }
 
 .railTooltip {
@@ -232,6 +239,17 @@
   opacity: 0;
   transition: opacity 120ms ease;
   z-index: 100;
+}
+
+.railSectionIcon:focus,
+.railSectionIcon:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.flyoutItem:focus,
+.flyoutItem:focus-visible {
+  outline: none;
 }
 
 .railSectionIcon:hover .railTooltip {

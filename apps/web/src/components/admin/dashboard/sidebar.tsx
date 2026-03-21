@@ -97,65 +97,65 @@ export function AdminSidebar({
 
   const sectionIcon: Record<string, React.ReactNode> = {
     Operations: (
-      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/>
-        <rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/>
-        <rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/>
-        <rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <rect x="2" y="2" width="9" height="9" rx="2"/>
+        <rect x="13" y="2" width="9" height="9" rx="2"/>
+        <rect x="2" y="13" width="9" height="9" rx="2"/>
+        <rect x="13" y="13" width="9" height="9" rx="2"/>
       </svg>
     ),
     Experience: (
-      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M8 13.5C8 13.5 2 9.8 2 5.5a3 3 0 0 1 6-0.5 3 3 0 0 1 6 0.5C14 9.8 8 13.5 8 13.5Z" fill="currentColor" opacity="0.9"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 21C12 21 3 15 3 8.5a4.5 4.5 0 0 1 9-0.5 4.5 4.5 0 0 1 9 0.5C21 15 12 21 12 21Z"/>
       </svg>
     ),
     Finance: (
-      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <rect x="1" y="9" width="3" height="5" rx="1" fill="currentColor" opacity="0.9"/>
-        <rect x="6" y="6" width="3" height="8" rx="1" fill="currentColor" opacity="0.9"/>
-        <rect x="11" y="2" width="3" height="12" rx="1" fill="currentColor" opacity="0.9"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <rect x="2" y="14" width="5" height="8" rx="1.5"/>
+        <rect x="9.5" y="9" width="5" height="13" rx="1.5"/>
+        <rect x="17" y="3" width="5" height="19" rx="1.5"/>
       </svg>
     ),
     Communication: (
-      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 2V3Z" fill="currentColor" opacity="0.9"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 3V5Z"/>
       </svg>
     ),
     Governance: (
-      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M8 1.5L2 4v4c0 3.3 2.7 5.8 6 6.5C11.3 13.8 14 11.3 14 8V4L8 1.5Z" fill="currentColor" opacity="0.9"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 2L3 6v6c0 5 3.9 9.3 9 10.9C17.1 21.3 21 17 21 12V6L12 2Z"/>
       </svg>
     ),
     Knowledge: (
-      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M3 2h7.5L13 4.5V14H3V2Z" fill="currentColor" opacity="0.25"/>
-        <path d="M3 2h7.5L13 4.5V14H3V2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
-        <line x1="5.5" y1="6.5" x2="10.5" y2="6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-        <line x1="5.5" y1="9" x2="9" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 3h11l5 5v13H4V3Z" fill="currentColor" opacity="0.3"/>
+        <path d="M4 3h11l5 5v13H4V3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+        <line x1="8" y1="10" x2="16" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <line x1="8" y1="14" x2="13" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
       </svg>
     ),
     Lifecycle: (
-      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M8 2a6 6 0 1 1-4.24 1.76" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M3 2l.76 2.76L6.5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 3a9 9 0 1 1-6.36 2.64" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+        <path d="M4 3l1 4 4-1" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
     "AI/ML": (
-      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="8" cy="8" r="2" fill="currentColor"/>
-        <circle cx="8" cy="2" r="1.2" fill="currentColor" opacity="0.7"/>
-        <circle cx="8" cy="14" r="1.2" fill="currentColor" opacity="0.7"/>
-        <circle cx="2" cy="8" r="1.2" fill="currentColor" opacity="0.7"/>
-        <circle cx="14" cy="8" r="1.2" fill="currentColor" opacity="0.7"/>
-        <line x1="8" y1="3.2" x2="8" y2="6" stroke="currentColor" strokeWidth="1.1"/>
-        <line x1="8" y1="10" x2="8" y2="12.8" stroke="currentColor" strokeWidth="1.1"/>
-        <line x1="3.2" y1="8" x2="6" y2="8" stroke="currentColor" strokeWidth="1.1"/>
-        <line x1="10" y1="8" x2="12.8" y2="8" stroke="currentColor" strokeWidth="1.1"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/>
+        <circle cx="12" cy="3" r="2" opacity="0.7"/>
+        <circle cx="12" cy="21" r="2" opacity="0.7"/>
+        <circle cx="3" cy="12" r="2" opacity="0.7"/>
+        <circle cx="21" cy="12" r="2" opacity="0.7"/>
+        <rect x="11" y="5" width="2" height="4"/>
+        <rect x="11" y="15" width="2" height="4"/>
+        <rect x="5" y="11" width="4" height="2"/>
+        <rect x="15" y="11" width="4" height="2"/>
       </svg>
     ),
     Automation: (
-      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M9.5 1.5L4 8.5h4L6.5 14.5L13 7H9L9.5 1.5Z" fill="currentColor" opacity="0.9"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M14 2L6 13h6L8 22 19 11h-6L14 2Z"/>
       </svg>
     ),
   };
