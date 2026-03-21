@@ -27,6 +27,9 @@ export async function getPortalPreferenceWithRefresh(
     | "settingsCurrency"
     | "readAnnouncements"
     | "notificationMutes"
+    | "portal_ftue_v1_seen"
+    | "onboarding_banner_dismissed"
+    | "completion_banner_dismissed"
 ): Promise<AuthorizedResult<PortalPreference | null>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const response = await callGateway<PortalPreference | null>(`/project-preferences?key=${key}`, accessToken);
@@ -65,7 +68,10 @@ export async function setPortalPreferenceWithRefresh(
       | "settingsCurrency"
       | "readAnnouncements"
       | "weeklyPulse"
-      | "notificationMutes";
+      | "notificationMutes"
+      | "portal_ftue_v1_seen"
+      | "onboarding_banner_dismissed"
+      | "completion_banner_dismissed";
     value: string;
   }
 ): Promise<AuthorizedResult<PortalPreference>> {

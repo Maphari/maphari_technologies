@@ -360,7 +360,10 @@ export interface PortalPreference {
     | "settingsApiAccess"
     | "settingsAutomationPhase2"
     | "dashboardLastSeenAt"
-    | "kanbanBoardPrefs";
+    | "kanbanBoardPrefs"
+    | "portal_ftue_v1_seen"
+    | "onboarding_banner_dismissed"
+    | "completion_banner_dismissed";
   value: string;
   createdAt: string;
   updatedAt: string;
