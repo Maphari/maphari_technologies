@@ -319,15 +319,15 @@
 .progressMeter {
   width: 100%;
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   appearance: none;
   background: var(--s3);
   border: none;
 }
 
-.progressMeter::-webkit-progress-bar { background: var(--s3); border-radius: 2px; }
-.progressMeter::-webkit-progress-value { border-radius: 2px; background: var(--accent); }
-.progressMeter::-moz-progress-bar { border-radius: 2px; background: var(--accent); }
+.progressMeter::-webkit-progress-bar { background: var(--s3); border-radius: var(--r-xs); }
+.progressMeter::-webkit-progress-value { border-radius: var(--r-xs); background: var(--accent); }
+.progressMeter::-moz-progress-bar { border-radius: var(--r-xs); background: var(--accent); }
 
 .progressMeterAccent::-webkit-progress-value { background: var(--accent); }
 .progressMeterAccent::-moz-progress-bar { background: var(--accent); }
@@ -666,7 +666,7 @@
   font-family: var(--font-dm-mono), monospace;
   font-size: 10px;
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
 }
 
 .kbColCountAccentV3 { background: var(--accent-d); color: var(--accent); }
@@ -689,14 +689,14 @@
   flex: 1;
   height: 3px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 
 .kbWipMeterFill {
   height: 100%;
   width: var(--pct, 0%);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 300ms ease;
 }
 
@@ -716,7 +716,7 @@
   font-size: 9px;
   font-family: var(--font-dm-mono), monospace;
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   white-space: nowrap;
 }
 
@@ -771,18 +771,18 @@
   background: var(--s3);
   color: var(--muted);
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .kbCardServiceBadge {
   font-size: 9px;
   font-family: var(--font-dm-mono), monospace;
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .kbCardServiceExpedite { background: var(--accent-d); color: var(--accent); }
-.kbCardPrepBadge { font-size: 9px; background: var(--purple-d); color: var(--purple); padding: 1px 5px; border-radius: 3px; font-family: var(--font-dm-mono), monospace; }
+.kbCardPrepBadge { font-size: 9px; background: var(--purple-d); color: var(--purple); padding: 1px 5px; border-radius: var(--r-xs); font-family: var(--font-dm-mono), monospace; }
 
 .kbCardBlockedBadge {
   display: inline-flex;
@@ -792,7 +792,7 @@
   background: var(--red-d);
   color: var(--red);
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .kbCardTitleV3 {
@@ -812,14 +812,14 @@
   flex: 1;
   height: 3px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 
 .kbProgressBarFill {
   height: 100%;
   width: var(--pct, 0%);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 400ms ease;
 }
 
@@ -862,7 +862,7 @@
   font-size: 9px;
   font-family: var(--font-dm-mono), monospace;
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .kbCardAgeOk    { background: var(--s3); color: var(--muted2); }
@@ -1303,7 +1303,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .tlv2RunBadgeOn  { background: var(--accent-d); color: var(--accent); }
@@ -1390,7 +1390,7 @@
   display: block;
   height: 3px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
   width: 100%;
 }
@@ -1398,7 +1398,7 @@
 .tlv2StatFill {
   display: block;
   height: 100%;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   width: var(--pct, 0%);
   transition: width 300ms ease;
 }
@@ -1521,14 +1521,14 @@
 .tlv2BrkTrack {
   height: 3px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 
 .tlv2BrkFill {
   height: 100%;
   width: var(--pct, 0%);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 400ms ease;
 }
 
@@ -1744,7 +1744,7 @@
   background: var(--amber-d);
   color: var(--amber);
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 .rtDueSoonText { color: var(--amber); }
 
@@ -1956,14 +1956,14 @@
 .tdStatusTone[data-status="not_started"]        { color: var(--muted2); }
 
 .tdStatusLabel { letter-spacing: 0.06em; }
-.tdStatusChip  { font-family: var(--font-dm-mono), monospace; padding: 2px 6px; border-radius: 3px; }
+.tdStatusChip  { font-family: var(--font-dm-mono), monospace; padding: 2px 6px; border-radius: var(--r-xs); }
 .tdStatusChip[data-status="done"]              { background: var(--green-d);  color: var(--green); }
 .tdStatusChip[data-status="in_progress"]        { background: var(--accent-d); color: var(--accent); }
 .tdStatusChip[data-status="awaiting_approval"]  { background: var(--amber-d);  color: var(--amber); }
 .tdStatusChip[data-status="not_started"]        { background: var(--s3); color: var(--muted); }
 
-.tdBlockedBadge { font-size: 9px; background: var(--red-d); color: var(--red); padding: 1px 5px; border-radius: 3px; font-family: var(--font-dm-mono), monospace; }
-.tdBlockedChip  { font-family: var(--font-dm-mono), monospace; background: var(--red-d); color: var(--red); padding: 2px 6px; border-radius: 3px; }
+.tdBlockedBadge { font-size: 9px; background: var(--red-d); color: var(--red); padding: 1px 5px; border-radius: var(--r-xs); font-family: var(--font-dm-mono), monospace; }
+.tdBlockedChip  { font-family: var(--font-dm-mono), monospace; background: var(--red-d); color: var(--red); padding: 2px 6px; border-radius: var(--r-xs); }
 
 .tdBlockedPanel {
   background: var(--red-d);
@@ -2413,7 +2413,7 @@
   background: var(--red-d);
   color: var(--red);
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   font-weight: 700;
 }
 
@@ -2423,7 +2423,7 @@
   background: var(--amber-d);
   color: var(--amber);
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   font-weight: 700;
 }
 
@@ -2607,7 +2607,7 @@
   background: var(--s2);
   color: var(--muted);
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 /* Action row */
@@ -2720,13 +2720,13 @@
   border-radius: var(--r-sm);
 }
 .kbListPane {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--b2);
   padding: 20px 12px;
   overflow-y: auto;
 }
   .kbListPane {
     border-right: none;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--b2);
     max-height: 360px;
   }
 .hidden { display: none; }
@@ -2799,8 +2799,8 @@
 .staffChipRed    { background: var(--red-d); color: var(--red); border-color: transparent; }
 
 /* Bar primitives */
-.staffBar { height: 6px; background: var(--s3); border-radius: 3px; overflow: hidden; }
-.staffBarFill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; }
+.staffBar { height: 6px; background: var(--s3); border-radius: var(--r-xs); overflow: hidden; }
+.staffBarFill { height: 100%; background: var(--accent); border-radius: var(--r-xs); transition: width 0.3s ease; }
 
 /* Budget bar */
 .staffBudgetBarWrap { display: flex; flex-direction: column; gap: 4px; }
@@ -2872,7 +2872,7 @@
 .staffDropzone { border: 2px dashed var(--b2); border-radius: var(--r-md); padding: 24px; display: flex; align-items: center; justify-content: center; color: var(--muted2); font-size: 0.75rem; }
 
 /* Checkbox */
-.staffCheckbox { width: 16px; height: 16px; border: 1px solid var(--b2); border-radius: 3px; background: var(--s2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.12s; flex-shrink: 0; }
+.staffCheckbox { width: 16px; height: 16px; border: 1px solid var(--b2); border-radius: var(--r-xs); background: var(--s2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.12s; flex-shrink: 0; }
 .staffCheckboxChecked { background: var(--accent); border-color: var(--accent); }
 .staffCheckRow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--b1); }
 

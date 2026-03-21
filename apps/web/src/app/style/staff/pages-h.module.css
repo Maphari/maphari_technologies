@@ -219,7 +219,7 @@
   padding: 2px 7px;
   background: var(--accent-d);
   border: 1px solid var(--accent);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-family: var(--font-dm-mono), monospace;
 }
@@ -228,7 +228,7 @@
   padding: 2px 7px;
   background: var(--s2);
   border: 1px solid var(--b1);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-family: var(--font-dm-mono), monospace;
 }
@@ -265,7 +265,7 @@
   color: var(--muted2);
   background: var(--s2);
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   border: 1px solid var(--b1);
 }
 
@@ -297,7 +297,7 @@
   color: var(--muted2);
   background: var(--s2);
   padding: 2px 5px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .atmTabChip {
@@ -542,7 +542,7 @@
 
 .ctrTypeBadge {
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-dm-mono), monospace;
@@ -554,7 +554,7 @@
 
 .ctrRenewalChip {
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   background: var(--accent-d);
   color: var(--accent);
@@ -656,12 +656,12 @@
   color: var(--muted2);
   padding: 2px 6px;
   background: var(--s3);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .dlImpactChip {
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-dm-mono), monospace;
@@ -674,7 +674,7 @@
 
 .dlTagChip {
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   background: var(--s2);
   border: 1px solid var(--b1);
@@ -817,12 +817,12 @@
   color: var(--muted2);
   padding: 2px 5px;
   background: var(--s2);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .incSeverityBadge {
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-dm-mono), monospace;
@@ -835,7 +835,7 @@
 }
 .incRoleBadge {
   padding: 2px 7px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   background: var(--s3);
   color: var(--muted);
@@ -865,13 +865,13 @@
 .incActionText { font-size: 12px; color: var(--muted); }
 
 /* skeleton helpers for incident alerts */
-.skeleBlock9x60p  { height: 9px;  width: 60%; border-radius: 4px; }
-.skeleBlock10x50p { height: 10px; width: 50%; border-radius: 4px; }
-.skeleBlock10x55p { height: 10px; width: 55%; border-radius: 4px; }
-.skeleBlock12x70px { height: 12px; width: 70%; border-radius: 4px; }
-.skeleBlock14x75p { height: 14px; width: 75%; border-radius: 4px; }
-.skeleBlock18x52px { height: 18px; width: 52%; border-radius: 4px; }
-.skeleBlock22x35p { height: 22px; width: 35%; border-radius: 4px; }
+.skeleBlock9x60p  { height: 9px;  width: 60%; border-radius: var(--r-xs); }
+.skeleBlock10x50p { height: 10px; width: 50%; border-radius: var(--r-xs); }
+.skeleBlock10x55p { height: 10px; width: 55%; border-radius: var(--r-xs); }
+.skeleBlock12x70px { height: 12px; width: 70%; border-radius: var(--r-xs); }
+.skeleBlock14x75p { height: 14px; width: 75%; border-radius: var(--r-xs); }
+.skeleBlock18x52px { height: 18px; width: 52%; border-radius: var(--r-xs); }
+.skeleBlock22x35p { height: 22px; width: 35%; border-radius: var(--r-xs); }
 .p32x16 { padding: 32px 16px; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -953,7 +953,7 @@
   color: var(--muted2);
   padding: 2px 5px;
   background: var(--s2);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .iavMetaRow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
@@ -970,7 +970,7 @@
 
 .iavPriorityBadge {
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-dm-mono), monospace;
@@ -981,7 +981,7 @@
 
 .iavTypeBadge {
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-family: var(--font-dm-mono), monospace;
 }
@@ -995,7 +995,7 @@
   color: var(--muted);
   padding: 2px 7px;
   background: var(--s3);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .iavAction { font-size: 12px; color: var(--muted); padding: 10px 16px; }
@@ -1007,7 +1007,7 @@
   padding: 2px 6px;
   background: color-mix(in srgb, var(--red) 12%, transparent);
   color: var(--red);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-family: var(--font-dm-mono), monospace;
 }
@@ -1166,7 +1166,7 @@
 
 .kbTagChip {
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   background: var(--s2);
   border: 1px solid var(--b1);
@@ -1201,7 +1201,7 @@
   width: 14px;
   height: 14px;
   border: 1px solid var(--b3);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   background: var(--s2);
   flex-shrink: 0;
 }
@@ -1438,12 +1438,12 @@
   color: var(--muted2);
   padding: 1px 5px;
   background: var(--s2);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .qaIssueSev {
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-dm-mono), monospace;
@@ -1474,7 +1474,7 @@
 
 .qaLocalBadge {
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   background: color-mix(in srgb, var(--purple) 12%, transparent);
   color: var(--purple);
@@ -1656,7 +1656,7 @@
 
 .rcTierBadge {
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-dm-mono), monospace;
@@ -1711,7 +1711,7 @@
 
 .rcFixedBadge {
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   background: color-mix(in srgb, var(--green) 12%, transparent);
   color: var(--green);
@@ -1719,7 +1719,7 @@
 }
 .rcMultiplierBadge {
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   background: color-mix(in srgb, var(--amber) 12%, transparent);
   color: var(--amber);
@@ -1798,7 +1798,7 @@
   color: var(--muted2);
   padding: 2px 5px;
   background: var(--s2);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .rqvMetaRow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
@@ -1815,7 +1815,7 @@
 
 .rqvPriorityBadge {
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-dm-mono), monospace;
@@ -1829,7 +1829,7 @@
   color: var(--muted);
   padding: 2px 7px;
   background: var(--s3);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
 }
 
 .rqvFooterCell { display: flex; flex-direction: column; gap: 2px; padding: 8px 14px; }
@@ -1899,7 +1899,7 @@
 
 .svcCatBadge {
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-dm-mono), monospace;
@@ -1930,7 +1930,7 @@
 
 .svcTimelineChip {
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-family: var(--font-dm-mono), monospace;
 }
@@ -1997,7 +1997,7 @@
   align-items: center;
   gap: 4px;
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-dm-mono), monospace;
@@ -2008,7 +2008,7 @@
 
 .shNewBadge {
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   font-size: 9px;
   background: var(--accent-d);
   color: var(--accent);
@@ -2022,7 +2022,7 @@
 .shDetailTitle { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 12px; }
 .shDetailBadge {
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-dm-mono), monospace;
@@ -2309,7 +2309,7 @@
 .tlHeadRow { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .tlBadge {
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-weight: 600;
   background: var(--s3);
@@ -2403,7 +2403,7 @@
   padding: 3px 7px;
   background: color-mix(in srgb, var(--red) 12%, transparent);
   color: var(--red);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-family: var(--font-dm-mono), monospace;
 }
@@ -2560,7 +2560,7 @@
 
 .dlHandoffChip {
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   background: color-mix(in srgb, var(--green) 12%, transparent);
   color: var(--green);
@@ -2574,7 +2574,7 @@
 
 .dlFormatChip {
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   font-size: 10px;
   font-family: var(--font-dm-mono), monospace;
 }
@@ -2864,7 +2864,7 @@
 .prThreadBubbleOther {
   max-width: min(560px, 85%);
   padding: 8px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--b2);
   border-radius: var(--r-xxs);
 }
 .prThreadBubbleMe {
@@ -2884,7 +2884,7 @@
   .tlLogRow,
 .pfFilterPillActive {
   background: var(--accent);
-  color: #050508;
+  color: var(--bg);
   font-weight: 600;
   border-color: var(--accent);
 }
@@ -2903,7 +2903,7 @@
 .pfFillRed   { background: var(--red); }
 .pfTaskDone   { background: rgba(52,217,139,0.1);  color: var(--green); border-color: rgba(52,217,139,0.2); }
 .pfTaskActive { background: rgba(245,166,35,0.08); color: var(--amber); border-color: rgba(245,166,35,0.18); }
-.pfTaskTotal  { background: rgba(255,255,255,0.04); color: var(--muted2); border-color: var(--border); }
+.pfTaskTotal  { background: rgba(255,255,255,0.04); color: var(--muted2); border-color: var(--b2); }
 .tlWeekLabelCurrent {
   color: var(--accent);
   font-weight: 600;
@@ -2941,7 +2941,7 @@
 .evaCategory { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 16px; }
 .evaCategoryBars { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
 .evaCategoryRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; }
-.evaClientBar { flex: 1; height: 4px; background: var(--s3); border-radius: 2px; overflow: hidden; }
+.evaClientBar { flex: 1; height: 4px; background: var(--s3); border-radius: var(--r-xs); overflow: hidden; }
 .evaClientName { font-size: 0.75rem; color: var(--muted); min-width: 80px; }
 .evaClientRow { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--b1); }
 .evaClientSelect { font-size: 0.6875rem; color: var(--muted2); font-family: var(--font-dm-mono), monospace; cursor: pointer; }

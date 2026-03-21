@@ -216,7 +216,7 @@
 .wlhLegendDot {
   width: 10px;
   height: 10px;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   flex-shrink: 0;
 }
 
@@ -378,7 +378,7 @@
   color: var(--muted2);
   background: var(--s1);
   border: 1px solid var(--b1);
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   padding: 0 4px;
   line-height: 16px;
 }
@@ -444,7 +444,7 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   display: inline-block;
 }
 
@@ -473,7 +473,7 @@
   color: var(--muted2);
   background: var(--s2);
   border: 1px solid var(--b1);
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   padding: 2px 6px;
 }
 
@@ -731,7 +731,7 @@
   background: var(--s2);
   border: 1px solid var(--b2);
   border-bottom-width: 2px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-family: var(--font-dm-mono), monospace;
   font-size: 11px;
   font-weight: 600;
@@ -846,7 +846,7 @@
 }
 .stgv2StatusCardIdle {
   background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border);
+  border: 1px solid var(--b2);
   color: var(--muted);
 }
 .stgv2StatusCardIdle:hover { background: rgba(255,255,255,0.06); color: var(--text); }
@@ -865,7 +865,7 @@
   background: rgba(36,184,168,0.06);
 }
 .stgv2ThemeCardIdle {
-  border: 1px solid var(--border) !important;
+  border: 1px solid var(--b2) !important;
   background: rgba(255,255,255,0.02);
 }
 .stgv2ThemeCardIdle:hover {
@@ -889,7 +889,7 @@
   background: rgba(36,184,168,0.07);
 }
 .stgv2KanbanOptIdle {
-  border: 1px solid var(--border) !important;
+  border: 1px solid var(--b2) !important;
   background: rgba(255,255,255,0.02);
 }
 .stgv2KanbanOptIdle:hover {
@@ -903,7 +903,7 @@
   gap: 12px;
   padding: 9px 20px;
   background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--b2);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
   text-transform: uppercase;

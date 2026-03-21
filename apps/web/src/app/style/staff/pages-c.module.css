@@ -745,14 +745,14 @@
 .dsvReadinessTrack {
   height: 4px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 
 .dsvReadinessFill {
   height: 100%;
   width: var(--pct, 0%);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 400ms ease;
 }
 .dsvFillGreen { background: var(--green); }
@@ -921,15 +921,15 @@
 .evaHoursProgress {
   flex: 1;
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   border: none;
   background: var(--s3);
   display: block;
   appearance: none;
 }
-.evaHoursProgress::-webkit-progress-bar   { background: var(--s3); border-radius: 2px; }
-.evaHoursProgress::-webkit-progress-value { border-radius: 2px; }
-.evaHoursProgress::-moz-progress-bar { border-radius: 2px; }
+.evaHoursProgress::-webkit-progress-bar   { background: var(--s3); border-radius: var(--r-xs); }
+.evaHoursProgress::-webkit-progress-value { border-radius: var(--r-xs); }
+.evaHoursProgress::-moz-progress-bar { border-radius: var(--r-xs); }
 
 /* Tone classes for progress bars */
 .evaToneGood::-webkit-progress-value { background: var(--green); }
@@ -976,15 +976,15 @@
 .evaClientProgress {
   flex: 1;
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   border: none;
   background: var(--s3);
   display: block;
   appearance: none;
 }
-.evaClientProgress::-webkit-progress-bar { background: var(--s3); border-radius: 2px; }
-.evaClientProgress::-webkit-progress-value { border-radius: 2px; }
-.evaClientProgress::-moz-progress-bar { border-radius: 2px; }
+.evaClientProgress::-webkit-progress-bar { background: var(--s3); border-radius: var(--r-xs); }
+.evaClientProgress::-webkit-progress-value { border-radius: var(--r-xs); }
+.evaClientProgress::-moz-progress-bar { border-radius: var(--r-xs); }
 
 /* Weekly chart */
 .evaWeeklyChart { }
@@ -1017,14 +1017,14 @@
   display: block;
   width: 100%;
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   border: none;
   background: var(--s3);
   appearance: none;
 }
-.evaCategoryProgress::-webkit-progress-bar { background: var(--s3); border-radius: 2px; }
-.evaCategoryProgress::-webkit-progress-value { border-radius: 2px; }
-.evaCategoryProgress::-moz-progress-bar { border-radius: 2px; }
+.evaCategoryProgress::-webkit-progress-bar { background: var(--s3); border-radius: var(--r-xs); }
+.evaCategoryProgress::-webkit-progress-value { border-radius: var(--r-xs); }
+.evaCategoryProgress::-moz-progress-bar { border-radius: var(--r-xs); }
 
 .evaMiniLabel { }
 

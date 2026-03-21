@@ -11,7 +11,7 @@
 .progressFillAccent {
   height: 100%;
   background: var(--accent);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   transition: width 300ms ease;
 }
 
@@ -74,9 +74,9 @@
 /* Skeleton helpers for Phase 5 pages */
 .skeleBlock12x25p { height: 12px; width: 25%; background: var(--s3); border-radius: var(--r-xs); }
 .skeleBlock16x45p { height: 16px; width: 45%; background: var(--s3); border-radius: var(--r-xs); }
-.skeleBlock9x60p_r3 { height: 9px; width: 60%; background: var(--s3); border-radius: 3px; }
-.skeleBarFull { height: 6px; width: 100%; background: var(--s3); border-radius: 3px; }
-.skeleBarFullMt8 { height: 6px; width: 100%; background: var(--s3); border-radius: 3px; margin-top: 8px; }
+.skeleBlock9x60p_r3 { height: 9px; width: 60%; background: var(--s3); border-radius: var(--r-xs); }
+.skeleBarFull { height: 6px; width: 100%; background: var(--s3); border-radius: var(--r-xs); }
+.skeleBarFullMt8 { height: 6px; width: 100%; background: var(--s3); border-radius: var(--r-xs); margin-top: 8px; }
 .skeleBlock11x60p { height: 11px; width: 60%; background: var(--s3); border-radius: var(--r-xs); }
 .skeleBlock22x40p { height: 22px; width: 40%; background: var(--s3); border-radius: var(--r-xs); }
 .skeleBlock11x30p { height: 11px; width: 30%; background: var(--s3); border-radius: var(--r-xs); }
@@ -289,14 +289,14 @@
 .pfProgressTrack {
   height: 4px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 
 .pfProgressFill {
   height: 100%;
   background: var(--accent);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 300ms ease;
 }
 
@@ -652,14 +652,14 @@
   flex: 1;
   height: 6px;
   background: var(--s3);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 
 .anlBarFill {
   height: 100%;
   background: var(--accent);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   transition: width 300ms ease;
 }
 
@@ -1223,14 +1223,14 @@
 .mobProgressTrack {
   height: 6px;
   background: var(--s3);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 
 .mobProgressFill {
   height: 100%;
   background: var(--accent);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   transition: width 300ms ease;
 }
 
@@ -1604,13 +1604,13 @@
 .empScoreTrack {
   height: 4px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 
 .empScoreFill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 300ms ease;
 }
 
@@ -1768,13 +1768,13 @@
 .mlvBalTrack {
   height: 6px;
   background: var(--s3);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 
 .mlvBalFill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   transition: width 300ms ease;
 }
 
@@ -2072,13 +2072,13 @@
 .mllProgressTrack {
   height: 4px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 
 .mllProgressFill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 300ms ease;
 }
 
@@ -2304,13 +2304,13 @@
 .enpHistBarTrack {
   height: 4px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 
 .enpHistBarFill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 300ms ease;
 }
 
@@ -2500,7 +2500,7 @@
 
 .tlBar {
   height: 18px;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   width: 100%;
 }
 
@@ -2610,7 +2610,7 @@
   background: rgba(245, 197, 24, 0.12);
 }
 .edwMoodCardActive[data-mood="4"] {
-  border-color: #a0c840;
+  border-color: var(--green);
   background: rgba(160, 200, 64, 0.12);
 }
 .edwMoodCardActive[data-mood="5"] {
@@ -2624,7 +2624,7 @@
 .edwMoodLabelActive[data-mood="1"] { color: var(--red); }
 .edwMoodLabelActive[data-mood="2"] { color: #f5a623; }
 .edwMoodLabelActive[data-mood="3"] { color: var(--amber); }
-.edwMoodLabelActive[data-mood="4"] { color: #a0c840; }
+.edwMoodLabelActive[data-mood="4"] { color: var(--green); }
 .edwMoodLabelActive[data-mood="5"] { color: var(--accent); }
 .edwLeadText {
   line-height: 1.6;
@@ -2634,9 +2634,9 @@
   align-items: flex-start;
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--b2);
   border-radius: var(--r-xxs);
-  background: var(--surface);
+  background: var(--s1);
 }
 .edwTaskOrder {
   width: 22px;
@@ -2677,9 +2677,9 @@
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--b2);
   border-radius: var(--r-xxs);
-  background: var(--surface);
+  background: var(--s1);
   text-align: left;
 }
 .edwFlagRowActive {
@@ -2739,7 +2739,7 @@
   font-family: var(--font-dm-mono), monospace;
 }
 .adGenBtn:hover {
-  background: #a8d420;
+  background: var(--green);
 }
 .adCopyBtn {
   transition: all 0.12s ease;
@@ -2752,7 +2752,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 13px 20px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--b2);
 }
 .exFormTitle {
   font-family: var(--font-syne), sans-serif;
@@ -2764,8 +2764,8 @@
   padding: 20px;
 }
 .exTableSection {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--s1);
+  border: 1px solid var(--b2);
   border-radius: var(--r-sm);
   overflow: hidden;
 }
@@ -2774,7 +2774,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--b2);
 }
 .exTableTitle {
   font-family: var(--font-syne), sans-serif;

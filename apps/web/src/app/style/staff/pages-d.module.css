@@ -161,13 +161,13 @@
 }
 
 /* Skeleton helpers */
-.skeleBlock10x50p { height: 10px; width: 50%; background: var(--s3); border-radius: 3px; }
-.skeleBlock22x35p { height: 22px; width: 35%; background: var(--s3); border-radius: 3px; }
-.skeleBlock9x60p  { height: 9px;  width: 60%; background: var(--s3); border-radius: 3px; }
-.skeleBlock14x180px { height: 14px; width: 180px; background: var(--s3); border-radius: 3px; margin-bottom: 6px; }
-.skeleBlock10x100px { height: 10px; width: 100px; background: var(--s3); border-radius: 3px; }
-.skeleBlock14x100px { height: 14px; width: 100px; background: var(--s3); border-radius: 3px; }
-.skeleBlock8xFull   { height: 8px;  width: 100%;  background: var(--s3); border-radius: 3px; }
+.skeleBlock10x50p { height: 10px; width: 50%; background: var(--s3); border-radius: var(--r-xs); }
+.skeleBlock22x35p { height: 22px; width: 35%; background: var(--s3); border-radius: var(--r-xs); }
+.skeleBlock9x60p  { height: 9px;  width: 60%; background: var(--s3); border-radius: var(--r-xs); }
+.skeleBlock14x180px { height: 14px; width: 180px; background: var(--s3); border-radius: var(--r-xs); margin-bottom: 6px; }
+.skeleBlock10x100px { height: 10px; width: 100px; background: var(--s3); border-radius: var(--r-xs); }
+.skeleBlock14x100px { height: 14px; width: 100px; background: var(--s3); border-radius: var(--r-xs); }
+.skeleBlock8xFull   { height: 8px;  width: 100%;  background: var(--s3); border-radius: var(--r-xs); }
 
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -355,8 +355,8 @@
 }
 
 /* Skeleton helpers for cb */
-.skeleBlock12x120px { height: 12px; width: 120px; background: var(--s3); border-radius: 3px; margin-bottom: 6px; }
-.skeleBlock9x80px   { height: 9px;  width: 80px;  background: var(--s3); border-radius: 3px; }
+.skeleBlock12x120px { height: 12px; width: 120px; background: var(--s3); border-radius: var(--r-xs); margin-bottom: 6px; }
+.skeleBlock9x80px   { height: 9px;  width: 80px;  background: var(--s3); border-radius: var(--r-xs); }
 
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -736,8 +736,8 @@
 }
 
 /* Skeleton helpers */
-.skeleBlock14x40p { height: 14px; width: 40%; background: var(--s3); border-radius: 3px; margin-bottom: 6px; }
-.skeleBlock9x25p  { height: 9px;  width: 25%; background: var(--s3); border-radius: 3px; }
+.skeleBlock14x40p { height: 14px; width: 40%; background: var(--s3); border-radius: var(--r-xs); margin-bottom: 6px; }
+.skeleBlock9x25p  { height: 9px;  width: 25%; background: var(--s3); border-radius: var(--r-xs); }
 
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -1044,7 +1044,7 @@
 .obtProgressTrack {
   height: 4px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 
@@ -1052,7 +1052,7 @@
   height: 100%;
   width: var(--pct, 0%);
   background: var(--accent);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 400ms ease;
 }
 
@@ -1075,7 +1075,7 @@
 .obtCheckbox {
   width: 16px;
   height: 16px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   border: 1.5px solid var(--b3);
   background: var(--s2);
   flex-shrink: 0;
@@ -1229,14 +1229,14 @@
   display: block;
   width: 100%;
   height: 3px;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   border: none;
   background: var(--s3);
   appearance: none;
 }
-.hoClientMeter::-webkit-progress-bar { background: var(--s3); border-radius: 2px; }
-.hoClientMeter::-webkit-progress-value { border-radius: 2px; }
-.hoClientMeter::-moz-progress-bar { border-radius: 2px; }
+.hoClientMeter::-webkit-progress-bar { background: var(--s3); border-radius: var(--r-xs); }
+.hoClientMeter::-webkit-progress-value { border-radius: var(--r-xs); }
+.hoClientMeter::-moz-progress-bar { border-radius: var(--r-xs); }
 
 .hoMeterAccent::-webkit-progress-value  { background: var(--accent);  }
 .hoMeterBlue::-webkit-progress-value    { background: var(--blue);    }
@@ -1275,15 +1275,15 @@
 .hoSectionMeter {
   flex: 1;
   height: 3px;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   border: none;
   background: var(--s3);
   display: block;
   appearance: none;
 }
-.hoSectionMeter::-webkit-progress-bar { background: var(--s3); border-radius: 2px; }
-.hoSectionMeter::-webkit-progress-value { border-radius: 2px; }
-.hoSectionMeter::-moz-progress-bar { border-radius: 2px; }
+.hoSectionMeter::-webkit-progress-bar { background: var(--s3); border-radius: var(--r-xs); }
+.hoSectionMeter::-webkit-progress-value { border-radius: var(--r-xs); }
+.hoSectionMeter::-moz-progress-bar { border-radius: var(--r-xs); }
 
 /* Mark done button */
 .hoMarkBtn {
@@ -1318,7 +1318,7 @@
 .hoCheckBox {
   width: 16px;
   height: 16px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   border: 1.5px solid var(--b3);
   background: var(--s2);
   flex-shrink: 0;
@@ -1557,15 +1557,15 @@
 .corBurnMeter {
   flex: 1;
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   border: none;
   background: var(--s3);
   display: block;
   appearance: none;
 }
-.corBurnMeter::-webkit-progress-bar { background: var(--s3); border-radius: 2px; }
-.corBurnMeter::-webkit-progress-value { border-radius: 2px; }
-.corBurnMeter::-moz-progress-bar { border-radius: 2px; }
+.corBurnMeter::-webkit-progress-bar { background: var(--s3); border-radius: var(--r-xs); }
+.corBurnMeter::-webkit-progress-value { border-radius: var(--r-xs); }
+.corBurnMeter::-moz-progress-bar { border-radius: var(--r-xs); }
 
 .corBurnAccent::-webkit-progress-value  { background: var(--accent);  }
 .corBurnPurple::-webkit-progress-value  { background: var(--purple);  }

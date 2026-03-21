@@ -27,15 +27,15 @@
   display: block;
   width: 80px;
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   margin-top: 4px;
   appearance: none;
   background: var(--s3);
   border: none;
 }
-.progressMeter::-webkit-progress-bar { background: var(--s3); border-radius: 2px; }
-.progressMeter::-webkit-progress-value { border-radius: 2px; transition: width 300ms; }
-.progressMeter::-moz-progress-bar { border-radius: 2px; }
+.progressMeter::-webkit-progress-bar { background: var(--s3); border-radius: var(--r-xs); }
+.progressMeter::-webkit-progress-value { border-radius: var(--r-xs); transition: width 300ms; }
+.progressMeter::-moz-progress-bar { border-radius: var(--r-xs); }
 .spCapacityMeter { }
 .spCapAccent::-webkit-progress-value { background: var(--accent); }
 .spCapAmber::-webkit-progress-value  { background: var(--amber); }
@@ -601,13 +601,13 @@
 .msoProgressBar {
   height: 3px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 .msoProgressBarFill {
   height: 100%;
   width: var(--pct, 0%);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 300ms;
 }
 .msoProgressFillGreen  { background: var(--green); }
@@ -658,13 +658,13 @@
 .msoDetailProgressBar {
   height: 4px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 .msoDetailProgressFill {
   height: 100%;
   width: var(--pct, 0%);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 300ms;
 }
 
@@ -1170,7 +1170,7 @@
 }
 .clv2EscReason { font-size: 11px; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clv2EscRight  { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.clv2EscSev    { font-size: 9px; font-family: var(--font-dm-mono), monospace; font-weight: 700; padding: 1px 5px; border-radius: 4px; text-transform: uppercase; }
+.clv2EscSev    { font-size: 9px; font-family: var(--font-dm-mono), monospace; font-weight: 700; padding: 1px 5px; border-radius: var(--r-xs); text-transform: uppercase; }
 .clv2EscSevLOW      { background: var(--s3); color: var(--muted); }
 .clv2EscSevMEDIUM   { background: var(--amber-d); color: var(--amber); }
 .clv2EscSevHIGH     { background: var(--red-d); color: var(--red); }
@@ -1335,7 +1335,7 @@
 .chDirBadge {
   font-size: 9px;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   font-family: var(--font-dm-mono), monospace;
   font-weight: 700;
   text-transform: uppercase;
@@ -1698,13 +1698,13 @@
 .coProgressMini {
   height: 3px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
   margin-top: 4px;
 }
 .coProgressMiniFill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 300ms;
 }
 .coFillGreen   { background: var(--green); }
@@ -1741,12 +1741,12 @@
 .coProgressBar {
   height: 6px;
   background: var(--s3);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 .coProgressBarFill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   transition: width 300ms;
 }
 
@@ -1942,12 +1942,12 @@
 .chsHealthBar {
   height: 4px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
 .chsHealthBarFill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 300ms;
 }
 .chsHealthFillGreen { background: var(--green); }
@@ -2428,13 +2428,13 @@
 .slaBar {
   height: 4px;
   background: var(--s3);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   overflow: hidden;
   width: 60px;
 }
 .slaBarFill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   transition: width 300ms;
 }
 .slaBarMet      { background: var(--green); }
@@ -3136,8 +3136,8 @@
 .chsHealthBarMeta { display: flex; align-items: center; justify-content: space-between; }
 .chsHealthBarLabel { font-size: 10px; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
 .chsHealthBarPct   { font-size: 11px; color: var(--text); font-family: var(--font-dm-mono), monospace; font-weight: 700; }
-.chsHealthTrack    { height: 4px; background: var(--s3); border-radius: 2px; overflow: hidden; }
-.chsHealthFill     { height: 100%; border-radius: 2px; transition: width 300ms; }
+.chsHealthTrack    { height: 4px; background: var(--s3); border-radius: var(--r-xs); overflow: hidden; }
+.chsHealthFill     { height: 100%; border-radius: var(--r-xs); transition: width 300ms; }
 .chsTrend  { font-size: 13px; font-weight: 700; }
 .chsMetrics { display: flex; flex-direction: column; gap: 4px; }
 .chsMetricCell  { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--b1); }
@@ -3258,8 +3258,8 @@
 .rtProgressLabel   { font-size: 11px; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
 .rtProgressPct     { font-size: 12px; font-weight: 700; color: var(--text); font-family: var(--font-dm-mono), monospace; }
 .rtMetSep { width: 1px; height: 12px; background: var(--b2); margin: 0 4px; }
-.progressTrack { height: 4px; background: var(--s3); border-radius: 2px; overflow: hidden; }
-.progressFill  { height: 100%; border-radius: 2px; transition: width 300ms; background: var(--accent); }
+.progressTrack { height: 4px; background: var(--s3); border-radius: var(--r-xs); overflow: hidden; }
+.progressFill  { height: 100%; border-radius: var(--r-xs); transition: width 300ms; background: var(--accent); }
 .rtLogList { display: flex; flex-direction: column; gap: 0; background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); overflow: hidden; }
 .rtLogRow  { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--b1); }
 .rtLogRow:last-child { border-bottom: none; }
@@ -3419,7 +3419,7 @@
 }
 .ssLaneFilterPillActive {
   font-weight: 600 !important;
-  border-color: var(--border) !important;
+  border-color: var(--b2) !important;
   color: var(--text) !important;
   background: color-mix(in srgb, var(--text) 6%, transparent) !important;
 }
@@ -3432,13 +3432,13 @@
   height: 1px;
 }
 .ssLaneLine[data-lane="urgent"] { background: rgba(255, 68, 68, 0.2); }
-.ssLaneLine[data-lane="followup"] { background: rgba(245, 197, 24, 0.2); }
+.ssLaneLine[data-lane="followup"] { background: var(--amber-d); }
 .ssLaneLine[data-lane="proactive"] { background: color-mix(in srgb, var(--accent) 20%, transparent); }
 .ssLaneLine[data-lane="opportunity"] { background: rgba(167, 139, 250, 0.2); }
 .ssLaneLine[data-lane="admin"] { background: rgba(160, 160, 176, 0.2); }
 .ssSuggCardShell {
   border-radius: var(--r-sm);
-  border: 1px solid var(--border);
+  border: 1px solid var(--b2);
   border-left: 3px solid transparent;
   overflow: hidden;
 }
@@ -3474,14 +3474,14 @@
 .ssClientAvatar[data-client-id="1"] { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); }
 .ssClientAvatar[data-client-id="2"] { background: rgba(167, 139, 250, 0.2); color: #a78bfa; }
 .ssClientAvatar[data-client-id="3"] { background: rgba(96, 165, 250, 0.2); color: #60a5fa; }
-.ssClientAvatar[data-client-id="4"] { background: rgba(245, 197, 24, 0.2); color: #f5c518; }
-.ssClientAvatar[data-client-id="5"] { background: rgba(255, 140, 0, 0.2); color: #ff8c00; }
+.ssClientAvatar[data-client-id="4"] { background: var(--amber-d); color: var(--amber); }
+.ssClientAvatar[data-client-id="5"] { background: var(--accent-d); color: var(--accent2); }
 .ssClientName[data-client-id="0"] { color: var(--muted); }
 .ssClientName[data-client-id="1"] { color: var(--accent); }
 .ssClientName[data-client-id="2"] { color: #a78bfa; }
 .ssClientName[data-client-id="3"] { color: #60a5fa; }
-.ssClientName[data-client-id="4"] { color: #f5c518; }
-.ssClientName[data-client-id="5"] { color: #ff8c00; }
+.ssClientName[data-client-id="4"] { color: var(--amber); }
+.ssClientName[data-client-id="5"] { color: var(--accent2); }
 .ssTaskText {
   line-height: 1.4;
 }
@@ -3498,10 +3498,10 @@
 .ssWhyPanel {
   padding: 12px 16px 14px;
   background: rgba(0, 0, 0, 0.2);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--b2);
 }
 .ssWhyPanel[data-lane="urgent"] { border-top-color: rgba(255, 68, 68, 0.2); }
-.ssWhyPanel[data-lane="followup"] { border-top-color: rgba(245, 197, 24, 0.2); }
+.ssWhyPanel[data-lane="followup"] { border-top-color: var(--amber-d); }
 .ssWhyPanel[data-lane="proactive"] { border-top-color: color-mix(in srgb, var(--accent) 20%, transparent); }
 .ssWhyPanel[data-lane="opportunity"] { border-top-color: rgba(167, 139, 250, 0.2); }
 .ssWhyPanel[data-lane="admin"] { border-top-color: rgba(160, 160, 176, 0.2); }
@@ -3694,7 +3694,7 @@
 .coActionGhost {
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: transparent;
-  color: #a0a0b0;
+  color: var(--muted);
 }
 .ssClientCard {
   transition: all 0.15s ease;
@@ -3715,13 +3715,13 @@
 }
 .ssClientCard {
   padding: 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--b2);
   border-radius: var(--r-xxs);
-  background: var(--surface);
+  background: var(--s1);
 }
 .ssClientCardIdle {
-  border-color: var(--border);
-  background: var(--surface);
+  border-color: var(--b2);
+  background: var(--s1);
 }
 .ssScoreClientAvatar {
   width: 22px;
@@ -3754,7 +3754,7 @@
   padding: 28px;
 }
 .ssPaneRightBorder {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--b2);
 }
 .ssClientName {
   font-size: 1.125rem;
@@ -3804,7 +3804,7 @@
   }
   .ssPaneRightBorder {
     border-right: none;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--b2);
   }
 .chSortPillActive {
   background: var(--surface3);
