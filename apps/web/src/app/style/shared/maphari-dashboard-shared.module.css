@@ -1073,7 +1073,6 @@
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  overflow: hidden;
 }
 
 /* Top shimmer */
@@ -1089,13 +1088,15 @@
 }
 
 /* Eyebrow label above the page title */
-.topbarEyebrow {
+.topbarLabelEyebrow {
   font-family: var(--font-dm-mono), monospace;
   font-size: 8px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(240, 237, 232, 0.28);
   line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 /* Title block (eyebrow stacked above title) */
@@ -1108,8 +1109,6 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   letter-spacing: -0.02em;
 }
 
@@ -3052,7 +3051,7 @@
 
   .topbar {
     top: 8px;
-    left: 60px; /* hamburger offset */
+    left: 8px; /* hamburger is inside topbar, not a separate fixed element */
     right: 8px;
     padding: 0 10px 0 12px;
   }
@@ -5352,11 +5351,6 @@
 
 /* ─── Topbar Breadcrumb Hierarchy ────────────────────────────────── */
 
-.topbarLabelEyebrow {
-  color: rgba(255,255,255,0.4);
-  font-size: 0.65rem;
-}
-
 .topbarLabelSep {
   color: rgba(255,255,255,0.2);
   margin: 0 4px;
@@ -5367,6 +5361,9 @@
   color: rgba(255,255,255,0.88);
   font-size: 0.72rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 /* ─── Mobile overlay — fade-in animation ─────────────────────────── */
 
