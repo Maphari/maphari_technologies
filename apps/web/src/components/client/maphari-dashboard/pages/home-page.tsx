@@ -612,7 +612,7 @@ export function HomePage({
           <button
             type="button"
             className={cx("btnSm", "btnAccent")}
-            onClick={() => onNavigate?.("contractsProposals")}
+            onClick={() => onNavigate?.("legalHub")}
           >
             Review &amp; Sign →
           </button>

@@ -105,7 +105,7 @@ export function NavIcon({ id, className }: { id: PageId; className: string }) {
       <path d="M8 5v3.5l2.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
-  if (id === "contractsProposals") return (
+  if (id === "legalHub") return (
     <svg className={className} viewBox="0 0 16 16" fill="none">
       <path d="M3.5 1.5h9v13h-9z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
       <path d="M5.5 4.5h5M5.5 7h5M5.5 9.5h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
@@ -117,13 +117,6 @@ export function NavIcon({ id, className }: { id: PageId; className: string }) {
       <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3" />
       <path d="M8 4v4l3 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M4 8a4 4 0 0 1 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeDasharray="1.5 1.5" />
-    </svg>
-  );
-  if (id === "quoteAcceptance") return (
-    <svg className={className} viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="2" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M5 7h6M5 9h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M9 12v2l2-1-2-1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
     </svg>
   );
   if (id === "financialReports") return (

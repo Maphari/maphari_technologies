@@ -23,9 +23,8 @@ export const pageTitles: Record<PageId, string> = {
   payments:             "Finance / Payments & Billing",
   invoices:             "Finance / Invoices",
   budgetTracker:        "Finance / Budget Tracker",
-  contractsProposals:   "Finance / Contracts & Proposals",
+  legalHub:             "Finance / Legal & Agreements",
   retainerDashboard:    "Finance / Retainer Dashboard",
-  quoteAcceptance:      "Finance / Quote Acceptance",
   financialReports:     "Finance / Financial Reports",
   invoiceHistory:       "Finance / Invoice History",
   // Communication

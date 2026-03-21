@@ -21,9 +21,8 @@ export type PageId =
   | "payments"
   | "invoices"
   | "budgetTracker"
-  | "contractsProposals"
+  | "legalHub"
   | "retainerDashboard"
-  | "quoteAcceptance"
   | "financialReports"
   | "invoiceHistory"
   // Communication
@@ -100,9 +99,8 @@ export const navSections: NavSection[] = [
       { id: "payments", label: "Payments & Billing" },
       { id: "invoices", label: "Invoices" },
       { id: "budgetTracker", label: "Budget Tracker" },
-      { id: "contractsProposals", label: "Contracts & Proposals" },
+      { id: "legalHub", label: "Legal & Agreements" },
       { id: "retainerDashboard", label: "Retainer Dashboard" },
-      { id: "quoteAcceptance", label: "Quote Acceptance" },
       { id: "financialReports", label: "Financial Reports" },
       { id: "invoiceHistory", label: "Invoice History" },
     ],

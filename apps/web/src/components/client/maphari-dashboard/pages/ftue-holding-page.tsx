@@ -72,7 +72,7 @@ export function FtueHoldingPage({ session, navigateTo }: FtueHoldingPageProps) {
                 <button
                   type="button"
                   className={cx("btnSm", "btnAccent")}
-                  onClick={() => navigateTo("quoteAcceptance")}
+                  onClick={() => navigateTo("legalHub")}
                 >
                   Review Proposal <Ic n="arrowRight" sz={11} c="var(--bg)" />
                 </button>

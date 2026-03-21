@@ -56,9 +56,8 @@ import { ContentApprovalPage } from "./maphari-dashboard/pages/content-approval-
 import { PaymentsPage } from "./maphari-dashboard/pages/payments-page";
 import { InvoicesPage } from "./maphari-dashboard/pages/invoices-page";
 import { BudgetTrackerPage } from "./maphari-dashboard/pages/budget-tracker-page";
-import { ContractsProposalsPage } from "./maphari-dashboard/pages/contracts-proposals-page";
+import { LegalHubPage } from "./maphari-dashboard/pages/legal-hub-page";
 import { RetainerDashboardPage } from "./maphari-dashboard/pages/retainer-dashboard-page";
-import { QuoteAcceptancePage } from "./maphari-dashboard/pages/quote-acceptance-page";
 import { FinancialReportsPage } from "./maphari-dashboard/pages/financial-reports-page";
 import { InvoiceHistoryPage } from "./maphari-dashboard/pages/invoice-history-page";
 // Communication
@@ -572,9 +571,8 @@ export function MaphariClientDashboard() {
             {nav.activePage === "payments" && <PaymentsPage payments={snapshot.payments} invoices={snapshot.invoices} />}
             {nav.activePage === "invoices" && <InvoicesPage invoices={snapshot.invoices} />}
             {nav.activePage === "budgetTracker" && <BudgetTrackerPage invoices={snapshot.invoices} />}
-            {nav.activePage === "contractsProposals" && <ContractsProposalsPage />}
+            {nav.activePage === "legalHub" && <LegalHubPage />}
             {nav.activePage === "retainerDashboard" && <RetainerDashboardPage />}
-            {nav.activePage === "quoteAcceptance" && <QuoteAcceptancePage />}
             {nav.activePage === "financialReports" && <FinancialReportsPage invoices={snapshot.invoices} />}
             {nav.activePage === "invoiceHistory" && <InvoiceHistoryPage invoices={snapshot.invoices} />}
 

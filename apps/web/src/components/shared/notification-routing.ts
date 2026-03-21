@@ -26,9 +26,8 @@ export const CLIENT_PAGE_TO_NOTIFICATION_TAB: Record<ClientPageId, DashboardNoti
   payments:             "invoices",
   invoices:             "invoices",
   budgetTracker:        "invoices",
-  contractsProposals:   "invoices",
+  legalHub:             "invoices",
   retainerDashboard:    "invoices",
-  quoteAcceptance:      "invoices",
   financialReports:     "invoices",
   invoiceHistory:       "invoices",
   // Communication
