@@ -2,41 +2,67 @@
 
 /* ── 1. Design tokens ─────────────────────────────────────────────────── */
 .staffRoot {
-  --bg: #030309;
-  --s1: #0c0c18;
-  --s2: #111120;
-  --s3: #161626;
-  --s4: #1c1c2e;
-  --b1: rgba(255,255,255,0.05);
-  --b2: rgba(255,255,255,0.09);
-  --b3: rgba(255,255,255,0.16);
+  /* ── Background ── */
+  --bg: #04040a;
+
+  /* ── Surfaces — white-glass like client ── */
+  --s1: rgba(255, 255, 255, 0.04);
+  --s2: rgba(255, 255, 255, 0.07);
+  --s3: rgba(255, 255, 255, 0.10);
+  --s4: rgba(255, 255, 255, 0.14);
+
+  /* ── Borders ── */
+  --b1: rgba(255, 255, 255, 0.06);
+  --b2: rgba(255, 255, 255, 0.10);
+  --b3: rgba(255, 255, 255, 0.16);
+  --b-top: rgba(255, 255, 255, 0.10);
+
+  /* ── Accent — ember orange, staff identity ── */
   --accent: #f97316;
-  --accent-d: rgba(249,115,22,0.12);
-  --accent-g: rgba(249,115,22,0.06);
+  --accent-d: rgba(249, 115, 22, 0.14);
+  --accent-g: rgba(249, 115, 22, 0.07);
   --accent2: #fb923c;
-  --green: #22c55e;    --green-d: rgba(34,197,94,0.10);
-  --amber: #eab308;    --amber-d: rgba(234,179,8,0.10);
-  --red: #ef4444;      --red-d: rgba(239,68,68,0.10);
-  --purple: #a855f7;   --purple-d: rgba(168,85,247,0.10);
-  --blue: #3b82f6;     --blue-d: rgba(59,130,246,0.10);
+
+  /* ── Semantic palette ── */
+  --green: #22c55e;    --green-d: rgba(34, 197, 94, 0.12);
+  --amber: #eab308;    --amber-d: rgba(234, 179, 8, 0.12);
+  --red: #ef4444;      --red-d: rgba(239, 68, 68, 0.12);
+  --purple: #a855f7;   --purple-d: rgba(168, 85, 247, 0.12);
+  --blue: #3b82f6;     --blue-d: rgba(59, 130, 246, 0.12);
+
+  /* ── Text ── */
   --text: #ede9e3;
-  --muted: rgba(237,233,227,0.50);
-  --muted2: rgba(237,233,227,0.28);
-  --r-xs: 3px; --r-sm: 5px; --r-md: 8px; --r-lg: 12px;
-  --shadow-card: 0 4px 16px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
-  --shadow-island: 0 16px 48px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.07);
-  --shadow-modal: 0 24px 64px rgba(0,0,0,0.72);
-  /* ── Layout geometry ── */
-  --edge: 10px;
-  --rail-w: 52px;
-  --gap: 8px;
+  --muted: rgba(237, 233, 227, 0.50);
+  --muted2: rgba(237, 233, 227, 0.28);
+
+  /* ── Radius — rounder, matching client ── */
+  --r-xxs: 4px;
+  --r-xs:  8px;
+  --r-sm:  12px;
+  --r-md:  16px;
+  --r-lg:  20px;
+  --r-xl:  28px;
+
+  /* ── Shadows ── */
+  --shadow-card:   0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 var(--b-top);
+  --shadow-island: 0 16px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+  --shadow-modal:  0 24px 64px rgba(0,0,0,0.65);
+
+  /* ── Layout ── */
+  --edge:     16px;
+  --rail-w:   52px;
+  --gap:       8px;
   --topbar-h: 48px;
-  /* ── Glass tokens ── */
+
+  /* ── Glass blur scale ── */
   --glass-sm:  8px;
-  --glass-md: 18px;
-  --glass-lg: 22px;
-  --glass-card:   rgba(10,10,20,0.55);
-  --glass-border: rgba(255,255,255,0.10);
+  --glass-md: 16px;
+  --glass-lg: 20px;
+
+  /* ── Legacy aliases ── */
+  --surface: var(--s1);
+  --border:  var(--b1);
+
   display: contents;
 }
 
@@ -44,11 +70,10 @@
 .shell {
   height: 100dvh;
   background-color: var(--bg);
-  /* Rich ambient depth — orange warmth left, indigo depth right */
   background-image:
-    radial-gradient(ellipse 700px 600px at 14% 35%, rgba(249,115,22,0.10) 0%, transparent 65%),
-    radial-gradient(ellipse 900px 700px at 88% 82%, rgba(99,102,241,0.07) 0%, transparent 65%),
-    radial-gradient(ellipse 500px 400px at 50% 100%, rgba(249,115,22,0.03) 0%, transparent 55%);
+    radial-gradient(ellipse 800px 600px at 12% 30%, rgba(249, 115, 22, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 700px 500px at 90% 85%, rgba(99, 102, 241, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 500px 400px at 55% 105%, rgba(249, 115, 22, 0.04) 0%, transparent 55%);
   color: var(--text);
   font-family: var(--font-syne), system-ui, sans-serif;
   overflow: hidden;
@@ -86,16 +111,12 @@
   left: calc(var(--edge) + var(--rail-w) + var(--gap));
   right: var(--edge);
   height: var(--topbar-h);
-  /* Staff identity: subtle orange accent stripe on top */
-  border-top: 1px solid rgba(249,115,22,0.28);
-  border-left: 1px solid rgba(255,255,255,0.07);
-  border-right: 1px solid rgba(255,255,255,0.07);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  border-radius: 14px;
-  background: rgba(8,8,18,0.75);
+  border-top: 2px solid var(--accent);
+  border-radius: var(--r-md);
+  background: var(--s2);
   backdrop-filter: blur(var(--glass-lg));
   -webkit-backdrop-filter: blur(var(--glass-lg));
-  box-shadow: 0 8px 32px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.06);
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -104,12 +125,11 @@
   overflow: hidden;
 }
 
-/* Shimmer highlight line */
 .topbar::before {
   content: "";
   position: absolute;
   top: 0; left: 20px; right: 20px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.22), transparent);
+  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.18), transparent);
   pointer-events: none;
 }
 
@@ -301,37 +321,36 @@
 .rail {
   width: var(--rail-w);
   flex-shrink: 0;
-  background: rgba(8,8,18,0.72);
+  background: var(--s2);
   backdrop-filter: blur(var(--glass-md));
   -webkit-backdrop-filter: blur(var(--glass-md));
-  border-radius: 18px;
-  box-shadow: var(--shadow-island);
+  border-radius: var(--r-lg);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.06);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 0 12px;
+  padding: 10px 0 14px;
   gap: 2px;
   z-index: 20;
   position: relative;
   overflow: hidden;
 }
 
-/* Shimmer highlight at rail top */
 .rail::before {
   content: "";
   position: absolute;
   top: 0; left: 10px; right: 10px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent);
+  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.20), transparent);
   pointer-events: none;
 }
 
 .railCollapsed { width: var(--rail-w); }
 
 .railLogo {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: rgba(249,115,22,0.18);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-xs);
+  background: rgba(249,115,22,0.16);
   color: var(--accent);
   font-family: var(--font-syne), sans-serif;
   font-size: 18px;
@@ -440,7 +459,7 @@
 .navIcon {
   width: 40px;
   height: 40px;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-xs);
   background: transparent;
   border: none;
   color: var(--muted2);
@@ -457,9 +476,7 @@
 
 .navIconActive {
   color: var(--accent);
-  background: rgba(249,115,22,0.12);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(249, 115, 22, 0.18);
 }
 
 .navIconDot {
@@ -477,11 +494,11 @@
 .flyout {
   width: 200px;
   flex-shrink: 0;
-  background: rgba(10,10,20,0.68);
+  background: var(--s2);
   backdrop-filter: blur(var(--glass-md));
   -webkit-backdrop-filter: blur(var(--glass-md));
-  border-radius: 14px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.06);
+  border-radius: var(--r-lg);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
   display: flex;
   flex-direction: column;
   padding: 8px 0;
@@ -492,12 +509,11 @@
   overflow-y: auto;
 }
 
-/* Shimmer at top */
 .flyout::before {
   content: "";
   position: absolute;
   top: 0; left: 14px; right: 14px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.11), transparent);
+  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.15), transparent);
   pointer-events: none;
   flex-shrink: 0;
 }
@@ -543,7 +559,7 @@
 .flyoutPageBtn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
 
 .flyoutPageBtnActive {
-  background: var(--accent-g);
+  background: rgba(249, 115, 22, 0.12);
   color: var(--text);
   font-weight: 700;
 }
