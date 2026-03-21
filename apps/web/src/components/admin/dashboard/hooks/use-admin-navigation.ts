@@ -22,6 +22,7 @@ export type UseAdminNavigationReturn = {
   pinnedPages: PageId[];
   grouped: Record<string, NavItem[]>;
   navBadgeCounts: Partial<Record<PageId, number>>;
+  statusBar: { clientsActive: number; blockers: number; atRisk: number };
   handlePageChange: (nextPage: PageId) => void;
   handleLogout: () => Promise<void>;
 };
@@ -100,6 +101,19 @@ export function useAdminNavigation({ session, snapshot, notificationJobs, projec
     };
   }, [notificationJobs, projectBlockers, snapshot.clients, snapshot.invoices, snapshot.leads, snapshot.projects]);
 
+  const statusBar = useMemo(() => {
+    const clientsActive = snapshot.clients.filter(
+      (client) => client.status === "ACTIVE",
+    ).length;
+    const blockers = projectBlockers.filter(
+      (blocker) => blocker.status !== "RESOLVED",
+    ).length;
+    const atRisk = snapshot.clients.filter(
+      (client) => client.status !== "ACTIVE",
+    ).length;
+    return { clientsActive, blockers, atRisk };
+  }, [projectBlockers, snapshot.clients]);
+
   const handlePageChange = useCallback((nextPage: PageId): void => {
     setPage(nextPage);
     setRecentPages((previous) => [nextPage, ...previous.filter((entry) => entry !== nextPage)].slice(0, 6));
@@ -122,6 +136,7 @@ export function useAdminNavigation({ session, snapshot, notificationJobs, projec
     pinnedPages,
     grouped,
     navBadgeCounts,
+    statusBar,
     handlePageChange,
     handleLogout
   };

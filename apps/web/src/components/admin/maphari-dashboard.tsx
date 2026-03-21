@@ -205,6 +205,7 @@ export function MaphariDashboard() {
     pinnedPages,
     grouped,
     navBadgeCounts,
+    statusBar,
     handlePageChange,
     handleLogout
   } = useAdminNavigation({
@@ -452,7 +453,7 @@ export function MaphariDashboard() {
             onOpenMessages={() => setPage("messages")}
             onLogout={() => void handleLogout()}
             onMenuToggle={() => setSidebarOpen((prev) => !prev)}
-            onOpenHelp={() => setPage("knowledgeBaseAdmin")}
+            statusBar={statusBar}
           />
 
           <section className={styles.content}>
