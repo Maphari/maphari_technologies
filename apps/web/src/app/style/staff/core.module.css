@@ -91,6 +91,7 @@
   transition: border-color 150ms, background 150ms, box-shadow 150ms;
   flex-shrink: 0;
   white-space: nowrap;
+  color: var(--muted);
 }
 
 .topbarSearch:hover {
@@ -905,7 +906,8 @@
 .cmdInput {
   background: transparent;
   border: none;
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
   font-size: 15px;
   font-family: var(--font-syne), sans-serif;
   font-weight: 600;
@@ -914,6 +916,13 @@
   padding: 0;
   caret-color: var(--accent);
   letter-spacing: -0.01em;
+  -webkit-appearance: none;
+}
+
+.cmdInput:focus,
+.cmdInput:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .cmdInput::placeholder {
