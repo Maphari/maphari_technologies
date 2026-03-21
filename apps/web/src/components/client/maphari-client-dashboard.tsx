@@ -99,6 +99,12 @@ import { ProjectBriefPage } from "./maphari-dashboard/pages/project-brief-page";
 import { OffboardingPage } from "./maphari-dashboard/pages/offboarding-page";
 import { CompanyProfilePage } from "./maphari-dashboard/pages/company-profile-page";
 
+// ── FTUE components
+import { FtueHoldingPage } from "./maphari-dashboard/pages/ftue-holding-page";
+import { FtueWelcomeModal } from "./maphari-dashboard/components/ftue-welcome-modal";
+import { OnboardingBanner } from "./maphari-dashboard/components/onboarding-banner";
+import { CompletionBanner } from "./maphari-dashboard/components/completion-banner";
+
 import type { NotificationPreference } from "./maphari-dashboard/types";
 
 const DEFAULT_NOTIFICATION_PREFS: NotificationPreference[] = [
@@ -277,6 +283,28 @@ export function MaphariClientDashboard() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     null,
   );
+
+  // ── FTUE: welcome modal ─────────────────────────────────────────────────
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
+  useEffect(() => {
+    if (!session) return;
+    void getPortalPreferenceWithRefresh(session, "portal_ftue_v1_seen").then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.data?.value) setShowWelcomeModal(true);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+
+  function handleWelcomeModalDismiss() {
+    setShowWelcomeModal(false);
+    if (!session) return;
+    void setPortalPreferenceWithRefresh(session, {
+      key: "portal_ftue_v1_seen",
+      value: "true",
+    }).then((r) => { if (r.nextSession) saveSession(r.nextSession); });
+  }
+
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // ── Client profile (for sidebar user card) ───────────────────────────────
@@ -368,6 +396,14 @@ export function MaphariClientDashboard() {
     },
     [session],
   );
+
+  // ── FTUE: project state detection ──────────────────────────────────────
+  type ProjectStatus = "SETUP" | "ONBOARDING" | "ACTIVE" | "COMPLETE" | "ARCHIVED";
+  const activeProject = snapshot.projects.find((p) => p.id === selectedProjectId) ?? snapshot.projects[0] ?? null;
+  const activeStatus  = (activeProject?.status ?? "") as ProjectStatus;
+  const hasNoProjects = !loading && snapshot.projects.length === 0;
+  const isOnboarding  = activeStatus === "SETUP" || activeStatus === "ONBOARDING";
+  const isComplete    = activeStatus === "COMPLETE" || activeStatus === "ARCHIVED";
 
   // ── Derived ──────────────────────────────────────────────────────────────
   const hasWorkspaceData = hasAnyDashboardData([
@@ -479,12 +515,29 @@ export function MaphariClientDashboard() {
             brandCompanyName={branding?.enabled ? branding.companyDisplayName : null}
             brandLogoUrl={branding?.enabled ? branding.logoUrl : null}
             planLabel={profile?.tier ? profile.tier.charAt(0) + profile.tier.slice(1).toLowerCase().replace(/_/g, " ") : undefined}
+            projects={snapshot.projects.map((p) => ({ id: p.id, name: p.name, status: p.status }))}
+            selectedProjectId={selectedProjectId}
+            onProjectSelect={setSelectedProjectId}
+            onViewAllProjects={() => handleNavigate("myProjects")}
           />
 
           <div className={styles.content} style={contentStyle}>
             <DashboardErrorBoundary>
-            {/* ── Overview ────────────────────────────────────────────── */}
-            {nav.activePage === "home" && (
+            {/* ── FTUE: No-project holding page ───────────────────────── */}
+            {hasNoProjects ? (
+              <FtueHoldingPage session={session ?? null} navigateTo={handleNavigate} />
+            ) : (
+              <>
+                {/* ── Contextual banners ──────────────────────────────── */}
+                {isOnboarding && (
+                  <OnboardingBanner session={session ?? null} navigateTo={handleNavigate} />
+                )}
+                {isComplete && activeProject && (
+                  <CompletionBanner projectId={activeProject.id} session={session ?? null} navigateTo={handleNavigate} />
+                )}
+
+                {/* ── Overview ──────────────────────────────────────────── */}
+                {nav.activePage === "home" && (
               <HomePage
                 projects={clientData.projects}
                 outstandingInvoices={clientData.outstandingInvoices}
@@ -621,6 +674,8 @@ export function MaphariClientDashboard() {
                 session={session}
                 onRestartTour={tour.resetTour}
               />
+            )}
+              </>
             )}
             </DashboardErrorBoundary>
           </div>
@@ -890,6 +945,11 @@ export function MaphariClientDashboard() {
           <Ic n="message" sz={13} c="var(--bg)" />
           Quick Ask
         </button>
+      )}
+
+      {/* ── FTUE Welcome Modal ──────────────────────────────────────────── */}
+      {showWelcomeModal && (
+        <FtueWelcomeModal onDismiss={handleWelcomeModalDismiss} />
       )}
 
       {/* ── Toast stack ─────────────────────────────────────────────────── */}
