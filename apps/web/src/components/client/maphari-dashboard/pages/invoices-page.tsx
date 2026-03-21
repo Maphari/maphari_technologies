@@ -1,21 +1,26 @@
 "use client";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { cx } from "../style";
 import { Ic, Av } from "../ui";
 import { usePageToast } from "../hooks/use-page-toast";
 import type { PortalInvoice } from "../../../../lib/api/portal/types";
+import { formatMoneyCents } from "../../../../lib/i18n/currency";
+import { useCurrencyConverter } from "../../../../lib/i18n/exchange-rates";
+import { useProjectLayer } from "../hooks/use-project-layer";
+import { saveSession } from "../../../../lib/auth/session";
+import { initiatePortalPayfastWithRefresh } from "../../../../lib/api/portal/projects";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type ITab = "All" | "Paid" | "Outstanding" | "Overdue";
 type IStatus = "Paid" | "Outstanding" | "Overdue";
 type ICategory = "Development" | "Design" | "Retainer" | "Strategy" | "QA";
-type PayState = "idle" | "processing" | "success";
 
 interface InvItem { desc: string; qty: number; rate: string; total: string; totalRaw: number }
 interface Invoice {
   id: string; ref: string; date: string; due: string; paidDate?: string;
-  amount: string; amountRaw: number; status: IStatus; items: InvItem[];
+  amount: string; amountRaw: number; amountCents: number; currency: string;
+  status: IStatus; items: InvItem[];
   issuedMs: number; category: ICategory; project: string;
   contact: string; contactInitials: string; notes?: string;
 }
@@ -37,14 +42,6 @@ const STATUS_COLOR: Record<IStatus, string> = {
 
 const TABS: ITab[] = ["All", "Paid", "Outstanding", "Overdue"];
 
-// Currency symbol is configured via NEXT_PUBLIC_CURRENCY_SYMBOL env var.
-// Defaults to "R" (ZAR) for backward compatibility.
-const CURRENCY_SYMBOL = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL ?? "R";
-const LOCALE          = process.env.NEXT_PUBLIC_LOCALE ?? "en-ZA";
-
-const fmt    = (n: number) => `${CURRENCY_SYMBOL} ${n.toLocaleString(LOCALE)}`;
-const fmtDec = (n: number) =>
-  `${CURRENCY_SYMBOL} ${n.toLocaleString(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const daysOverdue = (issuedMs: number, now: number) => Math.max(0, Math.floor((now - issuedMs) / 86_400_000));
 
 // ── Keyframe animations ────────────────────────────────────────────────────────
@@ -85,174 +82,9 @@ const PAGE_STYLES = `
   }
 `;
 
-// ── Pay Modal (unchanged) ──────────────────────────────────────────────────────
-
-function InvPayModal({ amount, desc, onClose }: { amount: number; desc: string; onClose: () => void }) {
-  const [payState, setPayState] = useState<PayState>("idle");
-  const [cardNum, setCardNum] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [splitPay, setSplitPay] = useState(false);
-  const receipt = useRef(`RCP-${Date.now().toString().slice(-6)}`);
-
-  const vat = Math.round(amount * 0.15);
-  const total = amount + vat;
-  const inst = Math.ceil(total / 3);
-
-  useEffect(() => {
-    if (payState === "processing") {
-      const t = setTimeout(() => setPayState("success"), 2200);
-      return () => clearTimeout(t);
-    }
-  }, [payState]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && payState !== "processing") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [payState, onClose]);
-
-  return (
-    <>
-      <div
-        className={cx("modalOverlay")}
-        onClick={(e) => { if (e.target === e.currentTarget && payState !== "processing") onClose(); }}
-      >
-        <div className={`inv-modal-in ${cx("pmModalInner")}`}>
-
-          {/* Header */}
-          <div className={cx("pmModalHd")}>
-            <div className={cx("flexRow", "gap8")}>
-              <Ic n="shieldCheck" sz={15} c="var(--lime)" />
-              <span className={cx("fontMono", "text10", "uppercase", "tracking", "colorAccent")}>
-                Secure Payment · 256-bit Encrypted
-              </span>
-            </div>
-            {payState !== "processing" && (
-              <button type="button" onClick={onClose} className={cx("iconBtn")}>
-                <Ic n="x" sz={16} />
-              </button>
-            )}
-          </div>
-
-          {/* Success */}
-          {payState === "success" ? (
-            <div className={cx("emptyPad36x24", "textCenter")}>
-              <div className={`inv-check-pop ${cx("pmSuccessCircle")}`}>
-                <Ic n="check" sz={30} c="var(--lime)" sw={2.5} />
-              </div>
-              <div className={cx("fw800", "fs11rem", "mb4")}>Payment Successful!</div>
-              <div className={cx("text11", "colorMuted", "mb4")}>{desc}</div>
-              <div className={cx("fontMono", "text10", "colorMuted2", "mb24")}>
-                Receipt #{receipt.current}
-              </div>
-              <div className={cx("flexRow", "justifyCenter", "gap8")}>
-                <button type="button" className={cx("btnSm", "btnGhost", "flexRow", "gap5")} title="Download not yet available" disabled>
-                  <Ic n="download" sz={13} /> Download Receipt
-                </button>
-                <button type="button" className={cx("btnSm", "btnAccent")} onClick={onClose}>Close</button>
-              </div>
-            </div>
-
-          ) : payState === "processing" ? (
-            <div className={cx("emptyPad48x24", "flexCol", "flexCenter", "gap16")}>
-              <div className={`inv-spinner ${cx("wh40")}`}  />
-              <div className={cx("fw600", "text12", "colorMuted2")}>Processing securely…</div>
-              <div className={cx("text11", "colorMuted2")}>Please don't close this window</div>
-            </div>
-
-          ) : (
-            <>
-              {/* Amount */}
-              <div className={cx("p20x24x0", "textCenter")}>
-                <div className={cx("fontMono", "fw800", "invBigAmount")}>
-                  {splitPay ? fmtDec(inst) : fmtDec(total)}
-                </div>
-                <div className={cx("text11", "colorMuted", "mt4", "mb2")}>
-                  {splitPay ? "Instalment 1 of 3" : desc}
-                </div>
-                <div className={cx("fontMono", "text10", "colorMuted2")}>
-                  Includes 15% VAT ({fmt(vat)})
-                </div>
-              </div>
-
-              {/* Card visual */}
-              <div className={cx("py16_px", "px24_px")}>
-                <div className={cx("invCardPreviewHd")}>
-                  <div className={cx("cardChipAmber")} />
-                  <span className={cx("fontMono", "text10", "colorMuted2", "ls01")}>
-                    •••• •••• •••• 4242
-                  </span>
-                </div>
-              </div>
-
-              {/* Card fields */}
-              <div className={cx("px24_0", "flexCol", "gap10")}>
-                <div className={cx("relative")}>
-                  <span className={cx("searchIconWrap")}>
-                    <Ic n="creditCard" sz={14} c="var(--muted2)" />
-                  </span>
-                  <input
-                    className={cx("input", "fontMono", "pl34", "tracking")}
-                    placeholder="•••• •••• •••• ••••"
-                    value={cardNum}
-                    onChange={(e) => setCardNum(e.target.value.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim())}
-                  />
-                </div>
-                <div className={cx("grid2Cols10Gap")}>
-                  <input className={cx("input", "fontMono")} placeholder="MM / YY" value={expiry} onChange={(e) => setExpiry(e.target.value)} />
-                  <input className={cx("input", "fontMono")} placeholder="CVV" value={cvv} type="password" onChange={(e) => setCvv(e.target.value.slice(0, 4))} />
-                </div>
-              </div>
-
-              {/* Split pay */}
-              <div className={cx("splitPayToggleRow")}>
-                <button
-                  type="button"
-                  onClick={() => setSplitPay(!splitPay)} className={cx("splitPayToggleBtn")}
-                >
-                  <Ic n="splitPay" sz={13} c="var(--amber)" />
-                  <span className={cx("fw700", "text12", "colorAmber", "flex1", "textLeft")}>
-                    {splitPay ? "Pay in full instead" : "Split into 3 monthly payments"}
-                  </span>
-                  <span className={cx("fontMono", "text10", "fw700", "splitPayBadge", "dynBgColor", "dynColor")} style={{ "--bg-color": splitPay ? "color-mix(in oklab, var(--amber) 15%, transparent)" : "var(--s3)", "--color": splitPay ? "var(--amber)" : "var(--muted2)" } as React.CSSProperties}>
-                    {splitPay ? "ON" : "OFF"}
-                  </span>
-                </button>
-                {splitPay && (
-                  <div className={cx("mt10", "flexCol", "gap4")}>
-                    {["Today", "30 days", "60 days"].map((label) => (
-                      <div key={label} className={cx("flexBetween")}>
-                        <span className={cx("text11", "colorMuted2")}>{label}</span>
-                        <span className={cx("fontMono", "text11", "fw700", "colorAmber", "tabularNums")}>{fmtDec(inst)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Pay button */}
-              <div className={cx("p024x20")}>
-                <button
-                  type="button"
-                  className={cx("btnAccent", "wFull", "flexRow", "flexCenter", "gap6")}
-                  onClick={() => setPayState("processing")}
-                >
-                  <Ic n="lock" sz={14} />
-                  {splitPay ? `Pay ${fmtDec(inst)} Today` : `Pay ${fmtDec(total)} Securely`}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
-
 // ── Invoice Preview Slide-in Panel ─────────────────────────────────────────────
 
-function InvoicePreview({ inv, onClose, onPay, onError }: { inv: Invoice; onClose: () => void; onPay: (amount: number, desc: string) => void; onError?: (msg: string) => void }) {
+function InvoicePreview({ inv, onClose, onPay, onError }: { inv: Invoice; onClose: () => void; onPay: (id: string) => void; onError?: (msg: string) => void }) {
   const vat = Math.round(inv.amountRaw * 0.15);
   const total = inv.amountRaw + vat;
   const [isDownloading, setIsDownloading] = useState(false);
@@ -348,8 +180,8 @@ function InvoicePreview({ inv, onClose, onPay, onError }: { inv: Invoice; onClos
           {/* Totals */}
           <div className={cx("mlAuto", "maxW240", "mt12")}>
             {[
-              { label: "Subtotal", value: fmt(inv.amountRaw) },
-              { label: "VAT (15%)", value: fmt(vat) },
+              { label: "Subtotal", value: formatMoneyCents(inv.amountCents, { currency: inv.currency }) },
+              { label: "VAT (15%)", value: formatMoneyCents(Math.round(inv.amountCents * 0.15), { currency: inv.currency }) },
             ].map(({ label, value }) => (
               <div key={label} className={cx("flexBetween", "py5_0", "borderB")}>
                 <span className={cx("text11", "colorMuted")}>{label}</span>
@@ -358,7 +190,9 @@ function InvoicePreview({ inv, onClose, onPay, onError }: { inv: Invoice; onClos
             ))}
             <div className={cx("flexBetween", "borderT", "mt2", "p10x0x6")}>
               <span className={cx("fw800", "text13")}>Total</span>
-              <span className={cx("fontMono", "fw800", "text13", "colorAccent", "tabularNums")}>{fmtDec(total)}</span>
+              <span className={cx("fontMono", "fw800", "text13", "colorAccent", "tabularNums")}>
+                {formatMoneyCents(Math.round(inv.amountCents * 1.15), { currency: inv.currency })}
+              </span>
             </div>
           </div>
 
@@ -394,7 +228,7 @@ function InvoicePreview({ inv, onClose, onPay, onError }: { inv: Invoice; onClos
             <button
               type="button"
               className={cx("btnSm", "btnAccent", "flex1", "flexRow", "flexCenter", "justifyCenter", "gap6")}
-              onClick={() => onPay(inv.amountRaw, `${inv.id} — ${inv.ref}`)}
+              onClick={() => onPay(inv.id)}
             >
               <Ic n="creditCard" sz={13} /> Pay Now
             </button>
@@ -407,17 +241,43 @@ function InvoicePreview({ inv, onClose, onPay, onError }: { inv: Invoice; onClos
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
-export function InvoicesPage({ invoices: apiInvoices = [] }: { invoices?: PortalInvoice[] }) {
+export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
+  invoices?: PortalInvoice[];
+  currency?: string;
+}) {
   const notify = usePageToast();
+  const { session } = useProjectLayer();
+  const { convert } = useCurrencyConverter(currency);
+
   const [tab, setTab] = useState<ITab>("All");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [previewInvoice, setPreviewInvoice] = useState<Invoice | null>(null);
-  const [payModal, setPayModal] = useState<{ amount: number; desc: string } | null>(null);
+  const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [payLoading, setPayLoading] = useState(false);
 
   const now = Date.now();
 
   const statusBadge = (s: IStatus) => s === "Paid" ? "badgeGreen" : s === "Outstanding" ? "badgeAmber" : "badgeRed";
+
+  async function handlePayNow(invoiceId: string) {
+    if (!session) return;
+    setPayLoading(true);
+    setPayError(null);
+    const r = await initiatePortalPayfastWithRefresh(session, {
+      invoiceId,
+      returnUrl: window.location.href,
+      cancelUrl: window.location.href,
+    });
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.error || !r.data?.redirectUrl) {
+      setPayError(r.error?.message ?? "Failed to initiate payment.");
+      setPayLoading(false);
+      return;
+    }
+    window.location.href = r.data.redirectUrl;
+  }
 
   const invoiceData = useMemo<Invoice[]>(() => {
     if (apiInvoices.length === 0) return [];
@@ -427,18 +287,22 @@ export function InvoicesPage({ invoices: apiInvoices = [] }: { invoices?: Portal
         DRAFT: "Outstanding", VOID: "Outstanding",
       };
       const status: IStatus = statusMap[inv.status] ?? "Outstanding";
-      const amountRaw = inv.amountCents / 100;
-      const fmtMoney = (cents: number) => fmtDec(cents / 100);
+      const amountCents = inv.amountCents;
+      const amountRaw = amountCents / 100;
+      const invCurrency = inv.currency || "ZAR";
+      const fmtInv = (cents: number) => formatMoneyCents(cents, { currency: invCurrency });
       return {
         id: inv.number || inv.id.slice(0, 8).toUpperCase(),
         ref: `Invoice ${inv.number}`,
         date: inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—",
         due: inv.dueAt ? new Date(inv.dueAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—",
         paidDate: inv.paidAt ? new Date(inv.paidAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : undefined,
-        amount: fmtMoney(inv.amountCents),
+        amount: fmtInv(amountCents),
         amountRaw,
+        amountCents,
+        currency: invCurrency,
         status,
-        items: [{ desc: `Service - Invoice ${inv.number}`, qty: 1, rate: fmtMoney(inv.amountCents), total: fmtMoney(inv.amountCents), totalRaw: amountRaw }],
+        items: [{ desc: `Service - Invoice ${inv.number}`, qty: 1, rate: fmtInv(amountCents), total: fmtInv(amountCents), totalRaw: amountRaw }],
         issuedMs: inv.issuedAt ? new Date(inv.issuedAt).getTime() : new Date(inv.createdAt).getTime(),
         category: "Development" as ICategory,
         project: "Active Project",
@@ -477,11 +341,27 @@ export function InvoicesPage({ invoices: apiInvoices = [] }: { invoices?: Portal
     ? Math.max(...displayMonthly.map(m => m.invoiced), 1)
     : 1;
 
-  const overdue          = invoiceData.filter((i) => i.status === "Overdue");
-  const totalInvoiced    = invoiceData.reduce((s, i) => s + i.amountRaw, 0);
-  const totalPaid        = invoiceData.filter((i) => i.status === "Paid").reduce((s, i) => s + i.amountRaw, 0);
-  const totalOutstanding = invoiceData.filter((i) => i.status === "Outstanding").reduce((s, i) => s + i.amountRaw, 0);
-  const totalOverdue     = invoiceData.filter((i) => i.status === "Overdue").reduce((s, i) => s + i.amountRaw, 0);
+  const overdue = invoiceData.filter((i) => i.status === "Overdue");
+
+  // Currency-converted summary stats
+  const allSameCurrency = apiInvoices.length > 0 && apiInvoices.every(i => i.currency === apiInvoices[0]?.currency);
+  const prefix = allSameCurrency ? "" : "~";
+
+  const totalInvoicedCents = apiInvoices.reduce((s, i) => s + convert(i.amountCents, i.currency), 0);
+  const totalPaidCents = apiInvoices
+    .filter(i => i.status === "PAID")
+    .reduce((s, i) => s + convert(i.amountCents, i.currency), 0);
+  const totalOutstandingCents = apiInvoices
+    .filter(i => i.status !== "PAID")
+    .reduce((s, i) => s + convert(i.amountCents, i.currency), 0);
+  const totalOverdueCents = apiInvoices
+    .filter(i => i.status === "OVERDUE")
+    .reduce((s, i) => s + convert(i.amountCents, i.currency), 0);
+
+  const totalInvoiced = totalInvoicedCents / 100;
+  const totalPaid = totalPaidCents / 100;
+  const totalOutstanding = totalOutstandingCents / 100;
+  const totalOverdue = totalOverdueCents / 100;
 
   const paidPct        = totalInvoiced > 0 ? Math.round((totalPaid        / totalInvoiced) * 100) : 0;
   const outstandingPct = totalInvoiced > 0 ? Math.round((totalOutstanding / totalInvoiced) * 100) : 0;
@@ -512,19 +392,19 @@ export function InvoicesPage({ invoices: apiInvoices = [] }: { invoices?: Portal
       <div className={cx("topCardsStack", "mb16")}>
         {[
           {
-            label: "Total Invoiced", value: fmt(totalInvoiced), color: "statCardBlue",
-            trend: `${invoiceData.length} invoices issued`, icon: "invoiceDoc", iconColor: "var(--cyan)",
+            label: "Total Invoiced", value: `${prefix}${formatMoneyCents(totalInvoicedCents, { currency })}`, color: "statCardBlue",
+            trend: `${apiInvoices.length} invoices issued`, icon: "invoiceDoc", iconColor: "var(--cyan)",
           },
           {
-            label: "Collected", value: fmt(totalPaid), color: "statCardGreen",
-            trend: `${invoiceData.filter((i) => i.status === "Paid").length} of ${invoiceData.length} paid`, icon: "check", iconColor: "var(--green)",
+            label: "Collected", value: `${prefix}${formatMoneyCents(totalPaidCents, { currency })}`, color: "statCardGreen",
+            trend: `${apiInvoices.filter((i) => i.status === "PAID").length} of ${apiInvoices.length} paid`, icon: "check", iconColor: "var(--green)",
           },
           {
-            label: "Outstanding", value: fmt(totalOutstanding), color: "statCardAmber",
-            trend: `${invoiceData.filter((i) => i.status === "Outstanding").length} invoice${invoiceData.filter((i) => i.status === "Outstanding").length !== 1 ? "s" : ""} pending`, icon: "clock", iconColor: "var(--amber)",
+            label: "Outstanding", value: `${prefix}${formatMoneyCents(totalOutstandingCents, { currency })}`, color: "statCardAmber",
+            trend: `${apiInvoices.filter((i) => i.status !== "PAID").length} invoice${apiInvoices.filter((i) => i.status !== "PAID").length !== 1 ? "s" : ""} pending`, icon: "clock", iconColor: "var(--amber)",
           },
           {
-            label: "Overdue", value: fmt(totalOverdue), color: "statCardRed",
+            label: "Overdue", value: `${prefix}${formatMoneyCents(totalOverdueCents, { currency })}`, color: "statCardRed",
             trend: overdue.length > 0 ? `${daysOverdue(overdue[0].issuedMs, now)}d since due` : "None overdue", icon: "alert", iconColor: "var(--red)",
           },
         ].map((s) => (
@@ -574,7 +454,9 @@ export function InvoicesPage({ invoices: apiInvoices = [] }: { invoices?: Portal
                   <span className={cx("wh8", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": color } as React.CSSProperties} />
                   <span className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01")}>{label}</span>
                 </div>
-                <div className={cx("fontMono", "fw800", "text12", "invLineAmt", "dynColor")} style={{ "--color": color } as React.CSSProperties}>{fmt(amount)}</div>
+                <div className={cx("fontMono", "fw800", "text12", "invLineAmt", "dynColor")} style={{ "--color": color } as React.CSSProperties}>
+                  {`${prefix}${formatMoneyCents(Math.round(amount * 100), { currency })}`}
+                </div>
                 <div className={cx("fontMono", "text10", "colorMuted2")}>{pct}% of total</div>
               </div>
             ))}
@@ -658,7 +540,7 @@ export function InvoicesPage({ invoices: apiInvoices = [] }: { invoices?: Portal
           <button
             type="button"
             className={cx("btnSm", "invPayNowBtn")}
-            onClick={() => setPayModal({ amount: overdue[0].amountRaw, desc: `${overdue[0].id} — ${overdue[0].ref}` })}
+            onClick={() => setPayingInvoiceId(overdue[0].id)}
           >
             <Ic n="creditCard" sz={12} c="var(--red)" />
             Pay {overdue[0].amount} Now
@@ -719,8 +601,7 @@ export function InvoicesPage({ invoices: apiInvoices = [] }: { invoices?: Portal
             const isOpen = expanded === inv.id;
             const catCfg = CAT[inv.category];
             const statusColor = STATUS_COLOR[inv.status];
-            const vat = Math.round(inv.amountRaw * 0.15);
-            const total = inv.amountRaw + vat;
+            const vatCents = Math.round(inv.amountCents * 0.15);
             return (
               <div
                 key={inv.id}
@@ -790,8 +671,8 @@ export function InvoicesPage({ invoices: apiInvoices = [] }: { invoices?: Portal
                         {/* Totals */}
                         <div className={cx("mt8", "pt8")}>
                           {[
-                            { label: "Subtotal", value: fmt(inv.amountRaw) },
-                            { label: "VAT (15%)", value: fmt(vat) },
+                            { label: "Subtotal", value: formatMoneyCents(inv.amountCents, { currency: inv.currency }) },
+                            { label: "VAT (15%)", value: formatMoneyCents(vatCents, { currency: inv.currency }) },
                           ].map(({ label, value }) => (
                             <div key={label} className={cx("invSumRow")}>
                               <span className={cx("text10", "colorMuted2")}>{label}</span>
@@ -800,7 +681,9 @@ export function InvoicesPage({ invoices: apiInvoices = [] }: { invoices?: Portal
                           ))}
                           <div className={cx("invTotalInclVAT")}>
                             <span className={cx("fw800", "text11")}>Total incl. VAT</span>
-                            <span className={cx("fontMono", "fw800", "text11", "colorAccent", "tabularNums", "minW80", "textRight")}>{fmtDec(total)}</span>
+                            <span className={cx("fontMono", "fw800", "text11", "colorAccent", "tabularNums", "minW80", "textRight")}>
+                              {formatMoneyCents(inv.amountCents + vatCents, { currency: inv.currency })}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -858,7 +741,7 @@ export function InvoicesPage({ invoices: apiInvoices = [] }: { invoices?: Portal
                             <button
                               type="button"
                               className={cx("btnSm", "btnAccent", "wFull", "flexRow", "flexCenter", "justifyCenter", "gap5")}
-                              onClick={() => setPayModal({ amount: inv.amountRaw, desc: `${inv.id} — ${inv.ref}` })}
+                              onClick={() => setPayingInvoiceId(inv.id)}
                             >
                               <Ic n="creditCard" sz={12} /> Pay {inv.amount} Now
                             </button>
@@ -885,19 +768,68 @@ export function InvoicesPage({ invoices: apiInvoices = [] }: { invoices?: Portal
         <InvoicePreview
           inv={previewInvoice}
           onClose={() => setPreviewInvoice(null)}
-          onPay={(amount, desc) => { setPreviewInvoice(null); setPayModal({ amount, desc }); }}
+          onPay={(id) => { setPreviewInvoice(null); setPayingInvoiceId(id); }}
           onError={(msg) => notify("error", "Download failed", msg)}
         />
       )}
 
       {/* ── Pay Modal ─────────────────────────────────────────────────────── */}
-      {payModal && (
-        <InvPayModal
-          amount={payModal.amount}
-          desc={payModal.desc}
-          onClose={() => setPayModal(null)}
-        />
-      )}
+      {payingInvoiceId && (() => {
+        const inv = invoiceData.find(i => i.id === payingInvoiceId);
+        if (!inv) return null;
+        return (
+          <div className={cx("modalOverlay")}>
+            <div className={`inv-modal-in ${cx("pmModalInner")}`}>
+              <div className={cx("pmModalHd")}>
+                <div className={cx("flexRow", "gap8")}>
+                  <Ic n="shieldCheck" sz={15} c="var(--lime)" />
+                  <span className={cx("fontMono", "text10", "uppercase", "tracking", "colorAccent")}>
+                    Secure Payment · PayFast
+                  </span>
+                </div>
+                {!payLoading && (
+                  <button type="button" onClick={() => { setPayingInvoiceId(null); setPayError(null); }} className={cx("iconBtn")}>
+                    <Ic n="x" sz={16} />
+                  </button>
+                )}
+              </div>
+              <div className={cx("p20x24x0", "textCenter")}>
+                <div className={cx("fontMono", "fw800", "invBigAmount")}>
+                  {formatMoneyCents(inv.amountCents, { currency: inv.currency })}
+                </div>
+                <div className={cx("text11", "colorMuted", "mt4", "mb2")}>{inv.ref}</div>
+                <div className={cx("text11", "colorMuted2", "mt4")}>
+                  You will be redirected to PayFast to complete payment securely.
+                </div>
+              </div>
+              {payError && (
+                <div className={cx("px24_0", "mt12")}>
+                  <div className={cx("cardS2", "p10x12", "colorRed", "text11")}>{payError}</div>
+                </div>
+              )}
+              <div className={cx("p024x20")}>
+                <button
+                  type="button"
+                  className={cx("btnAccent", "wFull", "flexRow", "flexCenter", "gap6")}
+                  onClick={() => handlePayNow(payingInvoiceId)}
+                  disabled={payLoading}
+                >
+                  <Ic n="lock" sz={14} />
+                  {payLoading ? "Redirecting…" : `Pay ${formatMoneyCents(inv.amountCents, { currency: inv.currency })} via PayFast`}
+                </button>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnGhost", "wFull", "mt8")}
+                  onClick={() => { setPayingInvoiceId(null); setPayError(null); }}
+                  disabled={payLoading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
