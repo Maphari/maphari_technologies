@@ -1,2 +1,815 @@
-/* Placeholder — styles added in later phases */
-.placeholder { display: contents; }
+/* apps/web/src/app/style/staff/pages-g.module.css
+   Phase 6 — Analytics, Integrations & Keyboard Shortcuts pages:
+   Team Performance, Workload Heatmap, My Integrations, Keyboard Shortcuts
+   ───────────────────────────────────────────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   TEAM PERFORMANCE  (tpm*)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Stat grid */
+.tpmStatGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.tpmStatCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tpmStatCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tpmStatLabel {
+  font-size: 11px;
+  color: var(--muted2);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.tpmStatValue {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tpmStatCardDivider { height: 1px; background: var(--b1); }
+
+.tpmStatCardBottom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tpmStatDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tpmStatMeta {
+  font-size: 11px;
+  color: var(--muted2);
+}
+
+/* Section */
+.tpmSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.tpmSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--b1);
+}
+
+.tpmSectionTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tpmSectionMeta {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 10px;
+  color: var(--muted2);
+  letter-spacing: 0.06em;
+}
+
+/* Member list */
+.tpmMemberList { display: flex; flex-direction: column; gap: 0; }
+
+.tpmMemberRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--b1);
+  transition: background 100ms;
+}
+
+.tpmMemberRow:hover { background: var(--s2); }
+
+.tpmMemberRowLast { border-bottom: none; }
+
+/* Avatar */
+.tpmAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tpmAvatarAccent { background: rgba(255,214,0,0.15);  color: var(--accent); }
+.tpmAvatarBlue   { background: rgba(96,165,250,0.15); color: #60a5fa; }
+.tpmAvatarGreen  { background: rgba(74,222,128,0.15); color: #4ade80; }
+.tpmAvatarAmber  { background: rgba(251,191,36,0.15); color: #fbbf24; }
+.tpmAvatarPurple { background: rgba(167,139,250,0.15); color: #a78bfa; }
+
+/* Member head */
+.tpmMemberHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 160px;
+}
+
+.tpmNameRow { display: flex; align-items: center; gap: 6px; }
+
+.tpmMemberName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tpmMemberRole {
+  font-size: 11px;
+  color: var(--muted2);
+}
+
+/* Metrics strip */
+.tpmMetricsStrip {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.tpmMetricCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 16px;
+}
+
+.tpmMetricSep {
+  width: 1px;
+  height: 28px;
+  background: var(--b2);
+  flex-shrink: 0;
+}
+
+.tpmMetricLabel {
+  font-size: 10px;
+  color: var(--muted2);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tpmMetricValue {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tpmMetricSuffix {
+  font-size: 10px;
+  color: var(--muted2);
+  font-weight: 400;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   WORKLOAD HEATMAP  (wlh*)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Legend */
+.wlhLegend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.wlhLegendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.wlhLegendGreen { background: rgba(74,222,128,0.35); }
+.wlhLegendAmber { background: rgba(251,191,36,0.45); }
+.wlhLegendRed   { background: rgba(248,113,113,0.55); }
+
+.wlhLegendLabel {
+  font-size: 11px;
+  color: var(--muted2);
+  margin-right: 4px;
+}
+
+/* Table wrapper */
+.wlhTableWrap {
+  overflow-x: auto;
+  border-radius: var(--r-md);
+  border: 1px solid var(--b2);
+}
+
+/* Table */
+.wlhTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.wlhCell {
+  padding: 10px 14px;
+  text-align: center;
+  border-bottom: 1px solid var(--b1);
+  border-right: 1px solid var(--b1);
+  vertical-align: middle;
+  position: relative;
+}
+
+.wlhCell:last-child { border-right: none; }
+
+.wlhHeaderCell {
+  background: var(--s2);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted2);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* Name cell (leftmost column) */
+.wlhNameCell {
+  text-align: left;
+  min-width: 180px;
+  padding: 10px 16px;
+}
+
+/* Staff info in name cell */
+.wlhStaffName {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.wlhStaffRole {
+  display: block;
+  font-size: 11px;
+  color: var(--muted2);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* Heat cell tones */
+.wlhGreen { background: rgba(74,222,128,0.1); }
+.wlhAmber { background: rgba(251,191,36,0.14); }
+.wlhRed   { background: rgba(248,113,113,0.18); }
+
+/* Hours & percentage inside cell */
+.wlhHours {
+  display: block;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.wlhPct {
+  display: block;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 10px;
+  color: var(--muted2);
+  margin-top: 2px;
+}
+
+/* Tooltip on hover */
+.wlhCellTip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-xs);
+  padding: 4px 8px;
+  font-size: 10px;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.wlhCell:hover .wlhCellTip { display: block; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   MY INTEGRATIONS  (itg*)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Filter row */
+.itgFilterRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.itgFilterBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 100ms, border-color 100ms, color 100ms;
+}
+
+.itgFilterBtn:hover {
+  background: var(--s3);
+  border-color: var(--b3);
+  color: var(--text);
+}
+
+.itgFilterBtnActive {
+  background: var(--s3);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.itgFilterCount {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 10px;
+  color: var(--muted2);
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: 4px;
+  padding: 0 4px;
+  line-height: 16px;
+}
+
+/* Provider grid */
+.itgGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* Integration card */
+.itgCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 120ms;
+}
+
+.itgCard:hover { border-color: var(--b3); }
+
+/* Card header */
+.itgCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.itgCardIcon {
+  width: 40px;
+  height: 40px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.itgCardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.itgCardName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.itgCardCategory {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Category tones */
+.itgCatProductivity  { background: rgba(255,214,0,0.1);    color: var(--accent); }
+.itgCatCommunication { background: rgba(96,165,250,0.12);  color: #60a5fa; }
+.itgCatDesign        { background: rgba(167,139,250,0.12); color: #a78bfa; }
+.itgCatDevelopment   { background: rgba(74,222,128,0.12);  color: #4ade80; }
+
+/* Card body */
+.itgCardDesc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* Scopes */
+.itgCardScopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.itgCardScopeTag {
+  font-size: 10px;
+  color: var(--muted2);
+  background: var(--s2);
+  border: 1px solid var(--b1);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+/* Card footer */
+.itgCardFooter {
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+/* Connect button */
+.itgConnectBtn {
+  width: 100%;
+  padding: 8px 14px;
+  background: var(--accent);
+  color: #0a0a0a;
+  border: none;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 120ms;
+}
+
+.itgConnectBtn:hover { opacity: 0.88; }
+
+.itgConnectBtnDone {
+  background: var(--s2);
+  color: var(--muted2);
+  border: 1px solid var(--b2);
+  cursor: default;
+}
+
+.itgConnectBtnDone:hover { opacity: 1; }
+
+/* Footer note */
+.itgFooterNote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+}
+
+.itgFooterDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.itgFooterText {
+  font-size: 11px;
+  color: var(--muted2);
+  line-height: 1.5;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   KEYBOARD SHORTCUTS  (ks*)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Page header */
+.ksHeaderWrap {
+  margin-bottom: 20px;
+}
+
+/* Press hint row */
+.ksPressHint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Search bar */
+.ksSearchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ksSearchIcon {
+  position: absolute;
+  left: 10px;
+  pointer-events: none;
+  font-size: 13px;
+  z-index: 1;
+}
+
+.ksSearchInput {
+  width: 100%;
+}
+
+.ksSearchInputInner {
+  width: 100%;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  padding: 8px 32px 8px 32px;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 120ms;
+}
+
+.ksSearchInputInner::placeholder { color: var(--muted2); }
+.ksSearchInputInner:focus { border-color: var(--b3); }
+
+.ksSearchClear {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: var(--muted2);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.ksSearchClear:hover { color: var(--text); }
+
+/* Main two-column grid */
+.ksMainGrid {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Sidebar column */
+.ksSideCol {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 0;
+}
+
+/* Sidebar nav buttons */
+.ksSectionBtn {
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm);
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  text-align: left;
+  transition: background 100ms, color 100ms;
+}
+
+.ksSideRowBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.ksSectionBtn:hover { background: var(--s2); color: var(--text); }
+
+.ksSectionIdle { color: var(--muted); }
+
+.ksSectionAllActive {
+  background: var(--s2);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.ksSectionRecentActive {
+  background: var(--s2);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.ksSectionToneActive {
+  font-weight: 600;
+}
+
+/* Dividers in sidebar */
+.ksDivider { height: 1px; background: var(--b1); }
+.ksDividerSm { margin: 4px 0; }
+.ksDividerLg { margin: 8px 0; }
+
+/* Content column */
+.ksContentCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Sections grid */
+.ksSectionsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ksSectionsGridAll {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px 32px;
+}
+
+.ksSectionsGridSingle {
+  display: block;
+}
+
+/* Section horizontal rule */
+.ksSectionLine {
+  height: 1px;
+  flex: 1;
+  opacity: 0.4;
+}
+
+/* Shortcut rows */
+.ksShortcutRow {
+  padding: 5px 10px;
+  border-radius: var(--r-xs);
+  transition: background 80ms;
+}
+
+.ksShortcutRow:hover { background: var(--s2); }
+
+.ksShortcutRowHighlight { background: var(--s2); }
+
+/* Key sequence */
+.ksKeySequence {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 80px;
+}
+
+.ksKeyPiece {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ksKeyJoin { font-size: 9px; }
+
+/* Individual key chip */
+.ksKey {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+}
+
+.ksKeyWide { min-width: 26px; }
+
+.ksKeyModifier {
+  background: var(--s3);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Tips card */
+.ksTipsCard {
+  display: flex;
+  gap: 24px;
+  margin-top: 24px;
+  padding: 14px 16px;
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+}
+
+/* Empty search */
+.ksEmptySearch {
+  padding: 20px 0;
+  text-align: center;
+}
+
+/* Tone color overrides — applied to icons and section labels */
+.ksToneAccent  { color: var(--accent); }
+.ksToneBlue    { color: #60a5fa; }
+.ksTonePurple  { color: #a78bfa; }
+.ksToneAmber   { color: #fbbf24; }
+.ksToneOrange  { color: #fb923c; }
+.ksToneMuted   { color: var(--muted2); }
+
+/* Surface fills when section is active in sidebar */
+.ksSurfaceAccent  { background: rgba(255,214,0,0.07); }
+.ksSurfaceBlue    { background: rgba(96,165,250,0.07); }
+.ksSurfacePurple  { background: rgba(167,139,250,0.07); }
+.ksSurfaceAmber   { background: rgba(251,191,36,0.07); }
+.ksSurfaceOrange  { background: rgba(251,146,60,0.07); }
+.ksSurfaceMuted   { background: rgba(255,255,255,0.03); }
+
+/* Section separator lines */
+.ksLineAccent  { background: var(--accent); }
+.ksLineBlue    { background: #60a5fa; }
+.ksLinePurple  { background: #a78bfa; }
+.ksLineAmber   { background: #fbbf24; }
+.ksLineOrange  { background: #fb923c; }
+.ksLineMuted   { background: var(--b2); }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE — pages-g
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  /* Team Performance */
+  .tpmStatGrid { grid-template-columns: repeat(2, 1fr); }
+  .tpmMetricsStrip { flex-wrap: wrap; gap: 4px; }
+
+  /* Integrations */
+  .itgGrid { grid-template-columns: 1fr; }
+
+  /* Keyboard Shortcuts */
+  .ksMainGrid { grid-template-columns: 1fr; }
+  .ksSideCol { position: static; flex-direction: row; flex-wrap: wrap; }
+  .ksSectionsGridAll { grid-template-columns: 1fr; }
+  .ksTipsCard { flex-direction: column; gap: 12px; }
+}
+
+@media (max-width: 480px) {
+  /* Team Performance */
+  .tpmStatGrid { grid-template-columns: 1fr; }
+  .tpmMemberRow { flex-wrap: wrap; }
+  .tpmMetricsStrip { width: 100%; }
+}
