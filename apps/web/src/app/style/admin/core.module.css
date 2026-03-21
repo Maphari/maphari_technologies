@@ -864,7 +864,7 @@
   min-width: 200px;
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
-  background: var(--surface);
+  background: var(--s2);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
   z-index: 20;
   padding: 8px;
@@ -1215,8 +1215,8 @@
 }
 
 .card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   overflow: clip;
   min-width: 0;
@@ -1379,7 +1379,7 @@
   text-align: left;
   padding: 12px 24px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--s2);
   font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
@@ -1407,12 +1407,12 @@
 
 .projTable tbody tr,
 .invTable tbody tr {
-  background: var(--surface);
+  background: var(--s2);
 }
 
 .projTable tbody tr:nth-child(even),
 .invTable tbody tr:nth-child(even) {
-  background: color-mix(in oklab, var(--surface) 92%, #000 8%);
+  background: color-mix(in oklab, var(--s2) 92%, #000 8%);
 }
 
 .badge {
@@ -1599,7 +1599,7 @@
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  background: var(--surface);
+  background: var(--s2);
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
@@ -1703,7 +1703,7 @@
 .formTextarea {
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  background: var(--surface);
+  background: var(--s3);
   color: var(--text);
   font-family: var(--font-syne), sans-serif;
   font-size: 0.78rem;
@@ -1919,7 +1919,7 @@
 }
 
 .filterSelect option {
-  background: var(--surface);
+  background: var(--s2);
   color: var(--text);
   font-family: var(--font-dm-mono), monospace;
   text-transform: uppercase;
@@ -1952,7 +1952,7 @@
   gap: 0;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  background: var(--surface);
+  background: var(--s2);
   min-height: 520px;
   overflow: hidden;
 }
@@ -1985,7 +1985,7 @@
 .leadsStageItem {
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  background: color-mix(in oklab, var(--surface) 92%, #000 8%);
+  background: var(--s2);
   padding: 12px;
   min-width: 0;
 }
@@ -2031,7 +2031,7 @@
 
 .leadPipelineCard {
   border-color: color-mix(in oklab, var(--border) 82%, var(--accent) 18%);
-  background: var(--surface);
+  background: var(--s2);
 }
 
 .leadPipelineCardInner {
@@ -2046,7 +2046,7 @@
 .messagesSearch {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--s2);
 }
 
 .msgItem {
@@ -2055,11 +2055,11 @@
   padding: 14px 16px;
   border-bottom: 1px solid var(--border);
   align-items: flex-start;
-  background: var(--surface);
+  background: var(--s2);
 }
 
 .msgSelected {
-  background: color-mix(in oklab, var(--accent) 12%, var(--surface));
+  background: color-mix(in oklab, var(--accent) 12%, var(--s2));
 }
 
 .msgAv {
@@ -2180,7 +2180,7 @@
 }
 
 .chatBubble {
-  background: var(--surface);
+  background: var(--s2);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   padding: 12px 16px;
@@ -2203,12 +2203,12 @@
   display: flex;
   gap: 10px;
   align-items: center;
-  background: var(--surface);
+  background: var(--s2);
 }
 
 .msgInput {
   flex: 1;
-  background: color-mix(in oklab, var(--surface) 92%, #000 8%);
+  background: var(--s3);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   color: var(--text);
@@ -2294,7 +2294,7 @@
 .toast {
   border: 1px solid var(--border2);
   border-radius: var(--r-sm);
-  background: var(--surface);
+  background: var(--s2);
   color: var(--text);
   padding: 12px 14px;
   font-size: 0.78rem;
