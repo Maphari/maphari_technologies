@@ -1,12 +1,18 @@
 .clientRoot {
-  --bg: var(--palette-bg, #050508);
-  --s1: var(--palette-surface, #0d0d14);
-  --s2: var(--palette-surface-2, #13131e);
-  --s3: var(--palette-surface-3, #171726);
-  --s4: #171726;
-  --b1: var(--palette-border, rgba(255, 255, 255, 0.07));
-  --b2: var(--palette-border-strong, rgba(255, 255, 255, 0.12));
+  /* ─── Background & surfaces ───────────────────────────────────────── */
+  --bg: var(--palette-bg, #04040a);
+  --s1: rgba(255, 255, 255, 0.04);
+  --s2: rgba(255, 255, 255, 0.07);
+  --s3: rgba(255, 255, 255, 0.10);
+  --s4: rgba(255, 255, 255, 0.13);
+
+  /* ─── Borders ─────────────────────────────────────────────────────── */
+  --b1: rgba(255, 255, 255, 0.06);
+  --b2: rgba(255, 255, 255, 0.10);
   --b3: rgba(255, 255, 255, 0.16);
+  --b-top: rgba(255, 255, 255, 0.12);
+
+  /* ─── Accent palette (unchanged) ─────────────────────────────────── */
   --lime: var(--palette-accent, #c8f135);
   --lime2: var(--palette-accent-2, #d6f55a);
   --green: #4dde8f;
@@ -21,34 +27,54 @@
   --purple-d: rgba(139, 111, 255, 0.14);
   --blue: #5b9cf5;
   --blue-d: rgba(91, 156, 245, 0.12);
+
+  /* ─── Text ────────────────────────────────────────────────────────── */
   --text: var(--palette-text, #f0ede8);
-  --muted: var(--palette-muted, rgba(240, 237, 232, 0.45));
-  --muted2: var(--palette-muted-2, rgba(240, 237, 232, 0.22));
+  --muted: var(--palette-muted, rgba(240, 237, 232, 0.50));
+  --muted2: var(--palette-muted-2, rgba(240, 237, 232, 0.28));
   --muted3: rgba(240, 237, 232, 0.08);
+
+  /* ─── Accent aliases ──────────────────────────────────────────────── */
   --accent: var(--palette-accent, var(--lime));
   --accent2: var(--palette-accent-2, var(--lime2));
   --accent-d: var(--palette-accent-dim, color-mix(in oklab, var(--accent) 16%, transparent));
   --accent-g: var(--palette-accent-glow, color-mix(in oklab, var(--accent) 8%, transparent));
   --lime-d: var(--accent-d);
   --lime-g: var(--accent-g);
-  /* Shared sidebar/link states use legacy alias tokens from admin styles. */
   --accent-dim: var(--accent-d);
   --accent-glow: var(--accent-g);
   --purple-dim: var(--purple-d);
   --amber-dim: var(--amber-d);
   --red-dim: var(--red-d);
+
+  /* ─── Legacy surface/border aliases (keep for backward compat) ────── */
   --surface: var(--s1);
   --surface2: var(--s2);
   --border: var(--b1);
   --border2: var(--b2);
-  --shadow-card: 0 10px 28px rgba(0, 0, 0, 0.25);
-  --shadow-modal: 0 16px 40px rgba(0, 0, 0, 0.38);
-  --r-xxs: 6px;
-  --r-xs: 6px;
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --sw: var(--layout-sidebar-w, 230px);
+
+  /* ─── Shadows ─────────────────────────────────────────────────────── */
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.40), inset 0 1px 0 var(--b-top);
+  --shadow-island: 0 16px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.60);
+
+  /* ─── Radius scale (all values increase intentionally) ───────────── */
+  --r-xxs: 4px;
+  --r-xs: 8px;   /* was 6px */
+  --r-sm: 12px;  /* was 8px */
+  --r-md: 16px;  /* was 12px */
+  --r-lg: 20px;  /* was 16px */
+  --r-xl: 28px;  /* new — hero cards */
+
+  /* ─── Layout ──────────────────────────────────────────────────────── */
+  --sw: 68px;    /* sidebar island width (was 230px) */
+
+  /* ─── Ambient glow ────────────────────────────────────────────────── */
+  --glow-lime: radial-gradient(ellipse at 30% 10%, rgba(200, 241, 53, 0.07) 0%, transparent 55%);
+  --glow-page: radial-gradient(ellipse at 70% 80%, rgba(91, 156, 245, 0.04) 0%, transparent 50%);
+
+  /* ─── Apply ambient glow to page canvas ──────────────────────────── */
+  background-image: var(--glow-lime), var(--glow-page);
 }
 
 
