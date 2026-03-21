@@ -1274,3 +1274,12 @@
   .dsvStatGrid  { grid-template-columns: 1fr; }
   .rskStatGrid  { grid-template-columns: 1fr; }
 }
+
+/* ── New delivery-status classes (refactored, CSS was missing) ── */
+.dsvProjectRow { padding: 12px 16px; }
+.dsvProjectMain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.dsvProjectMeta { font-size: 0.6875rem; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
+.dsvProjectRight { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.dsvDueDate { font-size: 0.6875rem; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
+.dsvViewTasksBtn { background: transparent; border: none; color: var(--accent); font-size: 0.6875rem; cursor: pointer; padding: 0; font-family: var(--font-dm-mono), monospace; letter-spacing: 0.04em; }
+.dsvViewTasksBtn:hover { text-decoration: underline; }

@@ -2543,3 +2543,279 @@
 
   .empDetailStrip { grid-template-columns: 1fr; }
 }
+
+/* ── Migrated from deleted monolith CSS ─────────────────────────────────── */
+.edwDoneWrap {
+  min-height: calc(100vh - 180px);
+}
+.edwDoneMeta {
+  max-width: 340px;
+}
+.edwDoneChip {
+  padding: 10px 20px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
+  border-radius: var(--r-xxs);
+}
+.edwHeaderBar {
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+}
+.edwStepTitle {
+  font-size: 1.375rem;
+}
+.edwHourBtn {
+  padding: 8px 16px;
+  border-radius: var(--r-xxs);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: var(--muted2);
+  cursor: pointer;
+}
+.edwHourBtnActive {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+.edwHourInput {
+  width: 80px;
+  padding: 8px 12px;
+}
+.edwTextareaSm {
+  min-height: 80px;
+  padding: 12px 14px;
+  line-height: 1.6;
+  resize: none;
+}
+.edwMoodCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-radius: var(--r-xxs);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+}
+.edwMoodCardActive[data-mood="1"] {
+  border-color: var(--red);
+  background: rgba(255, 87, 87, 0.12);
+}
+.edwMoodCardActive[data-mood="2"] {
+  border-color: #f5a623;
+  background: rgba(245, 166, 35, 0.12);
+}
+.edwMoodCardActive[data-mood="3"] {
+  border-color: var(--amber);
+  background: rgba(245, 197, 24, 0.12);
+}
+.edwMoodCardActive[data-mood="4"] {
+  border-color: #a0c840;
+  background: rgba(160, 200, 64, 0.12);
+}
+.edwMoodCardActive[data-mood="5"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.edwMoodLabel {
+  font-size: 0.5625rem;
+  color: var(--muted2);
+}
+.edwMoodLabelActive[data-mood="1"] { color: var(--red); }
+.edwMoodLabelActive[data-mood="2"] { color: #f5a623; }
+.edwMoodLabelActive[data-mood="3"] { color: var(--amber); }
+.edwMoodLabelActive[data-mood="4"] { color: #a0c840; }
+.edwMoodLabelActive[data-mood="5"] { color: var(--accent); }
+.edwLeadText {
+  line-height: 1.6;
+}
+.edwTaskRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xxs);
+  background: var(--surface);
+}
+.edwTaskOrder {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-xxs);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.edwTaskText {
+  line-height: 1.4;
+}
+.edwTaskClient {
+  margin-top: 3px;
+}
+.edwUrgentTag {
+  font-size: 0.5625rem;
+  margin-top: 3px;
+}
+.edwRemoveBtnVisible {
+  font-size: 0.875rem;
+  color: var(--red);
+  background: none;
+  border: none;
+  padding: 0 4px;
+  line-height: 1;
+}
+.edwTaskInput {
+  padding: 10px 12px;
+}
+.edwTaskAddBtn {
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  border-radius: var(--r-xxs);
+  cursor: pointer;
+}
+.edwFlagRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xxs);
+  background: var(--surface);
+  text-align: left;
+}
+.edwFlagRowActive {
+  border-color: rgba(255, 68, 68, 0.3);
+  background: rgba(255, 68, 68, 0.06);
+}
+.edwFlagCheck {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-xxs);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  font-size: 0.75rem;
+  color: var(--red);
+}
+.edwFlagCheckActive {
+  border-color: var(--red);
+  background: rgba(255, 68, 68, 0.2);
+}
+.edwFlagType {
+  font-size: 0.625rem;
+  margin-top: 3px;
+}
+.edwFlagType[data-type="approval"] { color: var(--amber); }
+.edwFlagType[data-type="overdue"] { color: var(--red); }
+.edwFlagType[data-type="invoice"] { color: var(--red); }
+.edwTextareaFlag {
+  min-height: 72px;
+  padding: 12px 14px;
+  line-height: 1.6;
+  resize: none;
+}
+.edwNavRow {
+  margin-top: 36px;
+}
+.edwBackBtnShell {
+  padding: 12px 20px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--r-xxs);
+  color: var(--muted2);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+}
+.edwSidePane {
+  padding-left: 24px;
+}
+.edwDoneTaskText {
+  line-height: 1.4;
+}
+  .edwSidePane {
+    padding-left: 0;
+  }
+.adGenBtn {
+  transition: all 0.15s ease;
+  cursor: pointer;
+  font-family: var(--font-dm-mono), monospace;
+}
+.adGenBtn:hover {
+  background: #a8d420;
+}
+.adCopyBtn {
+  transition: all 0.12s ease;
+  cursor: pointer;
+  font-family: var(--font-dm-mono), monospace;
+}
+.adCopyBtn:hover { opacity: 0.75; }
+.exFormHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.exFormTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.exFormBody {
+  padding: 20px;
+}
+.exTableSection {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.exTableHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.exTableTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.exTableCount {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.exCatBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.57rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.fbiAckDone    { background: rgba(52,217,139,0.1);  color: var(--green); }
+.fbiAckPending { background: rgba(245,166,35,0.1);  color: var(--amber); }
+.mobPhaseDone .mobPhaseName { color: var(--green); }
+.mobPhaseDone .mobPhaseCount { color: var(--green); }
+.mobCheckboxDone {
+  background: var(--green);
+  border-color: var(--green);
+}
+.mobCheckboxDone::after {
+  content: "";
+  display: block;
+  width: 9px;
+  height: 5px;
+  border-left: 1.5px solid #fff;
+  border-bottom: 1.5px solid #fff;
+  transform: rotate(-45deg) translateY(-1px);
+}
+.mlvHistoryCardLast { border-bottom: none; }
+.mllCourseCardLast { border-bottom: none; }

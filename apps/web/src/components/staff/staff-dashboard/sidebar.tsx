@@ -164,6 +164,20 @@ function SidebarInner({
         </div>
       </div>
 
+      {/* Expand trigger — always visible on the left edge when rail is collapsed */}
+      {collapsed && (
+        <button
+          className={cx("railExpandTrigger")}
+          onClick={toggleCollapse}
+          aria-label="Expand sidebar"
+          title="Expand sidebar"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+            <path d="M2 6l4-4v8L2 6zM8 2h2v8H8z"/>
+          </svg>
+        </button>
+      )}
+
       {/* Flyout Panel */}
       <div
         ref={flyoutRef}

@@ -1779,3 +1779,32 @@
   .ctmStatGrid { grid-template-columns: 1fr; }
   .obtStatGrid { grid-template-columns: 1fr; }
 }
+
+/* ── Migrated from deleted monolith CSS ─────────────────────────────────── */
+.ppTrendUp {
+  color: var(--accent);
+}
+.ppTrendDown {
+  color: #ff4444;
+}
+.ppMilestoneRowLast {
+  border-bottom: none;
+}
+.enpHistoryCardLast { border-bottom: none; }
+.empChangePlus    { background: rgba(52,217,139,0.12);  color: var(--green); }
+.empChangeNeutral { background: rgba(128,128,128,0.1);  color: var(--muted); }
+.empCompStatusCurrent { background: rgba(36,184,168,0.1);  color: var(--accent); }
+.empCompStatusPrev    { background: rgba(128,128,128,0.1); color: var(--muted);  }
+.empReviewCardLast { border-bottom: none; }
+.anlWeekRowLast   { border-bottom: none; }
+.anlBarFillBlue   { background: var(--blue);   }
+.ppProgressGreen { background: var(--green); }
+.ppProgressAmber { background: var(--amber); }
+.ppProgressRed   { background: #ef4444; }
+.ppTrendUp   { color: var(--green); }
+.ppTrendDown { color: #ef4444; }
+.ppWeekRowLast {
+  border-bottom: none;
+}
+/* ── New my-capacity class (refactored, CSS was missing) ── */
+.spCapacityBarWrap { display: flex; flex-direction: column; gap: 4px; }

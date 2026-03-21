@@ -813,3 +813,130 @@
   .tpmMemberRow { flex-wrap: wrap; }
   .tpmMetricsStrip { width: 100%; }
 }
+
+/* ── Migrated from deleted monolith CSS ─────────────────────────────────── */
+.stgv2RailDividerPush {
+  margin-top: auto;
+}
+.stgv2DividerH {
+  margin: 20px 0;
+}
+.stgv2TabBtnActive {
+  background: rgba(36, 184, 168, 0.12);
+  color: var(--accent);
+}
+.stgv2TabBtnIdle {
+  background: transparent;
+  color: var(--muted);
+}
+.stgv2TabBtnIdle:hover {
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+}
+.stgv2TabBtnActive .stgv2TabDesc { color: rgba(36,184,168,0.7); }
+.stgv2RailStatOnline { color: var(--accent); }
+.stgv2HeroBadge {
+  align-self: flex-start;
+  flex-shrink: 0;
+}
+.stgv2StatusCardActive {
+  background: rgba(36,184,168,0.08);
+  border: 1.5px solid rgba(36,184,168,0.4);
+  color: var(--text);
+}
+.stgv2StatusCardIdle {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.stgv2StatusCardIdle:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+.stgv2TagAccent {
+  background: rgba(36,184,168,0.1);
+  border: 1px solid rgba(36,184,168,0.25);
+  color: var(--accent);
+}
+.stgv2TagAmber {
+  background: rgba(245,166,35,0.1);
+  border: 1px solid rgba(245,166,35,0.25);
+  color: var(--amber);
+}
+.stgv2ThemeCardActive {
+  border: 1.5px solid rgba(36,184,168,0.5) !important;
+  background: rgba(36,184,168,0.06);
+}
+.stgv2ThemeCardIdle {
+  border: 1px solid var(--border) !important;
+  background: rgba(255,255,255,0.02);
+}
+.stgv2ThemeCardIdle:hover {
+  border-color: var(--border2) !important;
+  background: rgba(255,255,255,0.04);
+}
+.stgv2ThemePreviewDark {
+  background: #0c0c0f;
+}
+.stgv2ThemePreviewLight {
+  background: #f0f0f0;
+}
+.stgv2ThemePreviewLight .stgv2ThemePreviewSidebar {
+  background: rgba(0,0,0,0.08);
+}
+.stgv2ThemePreviewLight .stgv2ThemePreviewCard {
+  background: rgba(0,0,0,0.08);
+}
+.stgv2KanbanOptActive {
+  border: 1.5px solid rgba(36,184,168,0.45) !important;
+  background: rgba(36,184,168,0.07);
+}
+.stgv2KanbanOptIdle {
+  border: 1px solid var(--border) !important;
+  background: rgba(255,255,255,0.02);
+}
+.stgv2KanbanOptIdle:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: var(--border2) !important;
+}
+.stgv2KanbanOptActive .stgv2KanbanOptLabel { color: var(--accent); }
+.scrHead {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr 0.7fr 0.9fr 0.9fr 0.7fr;
+  gap: 12px;
+  padding: 9px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.54rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.scrRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr 0.7fr 0.9fr 0.9fr 0.7fr;
+  gap: 12px;
+  padding: 12px 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 120ms ease;
+}
+.scrRow:hover { background: rgba(255, 255, 255, 0.02); }
+.scrRow:last-child { border-bottom: none; }
+  .scrHead,
+  .scrRow {
+    grid-template-columns: 2fr 1fr 1fr;
+    font-size: 0.75rem;
+  }
+/* ── New sla-tracker classes (refactored, CSS was missing) ── */
+.slaComplianceCard { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 20px; }
+.slaRowMain { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.slaRowItem { display: flex; flex-direction: column; gap: 4px; }
+.slaRowClient { font-size: 0.6875rem; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
+.slaRowMetric { font-size: 0.875rem; font-weight: 600; color: var(--text); }
+.slaRowNumbers { display: flex; align-items: center; gap: 16px; }
+.slaRowRight { display: flex; align-items: center; gap: 12px; }
+.slaRowActual { font-size: 0.875rem; font-weight: 700; font-family: var(--font-dm-mono), monospace; color: var(--text); }
+.slaRowTarget { font-size: 0.6875rem; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
+.slaRowVariance { font-size: 0.6875rem; font-family: var(--font-dm-mono), monospace; }
+.slaFillGreen { background: var(--green); }
+.slaFillAmber { background: var(--amber); }
+.slaFillRed   { background: var(--red); }

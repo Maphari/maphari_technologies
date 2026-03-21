@@ -1904,3 +1904,257 @@
   .stgv2StatusGrid { grid-template-columns: 1fr; }
   .prFormGrid3     { grid-template-columns: 1fr; }
 }
+
+/* ── Migrated from deleted monolith CSS ─────────────────────────────────── */
+.pnSearchInput {
+  padding: 8px 10px;
+}
+.paHeaderBar {
+  padding-bottom: 20px;
+}
+.paHeaderTop {
+  align-items: flex-start;
+}
+.paHeaderTitleRow {
+  align-items: center;
+}
+.paTopStats {
+  align-items: flex-start;
+}
+.paLiveDotOn {
+  opacity: 1;
+}
+.paLiveDotDim {
+  opacity: 0.3;
+}
+.paLiveLabel {
+  letter-spacing: 0.1em;
+}
+.paStatLabel {
+  letter-spacing: 0.1em;
+}
+.paStatValue {
+  font-size: 1.375rem;
+  line-height: 1;
+}
+.paToolbar {
+  align-items: center;
+}
+.paFilterBtnActive {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  font-weight: 600;
+}
+.paEmptyState {
+  padding-top: 60px;
+  color: var(--muted2);
+}
+  .paHeaderTop {
+    flex-direction: column;
+    gap: 14px;
+  }
+  .paTopStats {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+.ltHeader {
+  padding-bottom: 20px;
+}
+.ltHeaderTop {
+  align-items: flex-start;
+}
+.ltTopStats {
+  align-items: flex-start;
+}
+.ltTopStatCard {
+  min-width: 56px;
+}
+.ltStatLabel {
+  letter-spacing: 0.1em;
+}
+.ltStatValue {
+  font-size: 1.375rem;
+  line-height: 1;
+}
+.ltTextDanger {
+  color: #ff4444;
+}
+.ltToolbar {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ltClientRowSelected {
+  border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+  background: color-mix(in srgb, var(--accent) 2%, transparent);
+}
+.ltClientRowInner {
+  align-items: flex-start;
+}
+.ltClientAvatar {
+  width: 32px;
+  height: 32px;
+  margin-top: 2px;
+  border-radius: var(--r-xxs);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 0.625rem;
+}
+.ltClientHead {
+  align-items: center;
+}
+.ltStalenessBadge {
+  padding: 2px 7px;
+  border-radius: var(--r-xxs);
+  letter-spacing: 0.08em;
+}
+.ltSinceValue {
+  font-size: 1.125rem;
+}
+.ltRetainerStat {
+  margin-top: 2px;
+}
+.ltSortBtnActive {
+  color: var(--text) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+.ltLayoutWithPanel {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  min-height: calc(100vh - 220px);
+}
+.ltListPaneWithPanel {
+  border-right: 1px solid var(--border);
+}
+.ltDetailPane {
+  padding: 24px;
+  gap: 20px;
+}
+.ltStalenessCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-xxs);
+}
+.ltAlignStart {
+  align-items: flex-start;
+}
+.ltTrackingWide {
+  letter-spacing: 0.12em;
+}
+.ltCopyBlock {
+  line-height: 1.5;
+}
+.ltDetailSince {
+  font-size: 1.375rem;
+}
+.ltNextActionCard {
+  padding: 14px;
+  border-radius: var(--r-xxs);
+}
+.ltNextActionOnTrack {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+.ltNextActionOverdue {
+  border: 1px solid rgba(255, 68, 68, 0.25);
+  background: rgba(255, 68, 68, 0.05);
+}
+.ltTimelineCol {
+  align-items: center;
+  width: 24px;
+}
+.ltTimelineIcon {
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid currentcolor;
+  border-radius: 50%;
+  font-size: 0.625rem;
+}
+.ltTimelineItem {
+  padding-bottom: 12px;
+}
+.ltTimelineItemLast {
+  padding-bottom: 0;
+}
+.ltTimelineLabel {
+  line-height: 1.4;
+}
+.ltTimelineTime {
+  margin-top: 2px;
+}
+  .ltLayoutWithPanel {
+    grid-template-columns: 1fr;
+  }
+  .ltListPaneWithPanel {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .ltDetailPane {
+    padding: 20px 0 8px;
+  }
+  .ltHeaderTop {
+    flex-direction: column;
+    gap: 14px;
+  }
+  .ltTopStats {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .ltTopStatCard {
+    text-align: left;
+    min-width: 0;
+  }
+  .ltClientHead,
+.pnSearchInput { min-width: 180px; flex: 1; max-width: 280px; }
+.pnNoteText { line-height: 1.6; margin: 0; }
+/* ── New page-specific classes (refactored, CSS was missing) ── */
+
+/* last-touched: ltTouchSummary */
+.ltTouchSummary { font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
+
+/* project-context (pc*) */
+.pcSideHeader { font-size: 0.625rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted2); font-family: var(--font-dm-mono), monospace; margin-bottom: 8px; }
+.pcSideTitle { font-size: 0.875rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.pcSidePanel { display: flex; flex-direction: column; gap: 16px; }
+.pcTabs { display: flex; gap: 0; border-bottom: 1px solid var(--b1); margin-bottom: 16px; }
+.pcDetailCard { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r-sm); padding: 12px 16px; }
+.pcDetailHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.pcDetailHeadInfo { display: flex; flex-direction: column; gap: 2px; }
+.pcDetailTitle { font-size: 0.875rem; font-weight: 600; color: var(--text); }
+.pcDetailBadges { display: flex; gap: 6px; flex-wrap: wrap; }
+.pcDetailProject { font-size: 0.6875rem; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
+.pcGroupLabel { font-size: 0.5625rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted2); font-family: var(--font-dm-mono), monospace; margin-bottom: 8px; }
+.pcGroupSection { margin-bottom: 16px; }
+.pcMetaRow { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--b1); }
+.pcMetaValue { font-size: 0.75rem; color: var(--muted); }
+.pcProseContent { font-size: 0.875rem; line-height: 1.6; color: var(--muted); }
+.pcClientInfo { display: flex; align-items: center; gap: 8px; }
+.pcClientName { font-size: 0.875rem; font-weight: 600; color: var(--text); }
+.pcClientSub { font-size: 0.6875rem; color: var(--muted2); }
+
+/* project-documents (pdoc*) */
+.pdocDocMain { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.pdocDocMeta { font-size: 0.6875rem; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
+
+/* project-budget (pb*) new */
+.pbCardNameCol { font-size: 0.875rem; font-weight: 600; color: var(--text); min-width: 0; flex: 1; }
+.pbAmountsRow { display: flex; align-items: center; gap: 16px; }
+.pbBar { height: 4px; background: var(--s3); border-radius: 2px; overflow: hidden; flex: 1; }
+.pbFillAccent { height: 100%; background: var(--accent); border-radius: 2px; }
+.pbSpentValue { font-size: 0.875rem; font-weight: 700; color: var(--text); font-family: var(--font-dm-mono), monospace; }
+.pbSpentOf { font-size: 0.6875rem; color: var(--muted2); }
+.pbRemainingLabel { font-size: 0.5625rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
+.pbRemainingValue { font-size: 0.6875rem; font-weight: 600; color: var(--muted); font-family: var(--font-dm-mono), monospace; }
+
+/* retainer-burn (rb*) new */
+.rbClientPanel { display: flex; align-items: center; gap: 12px; }
+.rbClientInfo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rbClientName { font-size: 0.875rem; font-weight: 600; color: var(--text); }
+.rbClientBurnPct { font-size: 0.6875rem; font-family: var(--font-dm-mono), monospace; color: var(--muted2); }
+.rbHistoryBar { height: 4px; background: var(--s3); border-radius: 2px; overflow: hidden; }
+.rbHistoryMonth { font-size: 0.5625rem; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
+.rbFillGreen { background: var(--green); }
+.rbFillAmber { background: var(--amber); }
+.rbFillRed   { background: var(--red); }
