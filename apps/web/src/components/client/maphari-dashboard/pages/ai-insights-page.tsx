@@ -7,7 +7,7 @@
 //            On mount: loadPortalRisksWithRefresh + loadPortalDeliverablesWithRefresh
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { cx } from "../style";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import { saveSession } from "../../../../lib/auth/session";
@@ -46,7 +46,7 @@ type InsightMap = Record<InsightId, InsightState>;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const INITIAL_STATE: InsightMap = {
+const INITIAL_INSIGHTS: InsightMap = {
   summary:   { loading: false, content: null, generatedAt: null, error: null },
   riskRadar: { loading: false, content: null, generatedAt: null, error: null },
   delivery:  { loading: false, content: null, generatedAt: null, error: null },
@@ -162,6 +162,8 @@ function DigestModal({ insights, onClose }: DigestModalProps) {
   const hasContent = sections.some((s) => insights[s.id].content);
 
   return (
+    // Inline styles are intentional here — modal overlay needs fixed positioning
+    // that cannot be expressed via a CSS module scoped to the page component.
     <div
       style={{
         position: "fixed",
@@ -212,27 +214,45 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
   // Pick first project for per-project data
   const activeProject = projects[0] ?? null;
 
-  const [insights, setInsights] = useState<InsightMap>(INITIAL_STATE);
+  const [insights, setInsights] = useState<InsightMap>(INITIAL_INSIGHTS);
   const [tokens, setTokens] = useState<Partial<Record<InsightId, number>>>({});
   const [risks, setRisks] = useState<PortalRisk[]>([]);
   const [deliverables, setDeliverables] = useState<PortalDeliverable[]>([]);
   const [digestOpen, setDigestOpen] = useState(false);
+
+  // Mounted ref — prevents setState after unmount
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Guard ref for generateAll — prevents concurrent re-trigger
+  const generatingAllRef = useRef(false);
 
   // Load risks + deliverables for active project once session is ready
   useEffect(() => {
     if (!session || !activeProject) return;
 
     void loadPortalRisksWithRefresh(session, activeProject.id).then((r) => {
+      if (!mountedRef.current) return;
       if (r.nextSession) saveSession(r.nextSession);
       if (!r.error && r.data) setRisks(r.data);
     });
 
     void loadPortalDeliverablesWithRefresh(session, activeProject.id).then((r) => {
+      if (!mountedRef.current) return;
       if (r.nextSession) saveSession(r.nextSession);
       if (!r.error && r.data) setDeliverables(r.data);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken, activeProject?.id]);
+
+  // Clear insights (and close digest) when the active project changes
+  useEffect(() => {
+    setInsights(INITIAL_INSIGHTS);
+    setDigestOpen(false);
+  }, [activeProject?.id]);
 
   // ── Insight prompt builders ──────────────────────────────────────────────
 
@@ -290,6 +310,10 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
   const generateInsight = useCallback(async (id: InsightId) => {
     if (!session) return;
 
+    // If already generating this insight, skip (prevents duplicate calls from
+    // "Generate All" + individual card button firing simultaneously)
+    if (insights[id].loading) return;
+
     type AiInput = { type: "general" | "summary"; prompt: string; context: string } | null;
     const inputBuilders: Record<InsightId, () => AiInput> = {
       summary:   buildSummaryInput,
@@ -307,9 +331,12 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
     }));
 
     const result = await callPortalAiGenerateWithRefresh(session, input);
+
+    if (!mountedRef.current) return;
     if (result.nextSession) saveSession(result.nextSession);
 
     if (result.error || !result.data) {
+      if (!mountedRef.current) return;
       setInsights((prev) => ({
         ...prev,
         [id]: { ...prev[id], loading: false, error: result.error?.message ?? "AI generation failed. Please try again." },
@@ -319,22 +346,30 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
 
     const { output, usage } = result.data;
     if (usage?.outputTokens) {
+      if (!mountedRef.current) return;
       setTokens((prev) => ({ ...prev, [id]: (usage.inputTokens ?? 0) + usage.outputTokens }));
     }
 
+    if (!mountedRef.current) return;
     setInsights((prev) => ({
       ...prev,
       [id]: { loading: false, content: output, generatedAt: new Date(), error: null },
     }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, activeProject, risks, deliverables, invoices]);
+  }, [session, activeProject?.id]);
 
   // ── Generate All (sequential) ────────────────────────────────────────────
 
   const generateAll = useCallback(async () => {
-    const ids: InsightId[] = ["summary", "riskRadar", "delivery", "budget"];
-    for (const id of ids) {
-      await generateInsight(id);
+    if (generatingAllRef.current) return;
+    generatingAllRef.current = true;
+    try {
+      const ids: InsightId[] = ["summary", "riskRadar", "delivery", "budget"];
+      for (const id of ids) {
+        await generateInsight(id);
+      }
+    } finally {
+      generatingAllRef.current = false;
     }
   }, [generateInsight]);
 
