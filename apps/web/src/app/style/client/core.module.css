@@ -985,3 +985,255 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
+
+/* ─── Client Sidebar override — remove island border ───────────────────── */
+
+.cSidebar {
+  border: none !important;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* ─── Client Rail + Flyout Navigation ──────────────────────────────────── */
+
+.cRail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 6px;
+  flex: 1;
+  overflow: visible;
+}
+
+.cRailBtn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  cursor: pointer;
+  position: relative;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  flex-shrink: 0;
+}
+
+.cRailBtn:hover {
+  background: rgba(200, 241, 53, 0.07);
+  border-color: rgba(200, 241, 53, 0.10);
+  color: var(--text);
+}
+
+.cRailBtnActive {
+  background: rgba(200, 241, 53, 0.12);
+  border-color: rgba(200, 241, 53, 0.20);
+  color: var(--lime);
+}
+
+/* Current page section — subtler lime tint (no flyout open) */
+.cRailBtnCurrent {
+  background: rgba(200, 241, 53, 0.06);
+  border-color: rgba(200, 241, 53, 0.12);
+}
+
+.cRailBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.cRailNotifDot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lime);
+  border: 1.5px solid var(--s1);
+}
+
+/* ── Flyout panel ──────────────────────────────────────────────────────── */
+
+.cFlyout {
+  position: fixed;
+  left: calc(var(--sw) + 20px);
+  top: calc(var(--layout-topbar-h, 64px) + 24px);
+  bottom: 12px;
+  width: 220px;
+  background: rgba(200, 241, 53, 0.08);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--r-lg);
+  z-index: 14;
+  /* z-index 14 keeps flyout below topbar (z-15) */
+  display: flex;
+  flex-direction: column;
+  padding: 14px 0 10px;
+  box-shadow: var(--shadow-island);
+  transition: opacity 220ms cubic-bezier(0.4, 0, 0.2, 1), transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.cFlyoutHidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-12px);
+}
+
+.cFlyoutSectionName {
+  font-size: 9px;
+  font-family: var(--font-dm-mono), monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 14px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.cFlyoutPages {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cFlyoutPageBtn {
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  color: var(--lime);
+  font-family: var(--font-syne), sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-radius: var(--r-xs);
+  flex-shrink: 0;
+}
+
+.cFlyoutPageBtn:hover {
+  background: rgba(200, 241, 53, 0.06);
+  color: var(--text);
+}
+
+.cFlyoutPageBtnActive {
+  background: rgba(200, 241, 53, 0.10);
+  color: var(--lime);
+  font-weight: 600;
+}
+
+.cFlyoutBadge {
+  font-size: 9px;
+  font-family: var(--font-dm-mono), monospace;
+  background: var(--lime-d);
+  color: var(--lime);
+  border-radius: 100px;
+  padding: 1px 6px;
+  min-width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ─── FTUE Welcome Modal ───────────────────────────────────────────────── */
+
+.welcomeModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.welcomeModal {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-lg);
+  padding: 32px;
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: var(--shadow-modal);
+}
+
+.welcomeModalHeader { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+.welcomeModalLogo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--lime) 12%, var(--s2));
+  border: 1px solid color-mix(in oklab, var(--lime) 25%, var(--b2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcomeModalTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.welcomeModalSub { font-size: 0.8rem; color: var(--muted); }
+
+.welcomeModalGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.welcomeModalTile {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.welcomeModalTileIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--lime) 12%, var(--s2));
+  border: 1px solid color-mix(in oklab, var(--lime) 22%, var(--b2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.welcomeModalCta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--r-md);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
