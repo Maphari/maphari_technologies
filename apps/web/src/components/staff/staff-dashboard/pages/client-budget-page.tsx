@@ -122,16 +122,16 @@ export function ClientBudgetPage({ isActive, session }: ClientBudgetPageProps) {
     });
 
     return () => { cancelled = true; };
-  }, [session, isActive]);
+  }, [session?.accessToken, isActive]);
 
   // ── Derived stats ──────────────────────────────────────────────────────────
   const avgBurn      = clients.length > 0
-    ? Math.round(clients.reduce((s, c) => s + c.retainerBurnPct, 0) / clients.length)
+    ? Math.round(clients.reduce((s, c) => s + (c.retainerBurnPct ?? 0), 0) / clients.length)
     : 0;
-  const healthyCount = clients.filter((c) => c.healthScore >= 80).length;
-  const atRiskCount  = clients.filter((c) => c.healthScore < 60).length;
+  const healthyCount = clients.filter((c) => (c.healthScore ?? 0) >= 80).length;
+  const atRiskCount  = clients.filter((c) => (c.healthScore ?? 0) < 60).length;
   const avgScore     = clients.length > 0
-    ? Math.round(clients.reduce((s, c) => s + c.healthScore, 0) / clients.length)
+    ? Math.round(clients.reduce((s, c) => s + (c.healthScore ?? 0), 0) / clients.length)
     : 0;
 
   if (loading) {
@@ -161,136 +161,105 @@ export function ClientBudgetPage({ isActive, session }: ClientBudgetPageProps) {
       </div>
 
       {/* ── Summary stats ────────────────────────────────────────────────── */}
-      <div className={cx("cbStatGrid")}>
-        <div className={cx("cbStatCard")}>
-          <div className={cx("cbStatCardTop")}>
-            <div className={cx("cbStatLabel")}>Clients</div>
-            <div className={cx("cbStatValue")}>{clients.length}</div>
-          </div>
-          <div className={cx("cbStatCardDivider")} />
-          <div className={cx("cbStatCardBottom")}>
-            <span className={cx("cbStatDot", "dotBgMuted2")} />
-            <span className={cx("cbStatMeta")}>assigned clients</span>
-          </div>
+      <div className={cx("staffKpiStrip", "staffKpiStripFour")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Clients</div>
+          <div className={cx("staffKpiValue")}>{clients.length}</div>
+          <div className={cx("staffKpiSub")}>assigned clients</div>
         </div>
-
-        <div className={cx("cbStatCard")}>
-          <div className={cx("cbStatCardTop")}>
-            <div className={cx("cbStatLabel")}>Avg Burn</div>
-            <div className={cx("cbStatValue", burnColorCls(avgBurn))}>{avgBurn}%</div>
-          </div>
-          <div className={cx("cbStatCardDivider")} />
-          <div className={cx("cbStatCardBottom")}>
-            <span className={cx("cbStatDot", "dotBgAccent")} />
-            <span className={cx("cbStatMeta")}>retainer utilised</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Avg Burn</div>
+          <div className={cx("staffKpiValue", burnColorCls(avgBurn))}>{avgBurn}%</div>
+          <div className={cx("staffKpiSub")}>retainer utilised</div>
         </div>
-
-        <div className={cx("cbStatCard")}>
-          <div className={cx("cbStatCardTop")}>
-            <div className={cx("cbStatLabel")}>Healthy Clients</div>
-            <div className={cx("cbStatValue", "colorGreen")}>{healthyCount}</div>
-          </div>
-          <div className={cx("cbStatCardDivider")} />
-          <div className={cx("cbStatCardBottom")}>
-            <span className={cx("cbStatDot", "dotBgGreen")} />
-            <span className={cx("cbStatMeta")}>{clients.length - healthyCount} need attention</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Healthy Clients</div>
+          <div className={cx("staffKpiValue", "colorGreen")}>{healthyCount}</div>
+          <div className={cx("staffKpiSub")}>{clients.length - healthyCount} need attention</div>
         </div>
-
-        <div className={cx("cbStatCard")}>
-          <div className={cx("cbStatCardTop")}>
-            <div className={cx("cbStatLabel")}>Avg Health Score</div>
-            <div className={cx("cbStatValue", avgScore >= 70 ? "colorGreen" : avgScore >= 50 ? "colorAmber" : "colorRed")}>
-              {avgScore}
-            </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Avg Health Score</div>
+          <div className={cx("staffKpiValue", avgScore >= 70 ? "colorGreen" : avgScore >= 50 ? "colorAmber" : "colorRed")}>
+            {avgScore}
           </div>
-          <div className={cx("cbStatCardDivider")} />
-          <div className={cx("cbStatCardBottom")}>
-            <span className={cx("cbStatDot", "dynBgColor")} style={{ "--bg-color": atRiskCount > 0 ? "var(--red)" : "var(--muted2)" } as React.CSSProperties} />
-            <span className={cx("cbStatMeta")}>{atRiskCount} at risk</span>
-          </div>
+          <div className={cx("staffKpiSub")}>{atRiskCount} at risk</div>
         </div>
       </div>
 
       {/* ── Client cards ─────────────────────────────────────────────────── */}
       {loading ? (
-        <div className={cx("flexCol", "gap12")}>
+        <div className={cx("flexCol", "gap10")}>
           {[1, 2, 3].map((n) => <SkeletonCard key={n} />)}
         </div>
       ) : clients.length === 0 ? (
-        <div className={cx("emptyState")}>
-          <div className={cx("emptyStateIcon")}><Ic n="dollar-sign" sz={22} c="var(--muted2)" /></div>
-          <div className={cx("emptyStateTitle")}>No client budget data</div>
-          <div className={cx("emptyStateSub")}>Budget awareness data will appear once clients are assigned to you.</div>
+        <div className={cx("staffEmpty")}>
+          <div className={cx("staffEmptyIcon")}><Ic n="dollar-sign" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("staffEmptyTitle")}>No client budget data</div>
+          <div className={cx("staffEmptyNote")}>Budget awareness data will appear once clients are assigned to you.</div>
         </div>
       ) : (
-        <div className={cx("flexCol", "gap12")}>
-          {clients.map((client) => (
-            <div key={client.clientId} className={cx("cbCard")}>
+        <div className={cx("flexCol", "gap10")}>
+          {clients.map((client) => {
+            const burn = client.retainerBurnPct ?? 0;
+            const burnFill = burn >= 85 ? "var(--red)" : burn >= 65 ? "var(--amber)" : "var(--green)";
+            const healthCls = client.healthScore >= 80 ? "staffChipGreen" : client.healthScore >= 60 ? "staffChipAmber" : "staffChipRed";
+            const toneCls = client.healthScore >= 80 ? "staffClientToneGreen" : client.healthScore >= 60 ? "staffClientToneAmber" : "staffClientToneRed";
+            return (
+              <div key={client.clientId} className={cx("staffCard", "staffClientCard", toneCls)}>
 
-              {/* ── Head ── */}
-              <div className={cx("cbCardHead")}>
-                <div className={cx("cbCardLeft")}>
-                  <div className={cx("cbAvatar")}>{initials(client.clientName)}</div>
-                  <div>
+                {/* Head */}
+                <div className={cx("staffListRow")}>
+                  <div className={cx("staffClientAvatar")}>{initials(client.clientName)}</div>
+                  <div className={cx("flex1", "minW0")}>
                     <div className={cx("cbClientName")}>{client.clientName}</div>
-                    <div className={cx("cbClientMeta")}>{client.hoursUsed}h used this cycle</div>
+                    <div className={cx("cbClientMeta")}>{client.hoursUsed ?? 0}h used this cycle</div>
                   </div>
-                </div>
-                <div className={cx("cbCardRight")}>
-                  <div className={cx("cbScoreRow")}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span className={cx("cbScore", healthScoreCls(client.healthScore))}>{client.healthScore}</span>
                     <span className={cx("cbScoreOf")}>/100</span>
+                    <span className={cx("staffChip", healthCls)}>{healthLabel(client.healthScore)}</span>
                   </div>
-                  <span className={cx("cbHealthBadge", healthBadgeCls(client.healthScore))}>
-                    {healthLabel(client.healthScore)}
-                  </span>
                 </div>
-              </div>
 
-              {/* ── Metrics strip ── */}
-              <div className={cx("cbMetrics")}>
-                <div className={cx("cbMetricItem")}>
-                  <div className={cx("cbMetricLabel")}>Hours Used</div>
-                  <div className={cx("cbMetricValue", burnColorCls(client.retainerBurnPct))}>{client.hoursUsed}h</div>
-                </div>
-                <div className={cx("cbMetricItem")}>
-                  <div className={cx("cbMetricLabel")}>Burn %</div>
-                  <div className={cx("cbMetricValue", burnColorCls(client.retainerBurnPct))}>{client.retainerBurnPct}%</div>
-                </div>
-                <div className={cx("cbMetricItem")}>
-                  <div className={cx("cbMetricLabel")}>Sentiment</div>
-                  <div className={cx("cbMetricValue")}>
-                    <span className={cx("cbHealthBadge", sentimentBadgeCls(client.sentiment))}>
+                {/* Metrics strip */}
+                <div className={cx("staffCardMetricGrid")}>
+                  <div className={cx("staffCardMetricCell")}>
+                    <div className={cx("staffCardMetricLabel")}>Hours Used</div>
+                    <div className={cx("staffCardMetricValue", burnColorCls(burn))}>{client.hoursUsed ?? 0}h</div>
+                  </div>
+                  <div className={cx("staffCardMetricCell")}>
+                    <div className={cx("staffCardMetricLabel")}>Burn %</div>
+                    <div className={cx("staffCardMetricValue", burnColorCls(burn))}>{burn}%</div>
+                  </div>
+                  <div className={cx("staffCardMetricCell")}>
+                    <div className={cx("staffCardMetricLabel")}>Sentiment</div>
+                    <span className={cx("staffChip", sentimentBadgeCls(client.sentiment) === "cbHealthGreen" ? "staffChipGreen" : sentimentBadgeCls(client.sentiment) === "cbHealthAmber" ? "staffChipAmber" : "staffChipRed")}>
                       {sentimentLabel(client.sentiment)}
                     </span>
                   </div>
-                </div>
-                <div className={cx("cbMetricItem")}>
-                  <div className={cx("cbMetricLabel")}>Health Score</div>
-                  <div className={cx("cbMetricValue", healthScoreCls(client.healthScore))}>{client.healthScore}/100</div>
-                </div>
-              </div>
-
-              {/* ── Progress bar ── */}
-              <div className={cx("cbBars")}>
-                <div className={cx("cbBarRow")}>
-                  <div className={cx("cbBarMeta")}>
-                    <span className={cx("cbBarLabel")}>Retainer Burn</span>
-                    <span className={cx("cbBarPct", burnColorCls(client.retainerBurnPct))}>{client.retainerBurnPct}%</span>
+                  <div className={cx("staffCardMetricCell")}>
+                    <div className={cx("staffCardMetricLabel")}>Health Score</div>
+                    <div className={cx("staffCardMetricValue", healthScoreCls(client.healthScore))}>{client.healthScore}/100</div>
                   </div>
-                  <div className={cx("progressTrack")}>
+                </div>
+
+                {/* Burn progress bar */}
+                <div className={cx("staffBudgetBarWrap")}>
+                  <div className={cx("staffBudgetBarMeta")}>
+                    <span className={cx("staffBudgetBarLabel")}>Retainer Burn</span>
+                    <span className={cx("staffBudgetBarPct", burnColorCls(burn))}>{burn}%</span>
+                  </div>
+                  <div className={cx("staffBar")}>
                     <div
-                      className={cx("progressFill", burnFillTone(client.retainerBurnPct))}
-                      style={{ '--pct': `${Math.min(client.retainerBurnPct, 100)}%` } as React.CSSProperties}
+                      className={cx("staffBarFill")}
+                      style={{ "--fill-pct": Math.min(100, burn), "--fill-color": burnFill } as React.CSSProperties}
                     />
                   </div>
                 </div>
-              </div>
 
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </section>

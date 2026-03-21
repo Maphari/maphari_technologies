@@ -57,7 +57,6 @@ export const pageTitles: Record<PageId, string> = {
   integrations:         "Account / Integrations",
   settings:             "Account / Settings",
   dataPrivacy:          "Account / Data & Privacy",
-  onboardingStatus:     "Overview / Onboarding Status",
   onboarding:           "Account / Onboarding Hub",
   progressKnowledge:    "Support / Progress & Knowledge",
   knowledgeAccess:      "Support / Knowledge Access",

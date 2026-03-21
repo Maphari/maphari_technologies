@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { cx } from "../style";
 import { Ic, Av } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
-import { loadPortalDeliverablesWithRefresh, type PortalDeliverable } from "../../../../lib/api/portal/project-layer";
+import { loadPortalDeliverablesWithRefresh, approvePortalDeliverableWithRefresh, requestChangesPortalDeliverableWithRefresh, type PortalDeliverable } from "../../../../lib/api/portal/project-layer";
 import { saveSession } from "../../../../lib/auth/session";
 import { CommentThread } from "../../../shared/ui/comment-thread";
 
@@ -76,10 +76,11 @@ const TABS: DTab[] = ["All", "Pending Review", "In Progress", "Accepted", "Upcom
 
 function apiStatusToUi(status: string): DStatus {
   switch (status) {
-    case "ACCEPTED":    return "Accepted";
-    case "DELIVERED":   return "Pending Review";
-    case "IN_PROGRESS": return "In Progress";
-    default:            return "Upcoming";
+    case "ACCEPTED":           return "Accepted";
+    case "DELIVERED":          return "Pending Review";
+    case "IN_PROGRESS":        return "In Progress";
+    case "CHANGES_REQUESTED":  return "Pending Review";
+    default:                   return "Upcoming";
   }
 }
 
@@ -136,6 +137,39 @@ export function DeliverablesPage() {
   const [expanded,      setExpanded]      = useState<string | null>(null);
   const [accepted,      setAccepted]      = useState<Record<string, boolean>>({});
   const [revised,       setRevised]       = useState<Record<string, boolean>>({});
+  const [submitting,    setSubmitting]    = useState<Record<string, boolean>>({});
+
+  async function handleApprove(d: Deliverable): Promise<void> {
+    if (!session || !projectId || submitting[d.id]) return;
+    setSubmitting(p => ({ ...p, [d.id]: true }));
+    setAccepted(p => ({ ...p, [d.id]: true })); // optimistic
+    try {
+      const result = await approvePortalDeliverableWithRefresh(session, projectId, d.id);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        // Roll back optimistic update
+        setAccepted(p => ({ ...p, [d.id]: false }));
+      }
+    } finally {
+      setSubmitting(p => ({ ...p, [d.id]: false }));
+    }
+  }
+
+  async function handleRequestChanges(d: Deliverable): Promise<void> {
+    if (!session || !projectId || submitting[d.id]) return;
+    setSubmitting(p => ({ ...p, [d.id]: true }));
+    setRevised(p => ({ ...p, [d.id]: true })); // optimistic
+    try {
+      const result = await requestChangesPortalDeliverableWithRefresh(session, projectId, d.id);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        // Roll back optimistic update
+        setRevised(p => ({ ...p, [d.id]: false }));
+      }
+    } finally {
+      setSubmitting(p => ({ ...p, [d.id]: false }));
+    }
+  }
 
   const MILESTONES = useMemo(() =>
     [...new Set(DATA.map((d) => d.milestone))].sort(),
@@ -537,14 +571,16 @@ export function DeliverablesPage() {
                           <button
                             type="button"
                             className={cx("btnSm", "btnAccent", "flexRow", "flexCenter", "justifyCenter", "gap6")}
-                            onClick={() => { setAccepted(p => ({ ...p, [d.id]: true })); setRevised(p => ({ ...p, [d.id]: false })); }}
+                            onClick={() => void handleApprove(d)}
+                            disabled={submitting[d.id]}
                           >
                             <Ic n="check" sz={11} c="var(--bg)" /> Accept Deliverable
                           </button>
                           <button
                             type="button"
                             className={cx("btnSm", "btnGhost", "flexRow", "flexCenter", "justifyCenter", "gap6")}
-                            onClick={() => setRevised(p => ({ ...p, [d.id]: true }))}
+                            onClick={() => void handleRequestChanges(d)}
+                            disabled={submitting[d.id]}
                           >
                             <Ic n="edit" sz={11} /> Request Changes
                           </button>

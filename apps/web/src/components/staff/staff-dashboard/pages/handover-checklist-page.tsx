@@ -146,10 +146,15 @@ function Section({
 
   return (
     <div className={cx("mb28")}>
-      <div className={cx("flexRow", "gap10", "mb12", "hoSectionHead")}>
+      <div className={cx("staffSectionHd", "hoSectionHead")}>
         <span className={cx("text14", section.toneClass)}>{section.icon}</span>
-        <span className={cx("fontDisplay", "text14", "fw700", done ? "hoToneAccent" : "colorText")}>{section.section}</span>
-        <progress className={cx("hoSectionMeter", done ? "hoMeterAccent" : section.meterClass)} max={progress.total} value={progress.done} />
+        <span className={cx("staffSectionTitle", done ? "hoToneAccent" : "")}>{section.section}</span>
+        <div className={cx("staffBar", "hoSectionMeterWrap")}>
+          <div
+            className={cx("staffBarFill", done ? "hoMeterAccent" : section.meterClass)}
+            style={{ width: `${progress.pct}%` }}
+          />
+        </div>
         <span className={cx("text10", "noShrink", done ? "hoToneAccent" : "colorMuted2")}>{progress.done}/{progress.total}</span>
         {!done && (
           <button type="button" className={cx("hoMarkBtn", "uppercase")} onClick={() => markSectionDone(section)}>All done</button>
@@ -160,8 +165,8 @@ function Section({
         {section.items.map((item) => {
           const checked = isChecked(item.id);
           return (
-            <div key={item.id} className={cx("hoCheckRow", "hoCheckItem", checked && "hoCheckItemChecked")} onClick={() => toggle(item.id)}>
-              <div className={cx("flexCenter", "noShrink", "hoCheckBox", checked && "hoCheckBoxChecked")}>
+            <div key={item.id} className={cx("staffListRow", "hoCheckRow", "hoCheckItem", checked && "hoCheckItemChecked")} onClick={() => toggle(item.id)}>
+              <div className={cx("staffCheckbox", "noShrink", checked ? "staffCheckboxChecked" : "")}>
                 {checked && <span className={cx("hoCheckAnim")}>✓</span>}
               </div>
               <div className={cx("flex1")}>
@@ -179,7 +184,7 @@ function Section({
         </button>
         {showNote && (
           <textarea
-            className={cx("hoTextarea", "hoNoteInput")}
+            className={cx("staffInput", "hoTextarea", "hoNoteInput")}
             value={notes[noteKey] ?? ""}
             onChange={(e) => setNotes((prev) => ({ ...prev, [noteKey]: e.target.value }))}
             placeholder={`Notes for ${section.section}…`}
@@ -373,7 +378,9 @@ export function HandoverChecklistPage({ isActive, session }: { isActive: boolean
                   <span className={cx("text11", isAct ? "colorText" : "colorMuted")}>{client.name}</span>
                   <span className={cx("text12", "fw700", "hoClientPct", client.toneClass)}>{cp}%</span>
                 </div>
-                <progress className={cx("hoClientMeter", cp === 100 ? "hoMeterAccent" : client.meterClass)} max={100} value={cp} />
+                <div className={cx("staffBar", "hoClientMeterWrap")}>
+                  <div className={cx("staffBarFill", cp === 100 ? "hoMeterAccent" : client.meterClass)} style={{ width: `${cp}%` }} />
+                </div>
                 <div className={cx("text10", "colorMuted2", "mt4", "hoClientProject")}>{client.project}</div>
               </div>
             );

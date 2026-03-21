@@ -199,57 +199,28 @@ export function MyLeavePage({ isActive, session, onNotify }: PageProps) {
         </div>
       </div>
 
-      {/* ── Summary stats ────────────────────────────────────────────────── */}
-      <div className={cx("mlvStatGrid")}>
-
-        <div className={cx("mlvStatCard")}>
-          <div className={cx("mlvStatCardTop")}>
-            <div className={cx("mlvStatLabel")}>Total Entitlement</div>
-            <div className={cx("mlvStatValue")}>{totalDays}</div>
-          </div>
-          <div className={cx("mlvStatCardDivider")} />
-          <div className={cx("mlvStatCardBottom")}>
-            <span className={cx("mlvStatDot", "dotBgMuted2")} />
-            <span className={cx("mlvStatMeta")}>days across all types</span>
-          </div>
+      {/* ── Summary strip ────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Total Entitlement</div>
+          <div className={cx("staffKpiValue")}>{totalDays}</div>
+          <div className={cx("staffKpiSub")}>days across all types</div>
         </div>
-
-        <div className={cx("mlvStatCard")}>
-          <div className={cx("mlvStatCardTop")}>
-            <div className={cx("mlvStatLabel")}>Days Used</div>
-            <div className={cx("mlvStatValue", "colorAmber")}>{totalUsed}</div>
-          </div>
-          <div className={cx("mlvStatCardDivider")} />
-          <div className={cx("mlvStatCardBottom")}>
-            <span className={cx("mlvStatDot", "dotBgAmber")} />
-            <span className={cx("mlvStatMeta")}>taken this cycle</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Days Used</div>
+          <div className={cx("staffKpiValue", "colorAmber")}>{totalUsed}</div>
+          <div className={cx("staffKpiSub")}>taken this cycle</div>
         </div>
-
-        <div className={cx("mlvStatCard")}>
-          <div className={cx("mlvStatCardTop")}>
-            <div className={cx("mlvStatLabel")}>Available</div>
-            <div className={cx("mlvStatValue", "colorGreen")}>{totalAvail}</div>
-          </div>
-          <div className={cx("mlvStatCardDivider")} />
-          <div className={cx("mlvStatCardBottom")}>
-            <span className={cx("mlvStatDot", "dotBgGreen")} />
-            <span className={cx("mlvStatMeta")}>days remaining</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Available</div>
+          <div className={cx("staffKpiValue", "colorGreen")}>{totalAvail}</div>
+          <div className={cx("staffKpiSub")}>days remaining</div>
         </div>
-
-        <div className={cx("mlvStatCard")}>
-          <div className={cx("mlvStatCardTop")}>
-            <div className={cx("mlvStatLabel")}>Pending</div>
-            <div className={cx("mlvStatValue", totalPend > 0 ? "colorAccent" : "colorGreen")}>{totalPend}</div>
-          </div>
-          <div className={cx("mlvStatCardDivider")} />
-          <div className={cx("mlvStatCardBottom")}>
-            <span className={cx("mlvStatDot", "dynBgColor")} style={{ "--bg-color": totalPend > 0 ? "var(--accent)" : "var(--muted2)" } as React.CSSProperties} />
-            <span className={cx("mlvStatMeta")}>{totalPend > 0 ? "awaiting approval" : "none pending"}</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Pending</div>
+          <div className={cx("staffKpiValue", totalPend > 0 ? "colorAccent" : "colorGreen")}>{totalPend}</div>
+          <div className={cx("staffKpiSub")}>{totalPend > 0 ? "awaiting approval" : "none pending"}</div>
         </div>
-
       </div>
 
       {/* ── Leave balances ────────────────────────────────────────────────── */}

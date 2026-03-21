@@ -66,7 +66,7 @@ export function OffboardingTasksPage({ isActive, session }: { isActive: boolean;
 
   // ── Fetch ───────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
-    if (!session) return;
+    if (!isActive || !session) return;
     setLoading(true);
     try {
       const clientsResult = await getStaffClients(session);
@@ -93,7 +93,7 @@ export function OffboardingTasksPage({ isActive, session }: { isActive: boolean;
     } finally {
       setLoading(false);
     }
-  }, [session?.accessToken]);
+  }, [isActive, session?.accessToken]);
 
   useEffect(() => { void fetchData(); }, [fetchData]);
 

@@ -18,7 +18,6 @@ import {
 
 // ── Local types ───────────────────────────────────────────────────────────────
 
-/** Flattened document row used by the UI */
 interface DocRow {
   id: string;
   name: string;
@@ -43,14 +42,13 @@ function inferDocType(title: string): string {
   return "Deliverable";
 }
 
-function typeCls(t: string): string {
-  if (t === "Brief")       return "pdocTypeBrief";
-  if (t === "Deliverable") return "pdocTypeDeliverable";
-  if (t === "Research")    return "pdocTypeResearch";
-  if (t === "Design")      return "pdocTypeDesign";
-  if (t === "Spec")        return "pdocTypeSpec";
-  if (t === "Notes")       return "pdocTypeNotes";
-  return "";
+function docIconContent(type: string): string {
+  if (type === "Brief")       return "BR";
+  if (type === "Research")    return "RS";
+  if (type === "Design")      return "DS";
+  if (type === "Spec")        return "SP";
+  if (type === "Notes")       return "NT";
+  return "DL";
 }
 
 function formatShortDate(iso: string): string {
@@ -74,11 +72,10 @@ export function ProjectDocumentsPage({
   isActive: boolean;
   session: AuthSession | null;
 }) {
-  const [projects,  setProjects]  = useState<StaffProject[]>([]);
-  const [docRows,   setDocRows]   = useState<DocRow[]>([]);
-  const [loading,   setLoading]   = useState(true);
+  const [projects, setProjects] = useState<StaffProject[]>([]);
+  const [docRows,  setDocRows]  = useState<DocRow[]>([]);
+  const [loading,  setLoading]  = useState(true);
 
-  // ── Fetch projects + deliverables ─────────────────────────────────────────
   useEffect(() => {
     if (!session) { setLoading(false); return; }
 
@@ -88,7 +85,6 @@ export function ProjectDocumentsPage({
       setLoading(true);
 
       try {
-        // 1. Fetch projects
         const projRes = await getStaffProjects(session!);
         if (projRes.nextSession) saveSession(projRes.nextSession);
         if (cancelled) return;
@@ -101,7 +97,6 @@ export function ProjectDocumentsPage({
           return;
         }
 
-        // 2. Fetch deliverables for every project in parallel
         const delivResults = await Promise.all(
           projList.map((p) => getStaffDeliverables(session!, p.id))
         );
@@ -140,14 +135,12 @@ export function ProjectDocumentsPage({
     return () => { cancelled = true; };
   }, [session?.accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Derived stats ─────────────────────────────────────────────────────────
-  const projectNames = useMemo(() => [...new Set(docRows.map((d) => d.project))], [docRows]);
-  const thisMonth    = currentMonthLabel();
-  const recentCount  = useMemo(() => docRows.filter((d) => d.uploadedAt === thisMonth).length, [docRows, thisMonth]);
-  const totalDocs    = docRows.length;
+  const projectNames  = useMemo(() => [...new Set(docRows.map((d) => d.project))], [docRows]);
+  const thisMonth     = currentMonthLabel();
+  const recentCount   = useMemo(() => docRows.filter((d) => d.uploadedAt === thisMonth).length, [docRows, thisMonth]);
+  const totalDocs     = docRows.length;
   const totalProjects = projectNames.length;
 
-  // ── Render ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-project-documents">
@@ -168,108 +161,78 @@ export function ProjectDocumentsPage({
         <p className={cx("pageSubtitleText", "mb20")}>Project-scoped document vault</p>
       </div>
 
-      {/* ── Summary stats ──────────────────────────────────────────────────── */}
-      <div className={cx("pdocStatGrid")}>
-
-        <div className={cx("pdocStatCard")}>
-          <div className={cx("pdocStatCardTop")}>
-            <div className={cx("pdocStatLabel")}>Documents</div>
-            <div className={cx("pdocStatValue", "colorAccent")}>{loading ? "--" : totalDocs}</div>
-          </div>
-          <div className={cx("pdocStatCardDivider")} />
-          <div className={cx("pdocStatCardBottom")}>
-            <span className={cx("pdocStatDot", "dotBgAccent")} />
-            <span className={cx("pdocStatMeta")}>files in vault</span>
-          </div>
+      {/* ── KPI strip ──────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip", "mb20")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Documents</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{totalDocs}</div>
+          <div className={cx("staffKpiSub")}>files in vault</div>
         </div>
-
-        <div className={cx("pdocStatCard")}>
-          <div className={cx("pdocStatCardTop")}>
-            <div className={cx("pdocStatLabel")}>Projects</div>
-            <div className={cx("pdocStatValue", "colorMuted2")}>{loading ? "--" : totalProjects}</div>
-          </div>
-          <div className={cx("pdocStatCardDivider")} />
-          <div className={cx("pdocStatCardBottom")}>
-            <span className={cx("pdocStatDot", "dotBgMuted2")} />
-            <span className={cx("pdocStatMeta")}>active folders</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Projects</div>
+          <div className={cx("staffKpiValue")}>{totalProjects}</div>
+          <div className={cx("staffKpiSub")}>active folders</div>
         </div>
-
-        <div className={cx("pdocStatCard")}>
-          <div className={cx("pdocStatCardTop")}>
-            <div className={cx("pdocStatLabel")}>Total Size</div>
-            <div className={cx("pdocStatValue", "colorMuted2")}>--</div>
-          </div>
-          <div className={cx("pdocStatCardDivider")} />
-          <div className={cx("pdocStatCardBottom")}>
-            <span className={cx("pdocStatDot", "dotBgMuted2")} />
-            <span className={cx("pdocStatMeta")}>combined storage</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Total Size</div>
+          <div className={cx("staffKpiValue", "colorMuted2")}>—</div>
+          <div className={cx("staffKpiSub")}>combined storage</div>
         </div>
-
-        <div className={cx("pdocStatCard")}>
-          <div className={cx("pdocStatCardTop")}>
-            <div className={cx("pdocStatLabel")}>This Month</div>
-            <div className={cx("pdocStatValue", "colorAccent")}>{loading ? "--" : recentCount}</div>
-          </div>
-          <div className={cx("pdocStatCardDivider")} />
-          <div className={cx("pdocStatCardBottom")}>
-            <span className={cx("pdocStatDot", "dotBgAccent")} />
-            <span className={cx("pdocStatMeta")}>{thisMonth} uploads</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>This Month</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{recentCount}</div>
+          <div className={cx("staffKpiSub")}>{thisMonth}</div>
         </div>
-
       </div>
 
-      {/* ── Empty state ────────────────────────────────────────────────────── */}
-      {!loading && docRows.length === 0 ? (
-        <div className={cx("pdocSection")}>
-          <div className={cx("pdocSectionHeader")}>
-            <div className={cx("pdocSectionLeft")}>
-              <div className={cx("emptyState")}>
-                <div className={cx("emptyStateIcon")}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-                    <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-                    <path d="M9 13h6M9 17h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <div className={cx("emptyStateTitle")}>No documents yet</div>
-                <div className={cx("emptyStateSub")}>
-                  {projects.length === 0
-                    ? "No projects assigned"
-                    : `${projects.length} project${projects.length !== 1 ? "s" : ""} loaded, no deliverables found`}
-                </div>
-              </div>
-            </div>
+      {/* ── Drop zone hint ─────────────────────────────────────────────── */}
+      <div className={cx("staffDropzone", "mb20")}>
+        Upload area — drag &amp; drop files here (coming soon)
+      </div>
+
+      {/* ── Empty state ────────────────────────────────────────────────── */}
+      {docRows.length === 0 ? (
+        <div className={cx("staffEmpty")}>
+          <div className={cx("staffEmptyIcon")}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+              <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+              <path d="M9 13h6M9 17h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div className={cx("staffEmptyTitle")}>No documents yet</div>
+          <div className={cx("staffEmptyNote")}>
+            {projects.length === 0
+              ? "No projects assigned"
+              : `${projects.length} project${projects.length !== 1 ? "s" : ""} loaded, no deliverables found`}
           </div>
         </div>
       ) : null}
 
-      {/* ── Project sections ────────────────────────────────────────────────── */}
-      {!loading && projectNames.map((project) => {
+      {/* ── Project sections ────────────────────────────────────────────── */}
+      {projectNames.map((project) => {
         const docs = docRows.filter((d) => d.project === project);
         return (
-          <div key={project} className={cx("pdocSection")}>
+          <div key={project} className={cx("staffCard", "mb12")}>
 
-            <div className={cx("pdocSectionHeader")}>
-              <div className={cx("pdocSectionLeft")}>
-                <div className={cx("pdocProjectName")}>{project}</div>
-              </div>
-              <span className={cx("pdocSectionMeta")}>{docs.length} DOC{docs.length !== 1 ? "S" : ""}</span>
+            <div className={cx("staffSectionHd")}>
+              <span className={cx("staffSectionTitle")}>{project}</span>
+              <span className={cx("staffChip")}>{docs.length} doc{docs.length !== 1 ? "s" : ""}</span>
             </div>
 
-            <div className={cx("pdocDocList")}>
-              {docs.map((doc, idx) => (
-                <div key={doc.id} className={cx("pdocDocRow", idx === docs.length - 1 && "pdocDocRowLast")}>
-                  <span className={cx("pdocTypeBadge", typeCls(doc.type))}>{doc.type}</span>
+            {docs.map((doc) => (
+              <div key={doc.id} className={cx("staffListRow", "pdocDocRow")}>
+                <div className={cx("staffDocIcon")}>{docIconContent(doc.type)}</div>
+                <div className={cx("pdocDocMain")}>
                   <span className={cx("pdocDocName")}>{doc.name}</span>
-                  <span className={cx("pdocUploader")}>{doc.uploadedBy}</span>
-                  <span className={cx("pdocDate")}>{doc.uploadedAt}</span>
-                  <button type="button" className={cx("pdocViewBtn")} disabled title="Coming soon">View</button>
+                  <span className={cx("pdocDocMeta")}>{doc.uploadedBy} · {doc.uploadedAt}</span>
                 </div>
-              ))}
-            </div>
+                <span className={cx("staffChip")}>{doc.type}</span>
+                <button type="button" className={cx("pdocViewBtn")} disabled title="Coming soon">
+                  View
+                </button>
+              </div>
+            ))}
 
           </div>
         );

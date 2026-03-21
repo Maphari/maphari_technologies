@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Mono, DM_Sans, Instrument_Serif, Syne } from "next/font/google";
+import { cookies } from "next/headers";
 import "./style/globals.css";
 
 export const metadata: Metadata = {
@@ -51,15 +52,17 @@ const instrumentSerif = Instrument_Serif({
   display: "swap"
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const resolvedTheme = (cookieStore.get("maphari:theme-r")?.value ?? "light") as "light" | "dark";
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-theme={resolvedTheme} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('maphari:theme')||'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');})();` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('maphari:theme')||'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=d?'dark':'light';document.documentElement.setAttribute('data-theme',r);document.cookie='maphari:theme-r='+r+';path=/;max-age=31536000;SameSite=Lax';})();` }} />
         {/* PWA meta tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

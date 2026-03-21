@@ -158,73 +158,44 @@ export function ClientJourneyPage({ isActive, session }: { isActive: boolean; se
       </div>
 
       {/* ── Summary stats ────────────────────────────────────────────────── */}
-      <div className={cx("cjStatGrid")}>
-
-        <div className={cx("cjStatCard")}>
-          <div className={cx("cjStatCardTop")}>
-            <div className={cx("cjStatLabel")}>Clients</div>
-            <div className={cx("cjStatValue", "colorAccent")}>{totalClients}</div>
-          </div>
-          <div className={cx("cjStatCardDivider")} />
-          <div className={cx("cjStatCardBottom")}>
-            <span className={cx("cjStatDot", "dotBgAccent")} />
-            <span className={cx("cjStatMeta")}>total managed</span>
-          </div>
+      <div className={cx("staffKpiStrip", "staffKpiStripFour")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Clients</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{totalClients}</div>
+          <div className={cx("staffKpiSub")}>total managed</div>
         </div>
-
-        <div className={cx("cjStatCard")}>
-          <div className={cx("cjStatCardTop")}>
-            <div className={cx("cjStatLabel")}>Healthy</div>
-            <div className={cx("cjStatValue", "colorGreen")}>{healthyCount}</div>
-          </div>
-          <div className={cx("cjStatCardDivider")} />
-          <div className={cx("cjStatCardBottom")}>
-            <span className={cx("cjStatDot", "dotBgGreen")} />
-            <span className={cx("cjStatMeta")}>active or growing</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Healthy</div>
+          <div className={cx("staffKpiValue", "colorGreen")}>{healthyCount}</div>
+          <div className={cx("staffKpiSub")}>active or growing</div>
         </div>
-
-        <div className={cx("cjStatCard")}>
-          <div className={cx("cjStatCardTop")}>
-            <div className={cx("cjStatLabel")}>At Risk</div>
-            <div className={cx("cjStatValue", atRiskCount > 0 ? "colorRed" : "colorGreen")}>{atRiskCount}</div>
-          </div>
-          <div className={cx("cjStatCardDivider")} />
-          <div className={cx("cjStatCardBottom")}>
-            <span className={cx("cjStatDot", "dynBgColor")} style={{ "--bg-color": atRiskCount > 0 ? "var(--red)" : "var(--green)" } as React.CSSProperties} />
-            <span className={cx("cjStatMeta")}>{atRiskCount > 0 ? "needs attention" : "none flagged"}</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>At Risk</div>
+          <div className={cx("staffKpiValue", atRiskCount > 0 ? "colorRed" : "colorGreen")}>{atRiskCount}</div>
+          <div className={cx("staffKpiSub")}>{atRiskCount > 0 ? "needs attention" : "none flagged"}</div>
         </div>
-
-        <div className={cx("cjStatCard")}>
-          <div className={cx("cjStatCardTop")}>
-            <div className={cx("cjStatLabel")}>Total Revenue</div>
-            <div className={cx("cjStatValue", "colorAccent")}>{formatTotal(totalRevenue)}</div>
-          </div>
-          <div className={cx("cjStatCardDivider")} />
-          <div className={cx("cjStatCardBottom")}>
-            <span className={cx("cjStatDot", "dotBgAccent")} />
-            <span className={cx("cjStatMeta")}>lifetime billed</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Total Revenue</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{formatTotal(totalRevenue)}</div>
+          <div className={cx("staffKpiSub")}>lifetime billed</div>
         </div>
-
       </div>
 
       {/* ── Journey cards ─────────────────────────────────────────────────── */}
       <div className={cx("cjSection")}>
 
-        <div className={cx("cjSectionHeader")}>
-          <div className={cx("cjSectionTitle")}>Client Lifecycles</div>
-          <span className={cx("cjSectionMeta")}>{journeys.length} CLIENTS</span>
+        <div className={cx("staffSectionHd")}>
+          <div className={cx("staffSectionTitle")}>Client Lifecycles</div>
+          <span className={cx("staffChip")}>{journeys.length} CLIENTS</span>
         </div>
 
         {loading ? (
-          <div className={cx("cjList")}>
+          <div className={cx("flexCol", "gap8")}>
             {[0, 1, 2].map((i) => (
-              <div key={i} className={cx("cjCard", "opacity45")}>
-                <div className={cx("cjCardHead")}>
-                  <div className={cx("cjAvatar", "cjAvatarAccent", "bgS3")}>&nbsp;</div>
-                  <div className={cx("cjHeadBody")}>
+              <div key={i} className={cx("staffCard", "opacity45")}>
+                <div className={cx("staffListRow")}>
+                  <div className={cx("staffClientAvatar", "bgS3")}>&nbsp;</div>
+                  <div className={cx("flex1")}>
                     <div className={cx("skeleBlock12x50p")} />
                     <div className={cx("skeleBlock10x30p")} />
                   </div>
@@ -233,66 +204,74 @@ export function ClientJourneyPage({ isActive, session }: { isActive: boolean; se
             ))}
           </div>
         ) : sorted.length === 0 ? (
-          <div className={cx("cjList")}>
-            <div className={cx("emptyState")}>
-              <div className={cx("emptyStateIcon")}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <div className={cx("emptyStateTitle")}>No client journeys found</div>
-              <div className={cx("emptyStateSub")}>Journey data will appear once clients have active projects with milestones.</div>
+          <div className={cx("staffEmpty")}>
+            <div className={cx("staffEmptyIcon")}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
+            <div className={cx("staffEmptyTitle")}>No client journeys found</div>
+            <div className={cx("staffEmptyNote")}>Journey data will appear once clients have active projects with milestones.</div>
           </div>
         ) : (
-          <div className={cx("cjList")}>
-            {sorted.map((j, idx) => (
+          <div className={cx("flexCol", "gap8")}>
+            {sorted.map((j) => (
               <div
                 key={j.client}
                 className={cx(
-                  "cjCard",
-                  stageStripCls(j.stage),
-                  idx === sorted.length - 1 && "cjCardLast",
+                  "staffCard",
+                  "staffClientCard",
+                  j.stage === "At Risk" ? "staffClientToneRed"
+                    : j.stage === "Offboarding" ? "staffClientToneAmber"
+                    : j.stage === "Growing" ? "staffClientToneAccent"
+                    : "staffClientToneGreen"
                 )}
               >
-
                 {/* Head: avatar + name + stage badge */}
-                <div className={cx("cjCardHead")}>
-                  <div className={cx("cjAvatar", avatarCls(j.avatar))}>{j.avatar}</div>
-                  <div className={cx("cjHeadBody")}>
+                <div className={cx("staffListRow")}>
+                  <div className={cx("staffClientAvatar", avatarCls(j.avatar))}>{j.avatar}</div>
+                  <div className={cx("flex1", "minW0")}>
                     <div className={cx("cjClientName")}>{j.client}</div>
                     <div className={cx("cjClientSince")}>Since {j.since}</div>
                   </div>
-                  <span className={cx("cjStageBadge", stageBadgeCls(j.stage))}>{j.stage}</span>
+                  <span className={cx(
+                    "staffChip",
+                    j.stage === "Active" ? "staffChipGreen"
+                      : j.stage === "Growing" ? "staffChipAccent"
+                      : j.stage === "At Risk" ? "staffChipRed"
+                      : "staffChipAmber"
+                  )}>{j.stage}</span>
                 </div>
 
-                {/* Metrics strip: projects · revenue · NPS */}
-                <div className={cx("cjMetricsRow")}>
-                  <div className={cx("cjMetricCell")}>
-                    <span className={cx("cjMetricLabel")}>Projects</span>
-                    <span className={cx("cjMetricValue")}>{j.projects}</span>
+                {/* Metrics strip */}
+                <div className={cx("staffCardMetricGrid")}>
+                  <div className={cx("staffCardMetricCell")}>
+                    <div className={cx("staffCardMetricLabel")}>Projects</div>
+                    <div className={cx("staffCardMetricValue")}>{j.projects}</div>
                   </div>
-                  <div className={cx("cjMetricSep")} />
-                  <div className={cx("cjMetricCell")}>
-                    <span className={cx("cjMetricLabel")}>Revenue</span>
-                    <span className={cx("cjMetricValue", "colorAccent")}>{j.totalRevenue}</span>
+                  <div className={cx("staffCardMetricCell")}>
+                    <div className={cx("staffCardMetricLabel")}>Revenue</div>
+                    <div className={cx("staffCardMetricValue", "colorAccent")}>{j.totalRevenue}</div>
                   </div>
-                  <div className={cx("cjMetricSep")} />
-                  <div className={cx("cjMetricCell")}>
-                    <span className={cx("cjMetricLabel")}>NPS</span>
-                    <span className={cx("cjMetricValue", npsColorCls(j.nps))}>
-                      {j.nps}<span className={cx("cjMetricSuffix")}>/10</span>
-                    </span>
+                  <div className={cx("staffCardMetricCell")}>
+                    <div className={cx("staffCardMetricLabel")}>NPS</div>
+                    <div className={cx("staffCardMetricValue", npsColorCls(j.nps))}>
+                      {j.nps}<span className={cx("staffKpiSub")}>/10</span>
+                    </div>
+                  </div>
+                  <div className={cx("staffCardMetricCell")}>
+                    <div className={cx("staffCardMetricLabel")}>Stage</div>
+                    <div className={cx("staffCardMetricValue")}>{j.stage}</div>
                   </div>
                 </div>
 
                 {/* Milestone track */}
-                <div className={cx("cjMilestoneTrack")}>
+                <div className={cx("staffMilestoneTrack")}>
                   {j.milestones.map((m, i) => (
-                    <div key={m} className={cx("cjMilestoneItem")}>
-                      <div className={cx("cjMilestoneDot", i === j.milestones.length - 1 && "cjMilestoneDotActive")} />
-                      <span className={cx("cjMilestoneLabel", i === j.milestones.length - 1 && "cjMilestoneLabelActive")}>{m}</span>
-                      {i < j.milestones.length - 1 && <span className={cx("cjMilestoneArrow")}>›</span>}
+                    <div key={m} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <div className={cx("staffMilestoneDot", i === j.milestones.length - 1 && "staffMilestoneDotActive")} />
+                      <span className={cx("staffMilestoneLabel", i === j.milestones.length - 1 && "staffMilestoneLabelActive")}>{m}</span>
+                      {i < j.milestones.length - 1 && <span className={cx("staffMilestoneArrow")}>›</span>}
                     </div>
                   ))}
                 </div>

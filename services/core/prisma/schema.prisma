@@ -1538,3 +1538,18 @@ model MarketRate {
   @@index([isActive, sortOrder])
   @@map("market_rates")
 }
+
+model EntityComment {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  clientId    String   @db.VarChar(36)
+  entityType  String   @db.VarChar(64)   // "deliverable" | "task" | "invoice" | "milestone" | "ticket"
+  entityId    String   @db.VarChar(36)
+  authorName  String   @db.VarChar(128)
+  authorRole  String   @default("CLIENT") @db.VarChar(32)
+  message     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([clientId, entityType, entityId, createdAt])
+  @@map("entity_comments")
+}

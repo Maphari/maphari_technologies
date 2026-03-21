@@ -352,32 +352,35 @@ export function CloseOutReportPage({
           </h1>
         </div>
 
-        <div className={cx("flexRow", "gap10")}>
-          {clients.map((row) => {
-            const rowReport = reports[row.id];
-            if (!rowReport) return null;
-            const isActiveProject = selectedId === row.id;
-            return (
-              <div
-                key={row.id}
-                className={cx("corProjectBtn", isActiveProject ? row.tabClass : "corProjectBtnIdle", isActiveProject && "corProjectBtnActive")}
-                onClick={() => setSelectedId(row.id)}
-              >
-                <div className={cx("corProjectAvatar", row.surfaceClass, row.toneClass)}>
-                  {row.avatar}
-                </div>
-                <div>
-                  <div className={cx("text11", isActiveProject ? "colorText" : "colorMuted")}>{row.name}</div>
-                  <div className={cx("text10", "colorMuted2")}>{rowReport.project}</div>
-                </div>
-                <span className={cx("corProjectStatus", rowReport.status === "complete" ? "corProjectStatusComplete" : "corProjectStatusDraft")}>
-                  {rowReport.status === "complete" ? "Complete" : "Draft"}
-                </span>
-              </div>
-            );
-          })}
+        <div className={cx("flexRow", "gap10", "flexWrap")}>
+          <div className={cx("staffSegControl")}>
+            {clients.map((row) => {
+              const rowReport = reports[row.id];
+              if (!rowReport) return null;
+              const isActiveProject = selectedId === row.id;
+              return (
+                <button
+                  key={row.id}
+                  type="button"
+                  className={cx("staffSegBtn", isActiveProject && "staffSegBtnActive")}
+                  onClick={() => setSelectedId(row.id)}
+                >
+                  <div className={cx("corProjectAvatar", row.surfaceClass, row.toneClass)}>
+                    {row.avatar}
+                  </div>
+                  <div>
+                    <div className={cx("text11", isActiveProject ? "colorText" : "colorMuted")}>{row.name}</div>
+                    <div className={cx("text10", "colorMuted2")}>{rowReport.project}</div>
+                  </div>
+                  <span className={cx("corProjectStatus", rowReport.status === "complete" ? "corProjectStatusComplete" : "corProjectStatusDraft")}>
+                    {rowReport.status === "complete" ? "Complete" : "Draft"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-          <div className={cx("corTabBarWrap")}>
+          <div className={cx("staffSegControl", "corTabBarWrap")}>
             {[
               { key: "overview", label: "Overview" },
               { key: "finance", label: "Finance" },
@@ -387,7 +390,7 @@ export function CloseOutReportPage({
               <button
                 key={tab.key}
                 type="button"
-                className={cx("corTabBtn", section === tab.key && "corTabBtnActive")}
+                className={cx("staffSegBtn", section === tab.key && "staffSegBtnActive")}
                 onClick={() => setSection(tab.key as "overview" | "finance" | "milestones" | "retro")}
               >
                 {tab.label}
@@ -420,21 +423,23 @@ export function CloseOutReportPage({
 
               <div className={cx("text13", "colorMuted", "corSummary")}>{report.summary}</div>
 
-              <div className={cx("grid4", "gap12", "mb28")}>
-                  {[
-                    { label: "Duration", value: `${report.weeks}w`, toneClass: "corToneMuted" },
-                    { label: "Total hours", value: `${totalHours}h`, toneClass: "corToneMuted" },
-                    { label: "Accuracy", value: `${accuracy}%`, toneClass: accuracy >= 85 ? "corToneAccent" : "corToneAmber" },
-                    { label: "Satisfaction", value: `${report.satisfaction}/100`, toneClass: report.satisfaction >= 85 ? "corToneAccent" : "corToneAmber" }
-                  ].map((stat) => (
-                    <div key={stat.label} className={cx("corStatCard")}>
-                      <div className={cx("corStatLabel")}>{stat.label}</div>
-                      <div className={cx("fontDisplay", "fw800", "corStatValue", stat.toneClass)}>{stat.value}</div>
-                    </div>
-                  ))}
+              <div className={cx("staffKpiStrip", "mb28")}>
+                {[
+                  { label: "Duration", value: `${report.weeks}w`, toneClass: "corToneMuted" },
+                  { label: "Total hours", value: `${totalHours}h`, toneClass: "corToneMuted" },
+                  { label: "Accuracy", value: `${accuracy}%`, toneClass: accuracy >= 85 ? "corToneAccent" : "corToneAmber" },
+                  { label: "Satisfaction", value: `${report.satisfaction}/100`, toneClass: report.satisfaction >= 85 ? "corToneAccent" : "corToneAmber" }
+                ].map((stat) => (
+                  <div key={stat.label} className={cx("staffKpiCell")}>
+                    <div className={cx("staffKpiLabel")}>{stat.label}</div>
+                    <div className={cx("staffKpiValue", stat.toneClass)}>{stat.value}</div>
+                  </div>
+                ))}
               </div>
 
-              <div className={cx("corSectionLabel", "mb12")}>Hours logged by week</div>
+              <div className={cx("staffSectionHd", "mb12")}>
+                <span className={cx("staffSectionTitle")}>Hours logged by week</span>
+              </div>
               <div className={cx("corBurnChartRows")}>
                 {report.burnData.length === 0 && (
                   <div className={cx("text12", "colorMuted2")}>No weekly hours data available.</div>
@@ -490,7 +495,10 @@ export function CloseOutReportPage({
 
         {report && client && section === "finance" && (
           <div className={cx("corFinanceWrap")}>
-            <div className={cx("fontDisplay", "fw800", "colorText", "corFinanceTitle")}>Financial Summary</div>
+            <div className={cx("staffCard")}>
+            <div className={cx("staffSectionHd")}>
+              <span className={cx("staffSectionTitle")}>Financial Summary</span>
+            </div>
             {[
               { label: "Contracted value", value: `R${report.finance.contracted.toLocaleString()}`, toneClass: "corToneMuted" },
               { label: "Scope changes", value: `+ R${report.finance.scopeChanges.toLocaleString()}`, toneClass: report.finance.scopeChanges > 0 ? "corToneAccent" : "corToneMuted2" },
@@ -512,12 +520,15 @@ export function CloseOutReportPage({
               </div>
               <div className={cx("text11", "colorMuted2", "mt4")}>Based on {totalHours}h logged</div>
             </div>
+            </div>
           </div>
         )}
 
         {report && client && section === "milestones" && (
           <div className={cx("corMilestonesWrap")}>
-            <div className={cx("fontDisplay", "fw800", "colorText", "corFinanceTitle")}>Milestone Review</div>
+            <div className={cx("staffSectionHd", "mb16")}>
+              <span className={cx("staffSectionTitle")}>Milestone Review</span>
+            </div>
             {report.milestones.length === 0 && (
               <div className={cx("text12", "colorMuted2")}>No milestones to review for this project.</div>
             )}

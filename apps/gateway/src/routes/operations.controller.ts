@@ -127,4 +127,24 @@ export class OperationsController {
       "x-trace-id": traceId ?? requestId ?? ""
     });
   }
+
+  @Roles("CLIENT", "ADMIN", "STAFF")
+  @Post("portal/video-rooms/instant")
+  async createInstantVideoRoom(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string,
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/portal/video-rooms/instant`, "POST", body as Record<string, unknown>, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? "",
+    });
+  }
 }

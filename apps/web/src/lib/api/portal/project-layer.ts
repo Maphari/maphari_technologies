@@ -272,6 +272,47 @@ export async function loadProjectRoadmapWithRefresh(
   });
 }
 
+// ── Deliverable Actions ────────────────────────────────────────────────────────
+
+export async function approvePortalDeliverableWithRefresh(
+  session: AuthSession,
+  projectId: string,
+  deliverableId: string,
+): Promise<AuthorizedResult<PortalDeliverable>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalDeliverable>(
+      `/projects/${projectId}/deliverables/${deliverableId}/approve`,
+      accessToken,
+      { method: "POST", body: {} }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "APPROVE_FAILED", response.payload.error?.message ?? "Unable to approve.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function requestChangesPortalDeliverableWithRefresh(
+  session: AuthSession,
+  projectId: string,
+  deliverableId: string,
+  reason?: string,
+): Promise<AuthorizedResult<PortalDeliverable>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalDeliverable>(
+      `/projects/${projectId}/deliverables/${deliverableId}/request-changes`,
+      accessToken,
+      { method: "POST", body: { reason } }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "CHANGES_FAILED", response.payload.error?.message ?? "Unable to submit request.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
 // ── Brief ─────────────────────────────────────────────────────────────────────
 
 export async function loadPortalBriefWithRefresh(

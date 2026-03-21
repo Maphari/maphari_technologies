@@ -375,27 +375,36 @@ export function ClientOnboardingPage({ isActive, session, onNavigate }: { isActi
           {filtered.map((client) => {
             const isSelected = selected === client.id;
             const done = client.steps.filter((step) => step.done).length;
-            const progress = Math.round((done / client.steps.length) * 100);
+            const progress = Math.round((done / Math.max(client.steps.length, 1)) * 100);
+            const barFill = client.status === "complete" ? "var(--accent)" : client.status === "stuck" ? "var(--red)" : "var(--blue)";
+            const toneCls = client.status === "complete" ? "staffClientToneGreen" : client.status === "stuck" ? "staffClientToneRed" : "staffClientToneAccent";
+            const chipCls = client.status === "complete" ? "staffChipGreen" : client.status === "stuck" ? "staffChipRed" : "staffChipAccent";
             return (
               <div
                 key={client.id}
-                className={cx("coClientItem", "coClientCard", isSelected && "coClientCardSelected", statusToneClass(client.status))}
+                className={cx("coClientItem", "coClientCard", isSelected && "coClientCardSelected", toneCls)}
                 onClick={() => setSelected(client.id)}
               >
-                <div className={cx("coClientTop")}>
-                  <div className={cx("coAvatar")}>{client.avatar}</div>
+                {/* Head row */}
+                <div className={cx("staffListRow")}>
+                  <div className={cx("staffClientAvatar")}>{client.avatar}</div>
                   <div className={cx("flex1", "minW0")}>
                     <div className={cx("coClientName", isSelected ? "colorText" : "colorMuted")}>{client.client}</div>
                     <div className={cx("coClientProject")}>{client.project}</div>
                   </div>
-                  <span className={cx("coStatusBadge", statusToneClass(client.status))}>{statusLabel(client.status)}</span>
+                  <span className={cx("staffChip", chipCls)}>{statusLabel(client.status)}</span>
                 </div>
-                <div className={cx("coProgressRow")}>
-                  <progress className={cx("progressMeter", "coProgressBar", statusMeterClass(client.status))} max={100} value={progress} />
-                  <span className={cx("text10", statusToneClass(client.status), "coPctMin")}>{progress}%</span>
+                {/* Progress bar */}
+                <div className={cx("staffBudgetBarWrap")}>
+                  <div className={cx("staffBar")}>
+                    <div
+                      className={cx("staffBarFill")}
+                      style={{ "--fill-pct": progress, "--fill-color": barFill } as React.CSSProperties}
+                    />
+                  </div>
                 </div>
-                <div className={cx("text10", "colorMuted2", "mt6")}>
-                  {done}/{client.steps.length} steps - started {client.startDate.split(",")[0]}
+                <div className={cx("text10", "colorMuted2")}>
+                  {done}/{client.steps.length} steps · started {client.startDate.split(",")[0]}
                 </div>
               </div>
             );
@@ -417,15 +426,15 @@ export function ClientOnboardingPage({ isActive, session, onNavigate }: { isActi
               </div>
             </div>
 
-            <div className={cx("coSplitStats")}>
+            <div className={cx("staffKpiStrip")}>
               {[
-                { label: "Staff", done: staffDone, total: staffSteps.length, className: "colorBlue" },
-                { label: "Client", done: clientDone, total: clientSteps.length, className: "colorAccent" }
+                { label: "Staff",  done: staffDone,  total: staffSteps.length,  cls: "colorBlue" },
+                { label: "Client", done: clientDone, total: clientSteps.length, cls: "colorAccent" }
               ].map((group) => (
-                <div key={group.label} className={cx("coStatCard")}>
-                  <div className={cx("text10", "colorMuted2", "uppercase", "tracking", "mb6")}>{group.label}</div>
-                  <div className={cx("fontDisplay", "fw800", "text20", group.className)}>{group.done}/{group.total}</div>
-                  <div className={cx("text10", "colorMuted2", "mt4")}>steps done</div>
+                <div key={group.label} className={cx("staffKpiCell")}>
+                  <div className={cx("staffKpiLabel")}>{group.label}</div>
+                  <div className={cx("staffKpiValue", group.cls)}>{group.done}/{group.total}</div>
+                  <div className={cx("staffKpiSub")}>steps done</div>
                 </div>
               ))}
             </div>
@@ -442,49 +451,61 @@ export function ClientOnboardingPage({ isActive, session, onNavigate }: { isActi
           ) : null}
 
           <div className={cx("mb24")}>
-            <div className={cx("sectionLabel", "mb16")}>Onboarding Checklist</div>
-            <div className={cx("flexCol")}>
-              {current.steps.map((step, index) => {
-                const isLast = index === current.steps.length - 1;
+            <div className={cx("staffSectionHd")}>
+              <span className={cx("staffSectionTitle")}>Onboarding Checklist</span>
+              {/* Overall progress bar */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, maxWidth: 200 }}>
+                <div className={cx("staffBar")} style={{ flex: 1 }}>
+                  <div
+                    className={cx("staffBarFill")}
+                    style={{
+                      "--fill-pct": pct,
+                      "--fill-color": current.status === "complete" ? "var(--accent)" : current.status === "stuck" ? "var(--red)" : "var(--blue)"
+                    } as React.CSSProperties}
+                  />
+                </div>
+                <span className={cx("staffRoleLabel")}>{pct}%</span>
+              </div>
+            </div>
+            <div className={cx("staffCard")}>
+              {current.steps.map((step) => {
                 const isBlocked = Boolean(step.blocked);
                 const isOverdue = Boolean(step.overdue);
                 const isCompleting = completing === step.id;
                 return (
-                  <div key={step.id}>
-                    <div className={cx("coStepRow", "coStepRowCard", isOverdue && "coStepRowOverdue")}>
-                      <div className={cx("coStepTrail")}>
-                        <div className={cx("coStepCheckbox", step.done ? "coStepDone" : isOverdue ? "coStepOverdue" : isBlocked ? "coStepBlocked" : "coStepPending")}>
-                          {step.done ? "✓" : isOverdue ? "!" : ""}
-                        </div>
-                        {!isLast ? <div className={cx("coStepConnector", step.done ? "coStepConnectorDone" : "coStepConnectorIdle")} /> : null}
-                      </div>
+                  <div key={step.id} className={cx("staffCheckRow")}>
+                    <div className={cx(
+                      "staffCheckIcon",
+                      step.done ? "staffCheckIconDone" : isBlocked ? "staffCheckIconBlocked" : isOverdue ? "staffCheckIconOverdue" : ""
+                    )}>
+                      {step.done ? "✓" : isOverdue ? "!" : isBlocked ? "×" : ""}
+                    </div>
 
-                      <div className={cx("flex1", "minW0")}>
-                        <div className={cx("coStepTitleRow")}>
-                          <span className={cx("coStepTitle", step.done ? "coStepTitleDone" : isBlocked ? "coStepTitleBlocked" : "coStepTitleOpen")}>{step.label}</span>
-                          <span className={cx("coCatBadge", categoryToneClass(step.category))}>{categoryLabel(step.category)}</span>
-                          {isBlocked && !isOverdue ? <span className={cx("coFlagBlocked")}>Blocked</span> : null}
-                          {isOverdue ? <span className={cx("coFlagOverdue")}>Overdue {step.overdueDays} days</span> : null}
-                          {!step.done && !isBlocked ? (
-                            <button
-                              type="button"
-                              className={cx("coActionBtn", "coActionBtnBase", "coActionAccent", "mlAuto", "p2x10", "fs10")}
-                              disabled={isCompleting}
-                              onClick={() => void handleCompleteStep(step)}
-                            >
-                              {isCompleting ? "Saving..." : "Complete step"}
-                            </button>
-                          ) : null}
-                        </div>
-                        <div className={cx("text10", "colorMuted2", "mt4")}>
-                          {step.done
-                            ? `Completed ${step.doneAt}`
-                            : step.scheduledFor
-                              ? `Scheduled ${step.scheduledFor}`
-                              : step.blocked
-                                ? "Waiting on previous step"
-                                : "Pending"}
-                        </div>
+                    <div className={cx("flex1", "minW0")}>
+                      <div className={cx("coStepTitleRow")}>
+                        <span className={cx("coStepTitle", step.done ? "coStepTitleDone" : isBlocked ? "coStepTitleBlocked" : "coStepTitleOpen")}>{step.label}</span>
+                        <span className={cx("staffChip", categoryToneClass(step.category) === "coCatStaff" ? "" : categoryToneClass(step.category) === "coCatClient" ? "staffChipAccent" : "staffChipPurple")}>{categoryLabel(step.category)}</span>
+                        {isBlocked && !isOverdue ? <span className={cx("staffChipRed")}>Blocked</span> : null}
+                        {isOverdue ? <span className={cx("staffChipAmber")}>Overdue {step.overdueDays}d</span> : null}
+                        {!step.done && !isBlocked ? (
+                          <button
+                            type="button"
+                            className={cx("coActionBtn", "coActionBtnBase", "coActionAccent", "mlAuto", "p2x10", "fs10")}
+                            disabled={isCompleting}
+                            onClick={() => void handleCompleteStep(step)}
+                          >
+                            {isCompleting ? "Saving..." : "Complete step"}
+                          </button>
+                        ) : null}
+                      </div>
+                      <div className={cx("text10", "colorMuted2", "mt4")}>
+                        {step.done
+                          ? `Completed ${step.doneAt}`
+                          : step.scheduledFor
+                            ? `Scheduled ${step.scheduledFor}`
+                            : step.blocked
+                              ? "Waiting on previous step"
+                              : "Pending"}
                       </div>
                     </div>
                   </div>

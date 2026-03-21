@@ -286,12 +286,12 @@ export function KanbanPage({
 
       {/* ── View + Swimlane controls ────────────────────────────────── */}
       <div className={cx("kbControlsRow")}>
-        <div className={cx("kbViewPills")}>
+        <div className={cx("staffSegControl", "kbViewPills")} role="group" aria-label="Kanban view mode">
           {VIEW_MODES.map((opt) => {
             const active = kanbanViewMode === opt.id;
             return (
               <button key={opt.id} type="button"
-                className={cx("kbViewPill", active ? "kbViewPillActive" : "kbViewPillIdle")}
+                className={cx("staffSegBtn", active ? "staffSegBtnActive" : "", "kbViewPill")}
                 onClick={() => onKanbanViewModeChange(opt.id)}
                 aria-pressed={active}
               >
@@ -382,12 +382,11 @@ export function KanbanPage({
               <div className={cx("kbColTopStrip", colTopStrip(column.tone))} />
 
               {/* Column header */}
-              <div className={cx("kbColHeadV3", "rdStudioSection")}>
-                <div className={cx("kbColHeadRow")}>
-                  <span className={cx("kbColTitleV3", colTitleColor(column.tone), "rdStudioLabel")}>{column.title}</span>
-                  <span className={cx("kbColCountV3", colCountVariant(column.countTone), "rdStudioMetric")}>{column.count}</span>
-                </div>
-
+              <div className={cx("staffKanbanColHd", "kbColHeadV3")}>
+                <span className={cx("staffKanbanColTitle", "kbColTitleV3", colTitleColor(column.tone))}>{column.title}</span>
+                <span className={cx("staffKanbanColCount", "kbColCountV3", colCountVariant(column.countTone))}>{column.count}</span>
+              </div>
+              <div className={cx("kbColHeadMeta")}>
                 {/* WIP meter + aging */}
                 {wipLimit ? (
                   <div className={cx("kbColWipRow")}>
@@ -434,7 +433,12 @@ export function KanbanPage({
                   </div>
                 ) : (
                   column.tasks.map((task) => (
-                    <div key={task.id} className={cx("kbCardV3", cardPriority(task.priority), task.faded && "kbCardFaded")}>
+                    <div key={task.id} className={cx(
+                      "kbCardV3",
+                      cardPriority(task.priority),
+                      task.priority === "high" ? "staffRowHigh" : task.priority === "med" ? "staffRowMed" : "staffRowLow",
+                      task.faded && "kbCardFaded"
+                    )}>
                       <div className={cx("kbCardInner")}>
 
                         {/* Tag + blocked badge */}

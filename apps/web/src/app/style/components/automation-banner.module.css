@@ -175,15 +175,38 @@
   to { transform: rotate(360deg); }
 }
 
-/* ── Responsive: stack on tiny screens ── */
+/* ── Responsive: stack actions below body on narrow screens ── */
 
-@media (max-width: 480px) {
+@media (max-width: 680px) {
   .automationBanner {
     flex-wrap: wrap;
+    gap: 10px;
   }
 
+  /* Icon + body share the first row */
+  .body {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+
+  /* Actions drop to their own full-width row */
   .actions {
     width: 100%;
     justify-content: flex-end;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 400px) {
+  /* On very small screens let buttons wrap too */
+  .actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .btn {
+    flex: 1 1 auto;
+    justify-content: center;
   }
 }

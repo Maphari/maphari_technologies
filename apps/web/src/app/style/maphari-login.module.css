@@ -1,20 +1,23 @@
 .loginRoot {
-  --bg: #050508;
-  --surface: #0d0d14;
-  --border: rgba(255, 255, 255, 0.08);
-  --border2: rgba(255, 255, 255, 0.15);
+  --bg: #030309;
+  --surface: rgba(255, 255, 255, 0.04);
+  --border: rgba(255, 255, 255, 0.07);
+  --border2: rgba(255, 255, 255, 0.14);
   --client: #c8f135;
-  --client-d: rgba(200, 241, 53, 0.1);
+  --client-d: rgba(200, 241, 53, 0.10);
   --staff: #f97316;
-  --staff-d: rgba(249, 115, 22, 0.1);
+  --staff-d: rgba(249, 115, 22, 0.10);
   --admin: #a78bfa;
-  --admin-d: rgba(167, 139, 250, 0.1);
+  --admin-d: rgba(167, 139, 250, 0.10);
   --active: var(--client);
   --active-d: var(--client-d);
   --text: #f0ede8;
   --muted: rgba(240, 237, 232, 0.45);
   --muted2: rgba(240, 237, 232, 0.22);
   background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 900px 700px at 18% 28%, color-mix(in oklab, var(--active) 9%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 700px 600px at 82% 78%, color-mix(in oklab, var(--active) 5%, transparent) 0%, transparent 55%);
   color: var(--text);
   font-family: var(--font-syne), sans-serif;
   height: 100vh;
@@ -58,17 +61,30 @@
 .shell {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 24px;
   height: 100vh;
+  align-items: center;
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
 }
 
 .left {
   position: relative;
   overflow: hidden;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+  background: rgba(8, 6, 20, 0.60);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 24px;
   display: flex;
   flex-direction: column;
-  padding: 48px;
+  padding: 52px 48px;
+  height: calc(100vh - 48px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.50), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .mesh {
@@ -278,9 +294,21 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 48px;
+  padding: 52px 48px;
   position: relative;
-  background: var(--bg);
+  background: rgba(8, 6, 20, 0.72);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  height: calc(100vh - 48px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.right::-webkit-scrollbar {
+  display: none;
 }
 
 .right::before {
@@ -290,6 +318,7 @@
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 0;
+  border-radius: 24px;
 }
 
 .formWrap {
@@ -312,87 +341,63 @@
 }
 
 .roleSelector {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 36px;
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 4px;
+  margin-bottom: 32px;
+  gap: 2px;
 }
 
 .roleButton {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 14px 8px;
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 9px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: background 160ms ease, box-shadow 160ms ease;
   position: relative;
   overflow: hidden;
   border-radius: 10px;
-  min-height: 52px;
 }
 
 .roleButton::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  transform: scaleX(0);
-  transition: transform 0.25s ease, background 0.25s ease;
+  display: none;
 }
 
 .roleButton:hover {
-  border-color: var(--border2);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.roleButton:hover::after {
-  transform: scaleX(1);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .activeClient {
-  border-color: var(--client);
   background: var(--client-d);
-}
-
-.activeClient::after {
-  background: var(--client);
-  transform: scaleX(1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.30);
 }
 
 .activeStaff {
-  border-color: var(--staff);
   background: var(--staff-d);
-}
-
-.activeStaff::after {
-  background: var(--staff);
-  transform: scaleX(1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.30);
 }
 
 .activeAdmin {
-  border-color: var(--admin);
   background: var(--admin-d);
-}
-
-.activeAdmin::after {
-  background: var(--admin);
-  transform: scaleX(1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.30);
 }
 
 .roleIcon {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  transition: all 0.25s ease;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
 }
 
 .roleIconClient {
@@ -400,7 +405,7 @@
 }
 
 .roleIconStaff {
-  background: rgba(79, 158, 255, 0.12);
+  background: rgba(249, 115, 22, 0.12);
 }
 
 .roleIconAdmin {
@@ -409,11 +414,11 @@
 
 .roleLabel {
   font-family: var(--font-dm-mono), monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.12em;
+  font-size: 0.58rem;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
-  color: var(--muted);
-  transition: color 0.25s ease;
+  color: var(--muted2);
+  transition: color 0.2s ease;
 }
 
 .activeClient .roleLabel {
@@ -485,8 +490,8 @@
 
 .fieldInput {
   width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   color: var(--text);
   font-family: var(--font-syne), sans-serif;
   font-size: 0.88rem;
@@ -495,14 +500,14 @@
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   letter-spacing: 0.01em;
   min-height: 48px;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .fieldInput:focus,
 .fieldInput:focus-visible {
-  border-color: var(--active);
-  background: rgba(255, 255, 255, 0.025);
-  box-shadow: 0 0 0 3px rgba(200, 241, 53, 0.12), 0 0 12px rgba(200, 241, 53, 0.06);
+  border-color: color-mix(in oklab, var(--active) 55%, transparent);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--active) 10%, transparent);
   outline: none;
 }
 
@@ -511,7 +516,7 @@
 .fieldInput:-webkit-autofill:hover,
 .fieldInput:-webkit-autofill:focus,
 .fieldInput:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset !important;
+  -webkit-box-shadow: 0 0 0 1000px #0d0b1c inset !important;
   -webkit-text-fill-color: var(--text) !important;
   caret-color: var(--text);
   border-color: var(--border) !important;
@@ -602,39 +607,41 @@
 
 .submitButton {
   width: 100%;
-  padding: 15px 24px;
+  padding: 14px 24px;
   background: var(--active);
   color: #050508;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-family: var(--font-syne), sans-serif;
   font-weight: 800;
-  font-size: 0.88rem;
-  letter-spacing: 0.06em;
+  font-size: 0.85rem;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.22s ease;
-  min-height: 52px;
+  transition: opacity 160ms ease, box-shadow 160ms ease, transform 80ms ease;
+  min-height: 50px;
   position: relative;
   overflow: hidden;
   margin-bottom: 20px;
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--active) 30%, transparent);
 }
 
 .submitButton::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
   transform: translateX(-100%);
-  transition: transform 0.4s ease;
+  transition: transform 0.45s ease;
 }
 
-.submitButton:hover::before {
+.submitButton:hover:not(:disabled)::before {
   transform: translateX(100%);
 }
 
-.submitButton:hover {
-  filter: brightness(1.08);
+.submitButton:hover:not(:disabled) {
+  opacity: 0.93;
+  box-shadow: 0 0 30px color-mix(in oklab, var(--active) 28%, transparent);
   transform: translateY(-1px);
 }
 
@@ -644,7 +651,7 @@
 
 .submitButtonLoading {
   pointer-events: none;
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
 .submitButtonLoading .submitText {
@@ -717,27 +724,27 @@
 .ssoButton {
   width: 100%;
   padding: 12px 24px;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   font-family: var(--font-syne), sans-serif;
   font-weight: 600;
   font-size: 0.8rem;
   letter-spacing: 0.04em;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-height: 52px;
-  border-radius: 8px;
+  min-height: 48px;
+  border-radius: 10px;
   margin-bottom: 28px;
 }
 
 .ssoButton:hover {
-  border-color: var(--border2);
-  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .formFooter {
@@ -1137,4 +1144,27 @@
 
 .formShake {
   animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* ── Mobile responsive ── */
+@media (max-width: 768px) {
+  .shell {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    height: auto;
+    min-height: 100vh;
+    align-items: flex-start;
+    max-width: 100%;
+    overflow-y: auto;
+  }
+
+  .left {
+    display: none;
+  }
+
+  .right {
+    height: auto;
+    min-height: calc(100vh - 32px);
+    padding: 40px 28px;
+  }
 }

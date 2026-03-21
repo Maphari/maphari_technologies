@@ -11,6 +11,9 @@ import { saveSession } from "../../../../lib/auth/session";
 import { setPortalPreferenceWithRefresh, getPortalPreferenceWithRefresh } from "../../../../lib/api/portal";
 import { requestDataExportWithRefresh, requestAccountDeletionWithRefresh } from "../../../../lib/api/portal/profile";
 import { callGateway, withAuthorizedSession } from "../../../../lib/api/portal/internal";
+import { loadPortalNotificationPrefsWithRefresh, updatePortalNotificationPrefsWithRefresh } from "../../../../lib/api/portal/notification-prefs";
+import { callPortalAiGenerateWithRefresh } from "../../../../lib/api/portal/ai";
+import { Ic } from "../ui";
 
 export interface SettingsPageProps {
   notificationPrefs: NotificationPreference[];
@@ -249,6 +252,14 @@ export function SettingsPage({
   const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
   const [installed, setInstalled] = useState(false);
 
+  // ── AI Weekly Digest state ────────────────────────────────────────────────
+  const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(false);
+  const [digestLoading,       setDigestLoading]       = useState(false);
+  const [digestPreviewOpen,   setDigestPreviewOpen]   = useState(false);
+  const [digestPreviewText,   setDigestPreviewText]   = useState("");
+  const [digestPreviewBusy,   setDigestPreviewBusy]   = useState(false);
+  const [digestToggleBusy,    setDigestToggleBusy]    = useState(false);
+
   const unreadPrefsCount = useMemo(
     () => notificationPrefs.filter((pref) => pref.inApp || pref.email || pref.push).length,
     [notificationPrefs],
@@ -291,14 +302,15 @@ export function SettingsPage({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (inviteModalOpen) setInviteModalOpen(false);
+        if (digestPreviewOpen) setDigestPreviewOpen(false);
+        else if (inviteModalOpen) setInviteModalOpen(false);
         else if (revokeSessionId !== null) setRevokeSessionId(null);
         else if (gdprTarget !== null) setGdprTarget(null);
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [inviteModalOpen, revokeSessionId, gdprTarget]);
+  }, [digestPreviewOpen, inviteModalOpen, revokeSessionId, gdprTarget]);
 
   // PWA install prompt listener
   useEffect(() => {
@@ -307,6 +319,16 @@ export function SettingsPage({
     window.addEventListener("appinstalled", () => setInstalled(true));
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
+
+  // Load notification prefs to initialise weekly digest toggle
+  useEffect(() => {
+    if (!session) return;
+    setDigestLoading(true);
+    void loadPortalNotificationPrefsWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data) setWeeklyDigestEnabled(r.data.weeklyDigest);
+    }).finally(() => setDigestLoading(false));
+  }, [session]);
 
   const handleInstall = async () => {
     if (!installPrompt) return;
@@ -371,6 +393,41 @@ export function SettingsPage({
     setHasChanges(false);
     notify("success", "Changes discarded", "Settings restored to last saved state.");
   };
+
+  async function handleToggleWeeklyDigest(): Promise<void> {
+    if (!session || digestToggleBusy) return;
+    const next = !weeklyDigestEnabled;
+    setWeeklyDigestEnabled(next); // optimistic
+    setDigestToggleBusy(true);
+    try {
+      const r = await updatePortalNotificationPrefsWithRefresh(session, { weeklyDigest: next });
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) setWeeklyDigestEnabled(!next); // rollback
+    } finally {
+      setDigestToggleBusy(false);
+    }
+  }
+
+  async function handlePreviewDigest(): Promise<void> {
+    if (!session || digestPreviewBusy) return;
+    setDigestPreviewBusy(true);
+    setDigestPreviewOpen(true);
+    setDigestPreviewText("");
+    try {
+      const r = await callPortalAiGenerateWithRefresh(session, {
+        type: "general",
+        prompt: "Generate a professional weekly project digest email for a client. Include sections for: Project Health (overall status and score), Recent Progress (what was completed this week), Upcoming Milestones (next 2 weeks), Budget Status (brief), and Action Items (anything the client needs to review or approve). Keep it concise, positive, and professional. Format with clear section headers.",
+      });
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data) {
+        setDigestPreviewText(r.data.output);
+      } else {
+        setDigestPreviewText("Unable to generate preview. Please try again.");
+      }
+    } finally {
+      setDigestPreviewBusy(false);
+    }
+  }
 
   const toggleAccessPermission = (
     userIndex: number,
@@ -996,6 +1053,51 @@ export function SettingsPage({
                   </table>
                 </div>
               </div>
+
+              {/* ── AI Weekly Digest card ──────────────────────────────────── */}
+              <div className={cx("card")}>
+                <div className={cx("cardHd")}>
+                  <Ic n="mail" sz={14} c="var(--accent)" />
+                  <span className={cx("cardHdTitle", "ml8")}>AI Weekly Digest</span>
+                  {weeklyDigestEnabled && (
+                    <span className={cx("badge", "badgeAccent", "mlAuto")}>Active</span>
+                  )}
+                </div>
+                <div className={cx("cardBodyPad")}>
+                  <div className={cx("text12", "colorMuted", "mb16", "lineH17")}>
+                    Receive an AI-generated project summary every Monday morning with your key metrics, milestones, budget status, and action items.
+                  </div>
+
+                  {/* Toggle row */}
+                  <div className={cx("flexBetween", "mb16")}>
+                    <div>
+                      <div className={cx("fw600", "text12")}>Enable Weekly Digest</div>
+                      <div className={cx("text11", "colorMuted2", "mt2")}>Delivered every Monday at 08:00</div>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Toggle weekly digest"
+                      onClick={() => void handleToggleWeeklyDigest()}
+                      disabled={digestToggleBusy || digestLoading}
+                      className={cx("settingsToggleTrack", "dynBgColor")}
+                      style={{ "--bg-color": weeklyDigestEnabled ? "var(--lime)" : "var(--b2)" } as React.CSSProperties}
+                    >
+                      <span className={cx("settingsToggleThumb")} style={{ "--left": weeklyDigestEnabled ? "18px" : "3px" } as React.CSSProperties} />
+                    </button>
+                  </div>
+
+                  {/* Preview button */}
+                  <button
+                    type="button"
+                    className={cx("btnSm", "btnGhost", "flexRow", "flexCenter", "gap6")}
+                    onClick={() => void handlePreviewDigest()}
+                    disabled={digestPreviewBusy || !session}
+                  >
+                    <Ic n="eye" sz={12} c="var(--muted)" />
+                    {digestPreviewBusy ? "Generating…" : "Preview this week's digest"}
+                  </button>
+                </div>
+              </div>
             </div>
           ) : null}
 
@@ -1173,7 +1275,15 @@ export function SettingsPage({
                           <div className={cx("secuQrInfo")}>
                             <div className={cx("secuQrTitle")}>Scan with your authenticator</div>
                             <div className={cx("secuQrDesc")}>Open Google Authenticator, Authy, or 1Password and scan. You&apos;ll need a 6-digit code on each login.</div>
-                            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => notify("success", "Key copied", "JBSWY3DPEHPK3PXP")}>Copy Secret Key</button>
+                            <button type="button" className={cx("btnSm", "btnGhost")} onClick={async () => {
+                              const secretKey = "JBSWY3DPEHPK3PXP";
+                              try {
+                                await navigator.clipboard.writeText(secretKey);
+                                notify("success", "Secret key copied", "Paste it into your authenticator app.");
+                              } catch {
+                                notify("error", "Clipboard not available", "Copy the key manually from the QR code.");
+                              }
+                            }}>Copy Secret Key</button>
                           </div>
                         </div>
                       )}
@@ -1281,7 +1391,29 @@ export function SettingsPage({
                       </div>
                       <div className={cx("flexRow", "gap8", "mt14")}>
                         <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => notify("success", "Codes regenerated", "Previous codes are now invalid")}>Regenerate</button>
-                        <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => notify("success", "Downloaded", "backup-codes.txt saved")}>↓ Download</button>
+                        <button type="button" className={cx("btnSm", "btnGhost")} onClick={async () => {
+                          const codes = ["K9X2-MNPL", "7YQR-4TBV", "FZAC-8WDE", "P3LN-XKGM", "HJ6T-RVWY", "2QSB-ZDCU", "MTFA-9XPL", "CNRV-4YHB"];
+                          try {
+                            await navigator.clipboard.writeText(codes.join("\n"));
+                            notify("success", "Backup codes copied", "Store them in a secure password manager.");
+                          } catch {
+                            notify("error", "Clipboard not available", "Copy the codes manually.");
+                          }
+                        }}>📋 Copy Codes</button>
+                        <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => {
+                          const codes = ["K9X2-MNPL", "7YQR-4TBV", "FZAC-8WDE", "P3LN-XKGM", "HJ6T-RVWY", "2QSB-ZDCU", "MTFA-9XPL", "CNRV-4YHB"];
+                          const text = "Maphari Emergency Backup Codes\n" + "=".repeat(30) + "\n\n" + codes.join("\n") + "\n\nStore these in a secure location. Each code can only be used once.";
+                          const blob = new Blob([text], { type: "text/plain" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = "maphari-backup-codes.txt";
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                          notify("success", "Downloaded", "backup-codes.txt saved to your device.");
+                        }}>↓ Download</button>
                       </div>
                     </div>
                   </div>
@@ -1569,6 +1701,33 @@ export function SettingsPage({
           </div>
         </div>
       ) : null}
+
+      {/* ── AI Digest Preview Modal ─────────────────────────────────────── */}
+      {digestPreviewOpen && (
+        <div className={cx("modalOverlay")} onClick={() => setDigestPreviewOpen(false)}>
+          <div className={cx("modalPanel", "w680")} onClick={(e) => e.stopPropagation()} style={{ maxHeight: "80vh", overflowY: "auto" }}>
+            <div className={cx("modalHd")}>
+              <Ic n="mail" sz={15} c="var(--accent)" />
+              <span className={cx("modalTitle", "ml8")}>AI Weekly Digest Preview</span>
+              <button type="button" className={cx("modalClose")} onClick={() => setDigestPreviewOpen(false)}>
+                <Ic n="close" sz={14} c="var(--muted)" />
+              </button>
+            </div>
+            <div className={cx("modalBody", "p20")}>
+              {digestPreviewBusy ? (
+                <div className={cx("flexCol", "gap8")}>
+                  <div className={cx("skeletonBlock", "skeleH80")} />
+                  <div className={cx("skeletonBlock", "skeleH68")} />
+                </div>
+              ) : (
+                <div className={cx("text12", "lineH17", "colorMuted")} style={{ whiteSpace: "pre-wrap" }}>
+                  {digestPreviewText}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {gdprTarget ? (
         <div className={cx("secuModalBackdrop")} onClick={() => setGdprTarget(null)}>

@@ -123,12 +123,14 @@ export function MeetingPrepPage({
 
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
+    let cancelled = false;
     setLoading(true);
     setError(null);
 
     void (async () => {
       try {
         const result = await getStaffMeetingsWithRefresh(session);
+        if (cancelled) return;
         if (result.nextSession) saveSession(result.nextSession);
 
         const all = (result.data ?? []).filter((m) => m.status !== "CANCELLED");
@@ -137,14 +139,16 @@ export function MeetingPrepPage({
         setMeetings(all);
         if (all.length > 0) setSelectedId(all[0].id);
       } catch (err: unknown) {
+        if (cancelled) return;
         const msg = (err as Error)?.message ?? "Failed to load meetings.";
         setError(msg);
         onNotify?.("error", msg);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [isActive, session]);
+    return () => { cancelled = true; };
+  }, [isActive, session?.accessToken]);
 
   const meeting = meetings.find((m) => m.id === selectedId) ?? null;
   const openItems = meeting ? agendaToOpenItems(meeting.agenda) : [];
@@ -256,9 +260,9 @@ export function MeetingPrepPage({
                 </div>
                 {/* Status row */}
                 <div className={cx("flexRow", "gap6", "mb5")}>
-                  <span className={cx("mpMeetingType")}>{item.status}</span>
+                  <span className={cx("staffChip", "mpMeetingType")}>{item.status}</span>
                   {item.durationMinutes ? (
-                    <span className={cx("mpPlatformChip", "mpPlatformDefault")}>{formatDuration(item.durationMinutes)}</span>
+                    <span className={cx("staffChip", "mpPlatformChip", "mpPlatformDefault")}>{formatDuration(item.durationMinutes)}</span>
                   ) : null}
                 </div>
                 {/* Time row */}
@@ -356,7 +360,7 @@ export function MeetingPrepPage({
                         {openItems.map((item, i) => (
                           <div
                             key={`${item.text}-${i}`}
-                            className={cx("mpCheckItem", checked[`open-${i}`] ? "mpRowDone" : "mpRowActive")}
+                            className={cx("staffListRow", "mpCheckItem", checked[`open-${i}`] ? "mpRowDone" : "mpRowActive")}
                             onClick={() => toggleCheck(`open-${i}`)}
                             role="button"
                             tabIndex={0}
@@ -370,7 +374,7 @@ export function MeetingPrepPage({
                                 {item.text}
                               </div>
                             </div>
-                            <span className={cx("mpPriorityLabel", priorityConfig[item.priority].toneClass)}>{item.priority}</span>
+                            <span className={cx("staffChip", "mpPriorityLabel", priorityConfig[item.priority].toneClass)}>{item.priority}</span>
                           </div>
                         ))}
                       </div>
@@ -381,21 +385,23 @@ export function MeetingPrepPage({
 
                   {/* Side card */}
                   <div className={cx("flexCol", "gap16")}>
-                    <div className={cx("mpSideCard")}>
-                      <div className={cx("mpSectionLabel", "mb12")}>Meeting Details</div>
-                      <div className={cx("mpSnapshotRow")}>
+                    <div className={cx("staffCard", "mpSideCard")}>
+                      <div className={cx("staffSectionHd")}>
+                        <span className={cx("staffSectionTitle")}>Meeting Details</span>
+                      </div>
+                      <div className={cx("staffListRow", "mpSnapshotRow")}>
                         <span className={cx("text11", "colorMuted2")}>Scheduled</span>
                         <span className={cx("text11", "colorMuted")}>{formatScheduledAt(meeting.scheduledAt)}</span>
                       </div>
-                      <div className={cx("mpSnapshotRow")}>
+                      <div className={cx("staffListRow", "mpSnapshotRow")}>
                         <span className={cx("text11", "colorMuted2")}>Duration</span>
                         <span className={cx("text11", "colorMuted")}>{formatDuration(meeting.durationMinutes)}</span>
                       </div>
-                      <div className={cx("mpSnapshotRow")}>
+                      <div className={cx("staffListRow", "mpSnapshotRow")}>
                         <span className={cx("text11", "colorMuted2")}>Status</span>
                         <span className={cx("text11", "colorMuted")}>{meeting.status}</span>
                       </div>
-                      <div className={cx("mpSnapshotRow")}>
+                      <div className={cx("staffListRow", "mpSnapshotRow")}>
                         <span className={cx("text11", "colorMuted2")}>Open items</span>
                         <span className={cx("text11", "colorMuted")}>{openItems.length}</span>
                       </div>
@@ -421,7 +427,7 @@ export function MeetingPrepPage({
                     return (
                       <div
                         key={`${item.text}-${i}`}
-                        className={cx("mpAgendaItem", checked[`agenda-${i}`] ? "mpRowDone" : "mpRowActive")}
+                        className={cx("staffListRow", "mpAgendaItem", checked[`agenda-${i}`] ? "mpRowDone" : "mpRowActive")}
                         onClick={() => toggleCheck(`agenda-${i}`)}
                         role="button"
                         tabIndex={0}
@@ -474,15 +480,19 @@ export function MeetingPrepPage({
               {/* NOTES TAB */}
               {activeTab === "notes" ? (
                 <div className={cx("mpNotesWrap")}>
-                  <div className={cx("mpSectionLabel", "mb14")}>
-                    Call Notes · {meeting.title} · {formatScheduledAt(meeting.scheduledAt)}
+                  <div className={cx("staffCard")}>
+                    <div className={cx("staffSectionHd")}>
+                      <span className={cx("staffSectionTitle")}>Call Notes</span>
+                      <span className={cx("text10", "colorMuted2")}>{meeting.title} · {formatScheduledAt(meeting.scheduledAt)}</span>
+                    </div>
+                    <textarea
+                      value={noteText}
+                      onChange={(e) => setNoteText(e.target.value)}
+                      placeholder={`Notes from the meeting…\n\n- Decisions made\n- Actions agreed\n- Follow-ups`}
+                      className={cx("staffInput", "mpNoteInput")}
+                    />
+                    <div className={cx("staffCharCount")}>{noteText.length} chars</div>
                   </div>
-                  <textarea
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    placeholder={`Notes from the meeting…\n\n- Decisions made\n- Actions agreed\n- Follow-ups`}
-                    className={cx("mpNoteInput")}
-                  />
                   <div className={cx("flexRow", "gap10", "mt12")}>
                     <button
                       type="button"

@@ -114,7 +114,7 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
   const projects           = capacity?.projects            ?? [];
   const weekHistory        = capacity?.weekHistory         ?? [];
 
-  const utilizationPct  = pct(loggedThisWeek, weeklyHours);
+  const utilizationPct  = weeklyHours > 0 ? Math.min(100, Math.round((loggedThisWeek / weeklyHours) * 100)) : 0;
   const availableHours  = Math.max(0, weeklyHours - loggedThisWeek);
 
   if (loading) {
@@ -159,63 +159,28 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
         </button>
       </div>
 
-      {/* ── Summary stats ──────────────────────────────────────────────────── */}
-      <div className={cx("mcStatGrid")}>
-        {(
-          <>
-            {/* Weekly Capacity */}
-            <div className={cx("mcStatCard")}>
-              <div className={cx("mcStatCardTop")}>
-                <div className={cx("mcStatLabel")}>Weekly Capacity</div>
-                <div className={cx("mcStatValue")}>{weeklyHours}h</div>
-              </div>
-              <div className={cx("mcStatCardDivider")} />
-              <div className={cx("mcStatCardBottom")}>
-                <span className={cx("mcStatDot", "dotBgMuted2")} />
-                <span className={cx("mcStatMeta")}>per week</span>
-              </div>
-            </div>
-
-            {/* Logged */}
-            <div className={cx("mcStatCard")}>
-              <div className={cx("mcStatCardTop")}>
-                <div className={cx("mcStatLabel")}>Logged This Week</div>
-                <div className={cx("mcStatValue", "colorAccent")}>{loggedThisWeek}h</div>
-              </div>
-              <div className={cx("mcStatCardDivider")} />
-              <div className={cx("mcStatCardBottom")}>
-                <span className={cx("mcStatDot", "dotBgAccent")} />
-                <span className={cx("mcStatMeta")}>{utilizationPct}% utilised</span>
-              </div>
-            </div>
-
-            {/* Utilization */}
-            <div className={cx("mcStatCard")}>
-              <div className={cx("mcStatCardTop")}>
-                <div className={cx("mcStatLabel")}>Utilization</div>
-                <div className={cx("mcStatValue", utilizationColor(utilizationPct))}>{utilizationPct}%</div>
-              </div>
-              <div className={cx("mcStatCardDivider")} />
-              <div className={cx("mcStatCardBottom")}>
-                <span className={cx("mcStatDot", "dynBgColor")} style={{ "--bg-color": utilizationPct >= 85 ? "var(--amber)" : "var(--green)" } as React.CSSProperties} />
-                <span className={cx("mcStatMeta")}>{utilizationPct >= 100 ? "Overloaded" : utilizationPct >= 85 ? "Near limit" : "Healthy"}</span>
-              </div>
-            </div>
-
-            {/* Available */}
-            <div className={cx("mcStatCard")}>
-              <div className={cx("mcStatCardTop")}>
-                <div className={cx("mcStatLabel")}>Available</div>
-                <div className={cx("mcStatValue", availableHours > 0 ? "colorGreen" : "colorRed")}>{availableHours}h</div>
-              </div>
-              <div className={cx("mcStatCardDivider")} />
-              <div className={cx("mcStatCardBottom")}>
-                <span className={cx("mcStatDot", "dynBgColor")} style={{ "--bg-color": availableHours > 0 ? "var(--green)" : "var(--red)" } as React.CSSProperties} />
-                <span className={cx("mcStatMeta")}>{availableHours > 0 ? "hours free" : "fully booked"}</span>
-              </div>
-            </div>
-          </>
-        )}
+      {/* ── Summary strip ──────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Weekly Capacity</div>
+          <div className={cx("staffKpiValue")}>{weeklyHours}h</div>
+          <div className={cx("staffKpiSub")}>per week</div>
+        </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Logged This Week</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{loggedThisWeek}h</div>
+          <div className={cx("staffKpiSub")}>{utilizationPct}% utilised</div>
+        </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Utilization</div>
+          <div className={cx("staffKpiValue", utilizationColor(utilizationPct))}>{utilizationPct}%</div>
+          <div className={cx("staffKpiSub")}>{utilizationPct >= 100 ? "Overloaded" : utilizationPct >= 85 ? "Near limit" : "Healthy"}</div>
+        </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Available</div>
+          <div className={cx("staffKpiValue", availableHours > 0 ? "colorGreen" : "colorRed")}>{availableHours}h</div>
+          <div className={cx("staffKpiSub")}>{availableHours > 0 ? "hours free" : "fully booked"}</div>
+        </div>
       </div>
 
       {/* ── Allocation by project ─────────────────────────────────────────── */}

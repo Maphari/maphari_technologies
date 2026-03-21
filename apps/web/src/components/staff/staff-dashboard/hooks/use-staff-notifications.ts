@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AuthSession } from "../../../../lib/auth/session";
 import {
   loadNotificationJobsWithRefresh,
@@ -46,7 +46,7 @@ export function useStaffNotifications({ session, activePage }: Params): UseStaff
     return () => {
       cancelled = true;
     };
-  }, [session]);
+  }, [session?.accessToken]);
 
   // ─── Auto-mark notifications read for active tab ───
   const markRead = (session: AuthSession, id: string, read: boolean) =>
@@ -87,25 +87,47 @@ export function useStaffNotifications({ session, activePage }: Params): UseStaff
     [unreadByTab]
   );
 
-  const handleMarkNotificationRead = async (jobId: string) => {
+  const handleMarkNotificationRead = useCallback(async (jobId: string) => {
     if (!session) return;
-    await setNotificationReadStateWithRefresh(session, jobId, true);
+    // Optimistic update
     setNotificationJobs((previous) =>
       previous.map((job) =>
         job.id === jobId ? { ...job, readAt: new Date().toISOString() } : job
       )
     );
-  };
+    try {
+      await setNotificationReadStateWithRefresh(session, jobId, true);
+    } catch {
+      // Roll back optimistic update on failure
+      setNotificationJobs((previous) =>
+        previous.map((job) =>
+          job.id === jobId ? { ...job, readAt: null } : job
+        )
+      );
+    }
+  }, [session?.accessToken]);
 
-  const handleMarkAllNotificationsRead = async () => {
+  const handleMarkAllNotificationsRead = useCallback(async () => {
     if (!session) return;
     const unread = notificationJobs.filter((job) => !job.readAt);
     if (unread.length === 0) return;
-    await Promise.all(unread.map((job) => setNotificationReadStateWithRefresh(session, job.id, true)));
+    const now = new Date().toISOString();
+    // Optimistic update
     setNotificationJobs((previous) =>
-      previous.map((job) => ({ ...job, readAt: job.readAt ?? new Date().toISOString() }))
+      previous.map((job) => ({ ...job, readAt: job.readAt ?? now }))
     );
-  };
+    try {
+      await Promise.all(unread.map((job) => setNotificationReadStateWithRefresh(session, job.id, true)));
+    } catch {
+      // Roll back optimistic update on failure
+      const unreadIds = new Set(unread.map((job) => job.id));
+      setNotificationJobs((previous) =>
+        previous.map((job) =>
+          unreadIds.has(job.id) ? { ...job, readAt: null } : job
+        )
+      );
+    }
+  }, [notificationJobs, session?.accessToken]);
 
   return {
     notificationJobs,

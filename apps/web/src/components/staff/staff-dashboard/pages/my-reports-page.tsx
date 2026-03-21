@@ -5,7 +5,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { cx } from "../style";
 import {
   getStaffMyPerformance,
@@ -171,6 +171,7 @@ export function MyReportsPage({
   const [perf, setPerf]       = useState<StaffPerformance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
+  const loadedRef             = useRef(false);
 
   // ── Scheduled reports ────────────────────────────────────────────────────
   const [scheduled, setScheduled] = useState<ScheduledReport[]>([]);
@@ -191,9 +192,10 @@ export function MyReportsPage({
   const [genTitle,       setGenTitle]       = useState("");
   const [genTarget,      setGenTarget]      = useState<ScheduledReport | null>(null);
 
-  // Load performance data
+  // Load performance data — only once on first activation
   useEffect(() => {
-    if (!session || !isActive) { setLoading(false); return; }
+    if (!isActive || !session?.accessToken || loadedRef.current) return;
+    loadedRef.current = true;
     let cancelled = false;
 
     setLoading(true);
@@ -211,7 +213,7 @@ export function MyReportsPage({
     }).finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [session?.accessToken, isActive]);
+  }, [isActive, session?.accessToken]);
 
   // Load scheduled reports from localStorage
   useEffect(() => {
@@ -341,57 +343,28 @@ export function MyReportsPage({
         <p className={cx("pageSubtitleText", "mb20")}>Export personal performance and time reports</p>
       </div>
 
-      {/* ── Summary stats ────────────────────────────────────────────────── */}
-      <div className={cx("rptStatGrid")}>
-
-        <div className={cx("rptStatCard")}>
-          <div className={cx("rptStatCardTop")}>
-            <div className={cx("rptStatLabel")}>Reports</div>
-            <div className={cx("rptStatValue", "colorAccent")}>{totalReports}</div>
-          </div>
-          <div className={cx("rptStatCardDivider")} />
-          <div className={cx("rptStatCardBottom")}>
-            <span className={cx("rptStatDot", "dotBgAccent")} />
-            <span className={cx("rptStatMeta")}>available</span>
-          </div>
+      {/* ── Summary strip ────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Reports</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{totalReports}</div>
+          <div className={cx("staffKpiSub")}>available</div>
         </div>
-
-        <div className={cx("rptStatCard")}>
-          <div className={cx("rptStatCardTop")}>
-            <div className={cx("rptStatLabel")}>This Month</div>
-            <div className={cx("rptStatValue", thisMonth > 0 ? "colorGreen" : "colorMuted2")}>{thisMonth}</div>
-          </div>
-          <div className={cx("rptStatCardDivider")} />
-          <div className={cx("rptStatCardBottom")}>
-            <span className={cx("rptStatDot", "dynBgColor")} style={{ "--bg-color": thisMonth > 0 ? "var(--green)" : "var(--muted2)" } as React.CSSProperties} />
-            <span className={cx("rptStatMeta")}>{currentMonth}</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>This Month</div>
+          <div className={cx("staffKpiValue", thisMonth > 0 ? "colorGreen" : "colorMuted2")}>{thisMonth}</div>
+          <div className={cx("staffKpiSub")}>{currentMonth}</div>
         </div>
-
-        <div className={cx("rptStatCard")}>
-          <div className={cx("rptStatCardTop")}>
-            <div className={cx("rptStatLabel")}>Types</div>
-            <div className={cx("rptStatValue", "colorMuted2")}>{typeCount}</div>
-          </div>
-          <div className={cx("rptStatCardDivider")} />
-          <div className={cx("rptStatCardBottom")}>
-            <span className={cx("rptStatDot", "dotBgMuted2")} />
-            <span className={cx("rptStatMeta")}>distinct categories</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Types</div>
+          <div className={cx("staffKpiValue")}>{typeCount}</div>
+          <div className={cx("staffKpiSub")}>distinct categories</div>
         </div>
-
-        <div className={cx("rptStatCard")}>
-          <div className={cx("rptStatCardTop")}>
-            <div className={cx("rptStatLabel")}>PDF</div>
-            <div className={cx("rptStatValue", "colorMuted2")}>{pdfCount}</div>
-          </div>
-          <div className={cx("rptStatCardDivider")} />
-          <div className={cx("rptStatCardBottom")}>
-            <span className={cx("rptStatDot", "dotBgMuted2")} />
-            <span className={cx("rptStatMeta")}>documents</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>PDF</div>
+          <div className={cx("staffKpiValue")}>{pdfCount}</div>
+          <div className={cx("staffKpiSub")}>documents</div>
         </div>
-
       </div>
 
       {/* ── Scheduled Reports ─────────────────────────────────────────────── */}

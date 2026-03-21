@@ -88,6 +88,7 @@ import { registerNotificationPrefRoutes } from "./routes/notification-prefs.js";
 import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { registerDataPrivacyRoutes } from "./routes/data-privacy.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
+import { registerCommentRoutes } from "./routes/comments.js";
 
 export async function createCoreApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
@@ -222,6 +223,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Webhooks ──────────────────────────────────────────────────────────────
   await registerWebhookRoutes(app);
+
+  // ── Comments ──────────────────────────────────────────────────────────────
+  await registerCommentRoutes(app);
 
   return app;
 }

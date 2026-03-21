@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { AuthSession } from "../../../../lib/auth/session";
 import {
   createProjectBlockerWithRefresh,
@@ -93,6 +93,7 @@ export function useStaffKanban({
   const [kanbanBlockSeverity, setKanbanBlockSeverity] = useState<"LOW" | "MEDIUM" | "HIGH" | "CRITICAL">("MEDIUM");
   const [kanbanBlockEta, setKanbanBlockEta] = useState("");
   const [creatingKanbanBlocker, setCreatingKanbanBlocker] = useState(false);
+  const movingRef = useRef(false);
 
   const searchQuery = topbarSearch.trim().toLowerCase();
 
@@ -327,35 +328,41 @@ export function useStaffKanban({
 
   const handleSubmitKanbanBlock = useCallback(async () => {
     if (!session || !kanbanBlockDraft || creatingKanbanBlocker) return;
+    if (movingRef.current) return;
     if (kanbanBlockReason.trim().length < 4) {
       setFeedback({ tone: "error", message: "Provide a clear blocker reason." });
       return;
     }
-    setCreatingKanbanBlocker(true);
-    const blockerResult = await createProjectBlockerWithRefresh(session, {
-      projectId: kanbanBlockDraft.projectId,
-      title: `Task blocked: ${kanbanBlockDraft.title}`,
-      description: kanbanBlockReason.trim(),
-      severity: kanbanBlockSeverity,
-      status: "OPEN",
-      ownerRole: "STAFF",
-      ownerName: staffName,
-      etaAt: kanbanBlockEta || undefined
-    });
-    if (!blockerResult.data) {
+    movingRef.current = true;
+    try {
+      setCreatingKanbanBlocker(true);
+      const blockerResult = await createProjectBlockerWithRefresh(session, {
+        projectId: kanbanBlockDraft.projectId,
+        title: `Task blocked: ${kanbanBlockDraft.title}`,
+        description: kanbanBlockReason.trim(),
+        severity: kanbanBlockSeverity,
+        status: "OPEN",
+        ownerRole: "STAFF",
+        ownerName: staffName,
+        etaAt: kanbanBlockEta || undefined
+      });
+      if (!blockerResult.data) {
+        setCreatingKanbanBlocker(false);
+        setFeedback({ tone: "error", message: blockerResult.error?.message ?? "Unable to create blocker." });
+        return;
+      }
+      const taskResult = await updateProjectTaskWithRefresh(session, kanbanBlockDraft.projectId, kanbanBlockDraft.taskId, { status: "BLOCKED" });
       setCreatingKanbanBlocker(false);
-      setFeedback({ tone: "error", message: blockerResult.error?.message ?? "Unable to create blocker." });
-      return;
+      setKanbanBlockDraft(null);
+      setKanbanBlockReason("");
+      setKanbanBlockSeverity("MEDIUM");
+      setKanbanBlockEta("");
+      setFeedback({ tone: "success", message: "Task marked blocked and escalated." });
+      await refreshWorkspace(taskResult.nextSession ?? blockerResult.nextSession ?? session);
+    } finally {
+      movingRef.current = false;
     }
-    const taskResult = await updateProjectTaskWithRefresh(session, kanbanBlockDraft.projectId, kanbanBlockDraft.taskId, { status: "BLOCKED" });
-    setCreatingKanbanBlocker(false);
-    setKanbanBlockDraft(null);
-    setKanbanBlockReason("");
-    setKanbanBlockSeverity("MEDIUM");
-    setKanbanBlockEta("");
-    setFeedback({ tone: "success", message: "Task marked blocked and escalated." });
-    await refreshWorkspace(taskResult.nextSession ?? blockerResult.nextSession ?? session);
-  }, [creatingKanbanBlocker, kanbanBlockDraft, kanbanBlockEta, kanbanBlockReason, kanbanBlockSeverity, refreshWorkspace, session, setFeedback, staffName]);
+  }, [creatingKanbanBlocker, kanbanBlockDraft, kanbanBlockEta, kanbanBlockReason, kanbanBlockSeverity, refreshWorkspace, session?.accessToken, setFeedback, staffName]);
 
   return {
     kanbanViewMode,

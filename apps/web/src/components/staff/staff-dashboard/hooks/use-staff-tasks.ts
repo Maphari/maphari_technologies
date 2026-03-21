@@ -270,7 +270,7 @@ export function useStaffTasks({
       );
     }
     await refreshWorkspace(result.nextSession ?? session);
-  }, [inProgressCount, inProgressLimit, refreshWorkspace, session, setFeedback, setProjectDetails]);
+  }, [inProgressCount, inProgressLimit, refreshWorkspace, session?.accessToken, setFeedback, setProjectDetails]);
 
   const handleMoveTask = useCallback(async (
     taskId: string,
@@ -300,7 +300,7 @@ export function useStaffTasks({
       );
     }
     await refreshWorkspace(result.nextSession ?? session);
-  }, [inProgressCount, inProgressLimit, refreshWorkspace, session, setFeedback, setProjectDetails]);
+  }, [inProgressCount, inProgressLimit, refreshWorkspace, session?.accessToken, setFeedback, setProjectDetails]);
 
   const handleCreateTask = useCallback(async (projects: Array<{ id: string; name: string }>) => {
     if (!session) return;
@@ -329,7 +329,7 @@ export function useStaffTasks({
       )
     );
     setNewTaskDraft({
-      projectId,
+      projectId: "",
       title: "",
       assigneeName: "",
       dueAt: ""
@@ -337,7 +337,7 @@ export function useStaffTasks({
     setShowTaskComposer(false);
     setFeedback({ tone: "success", message: "Task created." });
     await refreshWorkspace(result.nextSession ?? session, { background: true });
-  }, [newTaskDraft, refreshWorkspace, session, setFeedback, setProjectDetails]);
+  }, [newTaskDraft, refreshWorkspace, session?.accessToken, setFeedback, setProjectDetails]);
 
   return {
     activeTaskTab,

@@ -36,6 +36,7 @@ import { DocumentsController } from "../routes/documents.controller.js";
 import { ServiceCatalogController } from "../routes/service-catalog.controller.js";
 import { AutomationController } from "../routes/automation.controller.js";
 import { GoogleCalendarController } from "../routes/google-calendar.controller.js";
+import { CommentsController } from "../routes/comments.controller.js";
 import { RbacGuard } from "../auth/rbac.guard.js";
 import { RequestIdInterceptor } from "../common/request-id.interceptor.js";
 import { MetricsController } from "../observability/metrics.controller.js";
@@ -79,6 +80,7 @@ import { RateLimitGuard } from "../security/rate-limit.guard.js";
     ServiceCatalogController,
     AutomationController,
     GoogleCalendarController,
+    CommentsController,
     MetricsController
   ],
   providers: [

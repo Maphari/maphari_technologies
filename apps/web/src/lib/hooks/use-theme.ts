@@ -25,5 +25,7 @@ function applyTheme(t: Theme) {
   const root = document.documentElement;
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   const isDark = t === "dark" || (t === "system" && prefersDark);
-  root.setAttribute("data-theme", isDark ? "dark" : "light");
+  const resolved = isDark ? "dark" : "light";
+  root.setAttribute("data-theme", resolved);
+  document.cookie = `maphari:theme-r=${resolved};path=/;max-age=31536000;SameSite=Lax`;
 }

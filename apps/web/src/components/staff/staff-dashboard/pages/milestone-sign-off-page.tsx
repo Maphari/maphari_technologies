@@ -174,32 +174,29 @@ export function MilestoneSignOffPage({ isActive, session, onNotify }: MilestoneS
       </div>
 
       {/* ── Summary pills ────────────────────────────────────────────────── */}
-      <div className={cx("msoSummaryRow")}>
-        <div className={cx("msoPill")}>
-          <span
-            className={cx("msoPillDot", "dynBgColor")}
-            style={{ "--bg-color": pending > 0 ? "var(--amber)" : "var(--muted2)" } as React.CSSProperties}
-          />
-          <span className={cx("msoPillLabel")}>{pending} Pending</span>
+      <div className={cx("staffKpiStrip", "msoSummaryRow")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiValue", pending > 0 ? "colorAmber" : "colorMuted2")}>{pending}</div>
+          <div className={cx("staffKpiLabel")}>Pending</div>
         </div>
-        <div className={cx("msoPill")}>
-          <span className={cx("msoPillDot", "dotBgGreen")} />
-          <span className={cx("msoPillLabel")}>{approved} Approved</span>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiValue", "colorAccent")}>{approved}</div>
+          <div className={cx("staffKpiLabel")}>Approved</div>
         </div>
-        <div className={cx("msoPill")}>
-          <span className={cx("msoPillDot", "dotBgMuted2")} />
-          <span className={cx("msoPillLabel")}>{items.length} Total</span>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiValue")}>{items.length}</div>
+          <div className={cx("staffKpiLabel")}>Total</div>
         </div>
       </div>
 
       {/* ── Filter bar ───────────────────────────────────────────────────── */}
       {items.length > 0 && (
-        <div className={cx("msoFilterRow")}>
+        <div className={cx("staffSegControl", "msoFilterRow")}>
           {FILTERS.map((f) => (
             <button
               key={f.key}
               type="button"
-              className={cx("apptFilterBtn", filter === f.key && "apptFilterBtnActive")}
+              className={cx("staffSegBtn", filter === f.key && "staffSegBtnActive")}
               onClick={() => setFilter(f.key)}
             >
               {f.label}
@@ -236,35 +233,50 @@ export function MilestoneSignOffPage({ isActive, session, onNotify }: MilestoneS
                     return (
                       <div
                         key={item.id}
-                        className={cx("msoListRow", selected === item.id && "msoListRowActive")}
+                        className={cx("staffListRow", "msoListRow", selected === item.id && "msoListRowActive")}
                         onClick={() => setSelected(item.id)}
                       >
-                        <div className={cx("msoListRowTop")}>
-                          <span className={cx("msoMilestoneTitle")}>{item.milestoneTitle}</span>
-                          <span className={cx("msoStatusBadge", statusCls(item.status))}>
-                            {statusLabel(item.status)}
-                          </span>
-                        </div>
-                        <div className={cx("msoListRowMeta")}>
-                          <span>{item.clientName}</span>
-                          <span className={cx("msoMetaSep")}>·</span>
-                          <span>{item.projectName}</span>
-                        </div>
-                        <div className={cx("msoListRowFooter")}>
-                          {/* Progress bar */}
-                          {item.deliverables.length > 0 && (
-                            <div className={cx("msoProgressBar")}>
-                              <div
-                                className={cx("msoProgressBarFill", pct === 100 ? "msoProgressFillGreen" : "msoProgressFillAccent")}
-                                style={{ "--pct": `${pct}%` } as React.CSSProperties}
-                              />
-                            </div>
-                          )}
-                          <div className={cx("msoListRowDate")}>
-                            {relTime(item.requestedAt)}
-                            <span className={cx("msoMetaSep")}>·</span>
-                            {fmtDate(item.requestedAt)}
+                        <div className={cx("flex1", "minW0")}>
+                          <div className={cx("msoListRowTop")}>
+                            <span className={cx("msoMilestoneTitle")}>{item.milestoneTitle}</span>
+                            <span className={cx("staffChipMuted", "msoStatusBadge", statusCls(item.status))}>
+                              {statusLabel(item.status)}
+                            </span>
                           </div>
+                          <div className={cx("msoListRowMeta")}>
+                            <span>{item.clientName}</span>
+                            <span className={cx("msoMetaSep")}>·</span>
+                            <span>{item.projectName}</span>
+                          </div>
+                          <div className={cx("msoListRowFooter")}>
+                            {/* Progress bar */}
+                            {item.deliverables.length > 0 && (
+                              <div className={cx("staffBar", "msoProgressBar")}>
+                                <div
+                                  className={cx("staffBarFill", pct === 100 ? "msoProgressFillGreen" : "msoProgressFillAccent")}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            )}
+                            <div className={cx("msoListRowDate")}>
+                              {relTime(item.requestedAt)}
+                              <span className={cx("msoMetaSep")}>·</span>
+                              {fmtDate(item.requestedAt)}
+                            </div>
+                          </div>
+                        </div>
+                        <div className={cx("staffActionRow")}>
+                          {item.status === "PENDING" && (
+                            <>
+                              <button
+                                type="button"
+                                className={cx("staffBtnSm", "staffBtnSmAccent")}
+                                onClick={(e) => { e.stopPropagation(); setSelected(item.id); }}
+                              >
+                                Review
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
@@ -298,10 +310,10 @@ export function MilestoneSignOffPage({ isActive, session, onNotify }: MilestoneS
 
                   {/* ── Action buttons (PENDING only) ── */}
                   {detail.status === "PENDING" && (
-                    <div className={cx("msoActionRow")}>
+                    <div className={cx("staffActionRow", "msoActionRow")}>
                       <button
                         type="button"
-                        className={cx("aqApproveBtn")}
+                        className={cx("staffBtnSm", "staffBtnSmAccent")}
                         disabled={actioningId === detail.id}
                         onClick={async () => {
                           if (!session) return;
@@ -319,11 +331,11 @@ export function MilestoneSignOffPage({ isActive, session, onNotify }: MilestoneS
                           setActioningId(null);
                         }}
                       >
-                        {actioningId === detail.id ? "Processing…" : "✓ Approve"}
+                        {actioningId === detail.id ? "Processing…" : "Approve"}
                       </button>
                       <button
                         type="button"
-                        className={cx("aqRejectBtn")}
+                        className={cx("staffBtnSm")}
                         disabled={actioningId === detail.id}
                         onClick={() => {
                           onNotify?.("info", "Change request submitted to the project manager.");

@@ -638,7 +638,7 @@ export function HomePage({
       </div>
 
       {/* ══ MID ROW: Today's Focus + Phase Journey ════════════════════════ */}
-      <div className={cx("cmdMidRow", "rdStudioSection")}>
+      <div className={cx("cmdMidRow")}>
 
         {/* ── Today's Focus ── */}
         <div className={cx("cmdFocusCard")}>
@@ -749,7 +749,7 @@ export function HomePage({
       </div>
 
       {/* ══ PIPELINE + ACTIVITY ═══════════════════════════════════════════ */}
-      <div className={cx("cmdPipeActivityRow", "rdStudioSection")}>
+      <div className={cx("cmdPipeActivityRow")}>
 
         {/* ── Deliverable Pipeline ── */}
         <div className={cx("card", "p0")}>

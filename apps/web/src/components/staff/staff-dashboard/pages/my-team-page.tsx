@@ -208,59 +208,28 @@ export function MyTeamPage({ isActive, session }: MyTeamPageProps) {
         <p className={cx("pageSubtitleText", "mb20")}>Team hierarchy and escalation paths</p>
       </div>
 
-      {/* ── Summary stats ────────────────────────────────────────────────── */}
-      <div className={cx("mteStatGrid")}>
-        {(
-          <>
-            <div className={cx("mteStatCard")}>
-              <div className={cx("mteStatCardTop")}>
-                <div className={cx("mteStatLabel")}>Team Size</div>
-                <div className={cx("mteStatValue", "colorAccent")}>{totalMembers}</div>
-              </div>
-              <div className={cx("mteStatCardDivider")} />
-              <div className={cx("mteStatCardBottom")}>
-                <span className={cx("mteStatDot", "dotBgAccent")} />
-                <span className={cx("mteStatMeta")}>total members</span>
-              </div>
-            </div>
-
-            <div className={cx("mteStatCard")}>
-              <div className={cx("mteStatCardTop")}>
-                <div className={cx("mteStatLabel")}>Active</div>
-                <div className={cx("mteStatValue", "colorGreen")}>{activeCount}</div>
-              </div>
-              <div className={cx("mteStatCardDivider")} />
-              <div className={cx("mteStatCardBottom")}>
-                <span className={cx("mteStatDot", "dotBgGreen")} />
-                <span className={cx("mteStatMeta")}>in office</span>
-              </div>
-            </div>
-
-            <div className={cx("mteStatCard")}>
-              <div className={cx("mteStatCardTop")}>
-                <div className={cx("mteStatLabel")}>On Leave</div>
-                <div className={cx("mteStatValue", onLeaveCount > 0 ? "colorAmber" : "colorGreen")}>{onLeaveCount}</div>
-              </div>
-              <div className={cx("mteStatCardDivider")} />
-              <div className={cx("mteStatCardBottom")}>
-                <span className={cx("mteStatDot", "dynBgColor")} style={{ "--bg-color": onLeaveCount > 0 ? "var(--amber)" : "var(--green)" } as React.CSSProperties} />
-                <span className={cx("mteStatMeta")}>{onLeaveCount > 0 ? "currently away" : "all present"}</span>
-              </div>
-            </div>
-
-            <div className={cx("mteStatCard")}>
-              <div className={cx("mteStatCardTop")}>
-                <div className={cx("mteStatLabel")}>Departments</div>
-                <div className={cx("mteStatValue", "colorMuted2")}>{deptCount}</div>
-              </div>
-              <div className={cx("mteStatCardDivider")} />
-              <div className={cx("mteStatCardBottom")}>
-                <span className={cx("mteStatDot", "dotBgMuted2")} />
-                <span className={cx("mteStatMeta")}>across org</span>
-              </div>
-            </div>
-          </>
-        )}
+      {/* ── Summary strip ────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Team Size</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{totalMembers}</div>
+          <div className={cx("staffKpiSub")}>total members</div>
+        </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Active</div>
+          <div className={cx("staffKpiValue", "colorGreen")}>{activeCount}</div>
+          <div className={cx("staffKpiSub")}>in office</div>
+        </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>On Leave</div>
+          <div className={cx("staffKpiValue", onLeaveCount > 0 ? "colorAmber" : "colorGreen")}>{onLeaveCount}</div>
+          <div className={cx("staffKpiSub")}>{onLeaveCount > 0 ? "currently away" : "all present"}</div>
+        </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Departments</div>
+          <div className={cx("staffKpiValue")}>{deptCount}</div>
+          <div className={cx("staffKpiSub")}>across org</div>
+        </div>
       </div>
 
       {/* ── Team members ──────────────────────────────────────────────────── */}

@@ -1283,23 +1283,24 @@ model BrandAsset {
 // ─── Client Contracts ─────────────────────────────────────────────────────────
 
 model ClientContract {
-  id         String    @id @default(uuid())
-  clientId   String
-  title      String
-  type       String    @default("CONTRACT") // NDA | SOW | DPA | MSA | CONTRACT
-  ref        String?
-  status     String    @default("PENDING") // PENDING | SIGNED | VOID
-  signed     Boolean   @default(false)
-  signedAt   DateTime?
-  fileId     String? // links to the file service record
-  storageKey String?
-  mimeType   String?
-  sizeBytes  Int?
-  notes      String?
-  sortOrder  Int       @default(0)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  client     Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  id           String    @id @default(uuid())
+  clientId     String
+  title        String
+  type         String    @default("CONTRACT") // NDA | SOW | DPA | MSA | CONTRACT
+  ref          String?
+  status       String    @default("PENDING") // PENDING | SIGNED | VOID
+  signed       Boolean   @default(false)
+  signedAt     DateTime?
+  signedByName String?
+  fileId       String? // links to the file service record
+  storageKey   String?
+  mimeType     String?
+  sizeBytes    Int?
+  notes        String?
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([clientId, type])
   @@index([clientId, status])
@@ -1536,4 +1537,19 @@ model MarketRate {
 
   @@index([isActive, sortOrder])
   @@map("market_rates")
+}
+
+model EntityComment {
+  id         String   @id @default(uuid()) @db.VarChar(36)
+  clientId   String   @db.VarChar(36)
+  entityType String   @db.VarChar(64) // "deliverable" | "task" | "invoice" | "milestone" | "ticket"
+  entityId   String   @db.VarChar(36)
+  authorName String   @db.VarChar(128)
+  authorRole String   @default("CLIENT") @db.VarChar(32)
+  message    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([clientId, entityType, entityId, createdAt])
+  @@map("entity_comments")
 }

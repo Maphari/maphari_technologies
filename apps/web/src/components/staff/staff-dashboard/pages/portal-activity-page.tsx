@@ -108,7 +108,7 @@ export function PortalActivityPage({ isActive, session }: { isActive: boolean; s
   const [filterType, setFilterType]         = useState<ActivityType | "all">("all");
 
   useEffect(() => {
-    if (!session) { setLoading(false); return; }
+    if (!isActive || !session) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -132,7 +132,7 @@ export function PortalActivityPage({ isActive, session }: { isActive: boolean; s
       if (!cancelled) setError((err as Error)?.message ?? "Failed to load data.");
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [session?.accessToken]);
+  }, [isActive, session?.accessToken]);
 
   useEffect(() => {
     const interval = window.setInterval(() => setLiveIndicator((v) => !v), 1200);

@@ -191,65 +191,32 @@ export function MyEmploymentPage({
         <p className={cx("pageSubtitleText", "mb20")}>Personal records, contracts, and compensation (read-only)</p>
       </div>
 
-      {/* ── Summary stats ──────────────────────────────────────────────────── */}
-      <div className={cx("empStatGrid")}>
-
-        <div className={cx("empStatCard")}>
-          <div className={cx("empStatCardTop")}>
-            <div className={cx("empStatLabel")}>Current Salary</div>
-            <div className={cx("empStatValue", "colorAccent")}>
-              {currentComp
-                ? <>{currentComp.salary.replace("/month", "")}<span className={cx("empStatSuffix")}>/mo</span></>
-                : "—"}
-            </div>
+      {/* ── Summary strip ──────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Current Salary</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>
+            {currentComp ? currentComp.salary.replace("/month", "") : "—"}
           </div>
-          <div className={cx("empStatCardDivider")} />
-          <div className={cx("empStatCardBottom")}>
-            <span className={cx("empStatDot", "dotBgAccent")} />
-            <span className={cx("empStatMeta")}>{currentComp?.period.split("–")[0].trim() ?? "—"}</span>
-          </div>
+          <div className={cx("staffKpiSub")}>{currentComp?.period.split("–")[0].trim() ?? "—"}</div>
         </div>
-
-        <div className={cx("empStatCard")}>
-          <div className={cx("empStatCardTop")}>
-            <div className={cx("empStatLabel")}>Tenure</div>
-            <div className={cx("empStatValue", "colorMuted2")}>{tenure}</div>
-          </div>
-          <div className={cx("empStatCardDivider")} />
-          <div className={cx("empStatCardBottom")}>
-            <span className={cx("empStatDot", "dotBgMuted2")} />
-            <span className={cx("empStatMeta")}>since {startDate}</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Tenure</div>
+          <div className={cx("staffKpiValue")}>{tenure}</div>
+          <div className={cx("staffKpiSub")}>since {startDate}</div>
         </div>
-
-        <div className={cx("empStatCard")}>
-          <div className={cx("empStatCardTop")}>
-            <div className={cx("empStatLabel")}>Latest Score</div>
-            <div className={cx("empStatValue", "colorGreen")}>
-              {latestScore
-                ? <>{latestScore.split("/")[0]}<span className={cx("empStatSuffix")}>/5</span></>
-                : "—"}
-            </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Latest Score</div>
+          <div className={cx("staffKpiValue", "colorGreen")}>
+            {latestScore ? <>{latestScore.split("/")[0]}<span style={{ fontSize: "0.7em", opacity: 0.6 }}>/5</span></> : "—"}
           </div>
-          <div className={cx("empStatCardDivider")} />
-          <div className={cx("empStatCardBottom")}>
-            <span className={cx("empStatDot", "dotBgGreen")} />
-            <span className={cx("empStatMeta")}>{reviewRows[0]?.period ?? "No reviews yet"}</span>
-          </div>
+          <div className={cx("staffKpiSub")}>{reviewRows[0]?.period ?? "No reviews yet"}</div>
         </div>
-
-        <div className={cx("empStatCard")}>
-          <div className={cx("empStatCardTop")}>
-            <div className={cx("empStatLabel")}>Salary Growth</div>
-            <div className={cx("empStatValue", "colorGreen")}>{currentComp?.change ?? "—"}</div>
-          </div>
-          <div className={cx("empStatCardDivider")} />
-          <div className={cx("empStatCardBottom")}>
-            <span className={cx("empStatDot", "dotBgGreen")} />
-            <span className={cx("empStatMeta")}>last adjustment</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Salary Growth</div>
+          <div className={cx("staffKpiValue", "colorGreen")}>{currentComp?.change ?? "—"}</div>
+          <div className={cx("staffKpiSub")}>last adjustment</div>
         </div>
-
       </div>
 
       {/* ── Personal details ────────────────────────────────────────────────── */}

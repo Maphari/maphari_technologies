@@ -1177,4 +1177,50 @@ export class ProjectsController {
       "x-trace-id": traceId ?? requestId ?? ""
     });
   }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Post("projects/:projectId/deliverables/:deliverableId/approve")
+  async approveDeliverable(
+    @Param("projectId") projectId: string,
+    @Param("deliverableId") deliverableId: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(
+      `${baseUrl}/projects/${projectId}/deliverables/${deliverableId}/approve`,
+      "POST", body as Record<string, unknown>, {
+        "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+        "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+        "x-trace-id": traceId ?? requestId ?? ""
+      }
+    );
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Post("projects/:projectId/deliverables/:deliverableId/request-changes")
+  async requestDeliverableChanges(
+    @Param("projectId") projectId: string,
+    @Param("deliverableId") deliverableId: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(
+      `${baseUrl}/projects/${projectId}/deliverables/${deliverableId}/request-changes`,
+      "POST", body as Record<string, unknown>, {
+        "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+        "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+        "x-trace-id": traceId ?? requestId ?? ""
+      }
+    );
+  }
 }

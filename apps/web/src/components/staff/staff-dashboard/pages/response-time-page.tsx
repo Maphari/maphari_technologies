@@ -65,21 +65,6 @@ function slaFillCls(rate: number): string {
   return "progressFillRed";
 }
 
-// ── Skeleton ──────────────────────────────────────────────────────────────────
-
-function SkeletonStat() {
-  return (
-    <div className={cx("rtStatCard", "opacity50")}>
-      <div className={cx("rtStatCardTop")}>
-        <div className={cx("skeleBlock10x50p")} />
-        <div className={cx("skeleBlock22x35p")} />
-      </div>
-      <div className={cx("rtStatCardDivider")} />
-      <div className={cx("skeleBlock9x60p")} />
-    </div>
-  );
-}
-
 // ── Page component ────────────────────────────────────────────────────────────
 
 export function ResponseTimePage({ isActive, session }: ResponseTimePageProps) {
@@ -147,11 +132,11 @@ export function ResponseTimePage({ isActive, session }: ResponseTimePageProps) {
       </div>
 
       {/* ── Tabs ─────────────────────────────────────────────────────────── */}
-      <div className={cx("rtTabBar")}>
+      <div className={cx("staffSegControl")}>
         {TABS.map((t) => (
           <button
             key={t.key}
-            className={cx("rtTab", tab === t.key && "rtTabActive")}
+            className={cx("staffSegBtn", tab === t.key && "staffSegBtnActive")}
             onClick={() => setTab(t.key)}
           >
             {t.label}
@@ -162,60 +147,27 @@ export function ResponseTimePage({ isActive, session }: ResponseTimePageProps) {
       {/* ── Overview tab ─────────────────────────────────────────────────── */}
       {tab === "overview" && (
         <>
-          <div className={cx("rtStatGrid")}>
-            {loading ? (
-              [1, 2, 3, 4].map((n) => <SkeletonStat key={n} />)
-            ) : (
-              <>
-                <div className={cx("rtStatCard")}>
-                  <div className={cx("rtStatCardTop")}>
-                    <div className={cx("rtStatLabel")}>Avg Response</div>
-                    <div className={cx("rtStatValue")}>{formatHours(data?.avgActual ?? null)}</div>
-                  </div>
-                  <div className={cx("rtStatCardDivider")} />
-                  <div className={cx("rtStatCardBottom")}>
-                    <span className={cx("rtStatDot", "dotBgAccent")} />
-                    <span className={cx("rtStatMeta")}>actual average</span>
-                  </div>
-                </div>
-
-                <div className={cx("rtStatCard")}>
-                  <div className={cx("rtStatCardTop")}>
-                    <div className={cx("rtStatLabel")}>SLA Target</div>
-                    <div className={cx("rtStatValue")}>{formatHours(data?.avgTarget ?? null)}</div>
-                  </div>
-                  <div className={cx("rtStatCardDivider")} />
-                  <div className={cx("rtStatCardBottom")}>
-                    <span className={cx("rtStatDot", "dotBgMuted2")} />
-                    <span className={cx("rtStatMeta")}>target average</span>
-                  </div>
-                </div>
-
-                <div className={cx("rtStatCard")}>
-                  <div className={cx("rtStatCardTop")}>
-                    <div className={cx("rtStatLabel")}>SLA Met</div>
-                    <div className={cx("rtStatValue", slaRateCls(slaRate))}>{slaRate}%</div>
-                  </div>
-                  <div className={cx("rtStatCardDivider")} />
-                  <div className={cx("rtStatCardBottom")}>
-                    <span className={cx("rtStatDot", "dynBgColor")} style={{ "--bg-color": slaRate >= 80 ? "var(--green)" : "var(--red)" } as React.CSSProperties} />
-                    <span className={cx("rtStatMeta")}>{data?.metCount ?? 0} of {data?.totalCount ?? 0} records</span>
-                  </div>
-                </div>
-
-                <div className={cx("rtStatCard")}>
-                  <div className={cx("rtStatCardTop")}>
-                    <div className={cx("rtStatLabel")}>Records</div>
-                    <div className={cx("rtStatValue")}>{data?.totalCount ?? 0}</div>
-                  </div>
-                  <div className={cx("rtStatCardDivider")} />
-                  <div className={cx("rtStatCardBottom")}>
-                    <span className={cx("rtStatDot", "dotBgMuted2")} />
-                    <span className={cx("rtStatMeta")}>this period</span>
-                  </div>
-                </div>
-              </>
-            )}
+          <div className={cx("staffKpiStrip")}>
+            <div className={cx("staffKpiCell")}>
+              <div className={cx("staffKpiLabel")}>Avg Response</div>
+              <div className={cx("staffKpiValue", "colorAccent")}>{formatHours(data?.avgActual ?? null)}</div>
+              <div className={cx("staffKpiSub")}>actual average</div>
+            </div>
+            <div className={cx("staffKpiCell")}>
+              <div className={cx("staffKpiLabel")}>SLA Target</div>
+              <div className={cx("staffKpiValue")}>{formatHours(data?.avgTarget ?? null)}</div>
+              <div className={cx("staffKpiSub")}>target average</div>
+            </div>
+            <div className={cx("staffKpiCell")}>
+              <div className={cx("staffKpiLabel")}>SLA Met</div>
+              <div className={cx("staffKpiValue", slaRateCls(slaRate))}>{slaRate}%</div>
+              <div className={cx("staffKpiSub")}>{data?.metCount ?? 0} of {data?.totalCount ?? 0} records</div>
+            </div>
+            <div className={cx("staffKpiCell")}>
+              <div className={cx("staffKpiLabel")}>Records</div>
+              <div className={cx("staffKpiValue")}>{data?.totalCount ?? 0}</div>
+              <div className={cx("staffKpiSub")}>this period</div>
+            </div>
           </div>
 
           {!loading && data && (

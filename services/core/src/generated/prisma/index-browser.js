@@ -1009,6 +1009,7 @@ exports.Prisma.ClientContractScalarFieldEnum = {
   status: 'status',
   signed: 'signed',
   signedAt: 'signedAt',
+  signedByName: 'signedByName',
   fileId: 'fileId',
   storageKey: 'storageKey',
   mimeType: 'mimeType',
@@ -1184,6 +1185,18 @@ exports.Prisma.MarketRateScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.EntityCommentScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  authorName: 'authorName',
+  authorRole: 'authorRole',
+  message: 'message',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1291,7 +1304,8 @@ exports.Prisma.ModelName = {
   ServiceBundlePackage: 'ServiceBundlePackage',
   Competitor: 'Competitor',
   WinLossEntry: 'WinLossEntry',
-  MarketRate: 'MarketRate'
+  MarketRate: 'MarketRate',
+  EntityComment: 'EntityComment'
 };
 
 /**

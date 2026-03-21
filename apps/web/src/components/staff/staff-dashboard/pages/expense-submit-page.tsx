@@ -98,12 +98,17 @@ export function ExpenseSubmitPage({
   const totalPending  = submitted.reduce((s, e) => s + e.amount, 0);
 
   const handleSubmit = async () => {
-    if (!session || !formDesc || !formAmount) return;
+    if (!session) return;
+    const parsedAmount = parseFloat(formAmount);
+    if (!formDesc.trim()) { setError("Description is required."); return; }
+    if (!formAmount || isNaN(parsedAmount) || parsedAmount <= 0) { setError("A valid amount greater than zero is required."); return; }
+    if (!formCategory) { setError("Category is required."); return; }
+    setError(null);
     setSubmitting(true);
     const r = await submitExpenseWithRefresh(session, {
       category:    formCategory,
-      description: formDesc,
-      amountCents: Math.round(parseFloat(formAmount) * 100),
+      description: formDesc.trim(),
+      amountCents: Math.round(parsedAmount * 100),
       expenseDate: new Date().toISOString(),
     });
     setSubmitting(false);

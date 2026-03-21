@@ -3315,7 +3315,7 @@
 .allClearSub   { font-size: 0.585rem; color: var(--muted2); text-align: center; }
 
 /* Home page: empty deliverables icon */
-.emptyDeliverablesIcon { font-size: 20px; opacity: 0.3; }
+.emptyDeliverablesIcon { font-size: 20px; opacity: 0.3; display: block; margin-bottom: 8px; }
 
 /* Home page: chat input (styled textarea/input) */
 .chatInput {

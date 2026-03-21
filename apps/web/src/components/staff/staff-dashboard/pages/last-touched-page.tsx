@@ -231,7 +231,7 @@ export function LastTouchedPage({
 
   // ── Fetch data from API ───
   useEffect(() => {
-    if (!session) { setLoading(false); return; }
+    if (!isActive || !session) { setLoading(false); return; }
     let cancelled = false;
 
     void (async () => {
@@ -267,7 +267,7 @@ export function LastTouchedPage({
     })();
 
     return () => { cancelled = true; };
-  }, [session?.accessToken]);
+  }, [isActive, session?.accessToken]);
 
   const sorted = useMemo(() => {
     return [...clients]

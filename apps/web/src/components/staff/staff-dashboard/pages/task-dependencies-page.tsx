@@ -268,7 +268,7 @@ export function TaskDependenciesPage({ isActive, session }: PageProps) {
   // ── Empty state ───────────────────────────────────────────────────────────
   if (allTasks.length === 0) {
     return (
-      <section className={cx("page", "pageBody", "pageActive")} id="page-task-dependencies">
+      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-task-dependencies">
         <div className={cx("pageHeaderBar", "borderB", "tdHeaderBar")}>
           <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Planning</div>
           <h1 className={cx("pageTitleText")}>Task Dependencies</h1>
@@ -289,7 +289,7 @@ export function TaskDependenciesPage({ isActive, session }: PageProps) {
   }
 
   return (
-    <section className={cx("page", "pageBody", "pageActive")} id="page-task-dependencies">
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-task-dependencies">
       <div className={cx("pageHeaderBar", "borderB", "tdHeaderBar")}>
         <div className={cx("flexBetween", "mb20", "tdHeaderTop")}>
           <div>

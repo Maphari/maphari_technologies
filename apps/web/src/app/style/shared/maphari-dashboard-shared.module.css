@@ -138,7 +138,7 @@
   box-shadow: var(--shadow-island);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  overflow: hidden;
+  overflow: visible;
   transition: none;
 }
 
@@ -200,9 +200,9 @@
   align-items: center;
   gap: 2px;
   width: 100%;
-  padding: 0 6px;
+  padding: 2px 6px 0;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .navSectionLabel,
@@ -253,10 +253,42 @@
 
 /* Nav icon size in icon rail */
 .navIcon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   color: inherit;
+}
+
+/* ─── Nav tooltip ───────────────────────────────────────────────────── */
+
+.navTooltip {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-6px);
+  background: rgba(4, 3, 10, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(200, 241, 53, 0.22);
+  border-left: 2px solid var(--lime);
+  color: var(--text);
+  font-size: 10px;
+  font-family: var(--font-dm-mono), monospace;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease, transform 160ms ease;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.navItem:hover .navTooltip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
 
 /* Hide text labels — icon only */

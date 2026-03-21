@@ -16,6 +16,7 @@ import {
   type PortalAppointment
 } from "../../../../lib/api/portal";
 import { saveSession } from "../../../../lib/auth/session";
+import { createInstantVideoRoomWithRefresh, type InstantVideoRoom } from "../../../../lib/api/portal/video";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function toInitials(name: string | null | undefined): string {
@@ -156,6 +157,9 @@ export function BookCallPage() {
   const [submitting,    setSubmitting]    = useState(false);
   const [loading,       setLoading]       = useState(true);
   const [error,         setError]         = useState<string | null>(null);
+  const [instantRoom,        setInstantRoom]        = useState<InstantVideoRoom | null>(null);
+  const [instantLoading,     setInstantLoading]     = useState(false);
+  const [instantError,       setInstantError]       = useState<string | null>(null);
 
   // ── Current week (computed once per mount) ────────────────────────────────
   const weekDays = useMemo(() => getCurrentWeekDays(), []);
@@ -241,6 +245,26 @@ export function BookCallPage() {
         .slice(0, 6)
     );
     setBookStep("done");
+  }
+
+  async function handleInstantCall(): Promise<void> {
+    if (!session || instantLoading) return;
+    setInstantLoading(true);
+    setInstantError(null);
+    setInstantRoom(null);
+    try {
+      const result = await createInstantVideoRoomWithRefresh(session);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        setInstantError(result.error.message ?? "Failed to create video room.");
+        return;
+      }
+      if (result.data) {
+        setInstantRoom(result.data);
+      }
+    } finally {
+      setInstantLoading(false);
+    }
   }
 
   if (loading) {
@@ -401,6 +425,76 @@ export function BookCallPage() {
             <div className={cx("statValue")}>{s.value}</div>
           </div>
         ))}
+      </div>
+
+      {/* ── Instant Call hero ────────────────────────────────────────────── */}
+      <div className={cx("card", "borderLeftAccent")}>
+        <div className={cx("cardBodyPad", "pt16")}>
+          <div className={cx("flexBetween", "flexWrap", "gap12")}>
+            <div>
+              <div className={cx("flexRow", "gap8", "mb6")}>
+                <Ic n="video" sz={16} c="var(--lime)" />
+                <span className={cx("fw700", "text14")}>Instant Call</span>
+              </div>
+              <p className={cx("text12", "colorMuted", "lineH17", "mb0")}>
+                Need to talk now? Start an instant video call — your team will be notified immediately.
+              </p>
+            </div>
+            <div className={cx("flexCol", "gap8", "noShrink")}>
+              {!instantRoom && (
+                <button
+                  type="button"
+                  className={cx("btnAccent", "flexRow", "flexCenter", "gap8")}
+                  onClick={() => void handleInstantCall()}
+                  disabled={instantLoading || !session}
+                >
+                  <Ic n="video" sz={14} c="var(--bg)" />
+                  {instantLoading ? "Creating room…" : "Start Instant Call"}
+                </button>
+              )}
+              {instantError && (
+                <span className={cx("text11", "colorRed")}>{instantError}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Room ready state */}
+          {instantRoom && (
+            <div className={cx("mt14", "borderT", "pt14")}>
+              <div className={cx("flexRow", "gap10", "flexWrap", "flexCenter")}>
+                <div className={cx("flexRow", "gap6", "flex1")}>
+                  <span className={`live-dot ${cx("dotAccentSm", "inlineBlock")}`} />
+                  <span className={cx("fw600", "text12", "colorAccent")}>Room ready — share the link or join directly</span>
+                </div>
+                <div className={cx("flexRow", "gap8")}>
+                  <a
+                    href={instantRoom.joinUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cx("btnAccent", "flexRow", "flexCenter", "gap6", "noUnderline")}
+                  >
+                    <Ic n="externalLink" sz={13} c="var(--bg)" /> Join Room
+                  </a>
+                  <button
+                    type="button"
+                    className={cx("btnSm", "btnGhost", "flexRow", "flexCenter", "gap6")}
+                    onClick={() => { setInstantRoom(null); setInstantError(null); }}
+                  >
+                    End / Close
+                  </button>
+                </div>
+              </div>
+              <div className={cx("mt10", "flexRow", "gap8", "flexCenter")}>
+                <div className={cx("input", "flex1", "text11", "colorMuted2", "py8")} style={{ userSelect: "all" }}>
+                  {instantRoom.joinUrl}
+                </div>
+              </div>
+              <div className={cx("text10", "colorMuted2", "mt6")}>
+                Room expires at {new Date(instantRoom.expiresAt).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Next Meeting Hero Card ────────────────────────────────────────── */}

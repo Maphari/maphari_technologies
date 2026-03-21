@@ -7,6 +7,81 @@ import { cx, styles } from "./style";
 import type { NavItem, PageId } from "./types";
 import { capitalize } from "./utils";
 
+// ── Section icon map ───────────────────────────────────────────────────────
+const SECTION_ICONS: Record<string, React.ReactNode> = {
+  Overview: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  ),
+  Projects: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="7" width="20" height="14" rx="2" />
+      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+      <line x1="12" y1="12" x2="12" y2="16" />
+      <line x1="10" y1="14" x2="14" y2="14" />
+    </svg>
+  ),
+  Finance: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="1" y="4" width="22" height="16" rx="2" />
+      <line x1="1" y1="10" x2="23" y2="10" />
+    </svg>
+  ),
+  Communication: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  ),
+  Files: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  ),
+  Reporting: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  ),
+  Growth: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+      <polyline points="17 6 23 6 23 12" />
+    </svg>
+  ),
+  Support: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="4" />
+      <line x1="4.93" y1="4.93" x2="9.17" y2="9.17" />
+      <line x1="14.83" y1="14.83" x2="19.07" y2="19.07" />
+      <line x1="14.83" y1="9.17" x2="19.07" y2="4.93" />
+      <line x1="4.93" y1="19.07" x2="9.17" y2="14.83" />
+    </svg>
+  ),
+  Account: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+};
+
+// Fallback icon for unknown sections
+function DefaultSectionIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+    </svg>
+  );
+}
+
 type ClientSidebarProps = {
   navSections: Array<[string, NavItem[]]>;
   allPagesSections?: Array<[string, NavItem[]]>;
@@ -21,6 +96,7 @@ type ClientSidebarProps = {
   onProjectChange?: (projectId: string) => void;
   onOpenSearch?: () => void;
   mobileOpen?: boolean;
+  onActiveSectionChange?: (id: string | null) => void;
 };
 
 export function ClientSidebar({
@@ -37,18 +113,24 @@ export function ClientSidebar({
   onProjectChange,
   onOpenSearch,
   mobileOpen = false,
+  onActiveSectionChange,
 }: ClientSidebarProps) {
 
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("client-sidebar-collapsed") === "1";
-  });
-
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [showAllPages, setShowAllPages] = useState(false);
   const [allPagesQuery, setAllPagesQuery] = useState("");
+
+  const flyoutRef = useRef<HTMLDivElement | null>(null);
+  const railRef = useRef<HTMLElement | null>(null);
   const popupPanelRef = useRef<HTMLDivElement | null>(null);
   const allPagesInputRef = useRef<HTMLInputElement | null>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+
+  // Which section does the current active page belong to?
+  const activeSection = useMemo(
+    () => navSections.find(([, items]) => items.some((i) => i.id === activePage))?.[0] ?? null,
+    [navSections, activePage],
+  );
 
   const allPages = useMemo(
     () => (allPagesSections ?? navSections).flatMap(([, items]) => items),
@@ -77,13 +159,19 @@ export function ClientSidebar({
     }, {});
   }, [allPagesFiltered]);
 
-  function toggleCollapsed(): void {
-    setCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem("client-sidebar-collapsed", next ? "1" : "0");
-      return next;
-    });
+  function toggleSection(section: string): void {
+    setActiveSectionId((prev) => (prev === section ? null : section));
   }
+
+  function closeSection(): void {
+    setActiveSectionId(null);
+  }
+
+  // Notify parent after activeSectionId is committed — never during render
+  useEffect(() => {
+    onActiveSectionChange?.(activeSectionId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSectionId]);
 
   function openAllPages(): void {
     lastFocusedElementRef.current = document.activeElement as HTMLElement | null;
@@ -95,6 +183,34 @@ export function ClientSidebar({
     setAllPagesQuery("");
   }
 
+  // Close flyout on outside click or Esc
+  useEffect(() => {
+    if (!activeSectionId) return;
+    function onPointerDown(e: PointerEvent): void {
+      if (
+        flyoutRef.current && !flyoutRef.current.contains(e.target as Node) &&
+        railRef.current && !railRef.current.contains(e.target as Node)
+      ) {
+        closeSection();
+      }
+    }
+    function onKeyDown(e: KeyboardEvent): void {
+      if (e.key === "Escape") closeSection();
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [activeSectionId]);
+
+  // Close flyout when mobile drawer opens
+  useEffect(() => {
+    if (mobileOpen) closeSection();
+  }, [mobileOpen]);
+
+  // ⌘K toggle
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
@@ -114,6 +230,7 @@ export function ClientSidebar({
     };
   }, [showAllPages]);
 
+  // All-pages popup focus trap
   useEffect(() => {
     if (!showAllPages) return;
     document.body.style.overflow = "hidden";
@@ -158,8 +275,13 @@ export function ClientSidebar({
     };
   }, [allPagesFiltered, onNavigate, showAllPages]);
 
+  // Active pages for the open flyout section
+  const flyoutPages = activeSectionId
+    ? (navSections.find(([s]) => s === activeSectionId)?.[1] ?? [])
+    : [];
+
   return (
-    <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ""} ${mobileOpen ? styles.sidebarMobileOpen : ""}`}>
+    <aside className={`${styles.sidebar} ${styles.cSidebar} ${mobileOpen ? styles.sidebarMobileOpen : ""}`}>
 
       {/* ── Logo ──────────────────────────────────────────────────── */}
       <div className={styles.sidebarLogo}>
@@ -167,11 +289,11 @@ export function ClientSidebar({
           className={styles.logoMark}
           role="button"
           tabIndex={0}
-          onClick={toggleCollapsed}
+          onClick={() => closeSection()}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCollapsed(); }
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); closeSection(); }
           }}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title="Maphari"
         >
           M
         </div>
@@ -202,32 +324,58 @@ export function ClientSidebar({
         </div>
       ) : null}
 
-      {/* ── Nav ─────────────────────────────────────────────────────── */}
-      <nav className={styles.sidebarNav}>
-        {navSections.map(([section, items]) => (
-          <div key={section}>
-            <div className={styles.navSection}>{section}</div>
-            {items.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`${styles.navItem} ${activePage === item.id ? styles.navItemActive : ""}`}
-                onClick={() => onNavigate(item.id)}
-                title={collapsed ? item.label : undefined}
-              >
-                <NavIcon id={item.id} className={styles.navIcon} />
-                <span className={styles.navLabel}>{item.label}</span>
-                {item.badge ? (
-                  <span className={cx("navBadge", `navBadge${capitalize(item.badge.tone)}`)}>
-                    {item.badge.value}
-                  </span>
-                ) : null}
-              </button>
-            ))}
-          </div>
-        ))}
-
+      {/* ── Rail (one icon per section) ────────────────────────────── */}
+      <nav ref={railRef} className={styles.cRail} aria-label="Section navigation">
+        {navSections.map(([section, items]) => {
+          const hasNotif = items.some((i) => i.badge);
+          const isOpen = activeSectionId === section;
+          const isCurrent = activeSection === section;
+          return (
+            <button
+              key={section}
+              type="button"
+              className={`${styles.cRailBtn} ${(isOpen || isCurrent) ? styles.cRailBtnActive : ""} ${isCurrent && !isOpen ? styles.cRailBtnCurrent : ""}`}
+              onClick={() => toggleSection(section)}
+              title={section}
+              aria-pressed={isOpen}
+            >
+              {SECTION_ICONS[section] ?? <DefaultSectionIcon />}
+              {hasNotif && <span className={styles.cRailNotifDot} aria-hidden="true" />}
+            </button>
+          );
+        })}
       </nav>
+
+      {/* ── Flyout (pages within active section) ──────────────────── */}
+      <div
+        ref={flyoutRef}
+        className={`${styles.cFlyout} ${!activeSectionId ? styles.cFlyoutHidden : ""}`}
+        aria-hidden={!activeSectionId}
+      >
+        {activeSectionId ? (
+          <>
+            <div className={styles.cFlyoutSectionName}>{activeSectionId}</div>
+            <div className={styles.cFlyoutPages}>
+              {flyoutPages.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`${styles.cFlyoutPageBtn} ${activePage === item.id ? styles.cFlyoutPageBtnActive : ""}`}
+                  onClick={() => {
+                    onNavigate(item.id);
+                    closeSection();
+                  }}
+                >
+                  <span>{item.label}</span>
+                  {item.badge ? (
+                    <span className={styles.cFlyoutBadge}>{item.badge.value}</span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : null}
+      </div>
 
       {/* ── All Pages popup ─────────────────────────────────────────── */}
       {showAllPages ? createPortal(
@@ -365,7 +513,6 @@ export function ClientSidebar({
               onNavigate("profile");
             }
           }}
-          title={collapsed ? `${clientName} · ${companyName}` : undefined}
         >
           <div className={styles.userAvatar}>{clientInitials}</div>
           <div className={styles.userInfo}>

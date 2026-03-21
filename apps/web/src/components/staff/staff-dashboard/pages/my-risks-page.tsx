@@ -187,85 +187,29 @@ export function MyRisksPage({ isActive, session, onNotify }: PageProps) {
         </div>
       )}
 
-      {/* ── Stats ─────────────────────────────────────────────────────── */}
+      {/* ── Stats strip ───────────────────────────────────────────────── */}
       {!error && (
-        <div className={cx("rskStatGrid")}>
-
-          <div className={cx("rskStatCard")}>
-            <div className={cx("rskStatCardTop")}>
-              <div className={cx("rskStatLabel")}>Total Risks</div>
-              <div className={cx("rskStatValue", "colorAccent")}>{totalRisks}</div>
-            </div>
-            <div className={cx("rskStatCardDivider")} />
-            <div className={cx("rskStatCardBottom")}>
-              <span className={cx("rskStatDot", "dotBgAccent")} />
-              <span className={cx("rskStatMeta")}>being tracked</span>
-            </div>
+        <div className={cx("staffKpiStrip")}>
+          <div className={cx("staffKpiCell")}>
+            <div className={cx("staffKpiLabel")}>Total Risks</div>
+            <div className={cx("staffKpiValue", "colorAccent")}>{totalRisks}</div>
+            <div className={cx("staffKpiSub")}>being tracked</div>
           </div>
-
-          <div className={cx("rskStatCard")}>
-            <div className={cx("rskStatCardTop")}>
-              <div className={cx("rskStatLabel")}>Open</div>
-              <div
-                className={cx("rskStatValue", openCount > 0 ? "colorRed" : "colorGreen")}
-              >
-                {openCount}
-              </div>
-            </div>
-            <div className={cx("rskStatCardDivider")} />
-            <div className={cx("rskStatCardBottom")}>
-              <span
-                className={cx("rskStatDot", "dynBgColor")} style={{ "--bg-color": openCount > 0 ? "var(--red)" : "var(--green)" } as React.CSSProperties}
-              />
-              <span className={cx("rskStatMeta")}>
-                {openCount > 0 ? "needs action" : "none open"}
-              </span>
-            </div>
+          <div className={cx("staffKpiCell")}>
+            <div className={cx("staffKpiLabel")}>Open</div>
+            <div className={cx("staffKpiValue", openCount > 0 ? "colorRed" : "colorGreen")}>{openCount}</div>
+            <div className={cx("staffKpiSub")}>{openCount > 0 ? "needs action" : "none open"}</div>
           </div>
-
-          <div className={cx("rskStatCard")}>
-            <div className={cx("rskStatCardTop")}>
-              <div className={cx("rskStatLabel")}>Mitigating</div>
-              <div
-                className={cx("rskStatValue", mitigating > 0 ? "colorAmber" : "colorMuted2")}
-              >
-                {mitigating}
-              </div>
-            </div>
-            <div className={cx("rskStatCardDivider")} />
-            <div className={cx("rskStatCardBottom")}>
-              <span
-                className={cx("rskStatDot", "dynBgColor")}
-                style={{ "--bg-color": mitigating > 0 ? "var(--amber)" : "var(--muted2)" } as React.CSSProperties}
-              />
-              <span className={cx("rskStatMeta")}>in progress</span>
-            </div>
+          <div className={cx("staffKpiCell")}>
+            <div className={cx("staffKpiLabel")}>Mitigating</div>
+            <div className={cx("staffKpiValue", mitigating > 0 ? "colorAmber" : "colorMuted2")}>{mitigating}</div>
+            <div className={cx("staffKpiSub")}>in progress</div>
           </div>
-
-          <div className={cx("rskStatCard")}>
-            <div className={cx("rskStatCardTop")}>
-              <div className={cx("rskStatLabel")}>Critical</div>
-              <div
-                className={cx(
-                  "rskStatValue",
-                  criticalCount > 0 ? "colorRed" : "colorGreen"
-                )}
-              >
-                {criticalCount}
-              </div>
-            </div>
-            <div className={cx("rskStatCardDivider")} />
-            <div className={cx("rskStatCardBottom")}>
-              <span
-                className={cx("rskStatDot", "dynBgColor")}
-                style={{ "--bg-color": criticalCount > 0 ? "var(--red)" : "var(--green)" } as React.CSSProperties}
-              />
-              <span className={cx("rskStatMeta")}>
-                {criticalCount > 0 ? "highest priority" : "none critical"}
-              </span>
-            </div>
+          <div className={cx("staffKpiCell")}>
+            <div className={cx("staffKpiLabel")}>Critical</div>
+            <div className={cx("staffKpiValue", criticalCount > 0 ? "colorRed" : "colorGreen")}>{criticalCount}</div>
+            <div className={cx("staffKpiSub")}>{criticalCount > 0 ? "highest priority" : "none critical"}</div>
           </div>
-
         </div>
       )}
 

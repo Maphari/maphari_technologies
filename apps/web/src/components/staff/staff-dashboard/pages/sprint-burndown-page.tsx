@@ -373,7 +373,9 @@ export function SprintBurndownPage({
           <div className={cx("sbdGrid")}>
             {/* ── Left: Burn-Down Chart ─────────────────────────────── */}
             <div className={cx("sbdPanel")}>
-              <div className={cx("sbdPanelTitle")}>{data.sprintName} — Burn-Down</div>
+              <div className={cx("staffSectionHd")}>
+                <span className={cx("staffSectionTitle")}>{data.sprintName} — Burn-Down</span>
+              </div>
               <div className={cx("sbdPanelSub")}>
                 {new Date(data.startDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 {" – "}
@@ -388,10 +390,12 @@ export function SprintBurndownPage({
                 <span><span className={cx("sbdLegendDot", "sbdLegendRisk")} />At Risk</span>
               </div>
 
+              <div className={cx("staffChartContainer")}>
               <BurnDownSvg
                 dailyRemaining={data.dailyRemaining}
                 totalPoints={data.totalPoints}
               />
+              </div>
 
               {/* Legend */}
               <div className={cx("sbdLegend")}>
@@ -412,7 +416,9 @@ export function SprintBurndownPage({
 
             {/* ── Right: Velocity + Stats ───────────────────────────── */}
             <div className={cx("sbdPanel")}>
-              <div className={cx("sbdPanelTitle")}>Velocity History</div>
+              <div className={cx("staffSectionHd")}>
+                <span className={cx("staffSectionTitle")}>Velocity History</span>
+              </div>
               <div className={cx("sbdPanelSub")}>
                 Last {data.velocityHistory.length} sprint{data.velocityHistory.length !== 1 ? "s" : ""}
                 {" — "}
@@ -431,24 +437,24 @@ export function SprintBurndownPage({
                 )}
 
                 {/* Stats strip */}
-                <div className={cx("sbdStatsStrip")}>
-                  <div className={cx("sbdStat")}>
-                    <div className={cx("sbdStatLabel")}>Avg Velocity</div>
-                    <div className={cx("sbdStatValue")}>{avgVelocity}</div>
+                <div className={cx("staffKpiStrip")}>
+                  <div className={cx("staffKpiCell")}>
+                    <div className={cx("staffKpiLabel")}>Avg Velocity</div>
+                    <div className={cx("staffKpiValue")}>{avgVelocity}</div>
                   </div>
-                  <div className={cx("sbdStat")}>
-                    <div className={cx("sbdStatLabel")}>Completed</div>
-                    <div className={cx("sbdStatValue")}>{completionPct}%</div>
+                  <div className={cx("staffKpiCell")}>
+                    <div className={cx("staffKpiLabel")}>Completed</div>
+                    <div className={cx("staffKpiValue")}>{completionPct}%</div>
                   </div>
-                  <div className={cx("sbdStat")}>
-                    <div className={cx("sbdStatLabel")}>Remaining</div>
-                    <div className={cx("sbdStatValue")}>
+                  <div className={cx("staffKpiCell")}>
+                    <div className={cx("staffKpiLabel")}>Remaining</div>
+                    <div className={cx("staffKpiValue")}>
                       {data.totalPoints - data.completedPoints}
                     </div>
                   </div>
-                  <div className={cx("sbdStat")}>
-                    <div className={cx("sbdStatLabel")}>Sprint Health</div>
-                    <div className={cx("sbdStatValue")}>
+                  <div className={cx("staffKpiCell")}>
+                    <div className={cx("staffKpiLabel")}>Sprint Health</div>
+                    <div className={cx("staffKpiValue")}>
                       <span className={cx("sbdHealthChip", healthCssClass(health))}>
                         <span aria-hidden="true">{HEALTH_ICON[healthLabel(health)] ?? ""}</span>{" "}{healthLabel(health)}
                       </span>

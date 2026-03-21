@@ -56,7 +56,6 @@ export type PageId =
   | "integrations"
   | "settings"
   | "dataPrivacy"
-  | "onboardingStatus"
   | "onboarding"
   | "progressKnowledge"
   | "communicationHistory"
@@ -76,7 +75,6 @@ export const navSections: NavSection[] = [
       { id: "dashboard", label: "Mission Control" },
       { id: "notifications", label: "Notifications" },
       { id: "activityFeed", label: "Activity Feed" },
-      { id: "onboardingStatus", label: "Onboarding Status" },
     ],
   },
   {

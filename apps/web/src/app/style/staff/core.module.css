@@ -72,8 +72,8 @@
   background-color: var(--bg);
   background-image:
     radial-gradient(ellipse 800px 600px at 12% 30%, rgba(249, 115, 22, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 700px 500px at 90% 85%, rgba(99, 102, 241, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 500px 400px at 55% 105%, rgba(249, 115, 22, 0.04) 0%, transparent 55%);
+    radial-gradient(ellipse 600px 500px at 85% 80%, rgba(249, 115, 22, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 500px 400px at 55% 105%, rgba(249, 115, 22, 0.03) 0%, transparent 55%);
   color: var(--text);
   font-family: var(--font-syne), system-ui, sans-serif;
   overflow: hidden;

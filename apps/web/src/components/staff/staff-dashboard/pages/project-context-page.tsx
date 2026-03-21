@@ -45,10 +45,22 @@ type ProjectContext = {
   pinned: boolean;
 };
 
-const statusConfig: Record<ProjectStatus, { label: string; dotClass: string; badgeClass: string }> = {
-  active:   { label: "Active",   dotClass: "pcStatusDotActive",   badgeClass: "pcStatusBadgeActive"   },
-  at_risk:  { label: "At Risk",  dotClass: "pcStatusDotAtRisk",   badgeClass: "pcStatusBadgeAtRisk"   },
-  critical: { label: "Critical", dotClass: "pcStatusDotCritical", badgeClass: "pcStatusBadgeCritical" },
+const statusDotCls: Record<ProjectStatus, string> = {
+  active:   "staffDotGreen",
+  at_risk:  "staffDotAmber",
+  critical: "staffDotRed",
+};
+
+const statusChipCls: Record<ProjectStatus, string> = {
+  active:   "staffChipGreen",
+  at_risk:  "staffChipAmber",
+  critical: "staffChipRed",
+};
+
+const statusLabel: Record<ProjectStatus, string> = {
+  active:   "Active",
+  at_risk:  "At Risk",
+  critical: "Critical",
 };
 
 function toProjectContext(p: StaffProject): ProjectContext {
@@ -66,28 +78,14 @@ function toProjectContext(p: StaffProject): ProjectContext {
   };
 }
 
-function ProjectItem({ p, isSelected, onSelect }: { p: ProjectContext; isSelected: boolean; onSelect: () => void }) {
-  const status = statusConfig[p.status];
-  return (
-    <div className={cx("pcProjectItem", isSelected && "pcProjectItemActive")} onClick={onSelect}>
-      <div className={cx("flexRow", "gap8", "mb4")}>
-        <div className={cx("pcProjectAvatar")}>{p.avatar}</div>
-        <span className={cx("pcProjectName", isSelected ? "pcProjectNameActive" : "pcProjectNameIdle")}>{p.client}</span>
-        <div className={cx("pcStatusDot", status.dotClass)} />
-      </div>
-      <div className={cx("pcProjectSub")}>{p.project}</div>
-    </div>
-  );
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ProjectContextPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
   const [projects, setProjects] = useState<ProjectContext[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading,  setLoading]  = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "phase">("overview");
-  const [search, setSearch] = useState("");
+  const [search, setSearch]     = useState("");
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
@@ -122,114 +120,141 @@ export function ProjectContextPage({ isActive, session }: { isActive: boolean; s
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-context">
-      <div className={cx("pcLayout")}>
-        <div className={cx("pcSidebar")}>
-          <div className={cx("pageHeaderBar", "pcSidebarHeader")}>
+      <div className={cx("staffSplitShell")}>
+
+        {/* Left: project selector */}
+        <div className={cx("pcSidePanel")}>
+          <div className={cx("pageHeaderBar", "pcSideHeader")}>
             <div className={cx("pageEyebrow", "mb6")}>Staff Dashboard</div>
-            <h1 className={cx("pageTitle", "pcSidebarTitle")}>Project Context</h1>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search projects…" className={cx("pcSearchInput")} />
+            <h1 className={cx("pageTitle", "pcSideTitle")}>Project Context</h1>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search projects…"
+              className={cx("staffFilterInput")}
+            />
           </div>
 
           {filtered.length === 0 ? (
-            <div className={cx("pcSidebarSection")}><div className={cx("pcSidebarGroupLabel")}>No projects found</div></div>
+            <div className={cx("staffEmpty")}>
+              <div className={cx("staffEmptyTitle")}>No projects found</div>
+            </div>
           ) : (
             <>
-              {filtered.some((p) => p.pinned) ? (
-                <div className={cx("pcSidebarSection")}>
-                  <div className={cx("pcSidebarGroupLabel")}>Pinned</div>
+              {filtered.some((p) => p.pinned) && (
+                <div className={cx("pcGroupSection")}>
+                  <div className={cx("pcGroupLabel")}>Pinned</div>
                   {filtered.filter((p) => p.pinned).map((p) => (
-                    <ProjectItem key={p.id} p={p} isSelected={selected === p.id} onSelect={() => { setSelected(p.id); setActiveTab("overview"); }} />
+                    <div
+                      key={p.id}
+                      className={cx("staffListRow", selected === p.id && "staffClientToneAccent")}
+                      onClick={() => { setSelected(p.id); setActiveTab("overview"); }}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <span className={cx("staffDot", statusDotCls[p.status])} />
+                      <div className={cx("pcClientInfo")}>
+                        <div className={cx("pcClientName")}>{p.client}</div>
+                        <div className={cx("pcClientSub")}>{p.project}</div>
+                      </div>
+                    </div>
                   ))}
                 </div>
-              ) : null}
-              <div className={cx("pcSidebarSectionAll")}>
-                <div className={cx("pcSidebarGroupLabel", "mt8")}>All Projects</div>
+              )}
+              <div className={cx("pcGroupSection")}>
+                <div className={cx("pcGroupLabel")}>All Projects</div>
                 {filtered.filter((p) => !p.pinned).map((p) => (
-                  <ProjectItem key={p.id} p={p} isSelected={selected === p.id} onSelect={() => { setSelected(p.id); setActiveTab("overview"); }} />
+                  <div
+                    key={p.id}
+                    className={cx("staffListRow", selected === p.id && "staffClientToneAccent")}
+                    onClick={() => { setSelected(p.id); setActiveTab("overview"); }}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <span className={cx("staffDot", statusDotCls[p.status])} />
+                    <div className={cx("pcClientInfo")}>
+                      <div className={cx("pcClientName")}>{p.client}</div>
+                      <div className={cx("pcClientSub")}>{p.project}</div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </>
           )}
         </div>
 
+        {/* Right: detail */}
         {current ? (
-          <div className={cx("flexCol", "overflowAuto")}>
-            <div className={cx("pcDetailHeader")}>
-              <div className={cx("flexBetween", "mb16")}>
-                <div className={cx("flexRow", "gap10", "mb6")}>
-                  <div className={cx("pcDetailAvatar")}>{current.avatar}</div>
-                  <div>
-                    <div className={cx("fontDisplay", "fw800", "colorText", "pcDetailClientName")}>{current.client}</div>
-                    <div className={cx("text11", "colorMuted2")}>{current.project}</div>
-                  </div>
-                </div>
-                <div className={cx("flexRow", "gap8")}>
-                  <span className={cx("pcStatusBadge", statusConfig[current.status].badgeClass)}>{statusConfig[current.status].label}</span>
-                  <span className={cx("pcPhaseBadge")}>{current.phase}</span>
-                  {current.pinned ? <span className={cx("text12", "colorAccent")}>&loz;</span> : null}
-                </div>
+          <div className={cx("staffCard", "pcDetailCard")}>
+            {/* Header */}
+            <div className={cx("staffSectionHd", "pcDetailHead")}>
+              <div className={cx("pcDetailAvatar")}>{current.avatar}</div>
+              <div className={cx("pcDetailHeadInfo")}>
+                <div className={cx("pcDetailClientName")}>{current.client}</div>
+                <div className={cx("pcDetailProject")}>{current.project}</div>
               </div>
-
-              <div className={cx("flexRow", "gap24", "mb16")}>
-                {[{ label: "Started", value: current.startDate }, { label: "Deadline", value: current.deadline }, { label: "Lead", value: current.staffLead }].map((meta) => (
-                  <div key={meta.label}>
-                    <div className={cx("pcMetaLabel")}>{meta.label}</div>
-                    <div className={cx("text11", "colorMuted")}>{meta.value}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className={cx("flexRow")}>
-                {[{ key: "overview", label: "Overview" }, { key: "phase", label: "Phase" }].map((tab) => (
-                  <button type="button" key={tab.key} className={cx("pcTabBtn", activeTab === tab.key && "pcTabBtnActive")} onClick={() => setActiveTab(tab.key as "overview" | "phase")}>
-                    {tab.label}
-                  </button>
-                ))}
+              <div className={cx("pcDetailBadges")}>
+                <span className={cx("staffChip", statusChipCls[current.status])}>{statusLabel[current.status]}</span>
+                <span className={cx("staffChip")}>{current.phase}</span>
               </div>
             </div>
 
-            <div className={cx("pcTabContent")}>
-              {activeTab === "overview" ? (
-                <div className={cx("grid2", "gap24")}>
-                  <div>
-                    <div className={cx("pcSectionLabel", "mb14")}>Project Details</div>
-                    <div className={cx("pcContactCard")}>
-                      <div className={cx("fontDisplay", "fw700", "colorText", "pcContactName")}>{current.client}</div>
-                      <div className={cx("text11", "colorMuted2", "mb10")}>{current.project}</div>
-                      <div className={cx("text11", "colorMuted", "mb6")}>&loz; {current.phase}</div>
-                      <div className={cx("text11", "colorMuted")}>&rarr; {current.staffLead}</div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className={cx("pcSectionLabel", "mb14")}>Timeline</div>
-                    <div className={cx("pcContactCard")}>
-                      <div className={cx("text11", "colorMuted", "mb6")}>Started: {current.startDate}</div>
-                      <div className={cx("text11", "colorMuted")}>Deadline: {current.deadline}</div>
-                    </div>
-                    {current.status === "critical" ? (
-                      <div className={cx("pcCriticalBanner")}>
-                        <div className={cx("text11", "colorRed", "mb4")}>&loz; Critical status</div>
-                        <div className={cx("text11", "colorMuted")}>This project requires immediate attention. Review notes and escalate if needed.</div>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
-
-              {activeTab === "phase" ? (
-                <div className={cx("pcListWrap")}>
-                  <div className={cx("pcSectionLabel", "mb16")}>Current Phase</div>
-                  <div className={cx("pcListRow")}>
-                    <span className={cx("colorAccent", "text14", "noShrink", "pcArrowTight")}>&rarr;</span>
-                    <span className={cx("text13", "colorMuted", "pcCopyRelaxed")}>{current.phase}</span>
-                  </div>
-                </div>
-              ) : null}
+            {/* Metadata rows */}
+            <div className={cx("staffListRow", "pcMetaRow")}>
+              <span className={cx("pcMetaLabel")}>Started</span>
+              <span className={cx("pcMetaValue")}>{current.startDate}</span>
             </div>
+            <div className={cx("staffListRow", "pcMetaRow")}>
+              <span className={cx("pcMetaLabel")}>Deadline</span>
+              <span className={cx("pcMetaValue")}>{current.deadline}</span>
+            </div>
+            <div className={cx("staffListRow", "pcMetaRow")}>
+              <span className={cx("pcMetaLabel")}>Lead</span>
+              <span className={cx("pcMetaValue")}>{current.staffLead}</span>
+            </div>
+
+            {/* Tabs */}
+            <div className={cx("staffSegControl", "pcTabs")}>
+              {[{ key: "overview", label: "Overview" }, { key: "phase", label: "Phase" }].map((tab) => (
+                <button
+                  type="button"
+                  key={tab.key}
+                  className={cx("staffSegBtn", activeTab === tab.key && "staffSegBtnActive")}
+                  onClick={() => setActiveTab(tab.key as "overview" | "phase")}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab: Overview */}
+            {activeTab === "overview" && (
+              <div className={cx("staffProse", "pcProseContent")}>
+                <p>
+                  <strong>{current.client}</strong> — {current.project}
+                </p>
+                <p>
+                  Current phase: {current.phase}
+                  {" "}· Lead: {current.staffLead}
+                </p>
+                {current.status === "critical" && (
+                  <p style={{ color: "var(--red)" }}>
+                    This project is in a critical state. Review notes and escalate if needed.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Tab: Phase */}
+            {activeTab === "phase" && (
+              <div className={cx("staffProse", "pcProseContent")}>
+                <p>Current Phase: <strong>{current.phase}</strong></p>
+                <p>Started: {current.startDate}</p>
+                <p>Deadline: {current.deadline}</p>
+              </div>
+            )}
           </div>
         ) : (
-          <div className={cx("flexCol", "p24")}>
-            <div className={cx("text13", "colorMuted2")}>Select a project to view context.</div>
+          <div className={cx("staffEmpty")}>
+            <div className={cx("staffEmptyTitle")}>Select a project to view context.</div>
           </div>
         )}
       </div>

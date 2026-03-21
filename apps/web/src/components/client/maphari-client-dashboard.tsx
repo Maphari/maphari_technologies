@@ -91,7 +91,6 @@ import { TeamAccessPage } from "./maphari-dashboard/pages/team-access-page";
 import { IntegrationsPage } from "./maphari-dashboard/pages/integrations-page";
 import { SettingsPage } from "./maphari-dashboard/pages/settings-page";
 import { DataPrivacyPage } from "./maphari-dashboard/pages/data-privacy-page";
-import { OnboardingStatusPage } from "./maphari-dashboard/pages/onboarding-status-page";
 import { OnboardingPage } from "./maphari-dashboard/pages/onboarding-page";
 import { SupportPage as ProgressKnowledgePage } from "./maphari-dashboard/pages/support-page";
 import { CommunicationHistoryPage } from "./maphari-dashboard/pages/communication-history-page";
@@ -625,7 +624,6 @@ export function MaphariClientDashboard() {
             {nav.activePage === "teamAccess" && <TeamAccessPage />}
             {nav.activePage === "integrations" && <IntegrationsPage />}
             {nav.activePage === "dataPrivacy" && <DataPrivacyPage />}
-            {nav.activePage === "onboardingStatus" && <OnboardingStatusPage />}
             {nav.activePage === "onboarding" && <OnboardingPage />}
             {nav.activePage === "communicationHistory" && <CommunicationHistoryPage />}
             {nav.activePage === "projectBrief" && <ProjectBriefPage onNavigate={handleNavigate} />}

@@ -124,58 +124,29 @@ export function TeamPerformancePage({ isActive, session }: TeamPerformancePagePr
         <p className={cx("pageSubtitleText", "mb20")}>Team benchmarks for this week</p>
       </div>
 
-      {/* ── Summary stats ────────────────────────────────────────────────── */}
-      <div className={cx("tpmStatGrid")}>
-        <div className={cx("tpmStatCard")}>
-          <div className={cx("tpmStatCardTop")}>
-            <div className={cx("tpmStatLabel")}>Team Size</div>
-            <div className={cx("tpmStatValue", "colorAccent")}>{members.length}</div>
-          </div>
-          <div className={cx("tpmStatCardDivider")} />
-          <div className={cx("tpmStatCardBottom")}>
-            <span className={cx("tpmStatDot", "dotBgAccent")} />
-            <span className={cx("tpmStatMeta")}>members</span>
-          </div>
+      {/* ── Summary strip ────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Team Size</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{members.length}</div>
+          <div className={cx("staffKpiSub")}>members</div>
         </div>
-
-        <div className={cx("tpmStatCard")}>
-          <div className={cx("tpmStatCardTop")}>
-            <div className={cx("tpmStatLabel")}>Avg Tasks</div>
-            <div className={cx("tpmStatValue", "colorAccent")}>{teamAvgTasks}</div>
-          </div>
-          <div className={cx("tpmStatCardDivider")} />
-          <div className={cx("tpmStatCardBottom")}>
-            <span className={cx("tpmStatDot", "dotBgAccent")} />
-            <span className={cx("tpmStatMeta")}>per member this week</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Avg Tasks</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{teamAvgTasks}</div>
+          <div className={cx("staffKpiSub")}>per member this week</div>
         </div>
-
-        <div className={cx("tpmStatCard")}>
-          <div className={cx("tpmStatCardTop")}>
-            <div className={cx("tpmStatLabel")}>Avg Utilization</div>
-            <div className={cx("tpmStatValue", teamAvgUtil >= 85 ? "colorGreen" : "colorAmber")}>
-              {teamAvgUtil}%
-            </div>
-          </div>
-          <div className={cx("tpmStatCardDivider")} />
-          <div className={cx("tpmStatCardBottom")}>
-            <span className={cx("tpmStatDot", "dotBgGreen")} />
-            <span className={cx("tpmStatMeta")}>team average</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Avg Utilization</div>
+          <div className={cx("staffKpiValue", teamAvgUtil >= 85 ? "colorGreen" : "colorAmber")}>{teamAvgUtil}%</div>
+          <div className={cx("staffKpiSub")}>team average</div>
         </div>
-
-        <div className={cx("tpmStatCard")}>
-          <div className={cx("tpmStatCardTop")}>
-            <div className={cx("tpmStatLabel")}>Avg CSAT</div>
-            <div className={cx("tpmStatValue", peerRatingCls(teamAvgPeerRating))}>
-              {teamAvgPeerRating !== null ? teamAvgPeerRating : "—"}
-            </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Avg CSAT</div>
+          <div className={cx("staffKpiValue", peerRatingCls(teamAvgPeerRating))}>
+            {teamAvgPeerRating !== null ? teamAvgPeerRating : "—"}
           </div>
-          <div className={cx("tpmStatCardDivider")} />
-          <div className={cx("tpmStatCardBottom")}>
-            <span className={cx("tpmStatDot", "dotBgGreen")} />
-            <span className={cx("tpmStatMeta")}>peer rating avg</span>
-          </div>
+          <div className={cx("staffKpiSub")}>peer rating avg</div>
         </div>
       </div>
 
@@ -187,67 +158,42 @@ export function TeamPerformancePage({ isActive, session }: TeamPerformancePagePr
             <span className={cx("tpmSectionMeta")}>{members.length} MEMBERS</span>
           </div>
 
-          <div className={cx("tpmMemberList")}>
-            {sorted.map((m, idx) => (
-              <div
-                key={m.id}
-                className={cx("tpmMemberRow", idx === sorted.length - 1 && "tpmMemberRowLast")}
-              >
-                {/* Avatar */}
-                <div className={cx("tpmAvatar", avatarCls(m.name))}>
-                  {initials(m.name)}
-                </div>
-
-                {/* Name + role */}
-                <div className={cx("tpmMemberHead")}>
-                  <div className={cx("tpmNameRow")}>
-                    <span className={cx("tpmMemberName")}>{m.name}</span>
-                  </div>
-                  <span className={cx("tpmMemberRole")}>{m.role}</span>
-                </div>
-
-                {/* Metrics strip */}
-                <div className={cx("tpmMetricsStrip")}>
-                  <div className={cx("tpmMetricCell")}>
-                    <span className={cx("tpmMetricLabel")}>Tasks</span>
-                    <span className={cx("tpmMetricValue", "colorAccent")}>{m.tasksCompleted}</span>
-                  </div>
-
-                  <div className={cx("tpmMetricSep")} />
-
-                  <div className={cx("tpmMetricCell")}>
-                    <span className={cx("tpmMetricLabel")}>Avg Time</span>
-                    <span className={cx("tpmMetricValue", "colorMuted2")}>{avgTaskTime(m.hoursThisWeek, m.tasksCompleted)}</span>
-                  </div>
-
-                  <div className={cx("tpmMetricSep")} />
-
-                  <div className={cx("tpmMetricCell")}>
-                    <span className={cx("tpmMetricLabel")}>Utilization</span>
-                    <span className={cx("tpmMetricValue", utilizationCls(m.utilizationPct))}>{m.utilizationPct}%</span>
-                  </div>
-
-                  <div className={cx("tpmMetricSep")} />
-
-                  <div className={cx("tpmMetricCell")}>
-                    <span className={cx("tpmMetricLabel")}>Dept</span>
-                    <span className={cx("tpmMetricValue", "colorMuted2")}>{m.department ?? "—"}</span>
-                  </div>
-
-                  <div className={cx("tpmMetricSep")} />
-
-                  <div className={cx("tpmMetricCell")}>
-                    <span className={cx("tpmMetricLabel")}>CSAT</span>
-                    <span className={cx("tpmMetricValue", peerRatingCls(m.peerRating))}>
-                      {m.peerRating !== null
-                        ? <>{m.peerRating}<span className={cx("tpmMetricSuffix")}>/5</span></>
-                        : "—"}
+          <table className={cx("staffTable")}>
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th className="numCol">Tasks</th>
+                <th className="numCol">Avg Time</th>
+                <th className="numCol">Utilization</th>
+                <th>Dept</th>
+                <th className="numCol">CSAT</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((m) => (
+                <tr key={m.id}>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div className={cx("tpmAvatar", avatarCls(m.name))}>{initials(m.name)}</div>
+                      <div>
+                        <div className={cx("tpmMemberName")}>{m.name}</div>
+                        <div className={cx("tpmMemberRole")}>{m.role}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="numCol"><span className={cx("colorAccent")}>{m.tasksCompleted}</span></td>
+                  <td className="numCol"><span className={cx("colorMuted2")}>{avgTaskTime(m.hoursThisWeek, m.tasksCompleted)}</span></td>
+                  <td className="numCol"><span className={cx(utilizationCls(m.utilizationPct))}>{m.utilizationPct}%</span></td>
+                  <td><span className={cx("colorMuted2")}>{m.department ?? "—"}</span></td>
+                  <td className="numCol">
+                    <span className={cx(peerRatingCls(m.peerRating))}>
+                      {m.peerRating !== null ? <>{m.peerRating}<span style={{ opacity: 0.5, fontSize: "0.8em" }}>/5</span></> : "—"}
                     </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 

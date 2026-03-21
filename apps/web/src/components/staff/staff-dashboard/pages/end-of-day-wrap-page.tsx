@@ -278,16 +278,18 @@ export function EndOfDayWrapPage({
                 </div>
               </div>
 
-              <div>
-                <div className={cx("sectionLabel", "mb10")}>
-                  Quick reflection <span className={cx("edwOptionalText")}>Optional</span>
+              <div className={cx("staffCard")}>
+                <div className={cx("staffSectionHd")}>
+                  <span className={cx("staffSectionTitle")}>Quick Reflection</span>
+                  <span className={cx("edwOptionalText")}>Optional</span>
                 </div>
                 <textarea
                   value={wrapNote}
                   onChange={(event) => setWrapNote(event.target.value)}
                   placeholder="Anything worth noting about today? Wins, frustrations, things to remember..."
-                  className={cx("inputBase", "wFull", "text12", "edwTextareaSm")}
+                  className={cx("staffInput", "wFull", "text12", "edwTextareaSm")}
                 />
+                <div className={cx("staffCharCount")}>{wrapNote.length} / 600</div>
               </div>
 
               <div>
@@ -397,16 +399,18 @@ export function EndOfDayWrapPage({
                 ) : null}
               </div>
 
-              <div>
-                <div className={cx("sectionLabel", "mb10")}>
-                  Anything else to flag? <span className={cx("edwOptionalText")}>Optional</span>
+              <div className={cx("staffCard")}>
+                <div className={cx("staffSectionHd")}>
+                  <span className={cx("staffSectionTitle")}>Additional Flags</span>
+                  <span className={cx("edwOptionalText")}>Optional</span>
                 </div>
                 <textarea
                   value={additionalFlag}
                   onChange={(event) => setAdditionalFlag(event.target.value)}
                   placeholder="Escalations, concerns, things the account manager should know..."
-                  className={cx("inputBase", "wFull", "text12", "edwTextareaFlag")}
+                  className={cx("staffInput", "wFull", "text12", "edwTextareaFlag")}
                 />
+                <div className={cx("staffCharCount")}>{additionalFlag.length} / 400</div>
               </div>
             </div>
           ) : null}
@@ -424,7 +428,7 @@ export function EndOfDayWrapPage({
 
             <button
               type="button"
-              className={cx("edwNextBtn", "edwNextBtnShell")}
+              className={cx("staffBtnPrimary")}
               disabled={!canProceed || submitting}
               onClick={() => {
                 if (step < steps.length - 1) {
@@ -445,24 +449,31 @@ export function EndOfDayWrapPage({
         <div className={cx("flexCol", "gap20", "edwSidePane")}>
           <div>
             <div className={cx("sectionLabel", "mb12")}>Completed Today</div>
+            <div className={cx("staffKpiStrip", "mb12")}>
+              <div className={cx("staffKpiCell")}>
+                <div className={cx("staffKpiValue")}>{completedToday.length}</div>
+                <div className={cx("staffKpiLabel")}>Tasks done</div>
+              </div>
+              <div className={cx("staffKpiCell")}>
+                <div className={cx("staffKpiValue")}>{totalHoursToday}h</div>
+                <div className={cx("staffKpiLabel")}>Hours logged</div>
+              </div>
+            </div>
             <div className={cx("flexCol", "gap6")}>
               {completedToday.map((task, index) => (
-                <div key={index} className={cx("cardSurfaceSm")}>
-                  <div className={cx("text11", "colorMuted", "mb4", "edwDoneTaskText")}>{task.text}</div>
-                  <div className={cx("flexBetween")}>
-                    <span className={cx("text10", "colorMuted2")}>{task.client}</span>
-                    <span className={cx("text10", "colorAccent")}>{task.hours}h</span>
+                <div key={index} className={cx("staffListRow")}>
+                  <div className={cx("flex1", "minW0")}>
+                    <div className={cx("text11", "colorMuted", "mb4", "edwDoneTaskText")}>{task.text}</div>
+                    <div className={cx("flexBetween")}>
+                      <span className={cx("text10", "colorMuted2")}>{task.client}</span>
+                      <span className={cx("text10", "colorAccent")}>{task.hours}h</span>
+                    </div>
                   </div>
                 </div>
               ))}
               {completedToday.length === 0 ? (
                 <div className={cx("text11", "colorMuted2")}>No tasks completed today yet.</div>
               ) : null}
-            </div>
-
-            <div className={cx("flexBetween", "mt10", "edwTrackedRow")}>
-              <span className={cx("text11", "colorMuted2")}>Total tracked</span>
-              <span className={cx("text11", "colorAccent", "fw600")}>{totalHoursToday}h</span>
             </div>
           </div>
 

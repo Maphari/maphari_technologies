@@ -19,7 +19,9 @@
   padding: 16px 18px;
   border-left: 3px solid transparent;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 .clmKpiCard.toneAccent { border-left-color: var(--accent); }
 .clmKpiCard.toneBlue   { border-left-color: var(--blue);   }
@@ -5804,7 +5806,9 @@
   border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 .teamKpiCard.toneAccent { border-left-color: var(--accent); }
 .teamKpiCard.toneBlue   { border-left-color: var(--blue);   }

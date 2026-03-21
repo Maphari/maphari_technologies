@@ -8964,3 +8964,861 @@
 /* ── NPS star colours ────────────────────────────────────────── */
 .starFilled { color: var(--lime, #c8f135); }
 .starEmpty  { color: var(--b3); }
+/* Step indicator ───────────────────────────────────────────────────────────── */
+.prqStepper {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.prqStepItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prqStepCircle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--b2);
+  border: 1px solid var(--b3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--muted);
+  font-family: var(--font-mono, monospace);
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.prqStepCircleActive {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: var(--bg);
+}
+
+.prqStepCircleDone {
+  background: var(--lime-d);
+  border-color: var(--lime);
+  color: var(--lime);
+}
+
+.prqStepLabel {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.prqStepLabelActive {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.prqStepLine {
+  flex: 1;
+  height: 1px;
+  background: var(--b2);
+  margin: 0 12px;
+  min-width: 32px;
+  transition: background 0.3s;
+}
+
+.prqStepLineDone {
+  background: var(--lime);
+}
+
+/* Service cards ────────────────────────────────────────────────────────────── */
+.prqSvcGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.prqSvcCard {
+  background: var(--s1);
+  border: 1.5px solid var(--b2);
+  border-radius: var(--r-md);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  --svc-color: var(--lime);
+  width: 100%;
+  position: relative;
+}
+
+/* Override shared-module button reset (specificity: .root button:not() = 0-2-1) */
+.prqSvcGrid .prqSvcCard,
+.prqSvcGrid .prqSvcCardActive {
+  padding: 20px !important;
+}
+
+.prqSvcCard:hover {
+  border-color: var(--b3);
+  background: var(--s2);
+}
+
+.prqSvcCardActive {
+  background: color-mix(in oklab, var(--svc-color) 7%, transparent);
+  border-color: var(--svc-color) !important;
+}
+
+/* Popular badge — top-right corner */
+.prqSvcPopular {
+  position: absolute;
+  top: -1px;
+  right: 14px;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  background: var(--lime);
+  color: var(--bg);
+  border-radius: 0 0 var(--r-xs) var(--r-xs);
+}
+
+/* Tag inside service card meta */
+.prqSvcTag {
+  display: inline-block;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--r-xs);
+  margin-top: 3px;
+}
+
+.prqSvcHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.prqSvcIco {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  background: var(--b1);
+  border: 1px solid var(--b2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.prqSvcCardActive .prqSvcIco {
+  background: color-mix(in oklab, var(--svc-color) 15%, transparent);
+  border-color: color-mix(in oklab, var(--svc-color) 30%, transparent);
+}
+
+.prqSvcMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.prqSvcName {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.prqSvcPrice {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color 0.15s;
+}
+
+.prqSvcCardActive .prqSvcPrice {
+  color: var(--svc-color);
+}
+
+.prqSvcCheck {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--svc-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prqSvcDesc {
+  font-size: 0.72rem;
+  color: var(--muted2);
+  line-height: 1.55;
+}
+
+.prqSelRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* Form ─────────────────────────────────────────────────────────────────────── */
+.prqFormBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.prqFormField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prqFormLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted2);
+}
+
+.prqRequired {
+  color: var(--red);
+  margin-left: 2px;
+}
+
+.prqOptional {
+  font-size: 0.65rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+/* Review ───────────────────────────────────────────────────────────────────── */
+.prqReviewSvcs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.prqReviewGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+}
+
+.prqReviewItem {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--b1);
+}
+
+.prqReviewLbl {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted2);
+  margin-bottom: 3px;
+}
+
+.prqReviewVal {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.prqReviewSection {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--b1);
+}
+
+.prqReviewText {
+  font-size: 0.75rem;
+  color: var(--muted2);
+  line-height: 1.6;
+}
+
+/* What happens next ────────────────────────────────────────────────────────── */
+.prqNextList {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.prqNextItem {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.prqNextNum {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--lime-d);
+  border: 1px solid var(--lime);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--lime);
+  font-family: var(--font-mono, monospace);
+}
+
+.prqNextTitle {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.prqNextSub {
+  font-size: 0.7rem;
+  color: var(--muted2);
+}
+
+/* Action row ───────────────────────────────────────────────────────────────── */
+.prqActionRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.prqActionRowSpread {
+  justify-content: space-between;
+}
+
+/* Success state ────────────────────────────────────────────────────────────── */
+.prqSuccessCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 56px 32px;
+}
+
+.prqSuccessIco {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--green) 12%, transparent);
+  border: 1.5px solid color-mix(in oklab, var(--green) 30%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.prqSuccessTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.prqSuccessSub {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 400px;
+  margin-bottom: 28px;
+}
+
+.prqSuccessActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.prqSuccessRef {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  font-size: 0.7rem;
+  color: var(--muted2);
+}
+
+.prqSuccessRefVal {
+  font-family: var(--font-mono, monospace);
+  color: var(--lime);
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+/* Responsive ───────────────────────────────────────────────────────────────── */
+@media (max-width: 620px) {
+  .prqSvcGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .prqReviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .prqStepLine {
+    min-width: 16px;
+    margin: 0 6px;
+  }
+
+  .prqStepLabel {
+    display: none;
+  }
+
+  .prqStepLabelActive {
+    display: inline;
+  }
+
+  .prqSuccessCard {
+    padding: 36px 16px;
+  }
+}
+
+/* ── Goal picker ──────────────────────────────────────────────────────────── */
+.prqGoalRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.prqGoalCard {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px 16px !important;
+  background: var(--s1);
+  border: 1.5px solid var(--b2);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.prqGoalCard:hover {
+  border-color: var(--b3);
+  background: var(--s2);
+}
+
+.prqGoalCardActive {
+  border-color: var(--lime) !important;
+  background: var(--lime-g) !important;
+}
+
+.prqGoalIco {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.prqGoalLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.prqGoalSub {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* ── Live estimate strip ──────────────────────────────────────────────────── */
+@keyframes prqEstIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.prqEstStrip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 14px 20px;
+  margin-bottom: 14px;
+  animation: prqEstIn 0.25s ease both;
+}
+
+.prqEstItem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 20px;
+  min-width: 110px;
+}
+
+.prqEstItem:first-child {
+  padding-left: 0;
+}
+
+.prqEstItem:last-child {
+  padding-right: 0;
+}
+
+.prqEstVal {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--lime);
+  line-height: 1;
+}
+
+.prqEstLbl {
+  font-size: 10px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.prqEstDivider {
+  width: 1px;
+  height: 34px;
+  background: var(--b2);
+  flex-shrink: 0;
+}
+
+/* ── Tech includes pills ──────────────────────────────────────────────────── */
+.prqIncPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.prqIncPill {
+  font-size: 9px;
+  font-weight: 600;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  color: var(--muted2);
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-xs);
+  padding: 2px 6px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Recommended badge on service card ────────────────────────────────────── */
+.prqSvcReco {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+
+.prqSvcRecoDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  animation: prqRecoPulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes prqRecoPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.prqSvcCardReco {
+  border-color: color-mix(in oklab, var(--amber) 45%, transparent) !important;
+}
+
+/* ── Service-specific extra questions (radio) ─────────────────────────────── */
+.prqExtraCard {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  margin-top: 6px;
+}
+
+.prqExtraHd {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prqRadioRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.prqRadioOpt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px !important;
+  background: var(--s1);
+  border: 1.5px solid var(--b2);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted2);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.prqRadioOpt:hover {
+  border-color: var(--b3);
+  color: var(--text);
+}
+
+.prqRadioOptActive {
+  border-color: var(--lime) !important;
+  color: var(--text) !important;
+  background: var(--lime-g) !important;
+}
+
+.prqRadioOptDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--b3);
+  background: transparent;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.prqRadioOptActive .prqRadioOptDot {
+  background: var(--lime);
+  border-color: var(--lime);
+}
+/* Trust strip ──────────────────────────────────────────────────────────────── */
+.prqTrustStrip {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 4px 0 22px;
+  flex-wrap: wrap;
+}
+
+.prqTrustItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--muted2);
+  font-weight: 500;
+}
+
+.prqTrustSep {
+  width: 1px;
+  height: 12px;
+  background: var(--b2);
+}
+
+
+/* ── Missing prq classes (new component additions) ─────────────────────────── */
+
+.prqBreakdownPanel {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.prqBizCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px !important;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--b2);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+  width: 100%;
+}
+
+.prqBizIco {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prqSelBarTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--r-xs);
+  border-left: 2px solid var(--b2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.prqSuccessCircle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--lime) 12%, transparent);
+  border: 1.5px solid color-mix(in oklab, var(--lime) 30%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.prqRefBox {
+  margin-top: 16px;
+  padding: 10px 20px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  font-size: 0.7rem;
+  color: var(--muted2);
+  text-align: center;
+}
+
+.prqComboCard {
+  border: 1.5px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 16px !important;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+  text-align: left;
+}
+
+.prqComboIco {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prqComboPrice {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.prqComboSavingBadge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--r-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.prqAddonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.prqAddonCard {
+  border: 1.5px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 14px 16px !important;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.prqAddonIco {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prqAddonPrice {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--r-xs);
+}
+
+.prqAddonAddedRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--b1);
+  border-left: 2px solid var(--b2);
+  padding-left: 8px;
+}
+
+.prqAddonAddedLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.prqSvcTagMuted {
+  color: var(--muted2);
+  background: var(--s3);
+  border-color: var(--b2);
+}

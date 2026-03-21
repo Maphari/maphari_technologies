@@ -85,6 +85,13 @@ export function FocusModePage({ isActive, session }: FocusModePageProps) {
   const [breakLeft, setBreakLeft]       = useState(BREAK_DURATION);
   const [markPulse, setMarkPulse]       = useState(false);
   const intervalRef = useRef<number | null>(null);
+  const mountedRef  = useRef(true);
+
+  // ── Mounted guard — set false on unmount ──────────────────────────────────
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   // ── Data loading ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -118,9 +125,11 @@ export function FocusModePage({ isActive, session }: FocusModePageProps) {
     if (!running) return;
     if (phase === "active") {
       intervalRef.current = window.setInterval(() => {
+        if (!mountedRef.current) return;
         setTimeLeft((prev) => {
           if (prev <= 1) {
             if (intervalRef.current) window.clearInterval(intervalRef.current);
+            if (!mountedRef.current) return 0;
             setRunning(false);
             setPhase("break");
             setBreakLeft(BREAK_DURATION);
@@ -132,7 +141,7 @@ export function FocusModePage({ isActive, session }: FocusModePageProps) {
               setCompletedSessions((prev) => [{ task: selectedTask.title, client: selectedTask.client, toneIdx, duration: minutes }, ...prev]);
             }
             setMarkPulse(true);
-            window.setTimeout(() => setMarkPulse(false), 450);
+            window.setTimeout(() => { if (mountedRef.current) setMarkPulse(false); }, 450);
             return 0;
           }
           return prev - 1;
@@ -142,9 +151,11 @@ export function FocusModePage({ isActive, session }: FocusModePageProps) {
     }
     if (phase === "break") {
       intervalRef.current = window.setInterval(() => {
+        if (!mountedRef.current) return;
         setBreakLeft((prev) => {
           if (prev <= 1) {
             if (intervalRef.current) window.clearInterval(intervalRef.current);
+            if (!mountedRef.current) return 0;
             setRunning(false); setPhase("setup"); setSelectedTask(null); setNote(""); setTimeLeft(selectedDuration);
             return 0;
           }
@@ -231,11 +242,18 @@ export function FocusModePage({ isActive, session }: FocusModePageProps) {
 
               <div>
                 <div className={cx("sectionLabel", "mb10")}>Duration</div>
-                <div className={cx("flexRow", "gap8")}>
+                <div className={cx("staffSegControl", "flexRow", "gap8")} role="group" aria-label="Focus duration">
                   {DURATIONS.map((d) => (
                     <button type="button" key={d.value}
-                      className={cx("fmDurBtn", "fmDurPill", selectedDuration === d.value ? "fmDurPillActive" : "fmDurPillIdle")}
+                      className={cx(
+                        "staffSegBtn",
+                        selectedDuration === d.value ? "staffSegBtnActive" : "",
+                        "fmDurBtn",
+                        "fmDurPill",
+                        selectedDuration === d.value ? "fmDurPillActive" : "fmDurPillIdle"
+                      )}
                       onClick={() => { setSelectedDuration(d.value); setTimeLeft(d.value); }}
+                      aria-pressed={selectedDuration === d.value}
                     >{d.label}</button>
                   ))}
                 </div>
@@ -258,7 +276,7 @@ export function FocusModePage({ isActive, session }: FocusModePageProps) {
                   <circle cx={110} cy={110} r={ringR} fill="none" stroke={ringColor} className={cx("fmRingProgress", running && "fmRingProgressRunning")} strokeWidth="6" strokeDasharray={`${ringFill} ${ringCirc}`} strokeLinecap="round" transform="rotate(-90 110 110)" />
                 </svg>
                 <div className={cx("fmRingCenter")}>
-                  <div className={cx("fmTimerValue")}>{formatTime(timeLeft)}</div>
+                  <div className={cx("staffFocusTimerDisplay", "fmTimerValue")}>{formatTime(timeLeft)}</div>
                   <div className={cx("fmTimerLabel")}>{running ? "Focusing" : "Paused"}</div>
                 </div>
               </div>
@@ -289,7 +307,7 @@ export function FocusModePage({ isActive, session }: FocusModePageProps) {
                   <circle cx={90} cy={90} r={70} fill="none" stroke="var(--blue)" className={cx("fmBreakRingProgress")} strokeWidth="5" strokeDasharray={`${((BREAK_DURATION - breakLeft) / BREAK_DURATION) * (2 * Math.PI * 70)} ${2 * Math.PI * 70}`} strokeLinecap="round" transform="rotate(-90 90 90)" />
                 </svg>
                 <div className={cx("fmBreakCenter")}>
-                  <div className={cx("fmBreakValue")}>{formatTime(breakLeft)}</div>
+                  <div className={cx("staffFocusTimerDisplay", "fmBreakValue")}>{formatTime(breakLeft)}</div>
                   <div className={cx("fmBreakLabel")}>Break</div>
                 </div>
               </div>

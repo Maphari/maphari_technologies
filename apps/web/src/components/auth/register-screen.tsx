@@ -41,8 +41,8 @@ type RoleConfig = {
 
 const roleConfig: Record<RegisterRole, RoleConfig> = {
   staff: {
-    color: "#4f9eff",
-    colorD: "rgba(79,158,255,0.10)",
+    color: "#f97316",
+    colorD: "rgba(249,115,22,0.10)",
     activeClass: "activeStaff"
   },
   admin: {
@@ -330,7 +330,7 @@ export function RegisterScreen() {
                 left: -120,
                 background:
                   role === "staff"
-                    ? "radial-gradient(circle, rgba(79,158,255,0.14) 0%, transparent 70%)"
+                    ? "radial-gradient(circle, rgba(249,115,22,0.14) 0%, transparent 70%)"
                     : "radial-gradient(circle, rgba(167,139,250,0.14) 0%, transparent 70%)"
               }}
             />
@@ -344,8 +344,8 @@ export function RegisterScreen() {
                 right: -100,
                 background:
                   role === "staff"
-                    ? "radial-gradient(circle, rgba(200,241,53,0.08) 0%, transparent 70%)"
-                    : "radial-gradient(circle, rgba(79,158,255,0.08) 0%, transparent 70%)"
+                    ? "radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%)"
+                    : "radial-gradient(circle, rgba(167,139,250,0.08) 0%, transparent 70%)"
               }}
             />
           </div>
@@ -558,7 +558,7 @@ export function RegisterScreen() {
                 {role === "staff" ? (
                   <div
                     className={styles.resetSuccess}
-                    style={{ background: "rgba(79,158,255,0.08)", borderColor: "rgba(79,158,255,0.2)", color: "#4f9eff", marginBottom: 16 }}
+                    style={{ background: "rgba(249,115,22,0.08)", borderColor: "rgba(249,115,22,0.2)", color: "#f97316", marginBottom: 16 }}
                   >
                     Your request will be reviewed by an admin. Once approved, you&apos;ll receive a 6-digit PIN to complete activation.
                   </div>

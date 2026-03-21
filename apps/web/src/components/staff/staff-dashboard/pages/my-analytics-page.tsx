@@ -159,24 +159,19 @@ export function MyAnalyticsPage({ isActive, session }: MyAnalyticsPageProps) {
         <p className={cx("pageSubtitleText", "mb20")}>Personal performance analytics — derived from time entries &amp; task activity</p>
       </div>
 
-      {/* ── Metric cards ──────────────────────────────────────────────────── */}
-      <div className={cx("anlMetricGrid")}>
+      {/* ── Metric strip ──────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip")}>
         {metrics.map((m) => (
-              <div key={m.label} className={cx("anlMetricCard")}>
-                <div className={cx("anlMetricCardTop")}>
-                  <div className={cx("anlMetricLabel")}>{m.label}</div>
-                  <div className={cx("anlMetricValue", "colorAccent")}>{m.value}</div>
-                </div>
-                <div className={cx("anlMetricCardDivider")} />
-                <div className={cx("anlMetricCardBottom")}>
-                  <span className={cx("anlChangeChip", changeDirCls(m.changeDir))}>
-                    {m.changeDir === "up" ? "↑" : "↓"} {m.change}
-                  </span>
-                  <span className={cx("anlChangeSuffix")}>vs last month</span>
-                </div>
-              </div>
-            ))
-        }
+          <div key={m.label} className={cx("staffKpiCell")}>
+            <div className={cx("staffKpiLabel")}>{m.label}</div>
+            <div className={cx("staffKpiValue", m.changeDir === "up" ? "colorAccent" : "colorRed")}>{m.value}</div>
+            <div className={cx("staffKpiSub")}>
+              <span className={cx(changeDirCls(m.changeDir))}>
+                {m.changeDir === "up" ? "↑" : "↓"} {m.change}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* ── Weekly breakdown ───────────────────────────────────────────────── */}

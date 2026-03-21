@@ -124,57 +124,28 @@ export function MyLearningPage({ isActive, session }: { isActive: boolean; sessi
         <p className={cx("pageSubtitleText", "mb20")}>Course catalog, enrollments, and certifications</p>
       </div>
 
-      {/* ── Summary stats ────────────────────────────────────────────────── */}
-      <div className={cx("mllStatGrid")}>
-
-        <div className={cx("mllStatCard")}>
-          <div className={cx("mllStatCardTop")}>
-            <div className={cx("mllStatLabel")}>Completed</div>
-            <div className={cx("mllStatValue", "colorGreen")}>{completedCount}</div>
-          </div>
-          <div className={cx("mllStatCardDivider")} />
-          <div className={cx("mllStatCardBottom")}>
-            <span className={cx("mllStatDot", "dotBgGreen")} />
-            <span className={cx("mllStatMeta")}>courses finished</span>
-          </div>
+      {/* ── Summary strip ────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Completed</div>
+          <div className={cx("staffKpiValue", "colorGreen")}>{completedCount}</div>
+          <div className={cx("staffKpiSub")}>courses finished</div>
         </div>
-
-        <div className={cx("mllStatCard")}>
-          <div className={cx("mllStatCardTop")}>
-            <div className={cx("mllStatLabel")}>In Progress</div>
-            <div className={cx("mllStatValue", "colorAmber")}>{inProgressCount}</div>
-          </div>
-          <div className={cx("mllStatCardDivider")} />
-          <div className={cx("mllStatCardBottom")}>
-            <span className={cx("mllStatDot", "dotBgAmber")} />
-            <span className={cx("mllStatMeta")}>currently active</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>In Progress</div>
+          <div className={cx("staffKpiValue", "colorAmber")}>{inProgressCount}</div>
+          <div className={cx("staffKpiSub")}>currently active</div>
         </div>
-
-        <div className={cx("mllStatCard")}>
-          <div className={cx("mllStatCardTop")}>
-            <div className={cx("mllStatLabel")}>Not Started</div>
-            <div className={cx("mllStatValue")}>{notStartedCount}</div>
-          </div>
-          <div className={cx("mllStatCardDivider")} />
-          <div className={cx("mllStatCardBottom")}>
-            <span className={cx("mllStatDot", "dotBgMuted2")} />
-            <span className={cx("mllStatMeta")}>yet to begin</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Not Started</div>
+          <div className={cx("staffKpiValue")}>{notStartedCount}</div>
+          <div className={cx("staffKpiSub")}>yet to begin</div>
         </div>
-
-        <div className={cx("mllStatCard")}>
-          <div className={cx("mllStatCardTop")}>
-            <div className={cx("mllStatLabel")}>Total Hours</div>
-            <div className={cx("mllStatValue", "colorAccent")}>{totalHours}h</div>
-          </div>
-          <div className={cx("mllStatCardDivider")} />
-          <div className={cx("mllStatCardBottom")}>
-            <span className={cx("mllStatDot", "dotBgAccent")} />
-            <span className={cx("mllStatMeta")}>learning content</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Total Hours</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{totalHours}h</div>
+          <div className={cx("staffKpiSub")}>learning content</div>
         </div>
-
       </div>
 
       {/* ── Course list ───────────────────────────────────────────────────── */}

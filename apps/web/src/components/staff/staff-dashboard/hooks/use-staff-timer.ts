@@ -203,7 +203,7 @@ export function useStaffTimer({
     [projectTimeBreakdown]
   );
 
-  const timerDisplay = formatTimer(timerSeconds);
+  const timerDisplay = useMemo(() => formatTimer(timerSeconds), [timerSeconds]);
 
   // ─── Handlers ───
 

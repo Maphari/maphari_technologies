@@ -5,7 +5,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cx } from "../style";
 import {
   getStaffFeedback,
@@ -72,9 +72,13 @@ export function FeedbackInboxPage({ isActive, session }: FeedbackInboxPageProps)
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const [acking, setAcking]   = useState<string | null>(null);
+  const loadedRef             = useRef(false);
 
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
+    // Only load once on first activation
+    if (loadedRef.current) return;
+    loadedRef.current = true;
     let cancelled = false;
 
     setLoading(true);
@@ -84,27 +88,38 @@ export function FeedbackInboxPage({ isActive, session }: FeedbackInboxPageProps)
       if (result.nextSession) saveSession(result.nextSession);
       if (result.data) setItems(result.data);
     }).catch((err) => {
-      const msg = err?.message ?? "Failed to load feedback";
+      if (cancelled) return;
+      const msg = (err as Error)?.message ?? "Failed to load feedback";
       setError(msg);
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };
-  }, [session?.accessToken]);
+  }, [isActive, session?.accessToken]);
 
   // ── Acknowledge handler ────────────────────────────────────────────────────
   const handleAck = useCallback(async (item: StaffFeedbackItem) => {
     if (!session || acking) return;
     setAcking(item.id);
-    const result = await acknowledgeStaffFeedback(session, item.rawType, item.rawId);
-    if (result.nextSession) saveSession(result.nextSession);
-    if (result.data) {
-      setItems((prev) =>
-        prev.map((f) => f.id === item.id ? { ...f, status: result.data!.status } : f)
-      );
+    // Optimistic update: mark as read immediately
+    setItems((prev) => prev.map((f) => f.id === item.id ? { ...f, status: "REVIEWED" } : f));
+    try {
+      const result = await acknowledgeStaffFeedback(session, item.rawType, item.rawId);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.data) {
+        // Sync with actual server status
+        setItems((prev) => prev.map((f) => f.id === item.id ? { ...f, status: result.data!.status } : f));
+      } else {
+        // Revert on error
+        setItems((prev) => prev.map((f) => f.id === item.id ? { ...f, status: "PENDING" } : f));
+      }
+    } catch {
+      // Revert on network error
+      setItems((prev) => prev.map((f) => f.id === item.id ? { ...f, status: "PENDING" } : f));
+    } finally {
+      setAcking(null);
     }
-    setAcking(null);
   }, [session, acking]);
 
   // ── Derived stats ──────────────────────────────────────────────────────────

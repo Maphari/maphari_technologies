@@ -134,4 +134,85 @@ export async function registerDeliverableRoutes(app: FastifyInstance): Promise<v
       return { success: false, error: { code: "DELIVERABLE_DELETE_FAILED", message: "Unable to delete deliverable." } } as ApiResponse;
     }
   });
+
+  /** POST /projects/:projectId/deliverables/:id/approve — client approves a deliverable */
+  app.post("/projects/:projectId/deliverables/:id/approve", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const { projectId, id } = request.params as { projectId: string; id: string };
+
+    // Tenant safety for CLIENT
+    const scopedClientId = resolveClientFilter(scope.role, scope.clientId);
+    if (scopedClientId) {
+      const project = await prisma.project.findFirst({ where: { id: projectId, clientId: scopedClientId }, select: { id: true } });
+      if (!project) {
+        reply.status(404);
+        return { success: false, error: { code: "PROJECT_NOT_FOUND", message: "Project not found." } } as ApiResponse;
+      }
+    }
+
+    try {
+      const current = await prisma.projectDeliverable.findFirst({
+        where: { id, projectId },
+        select: { status: true }
+      });
+      if (!current) {
+        reply.status(404);
+        return { success: false, error: { code: "NOT_FOUND", message: "Deliverable not found." } } as ApiResponse;
+      }
+      if (current.status !== "DELIVERED") {
+        reply.status(409);
+        return { success: false, error: { code: "INVALID_STATUS", message: "Only delivered deliverables can be approved." } } as ApiResponse;
+      }
+      const deliverable = await prisma.projectDeliverable.update({
+        where: { id, projectId },
+        data: { status: "ACCEPTED" }
+      });
+      await cache.delete(CacheKeys.deliverables(projectId));
+      return { success: true, data: deliverable } as ApiResponse<typeof deliverable>;
+    } catch (error) {
+      request.log.error(error);
+      return { success: false, error: { code: "DELIVERABLE_APPROVE_FAILED", message: "Unable to approve deliverable." } } as ApiResponse;
+    }
+  });
+
+  /** POST /projects/:projectId/deliverables/:id/request-changes — client requests changes */
+  app.post("/projects/:projectId/deliverables/:id/request-changes", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const { projectId, id } = request.params as { projectId: string; id: string };
+    const body = request.body as { reason?: string };
+
+    // Tenant safety for CLIENT
+    const scopedClientId = resolveClientFilter(scope.role, scope.clientId);
+    if (scopedClientId) {
+      const project = await prisma.project.findFirst({ where: { id: projectId, clientId: scopedClientId }, select: { id: true } });
+      if (!project) {
+        reply.status(404);
+        return { success: false, error: { code: "PROJECT_NOT_FOUND", message: "Project not found." } } as ApiResponse;
+      }
+    }
+
+    try {
+      const current = await prisma.projectDeliverable.findFirst({
+        where: { id, projectId },
+        select: { status: true }
+      });
+      if (!current) {
+        reply.status(404);
+        return { success: false, error: { code: "NOT_FOUND", message: "Deliverable not found." } } as ApiResponse;
+      }
+      if (current.status !== "DELIVERED") {
+        reply.status(409);
+        return { success: false, error: { code: "INVALID_STATUS", message: "Only delivered deliverables can have changes requested." } } as ApiResponse;
+      }
+      const deliverable = await prisma.projectDeliverable.update({
+        where: { id, projectId },
+        data: { status: "CHANGES_REQUESTED" }
+      });
+      await cache.delete(CacheKeys.deliverables(projectId));
+      return { success: true, data: deliverable } as ApiResponse<typeof deliverable>;
+    } catch (error) {
+      request.log.error(error);
+      return { success: false, error: { code: "DELIVERABLE_CHANGES_FAILED", message: "Unable to submit change request." } } as ApiResponse;
+    }
+  });
 }

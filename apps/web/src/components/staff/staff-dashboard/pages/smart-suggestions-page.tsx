@@ -5,7 +5,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
@@ -324,7 +324,7 @@ export function SmartSuggestionsPage({
 
   // ── Fetch data from API ───
   useEffect(() => {
-    if (!session) { setLoading(false); return; }
+    if (!isActive || !session) { setLoading(false); return; }
     let cancelled = false;
 
     void (async () => {
@@ -353,27 +353,27 @@ export function SmartSuggestionsPage({
     })();
 
     return () => { cancelled = true; };
-  }, [session?.accessToken]);
+  }, [isActive, session?.accessToken]);
 
   const active = suggestions.filter((item) => !item.done && !item.dismissed && !item.snoozed);
   const snoozed = suggestions.filter((item) => item.snoozed && !item.done && !item.dismissed);
   const dismissed = suggestions.filter((item) => item.dismissed && !item.done);
   const completed = suggestions.filter((item) => item.done);
 
-  const markDone = (id: number) =>
-    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, done: true } : item)));
+  const markDone = useCallback((id: number) =>
+    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, done: true } : item))), []);
 
-  const dismiss = (id: number) =>
-    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, dismissed: true } : item)));
+  const dismiss = useCallback((id: number) =>
+    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, dismissed: true } : item))), []);
 
-  const snooze = (id: number) =>
-    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, snoozed: true } : item)));
+  const snooze = useCallback((id: number) =>
+    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, snoozed: true } : item))), []);
 
-  const restore = (id: number) =>
-    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, dismissed: false, snoozed: false } : item)));
+  const restore = useCallback((id: number) =>
+    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, dismissed: false, snoozed: false } : item))), []);
 
-  const sendFeedback = (id: number, feedback: Exclude<FeedbackValue, null>) =>
-    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, feedback } : item)));
+  const sendFeedback = useCallback((id: number, feedback: Exclude<FeedbackValue, null>) =>
+    setSuggestions((previous) => previous.map((item) => (item.id === id ? { ...item, feedback } : item))), []);
 
   const visibleActive = active
     .filter((item) => laneFilter === "all" || item.lane === laneFilter)

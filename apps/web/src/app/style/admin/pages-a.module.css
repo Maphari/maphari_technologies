@@ -20,7 +20,9 @@
   border-radius: var(--r-md);
   overflow: hidden;
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 .healthIntvHeadGrid {
@@ -96,7 +98,9 @@
 .healthIntvTimelineCard {
   border-radius: var(--r-sm);
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 .healthIntvNextStep {
@@ -632,7 +636,9 @@
   border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 .msgKpiCard.toneAccent { border-left-color: var(--accent); }
 .msgKpiCard.toneBlue   { border-left-color: var(--blue);   }
@@ -868,7 +874,9 @@
   border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 .notifKpiCard.toneAccent { border-left-color: var(--accent); }
 .notifKpiCard.toneBlue   { border-left-color: var(--blue);   }
@@ -1246,7 +1254,9 @@
   border-radius: var(--r-sm);
   line-height: 1.6;
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 .ownerAddPrivateBtn {
@@ -1457,7 +1467,9 @@
   border-radius: var(--r-sm);
   background: var(--s2);
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 .pifServiceRowAlert {
@@ -1891,7 +1903,9 @@
   border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.02);
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 .prrLevelRed { border-left-color: var(--red); }
@@ -2086,7 +2100,9 @@
   padding: 20px;
   background: var(--s2);
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 .prrCategoryCardAccent { border-left-color: var(--accent); }
@@ -2129,7 +2145,9 @@
   justify-content: space-between;
   gap: 10px;
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 .prrCategoryRowAccent { border-left-color: var(--accent); }
@@ -2982,7 +3000,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .qaCardTone {
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 .qaCardTone.toneRed    { border-left-color: var(--red);    }
 .qaCardTone.toneAmber  { border-left-color: var(--amber);  }
@@ -3322,7 +3342,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .resAllocProjectCard {
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 .resAllocProjectCard.toneAccent { border-left-color: var(--accent); }
 .resAllocProjectCard.toneBlue   { border-left-color: var(--blue);   }
@@ -4451,7 +4473,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: var(--r-md);
   padding: 20px;
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 .dvtClientCardAccent { border-left-color: var(--accent); }
@@ -4731,7 +4755,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 .exdKpiLabel {
@@ -5017,7 +5043,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 .exdClientName {
@@ -5122,7 +5150,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-left: 3px solid transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 .exdAlertLeftBig {

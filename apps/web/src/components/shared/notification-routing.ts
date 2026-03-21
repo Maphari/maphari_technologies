@@ -60,7 +60,6 @@ export const CLIENT_PAGE_TO_NOTIFICATION_TAB: Record<ClientPageId, DashboardNoti
   integrations:         "settings",
   settings:             "settings",
   dataPrivacy:          "settings",
-  onboardingStatus:     "dashboard",
   onboarding:           "settings",
   progressKnowledge:    "operations",
   knowledgeAccess:      "operations",

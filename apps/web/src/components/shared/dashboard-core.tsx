@@ -56,6 +56,7 @@ function injectPulseStyle() {
 
 export type DashboardVariant = "admin" | "staff" | "client";
 
+// Staff: orange #f97316 | Admin: purple #8b6fff | Client: lime #c8f135
 const VARIANT_CONFIG: Record<DashboardVariant, { accent: string; bg: string; surface: string; border: string; label: string; sublabel: string }> = {
   admin: {
     accent: "#8b6fff",
@@ -67,7 +68,7 @@ const VARIANT_CONFIG: Record<DashboardVariant, { accent: string; bg: string; sur
   },
   staff: {
     accent: "#f97316",
-    bg: "#06060e",
+    bg: "#030309",
     surface: "#0d0d1a",
     border: "rgba(249,115,22,0.18)",
     label: "Staff Portal",

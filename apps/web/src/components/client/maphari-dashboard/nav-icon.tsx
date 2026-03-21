@@ -297,12 +297,6 @@ export function NavIcon({ id, className }: { id: PageId; className: string }) {
       <rect x="8.5" y="10" width="6" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.3" />
     </svg>
   );
-  if (id === "onboardingStatus") return (
-    <svg className={className} viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
   if (id === "onboarding") return (
     <svg className={className} viewBox="0 0 16 16" fill="none">
       <circle cx="8" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3" />

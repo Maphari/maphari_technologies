@@ -14,12 +14,7 @@ import {
 } from "../../../../lib/api/staff/tasks";
 import {
   getStaffProjects,
-  getStaffSprints,
-  type StaffSprint,
 } from "../../../../lib/api/staff/projects";
-
-const sprintStart = new Date();
-const sprintEnd = new Date(Date.now() + 13 * 24 * 60 * 60 * 1000);
 
 type Client = {
   id: string;
@@ -101,6 +96,9 @@ export function SprintPlanningPage({
   isActive: boolean;
   session: AuthSession | null;
 }) {
+  const sprintStart = useMemo(() => new Date(), []);
+  const sprintEnd   = useMemo(() => new Date(Date.now() + 13 * 24 * 60 * 60 * 1000), []);
+
   const [clients, setClients] = useState<Client[]>([]);
   const [sprint, setSprint] = useState<SprintTask[]>([]);
   const [backlog, setBacklog] = useState<BacklogItem[]>([]);
@@ -297,16 +295,18 @@ export function SprintPlanningPage({
           </div>
 
           <div className={cx("spTopStats")}>
-            <div className={cx("textRight")}>
-              <div className={cx("statLabelNew", "rdStudioLabel")}>Capacity used</div>
-              <div className={cx("statValueNew", burnToneClass, "rdStudioMetric", burnPct > 90 ? "rdStudioMetricNeg" : burnPct > 70 ? "rdStudioMetricWarn" : "rdStudioMetricPos")}>
-                {totalEstimate}h <span className={cx("spCapacityBase")}>/ {sprintCapacity}h</span>
+            <div className={cx("staffKpiStrip")}>
+              <div className={cx("staffKpiCell")}>
+                <div className={cx("staffKpiLabel")}>Capacity used</div>
+                <div className={cx("staffKpiValue", burnToneClass)}>{totalEstimate}h <span className={cx("staffKpiSub")}>/ {sprintCapacity}h</span></div>
+                <div className={cx("staffBar", "spCapacityBarWrap")}>
+                  <div className={cx("staffBarFill", burnPct > 90 ? "spCapRed" : burnPct > 70 ? "spCapAmber" : "spCapAccent")} style={{ width: `${Math.min(burnPct, 100)}%` }} />
+                </div>
               </div>
-              <progress className={cx("progressMeter", "spCapacityMeter", burnMeterClass)} max={100} value={Math.min(burnPct, 100)} />
-            </div>
-            <div className={cx("textRight")}>
-              <div className={cx("statLabelNew", "rdStudioLabel")}>Done</div>
-              <div className={cx("statValueNew", "spDoneValue", "rdStudioMetric", "rdStudioMetricPos")}>{doneCount}/{sprint.length}</div>
+              <div className={cx("staffKpiCell")}>
+                <div className={cx("staffKpiLabel")}>Done</div>
+                <div className={cx("staffKpiValue")}>{doneCount}/{sprint.length}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -443,7 +443,7 @@ export function SprintPlanningPage({
                   {tasks.map((task) => {
                     const client = clients.find((candidate) => candidate.id === task.clientId);
                     return (
-                      <div key={task.id} className={cx("spListTaskRow", task.status === "done" && "spTaskDoneRow", "rdStudioRow")}>
+                      <div key={task.id} className={cx("staffListRow", "spListTaskRow", task.status === "done" && "spTaskDoneRow", "rdStudioRow")}>
                         <button type="button" className={cx("spStatusBtn", "spStatusBtnLg", statusToneClass(task.status), task.status === "done" && "spStatusDoneFill")} onClick={() => cycleStatus(task.id)}>
                           {task.status === "done" ? "✓" : task.status === "in_progress" ? "◉" : ""}
                         </button>
@@ -492,7 +492,8 @@ export function SprintPlanningPage({
               .map((item) => {
                 const client = clients.find((candidate) => candidate.id === item.clientId);
                 return (
-                  <div key={item.id} className={cx("spBacklogCard")}>
+                  <div key={item.id} className={cx("staffListRow", "spBacklogCard")}>
+                    <span className={cx("staffDragHandle")} aria-hidden="true">⠿</span>
                     <div className={cx("flex1", "minW0")}>
                       <div className={cx("spBacklogTitle")}>{item.title}</div>
                       <div className={cx("spBacklogMeta")}>

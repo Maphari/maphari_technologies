@@ -89,6 +89,39 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
         />
       )}
 
+      {/* ── KPI strip ────────────────────────────────────────────────────── */}
+      {rows.length > 0 && (() => {
+        const totalStaff = rows.length;
+        const allCells   = rows.flatMap((r) => r.weeks.map((w) => utilPct(w.allocatedHours, w.availableHours)));
+        const avgUtil    = allCells.length > 0 ? Math.round(allCells.reduce((s, v) => s + v, 0) / allCells.length) : 0;
+        const overloaded = rows.filter((r) => r.weeks.some((w) => utilPct(w.allocatedHours, w.availableHours) > 90)).length;
+        const available  = rows.filter((r) => r.weeks.every((w) => utilPct(w.allocatedHours, w.availableHours) <= 70)).length;
+        return (
+          <div className={cx("staffKpiStrip")}>
+            <div className={cx("staffKpiCell")}>
+              <div className={cx("staffKpiLabel")}>Team Members</div>
+              <div className={cx("staffKpiValue", "colorAccent")}>{totalStaff}</div>
+              <div className={cx("staffKpiSub")}>tracked</div>
+            </div>
+            <div className={cx("staffKpiCell")}>
+              <div className={cx("staffKpiLabel")}>Avg Utilization</div>
+              <div className={cx("staffKpiValue", avgUtil > 90 ? "colorRed" : avgUtil > 70 ? "colorAmber" : "colorGreen")}>{avgUtil}%</div>
+              <div className={cx("staffKpiSub")}>across all weeks</div>
+            </div>
+            <div className={cx("staffKpiCell")}>
+              <div className={cx("staffKpiLabel")}>Overloaded</div>
+              <div className={cx("staffKpiValue", overloaded > 0 ? "colorRed" : "colorGreen")}>{overloaded}</div>
+              <div className={cx("staffKpiSub")}>{overloaded > 0 ? "above 90%" : "none above 90%"}</div>
+            </div>
+            <div className={cx("staffKpiCell")}>
+              <div className={cx("staffKpiLabel")}>Available</div>
+              <div className={cx("staffKpiValue", available > 0 ? "colorGreen" : "colorAmber")}>{available}</div>
+              <div className={cx("staffKpiSub")}>under 70% all weeks</div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Legend ───────────────────────────────────────────────────────── */}
       <div className={cx("wlhLegend")}>
         <span className={cx("wlhLegendDot", "wlhLegendGreen")} />

@@ -225,10 +225,11 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
   const [sortBy, setSortBy]           = useState<"score" | "name" | "trend">("score");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionDone,    setActionDone]    = useState<string | null>(null);
+  const [actionError,   setActionError]   = useState<string | null>(null);
 
   // ── Load health scores on mount / session change ──────────────────────────
   useEffect(() => {
-    if (!session || !isActive) { setLoading(false); return; }
+    if (!session?.accessToken || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
@@ -238,13 +239,13 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
       if (result.data) setHealthData(result.data);
     }).catch((err) => {
       const msg = err?.message ?? "Failed to load client health";
-      setError(msg);
+      if (!cancelled) setError(msg);
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };
-  }, [session, isActive]);
+  }, [session?.accessToken, isActive]);
 
   const filtered = useMemo(
     () =>
@@ -267,17 +268,26 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
     if (!session || !selectedClient) return;
     setActionLoading(label);
     setActionDone(null);
-    const result = await createStaffInterventionWithRefresh(session, {
-      clientId:    selectedClient.id,
-      type,
-      description,
-      priority,
-    });
-    if (result.nextSession) saveSession(result.nextSession);
-    setActionLoading(null);
-    if (!result.error && result.data) {
-      setActionDone(label);
-      setTimeout(() => setActionDone(null), 3000);
+    setActionError(null);
+    try {
+      const result = await createStaffInterventionWithRefresh(session, {
+        clientId:    selectedClient.id,
+        type,
+        description,
+        priority,
+      });
+      if (result.nextSession) saveSession(result.nextSession);
+      if (!result.error && result.data) {
+        setActionDone(label);
+        setTimeout(() => setActionDone(null), 3000);
+      } else if (result.error) {
+        setActionError(result.error.message ?? "Action failed");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Action failed";
+      setActionError(msg);
+    } finally {
+      setActionLoading(null);
     }
   }
 
@@ -308,30 +318,30 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
         </div>
       )}
       <div className={cx("pageHeaderBar", "chHeaderBar")}>
-        <div className={cx("flexBetween", "gap24")}>
-          <div>
-            <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
-            <h1 className={cx("pageTitleText")}>Client Health Score</h1>
-          </div>
-
-          {!loading && (
-            <div className={cx("chTopStats")}>
-              {[
-                { label: "Portfolio avg",  value: avg,         unit: "/100",     className: avg >= 70 ? "colorAccent" : "colorAmber" },
-                { label: "At risk",        value: atRiskCount, unit: " clients",  className: atRiskCount > 0 ? "colorRed" : "colorAccent" },
-                { label: "Total clients",  value: healthData.length, unit: "",   className: "colorMuted" }
-              ].map((summary) => (
-                <div key={summary.label} className={cx("textRight")}>
-                  <div className={cx("statLabelNew")}>{summary.label}</div>
-                  <div className={cx("statValueNew", summary.className)}>
-                    {summary.value}
-                    <span className={cx("text12", "fontMono", "colorMuted2", "fw400")}>{summary.unit}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* ── Title row ── */}
+        <div className={cx("chHeaderTitle")}>
+          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
+          <h1 className={cx("pageTitleText")}>Client Health Score</h1>
         </div>
+
+        {/* ── KPI strip — full width below title ── */}
+        {!loading && (
+          <div className={cx("staffKpiStrip", "chKpiStrip")}>
+            {[
+              { label: "Portfolio avg",  value: avg,               unit: "/100",     cls: avg >= 70 ? "colorAccent" : "colorAmber" },
+              { label: "At risk",        value: atRiskCount,       unit: " clients", cls: atRiskCount > 0 ? "colorRed" : "colorAccent" },
+              { label: "Total clients",  value: healthData.length, unit: "",         cls: "colorMuted" },
+            ].map((summary) => (
+              <div key={summary.label} className={cx("staffKpiCell")}>
+                <div className={cx("staffKpiLabel")}>{summary.label}</div>
+                <div className={cx("staffKpiValue", summary.cls)}>
+                  {summary.value}
+                  <span className={cx("staffKpiSub")}>{summary.unit}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* ── At-risk alert banner ── */}
         {!loading && atRiskCount > 0 && (
@@ -360,7 +370,7 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
 
         {/* ── Filter + sort pills ── */}
         <div className={cx("chFilterRow")}>
-          <div className={cx("chFilterPills")}>
+          <div className={cx("staffSegControl")}>
             {SENTIMENT_FILTERS.map((opt) => {
               const count = opt.value === "all"
                 ? healthData.length
@@ -369,7 +379,7 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
                 <button
                   key={opt.value}
                   type="button"
-                  className={cx("chFilterPill", filter === opt.value ? "chFilterPillActive" : "chFilterPillIdle")}
+                  className={cx("staffSegBtn", filter === opt.value && "staffSegBtnActive")}
                   onClick={() => setFilter(opt.value)}
                   aria-pressed={filter === opt.value}
                 >
@@ -419,7 +429,7 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
 
           {/* Client rows */}
           {!loading && (
-            <div className={cx("flexCol", "gap12")}>
+            <div className={cx("flexCol", "gap10")}>
               {filtered.map((client) => {
                 const isSelected = selected === client.id;
 
@@ -449,49 +459,62 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
                 return (
                   <div
                     key={client.id}
-                    className={cx("chHealthRow", "chRowCard", isSelected && "chRowCardSelected")}
+                    className={cx(
+                      "staffCard",
+                      "chRowCard",
+                      isSelected && "chRowCardSelected",
+                      client.score < 50 ? "staffClientToneRed" : client.score < 75 ? "staffClientToneAmber" : "staffClientToneGreen"
+                    )}
+                    style={{ cursor: "pointer" }}
                     onClick={() => setSelected(isSelected ? null : client.id)}
                   >
-                    <ScoreRing score={client.score} />
-                    <div className={cx("minW0")}>
-                      <div className={cx("chNameRow")}>
-                        <div className={cx("chAvatar")}>{client.avatar}</div>
-                        <span className={cx("chClientName")}>{client.name}</span>
-                        <span className={cx("chSentimentBadge", sentimentClass(client.sentiment))}>{sentimentLabel(client.sentiment)}</span>
-                      </div>
-                      <div className={cx("text11", "colorMuted2", "mb4")}>{client.project} · No assigned manager</div>
-                      {client.milestoneDelay > 0 ? (
-                        <div className={cx("text10", "colorRed", "mb10")}>
-                          Milestone delay: {client.milestoneDelay} day{client.milestoneDelay === 1 ? "" : "s"}
+                    {/* Head row */}
+                    <div className={cx("staffListRow")}>
+                      <ScoreRing score={client.score} />
+                      <div className={cx("flex1", "minW0")}>
+                        <div className={cx("chNameRow")}>
+                          <div className={cx("staffClientAvatar")}>{client.avatar}</div>
+                          <span className={cx("chClientName")}>{client.name}</span>
+                          <span className={cx("chSentimentBadge", sentimentClass(client.sentiment))}>{sentimentLabel(client.sentiment)}</span>
                         </div>
-                      ) : (
-                        <div className={cx("mb10", "chSpacer14")} />
-                      )}
-
-                      <div className={cx("chMetricGrid")}>
-                        {metrics.map((metric) => {
-                          const tone = metricToneClass(metric.value);
-                          return (
-                            <div key={metric.label}>
-                              <div className={cx("chMetricLabel")}>{metric.label}</div>
-                              <progress className={cx("progressMeter", "chMiniBar", tone)} max={100} value={metric.value} />
-                              <div className={cx("text10", "mt3", tone)}>{metric.raw}</div>
-                            </div>
-                          );
-                        })}
+                        <div className={cx("text11", "colorMuted2", "mb4")}>{client.project}</div>
+                        {client.milestoneDelay > 0 && (
+                          <div className={cx("text10", "colorRed")}>
+                            Milestone delay: {client.milestoneDelay} day{client.milestoneDelay === 1 ? "" : "s"}
+                          </div>
+                        )}
+                        {/* Mini health bars */}
+                        <div className={cx("chMetricGrid")}>
+                          {metrics.map((metric) => {
+                            const tone = metricToneClass(metric.value);
+                            const fillColor = tone === "chMeterGood" ? "var(--accent)" : tone === "chMeterWarn" ? "var(--amber)" : "var(--red)";
+                            return (
+                              <div key={metric.label}>
+                                <div className={cx("chMetricLabel")}>{metric.label}</div>
+                                <div className={cx("staffBar")}>
+                                  <div
+                                    className={cx("staffBarFill")}
+                                    style={{ "--fill-pct": metric.value, "--fill-color": fillColor } as React.CSSProperties}
+                                  />
+                                </div>
+                                <div className={cx("text10", "mt3", tone)}>{metric.raw}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className={cx("chSideMeta")}>
-                      <div className={cx("chTrend", trendClass(client.trend))}>
-                        <span className={cx("chTrendIco")}><TrendIcon trend={client.trend} /></span>
-                        <span className={cx("chTrendVal")}>{client.trendVal} wk</span>
-                      </div>
-                      <div className={cx("text10", "colorMuted2", "mt8")}>Last touched</div>
-                      <div className={cx("text11", "colorMuted")}>{client.lastTouched}</div>
-                      <div className={cx("chDetailsToggle", isSelected ? "chDetailsToggleOpen" : "chDetailsToggleClosed")}>
-                        {isSelected ? <IcoChevronUp /> : <IcoChevronDown />}
-                        <span>{isSelected ? "Close" : "Details"}</span>
+                      <div className={cx("chSideMeta")}>
+                        <div className={cx("chTrend", trendClass(client.trend))}>
+                          <span className={cx("chTrendIco")}><TrendIcon trend={client.trend} /></span>
+                          <span className={cx("chTrendVal")}>{client.trendVal} wk</span>
+                        </div>
+                        <div className={cx("text10", "colorMuted2", "mt8")}>Last touched</div>
+                        <div className={cx("text11", "colorMuted")}>{client.lastTouched}</div>
+                        <div className={cx("chDetailsToggleClosed")}>
+                          {isSelected ? <IcoChevronUp /> : <IcoChevronDown />}
+                          <span>{isSelected ? "Close" : "Details"}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -561,6 +584,9 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
                   </button>
                 ))}
               </div>
+              {actionError && (
+                <div className={cx("text10", "colorRed", "mt6")}>{actionError}</div>
+              )}
             </div>
 
             <div className={cx("chRetainerCard")}>

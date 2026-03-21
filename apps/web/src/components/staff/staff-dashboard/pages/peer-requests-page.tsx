@@ -7,7 +7,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import type { AuthSession } from "../../../../lib/auth/session";
@@ -129,13 +129,13 @@ export function PeerRequestsPage({
   ]);
   const [clients, setClients] = useState<ClientRow[]>([]);
 
-  const [submitting, setSubmitting] = useState(false);
+  const [itemLoading, setItemLoading] = useState<Record<string, "approving" | "rejecting" | "completing" | null>>({});
   const [peerReviews, setPeerReviews] = useState<StaffPeerReview[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session) { setLoading(false); return; }
+    if (!isActive || !session?.accessToken) { setLoading(false); return; }
     setLoading(true);
     setError(null);
     // Load profile, clients, and peer reviews in parallel
@@ -212,8 +212,7 @@ export function PeerRequestsPage({
     }).catch((err: unknown) => {
       setError((err as Error)?.message ?? "Failed to load data.");
     }).finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.accessToken]);
+  }, [isActive, session?.accessToken]);
 
   // ── Request state ──────────────────────────────────────────────────────────
   const [requests, setRequests] = useState<PeerRequest[]>([]);
@@ -271,6 +270,26 @@ export function PeerRequestsPage({
     setDraft((prev) => ({ ...prev, title: "", description: "", dueBy: "", estimatedTime: "" }));
   };
 
+  const handleComplete = useCallback(async (requestId: string, lastThreadText: string) => {
+    if (!session) return;
+    const matchingPeer = peerReviews.find((pr) => pr.id === requestId);
+    setItemLoading((prev) => ({ ...prev, [requestId]: "completing" }));
+    try {
+      if (matchingPeer) {
+        const res = await submitPeerReviewWithRefresh(session, requestId, {
+          score: 80,
+          feedback: lastThreadText || "Completed",
+        });
+        if (res.nextSession) saveSession(res.nextSession);
+        if (!res.error) updateStatus(requestId, "completed");
+      } else {
+        updateStatus(requestId, "completed");
+      }
+    } finally {
+      setItemLoading((prev) => ({ ...prev, [requestId]: null }));
+    }
+  }, [session, peerReviews]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (loading) {
     return (
       <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-peer-requests">
@@ -324,7 +343,7 @@ export function PeerRequestsPage({
           </div>
         </div>
 
-        <div className={cx("flexRow")}>
+        <div className={cx("staffSegControl")}>
           {[
             { key: "all",      label: "All" },
             { key: "incoming", label: `Incoming${pendingIncoming > 0 ? ` (${pendingIncoming})` : ""}` },
@@ -333,7 +352,7 @@ export function PeerRequestsPage({
             <button
               key={tab.key}
               type="button"
-              className={cx("prTabBtn", view === tab.key && "prTabBtnActive")}
+              className={cx("staffSegBtn", view === tab.key && "staffSegBtnActive")}
               onClick={() => setView(tab.key as "all" | "incoming" | "outgoing")}
             >
               {tab.label}
@@ -620,27 +639,13 @@ export function PeerRequestsPage({
                     <button
                       type="button"
                       className={cx("prCompleteBtn")}
-                      disabled={submitting}
-                      onClick={async () => {
-                        // If this is a real peer review from the API, submit via backend
-                        const matchingPeer = peerReviews.find((pr) => pr.id === selected.id);
-                        if (matchingPeer && session) {
-                          setSubmitting(true);
-                          const res = await submitPeerReviewWithRefresh(session, selected.id, {
-                            score: 80,
-                            feedback: selected.thread.length > 0 ? selected.thread[selected.thread.length - 1].text : "Completed",
-                          });
-                          if (res.nextSession) saveSession(res.nextSession);
-                          if (!res.error) {
-                            updateStatus(selected.id, "completed");
-                          }
-                          setSubmitting(false);
-                        } else {
-                          updateStatus(selected.id, "completed");
-                        }
-                      }}
+                      disabled={itemLoading[selected.id] === "completing"}
+                      onClick={() => void handleComplete(
+                        selected.id,
+                        selected.thread.length > 0 ? (selected.thread[selected.thread.length - 1]?.text ?? "") : ""
+                      )}
                     >
-                      {submitting ? "Submitting…" : "Mark as completed →"}
+                      {itemLoading[selected.id] === "completing" ? "Submitting…" : "Mark as completed →"}
                     </button>
                   </div>
                 ) : null}

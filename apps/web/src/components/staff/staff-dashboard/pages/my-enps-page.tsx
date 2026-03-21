@@ -174,62 +174,32 @@ export function MyEnpsPage({
         <p className={cx("pageSubtitleText", "mb20")}>Submit pulse survey responses and view your feedback history</p>
       </div>
 
-      {/* ── Summary stats ────────────────────────────────────────────────── */}
-      <div className={cx("enpStatGrid")}>
-
-        <div className={cx("enpStatCard")}>
-          <div className={cx("enpStatCardTop")}>
-            <div className={cx("enpStatLabel")}>Latest Score</div>
-            <div className={cx("enpStatValue", latestScore !== null ? zoneColor(latestZone) : "colorMuted2")}>
-              {latestScore !== null ? latestScore : "—"}
-              <span className={cx("enpStatSuffix")}>/10</span>
-            </div>
+      {/* ── Summary strip ────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Latest Score</div>
+          <div className={cx("staffKpiValue", latestScore !== null ? zoneColor(latestZone) : "colorMuted2")}>
+            {latestScore !== null ? latestScore : "—"}<span style={{ fontSize: "0.7em", opacity: 0.6 }}>/10</span>
           </div>
-          <div className={cx("enpStatCardDivider")} />
-          <div className={cx("enpStatCardBottom")}>
-            <span className={cx("enpStatDot", "dynBgColor")} style={{ "--bg-color": latestScore !== null ? zoneDotBg(latestZone) : "var(--muted2)" } as React.CSSProperties} />
-            <span className={cx("enpStatMeta")}>{reviewScores[0]?.month ?? "No reviews yet"}</span>
-          </div>
+          <div className={cx("staffKpiSub")}>{reviewScores[0]?.month ?? "No reviews yet"}</div>
         </div>
-
-        <div className={cx("enpStatCard")}>
-          <div className={cx("enpStatCardTop")}>
-            <div className={cx("enpStatLabel")}>Avg Score</div>
-            <div className={cx("enpStatValue", "colorAccent")}>
-              {avgScore}<span className={cx("enpStatSuffix")}>{reviewScores.length > 0 ? "/10" : ""}</span>
-            </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Avg Score</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>
+            {avgScore}{reviewScores.length > 0 && <span style={{ fontSize: "0.7em", opacity: 0.6 }}>/10</span>}
           </div>
-          <div className={cx("enpStatCardDivider")} />
-          <div className={cx("enpStatCardBottom")}>
-            <span className={cx("enpStatDot", "dotBgAccent")} />
-            <span className={cx("enpStatMeta")}>across all responses</span>
-          </div>
+          <div className={cx("staffKpiSub")}>across all responses</div>
         </div>
-
-        <div className={cx("enpStatCard")}>
-          <div className={cx("enpStatCardTop")}>
-            <div className={cx("enpStatLabel")}>Responses</div>
-            <div className={cx("enpStatValue")}>{reviewScores.length}</div>
-          </div>
-          <div className={cx("enpStatCardDivider")} />
-          <div className={cx("enpStatCardBottom")}>
-            <span className={cx("enpStatDot", "dotBgMuted2")} />
-            <span className={cx("enpStatMeta")}>surveys submitted</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Responses</div>
+          <div className={cx("staffKpiValue")}>{reviewScores.length}</div>
+          <div className={cx("staffKpiSub")}>surveys submitted</div>
         </div>
-
-        <div className={cx("enpStatCard")}>
-          <div className={cx("enpStatCardTop")}>
-            <div className={cx("enpStatLabel")}>Standups</div>
-            <div className={cx("enpStatValue", "colorAccent")}>{standupCount}</div>
-          </div>
-          <div className={cx("enpStatCardDivider")} />
-          <div className={cx("enpStatCardBottom")}>
-            <span className={cx("enpStatDot", "dotBgAccent")} />
-            <span className={cx("enpStatMeta")}>this month</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Standups</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{standupCount}</div>
+          <div className={cx("staffKpiSub")}>this month</div>
         </div>
-
       </div>
 
       {/* ── Current pulse survey ──────────────────────────────────────────── */}

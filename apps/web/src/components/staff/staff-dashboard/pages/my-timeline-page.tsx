@@ -160,57 +160,28 @@ export function MyTimelinePage({
         <p className={cx("pageSubtitleText", "mb20")}>Personal task timeline across all assigned projects</p>
       </div>
 
-      {/* ── Summary stats ────────────────────────────────────────────────── */}
-      <div className={cx("tlStatGrid")}>
-
-        <div className={cx("tlStatCard")}>
-          <div className={cx("tlStatCardTop")}>
-            <div className={cx("tlStatLabel")}>Total Tasks</div>
-            <div className={cx("tlStatValue")}>{timelineItems.length}</div>
-          </div>
-          <div className={cx("tlStatCardDivider")} />
-          <div className={cx("tlStatCardBottom")}>
-            <span className={cx("tlStatDot", "dotBgMuted2")} />
-            <span className={cx("tlStatMeta")}>across all projects</span>
-          </div>
+      {/* ── Summary strip ────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Total Tasks</div>
+          <div className={cx("staffKpiValue")}>{timelineItems.length}</div>
+          <div className={cx("staffKpiSub")}>across all projects</div>
         </div>
-
-        <div className={cx("tlStatCard")}>
-          <div className={cx("tlStatCardTop")}>
-            <div className={cx("tlStatLabel")}>In Progress</div>
-            <div className={cx("tlStatValue", "colorAmber")}>{inProgress}</div>
-          </div>
-          <div className={cx("tlStatCardDivider")} />
-          <div className={cx("tlStatCardBottom")}>
-            <span className={cx("tlStatDot", "dotBgAmber")} />
-            <span className={cx("tlStatMeta")}>active tasks</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>In Progress</div>
+          <div className={cx("staffKpiValue", "colorAmber")}>{inProgress}</div>
+          <div className={cx("staffKpiSub")}>active tasks</div>
         </div>
-
-        <div className={cx("tlStatCard")}>
-          <div className={cx("tlStatCardTop")}>
-            <div className={cx("tlStatLabel")}>Completed</div>
-            <div className={cx("tlStatValue", "colorGreen")}>{done}</div>
-          </div>
-          <div className={cx("tlStatCardDivider")} />
-          <div className={cx("tlStatCardBottom")}>
-            <span className={cx("tlStatDot", "dotBgGreen")} />
-            <span className={cx("tlStatMeta")}>tasks done</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Completed</div>
+          <div className={cx("staffKpiValue", "colorGreen")}>{done}</div>
+          <div className={cx("staffKpiSub")}>tasks done</div>
         </div>
-
-        <div className={cx("tlStatCard")}>
-          <div className={cx("tlStatCardTop")}>
-            <div className={cx("tlStatLabel")}>Upcoming</div>
-            <div className={cx("tlStatValue", "colorAccent")}>{upcoming}</div>
-          </div>
-          <div className={cx("tlStatCardDivider")} />
-          <div className={cx("tlStatCardBottom")}>
-            <span className={cx("tlStatDot", "dotBgAccent")} />
-            <span className={cx("tlStatMeta")}>not yet started</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Upcoming</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{upcoming}</div>
+          <div className={cx("staffKpiSub")}>not yet started</div>
         </div>
-
       </div>
 
       {/* ── Project groups ───────────────────────────────────────────────── */}

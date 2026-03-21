@@ -138,24 +138,29 @@ export function RecurringTasksPage({
 
   // ── Load tasks on mount ──────────────────────────────────────────────────
   useEffect(() => {
-    if (!session) { setLoading(false); return; }
+    if (!isActive || !session) { setLoading(false); return; }
+    let cancelled = false;
     void (async () => {
       try {
         const r = await getRecurringTasks(session);
+        if (cancelled) return;
         if (r.nextSession) saveSession(r.nextSession);
         setTasks((r.data ?? []).map(apiToUi));
       } catch {
         // ignore
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [session]);
+    return () => { cancelled = true; };
+  }, [isActive, session?.accessToken]);
 
   // ── Load clients for the form ────────────────────────────────────────────
   useEffect(() => {
-    if (!session) return;
+    if (!isActive || !session) return;
+    let cancelled = false;
     void getStaffClients(session).then((r) => {
+      if (cancelled) return;
       if (r.nextSession) saveSession(r.nextSession);
       if (r.data && r.data.length > 0) {
         const colors = ["var(--accent)", "var(--purple)", "var(--blue)", "var(--amber)", "var(--amber)"];
@@ -167,7 +172,8 @@ export function RecurringTasksPage({
         })));
       }
     });
-  }, [session]);
+    return () => { cancelled = true; };
+  }, [isActive, session?.accessToken]);
 
   const clientsToUse: ClientRow[] = apiClients.length > 0
     ? [...apiClients, INTERNAL_CLIENT]

@@ -112,59 +112,30 @@ export function MyOnboardingPage({ isActive, session }: { isActive: boolean; ses
         <p className={cx("pageSubtitleText", "mb20")}>Personal onboarding checklist and progress</p>
       </div>
 
-      {/* ── Summary stats ────────────────────────────────────────────────── */}
-      <div className={cx("mobStatGrid")}>
-
-        <div className={cx("mobStatCard")}>
-          <div className={cx("mobStatCardTop")}>
-            <div className={cx("mobStatLabel")}>Progress</div>
-            <div className={cx("mobStatValue", "colorAccent")}>{progress}%</div>
-          </div>
-          <div className={cx("mobStatCardDivider")} />
-          <div className={cx("mobStatCardBottom")}>
-            <span className={cx("mobStatDot", "dotBgAccent")} />
-            <span className={cx("mobStatMeta")}>overall completion</span>
-          </div>
+      {/* ── Summary strip ────────────────────────────────────────────────── */}
+      <div className={cx("staffKpiStrip")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Progress</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{progress}%</div>
+          <div className={cx("staffKpiSub")}>overall completion</div>
         </div>
-
-        <div className={cx("mobStatCard")}>
-          <div className={cx("mobStatCardTop")}>
-            <div className={cx("mobStatLabel")}>Completed</div>
-            <div className={cx("mobStatValue", "colorGreen")}>
-              {completed}<span className={cx("mobStatSuffix")}>/{checklistItems.length}</span>
-            </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Completed</div>
+          <div className={cx("staffKpiValue", "colorGreen")}>
+            {completed}<span style={{ fontSize: "0.7em", opacity: 0.6 }}>/{checklistItems.length}</span>
           </div>
-          <div className={cx("mobStatCardDivider")} />
-          <div className={cx("mobStatCardBottom")}>
-            <span className={cx("mobStatDot", "dotBgGreen")} />
-            <span className={cx("mobStatMeta")}>tasks done</span>
-          </div>
+          <div className={cx("staffKpiSub")}>tasks done</div>
         </div>
-
-        <div className={cx("mobStatCard")}>
-          <div className={cx("mobStatCardTop")}>
-            <div className={cx("mobStatLabel")}>Remaining</div>
-            <div className={cx("mobStatValue", remaining > 0 ? "colorAmber" : "colorGreen")}>{remaining}</div>
-          </div>
-          <div className={cx("mobStatCardDivider")} />
-          <div className={cx("mobStatCardBottom")}>
-            <span className={cx("mobStatDot", "dynBgColor")} style={{ "--bg-color": remaining > 0 ? "var(--amber)" : "var(--green)" } as React.CSSProperties} />
-            <span className={cx("mobStatMeta")}>{remaining > 0 ? "still to complete" : "all done"}</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Remaining</div>
+          <div className={cx("staffKpiValue", remaining > 0 ? "colorAmber" : "colorGreen")}>{remaining}</div>
+          <div className={cx("staffKpiSub")}>{remaining > 0 ? "still to complete" : "all done"}</div>
         </div>
-
-        <div className={cx("mobStatCard")}>
-          <div className={cx("mobStatCardTop")}>
-            <div className={cx("mobStatLabel")}>Due This Week</div>
-            <div className={cx("mobStatValue", dueSoon > 0 ? "colorRed" : "colorGreen")}>{dueSoon}</div>
-          </div>
-          <div className={cx("mobStatCardDivider")} />
-          <div className={cx("mobStatCardBottom")}>
-            <span className={cx("mobStatDot", "dynBgColor")} style={{ "--bg-color": dueSoon > 0 ? "var(--red)" : "var(--muted2)" } as React.CSSProperties} />
-            <span className={cx("mobStatMeta")}>{dueSoon > 0 ? "needs attention" : "on track"}</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Due This Week</div>
+          <div className={cx("staffKpiValue", dueSoon > 0 ? "colorRed" : "colorGreen")}>{dueSoon}</div>
+          <div className={cx("staffKpiSub")}>{dueSoon > 0 ? "needs attention" : "on track"}</div>
         </div>
-
       </div>
 
       {/* ── Checklist ────────────────────────────────────────────────────── */}

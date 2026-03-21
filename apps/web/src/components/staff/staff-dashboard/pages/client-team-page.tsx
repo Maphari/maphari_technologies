@@ -122,70 +122,41 @@ export function ClientTeamPage({ isActive, session }: { isActive: boolean; sessi
       </div>
 
       {/* ── Summary stats ────────────────────────────────────────────────── */}
-      <div className={cx("ctmStatGrid")}>
-
-        <div className={cx("ctmStatCard")}>
-          <div className={cx("ctmStatCardTop")}>
-            <div className={cx("ctmStatLabel")}>Clients</div>
-            <div className={cx("ctmStatValue", "colorAccent")}>{totalClients}</div>
-          </div>
-          <div className={cx("ctmStatCardDivider")} />
-          <div className={cx("ctmStatCardBottom")}>
-            <span className={cx("ctmStatDot", "dotBgAccent")} />
-            <span className={cx("ctmStatMeta")}>managed accounts</span>
-          </div>
+      <div className={cx("staffKpiStrip", "staffKpiStripFour")}>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Clients</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{totalClients}</div>
+          <div className={cx("staffKpiSub")}>managed accounts</div>
         </div>
-
-        <div className={cx("ctmStatCard")}>
-          <div className={cx("ctmStatCardTop")}>
-            <div className={cx("ctmStatLabel")}>Contacts</div>
-            <div className={cx("ctmStatValue", "colorMuted2")}>{totalContacts}</div>
-          </div>
-          <div className={cx("ctmStatCardDivider")} />
-          <div className={cx("ctmStatCardBottom")}>
-            <span className={cx("ctmStatDot", "dotBgMuted2")} />
-            <span className={cx("ctmStatMeta")}>total stakeholders</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Contacts</div>
+          <div className={cx("staffKpiValue")}>{totalContacts}</div>
+          <div className={cx("staffKpiSub")}>total stakeholders</div>
         </div>
-
-        <div className={cx("ctmStatCard")}>
-          <div className={cx("ctmStatCardTop")}>
-            <div className={cx("ctmStatLabel")}>Decision Makers</div>
-            <div className={cx("ctmStatValue", "colorAccent")}>{decisionMakers}</div>
-          </div>
-          <div className={cx("ctmStatCardDivider")} />
-          <div className={cx("ctmStatCardBottom")}>
-            <span className={cx("ctmStatDot", "dotBgAccent")} />
-            <span className={cx("ctmStatMeta")}>final authority</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Decision Makers</div>
+          <div className={cx("staffKpiValue", "colorAccent")}>{decisionMakers}</div>
+          <div className={cx("staffKpiSub")}>final authority</div>
         </div>
-
-        <div className={cx("ctmStatCard")}>
-          <div className={cx("ctmStatCardTop")}>
-            <div className={cx("ctmStatLabel")}>Last Touch</div>
-            <div className={cx("ctmStatValue", "colorGreen", "textLg105")} >{lastTouch}</div>
-          </div>
-          <div className={cx("ctmStatCardDivider")} />
-          <div className={cx("ctmStatCardBottom")}>
-            <span className={cx("ctmStatDot", "dotBgGreen")} />
-            <span className={cx("ctmStatMeta")}>most recent contact</span>
-          </div>
+        <div className={cx("staffKpiCell")}>
+          <div className={cx("staffKpiLabel")}>Last Touch</div>
+          <div className={cx("staffKpiValue", "colorGreen")}>{lastTouch}</div>
+          <div className={cx("staffKpiSub")}>most recent contact</div>
         </div>
-
       </div>
 
       {/* ── Client sections ───────────────────────────────────────────────── */}
       {teams.map((team) => (
-        <div key={team.client} className={cx("ctmSection")}>
+        <div key={team.client} className={cx("staffCard", "mb16")}>
 
-          <div className={cx("ctmSectionHeader")}>
-            <div className={cx("ctmSectionLeft")}>
-              <div className={cx("ctmClientAvatar", TEAM_AVATAR_CLS[team.avatar] ?? "ctmClientAvatarAccent")}>
+          <div className={cx("staffSectionHd")}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className={cx("staffClientAvatar", TEAM_AVATAR_CLS[team.avatar] ?? "ctmClientAvatarAccent")}>
                 {team.avatar}
               </div>
-              <div className={cx("ctmClientName")}>{team.client}</div>
+              <span className={cx("staffSectionTitle")}>{team.client}</span>
             </div>
-            <span className={cx("ctmSectionMeta")}>
+            <span className={cx("staffChip")}>
               {team.contacts.length} CONTACT{team.contacts.length !== 1 ? "S" : ""}
             </span>
           </div>
@@ -195,33 +166,33 @@ export function ClientTeamPage({ isActive, session }: { isActive: boolean; sessi
               <div
                 key={c.email}
                 className={cx(
-                  "ctmContactRow",
-                  idx === team.contacts.length - 1 && "ctmContactRowLast",
+                  "staffTeamContactRow",
+                  idx === team.contacts.length - 1 && "staffTeamContactRowLast",
                 )}
               >
                 {/* Initials avatar */}
-                <div className={cx("ctmContactAvatar", contactAvatarCls(c.name))}>
+                <div className={cx("staffTeamContactAvatar", contactAvatarCls(c.name))}>
                   {initials(c.name)}
                 </div>
 
                 {/* Name + role */}
-                <div className={cx("ctmContactInfo")}>
-                  <span className={cx("ctmContactName")}>{c.name}</span>
-                  <span className={cx("ctmContactRole")}>{c.role}</span>
+                <div className={cx("staffTeamContactInfo")}>
+                  <div className={cx("staffTeamContactName")}>{c.name}</div>
+                  <div className={cx("staffRoleLabel")}>{c.role}</div>
                 </div>
 
                 {/* Authority badge */}
-                <span className={cx("ctmAuthBadge", authorityCls(c.decisionAuthority))}>
+                <span className={cx("staffChip", authorityCls(c.decisionAuthority) === "ctmAuthFinal" ? "staffChipAccent" : "")}>
                   {c.decisionAuthority}
                 </span>
 
-                {/* Email */}
-                <span className={cx("ctmEmail")}>{c.email}</span>
+                {/* Status dot */}
+                <div className={cx("staffDotGreen")} />
 
                 {/* Last contact */}
-                <div className={cx("ctmLastContact")}>
-                  <span className={cx("ctmLastContactLabel")}>Last contact</span>
-                  <span className={cx("ctmLastContactDate")}>{c.lastContact}</span>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div className={cx("staffRoleLabel")}>Last contact</div>
+                  <div className={cx("text11", "colorMuted")}>{c.lastContact}</div>
                 </div>
 
               </div>

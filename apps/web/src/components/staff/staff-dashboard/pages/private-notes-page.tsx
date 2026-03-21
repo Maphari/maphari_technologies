@@ -106,15 +106,35 @@ export function PrivateNotesPage({ isActive, session }: { isActive: boolean; ses
   async function handleAdd() {
     if (!session || !selectedClientId || !newNote.trim()) return;
     setSaving(true);
-    const result = await addClientNoteWithRefresh(session, selectedClientId, newNote.trim(), newCategory);
-    if (result.nextSession) saveSession(result.nextSession);
-    if (result.data) {
-      setNotes((prev) => [result.data!, ...prev]);
-      setNewNote("");
-      setNewCategory("general");
-      setComposing(false);
+    // Optimistic create: add temp note immediately, revert on error
+    const tempNote: ClientNote = {
+      id: `temp-${Date.now()}`,
+      clientId: selectedClientId,
+      note: newNote.trim(),
+      category: newCategory,
+      createdAt: new Date().toISOString(),
+      authorName: null,
+    };
+    setNotes((prev) => [tempNote, ...prev]);
+    setNewNote("");
+    setNewCategory("general");
+    setComposing(false);
+    try {
+      const result = await addClientNoteWithRefresh(session, selectedClientId, tempNote.note, newCategory);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.data) {
+        // Replace temp note with real saved note
+        setNotes((prev) => prev.map((n) => (n.id === tempNote.id ? result.data! : n)));
+      } else {
+        // Revert on API failure
+        setNotes((prev) => prev.filter((n) => n.id !== tempNote.id));
+      }
+    } catch {
+      // Revert on network error
+      setNotes((prev) => prev.filter((n) => n.id !== tempNote.id));
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   async function handleDelete(noteId: string) {
