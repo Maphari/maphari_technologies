@@ -180,13 +180,12 @@
 .railSectionIcon:hover {
   background: rgba(139, 111, 255, 0.14);
   color: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 0 0 1px rgba(139, 111, 255, 0.2);
 }
 
 .railSectionActive {
   background: linear-gradient(135deg, rgba(139, 111, 255, 0.35), rgba(139, 111, 255, 0.2)) !important;
   color: var(--accent2) !important;
-  box-shadow: 0 0 0 1px rgba(139, 111, 255, 0.35), 0 4px 12px rgba(139, 111, 255, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(139, 111, 255, 0.2) !important;
 }
 
 .railDivider {
