@@ -123,40 +123,44 @@
 
 .rail {
   width: var(--rail-w);
-  min-height: 100vh;
-  background: var(--rail-bg);
+  background: rgba(9, 9, 15, 0.84);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
+  left: 16px;
+  top: 16px;
+  bottom: 16px;
   z-index: 30;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 0;
+  padding: 14px 0;
   gap: 2px;
-  box-shadow: inset -2px 0 0 var(--accent);
+  border-radius: 14px;
+  border: 1px solid rgba(139, 111, 255, 0.16);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .railLogo {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  background: var(--accent);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: 0 2px 8px rgba(139, 111, 255, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   color: #fff;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   flex-shrink: 0;
 }
 
 .railSectionIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: transparent;
   display: flex;
   align-items: center;
@@ -167,23 +171,22 @@
   -webkit-appearance: none;
   appearance: none;
   box-shadow: none;
-  color: rgba(255, 255, 255, 0.55);
-  transition: background 120ms ease, color 120ms ease;
+  color: rgba(255, 255, 255, 0.45);
+  transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
   position: relative;
   flex-shrink: 0;
-  font-size: 9px;
-  font-weight: 700;
-  font-family: var(--font-dm-mono), monospace;
 }
 
 .railSectionIcon:hover {
-  background: rgba(139, 111, 255, 0.12);
-  color: var(--accent2);
+  background: rgba(139, 111, 255, 0.14);
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(139, 111, 255, 0.2);
 }
 
 .railSectionActive {
-  background: var(--accent) !important;
-  color: #fff !important;
+  background: linear-gradient(135deg, rgba(139, 111, 255, 0.35), rgba(139, 111, 255, 0.2)) !important;
+  color: var(--accent2) !important;
+  box-shadow: 0 0 0 1px rgba(139, 111, 255, 0.35), 0 4px 12px rgba(139, 111, 255, 0.25) !important;
 }
 
 .railDivider {
@@ -258,22 +261,25 @@
 
 .flyout {
   width: var(--flyout-w);
-  min-height: 100vh;
-  background: var(--flyout-bg);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  background: rgba(14, 14, 26, 0.86);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.03);
   position: fixed;
-  left: var(--rail-w);
-  top: 0;
-  bottom: 0;
+  left: calc(16px + var(--rail-w) + 8px);
+  top: 16px;
+  bottom: 16px;
   z-index: 29;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 111, 255, 0.13);
   display: flex;
   flex-direction: column;
-  padding: 10px 8px;
-  gap: 3px;
+  padding: 12px 8px;
+  gap: 2px;
   overflow-y: auto;
-  transform: translateX(-100%);
+  transform: translateX(calc(-100% - 32px));
   opacity: 0;
-  transition: transform 180ms ease-out, opacity 180ms ease-out;
+  transition: transform 200ms cubic-bezier(0.32, 0, 0.15, 1), opacity 200ms ease;
   pointer-events: none;
 }
 
@@ -285,19 +291,19 @@
 
 .flyoutSectionLabel {
   font-size: 9px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(139, 111, 255, 0.6);
-  padding: 6px 8px 3px;
-  font-family: var(--font-syne), sans-serif;
+  color: rgba(139, 111, 255, 0.5);
+  padding: 10px 10px 4px;
+  font-family: var(--font-dm-mono), monospace;
 }
 
 .flyoutItem {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
-  border-radius: 6px;
+  padding: 7px 10px;
+  border-radius: 7px;
   cursor: pointer;
   border: none;
   outline: none;
@@ -306,30 +312,33 @@
   text-align: left;
   font-family: var(--font-syne), sans-serif;
   font-size: 12px;
-  color: rgba(240, 237, 232, 0.55);
-  transition: background 100ms ease, color 100ms ease;
+  font-weight: 500;
+  color: rgba(240, 237, 232, 0.5);
+  transition: background 120ms ease, color 120ms ease;
 }
 
 .flyoutItem:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text);
+  background: rgba(139, 111, 255, 0.08);
+  color: rgba(240, 237, 232, 0.9);
 }
 
 .flyoutItemActive {
-  background: rgba(139, 111, 255, 0.2);
-  color: var(--text);
+  background: rgba(139, 111, 255, 0.18);
+  color: var(--accent2);
+  font-weight: 600;
 }
 
 .flyoutDot {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.15);
   flex-shrink: 0;
 }
 
 .flyoutItemActive .flyoutDot {
   background: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
 }
 
 .flyoutItemLabel {
@@ -613,37 +622,39 @@
 
 .main {
   flex: 1;
-  margin-left: var(--rail-w);
-  padding-top: calc(var(--topbar-h) + 12px);
+  margin-left: calc(var(--rail-w) + 32px);
+  padding-top: calc(var(--topbar-h) + 32px);
   min-width: 0;
-  transition: margin-left 180ms ease-out;
+  transition: margin-left 200ms cubic-bezier(0.32, 0, 0.15, 1);
 }
 
 .flyoutIsOpen .main {
-  margin-left: calc(var(--rail-w) + var(--flyout-w));
+  margin-left: calc(var(--rail-w) + var(--flyout-w) + 40px);
 }
 
 .flyoutIsOpen .topbar {
-  left: calc(var(--rail-w) + var(--flyout-w));
+  left: calc(var(--rail-w) + var(--flyout-w) + 40px);
 }
 
 .topbar {
   height: var(--topbar-h);
   position: fixed;
-  top: 0;
-  left: var(--rail-w);
-  right: 0;
+  top: 16px;
+  left: calc(var(--rail-w) + 32px);
+  right: 16px;
   z-index: 20;
   display: flex;
   align-items: center;
   gap: 0;
   padding: 0 16px;
-  background: #08080e;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 0;
-  box-shadow: none;
+  background: rgba(8, 8, 14, 0.84);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(139, 111, 255, 0.15);
   border-top: 2px solid var(--accent);
-  transition: left 180ms ease-out;
+  border-radius: var(--r-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: left 200ms cubic-bezier(0.32, 0, 0.15, 1);
 }
 
 .topbarBreadcrumb {
@@ -2421,14 +2432,14 @@
 
   .main {
     margin-left: 0;
-    padding-top: calc(var(--topbar-h) + 12px);
+    padding-top: calc(var(--topbar-h) + 24px);
   }
 
   .topbar {
-    top: 0;
-    left: 0;  /* full width on mobile — rail is hidden */
-    right: 0;
-    border-radius: 0;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    border-radius: var(--r-sm);
     height: var(--topbar-h);
     padding: 0 12px;
   }

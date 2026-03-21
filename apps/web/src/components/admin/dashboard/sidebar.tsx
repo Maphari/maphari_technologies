@@ -321,7 +321,6 @@ export function AdminSidebar({
             key={section}
             type="button"
             className={`${styles.railSectionIcon}${activeSectionId === section && flyoutOpen ? ` ${styles.railSectionActive}` : ""}`}
-            style={{ all: "unset", display: "flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", cursor: "pointer", borderRadius: "8px", position: "relative", flexShrink: 0, color: "rgba(255,255,255,0.65)" } as React.CSSProperties}
             onClick={() => handleSectionClick(section)}
             aria-label={`Open ${section} navigation`}
             aria-expanded={activeSectionId === section && flyoutOpen}
@@ -366,7 +365,6 @@ export function AdminSidebar({
                 key={item.id}
                 type="button"
                 className={`${styles.flyoutItem}${page === item.id ? ` ${styles.flyoutItemActive}` : ""}`}
-                style={{ all: "unset", display: "flex", alignItems: "center", gap: "8px", width: "100%", cursor: "pointer" } as React.CSSProperties}
                 onClick={() => handlePageSelect(item.id)}
               >
                 <span className={styles.flyoutItemLabel}>
