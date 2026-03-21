@@ -96,6 +96,14 @@ const [payError, setPayError] = useState<string | null>(null);
 const [payLoading, setPayLoading] = useState(false);
 ```
 
+**Session:** `invoices-page.tsx` is a props-driven page with no current session access. Add `useProjectLayer()` to obtain session and `saveSession`:
+```ts
+import { useProjectLayer } from "../hooks/use-project-layer";
+import { saveSession } from "../../../../lib/auth/session";
+// inside component:
+const { session } = useProjectLayer();
+```
+
 **Handler:**
 ```ts
 async function handlePayNow(invoiceId: string) {
@@ -161,8 +169,11 @@ const monthlyActivity = useMemo(() => {
 Bar heights: `(bar.amountCents / Math.max(...monthlyActivity.map(b => b.amountCents), 1)) * 100` as a percentage. If all months are zero, show empty state inside the chart area.
 
 #### 3d. Upcoming payment schedule — load from portal
-Add state and fetch on mount:
+`payments-page.tsx` is a props-driven page with no current session access. It renders inside `ProjectLayerCtx` (provided by `maphari-client-dashboard.tsx`), so `useProjectLayer()` is available. Add:
 ```ts
+import { useProjectLayer } from "../hooks/use-project-layer";
+import { saveSession } from "../../../../lib/auth/session";
+// inside component:
 const { session, projectId } = useProjectLayer();
 const [milestones, setMilestones] = useState<PortalProjectPaymentMilestone[] | null>(null);
 ```
