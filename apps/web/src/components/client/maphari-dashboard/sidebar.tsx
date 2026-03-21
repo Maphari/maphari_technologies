@@ -38,20 +38,6 @@ export function ClientSidebar({
   onOpenSearch,
   mobileOpen = false,
 }: ClientSidebarProps) {
-  const [isOnline, setIsOnline] = useState<boolean>(
-    typeof navigator !== "undefined" ? navigator.onLine : true,
-  );
-
-  useEffect(() => {
-    const setOnline  = () => setIsOnline(true);
-    const setOffline = () => setIsOnline(false);
-    window.addEventListener("online",  setOnline);
-    window.addEventListener("offline", setOffline);
-    return () => {
-      window.removeEventListener("online",  setOnline);
-      window.removeEventListener("offline", setOffline);
-    };
-  }, []);
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -367,13 +353,6 @@ export function ClientSidebar({
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
       <div className={styles.sidebarFooter}>
-        {/* Status + plan row */}
-        <div className={styles.sidebarStatusRow}>
-          <span className={`${styles.sidebarStatusDot} ${isOnline ? "" : styles.sidebarStatusDotOffline ?? ""}`} />
-          <span className={styles.sidebarStatusLabel}>{isOnline ? "Online" : "Offline"}</span>
-          {planLabel && <span className={styles.sidebarPlanBadge}>{planLabel}</span>}
-        </div>
-
         {/* User card */}
         <div
           className={styles.userCard}

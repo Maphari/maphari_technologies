@@ -337,8 +337,8 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(200, 241, 53, 0.12);
-  border: 1.5px solid rgba(200, 241, 53, 0.25);
+  background: var(--s3);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -492,8 +492,8 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: color-mix(in oklab, var(--accent) 88%, #fff 12%);
-  color: #050508;
+  background: var(--s3);
+  color: var(--text);
   display: grid;
   place-items: center;
   font-size: 0.72rem;
@@ -1244,18 +1244,20 @@
   background: transparent;
   border: none;
   padding: 0;
+  outline: none;
 }
 
 .topbarUserAvatar {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: rgba(200, 241, 53, 0.15);
+  background: var(--s3);
   border: none;
+  outline: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--lime);
+  color: var(--text);
   font-family: var(--font-dm-mono), monospace;
   font-size: 9px;
   font-weight: 600;
