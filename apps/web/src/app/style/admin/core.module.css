@@ -1070,38 +1070,71 @@
 }
 
 .statCard {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 20px;
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-top: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 14px 16px;
   position: relative;
   min-width: 0;
-  transition: border-color 0.15s ease, box-shadow 0.2s ease;
+  overflow: hidden;
 }
 
-.statCard:hover {
-  border-color: var(--border2);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
-}
-
-.statCard::before {
+.statCard::after {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: transparent;
-  display: none;
+  bottom: -15px;
+  right: -15px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--glow-purple);
+  filter: blur(16px);
+  pointer-events: none;
 }
 
-.green::before { background: var(--accent); }
+.statCardGreen {
+  border-top-color: var(--green);
+}
+.statCardGreen::after { background: var(--glow-green); }
 
-.purple::before { background: var(--purple); }
+.statCardAmber {
+  border-top-color: var(--amber);
+}
+.statCardAmber::after { background: var(--glow-amber); }
 
-.amber::before { background: var(--amber); }
+.statCardBlue {
+  border-top-color: var(--blue);
+}
+.statCardBlue::after { background: var(--glow-blue); }
 
-.red::before { background: var(--red); }
+.statCardValue {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.statCardLabel {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: var(--font-syne), sans-serif;
+}
+
+.statCardDelta {
+  font-size: 11px;
+  font-family: var(--font-dm-mono), monospace;
+  margin-top: 4px;
+  color: var(--green);
+}
+
+.statCardDeltaNeg {
+  color: var(--amber);
+}
 
 .statLabel {
   font-family: var(--font-dm-mono), monospace;
@@ -2638,76 +2671,8 @@
 .healthBarFill { height: 4px; border-radius: 3px; transition: width 0.3s; }
 
 /* ═══════════════════════════════════════════════════════════
-   SHARED CARD SYSTEM
+   SHARED CARD SYSTEM (section header, entity rows, data table, empty state)
    ═══════════════════════════════════════════════════════════ */
-
-/* ─── Stat card base ─────────────────────────────────────── */
-
-.statCard {
-  background: var(--s2);
-  border: 1px solid rgba(139, 111, 255, 0.1);
-  border-top: 2px solid var(--accent);
-  border-radius: 8px;
-  padding: 14px 16px;
-  position: relative;
-  overflow: hidden;
-}
-
-.statCard::after {
-  content: "";
-  position: absolute;
-  bottom: -15px;
-  right: -15px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: var(--glow-purple);
-  filter: blur(16px);
-  pointer-events: none;
-}
-
-.statCardGreen {
-  border-top-color: var(--green);
-}
-.statCardGreen::after { background: var(--glow-green); }
-
-.statCardAmber {
-  border-top-color: var(--amber);
-}
-.statCardAmber::after { background: var(--glow-amber); }
-
-.statCardBlue {
-  border-top-color: var(--blue);
-}
-.statCardBlue::after { background: var(--glow-blue); }
-
-.statCardValue {
-  font-size: 22px;
-  font-weight: 700;
-  font-family: var(--font-dm-mono), monospace;
-  color: var(--text);
-  line-height: 1;
-  margin-bottom: 4px;
-}
-
-.statCardLabel {
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-family: var(--font-syne), sans-serif;
-}
-
-.statCardDelta {
-  font-size: 11px;
-  font-family: var(--font-dm-mono), monospace;
-  margin-top: 4px;
-  color: var(--green);
-}
-
-.statCardDeltaNeg {
-  color: var(--amber);
-}
 
 /* ─── Section header (label + rule) ─────────────────────── */
 
