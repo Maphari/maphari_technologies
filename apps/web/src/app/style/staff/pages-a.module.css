@@ -2349,8 +2349,8 @@
 .snRowRead { }
 /* Shared unread-row state used by notifications-page + communication-history-page */
 .staffNotifUnread {
-  border-left: 2px solid rgba(200, 241, 53, 0.5);
-  background: rgba(200, 241, 53, 0.03);
+  border-left: 2px solid var(--accent);
+  background: var(--accent-g);
 }
 
 /* Priority dot */
