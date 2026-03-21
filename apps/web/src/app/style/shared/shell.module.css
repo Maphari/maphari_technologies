@@ -111,6 +111,12 @@
   z-index: 9998;
 }
 
+/* Hide cursor trail on touch / small screens — no mouse pointer exists */
+@media (max-width: 768px), (hover: none) {
+  .cursor    { display: none !important; }
+  .cursorRing { display: none !important; }
+}
+
 .shell {
   display: block;
   height: 100%;
