@@ -2636,3 +2636,216 @@
 /* ─── Health bars ────────────────────────────────────────── */
 .healthBarBg   { flex: 1; background: var(--b1); border-radius: 3px; height: 4px; }
 .healthBarFill { height: 4px; border-radius: 3px; transition: width 0.3s; }
+
+/* ═══════════════════════════════════════════════════════════
+   SHARED CARD SYSTEM
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Stat card base ─────────────────────────────────────── */
+
+.statCard {
+  background: var(--s2);
+  border: 1px solid rgba(139, 111, 255, 0.1);
+  border-top: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.statCard::after {
+  content: "";
+  position: absolute;
+  bottom: -15px;
+  right: -15px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--glow-purple);
+  filter: blur(16px);
+  pointer-events: none;
+}
+
+.statCardGreen {
+  border-top-color: var(--green);
+}
+.statCardGreen::after { background: var(--glow-green); }
+
+.statCardAmber {
+  border-top-color: var(--amber);
+}
+.statCardAmber::after { background: var(--glow-amber); }
+
+.statCardBlue {
+  border-top-color: var(--blue);
+}
+.statCardBlue::after { background: var(--glow-blue); }
+
+.statCardValue {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.statCardLabel {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: var(--font-syne), sans-serif;
+}
+
+.statCardDelta {
+  font-size: 11px;
+  font-family: var(--font-dm-mono), monospace;
+  margin-top: 4px;
+  color: var(--green);
+}
+
+.statCardDeltaNeg {
+  color: var(--amber);
+}
+
+/* ─── Section header (label + rule) ─────────────────────── */
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sectionHeaderLabel {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.25);
+  font-family: var(--font-syne), sans-serif;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sectionHeaderRule {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ─── Entity row ─────────────────────────────────────────── */
+
+.entityRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  transition: background 80ms ease;
+}
+
+.entityRow:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.entityLogo {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(139, 111, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.entityNameBlock {
+  flex: 1;
+  min-width: 0;
+}
+
+.entityName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entityProgress {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.entityProgressFill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.entityStatusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+}
+
+.entityStatusDotAmber { background: var(--amber); }
+.entityStatusDotRed   { background: var(--red); }
+
+/* ─── Data table ─────────────────────────────────────────── */
+
+.dataTableHead {
+  display: grid;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dataTableHeadCell {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+  font-family: var(--font-syne), sans-serif;
+}
+
+.dataTableRow {
+  display: grid;
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background 80ms ease;
+}
+
+.dataTableRow:last-child {
+  border-bottom: none;
+}
+
+.dataTableRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* ─── Empty state ─────────────────────────────────────────── */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 8px;
+  text-align: center;
+}
+
+.emptyStateHeading {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.emptyStateSub {
+  font-size: 12px;
+  color: var(--muted);
+}
