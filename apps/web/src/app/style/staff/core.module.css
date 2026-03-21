@@ -2,17 +2,17 @@
 
 /* ── 1. Design tokens ─────────────────────────────────────────────────── */
 .staffRoot {
-  --bg: #06060e;
-  --s1: #0d0d1a;
-  --s2: #12121f;
-  --s3: #161624;
-  --s4: #1b1b2a;
-  --b1: rgba(255,255,255,0.04);
-  --b2: rgba(255,255,255,0.08);
-  --b3: rgba(255,255,255,0.15);
+  --bg: #030309;
+  --s1: #0c0c18;
+  --s2: #111120;
+  --s3: #161626;
+  --s4: #1c1c2e;
+  --b1: rgba(255,255,255,0.05);
+  --b2: rgba(255,255,255,0.09);
+  --b3: rgba(255,255,255,0.16);
   --accent: #f97316;
-  --accent-d: rgba(249,115,22,0.10);
-  --accent-g: rgba(249,115,22,0.05);
+  --accent-d: rgba(249,115,22,0.12);
+  --accent-g: rgba(249,115,22,0.06);
   --accent2: #fb923c;
   --green: #22c55e;    --green-d: rgba(34,197,94,0.10);
   --amber: #eab308;    --amber-d: rgba(234,179,8,0.10);
@@ -20,77 +20,97 @@
   --purple: #a855f7;   --purple-d: rgba(168,85,247,0.10);
   --blue: #3b82f6;     --blue-d: rgba(59,130,246,0.10);
   --text: #ede9e3;
-  --muted: rgba(237,233,227,0.52);
-  --muted2: rgba(237,233,227,0.30);
+  --muted: rgba(237,233,227,0.50);
+  --muted2: rgba(237,233,227,0.28);
   --r-xs: 3px; --r-sm: 5px; --r-md: 8px; --r-lg: 12px;
-  --shadow-card: 0 2px 8px rgba(0,0,0,0.5);
-  --shadow-modal: 0 16px 48px rgba(0,0,0,0.7);
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
+  --shadow-island: 0 16px 48px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.07);
+  --shadow-modal: 0 24px 64px rgba(0,0,0,0.72);
+  /* ── Layout geometry ── */
+  --edge: 10px;
+  --rail-w: 52px;
+  --gap: 8px;
+  --topbar-h: 48px;
   /* ── Glass tokens ── */
   --glass-sm:  8px;
-  --glass-md: 14px;
-  --glass-lg: 18px;
-  --glass-topbar:  rgba(13,13,26,0.72);
-  --glass-rail:    rgba(13,13,26,0.68);
-  --glass-flyout:  rgba(18,18,31,0.65);
-  --glass-card:    rgba(13,13,26,0.55);
-  --glass-border:  rgba(255,255,255,0.10);
+  --glass-md: 18px;
+  --glass-lg: 22px;
+  --glass-card:   rgba(10,10,20,0.55);
+  --glass-border: rgba(255,255,255,0.10);
   display: contents;
 }
 
 /* ── 2. Shell / layout ────────────────────────────────────────────────── */
 .shell {
-  display: flex;
-  flex-direction: column;
   height: 100dvh;
-  background: var(--bg);
+  background-color: var(--bg);
+  /* Rich ambient depth — orange warmth left, indigo depth right */
+  background-image:
+    radial-gradient(ellipse 700px 600px at 14% 35%, rgba(249,115,22,0.10) 0%, transparent 65%),
+    radial-gradient(ellipse 900px 700px at 88% 82%, rgba(99,102,241,0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 500px 400px at 50% 100%, rgba(249,115,22,0.03) 0%, transparent 55%);
   color: var(--text);
   font-family: var(--font-syne), system-ui, sans-serif;
   overflow: hidden;
   position: relative;
 }
 
-/* Ambient depth layer — gives glass chrome something to refract */
-.shell::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 600px 500px at 10% 20%, rgba(249,115,22,0.07) 0%, transparent 70%),
-    radial-gradient(ellipse 700px 600px at 85% 75%, rgba(99,102,241,0.05) 0%, transparent 70%),
-    radial-gradient(ellipse 400px 400px at 50% 50%, rgba(249,115,22,0.02) 0%, transparent 60%);
-}
-
+/* Body — floating island area below topbar */
 .body {
+  position: fixed;
+  top: calc(var(--edge) + var(--topbar-h) + var(--gap));
+  left: var(--edge);
+  right: var(--edge);
+  bottom: var(--edge);
   display: flex;
-  flex: 1;
-  overflow: hidden;
+  gap: var(--gap);
+  z-index: 5;
 }
 
+/* Main scrollable content */
 .main {
   flex: 1;
   overflow-y: auto;
-  padding: 28px 32px;
+  padding: 20px 24px;
   background: transparent;
   position: relative;
   z-index: 1;
+  min-width: 0;
+  border-radius: 14px;
 }
 
-/* ── 3. Topbar (44px slim) ────────────────────────────────────────────── */
+/* ── 3. Topbar — floating glass pill ─────────────────────────────────── */
 .topbar {
-  height: 44px;
-  background: var(--glass-topbar);
+  position: fixed;
+  top: var(--edge);
+  left: calc(var(--edge) + var(--rail-w) + var(--gap));
+  right: var(--edge);
+  height: var(--topbar-h);
+  /* Staff identity: subtle orange accent stripe on top */
+  border-top: 1px solid rgba(249,115,22,0.28);
+  border-left: 1px solid rgba(255,255,255,0.07);
+  border-right: 1px solid rgba(255,255,255,0.07);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  background: rgba(8,8,18,0.75);
   backdrop-filter: blur(var(--glass-lg));
   -webkit-backdrop-filter: blur(var(--glass-lg));
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07);
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 16px;
   gap: 12px;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 10;
+  z-index: 30;
+  overflow: hidden;
+}
+
+/* Shimmer highlight line */
+.topbar::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 20px; right: 20px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.22), transparent);
+  pointer-events: none;
 }
 
 .topbarBreadcrumb {
@@ -191,7 +211,7 @@
   height: 6px;
   border-radius: 50%;
   background: var(--accent);
-  border: 2px solid var(--s1);
+  border: 2px solid rgba(8,8,18,0.8);
 }
 
 .topbarAddBtn {
@@ -277,14 +297,15 @@
   border: 1.5px solid var(--bg);
 }
 
-/* ── 4. Sidebar rail ──────────────────────────────────────────────────── */
+/* ── 4. Sidebar rail — floating island pill ───────────────────────────── */
 .rail {
-  width: 44px;
+  width: var(--rail-w);
   flex-shrink: 0;
-  background: var(--glass-rail);
+  background: rgba(8,8,18,0.72);
   backdrop-filter: blur(var(--glass-md));
   -webkit-backdrop-filter: blur(var(--glass-md));
-  border-right: 1px solid rgba(255,255,255,0.06);
+  border-radius: 18px;
+  box-shadow: var(--shadow-island);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -292,31 +313,38 @@
   gap: 2px;
   z-index: 20;
   position: relative;
-  transition: width 200ms ease;
+  overflow: hidden;
 }
 
-.railCollapsed { width: 44px; }
+/* Shimmer highlight at rail top */
+.rail::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 10px; right: 10px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent);
+  pointer-events: none;
+}
+
+.railCollapsed { width: var(--rail-w); }
 
 .railLogo {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--r-sm);
-  background: rgba(249,115,22,0.15);
-  border: 1px solid rgba(249,115,22,0.30);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(249,115,22,0.18);
   color: var(--accent);
   font-family: var(--font-syne), sans-serif;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 900;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   flex-shrink: 0;
   letter-spacing: -0.03em;
   user-select: none;
   cursor: default;
+  box-shadow: 0 0 16px rgba(249,115,22,0.15);
 }
 
 .railLogoImg { display: none; }
@@ -351,7 +379,6 @@
   height: 28px;
   border-radius: 50%;
   background: var(--accent-d);
-  border: 1px solid rgba(249,115,22,0.25);
   color: var(--accent);
   font-family: var(--font-syne), sans-serif;
   font-size: 11px;
@@ -365,27 +392,7 @@
   cursor: default;
 }
 
-.railExpandTrigger {
-  position: fixed;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 14px;
-  height: 40px;
-  background: var(--s2);
-  border: 1px solid var(--b2);
-  border-left: none;
-  border-radius: 0 var(--r-sm) var(--r-sm) 0;
-  color: var(--muted2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 25;
-  transition: background 120ms;
-}
-
-.railExpandTrigger:hover { background: var(--s3); }
+.railExpandTrigger { display: none; }
 
 /* Legacy rail classes kept for backward compat */
 .railCollapseStrip {
@@ -436,7 +443,6 @@
   border-radius: var(--r-sm);
   background: transparent;
   border: none;
-  border-left: 2px solid transparent;
   color: var(--muted2);
   display: flex;
   align-items: center;
@@ -454,7 +460,6 @@
   background: rgba(249,115,22,0.12);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  border-left-color: var(--accent);
 }
 
 .navIconDot {
@@ -465,24 +470,36 @@
   height: 5px;
   border-radius: 50%;
   background: var(--accent);
-  border: 1.5px solid var(--s1);
+  border: 1.5px solid rgba(8,8,18,0.8);
 }
 
-/* ── 6. Flyout panel ──────────────────────────────────────────────────── */
+/* ── 6. Flyout panel — floating island ───────────────────────────────── */
 .flyout {
   width: 200px;
   flex-shrink: 0;
-  background: var(--glass-flyout);
+  background: rgba(10,10,20,0.68);
   backdrop-filter: blur(var(--glass-md));
   -webkit-backdrop-filter: blur(var(--glass-md));
-  border-right: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.06);
   display: flex;
   flex-direction: column;
   padding: 8px 0;
   z-index: 19;
   position: relative;
-  transition: width 200ms, opacity 150ms;
+  overflow: hidden;
+  transition: width 220ms cubic-bezier(0.4,0,0.2,1), opacity 180ms ease;
   overflow-y: auto;
+}
+
+/* Shimmer at top */
+.flyout::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 14px; right: 14px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.11), transparent);
+  pointer-events: none;
+  flex-shrink: 0;
 }
 
 .flyoutHidden {
@@ -491,6 +508,8 @@
   pointer-events: none;
   overflow: hidden;
   padding: 0;
+  border: none;
+  box-shadow: none;
 }
 
 .flyoutSectionName {
@@ -512,7 +531,6 @@
   padding: 7px 16px;
   background: transparent;
   border: none;
-  border-left: 2px solid transparent;
   font-family: var(--font-syne), sans-serif;
   font-size: 12px;
   font-weight: 500;
@@ -522,13 +540,12 @@
   transition: background 120ms, color 120ms;
 }
 
-.flyoutPageBtn:hover { background: var(--s3); color: var(--text); }
+.flyoutPageBtn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
 
 .flyoutPageBtnActive {
   background: var(--accent-g);
   color: var(--text);
   font-weight: 700;
-  border-left-color: var(--accent);
 }
 
 .flyoutBadge {
