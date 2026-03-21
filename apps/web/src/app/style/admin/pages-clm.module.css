@@ -11,7 +11,9 @@
 }
 .clmKpiCard {
   position: relative;
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 16px 18px;
@@ -304,7 +306,7 @@
 .clmPortfolioHealthLabel { font-family: var(--font-dm-mono), monospace; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 
 .clmPortfolioMeta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
-.clmPortfolioMetaCell { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--r-xs); padding: 7px 10px; }
+.clmPortfolioMetaCell { background: rgba(255,255,255,0.02); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-xs); padding: 7px 10px; }
 .clmPortfolioMetaLabel { font-family: var(--font-dm-mono), monospace; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
 .clmPortfolioMetaVal   { font-family: var(--font-dm-mono), monospace; font-size: 0.66rem; font-weight: 700; }
 .clmPortfolioMetaVal.toneAccent { color: var(--accent); }
@@ -333,7 +335,7 @@
 
 /* 4-cell metric grid */
 .clmMetaGrid  { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.clmMetaCell  { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--r-xs); padding: 10px 12px; }
+.clmMetaCell  { background: rgba(255,255,255,0.02); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-xs); padding: 10px 12px; }
 .clmMetaLabel { font-family: var(--font-dm-mono), monospace; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 5px; }
 .clmMetaValue { font-family: var(--font-dm-mono), monospace; font-size: 0.7rem; font-weight: 700; }
 .clmMetaValue.toneAccent { color: var(--accent); }
@@ -343,7 +345,7 @@
 
 /* Info blocks */
 .clmInfoLabel { font-family: var(--font-dm-mono), monospace; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 5px; }
-.clmInfoBlock { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--r-xs); padding: 10px 14px; font-family: var(--font-dm-mono), monospace; font-size: 0.64rem; }
+.clmInfoBlock { background: rgba(255,255,255,0.02); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-xs); padding: 10px 14px; font-family: var(--font-dm-mono), monospace; font-size: 0.64rem; }
 
 /* Actions */
 .clmDetailActions { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -783,7 +785,7 @@
 }
 
 .cmpiBeatCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--accent-d);
@@ -1039,7 +1041,7 @@
   aspect-ratio: 1.4 / 1;
   background: rgba(255,255,255,0.02);
   border-radius: var(--r-md);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   overflow: hidden;
 }
 
@@ -1974,7 +1976,7 @@
 
 .sciSegBtn {
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   background: transparent;
   color: var(--muted);
   padding: 6px 14px;
@@ -2245,7 +2247,7 @@
 
 .sciMonitorBtn {
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   background: transparent;
   color: var(--muted);
   padding: 6px 14px;
@@ -3698,7 +3700,7 @@
 /* --- All Courses Table --- */
 
 .lndTableCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -3825,7 +3827,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 18px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.03);
 }
@@ -4217,7 +4219,7 @@
 }
 
 .rcpKanbanCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 10px 12px;
 }
@@ -4245,7 +4247,7 @@
 /* --- Candidates table --- */
 
 .rcpTableCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -4746,7 +4748,7 @@
 /* --- Strongest / Weakest --- */
 
 .sstStrongWeakCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   overflow: hidden;
   display: grid;
@@ -4756,7 +4758,7 @@
 .sstStrongBlock {
   padding: 16px;
   text-align: center;
-  border-right: 1px solid var(--border);
+  border-right: 1px solid rgba(139, 111, 255, 0.1);
 }
 
 .sstWeakBlock {
@@ -4866,7 +4868,7 @@
   font-size: 0.76rem;
   color: var(--muted);
   padding: 12px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.02);
   margin-bottom: 16px;
@@ -4879,7 +4881,7 @@
 }
 
 .sstFeedbackCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 16px;
 }
@@ -5236,7 +5238,7 @@
 
 .tprMetricTile {
   padding: 14px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   text-align: center;
   background: rgba(255, 255, 255, 0.02);
@@ -5489,7 +5491,7 @@
 /* --- Tasks & Output table --- */
 
 .tprTableCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -5795,7 +5797,9 @@
 }
 .teamKpiCard {
   position: relative;
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 16px 18px;

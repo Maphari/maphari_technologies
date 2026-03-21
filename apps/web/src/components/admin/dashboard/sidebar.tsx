@@ -97,7 +97,7 @@ export function AdminSidebar({
 
   const sectionIcon: Record<string, React.ReactNode> = {
     Operations: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <rect x="2" y="2" width="9" height="9" rx="2"/>
         <rect x="13" y="2" width="9" height="9" rx="2"/>
         <rect x="2" y="13" width="9" height="9" rx="2"/>
@@ -105,29 +105,29 @@ export function AdminSidebar({
       </svg>
     ),
     Experience: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M12 21C12 21 3 15 3 8.5a4.5 4.5 0 0 1 9-0.5 4.5 4.5 0 0 1 9 0.5C21 15 12 21 12 21Z"/>
       </svg>
     ),
     Finance: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <rect x="2" y="14" width="5" height="8" rx="1.5"/>
         <rect x="9.5" y="9" width="5" height="13" rx="1.5"/>
         <rect x="17" y="3" width="5" height="19" rx="1.5"/>
       </svg>
     ),
     Communication: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 3V5Z"/>
       </svg>
     ),
     Governance: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M12 2L3 6v6c0 5 3.9 9.3 9 10.9C17.1 21.3 21 17 21 12V6L12 2Z"/>
       </svg>
     ),
     Knowledge: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M4 3h11l5 5v13H4V3Z" fill="currentColor" opacity="0.3"/>
         <path d="M4 3h11l5 5v13H4V3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
         <line x1="8" y1="10" x2="16" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -135,13 +135,13 @@ export function AdminSidebar({
       </svg>
     ),
     Lifecycle: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M12 3a9 9 0 1 1-6.36 2.64" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
         <path d="M4 3l1 4 4-1" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
     "AI/ML": (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <circle cx="12" cy="12" r="3"/>
         <circle cx="12" cy="3" r="2" opacity="0.7"/>
         <circle cx="12" cy="21" r="2" opacity="0.7"/>
@@ -154,7 +154,7 @@ export function AdminSidebar({
       </svg>
     ),
     Automation: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M14 2L6 13h6L8 22 19 11h-6L14 2Z"/>
       </svg>
     ),
@@ -321,6 +321,7 @@ export function AdminSidebar({
             key={section}
             type="button"
             className={`${styles.railSectionIcon}${activeSectionId === section && flyoutOpen ? ` ${styles.railSectionActive}` : ""}`}
+            style={{ all: "unset", display: "flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", cursor: "pointer", borderRadius: "8px", position: "relative", flexShrink: 0, color: "rgba(255,255,255,0.65)" } as React.CSSProperties}
             onClick={() => handleSectionClick(section)}
             aria-label={`Open ${section} navigation`}
             aria-expanded={activeSectionId === section && flyoutOpen}
@@ -365,6 +366,7 @@ export function AdminSidebar({
                 key={item.id}
                 type="button"
                 className={`${styles.flyoutItem}${page === item.id ? ` ${styles.flyoutItemActive}` : ""}`}
+                style={{ all: "unset", display: "flex", alignItems: "center", gap: "8px", width: "100%", cursor: "pointer" } as React.CSSProperties}
                 onClick={() => handlePageSelect(item.id)}
               >
                 <span className={styles.flyoutItemLabel}>

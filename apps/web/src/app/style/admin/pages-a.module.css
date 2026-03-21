@@ -16,7 +16,7 @@
 }
 
 .healthIntvCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   overflow: hidden;
   border-left: 3px solid transparent;
@@ -306,7 +306,7 @@
 }
 
 .lglTableCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -380,7 +380,7 @@
 
 .lglRenewBtn {
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   background: transparent;
   padding: 4px 12px;
   border-radius: var(--r-xs);
@@ -1410,7 +1410,7 @@
   gap: 8px;
   padding: 6px 14px;
   border-radius: var(--r-sm);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
 }
 
 .pifHealthBadgeTone {
@@ -1590,7 +1590,7 @@
   background: rgba(255, 255, 255, 0.02);
   padding: 12px;
   border-radius: var(--r-sm);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
 }
 
 .pifAdvisoryCard {
@@ -1616,7 +1616,7 @@
 
 .pifQuickBtn {
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   background: transparent;
   color: var(--muted);
   padding: 10px 14px;
@@ -1633,7 +1633,7 @@
 }
 
 .pifTableCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -2238,7 +2238,7 @@
   justify-content: center;
   gap: 4px;
   padding: 12px 14px;
-  border-right: 1px solid var(--border);
+  border-right: 1px solid rgba(139, 111, 255, 0.1);
   flex-shrink: 0;
   width: 130px;
 }
@@ -2256,7 +2256,7 @@
 .projOpsLaneItem {
   padding: 10px 12px;
   border-radius: var(--r-sm);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   background: rgba(255, 255, 255, 0.02);
   cursor: pointer;
   transition: border-color 0.12s ease;
@@ -2297,7 +2297,7 @@
 
 .projOpsMiniBtn {
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   background: transparent;
   color: var(--muted);
   padding: 3px 10px;
@@ -2365,7 +2365,7 @@
   background: rgba(255, 255, 255, 0.02);
   padding: 10px;
   border-radius: var(--r-sm);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   text-align: center;
 }
 
@@ -2787,7 +2787,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 /* List view */
 
 .pportListCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -2964,7 +2964,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .qaFilterChip {
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   background: transparent;
   padding: 3px 10px;
   border-radius: var(--r-xs);
@@ -3570,12 +3570,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .timelineMilestoneItem {
   padding: 12px 16px;
   min-height: 56px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
 }
 
 .timelineMilestoneOverdue {
   border-color: color-mix(in oklab, var(--red) 28%, var(--border));
-  background: color-mix(in oklab, var(--red) 9%, var(--surface));
+  background: color-mix(in oklab, var(--red) 9%, var(--s2));
 }
 
 .timelineLegendWrap {
@@ -3703,7 +3703,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .accessAdminCard {
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   padding: 20px;
@@ -3909,7 +3911,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .accessAuditType.toneMuted  { background: rgba(255,255,255,0.06); color: var(--muted); }
 
 .accessInfoCard {
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   padding: 18px 20px;
@@ -3919,7 +3923,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .accessDelegationCard {
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   padding: 20px;
@@ -3949,7 +3955,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .accessCreateCard:hover { border-color: var(--muted); color: var(--text); }
 
 .accessKeyCard {
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   padding: 20px;
@@ -4008,7 +4016,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .brandSwatch {
   border-radius: var(--r-sm);
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   margin-bottom: 8px;
 }
 
@@ -4030,7 +4038,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .brandPreviewCard {
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 16px;
   margin-top: 16px;
@@ -4068,7 +4076,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .brandTypoCard {
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 16px;
 }
@@ -4088,7 +4096,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .brandLogoCard {
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   padding: 24px;
   text-align: center;
@@ -4112,7 +4120,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .brandTemplateCard {
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   padding: 16px 20px;
@@ -4139,7 +4149,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .brandCreateCard:hover { border-color: var(--muted); color: var(--text); }
 
 .brandEmailMockOuter {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--bg);
@@ -4191,7 +4201,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .brandInfoCard {
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   padding: 18px 20px;
@@ -4201,7 +4213,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .brandDomainCard {
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   padding: 20px;
@@ -4240,7 +4254,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .brandCreateAccentCard:hover { border-color: var(--accent); background: var(--accent-d); }
 
 .brandWhiteLabelCard {
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   padding: 24px;
@@ -4283,7 +4299,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .dvtPillBtn {
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   background: transparent;
   color: var(--muted);
   padding: 4px 12px;
@@ -4308,7 +4324,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .dvtMainSplitSingle { grid-template-columns: 1fr; }
 
 .dvtTableCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -4378,7 +4394,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .dvtStatusArchived { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
 
 .dvtSideCard {
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   padding: 20px;
@@ -4426,7 +4444,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .dvtClientCard {
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   padding: 20px;
@@ -4466,7 +4486,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .dvtContractsStack { display: flex; flex-direction: column; gap: 12px; }
 
 .dvtContractRow {
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   padding: 16px 20px;
@@ -4656,7 +4678,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .exdAlertBtn {
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   background: transparent;
   color: var(--muted);
   padding: 4px 12px;
@@ -4702,10 +4724,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .exdKpiCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   padding: 16px 18px;
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-left: 3px solid transparent;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
@@ -4987,9 +5011,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 12px;
   align-items: center;
   padding: 14px 18px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-left: 3px solid transparent;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
@@ -5090,9 +5116,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   justify-content: space-between;
   gap: 16px;
   padding: 14px 18px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-left: 3px solid transparent;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
@@ -5121,7 +5149,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .exdAlertBtnBig {
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   background: transparent;
   color: var(--muted);
   padding: 6px 14px;
@@ -5608,7 +5636,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revfTableCard {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -5931,7 +5959,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   padding: 14px;
   background: rgba(255, 255, 255, 0.02);
   border-radius: var(--r-sm);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
 }
 
 .revfModelTitle {
@@ -7228,7 +7256,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .fyProfitCard {
   text-align: center;
   padding: 28px 24px;
-  background: var(--s2);
+  background: rgba(19, 19, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--accent-d);
   border-radius: var(--r-md);
 }

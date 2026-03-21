@@ -342,7 +342,7 @@
 .ldrKanbanCard {
   position: relative;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-xs);
   padding: 10px 12px 10px 15px;
   cursor: pointer;
@@ -416,7 +416,7 @@
 
 .ldrKanbanMoveBtn {
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   background: transparent;
   color: var(--muted);
   padding: 3px 9px;
@@ -540,7 +540,7 @@
 
 .ldrMetaCell {
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-xs);
   padding: 10px 12px;
 }
@@ -566,7 +566,7 @@
   justify-content: space-between;
   align-items: center;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-xs);
   padding: 10px 14px;
 }
@@ -586,7 +586,7 @@
 /* Notes */
 .ldrNotesBox {
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(139, 111, 255, 0.1);
   border-radius: var(--r-xs);
   padding: 12px 14px;
   font-size: 0.75rem;
@@ -1967,7 +1967,7 @@
 
 /* ── Program settings helpers ── */
 .refRuleRow    { padding: 12px 0; }
-.refPendingCard { padding: 14px 16px; border-radius: var(--r-sm); border: 1px solid var(--border); }
+.refPendingCard { padding: 14px 16px; border-radius: var(--r-sm); border: 1px solid rgba(139, 111, 255, 0.1); }
 
 /* ── Apply credit button — purple variant ── */
 .refApplyBtnPurple {
