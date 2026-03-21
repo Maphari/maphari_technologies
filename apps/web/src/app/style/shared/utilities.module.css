@@ -464,7 +464,7 @@
 }
 
 .bgSurface {
-  background: var(--surface);
+  background: var(--s2);
 }
 
 .bgBg {
@@ -2013,7 +2013,7 @@
 
 /* ── Confirm Dialog ──────────────────────────────────────────── */
 .confirmOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn 0.12s ease; }
-.confirmBox { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-lg); padding: 28px; max-width: 400px; width: 100%; box-shadow: var(--shadow-modal); }
+.confirmBox { background: var(--s2); border: 1px solid var(--b2); border-radius: var(--r-lg); padding: 28px; max-width: 400px; width: 100%; box-shadow: var(--shadow-modal); }
 .confirmTitle { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
 .confirmBody  { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; }
 .confirmActions { display: flex; gap: 8px; justify-content: flex-end; }
