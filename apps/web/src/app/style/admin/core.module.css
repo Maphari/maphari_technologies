@@ -2358,13 +2358,15 @@
 
   .main {
     margin-left: 0;
-    padding-top: 72px;
+    padding-top: calc(var(--topbar-h) + 12px);
   }
 
   .topbar {
-    top: 8px;
-    left: 8px;
-    right: 8px;
+    top: 0;
+    left: 0;  /* full width on mobile — rail is hidden */
+    right: 0;
+    border-radius: 0;
+    height: var(--topbar-h);
     padding: 0 12px;
   }
 
