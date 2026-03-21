@@ -1100,7 +1100,7 @@
 
 /* ── Invoice Chasing ─────────────────────────────────────────────────────── */
 .icSequenceTrack { display: flex; align-items: center; gap: 0; margin: 16px 0 24px; }
-.icStageDot { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--b2); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; background: var(--s1); color: var(--text-muted); flex-shrink: 0; }
+.icStageDot { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--b2); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; background: var(--s2); color: var(--text-muted); flex-shrink: 0; }
 .icStageDotActive { border-color: var(--accent, #8b6fff); background: color-mix(in srgb, var(--accent, #8b6fff) 15%, transparent); color: var(--accent, #8b6fff); }
 .icStageLine { flex: 1; height: 2px; background: var(--b1); }
 .icStageLineActive { background: var(--accent, #8b6fff); }
@@ -1159,7 +1159,7 @@
 
 /* ── Capacity Forecast ───────────────────────────────────────────────────── */
 .cfPeriodGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
-.cfPeriodCard { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 20px; border-left-width: 3px; }
+.cfPeriodCard { background: var(--s2); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 20px; border-left-width: 3px; }
 .cfPeriodCardGreen { border-left-color: var(--green, #24b8a8); }
 .cfPeriodCardAmber { border-left-color: var(--amber, #f59e0b); }
 .cfPeriodCardRed   { border-left-color: var(--red, #ef4444); }
