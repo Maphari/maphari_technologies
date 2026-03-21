@@ -773,8 +773,8 @@
   gap: 8px;
 }
 .incStatCardTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.incStatLabel { font-size: 11px; color: var(--muted2); letter-spacing: 0.04em; text-transform: uppercase; font-weight: 500; }
-.incStatValue { font-family: var(--font-dm-mono), monospace; font-size: 24px; font-weight: 700; line-height: 1; }
+.incStatLabel { font-size: 10px; color: var(--muted2); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; font-family: var(--font-dm-mono), monospace; }
+.incStatValue { font-family: var(--font-syne), sans-serif; font-size: 1.5rem; font-weight: 800; line-height: 1; color: var(--text); }
 .incStatCardDivider { height: 1px; background: var(--b1); }
 .incStatCardBottom { display: flex; align-items: center; gap: 6px; }
 .incStatDot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
@@ -2136,8 +2136,8 @@
   gap: 8px;
 }
 .sysStatCardTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.sysStatLabel { font-size: 11px; color: var(--muted2); letter-spacing: 0.04em; text-transform: uppercase; font-weight: 500; }
-.sysStatValue { font-family: var(--font-dm-mono), monospace; font-size: 24px; font-weight: 700; line-height: 1; }
+.sysStatLabel { font-size: 10px; color: var(--muted2); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; font-family: var(--font-dm-mono), monospace; }
+.sysStatValue { font-family: var(--font-syne), sans-serif; font-size: 1.5rem; font-weight: 800; line-height: 1; color: var(--text); }
 .sysStatCardDivider { height: 1px; background: var(--b1); }
 .sysStatCardBottom { display: flex; align-items: center; gap: 6px; }
 .sysStatDot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }

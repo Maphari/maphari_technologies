@@ -212,12 +212,24 @@
 }
 
 .railLogo {
-  width: 28px;
-  height: 28px;
-  background: var(--accent);
+  width: 32px;
+  height: 32px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
   border-radius: var(--r-sm);
   margin-bottom: 10px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.railLogoImg {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: var(--r-xs);
+  display: block;
 }
 
 .railSectionDivider {

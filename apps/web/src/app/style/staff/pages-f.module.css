@@ -821,7 +821,7 @@
 
 .stgv2TabText { display: flex; flex-direction: column; gap: 1px; }
 
-.stgv2TabLabel { font-size: 13px; font-weight: 600; }
+.stgv2TabLabel { font-size: 13px; font-weight: 700; font-family: var(--font-syne), sans-serif; }
 
 .stgv2TabDesc {
   font-family: var(--font-dm-mono), monospace;
@@ -849,6 +849,7 @@
 }
 
 .stgv2PanelTitle {
+  font-family: var(--font-syne), sans-serif;
   font-size: 14px;
   font-weight: 700;
   color: var(--text);
@@ -936,6 +937,7 @@
 .stgv2HeroInfo { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 
 .stgv2HeroName {
+  font-family: var(--font-syne), sans-serif;
   font-size: 15px;
   font-weight: 700;
   color: var(--text);
@@ -1023,7 +1025,7 @@
 
 .stgv2IdentityInfo { display: flex; flex-direction: column; gap: 3px; }
 
-.stgv2IdentityName { font-size: 14px; font-weight: 700; color: var(--text); }
+.stgv2IdentityName { font-family: var(--font-syne), sans-serif; font-size: 14px; font-weight: 700; color: var(--text); }
 
 .stgv2IdentityRole {
   font-family: var(--font-dm-mono), monospace;
@@ -1058,8 +1060,9 @@
 .stgv2NotifBody { flex: 1; min-width: 0; }
 
 .stgv2NotifLabel {
+  font-family: var(--font-syne), sans-serif;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
 }
 
@@ -2149,7 +2152,14 @@
 .pbRemainingValue { font-size: 0.6875rem; font-weight: 600; color: var(--muted); font-family: var(--font-dm-mono), monospace; }
 
 /* retainer-burn (rb*) new */
-.rbClientPanel { display: flex; align-items: center; gap: 12px; }
+.rbClientPanel {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+}
 .rbClientInfo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .rbClientName { font-size: 0.875rem; font-weight: 600; color: var(--text); }
 .rbClientBurnPct { font-size: 0.6875rem; font-family: var(--font-dm-mono), monospace; color: var(--muted2); }

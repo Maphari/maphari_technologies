@@ -206,7 +206,6 @@ function IntegrationCard({
 export function MyIntegrationsPage({ isActive, session, onNotify }: PageProps) {
   const [profile, setProfile]           = useState<StaffProfile | null>(null);
   const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<"all" | IntegrationCategory>("all");
   const [requested, setRequested]       = useState<Set<string>>(new Set());
 
@@ -219,17 +218,15 @@ export function MyIntegrationsPage({ isActive, session, onNotify }: PageProps) {
     let cancelled = false;
 
     setLoading(true);
-    setError(null);
     void getMyProfile(session).then((result) => {
       if (cancelled) return;
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.error || !result.data) {
-        setError(result.error?.message ?? "Failed to load data. Please try again.");
-        return;
+      // Profile is optional — if it fails we still render the catalog
+      if (!result.error && result.data) {
+        setProfile(result.data);
       }
-      setProfile(result.data);
-    }).catch((err: unknown) => {
-      if (!cancelled) setError((err as Error)?.message ?? "Failed to load data.");
+    }).catch(() => {
+      // Profile load failure is non-fatal — catalog renders without it
     }).finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
@@ -259,18 +256,6 @@ export function MyIntegrationsPage({ isActive, session, onNotify }: PageProps) {
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
-        </div>
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-integrations">
-        <div className={cx("errorState")}>
-          <div className={cx("errorStateIcon")}>✕</div>
-          <div className={cx("errorStateTitle")}>Failed to load</div>
-          <div className={cx("errorStateSub")}>{error}</div>
         </div>
       </section>
     );

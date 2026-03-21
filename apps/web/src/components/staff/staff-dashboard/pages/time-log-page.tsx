@@ -6,6 +6,7 @@ import { cx } from "../style";
 import { AutomationBanner } from "../../../shared/automation-banner";
 import type { TimeEntrySummary } from "../types";
 import { formatDateShort, formatDuration } from "../utils";
+import { StaffEmptyState, EmptyIcons } from "../empty-state";
 
 type ProjectOption = { id: string; name: string };
 type WeekData = { days: Array<{ date: Date; label: string }>; dailyMinutes: number[] };
@@ -338,7 +339,7 @@ export function TimeLogPage({
             <div className={cx("tlv2Breakdown")}>
               <div className={cx("tlv2BrkHeading")}>By Project</div>
               {projectTimeBreakdown.length === 0 ? (
-                <div className={cx("emptyState")}>No time logged yet.</div>
+                <StaffEmptyState icon={EmptyIcons.clock} title="No time logged" sub="Start the timer or log an entry manually." />
               ) : (
                 projectTimeBreakdown.map(([project, minutes], i) => {
                   const pct  = Math.round((minutes / Math.max(1, weekMinutes)) * 100);
@@ -399,7 +400,7 @@ export function TimeLogPage({
           <div className={cx("cardBody", "pt0", "pb8")}>
             <div className={cx("timeEntries")}>
               {filteredEntries.length === 0 ? (
-                <div className={cx("emptyState")}>No entries match.</div>
+                <StaffEmptyState icon={EmptyIcons.clock} title="No entries" sub="No time entries match the current filter." />
               ) : (
                 filteredEntries.map((entry) => (
                   <TimeEntry

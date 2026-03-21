@@ -5,8 +5,9 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { cx } from "../style";
+import { StaffEmptyState, EmptyIcons } from "../empty-state";
 import { AutomationBanner } from "../../../shared/automation-banner";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
@@ -98,13 +99,18 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
   const [flagAdmin,      setFlagAdmin]      = useState(false);
   const [view,       setView]       = useState<"log" | "history">("log");
 
+  const submittingRef = useRef(false);
+
   useEffect(() => {
     if (!session) return;
+    let cancelled = false;
     void loadMyStandupsWithRefresh(session).then((r) => {
+      if (cancelled) return;
       if (r.nextSession) saveSession(r.nextSession);
       if (!r.error && r.data) setStandups(r.data);
     });
-  }, [session]);
+    return () => { cancelled = true; };
+  }, [session?.accessToken]);
 
   // ── Load top-3 tasks ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -129,7 +135,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
       if (!cancelled) setTopTaskLoading(false);
     });
     return () => { cancelled = true; };
-  }, [session]);
+  }, [session?.accessToken]);
 
   const canSubmit    = mood > 0 && fields.yesterday.trim().length > 0 && fields.today_plan.trim().length > 0;
   const pastSelected = standups.find((s) => s.id === selectedId) ?? null;
@@ -145,18 +151,24 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
     [standups.length]
   );
 
-  async function handleSubmit() {
-    if (session) {
-      const r = await postStandupWithRefresh(session, {
-        yesterday: fields.yesterday,
-        today:     fields.today_plan,
-        blockers:  fields.blockers || undefined,
-      });
-      if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setStandups((prev) => [r.data!, ...prev]);
+  const handleSubmit = useCallback(async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    try {
+      if (session) {
+        const r = await postStandupWithRefresh(session, {
+          yesterday: fields.yesterday,
+          today:     fields.today_plan,
+          blockers:  fields.blockers || undefined,
+        });
+        if (r.nextSession) saveSession(r.nextSession);
+        if (!r.error && r.data) setStandups((prev) => [r.data!, ...prev]);
+      }
+      setSubmitted(true);
+    } finally {
+      submittingRef.current = false;
     }
-    setSubmitted(true);
-  }
+  }, [session?.accessToken, fields.yesterday, fields.today_plan, fields.blockers]);
 
   return (
     <section className={cx("page", "pageBody", "rdStudioPage", isActive && "pageActive")} id="page-standup">
@@ -230,98 +242,106 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
               </div>
             ) : (
               <div className={cx("flexCol", "gap22", "dsFormWrap")}>
-                <div>
+                <div className={cx("staffCard")}>
+                  <div className={cx("staffSectionHd")}>
+                    <span className={cx("staffSectionTitle")}>Yesterday</span>
+                  </div>
                   <label className={cx("dsFormLabel", "rdStudioLabel")}>What did you complete yesterday?</label>
                   <textarea
                     value={fields.yesterday}
                     onChange={(event) => setFields((prev) => ({ ...prev, yesterday: event.target.value }))}
                     placeholder="e.g. Finished logo revisions, drafted campaign intro for client review..."
-                    className={cx("dsTextarea")}
+                    className={cx("dsTextarea", "staffInput")}
                   />
+                  <div className={cx("staffCharCount")}>{fields.yesterday.length} / 500</div>
                 </div>
 
-                <div>
+                <div className={cx("staffCard")}>
+                  <div className={cx("staffSectionHd")}>
+                    <span className={cx("staffSectionTitle")}>Today&apos;s Focus</span>
+                  </div>
                   <label className={cx("dsFormLabel", "rdStudioLabel")}>What&apos;s your focus today?</label>
                   <textarea
                     value={fields.today_plan}
                     onChange={(event) => setFields((prev) => ({ ...prev, today_plan: event.target.value }))}
                     placeholder="e.g. Finalise KPI framework, begin wireframe revisions for the team..."
-                    className={cx("dsTextarea")}
+                    className={cx("dsTextarea", "staffInput")}
                   />
+                  <div className={cx("staffCharCount")}>{fields.today_plan.length} / 500</div>
                 </div>
 
-                <div>
-                  <label className={cx("dsFormLabel")}>
-                    Any blockers?
+                <div className={cx("staffCard")}>
+                  <div className={cx("staffSectionHd")}>
+                    <span className={cx("staffSectionTitle")}>Blockers</span>
                     <span className={cx("dsFormLabelOptional")}>Optional</span>
-                  </label>
+                  </div>
                   <textarea
                     value={fields.blockers}
                     onChange={(event) => setFields((prev) => ({ ...prev, blockers: event.target.value }))}
                     placeholder="Waiting on client feedback, need design resource, unclear brief..."
-                    className={cx("dsTextareaBlockers", fields.blockers.trim().length > 0 && "dsTextareaWarn")}
+                    className={cx("dsTextareaBlockers", "staffInput", fields.blockers.trim().length > 0 && "dsTextareaWarn")}
                   />
+                  <div className={cx("staffCharCount")}>{fields.blockers.length} / 300</div>
                 </div>
 
-                <div>
-                  <label className={cx("dsFormLabel")}>Hours logged yesterday</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="16"
-                    step="0.5"
-                    value={hours}
-                    onChange={(event) => setHours(event.target.value)}
-                    placeholder="7.5"
-                    className={cx("dsHoursInput")}
-                  />
-                </div>
-
-                <div>
-                  <label className={cx("dsFormLabel", "mb12")}>How are you feeling?</label>
-                  <div className={cx("flexRow", "gap10")}>
-                    {[1, 2, 3, 4, 5].map((value) => (
-                      <button
-                        type="button"
-                        key={value}
-                        className={cx("dsMoodBtn", mood === value && moodActiveBtnClasses[value])}
-                        onClick={() => setMood(value)}
-                      >
-                        <MoodDot value={value} size={8} />
-                        <span className={cx("dsMoodLabel", mood === value ? moodToneClasses[value] : "dsToneMuted2")}>
-                          {moodLabels[value]}
-                        </span>
-                      </button>
-                    ))}
-                    {mood > 0 ? (
-                      <span className={cx("text12", moodToneClasses[mood], "dsMoodCurrent")}>{moodLabels[mood]}</span>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className={cx("flexRow", "gap12")}>
-                  <div
-                    onClick={() => setFlagAdmin((prev) => !prev)}
-                    className={cx("dsFlagCheck", flagAdmin ? "dsFlagCheckActive" : "dsFlagCheckIdle")}
-                  >
-                    {flagAdmin ? <IcoCheck /> : null}
-                  </div>
+                <div className={cx("dsFormSection")}>
                   <div>
-                    <div className={cx("text12", flagAdmin ? "dsToneRed" : "colorMuted")}>Flag for admin attention</div>
-                    <div className={cx("text10", "colorMuted2")}>Admin will see this standup highlighted</div>
+                    <label className={cx("dsFormLabel")}>Hours logged yesterday</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="16"
+                      step="0.5"
+                      value={hours}
+                      onChange={(event) => setHours(event.target.value)}
+                      placeholder="7.5"
+                      className={cx("dsHoursInput")}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={cx("dsFormLabel", "mb12")}>How are you feeling?</label>
+                    <div className={cx("flexRow", "gap10")}>
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <button
+                          type="button"
+                          key={value}
+                          className={cx("dsMoodBtn", mood === value && moodActiveBtnClasses[value])}
+                          onClick={() => setMood(value)}
+                        >
+                          <MoodDot value={value} size={8} />
+                          <span className={cx("dsMoodLabel", mood === value ? moodToneClasses[value] : "dsToneMuted2")}>
+                            {moodLabels[value]}
+                          </span>
+                        </button>
+                      ))}
+                      {mood > 0 ? (
+                        <span className={cx("text12", moodToneClasses[mood], "dsMoodCurrent")}>{moodLabels[mood]}</span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className={cx("flexRow", "gap12")}>
+                    <div
+                      onClick={() => setFlagAdmin((prev) => !prev)}
+                      className={cx("dsFlagCheck", flagAdmin ? "dsFlagCheckActive" : "dsFlagCheckIdle")}
+                    >
+                      {flagAdmin ? <IcoCheck /> : null}
+                    </div>
+                    <div>
+                      <div className={cx("text12", flagAdmin ? "dsToneRed" : "colorMuted")}>Flag for admin attention</div>
+                      <div className={cx("text10", "colorMuted2")}>Admin will see this standup highlighted</div>
+                    </div>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  className={cx("dsSubmitBtn")}
+                  className={cx("staffBtnPrimary")}
                   disabled={!canSubmit}
                   onClick={() => void handleSubmit()}
                 >
-                  Submit Standup{" "}
-                  <span className={cx("inlineFlex", "ml4")}>
-                    <IcoArrow />
-                  </span>
+                  Submit Standup
                 </button>
               </div>
             )}
@@ -408,7 +428,11 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
           <div className={cx("dsHistoryLeft")}>
             <div className={cx("flexCol", "gap10")}>
               {standups.length === 0 ? (
-                <div className={cx("text12", "colorMuted2")}>No past standups found.</div>
+                <StaffEmptyState
+                  icon={EmptyIcons.clock}
+                  title="No past standups"
+                  sub="Submitted standups will appear here after you submit today's."
+                />
               ) : null}
               {standups.map((entry) => (
                 <div

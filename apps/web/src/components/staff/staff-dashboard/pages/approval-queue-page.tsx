@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { cx } from "../style";
+import { StaffEmptyState, EmptyIcons } from "../empty-state";
 import {
   getStaffApprovals,
   resolveStaffApproval,
@@ -294,25 +295,22 @@ export function ApprovalQueuePage({ isActive, session, onFeedback }: ApprovalQue
               {filteredPending.length === 0 ? (
                 typeFilter === "All" ? (
                   <tr>
-                    <td colSpan={7} className={cx("emptyState")}>
-                      <div className={cx("emptyState")}>
-                        <div className={cx("emptyStateIcon")}>
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-                            <path d="M8 12l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </div>
-                        <div className={cx("emptyStateTitle")}>Queue is clear</div>
-                        <div className={cx("emptyStateSub")}>All approval items have been processed.</div>
-                      </div>
+                    <td colSpan={7} className={cx("aqEmptyCell")}>
+                      <StaffEmptyState
+                        icon={EmptyIcons.check}
+                        title="Queue is clear"
+                        sub="All approval items have been processed. New requests will appear here."
+                      />
                     </td>
                   </tr>
                 ) : (
                   <tr>
-                    <td colSpan={7} className={cx("emptyState")}>
-                      <div className={cx("emptyState")}>
-                        <div className={cx("emptyStateSub")}>No items match the selected filter.</div>
-                      </div>
+                    <td colSpan={7} className={cx("aqEmptyCell")}>
+                      <StaffEmptyState
+                        icon={EmptyIcons.search}
+                        title="No matches"
+                        sub="No items match the selected filter. Try a different type."
+                      />
                     </td>
                   </tr>
                 )

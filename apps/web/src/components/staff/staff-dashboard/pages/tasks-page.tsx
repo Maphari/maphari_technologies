@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cx } from "../style";
+import { StaffEmptyState, EmptyIcons } from "../empty-state";
 import type { TaskContext } from "../types";
 import { capitalize, formatDuration } from "../utils";
 import type { AuthSession } from "../../../../lib/auth/session";
@@ -206,7 +207,13 @@ export function TasksPage({
             <tbody>
               {visibleTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className={cx("emptyState", "tasksEmptyState")}>No tasks in this view yet.</td>
+                  <td colSpan={9} className={cx("tasksEmptyCell")}>
+                    <StaffEmptyState
+                      icon={EmptyIcons.tasks}
+                      title="No tasks yet"
+                      sub="No tasks match the current filter. Try switching the view or assigning tasks in the project."
+                    />
+                  </td>
                 </tr>
               ) : (
                 visibleTasks.map((task) => (

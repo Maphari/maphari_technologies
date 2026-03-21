@@ -429,7 +429,7 @@ export function ClientsPage({
         <div className={cx("clv2Main")}>
 
           {/* Thread header */}
-          <div className={cx("clv2ThreadHeader")}>
+          <div className={cx("clv2ThreadHeader")} aria-label="Thread header">
             <div
               className={cx(
                 cx("clv2ThreadAvatar"),
@@ -508,6 +508,10 @@ export function ClientsPage({
               </button>
             </div>
           </div>
+
+          {/* Content zone: messages+compose (left) | notes+escalations (right rail) */}
+          <div className={cx("clv2ContentZone")}>
+          <div className={cx("clv2MsgZone")}>
 
           {/* Messages */}
           <div className={cx("clv2Messages")}>
@@ -633,6 +637,11 @@ export function ClientsPage({
             </div>
           </div>
 
+          </div>{/* end clv2MsgZone */}
+
+          {/* Right rail: Internal Notes + Escalations */}
+          <div className={cx("clv2RailZone")}>
+
           {/* Internal Notes */}
           <div className={cx("clv2SidePanel")}>
             <div className={cx("clv2SidePanelHeader")}>
@@ -748,6 +757,9 @@ export function ClientsPage({
               </div>
             </div>
           </div>
+
+          </div>{/* end clv2RailZone */}
+          </div>{/* end clv2ContentZone */}
 
         </div>
       </div>

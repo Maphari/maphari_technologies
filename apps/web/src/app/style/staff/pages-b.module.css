@@ -930,6 +930,31 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--bg);
+  min-height: 0;
+}
+
+/* Content zone: messages+compose left | notes+escalations right rail */
+.clv2ContentZone {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.clv2MsgZone {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--b1);
+}
+
+.clv2RailZone {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--s1);
 }
 
 /* Thread header */
@@ -1119,14 +1144,15 @@
 .clv2SendBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 .clv2ComposeMeta { font-size: 10px; color: var(--muted2); padding-top: 4px; text-align: right; }
 
-/* Side panels */
+/* Side panels — now in right rail, stacked vertically */
 .clv2SidePanel {
   flex-shrink: 0;
-  border-top: 1px solid var(--b1);
+  border-bottom: 1px solid var(--b1);
   display: flex;
   flex-direction: column;
   gap: 0;
 }
+.clv2SidePanel:last-child { border-bottom: none; }
 .clv2SidePanelHeader {
   display: flex;
   align-items: center;
@@ -2876,7 +2902,16 @@
 }
 .dsLogLeft { display: flex; flex-direction: column; gap: 0; }
 .dsLogRight { display: flex; flex-direction: column; gap: 0; }
-.dsFormWrap { }
+.dsFormWrap { display: flex; flex-direction: column; gap: 16px; }
+.dsFormSection {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .dsFormLabel {
   display: block;
   font-size: 11px;
@@ -3060,7 +3095,7 @@
   height: 26px; padding: 0 10px; border-radius: 20px;
   font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 100ms;
 }
-.chFilterRow { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.chFilterRow { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 20px; margin-bottom: 16px; }
 .chFilterCount { font-size: 9px; padding: 1px 5px; border-radius: 8px; background: var(--s3); color: var(--muted2); margin-left: 4px; }
 .chSortPills { display: flex; align-items: center; gap: 4px; }
 .chSortPill { height: 24px; padding: 0 9px; border-radius: 20px; font-size: 11px; cursor: pointer; border: 1px solid var(--b2); background: var(--s2); color: var(--muted); transition: all 100ms; }
@@ -3844,17 +3879,21 @@
   margin-bottom: 20px;
 }
 .apptKpiCard {
-  padding: 16px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--r-xs);
-  background: rgba(255, 255, 255, 0.015);
+  padding: 14px 16px;
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  background: var(--s1);
   display: flex;
   flex-direction: column;
   gap: 6px;
+  position: relative;
+  overflow: hidden;
 }
 .apptKpiLabel {
-  font-size: 0.5625rem;
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted2);
 }
@@ -3881,14 +3920,15 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--r-xs);
-  background: rgba(255, 255, 255, 0.015);
-  transition: background 0.12s ease;
+  padding: 14px 16px;
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  background: var(--s1);
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
 .apptRow:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--s2);
+  border-color: var(--b3);
 }
 .apptRowPast {
   opacity: 0.5;
