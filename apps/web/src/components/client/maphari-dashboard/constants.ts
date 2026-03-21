@@ -42,6 +42,7 @@ export const pageTitles: Record<PageId, string> = {
   projectReports:       "Reporting / Project Reports",
   healthScore:          "Reporting / Health Score",
   performanceDashboard: "Reporting / Performance",
+  executiveSummary:     "Reporting / Executive View",
   // Growth
   serviceCatalog:       "Growth / Service Catalog",
   referralProgram:      "Growth / Referral Program",

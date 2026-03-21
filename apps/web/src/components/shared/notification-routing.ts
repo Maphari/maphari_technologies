@@ -45,6 +45,7 @@ export const CLIENT_PAGE_TO_NOTIFICATION_TAB: Record<ClientPageId, DashboardNoti
   projectReports:       "dashboard",
   healthScore:          "dashboard",
   performanceDashboard: "dashboard",
+  executiveSummary:     "dashboard",
   // Growth
   serviceCatalog:       "operations",
   referralProgram:      "operations",

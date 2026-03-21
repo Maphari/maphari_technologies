@@ -40,6 +40,7 @@ export type PageId =
   | "projectReports"
   | "healthScore"
   | "performanceDashboard"
+  | "executiveSummary"
   // Growth
   | "serviceCatalog"
   | "referralProgram"
@@ -132,6 +133,7 @@ export const navSections: NavSection[] = [
       { id: "projectReports", label: "Project Reports" },
       { id: "healthScore", label: "Health Score" },
       { id: "performanceDashboard", label: "Performance" },
+      { id: "executiveSummary", label: "Executive View" },
     ],
   },
   {

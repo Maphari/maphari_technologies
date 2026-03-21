@@ -75,6 +75,7 @@ import { ResourceHubPage } from "./maphari-dashboard/pages/resource-hub-page";
 import { ProjectReportsPage } from "./maphari-dashboard/pages/project-reports-page";
 import { HealthScorePage } from "./maphari-dashboard/pages/health-score-page";
 import { PerformanceDashboardPage } from "./maphari-dashboard/pages/performance-dashboard-page";
+import { ExecutiveSummaryPage } from "./maphari-dashboard/pages/executive-summary-page";
 // Growth
 import { ServiceCatalogPage } from "./maphari-dashboard/pages/service-catalog-page";
 import { ReferralProgramPage } from "./maphari-dashboard/pages/referral-program-page";
@@ -168,6 +169,7 @@ export function MaphariClientDashboard() {
   // ── 2. Toast system ──────────────────────────────────────────────────────
   const { toasts, setFeedback } = useDashboardToasts();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [flyoutOpen, setFlyoutOpen] = useState(false);
 
   // ── 3. Delayed flag for animation delay ──────────────────────────────────
   // ── 3. Data transformation ───────────────────────────────────────────────
@@ -426,6 +428,7 @@ export function MaphariClientDashboard() {
           onProjectChange={setSelectedProjectId}
           onOpenSearch={() => commandSearch.open()}
           mobileOpen={sidebarOpen}
+          onActiveSectionChange={(id) => setFlyoutOpen(!!id)}
         />
         {sidebarOpen && (
           <div className={styles.mobileOverlay} onClick={() => setSidebarOpen(false)} />
@@ -449,7 +452,13 @@ export function MaphariClientDashboard() {
         </button>
 
         {/* ── Main area ───────────────────────────────────────────────── */}
-        <div className={styles.main}>
+        <div
+          className={styles.main}
+          style={{
+            marginLeft: flyoutOpen ? 'calc(var(--sw) + 248px)' : undefined,
+            transition: 'margin-left 220ms cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        >
           <ClientTopbar
             eyebrow={eyebrow}
             title={title}
@@ -532,6 +541,7 @@ export function MaphariClientDashboard() {
             {nav.activePage === "projectReports" && <ProjectReportsPage />}
             {nav.activePage === "healthScore" && <HealthScorePage invoices={snapshot.invoices} projects={snapshot.projects} />}
             {nav.activePage === "performanceDashboard" && <PerformanceDashboardPage invoices={snapshot.invoices} projects={snapshot.projects} />}
+            {nav.activePage === "executiveSummary" && <ExecutiveSummaryPage />}
 
             {/* ── Growth ──────────────────────────────────────────────── */}
             {nav.activePage === "serviceCatalog" && <ServiceCatalogPage />}
