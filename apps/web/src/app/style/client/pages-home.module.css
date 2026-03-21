@@ -1374,6 +1374,16 @@
   background: color-mix(in oklab, var(--accent) 18%, transparent);
 }
 
+.hxTrackDotReview {
+  background: var(--amber);
+  box-shadow: 0 0 5px rgba(245, 166, 35, 0.4);
+}
+
+.hxTrackDotPlanned {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
 .hxTrackNodeId {
   font-size: 0.5rem;
   font-weight: 700;
@@ -1689,3 +1699,10 @@
 
 .weeklyPulse { /* stub — container for weekly-pulse section */ }
 .urgentBadgeBtn { /* stub — defined in pages-misc */ }
+
+/* ── Design debug utilities (stubs) ────────────────────────────────── */
+.rdStudioPage {}
+.rdStudioCard {}
+.rdStudioLabel {}
+.rdStudioMetric {}
+.rdStudioSection {}
