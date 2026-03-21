@@ -568,9 +568,9 @@ export function MaphariClientDashboard() {
             {nav.activePage === "contentApproval" && <ContentApprovalPage />}
 
             {/* ── Finance ─────────────────────────────────────────────── */}
-            {nav.activePage === "payments" && <PaymentsPage payments={snapshot.payments} invoices={snapshot.invoices} />}
-            {nav.activePage === "invoices" && <InvoicesPage invoices={snapshot.invoices} />}
-            {nav.activePage === "budgetTracker" && <BudgetTrackerPage invoices={snapshot.invoices} />}
+            {nav.activePage === "payments" && <PaymentsPage payments={snapshot.payments} invoices={snapshot.invoices} currency={currency} />}
+            {nav.activePage === "invoices" && <InvoicesPage invoices={snapshot.invoices} currency={currency} />}
+            {nav.activePage === "budgetTracker" && <BudgetTrackerPage invoices={snapshot.invoices} currency={currency} />}
             {nav.activePage === "legalHub" && <LegalHubPage />}
             {nav.activePage === "retainerDashboard" && <RetainerDashboardPage />}
             {nav.activePage === "financialReports" && <FinancialReportsPage invoices={snapshot.invoices} />}
