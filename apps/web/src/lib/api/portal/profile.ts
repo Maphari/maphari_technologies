@@ -144,6 +144,30 @@ export async function requestDataExportWithRefresh(
   });
 }
 
+export async function revokeAllSessionsWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<{ revokedCount: number }>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ revokedCount: number }>(
+      "/auth/revoke-all-sessions",
+      accessToken,
+      { method: "POST" }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "REVOKE_ALL_FAILED",
+          response.payload.error?.message ?? "Unable to sign out all devices."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
 export async function requestAccountDeletionWithRefresh(
   session: AuthSession,
   body: { confirmation: string; reason?: string }

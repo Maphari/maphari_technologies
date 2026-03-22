@@ -726,6 +726,26 @@ export class AuthController {
     });
   }
 
+  // ── POST /auth/revoke-all-sessions ────────────────────────────────────────
+  // Authenticated (all roles): revokes all active refresh tokens for the
+  // current user. Used by the client portal "Sign out all devices" button.
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Post("auth/revoke-all-sessions")
+  async revokeAllSessions(
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.AUTH_SERVICE_URL ?? "http://localhost:4001";
+    return proxyRequest(`${baseUrl}/auth/revoke-all-sessions`, "POST", undefined, {
+      "x-user-role": role ?? "",
+      "x-user-id": userId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
   // ── DELETE /auth/me/sessions ───────────────────────────────────────────────
   @Roles("ADMIN", "STAFF")
   @Delete("me/sessions")

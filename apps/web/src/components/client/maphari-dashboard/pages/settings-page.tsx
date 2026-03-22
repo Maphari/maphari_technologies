@@ -7,9 +7,9 @@ import type { NotificationPreference, ConnectedIntegration, SessionInfo } from "
 import type { PageId } from "../config";
 import { formatRelative } from "../utils";
 import type { AuthSession } from "../../../../lib/auth/session";
-import { saveSession } from "../../../../lib/auth/session";
+import { saveSession, clearSession } from "../../../../lib/auth/session";
 import { setPortalPreferenceWithRefresh, getPortalPreferenceWithRefresh } from "../../../../lib/api/portal";
-import { requestDataExportWithRefresh, requestAccountDeletionWithRefresh } from "../../../../lib/api/portal/profile";
+import { requestDataExportWithRefresh, requestAccountDeletionWithRefresh, revokeAllSessionsWithRefresh } from "../../../../lib/api/portal/profile";
 import { callGateway, withAuthorizedSession } from "../../../../lib/api/portal/internal";
 import { loadPortalNotificationPrefsWithRefresh, updatePortalNotificationPrefsWithRefresh } from "../../../../lib/api/portal/notification-prefs";
 import { loadPortalTeamMembersWithRefresh } from "../../../../lib/api/portal/team";
@@ -229,6 +229,7 @@ export function SettingsPage({
   const [securitySessions, setSecuritySessions] = useState<SessionInfo[]>(sessions);
   const [accessUsers, setAccessUsers] = useState<AccessUser[]>(DEFAULT_ACCESS_USERS);
   const [revokeSessionId, setRevokeSessionId] = useState<string | null>(null);
+  const [signingOutAll, setSigningOutAll] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [gdprTarget, setGdprTarget] = useState<GdprItem | null>(null);
   const [password, setPassword] = useState("");
@@ -475,6 +476,20 @@ export function SettingsPage({
     setRevokeSessionId(null);
     notify("success", "Session revoked", "Device signed out successfully.");
   };
+
+  async function handleSignOutAll(): Promise<void> {
+    if (!session || signingOutAll) return;
+    setSigningOutAll(true);
+    const result = await revokeAllSessionsWithRefresh(session);
+    if (result.nextSession) saveSession(result.nextSession);
+    setSigningOutAll(false);
+    if (result.error) {
+      notify("error", "Sign-out failed", result.error.message ?? "Unable to sign out all devices.");
+    } else {
+      clearSession();
+      window.location.href = "/login";
+    }
+  }
 
   return (
     <div className={cx("pageBody")}>
@@ -1452,7 +1467,15 @@ export function SettingsPage({
               {securityTab === "Active Sessions" ? (
                 <div className={cx("grid2Cols", "gap16")}>
                   <div className={cx("card")}>
-                    <div className={cx("cardHd")}><span className={cx("cardHdTitle")}>Devices & Sessions</span></div>
+                    <div className={cx("cardHd")}>
+                      <span className={cx("cardHdTitle")}>Devices & Sessions</span>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnGhost", "mlAuto")}
+                        disabled={signingOutAll}
+                        onClick={() => { void handleSignOutAll(); }}
+                      >{signingOutAll ? "Signing out…" : "Sign out all devices"}</button>
+                    </div>
                     <div className={cx("listGroup")}>
                       {securitySessions.map((session) => (
                         <div key={session.id} className={cx("listRow", "gap12", "flexAlignStart")}>

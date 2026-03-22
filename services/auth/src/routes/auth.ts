@@ -2233,4 +2233,31 @@ export async function registerAuthRoutes(
       } as ApiResponse;
     }
   });
+
+  // ── POST /auth/revoke-all-sessions ────────────────────────────────────────
+  // Authenticated: revokes all active refresh tokens for the current user.
+  // Used by the client portal "Sign out all devices" feature.
+  app.post("/auth/revoke-all-sessions", async (request, reply) => {
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } } as ApiResponse;
+    }
+
+    try {
+      const result = await prisma.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() }
+      });
+
+      return {
+        success: true,
+        data: { revokedCount: result.count }
+      } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "REVOKE_ALL_FAILED", message: "Unable to revoke all sessions" } } as ApiResponse;
+    }
+  });
 }
