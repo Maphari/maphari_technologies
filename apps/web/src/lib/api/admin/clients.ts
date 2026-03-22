@@ -748,3 +748,30 @@ export async function createLeadWithRefresh(
     return { unauthorized: false, data: response.payload.data, error: null };
   });
 }
+
+export async function broadcastToClientsWithRefresh(
+  session: AuthSession,
+  clientIds: string[],
+  subject: string,
+  body: string
+): Promise<AuthorizedResult<{ sent: number; total: number }>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ sent: number; total: number }>(
+      "/admin/clients/broadcast",
+      accessToken,
+      { method: "POST", body: { clientIds, subject, body } }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "BROADCAST_FAILED",
+          response.payload.error?.message ?? "Failed to broadcast message."
+        ),
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}

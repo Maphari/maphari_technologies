@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { formatMoneyCents } from "@/lib/i18n/currency";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
-import { createClientWithRefresh, updateClientWithRefresh, updateClientStatusWithRefresh } from "../../../../lib/api/admin/clients";
+import { broadcastToClientsWithRefresh, createClientWithRefresh, updateClientWithRefresh, updateClientStatusWithRefresh } from "../../../../lib/api/admin/clients";
 import { provisionClientAccessWithRefresh } from "../../../../lib/api/admin/staff";
 import { decideProjectRequestWithRefresh } from "../../../../lib/api/admin/projects";
 import { loadAdminContractsWithRefresh, type LegalContract } from "../../../../lib/api/admin/contracts";
@@ -125,6 +125,15 @@ export function ClientsAndProjectsPage({
   const [editOwner, setEditOwner] = useState("");
   const [editRenewalAt, setEditRenewalAt] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+
+  // ── Broadcast state ────────────────────────────────────────────────────────
+  const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [broadcastSubject, setBroadcastSubject] = useState("");
+  const [broadcastBody, setBroadcastBody] = useState("");
+  const [broadcastBusy, setBroadcastBusy] = useState(false);
+  const [broadcastError, setBroadcastError] = useState("");
+  const [broadcastResult, setBroadcastResult] = useState<{ sent: number; total: number } | null>(null);
 
   // Load all contracts and build a per-client map
   useEffect(() => {
@@ -263,6 +272,29 @@ export function ClientsAndProjectsPage({
     }
     setDecidingId(null);
   }
+
+  const handleBroadcast = useCallback(async () => {
+    if (!session || selectedClientIds.size === 0) return;
+    setBroadcastBusy(true);
+    setBroadcastError("");
+    const result = await broadcastToClientsWithRefresh(
+      session,
+      Array.from(selectedClientIds),
+      broadcastSubject,
+      broadcastBody
+    );
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.data) {
+      setBroadcastResult(result.data);
+      setBroadcastOpen(false);
+      setSelectedClientIds(new Set());
+      setBroadcastSubject("");
+      setBroadcastBody("");
+    } else {
+      setBroadcastError(result.error?.message ?? "Broadcast failed.");
+    }
+    setBroadcastBusy(false);
+  }, [session, selectedClientIds, broadcastSubject, broadcastBody]);
 
   // ── Derived: projects pending admin decision ───────────────────────────────
   const pendingRequests = useMemo(
@@ -479,6 +511,22 @@ export function ClientsAndProjectsPage({
         ))}
       </div>
 
+      {/* ── Broadcast result toast ── */}
+      {broadcastResult ? (
+        <div className={cx("flexRow", "gap8", "mb8")}>
+          <span className={cx("badge", "badgeGreen")}>
+            Sent to {broadcastResult.sent} of {broadcastResult.total} client{broadcastResult.total !== 1 ? "s" : ""}.
+          </span>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost")}
+            onClick={() => setBroadcastResult(null)}
+          >
+            ✕
+          </button>
+        </div>
+      ) : null}
+
       {/* ── Filter bar ── */}
       <div className={styles.clmFilters}>
         <input
@@ -504,6 +552,15 @@ export function ClientsAndProjectsPage({
           <option value="list">List</option>
           <option value="portfolio">Portfolio</option>
         </select>
+        {selectedClientIds.size > 0 ? (
+          <button
+            type="button"
+            className={cx("btnSm", "btnAccent")}
+            onClick={() => setBroadcastOpen(true)}
+          >
+            Broadcast ({selectedClientIds.size})
+          </button>
+        ) : null}
       </div>
 
       {/* ── Main split layout ── */}
@@ -518,6 +575,20 @@ export function ClientsAndProjectsPage({
                 <span className={styles.clmSectionMeta}>{filtered.length} ACCOUNTS</span>
               </div>
               <div className={styles.clmListHead}>
+                <span>
+                  <input
+                    type="checkbox"
+                    title="Select all clients"
+                    checked={filtered.length > 0 && filtered.every((c) => selectedClientIds.has(c.id))}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedClientIds(new Set(filtered.map((c) => c.id)));
+                      } else {
+                        setSelectedClientIds(new Set());
+                      }
+                    }}
+                  />
+                </span>
                 <span>Client</span>
                 <span>Status</span>
                 <span>Tier</span>
@@ -536,6 +607,24 @@ export function ClientsAndProjectsPage({
                     className={`${styles.clmClientRow} ${healthStripCls(client.health)}${client.id === selectedId ? ` ${styles.clmClientSelected}` : ""}`}
                     onClick={() => setSelectedId(client.id)}
                   >
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        title={`Select ${client.name}`}
+                        checked={selectedClientIds.has(client.id)}
+                        onChange={(e) => {
+                          setSelectedClientIds((prev) => {
+                            const next = new Set(prev);
+                            if (e.target.checked) {
+                              next.add(client.id);
+                            } else {
+                              next.delete(client.id);
+                            }
+                            return next;
+                          });
+                        }}
+                      />
+                    </div>
                     <div>
                       <div className={styles.clmClientName}>{client.name}</div>
                       <div className={styles.clmClientOwner}>{client.ownerName ?? "Unassigned"}</div>
@@ -829,6 +918,58 @@ export function ClientsAndProjectsPage({
       <div className={cx("mt16", "text10", "colorMuted", "fontMono")}>
         Signed in as {session?.user.email ?? "Unknown"}
       </div>
+
+      {/* ── Broadcast Modal ─────────────────────────────────────────────── */}
+      {broadcastOpen ? (
+        <div className={styles.modalOverlay} onClick={() => setBroadcastOpen(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHd}>
+              <span className={styles.modalTitle}>
+                Broadcast to {selectedClientIds.size} Client{selectedClientIds.size !== 1 ? "s" : ""}
+              </span>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setBroadcastOpen(false)}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <label className={styles.fieldLabel}>Subject</label>
+              <input
+                type="text"
+                className={styles.fieldInput}
+                placeholder="Email subject…"
+                value={broadcastSubject}
+                onChange={(e) => setBroadcastSubject(e.target.value)}
+              />
+              <label className={styles.fieldLabel}>Message</label>
+              <textarea
+                className={styles.formTextarea}
+                placeholder="Email body (min 10 characters)…"
+                rows={5}
+                value={broadcastBody}
+                onChange={(e) => setBroadcastBody(e.target.value)}
+              />
+              {broadcastError ? (
+                <p className={cx("text12", "colorRed")}>{broadcastError}</p>
+              ) : null}
+            </div>
+            <div className={cx("flexEnd", "gap8", "px20", "mb20")}>
+              <button
+                type="button"
+                className={cx("btnSm", "btnGhost")}
+                onClick={() => setBroadcastOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={cx("btnSm", "btnAccent")}
+                onClick={() => void handleBroadcast()}
+                disabled={broadcastBusy || !broadcastSubject.trim() || broadcastBody.trim().length < 10}
+              >
+                {broadcastBusy ? "Sending…" : `Send to ${selectedClientIds.size} client${selectedClientIds.size !== 1 ? "s" : ""}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* ── Create Client Modal ─────────────────────────────────────────── */}
       {showCreate ? (

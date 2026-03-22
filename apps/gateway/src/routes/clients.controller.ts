@@ -985,6 +985,27 @@ export class ClientsController {
     );
   }
 
+  // ── POST /admin/clients/broadcast ─────────────────────────────────────────
+  @Roles("ADMIN")
+  @Post("admin/clients/broadcast")
+  async broadcastToClients(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/admin/clients/broadcast`, "POST", body as Record<string, unknown>, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? "",
+    });
+  }
+
   // ── Comments: POST /comments ──────────────────────────────────────────────
 
   @Roles("ADMIN", "STAFF", "CLIENT")

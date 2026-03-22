@@ -920,4 +920,58 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
       } as ApiResponse;
     }
   });
+
+  // ── POST /admin/clients/broadcast ─────────────────────────────────────────
+  app.post("/admin/clients/broadcast", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      return reply.status(403).send({ success: false, error: { code: "FORBIDDEN", message: "Admin access required." } } as ApiResponse);
+    }
+
+    const body = request.body as { clientIds?: unknown; subject?: unknown; body?: unknown } | null;
+    const clientIds = Array.isArray(body?.clientIds) ? (body.clientIds as unknown[]).filter((id): id is string => typeof id === "string") : [];
+    const subject = typeof body?.subject === "string" ? body.subject.trim() : "";
+    const messageBody = typeof body?.body === "string" ? body.body.trim() : "";
+
+    if (clientIds.length === 0) {
+      return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "clientIds must be a non-empty array of strings." } } as ApiResponse);
+    }
+    if (!subject) {
+      return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "subject is required." } } as ApiResponse);
+    }
+    if (messageBody.length < 10) {
+      return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "body must be at least 10 characters." } } as ApiResponse);
+    }
+
+    try {
+      const clients = await prisma.client.findMany({
+        where: { id: { in: clientIds } },
+        select: { id: true, billingEmail: true, name: true },
+      });
+
+      const results = await Promise.allSettled(
+        clients.map((client) => {
+          if (!client.billingEmail) return Promise.resolve();
+          return eventBus.publish({
+            eventId: randomUUID(),
+            occurredAt: new Date().toISOString(),
+            requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined,
+            topic: EventTopics.notificationRequested,
+            payload: {
+              channel: "EMAIL",
+              recipientEmail: client.billingEmail,
+              subject,
+              message: messageBody,
+            },
+          });
+        })
+      );
+
+      const sent = results.filter((r) => r.status === "fulfilled").length;
+      return { success: true, data: { sent, total: clientIds.length }, meta: { requestId: scope.requestId } } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ success: false, error: { code: "BROADCAST_FAILED", message: "Broadcast failed." } } as ApiResponse);
+    }
+  });
 }
