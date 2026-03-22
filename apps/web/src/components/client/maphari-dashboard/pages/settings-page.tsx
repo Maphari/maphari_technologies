@@ -340,11 +340,12 @@ export function SettingsPage({
   useEffect(() => {
     if (!session) return;
     setNotifPrefsLoading(true);
-    void loadPortalNotifPrefsWithRefresh(session).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.data) setNotifPrefs(r.data);
-      setNotifPrefsLoading(false);
-    });
+    void loadPortalNotifPrefsWithRefresh(session)
+      .then((r) => {
+        if (r.nextSession) saveSession(r.nextSession);
+        if (r.data) setNotifPrefs(r.data);
+      })
+      .finally(() => setNotifPrefsLoading(false));
   }, [session]);
 
   const handleNotifToggle = useCallback(async (key: NotifPrefKey, current: boolean) => {

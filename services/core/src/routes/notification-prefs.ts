@@ -40,6 +40,10 @@ function ck(clientId: string): string {
   return `core:notification-prefs:${clientId}`;
 }
 
+function perKeyCk(userId: string): string {
+  return `core:notif-prefs-perkey:${userId}`;
+}
+
 export const NOTIF_PREF_KEYS = [
   "notif_email_invoice",
   "notif_email_milestone",
@@ -141,6 +145,9 @@ export async function registerNotificationPrefRoutes(app: FastifyInstance): Prom
     }
 
     try {
+      const cached = await cache.getJson<Record<NotifPrefKey, boolean>>(perKeyCk(scope.userId));
+      if (cached) return { success: true, data: cached, meta: { requestId: scope.requestId } } as ApiResponse<Record<NotifPrefKey, boolean>>;
+
       const rows = await prisma.userPreference.findMany({
         where: { userId: scope.userId, key: { in: [...NOTIF_PREF_KEYS] } },
       });
@@ -150,6 +157,7 @@ export async function registerNotificationPrefRoutes(app: FastifyInstance): Prom
         NOTIF_PREF_KEYS.map((k) => [k, rowMap.has(k) ? (rowMap.get(k) as boolean) : true])
       ) as Record<NotifPrefKey, boolean>;
 
+      await cache.setJson(perKeyCk(scope.userId), result, 120);
       return { success: true, data: result, meta: { requestId: scope.requestId } } as ApiResponse<Record<NotifPrefKey, boolean>>;
     } catch (error) {
       request.log.error(error);
@@ -165,19 +173,24 @@ export async function registerNotificationPrefRoutes(app: FastifyInstance): Prom
     }
 
     const body = request.body as { key: unknown; value: unknown };
-    const key = body.key as string;
+    const key = body.key;
     const value = body.value;
 
     if (!NOTIF_PREF_KEYS.includes(key as NotifPrefKey)) {
-      return reply.status(400).send({ success: false, error: { code: "INVALID_KEY", message: `Invalid notification preference key: ${key}` } } as ApiResponse);
+      return reply.status(400).send({ success: false, error: { code: "INVALID_KEY", message: "Invalid notification preference key." } } as ApiResponse);
+    }
+    if (typeof value !== "boolean") {
+      return reply.status(400).send({ success: false, error: { code: "INVALID_VALUE", message: "Value must be a boolean." } } as ApiResponse);
     }
 
     try {
       await prisma.userPreference.upsert({
-        where: { userId_key: { userId: scope.userId, key } },
+        where: { userId_key: { userId: scope.userId, key: key as NotifPrefKey } },
         update: { value: String(value) },
-        create: { userId: scope.userId, key, value: String(value) },
+        create: { userId: scope.userId, key: key as NotifPrefKey, value: String(value) },
       });
+
+      await cache.delete(perKeyCk(scope.userId));
 
       return { success: true, data: { success: true }, meta: { requestId: scope.requestId } } as ApiResponse<{ success: boolean }>;
     } catch (error) {
