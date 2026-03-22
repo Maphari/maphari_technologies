@@ -109,19 +109,24 @@ export function ClientOnboardingPage({ session, onNotify }: ClientOnboardingPage
     let cancelled = false;
     async function load() {
       setLoading(true);
-      const snap = await loadAdminSnapshotWithRefresh(session!);
-      if (cancelled) return;
-      if (snap.error || !snap.data) { onNotify("error", snap.error?.message ?? "Failed to load clients."); setLoading(false); return; }
-      const clients = snap.data.clients.filter((c) => c.status === "ONBOARDING");
-      if (!clients.length) { setOnboardings([]); setLoading(false); return; }
-      const results = await Promise.all(clients.map((c) => loadClientOnboardingWithRefresh(session!, c.id)));
-      if (cancelled) return;
-      const built = clients.map((c, i) => buildOnboarding(c, results[i].data ?? [], i));
-      setOnboardings(built);
-      if (built.length) setExpanded(built[0].id);
-      setLoading(false);
+      try {
+        const snap = await loadAdminSnapshotWithRefresh(session!);
+        if (cancelled) return;
+        if (snap.error || !snap.data) { onNotify("error", snap.error?.message ?? "Failed to load clients."); return; }
+        const clients = snap.data.clients.filter((c) => c.status === "ONBOARDING");
+        if (!clients.length) { setOnboardings([]); return; }
+        const results = await Promise.all(clients.map((c) => loadClientOnboardingWithRefresh(session!, c.id)));
+        if (cancelled) return;
+        const built = clients.map((c, i) => buildOnboarding(c, results[i].data ?? [], i));
+        setOnboardings(built);
+        if (built.length) setExpanded(built[0].id);
+      } catch (err: unknown) {
+        if (!cancelled) onNotify("error", (err as Error)?.message ?? "Failed to load.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
-    load();
+    void load();
     return () => { cancelled = true; };
   }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
 

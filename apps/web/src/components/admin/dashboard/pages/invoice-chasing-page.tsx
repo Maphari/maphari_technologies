@@ -108,18 +108,20 @@ export function InvoiceChasingPage({
   const load = useCallback(async () => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
-    const r = await loadOverdueChaseStatusWithRefresh(session);
-    if (r.nextSession) saveSession(r.nextSession);
-    if (r.error || !r.data) {
-      const msg = r.error?.message ?? "Failed to load invoices. Please try again.";
-      setLoadError(msg);
-      onNotify("error", msg);
+    try {
+      const r = await loadOverdueChaseStatusWithRefresh(session);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error || !r.data) {
+        const msg = r.error?.message ?? "Failed to load invoices. Please try again.";
+        setLoadError(msg);
+        onNotify("error", msg);
+        return;
+      }
+      setLoadError(null);
+      setInvoices(r.data.invoices);
+    } finally {
       setLoading(false);
-      return;
     }
-    setLoadError(null);
-    setInvoices(r.data.invoices);
-    setLoading(false);
   }, [session, onNotify]);
 
   useEffect(() => { void load(); }, [load]);
