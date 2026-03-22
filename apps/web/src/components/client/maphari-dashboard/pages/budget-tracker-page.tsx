@@ -97,8 +97,8 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
   const [pendingCRs, setPendingCRs] = useState<CrRow[]>([]);
   const [activeCRs, setActiveCRs]   = useState<Set<string>>(new Set());
 
-  const fmt = (v: number) => formatMoneyCents(Math.round(v) * 100, { currency, maximumFractionDigits: 0 });
-  const fmtk = (v: number) => formatMoneyCents(Math.round(v) * 100, { currency, maximumFractionDigits: 0 });
+  const fmt = (v: number) => formatMoneyCents(Math.round(v) * 100, { currency: "ZAR", maximumFractionDigits: 0 });
+  const fmtk = (v: number) => formatMoneyCents(Math.round(v) * 100, { currency: "ZAR", maximumFractionDigits: 0 });
 
   useEffect(() => {
     if (!session || !projectId) { setLoading(false); return; }

@@ -414,6 +414,9 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
               <Ic n={s.icon} sz={14} c={s.iconColor} />
             </div>
             <div className={cx("statValue", "fontMono", "tabularNums")}>{s.value}</div>
+            {!allSameCurrency && (
+              <span className={cx("statSub")}>Converted from original currencies</span>
+            )}
             <div className={cx("fontMono", "text10", "colorMuted2", "mt6")}>{s.trend}</div>
           </div>
         ))}
