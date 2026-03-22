@@ -40,9 +40,9 @@ export function FtueHoldingPage({ session, navigateTo }: FtueHoldingPageProps) {
       <div className={cx("ftueHoldingHero")}>
         <div className={cx("ftuePulseDot")} />
         <div>
-          <h1 className={cx("ftueHoldingTitle")}>Your project is on its way</h1>
+          <h1 className={cx("ftueHoldingTitle")}>Welcome to your portal</h1>
           <p className={cx("ftueHoldingSub")}>
-            We&apos;re setting things up on our end. You&apos;ll get full access to your project portal once your team has everything ready.
+            Get started by requesting a project, or your team will reach out with a proposal to review.
           </p>
         </div>
       </div>
@@ -84,8 +84,8 @@ export function FtueHoldingPage({ session, navigateTo }: FtueHoldingPageProps) {
         <div className={cx("ftuePropCard", "ftueNoProposals")}>
           <Ic n="clock" sz={16} c="var(--muted2)" />
           <div>
-            <div className={cx("fw600", "text13")}>Awaiting your proposal</div>
-            <div className={cx("text11", "colorMuted")}>Your team will send over a proposal shortly. You&apos;ll be notified by email.</div>
+            <div className={cx("fw600", "text13")}>No active projects yet</div>
+            <div className={cx("text11", "colorMuted")}>Submit a project request to get started, or your team will be in touch with a proposal.</div>
           </div>
         </div>
       )}
