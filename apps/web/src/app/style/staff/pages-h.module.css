@@ -2953,4 +2953,588 @@
 .evaSummaryRow { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--b1); }
 .evaVariancePct { font-size: 0.75rem; font-weight: 700; font-family: var(--font-dm-mono), monospace; }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   MY GOALS / OKR TRACKER  (okr*)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.okrQuarterTabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+
+.okrQTab {
+  padding: 6px 14px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--b2);
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font-dm-mono), monospace;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.okrQTab:hover { background: var(--s2); color: var(--text); border-color: var(--b3); }
+
+.okrQTabActive {
+  background: var(--accent-d);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.okrGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
+.okrCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.okrCardHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+
+.okrCardTitle { font-size: 0.9375rem; font-weight: 700; color: var(--text); line-height: 1.3; }
+
+.okrCardMeta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.okrCardDesc {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.okrProgressRow { display: flex; align-items: center; gap: 10px; }
+
+.okrProgressTrack {
+  flex: 1;
+  height: 6px;
+  background: var(--s3);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.okrProgressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.okrProgressFillGreen { background: var(--green); }
+
+.okrProgressPct {
+  font-size: 0.6875rem;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--muted);
+  min-width: 30px;
+  text-align: right;
+}
+
+.okrCardActions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+
+.okrCardTargetDate {
+  font-size: 0.6875rem;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--muted2);
+  letter-spacing: 0.04em;
+}
+
+.okrSliderRow { display: flex; align-items: center; gap: 10px; }
+
+.okrSlider {
+  flex: 1;
+  accent-color: var(--accent);
+  height: 4px;
+  cursor: pointer;
+}
+
+.okrSliderVal {
+  font-size: 0.6875rem;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--accent);
+  min-width: 30px;
+  text-align: right;
+}
+
+.okrFormField { display: flex; flex-direction: column; gap: 6px; }
+
+.okrFormLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: var(--font-dm-mono), monospace;
+}
+
+.okrModalTitle { font-size: 1.125rem; font-weight: 700; color: var(--text); margin-bottom: 20px; }
+
+.okrModalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+@media (max-width: 900px) {
+  .okrGrid { grid-template-columns: 1fr; }
+}
+
 /* spCapacityBarWrap (my-capacity page, should go in pages-d) */
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   PEER REVIEW PAGE  (prw*)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.prwStatLabel { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.prwStatValue { font-size: 20px; font-weight: 800; font-family: var(--font-syne); color: var(--text); }
+
+/* ── Two-column layout: colleague list + form panel ── */
+
+.prwLayout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .prwLayout { grid-template-columns: 1fr; }
+}
+
+/* ── Colleague list (left rail) ── */
+
+.prwColleagueList {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.prwColleagueListHeader {
+  padding: 10px 14px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-dm-mono);
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--b1);
+}
+
+.prwColleagueEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: var(--muted2);
+  font-size: 12px;
+  font-family: var(--font-dm-mono);
+}
+
+.prwColleagueCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--b1);
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms;
+  width: 100%;
+}
+.prwColleagueCard:last-child { border-bottom: none; }
+.prwColleagueCard:hover { background: var(--s2); }
+.prwColleagueCardActive { background: color-mix(in oklab, var(--accent) 8%, var(--s2)) !important; }
+
+.prwColleagueAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--accent) 15%, var(--s3));
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-syne);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prwColleagueInfo { flex: 1; min-width: 0; }
+.prwColleagueName { font-size: 12px; font-weight: 700; font-family: var(--font-syne); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prwColleagueRole { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.prwSubmittedBadge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: color-mix(in oklab, var(--accent) 12%, var(--s1));
+  border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--font-dm-mono);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Form panel (right) ── */
+
+.prwFormPanel {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.prwFormPanelEmpty {
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+}
+
+.prwEmptyTitle { font-size: 13px; font-family: var(--font-syne); color: var(--muted); }
+
+.prwFormHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.prwFormAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--accent) 15%, var(--s3));
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-syne);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prwFormName { font-size: 16px; font-weight: 800; font-family: var(--font-syne); color: var(--text); }
+.prwFormRole { font-size: 11px; font-family: var(--font-dm-mono); color: var(--muted); }
+
+/* ── No assignment state ── */
+
+.prwNoAssignment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px;
+  text-align: center;
+  background: var(--s2);
+  border-radius: var(--r-sm);
+}
+
+.prwNoAssignmentTitle { font-size: 13px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
+.prwNoAssignmentSub { font-size: 12px; font-family: var(--font-dm-mono); color: var(--muted); line-height: 1.6; max-width: 340px; }
+
+/* ── Form sections ── */
+
+.prwFormSection { display: flex; flex-direction: column; gap: 8px; }
+.prwFormSectionLabel { font-size: 11px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
+.prwFormSectionSub { font-size: 11px; font-family: var(--font-dm-mono); color: var(--muted); line-height: 1.5; }
+
+/* ── Star rating ── */
+
+.prwStars { display: flex; align-items: center; gap: 4px; }
+
+.prwStar {
+  font-size: 28px;
+  background: none;
+  border: none;
+  padding: 0 2px;
+  cursor: pointer;
+  line-height: 1;
+  transition: transform 80ms, color 80ms;
+}
+.prwStar:disabled { cursor: default; }
+.prwStarFilled { color: var(--accent); }
+.prwStarEmpty  { color: var(--s3); }
+.prwStar:not(:disabled):hover { transform: scale(1.15); }
+
+.prwScoreRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.prwScoreLabel { font-size: 11px; font-weight: 600; font-family: var(--font-dm-mono); }
+
+/* ── Feedback textarea ── */
+
+.prwFeedbackArea {
+  width: 100%;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-size: 12px;
+  font-family: var(--font-dm-mono);
+  color: var(--text);
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.6;
+  transition: border-color 120ms;
+  box-sizing: border-box;
+}
+.prwFeedbackArea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.prwFeedbackArea::placeholder { color: var(--muted2); }
+
+/* ── Submit row ── */
+
+.prwSubmitRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.prwSubmitHint { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
+
+/* ── Already submitted state ── */
+
+.prwSubmittedState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px;
+  text-align: center;
+  background: color-mix(in oklab, var(--accent) 5%, var(--s2));
+  border: 1px solid color-mix(in oklab, var(--accent) 20%, transparent);
+  border-radius: var(--r-md);
+}
+
+.prwSubmittedIcon { color: var(--accent); }
+.prwSubmittedTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
+.prwSubmittedMeta { font-size: 12px; font-family: var(--font-dm-mono); color: var(--muted); }
+.prwSubmittedFeedback { font-size: 12px; font-family: var(--font-dm-mono); color: var(--muted); line-height: 1.6; max-width: 400px; padding: 10px 14px; background: var(--s1); border-radius: var(--r-sm); border: 1px solid var(--b2); }
+
+/* ── Received tab ── */
+
+.prwReceivedSection { display: flex; flex-direction: column; gap: 16px; }
+.prwReceivedHeader { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.prwReceivedTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
+.prwReceivedMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; }
+
+/* Average score card */
+.prwAvgCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  flex-wrap: wrap;
+}
+
+.prwAvgScore { font-size: 36px; font-weight: 800; font-family: var(--font-syne); line-height: 1; }
+.prwAvgLabel { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 4px; }
+.prwAvgSub { font-size: 11px; font-family: var(--font-dm-mono); color: var(--muted); }
+
+/* Review cards */
+.prwReceivedList { display: flex; flex-direction: column; gap: 10px; }
+
+.prwReceivedCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.prwReceivedCardHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.prwAnonymousAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--s3);
+  color: var(--muted2);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-syne);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prwReceivedCardMeta { flex: 1; min-width: 0; }
+.prwAnonymousLabel { font-size: 11px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
+.prwReceivedDate { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
+
+.prwReceivedScore {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.prwReceivedScoreNum { font-size: 14px; font-weight: 800; font-family: var(--font-syne); }
+.prwReceivedFeedback { font-size: 12px; font-family: var(--font-dm-mono); color: var(--muted); line-height: 1.7; }
+.prwReceivedNoFeedback { font-size: 11px; font-family: var(--font-dm-mono); color: var(--muted2); font-style: italic; }
+
+/* ══ Staff Message Client Modal ══════════════════════════════════════════════ */
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-modal);
+  width: 480px;
+  max-width: 96vw;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--b1);
+}
+
+.modalTitle {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-syne);
+  color: var(--text);
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-xs);
+  transition: background 0.12s;
+}
+.modalClose:hover { background: var(--s2); }
+
+.modalBody {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.chMsgFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.chMsgFieldLabel {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-syne);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.chMsgFieldInput {
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: var(--font-dm-mono);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+.chMsgFieldInput:focus { border-color: var(--b3); }
+
+.chMsgFieldTextarea {
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: var(--font-dm-mono);
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  line-height: 1.6;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+.chMsgFieldTextarea:focus { border-color: var(--b3); }
+
+/* ══ Staff Toast ══════════════════════════════════════════════════════════════ */
+
+.staffToast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 18px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-family: var(--font-dm-mono);
+  font-weight: 600;
+  z-index: 2000;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.staffToastSuccess {
+  background: var(--lime-d);
+  border: 1px solid var(--lime);
+  color: var(--lime);
+}
+
+.staffToastError {
+  background: rgba(255, 80, 80, 0.1);
+  border: 1px solid var(--red);
+  color: var(--red);
+}

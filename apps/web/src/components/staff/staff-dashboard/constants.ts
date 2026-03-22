@@ -81,5 +81,7 @@ export const pageTitles: Record<PageId, [string, string]> = {
   changeRequests: ["Client Lifecycle", "Change Requests"],
   slaTracker: ["Client Lifecycle", "SLA Tracker"],
   appointments: ["Client Work", "Appointments"],
-  workloadheatmap: ["Analytics", "Workload Heatmap"]
+  workloadheatmap: ["Analytics", "Workload Heatmap"],
+  mygoals: ["Personal Growth", "My Goals & OKRs"],
+  peerreview: ["HR", "Peer Reviews"]
 };

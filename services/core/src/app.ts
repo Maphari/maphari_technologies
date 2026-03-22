@@ -100,6 +100,15 @@ import { registerDataRetentionRoutes } from "./routes/data-retention.js";
 // ── FY Closeout Checklist ─────────────────────────────────────────────────────
 import { registerFyChecklistRoutes } from "./routes/fy-checklist.js";
 
+// ── Staff Goals (OKR / Personal Goal Tracking) ────────────────────────────────
+import { registerStaffGoalRoutes } from "./routes/staff-goals.js";
+
+// ── Deliverable Annotations ────────────────────────────────────────────────────
+import { registerAnnotationRoutes } from "./routes/annotations.js";
+
+// ── Shared Calendar ───────────────────────────────────────────────────────────
+import { registerCalendarRoutes } from "./routes/calendar.js";
+
 export async function createCoreApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
   const metrics = new ServiceMetrics();
@@ -246,6 +255,15 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── FY Closeout Checklist ─────────────────────────────────────────────────
   await registerFyChecklistRoutes(app);
+
+  // ── Staff Goals (OKR / Personal Goal Tracking) ────────────────────────────
+  await registerStaffGoalRoutes(app);
+
+  // ── Shared Calendar ───────────────────────────────────────────────────────
+  await registerCalendarRoutes(app);
+
+  // ── Deliverable Annotations ────────────────────────────────────────────────
+  await registerAnnotationRoutes(app);
 
   return app;
 }

@@ -319,18 +319,21 @@ model ProjectWorkSession {
 }
 
 model ProjectTimeEntry {
-  id          String    @id @default(uuid())
-  projectId   String
-  clientId    String
-  phaseId     String?
-  staffUserId String?   @db.Uuid
-  staffName   String?
-  taskLabel   String
-  minutes     Int
-  startedAt   DateTime?
-  endedAt     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  projectId     String
+  clientId      String
+  phaseId       String?
+  staffUserId   String?   @db.Uuid
+  staffName     String?
+  taskLabel     String
+  minutes       Int
+  startedAt     DateTime?
+  endedAt       DateTime?
+  status        String    @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | REJECTED
+  submittedAt   DateTime?
+  submittedWeek String? // "2026-W12" ISO week format
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   project Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   client  Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -339,6 +342,8 @@ model ProjectTimeEntry {
   @@index([clientId, createdAt])
   @@index([projectId, createdAt])
   @@index([phaseId])
+  @@index([status])
+  @@index([staffUserId, submittedWeek])
   @@map("project_time_entries")
 }
 
@@ -1292,6 +1297,7 @@ model ClientContract {
   signed       Boolean   @default(false)
   signedAt     DateTime?
   signedByName String?
+  expiresAt    DateTime? // contract expiry date for renewal tracking
   fileId       String? // links to the file service record
   storageKey   String?
   mimeType     String?
@@ -1598,4 +1604,50 @@ model DataRetentionPolicy {
 
   @@index([status])
   @@map("data_retention_policies")
+}
+
+model FyChecklistItem {
+  id         String    @id @default(cuid())
+  fiscalYear String // e.g. "2025-2026"
+  label      String
+  category   String // "REVENUE" | "TAX" | "PAYROLL" | "ARCHIVE"
+  done       Boolean   @default(false)
+  doneAt     DateTime?
+  doneBy     String? // userId of who checked it
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([fiscalYear, label])
+  @@index([fiscalYear])
+  @@map("fy_checklist_items")
+}
+
+model StaffGoal {
+  id          String   @id @default(cuid())
+  staffUserId String
+  title       String
+  description String?
+  targetDate  DateTime
+  progress    Int      @default(0) // 0-100 percentage
+  status      String   @default("ACTIVE") // ACTIVE | ACHIEVED | CANCELLED
+  quarter     String // "Q1-2026", "Q2-2026", etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([staffUserId])
+  @@index([staffUserId, quarter])
+}
+
+model DeliverableAnnotation {
+  id            String    @id @default(cuid())
+  deliverableId String
+  clientId      String
+  comment       String
+  pageNumber    Int?
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([deliverableId])
+  @@map("deliverable_annotations")
 }

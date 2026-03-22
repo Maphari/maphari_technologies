@@ -23,6 +23,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from "@nestjs/common";
 import { type ApiResponse, type Role } from "@maphari/contracts";
 import { Roles } from "../auth/roles.decorator.js";
@@ -1122,6 +1123,88 @@ export class StaffController {
     return proxyRequest(
       `${CORE()}/standup/feed`,
       "GET",
+      undefined,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Staff Goals (OKR / Personal Goal Tracking)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /staff/goals — list my goals (optionally filter by quarter) ───────
+  @Roles("ADMIN", "STAFF")
+  @Get("staff/goals")
+  async listMyGoals(
+    @Query("quarter")         quarter?: string,
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    const qs = quarter ? `?quarter=${encodeURIComponent(quarter)}` : "";
+    return proxyRequest(
+      `${CORE()}/staff-goals${qs}`,
+      "GET",
+      undefined,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── POST /staff/goals — create a new personal goal ────────────────────────
+  @Roles("ADMIN", "STAFF")
+  @Post("staff/goals")
+  async createMyGoal(
+    @Body()                   body: unknown,
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/staff-goals`,
+      "POST",
+      body,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PATCH /staff/goals/:id — update progress, status, title ──────────────
+  @Roles("ADMIN", "STAFF")
+  @Patch("staff/goals/:id")
+  async updateMyGoal(
+    @Param("id")              id: string,
+    @Body()                   body: unknown,
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/staff-goals/${id}`,
+      "PATCH",
+      body,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── DELETE /staff/goals/:id — soft-delete (cancel) a personal goal ────────
+  @Roles("ADMIN", "STAFF")
+  @Delete("staff/goals/:id")
+  async deleteMyGoal(
+    @Param("id")              id: string,
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/staff-goals/${id}`,
+      "DELETE",
       undefined,
       scopeHeaders(userId, role, clientId, requestId, traceId)
     );

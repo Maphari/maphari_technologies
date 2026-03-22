@@ -56,6 +56,7 @@ const PRIMARY_SIDEBAR_IDS = new Set<PageId>([
   "standup",
   "timelog",
   "performance",
+  "mygoals",
   // Workflow
   "approvalqueue",
   // Project Management
@@ -415,6 +416,12 @@ export function useStaffNav({
       { id: "myreports",        label: "My Reports",          section: "Analytics" },
       { id: "teamperformance",  label: "Team Performance",    section: "Analytics" },
       { id: "workloadheatmap",  label: "Workload Heatmap",    section: "Analytics" },
+
+      // ── Personal Growth ────────────────────────────────────────────────────
+      { id: "mygoals",          label: "My Goals & OKRs",     section: "Personal Growth" },
+
+      // ── HR ────────────────────────────────────────────────────────────────
+      { id: "peerreview",       label: "Peer Reviews",         section: "HR" },
 
       // ── Settings ──────────────────────────────────────────────────────────
       { id: "myintegrations", label: "My Integrations", section: "Settings" },

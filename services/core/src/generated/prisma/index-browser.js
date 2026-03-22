@@ -312,6 +312,9 @@ exports.Prisma.ProjectTimeEntryScalarFieldEnum = {
   minutes: 'minutes',
   startedAt: 'startedAt',
   endedAt: 'endedAt',
+  status: 'status',
+  submittedAt: 'submittedAt',
+  submittedWeek: 'submittedWeek',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1010,6 +1013,7 @@ exports.Prisma.ClientContractScalarFieldEnum = {
   signed: 'signed',
   signedAt: 'signedAt',
   signedByName: 'signedByName',
+  expiresAt: 'expiresAt',
   fileId: 'fileId',
   storageKey: 'storageKey',
   mimeType: 'mimeType',
@@ -1233,6 +1237,42 @@ exports.Prisma.DataRetentionPolicyScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.FyChecklistItemScalarFieldEnum = {
+  id: 'id',
+  fiscalYear: 'fiscalYear',
+  label: 'label',
+  category: 'category',
+  done: 'done',
+  doneAt: 'doneAt',
+  doneBy: 'doneBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.StaffGoalScalarFieldEnum = {
+  id: 'id',
+  staffUserId: 'staffUserId',
+  title: 'title',
+  description: 'description',
+  targetDate: 'targetDate',
+  progress: 'progress',
+  status: 'status',
+  quarter: 'quarter',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.DeliverableAnnotationScalarFieldEnum = {
+  id: 'id',
+  deliverableId: 'deliverableId',
+  clientId: 'clientId',
+  comment: 'comment',
+  pageNumber: 'pageNumber',
+  resolvedAt: 'resolvedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1344,7 +1384,10 @@ exports.Prisma.ModelName = {
   EntityComment: 'EntityComment',
   Crisis: 'Crisis',
   ComplianceRecord: 'ComplianceRecord',
-  DataRetentionPolicy: 'DataRetentionPolicy'
+  DataRetentionPolicy: 'DataRetentionPolicy',
+  FyChecklistItem: 'FyChecklistItem',
+  StaffGoal: 'StaffGoal',
+  DeliverableAnnotation: 'DeliverableAnnotation'
 };
 
 /**
