@@ -29,6 +29,7 @@ import { LegalPage } from "./dashboard/pages/legal-page";
 import { PerformancePage } from "./dashboard/pages/performance-page";
 import { PlatformInfrastructurePage } from "./dashboard/pages/platform-infrastructure-page";
 import { PricingPage } from "./dashboard/pages/pricing-page";
+import { ProposalsPage } from "./dashboard/pages/proposals-page";
 import { ProfitabilityPerClientPage } from "./dashboard/pages/profitability-per-client-page";
 import { ProfitabilityPerProjectPage } from "./dashboard/pages/profitability-per-project-page";
 import { CashFlowCalendarPage } from "./dashboard/pages/cash-flow-calendar-page";
@@ -540,6 +541,7 @@ export function MaphariDashboard() {
             {page === "fyCloseout" ? <FinancialYearCloseoutPage session={session} onNotify={pushToast} /> : null}
             {page === "expenses" ? <ExpenseTrackerPage session={session} /> : null}
             {page === "payroll" ? <PayrollLedgerPage session={session} /> : null}
+            {page === "proposals" ? <ProposalsPage session={session} /> : null}
             {page === "pricing" ? <PricingPage /> : null}
             {page === "vendors" ? <VendorCostControlPage session={session} /> : null}
             {page === "platform" ? <PlatformInfrastructurePage session={session} onNotify={pushToast} /> : null}

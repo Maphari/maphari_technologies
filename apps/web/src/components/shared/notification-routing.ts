@@ -247,5 +247,6 @@ export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotifi
   contractRenewal: "operations",
   clvAnalytics: "invoices",
   projectTemplates: "projects",
-  staffScheduling: "operations"
+  staffScheduling: "operations",
+  proposals: "invoices"
 };

@@ -16,6 +16,7 @@ export const pageTitles: Record<PageId, [string, string]> = {
   fyCloseout: ["Finance", "Financial Year Closeout"],
   expenses: ["Finance", "Expense Tracker"],
   payroll: ["Finance", "Payroll Ledger"],
+  proposals: ["Finance", "Proposal Builder"],
   pricing: ["Finance", "Pricing Control"],
   vendors: ["Finance", "Vendor & Cost Control"],
   portfolio: ["Operations", "Project Portfolio"],

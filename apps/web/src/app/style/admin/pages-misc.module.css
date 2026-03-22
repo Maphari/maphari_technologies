@@ -2800,6 +2800,218 @@
   margin-bottom: 16px;
 }
 
+/* ─── Proposals Page ─────────────────────────────────────────────────────── */
+
+.propPage { padding: 20px 24px; }
+
+.propHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.propTitle {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.propGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.propCard {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 16px;
+}
+
+.propCardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.propCardMeta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.propCardAmount {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font-dm-mono);
+}
+
+.propCardActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.propStatusChip {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.propStatusDraft { background: rgba(139, 111, 255, 0.12); color: var(--accent); }
+.propStatusPending { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+.propStatusAccepted { background: rgba(34, 197, 94, 0.12); color: #22c55e; }
+.propStatusDeclined { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+.propStatusExpired { background: rgba(100, 116, 139, 0.12); color: #64748b; }
+
+.propItemRow {
+  display: grid;
+  grid-template-columns: 1fr 80px 60px 32px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--b1);
+  cursor: grab;
+}
+
+.propItemRow:active { cursor: grabbing; }
+
+.propDragging { opacity: 0.5; }
+
+.propSubtotal {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+  padding: 8px 0;
+  border-top: 1px solid var(--b2);
+  margin-top: 8px;
+  font-family: var(--font-dm-mono);
+}
+
+.propItemHead {
+  display: grid;
+  grid-template-columns: 1fr 80px 60px 32px;
+  gap: 8px;
+  padding: 4px 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--b2);
+  margin-bottom: 4px;
+}
+
+.propDragHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--muted);
+  cursor: grab;
+  border-radius: var(--r-xs);
+  flex-shrink: 0;
+}
+
+.propDragHandle:hover { color: var(--text); background: var(--s2); }
+
+.propItemsSection { margin-top: 16px; }
+
+.propItemsLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.propAiBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  background: rgba(200, 241, 53, 0.08);
+  border: 1px solid rgba(200, 241, 53, 0.2);
+  color: var(--lime);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.propAiBtn:hover:not(:disabled) { background: rgba(200, 241, 53, 0.14); }
+.propAiBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.propConfirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.propConfirmBox {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-modal);
+}
+
+.propConfirmTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.propConfirmBody {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.propConfirmActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.propDeleteError {
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 6px;
+}
+
+.propEmpty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.propError {
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--r-sm);
+  color: #ef4444;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
 @media (max-width: 900px) {
   .staffSchedPanel { width: 100vw; border-left: none; border-top: 1px solid var(--b2); top: auto; bottom: 0; height: 60dvh; }
 }

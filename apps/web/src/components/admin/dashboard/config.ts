@@ -91,6 +91,7 @@ export type PageId =
   | "clvAnalytics"
   | "projectTemplates"
   | "staffScheduling"
+  | "proposals"
   | "settings";
 
 // ─── Re-exports for backward compatibility ───
@@ -139,6 +140,7 @@ export const navItems: NavItem[] = [
   { id: "fyCloseout", label: "FY Closeout", section: "Finance" },
   { id: "expenses", label: "Expenses", section: "Finance" },
   { id: "payroll", label: "Payroll", section: "Finance" },
+  { id: "proposals", label: "Proposals", section: "Finance" },
   { id: "pricing", label: "Pricing", section: "Finance" },
   { id: "vendors", label: "Vendors", section: "Finance" },
   { id: "clvAnalytics", label: "CLV Analytics", section: "Finance" },
