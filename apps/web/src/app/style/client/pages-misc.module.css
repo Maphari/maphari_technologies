@@ -1231,6 +1231,8 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.52);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2251,7 +2253,7 @@
 .sectionHeadPad { padding: 16px 18px 12px; }
 
 /* ── Modal background overlay ────────────────────────────────────────────── */
-.modalBg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 49; display: flex; align-items: center; justify-content: center; }
+.modalBg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 49; display: flex; align-items: center; justify-content: center; }
 
 /* ── Text + section titles ───────────────────────────────────────────────── */
 .sectionTitle { font-size: 0.65rem; font-weight: 700; color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; }
