@@ -740,6 +740,33 @@ export function MaphariDashboard() {
               autoFocus
             />
             <div className={styles.cmdResults}>
+              {/* Recent searches — shown when no query and history exists */}
+              {!commandSearch.query && commandSearch.history.length > 0 && (
+                <div>
+                  <div className={cx("cmdSectionLabel", "flexRow")}>
+                    <span>Recent searches</span>
+                    <button
+                      type="button"
+                      className={cx("cmdClear")}
+                      onClick={commandSearch.clearHistory}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className={styles.cmdHistoryChips}>
+                    {commandSearch.history.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        className={cx("cmdHistoryChip")}
+                        onClick={() => commandSearch.selectHistory(q)}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {commandSearch.results.map((result, i) => (
                 <button
                   key={result.id}

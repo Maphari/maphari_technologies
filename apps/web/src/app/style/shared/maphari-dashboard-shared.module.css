@@ -4146,6 +4146,50 @@
   text-align: center;
 }
 
+.cmdSectionLabel {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  padding: 10px 18px 4px;
+}
+
+.cmdHistoryChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 12px 10px;
+}
+
+.cmdHistoryChip {
+  padding: 3px 10px;
+  border-radius: var(--r-sm);
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cmdHistoryChip:hover {
+  background: var(--s3);
+  color: var(--text);
+}
+
+.cmdClear {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted2);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0 4px;
+}
+.cmdClear:hover {
+  color: var(--text);
+}
+
 /* ─── Session Timeout Overlay ────────────────────────────────────── */
 
 .sessionWarning {

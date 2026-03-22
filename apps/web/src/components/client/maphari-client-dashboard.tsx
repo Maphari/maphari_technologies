@@ -731,6 +731,33 @@ export function MaphariClientDashboard() {
 
             {/* Results */}
             <div className={styles.cmdResults}>
+              {/* Recent searches — shown when no query and history exists */}
+              {!commandSearch.query && commandSearch.history.length > 0 && (
+                <div>
+                  <div className={cx("cmdSuggestLabel", "flexRow")}>
+                    <span>Recent</span>
+                    <button
+                      type="button"
+                      className={cx("cmdClear")}
+                      onClick={commandSearch.clearHistory}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className={styles.cmdHistoryChips}>
+                    {commandSearch.history.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        className={cx("cmdHistoryChip")}
+                        onClick={() => commandSearch.selectHistory(q)}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {/* Quick navigate grid when no query */}
               {!commandSearch.query && (
                 <>

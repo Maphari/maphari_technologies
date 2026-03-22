@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import {
+  getSearchHistory,
+  addToSearchHistory,
+  clearSearchHistory,
+} from "@/lib/utils/search-history";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -76,6 +81,7 @@ export function useCommandSearch({
   const [activeIndex, setActiveIndex] = useState(0);
   const [asyncResults, setAsyncResults] = useState<CommandSearchSource[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [history, setHistory] = useState<string[]>(() => getSearchHistory());
 
   // Cancel-token ref so stale responses are discarded
   const cancelRef = useRef<{ cancelled: boolean }>({ cancelled: false });
@@ -167,6 +173,7 @@ export function useCommandSearch({
     setIsOpen(true);
     setQuery("");
     setActiveIndex(0);
+    setHistory(getSearchHistory()); // sync from localStorage on open
   }, []);
 
   const close = useCallback(() => {
@@ -183,10 +190,15 @@ export function useCommandSearch({
   const executeActive = useCallback(() => {
     const result = results[activeIndex];
     if (result) {
+      const q = query.trim();
+      if (q) {
+        addToSearchHistory(q);
+        setHistory(getSearchHistory());
+      }
       result.action();
       close();
     }
-  }, [results, activeIndex, close]);
+  }, [results, activeIndex, close, query]);
 
   const moveUp = useCallback(() => {
     setActiveIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
@@ -195,6 +207,16 @@ export function useCommandSearch({
   const moveDown = useCallback(() => {
     setActiveIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
   }, [results.length]);
+
+  const clearHistory = useCallback(() => {
+    clearSearchHistory();
+    setHistory([]);
+  }, []);
+
+  const selectHistory = useCallback((q: string) => {
+    setQuery(q);
+    setActiveIndex(0);
+  }, []);
 
   return {
     isOpen,
@@ -208,5 +230,8 @@ export function useCommandSearch({
     executeActive,
     moveUp,
     moveDown,
+    history,
+    clearHistory,
+    selectHistory,
   };
 }
