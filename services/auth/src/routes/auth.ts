@@ -118,10 +118,10 @@ function ensureAdmin(request: { headers: Record<string, unknown> }, reply: { sta
   return true;
 }
 
-function ensureStaff(request: { headers: Record<string, unknown> }, reply: { status: (code: number) => unknown }): boolean {
+function ensureStaff(request: { headers: Record<string, unknown> }, reply: { status: (code: number) => { send: (body: unknown) => void } }): boolean {
   const actor = currentActor(request);
   if (actor.role !== "STAFF") {
-    reply.status(403);
+    reply.status(403).send({ success: false, error: { code: "FORBIDDEN", message: "Staff access required." } } as ApiResponse);
     return false;
   }
   return true;
@@ -2443,6 +2443,19 @@ export async function registerAuthRoutes(
       return { success: false, error: { code: "UNAUTHORIZED", message: "User ID missing" } } as ApiResponse;
     }
 
+    const disableRateCheck = await checkTotpRateLimit(redis, userId);
+    if (!disableRateCheck.allowed) {
+      reply.status(429);
+      reply.header("retry-after", String(Math.ceil((disableRateCheck.resetAt - Date.now()) / 1000)));
+      return {
+        success: false,
+        error: {
+          code: "TOTP_RATE_LIMITED",
+          message: "Too many 2FA attempts. Please wait before trying again."
+        }
+      } as ApiResponse;
+    }
+
     const body = request.body as Record<string, unknown> | null;
     const password = typeof body?.password === "string" ? body.password : "";
     if (!password) {
@@ -2464,9 +2477,12 @@ export async function registerAuthRoutes(
         return { success: false, error: { code: "TOTP_NOT_ENABLED", message: "2FA is not currently enabled" } } as ApiResponse;
       }
       if (!user.passwordHash || !user.passwordSalt || !verifyPassword(password, user.passwordHash, user.passwordSalt)) {
+        await recordTotpFailure(redis, userId);
         reply.status(401);
         return { success: false, error: { code: "INVALID_PASSWORD", message: "Incorrect password" } } as ApiResponse;
       }
+
+      await resetTotpRateLimit(redis, userId);
 
       await prisma.user.update({
         where: { id: userId },

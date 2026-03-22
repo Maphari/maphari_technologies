@@ -306,6 +306,7 @@ export function SettingsPage({
   const [twoFaDisableBusy, setTwoFaDisableBusy] = useState(false);
   const [twoFaDisableError, setTwoFaDisableError] = useState("");
   const [twoFaSetupStep, setTwoFaSetupStep] = useState<"qr" | "verify" | "codes">("qr");
+  const [twoFaSetupError, setTwoFaSetupError] = useState("");
 
   // Load 2FA status on mount
   useEffect(() => {
@@ -318,6 +319,9 @@ export function SettingsPage({
 
   const handleSetup2fa = useCallback(async () => {
     if (!session) return;
+    setTwoFaSetupError("");
+    setTwoFaVerifyCode("");
+    setTwoFaVerifyError("");
     setTwoFaSetupStep("qr");
     const r = await setupStaff2faWithRefresh(session);
     if (r.data) {
@@ -325,6 +329,8 @@ export function SettingsPage({
       setTwoFaQrUrl(r.data.qrCodeDataUrl);
       setTwoFaBackupCodes(r.data.backupCodes);
       setTwoFaSetupOpen(true);
+    } else {
+      setTwoFaSetupError(r.error?.message ?? "Unable to set up 2FA. Please try again.");
     }
   }, [session?.accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -973,20 +979,23 @@ export function SettingsPage({
                   </button>
                 </div>
               ) : (
-                <div className={cx("stgv2SecurityRow")}>
-                  <div className={cx("stgv2SecurityRowInfo")}>
-                    <div className={cx("stgv2SecurityRowLabel")}>Status</div>
-                    <div className={cx("stgv2SecurityRowSub")}>Two-factor authentication is not enabled.</div>
+                <>
+                  <div className={cx("stgv2SecurityRow")}>
+                    <div className={cx("stgv2SecurityRowInfo")}>
+                      <div className={cx("stgv2SecurityRowLabel")}>Status</div>
+                      <div className={cx("stgv2SecurityRowSub")}>Two-factor authentication is not enabled.</div>
+                    </div>
+                    <button type="button" className={cx("stgv2BtnPrimary")} onClick={() => void handleSetup2fa()}>
+                      Enable 2FA
+                    </button>
                   </div>
-                  <button type="button" className={cx("stgv2BtnPrimary")} onClick={() => void handleSetup2fa()}>
-                    Enable 2FA
-                  </button>
-                </div>
+                  {twoFaSetupError ? <p className={cx("stgv2ErrMsg")}>{twoFaSetupError}</p> : null}
+                </>
               )}
 
               {/* Setup modal */}
               {twoFaSetupOpen ? (
-                <div className={cx("stgv2ModalBackdrop")} onClick={() => setTwoFaSetupOpen(false)}>
+                <div className={cx("stgv2ModalBackdrop")} onClick={() => { if (!twoFaVerifyBusy) { setTwoFaSetupOpen(false); setTwoFaVerifyCode(""); setTwoFaVerifyError(""); } }}>
                   <div className={cx("stgv2Modal")} onClick={(e) => e.stopPropagation()}>
                     {twoFaSetupStep === "qr" ? (
                       <>
@@ -1054,7 +1063,7 @@ export function SettingsPage({
                           <button
                             type="button"
                             className={cx("stgv2BtnPrimary")}
-                            onClick={() => { setTwoFaSetupOpen(false); setTwoFaVerifyCode(""); }}
+                            onClick={() => { setTwoFaSetupOpen(false); setTwoFaVerifyCode(""); setTwoFaVerifyError(""); }}
                           >
                             Done
                           </button>
