@@ -12,6 +12,7 @@ import {
   type PortalInvoice,
 } from "../../../../lib/api/portal";
 import { saveSession } from "../../../../lib/auth/session";
+import { formatMoneyCents } from "../../../../lib/i18n/currency";
 
 // ── Weekly chart constants (no weekly spend API yet) ──────────────────────
 const TODAY_WEEK = 0;
@@ -26,12 +27,9 @@ const CHART_H = 120;
 // ── Change request risk colour map ────────────────────────────────────────
 const CR_RISK_COLOR = { green: "var(--green)", amber: "var(--amber)", red: "var(--red)" } as const;
 
-const fmt = (v: number) => "R " + Math.round(v).toLocaleString("en-ZA");
-const fmtk = (v: number) => "R " + (v / 1000).toFixed(0) + "k";
-
 // ── API mapper ─────────────────────────────────────────────────────────────────
 interface BudgetPhaseRow { name: string; budget: number; spent: number; color: string; icon: string }
-const HOURLY_RATE_ZAR = 1000; // R 1 000 / hr — used to convert hours → cost
+const HOURLY_RATE_ZAR = 1000; // R 1 000 / hr — estimated — used to convert hours → cost
 const BP_COLORS = ["var(--amber)", "var(--purple)", "var(--lime)", "var(--green)", "var(--muted2)"] as const;
 const BP_ICONS  = ["target", "layers", "code", "check", "rocket"] as const;
 
@@ -86,15 +84,21 @@ function computeMonthlySpend(invoices: PortalInvoice[]): MonthRow[] {
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────
-export interface BudgetTrackerPageProps { invoices?: PortalInvoice[] }
+export interface BudgetTrackerPageProps {
+  invoices?: PortalInvoice[]
+  currency?: string
+}
 
-export function BudgetTrackerPage({ invoices = [] }: BudgetTrackerPageProps) {
+export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTrackerPageProps) {
   const { session, projectId } = useProjectLayer();
   const [loading, setLoading]       = useState(true);
   const [error,   setError]         = useState<string | null>(null);
   const [phaseRows, setPhaseRows]   = useState<BudgetPhaseRow[]>([]);
   const [pendingCRs, setPendingCRs] = useState<CrRow[]>([]);
   const [activeCRs, setActiveCRs]   = useState<Set<string>>(new Set());
+
+  const fmt = (v: number) => formatMoneyCents(Math.round(v) * 100, { currency, maximumFractionDigits: 0 });
+  const fmtk = (v: number) => formatMoneyCents(Math.round(v) * 100, { currency, maximumFractionDigits: 0 });
 
   useEffect(() => {
     if (!session || !projectId) { setLoading(false); return; }
