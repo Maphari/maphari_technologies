@@ -35,6 +35,14 @@ type TimeLogPageProps = {
   onExportJson: () => void;
   /** Optional automation: quick-log 8h to the primary project */
   onQuickLog8h?: () => Promise<void>;
+  /** Timesheet approval: current ISO week string e.g. "2026-W12" */
+  currentWeek?: string;
+  /** True when all entries for this week are already SUBMITTED/APPROVED */
+  weekAlreadySubmitted?: boolean;
+  /** Submitting state for loading indication */
+  submittingWeek?: boolean;
+  /** Submit the current week's DRAFT entries for approval */
+  onSubmitWeek?: () => Promise<void>;
 };
 
 const FILTER_OPTS = [
@@ -126,6 +134,10 @@ export function TimeLogPage({
   onExportCsv,
   onExportJson,
   onQuickLog8h,
+  currentWeek,
+  weekAlreadySubmitted,
+  submittingWeek,
+  onSubmitWeek,
 }: TimeLogPageProps) {
   const [entryFilter, setEntryFilter] = useState<"all" | "today" | "week">("all");
   const [entrySearch, setEntrySearch] = useState("");
@@ -175,6 +187,17 @@ export function TimeLogPage({
             <button className={cx("tlv2ExportBtn")} type="button" onClick={onExportJson}>
               <span className={cx("tlv2BtnIco")}><IcoJson /></span>Export JSON
             </button>
+            {onSubmitWeek && (
+              <button
+                type="button"
+                className={cx("tlv2SubmitWeekBtn", weekAlreadySubmitted ? "tlv2SubmitWeekBtnDone" : "tlv2SubmitWeekBtnIdle")}
+                onClick={() => void onSubmitWeek()}
+                disabled={weekAlreadySubmitted || submittingWeek}
+                title={weekAlreadySubmitted ? "All entries for this week have been submitted" : `Submit ${currentWeek ?? "this week"} for approval`}
+              >
+                {submittingWeek ? "Submitting…" : weekAlreadySubmitted ? "Submitted" : `Submit ${currentWeek ? `Week ${currentWeek.split("-W")[1]}` : "Week"}`}
+              </button>
+            )}
           </div>
         </div>
       </div>

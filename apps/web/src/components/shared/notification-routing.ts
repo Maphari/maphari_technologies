@@ -149,7 +149,9 @@ export const STAFF_PAGE_TO_NOTIFICATION_TAB: Record<StaffPageId, DashboardNotifi
   changeRequests: "projects",
   slaTracker: "projects",
   appointments: "messages",
-  workloadheatmap: "operations"
+  workloadheatmap: "operations",
+  mygoals: "operations",
+  peerreview: "operations"
 };
 
 export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotificationTab> = {

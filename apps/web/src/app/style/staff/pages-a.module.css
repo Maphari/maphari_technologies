@@ -1426,6 +1426,33 @@
 
 .tlv2ExportBtn:hover { color: var(--text); border-color: var(--b3); }
 
+/* Submit Week button */
+.tlv2SubmitWeekBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 14px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms;
+}
+.tlv2SubmitWeekBtnIdle {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #0d0d0d;
+}
+.tlv2SubmitWeekBtnIdle:hover:not(:disabled) { opacity: 0.88; }
+.tlv2SubmitWeekBtnDone {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  color: var(--muted);
+  cursor: default;
+}
+.tlv2SubmitWeekBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
 /* Content grid */
 .tlv2ContentGrid {
   display: grid;

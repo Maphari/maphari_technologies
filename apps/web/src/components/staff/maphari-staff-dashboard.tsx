@@ -110,6 +110,7 @@ import { TimeLogPage } from "./staff-dashboard/pages/time-log-page";
 import { ChangeRequestsPage } from "./staff-dashboard/pages/change-requests-page";
 import { SlaTrackerPage } from "./staff-dashboard/pages/sla-tracker-page";
 import { WorkloadHeatmapPage } from "./staff-dashboard/pages/workload-heatmap-page";
+import { MyGoalsPage } from "./staff-dashboard/pages/my-goals-page";
 import { styles, cx } from "./staff-dashboard/style";
 import { Ic } from "./staff-dashboard/ui";
 import { inferCountryFromLocale, currencyFromCountry } from "../../lib/i18n/currency";
@@ -1306,6 +1307,8 @@ export function MaphariStaffDashboard() {
             <SlaTrackerPage isActive={activePage === "slaTracker"} session={session ?? null} />
 
             <WorkloadHeatmapPage isActive={activePage === "workloadheatmap"} session={session ?? null} />
+
+            <MyGoalsPage isActive={activePage === "mygoals"} session={session ?? null} />
 
             <PersonalPerformancePage isActive={activePage === "performance"} session={session ?? null} />
 

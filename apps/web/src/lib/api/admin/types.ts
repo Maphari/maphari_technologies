@@ -244,6 +244,9 @@ export interface ProjectTimeEntry {
   minutes: number;
   startedAt: string | null;
   endedAt: string | null;
+  status?: string;           // DRAFT | SUBMITTED | APPROVED | REJECTED
+  submittedAt?: string | null;
+  submittedWeek?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -405,6 +408,10 @@ export interface AdminInvoice {
   paidAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Computed client-side: days past due for OVERDUE invoices */
+  daysOverdue?: number;
+  /** 0=current, 1=gentle(7-13d), 2=firm(14-29d), 3=director(30+d) */
+  escalationLevel?: 0 | 1 | 2 | 3;
 }
 
 export interface AdminPayment {

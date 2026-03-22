@@ -10,6 +10,9 @@
 //             GET  /standup/feed
 //             GET  /peer-reviews       POST
 //             GET  /staff/:id/onboarding
+//             GET  /time-entries/pending
+//             PATCH /time-entries/:id/approve
+//             PATCH /time-entries/:id/reject
 // ════════════════════════════════════════════════════════════════════════════
 
 // ── Imports ──────────────────────────────────────────────────────────────────
@@ -128,6 +131,24 @@ export interface AdminStaffOnboardingRecord {
   sortOrder: number;
   completedAt: string | null;
   notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPendingTimeEntry {
+  id: string;
+  projectId: string;
+  clientId: string;
+  phaseId: string | null;
+  staffUserId: string | null;
+  staffName: string | null;
+  taskLabel: string;
+  minutes: number;
+  startedAt: string | null;
+  endedAt: string | null;
+  status: string;
+  submittedAt: string | null;
+  submittedWeek: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -338,5 +359,49 @@ export async function loadAdminStaffOnboardingWithRefresh(
       return { unauthorized: false, data: [], error: toGatewayError(response.payload.error?.code ?? "STAFF_ONBOARDING_FETCH_FAILED", response.payload.error?.message ?? "Unable to load staff onboarding.") };
     }
     return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+// ── Timesheet Approval ────────────────────────────────────────────────────────
+
+export async function loadPendingTimesheetsWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<AdminPendingTimeEntry[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<AdminPendingTimeEntry[]>("/time-entries/pending", accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return { unauthorized: false, data: [], error: toGatewayError(response.payload.error?.code ?? "PENDING_TIMESHEETS_FETCH_FAILED", response.payload.error?.message ?? "Unable to load pending timesheets.") };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+export async function approveTimesheetEntryWithRefresh(
+  session: AuthSession,
+  id: string
+): Promise<AuthorizedResult<AdminPendingTimeEntry>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<AdminPendingTimeEntry>(`/time-entries/${id}/approve`, accessToken, { method: "PATCH", body: {} });
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "TIMESHEET_APPROVE_FAILED", response.payload.error?.message ?? "Unable to approve time entry.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function rejectTimesheetEntryWithRefresh(
+  session: AuthSession,
+  id: string,
+  reason?: string
+): Promise<AuthorizedResult<AdminPendingTimeEntry>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<AdminPendingTimeEntry>(`/time-entries/${id}/reject`, accessToken, { method: "PATCH", body: { reason } });
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "TIMESHEET_REJECT_FAILED", response.payload.error?.message ?? "Unable to reject time entry.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
   });
 }
