@@ -569,6 +569,17 @@ exports.Prisma.SatisfactionResponseScalarFieldEnum = {
   surveyId: 'surveyId',
   question: 'question',
   answer: 'answer',
+  comment: 'comment',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.SurveyTokenScalarFieldEnum = {
+  id: 'id',
+  token: 'token',
+  surveyId: 'surveyId',
+  clientId: 'clientId',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
   createdAt: 'createdAt'
 };
 
@@ -1348,6 +1359,7 @@ exports.Prisma.ModelName = {
   ClientIntervention: 'ClientIntervention',
   SatisfactionSurvey: 'SatisfactionSurvey',
   SatisfactionResponse: 'SatisfactionResponse',
+  SurveyToken: 'SurveyToken',
   ClientOnboardingRecord: 'ClientOnboardingRecord',
   OffboardingTask: 'OffboardingTask',
   CommunicationLog: 'CommunicationLog',

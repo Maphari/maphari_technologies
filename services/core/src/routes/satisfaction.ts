@@ -11,6 +11,7 @@ import { prisma } from "../lib/prisma.js";
 import type { Prisma } from "@prisma/client";
 import { withCache, CacheKeys, cache } from "../lib/infrastructure.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
+import { randomUUID } from "crypto";
 
 // ── Route registration ────────────────────────────────────────────────────────
 export async function registerSatisfactionRoutes(app: FastifyInstance): Promise<void> {
@@ -222,5 +223,129 @@ export async function registerSatisfactionRoutes(app: FastifyInstance): Promise<
     await cache.delete(CacheKeys.surveyResponses(surveyId));
 
     return reply.code(201).send({ success: true, data: created, meta: { requestId: scope.requestId } } as ApiResponse<typeof created>);
+  });
+
+  // ── POST /clients/:clientId/surveys/:surveyId/tokens ─────────────────────
+  // Admin/Staff only — generates a share token for the specified survey
+  app.post("/clients/:clientId/surveys/:surveyId/tokens", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Clients cannot generate survey tokens." } } as ApiResponse);
+    }
+
+    const { clientId, surveyId } = request.params as { clientId: string; surveyId: string };
+
+    const survey = await prisma.satisfactionSurvey.findFirst({ where: { id: surveyId, clientId } });
+    if (!survey) {
+      return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Survey not found." } } as ApiResponse);
+    }
+
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    await prisma.surveyToken.create({
+      data: { token, surveyId, clientId, expiresAt }
+    });
+
+    const portalBase = process.env.PORTAL_BASE_URL ?? "http://localhost:3000";
+    const surveyUrl = `${portalBase}/survey/${token}`;
+
+    return reply.code(201).send({
+      success: true,
+      data: { token, expiresAt: expiresAt.toISOString(), surveyUrl },
+      meta: { requestId: scope.requestId }
+    } as ApiResponse<{ token: string; expiresAt: string; surveyUrl: string }>);
+  });
+
+  // ── GET /public/survey/:token ────────────────────────────────────────────
+  // Public — no auth required
+  app.get("/public/survey/:token", async (request, reply) => {
+    const { token } = request.params as { token: string };
+
+    const tokenRecord = await prisma.surveyToken.findUnique({
+      where: { token },
+      include: { survey: true, client: true }
+    });
+
+    if (!tokenRecord) {
+      return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Survey not found." } } as ApiResponse);
+    }
+
+    if (tokenRecord.usedAt !== null) {
+      return reply.code(410).send({ success: false, error: { code: "GONE", message: "This survey has already been completed." } } as ApiResponse);
+    }
+
+    if (tokenRecord.expiresAt < new Date()) {
+      return reply.code(410).send({ success: false, error: { code: "GONE", message: "This survey link has expired." } } as ApiResponse);
+    }
+
+    const data = {
+      surveyId: tokenRecord.surveyId,
+      clientId: tokenRecord.clientId,
+      companyName: tokenRecord.client.name,
+      periodStart: tokenRecord.survey.periodStart.toISOString(),
+      periodEnd: tokenRecord.survey.periodEnd.toISOString()
+    };
+
+    return { success: true, data } as ApiResponse<typeof data>;
+  });
+
+  // ── POST /public/survey/:token/respond ───────────────────────────────────
+  // Public — no auth required
+  app.post("/public/survey/:token/respond", async (request, reply) => {
+    const { token } = request.params as { token: string };
+    const body = request.body as { npsScore: number; comment?: string };
+
+    if (body.npsScore === undefined || body.npsScore === null || body.npsScore < 0 || body.npsScore > 10) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "npsScore must be an integer from 0 to 10." } } as ApiResponse);
+    }
+
+    const tokenRecord = await prisma.surveyToken.findUnique({
+      where: { token },
+      include: { survey: true, client: true }
+    });
+
+    if (!tokenRecord) {
+      return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Survey not found." } } as ApiResponse);
+    }
+
+    if (tokenRecord.usedAt !== null) {
+      return reply.code(410).send({ success: false, error: { code: "GONE", message: "This survey has already been completed." } } as ApiResponse);
+    }
+
+    if (tokenRecord.expiresAt < new Date()) {
+      return reply.code(410).send({ success: false, error: { code: "GONE", message: "This survey link has expired." } } as ApiResponse);
+    }
+
+    const npsScore = Math.round(body.npsScore);
+    const comment = body.comment?.trim();
+
+    await prisma.satisfactionResponse.create({
+      data: {
+        surveyId: tokenRecord.surveyId,
+        question: "NPS",
+        answer: String(npsScore),
+        ...(comment ? { comment } : {})
+      }
+    });
+
+    await prisma.satisfactionSurvey.update({
+      where: { id: tokenRecord.surveyId },
+      data: {
+        status: "COMPLETED",
+        completedAt: new Date(),
+        npsScore
+      }
+    });
+
+    await prisma.surveyToken.update({
+      where: { token },
+      data: { usedAt: new Date() }
+    });
+
+    await cache.delete(CacheKeys.surveys(tokenRecord.clientId));
+    await cache.delete(CacheKeys.surveyResponses(tokenRecord.surveyId));
+
+    return { success: true, data: { success: true } } as ApiResponse<{ success: boolean }>;
   });
 }

@@ -41,6 +41,7 @@ import { CalendarController } from "../routes/calendar.controller.js";
 import { NotificationPrefsController } from "../routes/notification-prefs.controller.js";
 import { ProjectTemplatesController } from "../routes/project-templates.controller.js";
 import { StaffScheduleController } from "../routes/staff-schedule.controller.js";
+import { SurveyController } from "../routes/survey.controller.js";
 import { RbacGuard } from "../auth/rbac.guard.js";
 import { RequestIdInterceptor } from "../common/request-id.interceptor.js";
 import { MetricsController } from "../observability/metrics.controller.js";
@@ -89,6 +90,7 @@ import { RateLimitGuard } from "../security/rate-limit.guard.js";
     NotificationPrefsController,
     ProjectTemplatesController,
     StaffScheduleController,
+    SurveyController,
     MetricsController
   ],
   providers: [

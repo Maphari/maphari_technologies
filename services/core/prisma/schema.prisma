@@ -40,6 +40,7 @@ model Client {
   healthSignals    ClientHealthSignal[]
   interventions    ClientIntervention[]
   satisfactionSurveys SatisfactionSurvey[]
+  surveyTokens     SurveyToken[]
   onboardingRecords ClientOnboardingRecord[]
   offboardingTasks OffboardingTask[]
   communicationLogs CommunicationLog[]
@@ -686,6 +687,7 @@ model SatisfactionSurvey {
   updatedAt   DateTime               @updatedAt
   client      Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
   responses   SatisfactionResponse[]
+  tokens      SurveyToken[]
 
   @@index([clientId, periodStart])
   @@map("satisfaction_surveys")
@@ -696,11 +698,27 @@ model SatisfactionResponse {
   surveyId  String
   question  String
   answer    String
+  comment   String?
   createdAt DateTime           @default(now())
   survey    SatisfactionSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
 
   @@index([surveyId])
   @@map("satisfaction_responses")
+}
+
+model SurveyToken {
+  id         String             @id @default(uuid())
+  token      String             @unique
+  surveyId   String
+  clientId   String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime           @default(now())
+  survey     SatisfactionSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  client     Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("survey_tokens")
 }
 
 model ClientOnboardingRecord {
