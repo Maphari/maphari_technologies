@@ -24,6 +24,14 @@ import {
 import { prisma } from "../lib/prisma.js";
 import { buildRefreshToken, buildRefreshTokenWithHours, hashRefreshToken, signAccessToken, signTempToken, verifyTempToken } from "../lib/tokens.js";
 import type { AuthConfig } from "../lib/config.js";
+import { RedisCache } from "@maphari/platform";
+import {
+  checkLoginRateLimit,
+  recordLoginFailure,
+  resetLoginRateLimit,
+  checkTotpRateLimit,
+  resetTotpRateLimit,
+} from "../lib/rate-limit.js";
 
 interface AuthRouteDependencies {
   eventBus: NatsEventBus;
@@ -114,68 +122,14 @@ function ensureAdmin(request: { headers: Record<string, unknown> }, reply: { sta
 // Swap for Redis on multi-instance deployments.
 const pendingPhoneOtps = new Map<string, { phone: string; code: string; expiresAt: number }>();
 
-// ── TOTP brute-force guard ────────────────────────────────────────────────────
-// Per-userId in-memory attempt counter.  5 failures → 5 min lockout.
-// On single-instance deployments this is sufficient; swap for Redis if needed.
-const TOTP_MAX_ATTEMPTS = 5;
-const TOTP_WINDOW_MS    = 5 * 60 * 1000; // 5 minutes
-interface TotpAttemptBucket { count: number; resetAt: number }
-const totpAttempts = new Map<string, TotpAttemptBucket>();
-
-function checkTotpRateLimit(userId: string): { allowed: boolean; resetAt: number } {
-  const now = Date.now();
-  const bucket = totpAttempts.get(userId);
-  if (!bucket || bucket.resetAt <= now) {
-    // First attempt or window has expired → fresh bucket
-    totpAttempts.set(userId, { count: 1, resetAt: now + TOTP_WINDOW_MS });
-    return { allowed: true, resetAt: now + TOTP_WINDOW_MS };
-  }
-  if (bucket.count >= TOTP_MAX_ATTEMPTS) {
-    return { allowed: false, resetAt: bucket.resetAt };
-  }
-  bucket.count += 1;
-  return { allowed: true, resetAt: bucket.resetAt };
-}
-
-function resetTotpRateLimit(userId: string): void {
-  totpAttempts.delete(userId);
-}
-
-// ── Login brute-force guard ────────────────────────────────────────────────
-// Per email:ip in-memory attempt counter.  5 failures → 15 min lockout.
-// On single-instance deployments this is sufficient; swap for Redis if needed.
-const LOGIN_MAX_ATTEMPTS = 5;
-const LOGIN_WINDOW_MS    = 15 * 60 * 1000; // 15 minutes
-interface LoginAttemptBucket { count: number; resetAt: number }
-const loginAttempts = new Map<string, LoginAttemptBucket>();
-
-function checkLoginRateLimit(key: string): { allowed: boolean; resetAt: number } {
-  const now = Date.now();
-  const bucket = loginAttempts.get(key);
-  if (!bucket || bucket.resetAt <= now) return { allowed: true, resetAt: now + LOGIN_WINDOW_MS };
-  if (bucket.count >= LOGIN_MAX_ATTEMPTS) return { allowed: false, resetAt: bucket.resetAt };
-  return { allowed: true, resetAt: bucket.resetAt };
-}
-
-function recordLoginFailure(key: string): void {
-  const now = Date.now();
-  const bucket = loginAttempts.get(key);
-  if (!bucket || bucket.resetAt <= now) {
-    loginAttempts.set(key, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
-  } else {
-    bucket.count += 1;
-  }
-}
-
-function resetLoginRateLimit(key: string): void {
-  loginAttempts.delete(key);
-}
-
 export async function registerAuthRoutes(
   app: FastifyInstance,
   config: AuthConfig,
   deps: AuthRouteDependencies
 ): Promise<void> {
+
+  // ── Redis client for rate limiting ────────────────────────────────────────
+  const redis = new RedisCache(config.redisUrl, console);
 
   // ── POST /auth/logout ─────────────────────────────────────────────────────
   // Revokes the supplied refresh token in the database so it cannot be used
@@ -982,8 +936,9 @@ export async function registerAuthRoutes(
       const password = parsedBody.data.password ?? "";
 
       // S10 — Server-side login rate limiting keyed to email:ip.
-      const loginKey = `${email.toLowerCase()}:${request.ip ?? "unknown"}`;
-      const loginRateCheck = checkLoginRateLimit(loginKey);
+      const loginEmail = email.toLowerCase();
+      const loginIp = request.ip ?? "unknown";
+      const loginRateCheck = await checkLoginRateLimit(redis, loginEmail, loginIp);
       if (!loginRateCheck.allowed) {
         const retryAfterSec = Math.ceil((loginRateCheck.resetAt - Date.now()) / 1000);
         reply.status(429).header("Retry-After", String(retryAfterSec));
@@ -1006,7 +961,7 @@ export async function registerAuthRoutes(
       let user;
       if (!existingUser) {
         request.log.warn({ ip: request.ip }, "Login attempt for unknown email (hidden from caller)");
-        recordLoginFailure(loginKey);
+        await recordLoginFailure(redis, loginEmail, loginIp);
         reply.status(401);
         return {
           success: false,
@@ -1045,7 +1000,7 @@ export async function registerAuthRoutes(
         if (user.passwordHash && user.passwordSalt) {
           if (!password || !verifyPassword(password, user.passwordHash, user.passwordSalt)) {
             request.log.warn({ email: parsedBody.data.email, ip: request.ip }, "Failed login attempt");
-            recordLoginFailure(loginKey);
+            await recordLoginFailure(redis, loginEmail, loginIp);
             reply.status(401);
             return {
               success: false,
@@ -1074,7 +1029,7 @@ export async function registerAuthRoutes(
           }
           if (!password || password !== config.adminPassword) {
             request.log.warn({ email: parsedBody.data.email, ip: request.ip }, "Failed login attempt");
-            recordLoginFailure(loginKey);
+            await recordLoginFailure(redis, loginEmail, loginIp);
             reply.status(401);
             return {
               success: false,
@@ -1091,7 +1046,7 @@ export async function registerAuthRoutes(
         if (user.passwordHash && user.passwordSalt) {
           if (!password || !verifyPassword(password, user.passwordHash, user.passwordSalt)) {
             request.log.warn({ email: parsedBody.data.email, ip: request.ip }, "Failed login attempt");
-            recordLoginFailure(loginKey);
+            await recordLoginFailure(redis, loginEmail, loginIp);
             reply.status(401);
             return {
               success: false,
@@ -1120,7 +1075,7 @@ export async function registerAuthRoutes(
           }
           if (!password || password !== config.staffPassword) {
             request.log.warn({ email: parsedBody.data.email, ip: request.ip }, "Failed login attempt");
-            recordLoginFailure(loginKey);
+            await recordLoginFailure(redis, loginEmail, loginIp);
             reply.status(401);
             return {
               success: false,
@@ -1208,7 +1163,7 @@ export async function registerAuthRoutes(
       });
 
       // Clear login failure counter on success.
-      resetLoginRateLimit(loginKey);
+      await resetLoginRateLimit(redis, loginEmail, loginIp);
 
       return {
         success: true,
@@ -1539,7 +1494,7 @@ export async function registerAuthRoutes(
     }
 
     // ── Rate limit: 5 attempts per 5 minutes per userId ────────────────────
-    const rateCheck = checkTotpRateLimit(userId);
+    const rateCheck = await checkTotpRateLimit(redis, userId);
     if (!rateCheck.allowed) {
       reply.status(429);
       reply.header("retry-after", String(Math.ceil((rateCheck.resetAt - Date.now()) / 1000)));
@@ -1580,7 +1535,7 @@ export async function registerAuthRoutes(
       }
 
       // Successful verification — clear the attempt counter
-      resetTotpRateLimit(userId);
+      await resetTotpRateLimit(redis, userId);
 
       // Activate 2FA
       await prisma.user.update({

@@ -5,6 +5,7 @@ export interface AuthConfig {
   refreshTokenTtlDays: number;
   refreshTokenSessionTtlHours: number;
   natsUrl: string;
+  redisUrl: string;
   adminEmails: string[];
   staffEmails: string[];
   adminPassword: string;
@@ -28,6 +29,7 @@ export function readAuthConfig(env: NodeJS.ProcessEnv = process.env): AuthConfig
     refreshTokenTtlDays: Number(env.REFRESH_TOKEN_TTL_DAYS ?? 7),
     refreshTokenSessionTtlHours: Number(env.REFRESH_TOKEN_SESSION_TTL_HOURS ?? 24),
     natsUrl: env.NATS_URL ?? "nats://localhost:4222",
+    redisUrl: env.REDIS_URL ?? "redis://localhost:6379",
     adminEmails: parseEmailList(env.ADMIN_EMAILS),
     staffEmails: parseEmailList(env.STAFF_EMAILS),
     adminPassword: env.ADMIN_LOGIN_PASSWORD ?? "",

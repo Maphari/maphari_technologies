@@ -13,6 +13,7 @@ const TEST_CONFIG: AuthConfig = {
   refreshTokenTtlDays: 7,
   refreshTokenSessionTtlHours: 24,
   natsUrl: "nats://localhost:4222",
+  redisUrl: "redis://localhost:6379",
   adminEmails: ["admin@maphari.com"],
   staffEmails: [],
   adminPassword: "",
