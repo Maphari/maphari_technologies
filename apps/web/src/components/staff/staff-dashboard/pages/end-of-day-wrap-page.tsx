@@ -108,7 +108,6 @@ export function EndOfDayWrapPage({
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error || !r.data) {
         setError(r.error?.message ?? "Failed to load data. Please try again.");
-        setLoading(false);
         return;
       }
       const { suggested, completed, urgent } = deriveFromTasks(r.data);
@@ -116,7 +115,10 @@ export function EndOfDayWrapPage({
       setCompletedToday(completed);
       setUrgentItems(urgent);
       setError(null);
-      setLoading(false);
+    }).catch((err) => {
+      if (!cancelled) setError(err?.message ?? "Failed to load");
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
   }, [session?.accessToken, isActive]);

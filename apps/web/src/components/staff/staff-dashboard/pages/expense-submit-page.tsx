@@ -69,11 +69,13 @@ export function ExpenseSubmitPage({
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error || !r.data) {
         setError(r.error?.message ?? "Failed to load data. Please try again.");
-        setLoading(false);
         return;
       }
       setApiExpenses(r.data);
       setError(null);
+    }).catch((err) => {
+      setError(err?.message ?? "Failed to load");
+    }).finally(() => {
       setLoading(false);
     });
   }, [session?.accessToken]);

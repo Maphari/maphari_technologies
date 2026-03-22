@@ -53,14 +53,18 @@ export function ChangeRequestsPage({
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("open");
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     getStaffChangeRequests(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
       if (!r.error && r.data) setRequests(r.data);
-      setLoading(false);
-    }).catch(() => {
+    }).catch((err) => {
+      setError(err?.message ?? "Failed to load");
+    }).finally(() => {
       setLoading(false);
     });
   }, [session]);
