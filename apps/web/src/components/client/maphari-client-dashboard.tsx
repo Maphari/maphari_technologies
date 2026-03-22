@@ -735,7 +735,7 @@ export function MaphariClientDashboard() {
               {!commandSearch.query && commandSearch.history.length > 0 && (
                 <div>
                   <div className={cx("cmdSuggestLabel", "flexRow")}>
-                    <span>Recent</span>
+                    <span>Recent searches</span>
                     <button
                       type="button"
                       className={cx("cmdClear")}
