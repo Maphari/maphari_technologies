@@ -23,6 +23,8 @@ import {
   type PortalDeliverable,
   type PortalRisk,
 } from "../../../../lib/api/portal";
+import { createInstantVideoRoomWithRefresh } from "../../../../lib/api/portal/video";
+import { VideoRoomModal } from "../components/video-room-modal";
 import type { Thread as WorkspaceThread } from "../types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -197,6 +199,11 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
   const [supPriority, setSupPriority] = useState<Priority>("Medium");
   const [supSending, setSupSending] = useState(false);
   const [supDone, setSupDone] = useState(false);
+
+  // ── Video room ────────────────────────────────────────────────────────────
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [videoRoomUrl, setVideoRoomUrl] = useState("");
+  const [videoLoading, setVideoLoading] = useState(false);
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const threads = useMemo(() => apiThreads.map(mapThread), [apiThreads]);
@@ -375,6 +382,22 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
     }
   }
 
+  async function handleStartVideoCall() {
+    if (!session) return;
+    setVideoLoading(true);
+    setVideoModalOpen(true);
+    setVideoRoomUrl("");
+    const r = await createInstantVideoRoomWithRefresh(session);
+    if (r.nextSession) saveSession(r.nextSession);
+    setVideoLoading(false);
+    if (r.error || !r.data) {
+      showToast("error", r.error?.message ?? "Failed to start video call");
+      setVideoModalOpen(false);
+      return;
+    }
+    setVideoRoomUrl(r.data.joinUrl);
+  }
+
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -458,6 +481,16 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                 </button>
               ))}
             </div>
+            <button
+              type="button"
+              className={cx("btnSm", "btnGhost", "mlAuto")}
+              onClick={() => void handleStartVideoCall()}
+              disabled={videoLoading || !session}
+              title="Start an instant video call"
+            >
+              <Ic n="video" sz={13} c="var(--text)" />
+              {videoLoading ? "Starting…" : "Start Call"}
+            </button>
           </div>
 
           {/* ── INBOX ───────────────────────────────────────────────────── */}
@@ -836,6 +869,14 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
           )}
         </div>
       </div>
+
+      {/* ── Video Room Modal ─────────────────────────────────────────────── */}
+      <VideoRoomModal
+        isOpen={videoModalOpen}
+        onClose={() => setVideoModalOpen(false)}
+        roomUrl={videoRoomUrl}
+        isLoading={videoLoading}
+      />
 
       {/* ── New Thread Modal ─────────────────────────────────────────────── */}
       {showNewThread && (
