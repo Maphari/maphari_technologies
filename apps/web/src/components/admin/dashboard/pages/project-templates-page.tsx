@@ -52,6 +52,7 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
   // Delete confirm
   const [deleteId, setDeleteId]   = useState<string | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const loaded = useRef(false);
 
@@ -163,14 +164,19 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
   async function handleDelete() {
     if (!session || !deleteId) return;
     setDeleteBusy(true);
+    setDeleteError(null);
     try {
       const res = await deleteAdminProjectTemplateWithRefresh(session, deleteId);
       if (res.nextSession) saveSession(res.nextSession);
-      setTemplates((prev) => prev.filter((t) => t.id !== deleteId));
-      setDeleteId(null);
-    } catch {
-      // silently close
-      setDeleteId(null);
+      if (res.error) {
+        setDeleteError(res.error.message ?? "Failed to delete template.");
+      } else {
+        setDeleteError(null);
+        setTemplates((prev) => prev.filter((t) => t.id !== deleteId));
+        setDeleteId(null);
+      }
+    } catch (err: unknown) {
+      setDeleteError((err as Error)?.message ?? "Failed to delete template.");
     } finally {
       setDeleteBusy(false);
     }
@@ -246,7 +252,7 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
                 <button
                   type="button"
                   className={cx("btnSm", "btnGhost", "colorRed")}
-                  onClick={() => setDeleteId(tmpl.id)}
+                  onClick={() => { setDeleteError(null); setDeleteId(tmpl.id); }}
                 >
                   Delete
                 </button>
@@ -382,7 +388,7 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
               <button
                 type="button"
                 className={cx("btnSm", "btnAccent")}
-                disabled={createBusy || !createName.trim() || (!createSrcId && createPhases.length === 0)}
+                disabled={createBusy || !createName.trim() || (!createSrcId && createPhases.length === 0) || (!createSrcId && createPhases.some(p => !p.name.trim()))}
                 onClick={() => void handleCreate()}
               >
                 {createBusy ? "Saving…" : "Save Template"}
@@ -471,6 +477,9 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
             <div className={cx("text13", "colorMuted", "mb20")}>
               Are you sure you want to delete this template? This cannot be undone.
             </div>
+            {deleteError && (
+              <div className={cx("colorRed", "text12", "mb12")}>{deleteError}</div>
+            )}
             <div className={cx("flexRow", "gap8", "flexEnd")}>
               <button
                 type="button"

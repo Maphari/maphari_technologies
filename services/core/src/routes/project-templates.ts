@@ -84,6 +84,11 @@ export async function registerProjectTemplateRoutes(app: FastifyInstance): Promi
         return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "phases must be an array." } } as ApiResponse);
       }
       phases = raw as TemplatePhase[];
+      if (phases.some(p => !p.name || typeof p.name !== "string" || !p.name.trim())) {
+        return reply.status(400).send({ success: false, error: { code: "INVALID_PHASE", message: "All phases must have a non-empty name." } } as ApiResponse);
+      }
+      // Trim phase names
+      phases = phases.map(p => ({ ...p, name: p.name.trim() }));
     }
 
     try {
@@ -103,6 +108,7 @@ export async function registerProjectTemplateRoutes(app: FastifyInstance): Promi
           name: template.name,
           description: template.description,
           phaseCount: phases.length,
+          taskCount: countTasks(phases),
           createdAt: template.createdAt.toISOString(),
         },
         meta: { requestId: scope.requestId },
@@ -121,9 +127,17 @@ export async function registerProjectTemplateRoutes(app: FastifyInstance): Promi
     }
     const { id } = request.params as { id: string };
     try {
+      const existing = await prisma.projectTemplate.findUnique({ where: { id } });
+      if (!existing) {
+        return reply.status(404).send({ success: false, error: { code: "NOT_FOUND", message: "Template not found." } } as ApiResponse);
+      }
       await prisma.projectTemplate.delete({ where: { id } });
       return { success: true, data: { success: true }, meta: { requestId: scope.requestId } } as ApiResponse;
-    } catch (error) {
+    } catch (error: unknown) {
+      const prismaError = error as { code?: string };
+      if (prismaError?.code === "P2025") {
+        return reply.status(404).send({ success: false, error: { code: "NOT_FOUND", message: "Template not found." } } as ApiResponse);
+      }
       request.log.error(error);
       return reply.status(500).send({ success: false, error: { code: "TEMPLATE_DELETE_FAILED", message: "Failed to delete template." } } as ApiResponse);
     }
