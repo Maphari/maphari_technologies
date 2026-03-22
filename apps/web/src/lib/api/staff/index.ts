@@ -22,3 +22,6 @@ export * from "./auto-drafts";
 export * from "./ai-drafts";
 export * from "./client-notes";
 export * from "./notifications";
+export * from "./messaging";
+export * from "./calendar";
+export * from "./audit";

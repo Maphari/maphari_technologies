@@ -7,6 +7,7 @@ import { getStaffAllHealthScores, type StaffHealthScoreEntry } from "@/lib/api/s
 import type { AuthSession } from "@/lib/auth/session";
 import { saveSession } from "@/lib/auth/session";
 import { createStaffInterventionWithRefresh } from "@/lib/api/staff/interventions";
+import { createStaffClientMessageWithRefresh } from "@/lib/api/staff/messaging";
 
 type ClientHealthPageProps = {
   isActive: boolean;
@@ -227,6 +228,13 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
   const [actionDone,    setActionDone]    = useState<string | null>(null);
   const [actionError,   setActionError]   = useState<string | null>(null);
 
+  // ── Message Client modal state ────────────────────────────────────────────
+  const [showMsgModal,  setShowMsgModal]  = useState(false);
+  const [msgSubject,    setMsgSubject]    = useState("");
+  const [msgBody,       setMsgBody]       = useState("");
+  const [msgSending,    setMsgSending]    = useState(false);
+  const [msgToast,      setMsgToast]      = useState<{ tone: "success" | "error"; text: string } | null>(null);
+
   // ── Load health scores on mount / session change ──────────────────────────
   useEffect(() => {
     if (!session?.accessToken || !isActive) { setLoading(false); return; }
@@ -288,6 +296,34 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
       setActionError(msg);
     } finally {
       setActionLoading(null);
+    }
+  }
+
+  async function handleSendMessage() {
+    if (!session || !selectedClient || !msgSubject.trim() || !msgBody.trim()) return;
+    setMsgSending(true);
+    try {
+      const result = await createStaffClientMessageWithRefresh(
+        session,
+        selectedClient.id,
+        msgSubject.trim(),
+        msgBody.trim()
+      );
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        setMsgToast({ tone: "error", text: result.error.message });
+      } else {
+        setMsgToast({ tone: "success", text: "Message sent to client" });
+        setMsgSubject("");
+        setMsgBody("");
+        setShowMsgModal(false);
+        setTimeout(() => setMsgToast(null), 3000);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to send message";
+      setMsgToast({ tone: "error", text: msg });
+    } finally {
+      setMsgSending(false);
     }
   }
 
@@ -583,6 +619,19 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
                     </div>
                   </button>
                 ))}
+
+                {/* Message Client — opens compose modal */}
+                <button
+                  className={cx("chActionBtn", "chActionCard")}
+                  type="button"
+                  onClick={() => { setMsgSubject(""); setMsgBody(""); setShowMsgModal(true); }}
+                >
+                  <span className={cx("chActionIcoBox", "chActionIcoMail")}><IcoMail /></span>
+                  <div>
+                    <div className={cx("text12", "colorText", "fontMono")}>Message client</div>
+                    <div className={cx("text10", "colorMuted2", "mt2")}>Send direct message via portal inbox</div>
+                  </div>
+                </button>
               </div>
               {actionError && (
                 <div className={cx("text10", "colorRed", "mt6")}>{actionError}</div>
@@ -612,6 +661,85 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
           </div>
         ) : null}
       </div>
+
+      {/* ── Toast notification ───────────────────────────────────────────── */}
+      {msgToast && (
+        <div
+          className={cx(
+            "staffToast",
+            msgToast.tone === "success" ? "staffToastSuccess" : "staffToastError"
+          )}
+        >
+          {msgToast.text}
+        </div>
+      )}
+
+      {/* ── Message Client Modal ─────────────────────────────────────────── */}
+      {showMsgModal && selectedClient && (
+        <div
+          className={cx("modalBackdrop")}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowMsgModal(false); }}
+        >
+          <div className={cx("modal")}>
+            <div className={cx("modalHeader")}>
+              <span className={cx("modalTitle")}>Message {selectedClient.name}</span>
+              <button
+                type="button"
+                className={cx("modalClose")}
+                onClick={() => setShowMsgModal(false)}
+                title="Close"
+              >
+                <Ic n="x" sz={15} c="var(--text)" />
+              </button>
+            </div>
+            <div className={cx("modalBody")}>
+              <div className={cx("chMsgFieldGroup")}>
+                <label className={cx("chMsgFieldLabel")} htmlFor="msg-subject">
+                  Subject
+                </label>
+                <input
+                  id="msg-subject"
+                  className={cx("chMsgFieldInput")}
+                  placeholder="Message subject"
+                  value={msgSubject}
+                  onChange={(e) => setMsgSubject(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className={cx("chMsgFieldGroup")}>
+                <label className={cx("chMsgFieldLabel")} htmlFor="msg-body">
+                  Message
+                </label>
+                <textarea
+                  id="msg-body"
+                  className={cx("chMsgFieldTextarea")}
+                  placeholder="Type your message to the client…"
+                  value={msgBody}
+                  onChange={(e) => setMsgBody(e.target.value)}
+                  rows={5}
+                />
+              </div>
+              <div className={cx("modalFooter")}>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnGhost")}
+                  onClick={() => setShowMsgModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnAccent")}
+                  disabled={msgSending || !msgSubject.trim() || !msgBody.trim()}
+                  onClick={() => void handleSendMessage()}
+                >
+                  {msgSending ? "Sending…" : "Send Message"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
