@@ -394,13 +394,27 @@ export function MaphariDashboard() {
   // ── Mark all notifications read (admin) ───────────────────────────────────
   async function handleMarkAllAdminNotificationsRead(): Promise<void> {
     if (!session) return;
-    const result = await markAllAdminNotificationsReadWithRefresh(session);
-    if (result.nextSession) saveSession(result.nextSession);
-    if (!result.nextSession || result.error) return;
-    setNotificationJobs((prev) =>
-      prev.map((job) => ({ ...job, readAt: job.readAt ?? new Date().toISOString() }))
-    );
-    await refreshSnapshot();
+
+    // Snapshot + optimistic update
+    let previousJobs: typeof notificationJobs = [];
+    setNotificationJobs((prev) => {
+      previousJobs = prev;
+      const now = new Date().toISOString();
+      return prev.map((job) => ({ ...job, readAt: job.readAt ?? now }));
+    });
+
+    try {
+      const result = await markAllAdminNotificationsReadWithRefresh(session);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (!result.nextSession || result.error) {
+        setNotificationJobs(previousJobs);
+        return;
+      }
+      // Refresh snapshot to sync other derived state
+      await refreshSnapshot();
+    } catch {
+      setNotificationJobs(previousJobs);
+    }
   }
 
   // ── Loading gate ───────────────────────────────────────────────────────────

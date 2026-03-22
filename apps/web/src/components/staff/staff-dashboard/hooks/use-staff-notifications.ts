@@ -111,28 +111,25 @@ export function useStaffNotifications({ session, activePage }: Params): UseStaff
 
   const handleMarkAllNotificationsRead = useCallback(async () => {
     if (!session) return;
-    const hasUnread = notificationJobs.some((job) => !job.readAt);
-    if (!hasUnread) return;
-    const now = new Date().toISOString();
-    // Optimistic update
-    setNotificationJobs((previous) =>
-      previous.map((job) => ({ ...job, readAt: job.readAt ?? now }))
-    );
+
+    // Snapshot before mutation (for reliable rollback)
+    let previousJobs: typeof notificationJobs = [];
+    setNotificationJobs((previous) => {
+      previousJobs = previous;
+      const now = new Date().toISOString();
+      return previous.map((job) => ({ ...job, readAt: job.readAt ?? now }));
+    });
+
     try {
       const result = await markAllStaffNotificationsReadWithRefresh(session);
       if (result.nextSession) saveSession(result.nextSession);
       if (!result.nextSession || result.error) {
-        // Rollback optimistic update on failure
-        setNotificationJobs((previous) =>
-          previous.map((job) => (job.readAt === now ? { ...job, readAt: null } : job))
-        );
+        setNotificationJobs(previousJobs);
       }
     } catch {
-      setNotificationJobs((previous) =>
-        previous.map((job) => (job.readAt === now ? { ...job, readAt: null } : job))
-      );
+      setNotificationJobs(previousJobs);
     }
-  }, [notificationJobs, session]);
+  }, [session]);
 
   return {
     notificationJobs,

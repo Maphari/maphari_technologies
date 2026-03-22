@@ -258,11 +258,11 @@ export function NotificationsPage() {
               {unreadCount} unread
             </span>
           )}
-          <button type="button" className={cx("btnSm", "btnGhost", "dynColor")} onClick={markAllRead}
-            disabled={unreadCount === 0} style={{ "--color": "inherit" } as React.CSSProperties}>
+          <button type="button" className={cx("btnSm", "btnGhost", "colorInherit")} onClick={markAllRead}
+            disabled={unreadCount === 0}>
             Mark all read
           </button>
-          <button type="button" className={cx("btnSm", "btnGhost", "dynColor", "flexRow", "gap6")} onClick={() => setShowPrefs(p => !p)} style={{ "--color": "inherit" } as React.CSSProperties}>
+          <button type="button" className={cx("btnSm", "btnGhost", "colorInherit", "flexRow", "gap6")} onClick={() => setShowPrefs(p => !p)}>
             <Ic n="settings" sz={13} c={showPrefs ? "var(--lime)" : "var(--muted2)"} />
             <span className={cx("dynColor")} style={{ "--color": showPrefs ? "var(--lime)" : "inherit" } as React.CSSProperties}>Preferences</span>
           </button>
@@ -344,15 +344,15 @@ export function NotificationsPage() {
               QUICK ACTIONS
             </div>
             <div className={cx("flexRow", "gap8", "flexWrap")}>
-              <button type="button" className={cx("btnSm", "btnGhost", "dynColor", "flexRow", "gap5")} onClick={markAllRead} style={{ "--color": "inherit" } as React.CSSProperties}>
+              <button type="button" className={cx("btnSm", "btnGhost", "colorInherit", "flexRow", "gap5")} onClick={markAllRead}>
                 <Ic n="check" sz={11} c="var(--muted2)" /> Mark all read
               </button>
-              <button type="button" className={cx("btnSm", "btnGhost", "dynColor", "flexRow", "gap5")}
-                onClick={() => setDismissed(new Set(visible.map(n => n.id)))} style={{ "--color": "inherit" } as React.CSSProperties}>
+              <button type="button" className={cx("btnSm", "btnGhost", "colorInherit", "flexRow", "gap5")}
+                onClick={() => setDismissed(new Set(visible.map(n => n.id)))}>
                 <Ic n="trash" sz={11} c="var(--muted2)" /> Clear all
               </button>
               {snoozedCount > 0 && (
-                <button type="button" className={cx("btnSm", "btnGhost", "dynColor", "flexRow", "gap5")} onClick={() => setSnoozed(new Set())} style={{ "--color": "inherit" } as React.CSSProperties}>
+                <button type="button" className={cx("btnSm", "btnGhost", "colorInherit", "flexRow", "gap5")} onClick={() => setSnoozed(new Set())}>
                   <Ic n="refresh" sz={11} c="var(--muted2)" /> Restore snoozed ({snoozedCount})
                 </button>
               )}

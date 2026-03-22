@@ -133,31 +133,25 @@ export function useNotifications({
 
   const markAllAsRead = useCallback(async () => {
     if (!session) return;
-    const hasUnread = notifications.some((n) => n.readAt === null);
-    if (!hasUnread) return;
 
-    // Optimistic update
-    const nowIso = new Date().toISOString();
-    setNotifications((prev) =>
-      prev.map((n) => (n.readAt === null ? { ...n, readAt: nowIso } : n))
-    );
+    // Snapshot before mutation (for reliable rollback)
+    let previousNotifications: PortalNotificationJob[] = [];
+    setNotifications((prev) => {
+      previousNotifications = prev;
+      const nowIso = new Date().toISOString();
+      return prev.map((n) => (n.readAt === null ? { ...n, readAt: nowIso } : n));
+    });
 
     try {
       const result = await markAllPortalNotificationsReadWithRefresh(session);
       if (result.nextSession) saveSession(result.nextSession);
       if (!result.nextSession || result.error) {
-        // Rollback on failure
-        setNotifications((prev) =>
-          prev.map((n) => (n.readAt === nowIso ? { ...n, readAt: null } : n))
-        );
+        setNotifications(previousNotifications);
       }
     } catch {
-      // Rollback on failure
-      setNotifications((prev) =>
-        prev.map((n) => (n.readAt === nowIso ? { ...n, readAt: null } : n))
-      );
+      setNotifications(previousNotifications);
     }
-  }, [session, notifications]);
+  }, [session]);
 
   return {
     notifications,
