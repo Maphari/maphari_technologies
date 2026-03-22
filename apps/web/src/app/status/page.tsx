@@ -25,9 +25,7 @@ interface StatusPayload {
 }
 
 async function fetchStatus(): Promise<StatusPayload | null> {
-  const gatewayUrl =
-    process.env.NEXT_PUBLIC_GATEWAY_BASE_URL?.replace("/api/v1", "") ??
-    "http://localhost:4000";
+  const gatewayUrl = process.env.GATEWAY_INTERNAL_URL ?? "http://localhost:4000";
   try {
     const res = await fetch(`${gatewayUrl}/status`, {
       next: { revalidate: 30 }

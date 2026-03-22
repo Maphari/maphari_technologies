@@ -24,10 +24,7 @@ const SERVICES: Array<{ name: string; url: string }> = [
 async function pingService(name: string, url: string): Promise<ServiceHealth> {
   const start = Date.now();
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
     const latencyMs = Date.now() - start;
     return {
       name,
