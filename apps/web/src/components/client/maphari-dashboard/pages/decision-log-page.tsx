@@ -120,10 +120,11 @@ export function DecisionLogPage() {
     setError(null);
     void loadPortalDecisionsWithRefresh(session, projectId).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (r.error) { setError(r.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (r.error) { setError(r.error.message ?? "Failed to load."); return; }
       if (r.data) setDecisions(r.data.map(mapApiDecision));
-      setLoading(false);
-    });
+    })
+    .catch((err) => setError(err?.message ?? "Failed to load"))
+    .finally(() => setLoading(false));
   }, [session, projectId]);
 
   const filtered = useMemo(() => {

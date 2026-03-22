@@ -87,10 +87,11 @@ export function CommunicationHistoryPage() {
     setError(null);
     loadPortalCommLogsWithRefresh(session, session.user.clientId ?? "").then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (result.error) { setError(result.error.message ?? "Failed to load."); return; }
       if (result.data) setCommHistory(result.data.map(mapLog));
-      setLoading(false);
-    });
+    })
+    .catch((err) => setError(err?.message ?? "Failed to load"))
+    .finally(() => setLoading(false));
   }, [session]);
 
   const messagesCount = commHistory.filter((c) => c.type === "message" || c.type === "email").length;

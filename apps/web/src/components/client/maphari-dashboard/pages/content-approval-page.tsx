@@ -137,10 +137,11 @@ export function ContentApprovalPage() {
     setError(null);
     void loadPortalContentSubmissionsWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (r.error) { setError(r.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (r.error) { setError(r.error.message ?? "Failed to load."); return; }
       if (r.data) setItems(r.data.map(mapSubmissionToItem));
-      setLoading(false);
-    });
+    })
+    .catch((err) => setError(err?.message ?? "Failed to load"))
+    .finally(() => setLoading(false));
   }, [session]);
 
   const resolvedStatus = (item: CAItem): CStatus => {

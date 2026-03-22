@@ -63,7 +63,7 @@ export function AnnouncementsPage() {
     ]).then(([ar, pr]) => {
       if (ar.nextSession) saveSession(ar.nextSession);
       if (pr.nextSession) saveSession(pr.nextSession);
-      if (ar.error) { setError(ar.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (ar.error) { setError(ar.error.message ?? "Failed to load."); return; }
       if (!ar.error && ar.data) setAnnouncements(ar.data);
       if (!pr.error && pr.data?.value) {
         try {
@@ -71,8 +71,9 @@ export function AnnouncementsPage() {
           setRead(Object.fromEntries(ids.map((id) => [id, true])));
         } catch { /* ignore */ }
       }
-      setLoading(false);
-    });
+    })
+    .catch((err) => setError(err?.message ?? "Failed to load"))
+    .finally(() => setLoading(false));
   }, [session]);
 
   function persistRead(ids: string[]) {

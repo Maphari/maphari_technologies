@@ -83,6 +83,7 @@ export function BrandLibraryPage() {
   const [activeTab, setActiveTab] = useState<BLTab>("All");
   const [assets, setAssets] = useState<PortalBrandAsset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
   // Color modal
@@ -109,10 +110,16 @@ export function BrandLibraryPage() {
   const loadAssets = useCallback(async () => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
-    const r = await loadPortalBrandAssetsWithRefresh(session);
-    if (r.nextSession) saveSession(r.nextSession);
-    setAssets(r.data ?? []);
-    setLoading(false);
+    setError(null);
+    try {
+      const r = await loadPortalBrandAssetsWithRefresh(session);
+      if (r.nextSession) saveSession(r.nextSession);
+      setAssets(r.data ?? []);
+    } catch (err: unknown) {
+      setError((err as Error)?.message ?? "Failed to load brand assets");
+    } finally {
+      setLoading(false);
+    }
   }, [session?.accessToken]);
 
   useEffect(() => { void loadAssets(); }, [loadAssets]);
@@ -338,6 +345,11 @@ export function BrandLibraryPage() {
 
       {loading ? (
         <div className={cx("skeletonBlock", "h200")} />
+      ) : error ? (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
       ) : (
         <div className={cx("flexCol", "gap28")}>
 

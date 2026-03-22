@@ -80,7 +80,7 @@ export function DataPrivacyPage() {
     ]).then(([prefR, ticketR]) => {
       if (prefR.nextSession) saveSession(prefR.nextSession);
       if (ticketR.nextSession) saveSession(ticketR.nextSession);
-      if (prefR.error) { setError(prefR.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (prefR.error) { setError(prefR.error.message ?? "Failed to load."); return; }
       if (prefR.data?.value) {
         try {
           const saved = JSON.parse(prefR.data.value) as Array<{ id: string; enabled: boolean }>;
@@ -93,8 +93,9 @@ export function DataPrivacyPage() {
       if (!ticketR.error && ticketR.data) {
         setPopiaRequests(ticketR.data.filter((t) => t.title?.startsWith("POPIA Request:")));
       }
-      setLoading(false);
-    });
+    })
+    .catch((err) => setError(err?.message ?? "Failed to load"))
+    .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
 

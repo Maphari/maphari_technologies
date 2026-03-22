@@ -209,7 +209,9 @@ export function BookCallPage() {
         );
       }
       setLoading(false);
-    });
+    })
+    .catch((err) => setError(err?.message ?? "Failed to load"))
+    .finally(() => setLoading(false));
   }, [session]);
 
   // ── Stats derived from real appointment data ──────────────────────────────

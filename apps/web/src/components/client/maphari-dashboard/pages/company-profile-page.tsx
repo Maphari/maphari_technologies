@@ -63,8 +63,9 @@ export function CompanyProfilePage() {
     void loadPortalProfileWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
       if (!r.error && r.data) setProfile(r.data);
-      setLoading(false);
-    });
+    })
+    .catch(() => { /* profile load failure — page still renders with null profile */ })
+    .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
 
