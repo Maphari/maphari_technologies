@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { cx } from "./style";
+import { ThemeToggle } from "@/components/shared/ui/theme-toggle";
 
 // ─── New canonical props ──────────────────────────────────────────────────────
 
@@ -80,6 +81,9 @@ export function Topbar({
             <span className={cx("topbarNotifBadge")} aria-hidden="true" />
           )}
         </button>
+
+        {/* Theme toggle */}
+        <ThemeToggle />
 
         {/* Add button */}
         <button
