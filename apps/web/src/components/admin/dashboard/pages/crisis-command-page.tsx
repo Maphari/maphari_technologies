@@ -47,7 +47,7 @@ function mapApiCrisis(c: AdminCrisis): Crisis {
   const daysOpen = Math.floor((Date.now() - createdAt.getTime()) / 86_400_000);
   return {
     id:         c.id,
-    client:     c.clientId ?? "Unknown",
+    client:     c.clientName ?? c.clientId ?? "Unknown",
     color:      "var(--accent)",
     severity:   severityToLocal(c.severity),
     title:      c.title,
@@ -69,7 +69,7 @@ function mapApiResolved(c: AdminCrisis): ResolvedCrisis {
   const daysToResolve = Math.max(1, Math.floor((resolvedDate.getTime() - created.getTime()) / 86_400_000));
   return {
     id:            c.id,
-    client:        c.clientId ?? "Unknown",
+    client:        c.clientName ?? c.clientId ?? "Unknown",
     severity:      severityToLocal(c.severity),
     title:         c.title,
     resolved:      resolvedDate.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }),
@@ -158,6 +158,10 @@ export function CrisisCommandPage({ session }: { session: AuthSession | null }) 
     if (!title) return;
     const r = await createCrisisWithRefresh(session, { title, severity: "HIGH", status: "ACTIVE" });
     if (r.nextSession) saveSession(r.nextSession);
+    if (r.error) {
+      setError(r.error.message ?? "Failed to log crisis");
+      return;
+    }
     if (r.data) setAllCrises((prev) => [r.data!, ...prev]);
   }
 

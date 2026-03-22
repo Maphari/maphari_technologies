@@ -493,6 +493,7 @@ export interface AdminCrisis {
   description: string | null;
   ownerId:     string | null;
   clientId:    string | null;
+  clientName?: string | null;
   resolvedAt:  string | null;
   createdAt:   string;
   updatedAt:   string;
