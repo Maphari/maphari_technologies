@@ -28,6 +28,7 @@ import { DashboardTour } from "../shared/dashboard-tour";
 import { useSessionTimeout } from "./maphari-dashboard/hooks/use-session-timeout";
 import { useTheme } from "./maphari-dashboard/hooks/use-theme";
 import { useQuickCompose } from "./maphari-dashboard/hooks/use-quick-compose";
+import { usePortalRealtime } from "./maphari-dashboard/hooks/use-portal-realtime";
 
 // ── Shell components ─────────────────────────────────────────────────────────
 import { DashboardErrorBoundary } from "./maphari-dashboard/error-boundary";
@@ -262,6 +263,22 @@ export function MaphariClientDashboard() {
     void refreshSnapshot(undefined, { background: true });
   }, [refreshSnapshot]);
   useRealtimeRefresh(session ?? null, handleSseRefresh);
+
+  // ── 9b. Polling realtime feed (project status events) ─────────────────
+  const handleRealtimeToast = useCallback(
+    (tone: "success" | "info" | "warning" | "error", message: string) => {
+      setFeedback({ tone, message });
+    },
+    [setFeedback],
+  );
+  const handleMilestoneCompleted = useCallback(() => {
+    void refreshSnapshot(undefined, { background: true });
+  }, [refreshSnapshot]);
+  const { isConnected: isRealtimeConnected } = usePortalRealtime({
+    session: session ?? null,
+    onToast: handleRealtimeToast,
+    onMilestoneCompleted: handleMilestoneCompleted,
+  });
 
   // ── 9. Session timeout ─────────────────────────────────────────────────
   const sessionTimeout = useSessionTimeout({ onTimeout: signOut });
@@ -517,6 +534,7 @@ export function MaphariClientDashboard() {
             selectedProjectId={selectedProjectId}
             onProjectSelect={setSelectedProjectId}
             onViewAllProjects={() => handleNavigate("myProjects")}
+            isRealtimeConnected={isRealtimeConnected}
           />
 
           <div className={styles.content} style={contentStyle}>

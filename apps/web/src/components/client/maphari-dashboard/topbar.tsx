@@ -37,6 +37,13 @@ type ClientTopbarProps = {
   onProjectSelect?: (id: string) => void;
   /** Called when user clicks "View all projects" in switcher */
   onViewAllProjects?: () => void;
+  /**
+   * Real-time connection state from usePortalRealtime.
+   * undefined = hook not yet mounted (hide pill)
+   * false     = polling in flight / not yet seeded (show "Syncing…")
+   * true      = at least one successful poll completed (show "Live")
+   */
+  isRealtimeConnected?: boolean;
 };
 
 const PROFILE_LINKS = [
@@ -68,6 +75,7 @@ export function ClientTopbar({
   selectedProjectId,
   onProjectSelect,
   onViewAllProjects,
+  isRealtimeConnected,
 }: ClientTopbarProps) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
@@ -144,6 +152,17 @@ export function ClientTopbar({
 
       {/* ── Right: action strip ──────────────────────────────────────── */}
       <div className={styles.topbarActions}>
+        {/* Realtime sync pill */}
+        {isRealtimeConnected !== undefined ? (
+          <span
+            className={`${styles.realtimePill}${isRealtimeConnected ? "" : ` ${styles.realtimePillSyncing}`}`}
+            aria-label={isRealtimeConnected ? "Live data" : "Syncing data"}
+          >
+            <span className={styles.realtimePillDot} aria-hidden="true" />
+            {isRealtimeConnected ? "Live" : "Syncing…"}
+          </span>
+        ) : null}
+
         {/* Search */}
         <button
           type="button"
