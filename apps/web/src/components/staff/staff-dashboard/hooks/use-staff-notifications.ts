@@ -6,6 +6,8 @@ import {
   loadNotificationJobsWithRefresh,
   setNotificationReadStateWithRefresh
 } from "../../../../lib/api/admin";
+import { markAllStaffNotificationsReadWithRefresh } from "../../../../lib/api/staff/notifications";
+import { saveSession } from "../../../../lib/auth/session";
 import type { PageId } from "../config";
 import { useMarkActiveTabNotificationsRead } from "../../../shared/use-mark-active-tab-notifications-read";
 import { STAFF_PAGE_TO_NOTIFICATION_TAB } from "../../../shared/notification-routing";
@@ -109,25 +111,28 @@ export function useStaffNotifications({ session, activePage }: Params): UseStaff
 
   const handleMarkAllNotificationsRead = useCallback(async () => {
     if (!session) return;
-    const unread = notificationJobs.filter((job) => !job.readAt);
-    if (unread.length === 0) return;
+    const hasUnread = notificationJobs.some((job) => !job.readAt);
+    if (!hasUnread) return;
     const now = new Date().toISOString();
     // Optimistic update
     setNotificationJobs((previous) =>
       previous.map((job) => ({ ...job, readAt: job.readAt ?? now }))
     );
     try {
-      await Promise.all(unread.map((job) => setNotificationReadStateWithRefresh(session, job.id, true)));
+      const result = await markAllStaffNotificationsReadWithRefresh(session);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (!result.nextSession || result.error) {
+        // Rollback optimistic update on failure
+        setNotificationJobs((previous) =>
+          previous.map((job) => (job.readAt === now ? { ...job, readAt: null } : job))
+        );
+      }
     } catch {
-      // Roll back optimistic update on failure
-      const unreadIds = new Set(unread.map((job) => job.id));
       setNotificationJobs((previous) =>
-        previous.map((job) =>
-          unreadIds.has(job.id) ? { ...job, readAt: null } : job
-        )
+        previous.map((job) => (job.readAt === now ? { ...job, readAt: null } : job))
       );
     }
-  }, [notificationJobs, session?.accessToken]);
+  }, [notificationJobs, session]);
 
   return {
     notificationJobs,

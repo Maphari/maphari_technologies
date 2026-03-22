@@ -306,6 +306,25 @@ export async function applyProviderCallback(
   return mapJob(updated);
 }
 
+export async function markAllJobsRead(
+  clientId: string | undefined,
+  actor?: QueueActor
+): Promise<{ count: number }> {
+  const now = new Date();
+  const result = await prisma.notificationJob.updateMany({
+    where: {
+      clientId: clientId ?? undefined,
+      readAt: null,
+    },
+    data: {
+      readAt: now,
+      readByUserId: actor?.userId ?? null,
+      readByRole: actor?.role ?? null,
+    },
+  });
+  return { count: result.count };
+}
+
 export async function setNotificationReadState(
   id: string,
   read: boolean,

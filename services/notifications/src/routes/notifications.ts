@@ -12,6 +12,7 @@ import {
   applyProviderCallback,
   enqueueJob,
   listJobs,
+  markAllJobsRead,
   processNextJob,
   setNotificationReadState,
   unreadCounts
@@ -158,6 +159,20 @@ export async function registerNotificationRoutes(app: FastifyInstance): Promise<
       data: updated,
       meta: { requestId: scope.requestId }
     } as ApiResponse<typeof updated>;
+  });
+
+  app.patch("/notifications/mark-all-read", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const clientId = resolveClientFilter(scope.role, scope.clientId);
+    const result = await markAllJobsRead(clientId, {
+      userId: scope.userId,
+      role: scope.role as "ADMIN" | "STAFF" | "CLIENT"
+    });
+    return {
+      success: true,
+      data: result,
+      meta: { requestId: scope.requestId }
+    } as ApiResponse<typeof result>;
   });
 
   app.post("/notifications/provider-callback", async (request, reply) => {

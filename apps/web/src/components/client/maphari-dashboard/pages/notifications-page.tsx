@@ -6,6 +6,7 @@ import { saveSession } from "../../../../lib/auth/session";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import {
   loadPortalNotificationsWithRefresh,
+  markAllPortalNotificationsReadWithRefresh,
   setPortalNotificationReadStateWithRefresh,
   type PortalNotificationJob,
 } from "../../../../lib/api/portal";
@@ -171,12 +172,9 @@ export function NotificationsPage() {
   const markAllRead = () => {
     setNotifs(prev => prev.map(n => ({ ...n, unread: false })));
     if (session) {
-      const unreadIds = notifs.filter(n => n.unread).map(n => n.id);
-      for (const id of unreadIds) {
-        void setPortalNotificationReadStateWithRefresh(session, id, true).then((r) => {
-          if (r.nextSession) saveSession(r.nextSession);
-        });
-      }
+      void markAllPortalNotificationsReadWithRefresh(session).then((r) => {
+        if (r.nextSession) saveSession(r.nextSession);
+      });
     }
   };
   const markRead    = (id: string) => {

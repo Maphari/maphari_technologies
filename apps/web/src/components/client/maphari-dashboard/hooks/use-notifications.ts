@@ -8,8 +8,10 @@ import { useMarkActiveTabNotificationsRead } from "../../../shared/use-mark-acti
 import { CLIENT_PAGE_TO_NOTIFICATION_TAB } from "../../../shared/notification-routing";
 import {
   loadPortalNotificationsWithRefresh,
+  markAllPortalNotificationsReadWithRefresh,
   setPortalNotificationReadStateWithRefresh,
 } from "../../../../lib/api/portal/notifications";
+import { saveSession } from "../../../../lib/auth/session";
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -131,43 +133,28 @@ export function useNotifications({
 
   const markAllAsRead = useCallback(async () => {
     if (!session) return;
-
-    const unreadIds = notifications
-      .filter((n) => n.readAt === null)
-      .map((n) => n.id);
-
-    if (unreadIds.length === 0) return;
+    const hasUnread = notifications.some((n) => n.readAt === null);
+    if (!hasUnread) return;
 
     // Optimistic update
     const nowIso = new Date().toISOString();
     setNotifications((prev) =>
-      prev.map((n) =>
-        n.readAt === null ? { ...n, readAt: nowIso } : n,
-      ),
+      prev.map((n) => (n.readAt === null ? { ...n, readAt: nowIso } : n))
     );
 
-    // Fire all requests in parallel
-    const results = await Promise.allSettled(
-      unreadIds.map((id) =>
-        setPortalNotificationReadStateWithRefresh(session, id, true),
-      ),
-    );
-
-    // Rollback any that failed
-    const failedIds = new Set<string>();
-    results.forEach((r, i) => {
-      if (r.status === "rejected") {
-        failedIds.add(unreadIds[i]);
-      } else if (!r.value.nextSession || r.value.error) {
-        failedIds.add(unreadIds[i]);
+    try {
+      const result = await markAllPortalNotificationsReadWithRefresh(session);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (!result.nextSession || result.error) {
+        // Rollback on failure
+        setNotifications((prev) =>
+          prev.map((n) => (n.readAt === nowIso ? { ...n, readAt: null } : n))
+        );
       }
-    });
-
-    if (failedIds.size > 0) {
+    } catch {
+      // Rollback on failure
       setNotifications((prev) =>
-        prev.map((n) =>
-          failedIds.has(n.id) ? { ...n, readAt: null } : n,
-        ),
+        prev.map((n) => (n.readAt === nowIso ? { ...n, readAt: null } : n))
       );
     }
   }, [session, notifications]);

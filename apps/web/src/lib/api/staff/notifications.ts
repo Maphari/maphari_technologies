@@ -62,6 +62,30 @@ export async function loadStaffNotificationsWithRefresh(
   });
 }
 
+export async function markAllStaffNotificationsReadWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<{ count: number }>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ count: number }>(
+      "/notifications/mark-all-read",
+      accessToken,
+      { method: "PATCH" }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "MARK_ALL_READ_FAILED",
+          response.payload.error?.message ?? "Unable to mark all notifications as read."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? { count: 0 }, error: null };
+  });
+}
+
 export async function setStaffNotificationReadStateWithRefresh(
   session: AuthSession,
   id: string,

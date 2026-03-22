@@ -129,6 +129,25 @@ export class NotificationsController {
     });
   }
 
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Patch("notifications/mark-all-read")
+  async markAllRead(
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:4009";
+    return proxyRequest(`${baseUrl}/notifications/mark-all-read`, "PATCH", undefined, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
   @Public()
   @Post("notifications/provider-callback")
   async providerCallback(

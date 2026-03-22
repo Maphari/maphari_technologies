@@ -56,7 +56,8 @@ export function NotificationsPage({
   processing,
   onProcess,
   onRefreshSnapshot,
-  onNotify
+  onNotify,
+  onMarkAllRead
 }: {
   snapshot: ReturnType<typeof useAdminWorkspaceContext>["snapshot"];
   session: AuthSession | null;
@@ -65,6 +66,7 @@ export function NotificationsPage({
   onProcess: () => Promise<void>;
   onRefreshSnapshot: (sessionOverride?: AuthSession) => Promise<void>;
   onNotify: (tone: "success" | "error", message: string) => void;
+  onMarkAllRead?: () => Promise<void>;
 }) {
   const canEdit = session?.user.role === "ADMIN" || session?.user.role === "STAFF";
 
@@ -202,6 +204,15 @@ export function NotificationsPage({
           <div className={styles.notifSectionHeader}>
             <span className={styles.notifSectionTitle}>Notification Queue</span>
             <span className={styles.notifSectionMeta}>{filtered.length} JOBS</span>
+            {onMarkAllRead && (
+              <button
+                type="button"
+                className={cx("btnSm", "btnGhost")}
+                onClick={() => void onMarkAllRead()}
+              >
+                Mark all read
+              </button>
+            )}
           </div>
           <div className={styles.notifQueueHead}>
             {["Channel", "Client", "Recipient", "Status", "Attempts", "Updated"].map((h) => (

@@ -100,7 +100,8 @@ import { PipelineAnalyticsPage } from "./dashboard/pages/pipeline-analytics-page
 import { WebhookHubPage } from "./dashboard/pages/webhook-hub-page";
 import { ContractRenewalPage } from "./dashboard/pages/contract-renewal-page";
 import { CLVAnalyticsPage } from "./dashboard/pages/clv-analytics-page";
-import { createMaintenanceCheckWithRefresh, setNotificationReadStateWithRefresh } from "../../lib/api/admin";
+import { createMaintenanceCheckWithRefresh, markAllAdminNotificationsReadWithRefresh, setNotificationReadStateWithRefresh } from "../../lib/api/admin";
+import { saveSession } from "../../lib/auth/session";
 import { searchGlobal } from "../../lib/api/shared/search";
 import { DashboardLoadingFallback, DashboardToastStack, hasAnyDashboardData, useDashboardToasts } from "../shared/dashboard-core";
 import { ADMIN_PAGE_TO_NOTIFICATION_TAB } from "../shared/notification-routing";
@@ -390,6 +391,18 @@ export function MaphariDashboard() {
     pushToast("success", "Maintenance check created.");
   }
 
+  // ── Mark all notifications read (admin) ───────────────────────────────────
+  async function handleMarkAllAdminNotificationsRead(): Promise<void> {
+    if (!session) return;
+    const result = await markAllAdminNotificationsReadWithRefresh(session);
+    if (result.nextSession) saveSession(result.nextSession);
+    if (!result.nextSession || result.error) return;
+    setNotificationJobs((prev) =>
+      prev.map((job) => ({ ...job, readAt: job.readAt ?? new Date().toISOString() }))
+    );
+    await refreshSnapshot();
+  }
+
   // ── Loading gate ───────────────────────────────────────────────────────────
   const hasWorkspaceData = hasAnyDashboardData([
     snapshot.clients,
@@ -556,6 +569,7 @@ export function MaphariDashboard() {
                 onProcess={handleProcessQueue}
                 onRefreshSnapshot={refreshSnapshot}
                 onNotify={pushToast}
+                onMarkAllRead={handleMarkAllAdminNotificationsRead}
               />
             ) : null}
 
