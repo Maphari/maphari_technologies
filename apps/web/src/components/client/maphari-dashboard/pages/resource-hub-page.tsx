@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 // resource-hub-page.tsx — Client Resource Hub
 // Loads knowledge articles (category=resource) from the governance API.
-// Falls back to curated static list when the API returns no published articles.
+// Shows an honest empty state when the API returns no published articles.
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo, useEffect } from "react";
@@ -22,16 +22,17 @@ import {
 type RHCategory = "All" | "Templates" | "Guides" | "Checklists" | "Videos";
 
 interface ResourceItem {
-  id:       string;
-  title:    string;
-  category: RHCategory;
-  icon:     string;
-  color:    string;
-  ext:      string;
-  size:     string;
-  updated:  string;
-  isNew:    boolean;
-  desc:     string;
+  id:        string;
+  title:     string;
+  category:  RHCategory;
+  icon:      string;
+  color:     string;
+  ext:       string;
+  size:      string;
+  updated:   string;
+  isNew:     boolean;
+  desc:      string;
+  viewCount: number;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -68,23 +69,6 @@ const EXT_COLOR: Record<string, string> = {
   PPTX:  "var(--amber)",
   VIDEO: "var(--purple)",
 };
-
-// ── Curated fallback (shown when API returns no published articles) ─────────────
-
-const CURATED: ResourceItem[] = [
-  { id: "r01", title: "Project Brief Template",      category: "Templates",  icon: "file",   color: "var(--lime)",   ext: "PDF",   size: "245 KB",  updated: "2 Mar 2026",  isNew: true,  desc: "Structured template for scoping new projects. Covers goals, timelines, budget, and stakeholder sign-off." },
-  { id: "r02", title: "Brand Voice Guide",           category: "Guides",     icon: "star",   color: "var(--amber)",  ext: "PDF",   size: "1.2 MB",  updated: "28 Feb 2026", isNew: false, desc: "Tone, vocabulary, and communication principles for all client-facing copy across channels." },
-  { id: "r03", title: "Sprint Planning Checklist",   category: "Checklists", icon: "check",  color: "var(--green)",  ext: "PDF",   size: "89 KB",   updated: "1 Mar 2026",  isNew: true,  desc: "Pre-sprint checklist for aligning on goals, capacity, and acceptance criteria before each sprint." },
-  { id: "r04", title: "Client Onboarding Guide",     category: "Guides",     icon: "link",   color: "var(--purple)", ext: "PDF",   size: "3.1 MB",  updated: "15 Feb 2026", isNew: false, desc: "Step-by-step walkthrough of the Maphari onboarding process — tools, contacts, and first-sprint expectations." },
-  { id: "r05", title: "Figma Handoff Checklist",     category: "Checklists", icon: "check",  color: "var(--lime)",   ext: "PDF",   size: "156 KB",  updated: "20 Feb 2026", isNew: false, desc: "Ensure every handoff includes named layers, exported assets, spacing notes, and component annotations." },
-  { id: "r06", title: "Presentation Deck Template",  category: "Templates",  icon: "layers", color: "var(--amber)",  ext: "PPTX",  size: "8.4 MB",  updated: "10 Feb 2026", isNew: false, desc: "Branded slide template for sprint demos, strategy calls, and board presentations. Fully editable." },
-  { id: "r07", title: "API Integration Guide",       category: "Guides",     icon: "code",   color: "var(--green)",  ext: "PDF",   size: "512 KB",  updated: "5 Feb 2026",  isNew: false, desc: "Technical guide for connecting third-party APIs — auth, rate limits, and error handling patterns." },
-  { id: "r08", title: "QA Testing Checklist",        category: "Checklists", icon: "check",  color: "var(--purple)", ext: "PDF",   size: "203 KB",  updated: "22 Feb 2026", isNew: false, desc: "Full functional, accessibility, and performance checklist for pre-launch quality assurance sign-off." },
-  { id: "r09", title: "Project Kickoff Walkthrough", category: "Videos",     icon: "zap",    color: "var(--accent)", ext: "VIDEO", size: "45 min",  updated: "1 Jan 2026",  isNew: false, desc: "Video walkthrough of the entire project kickoff process — from contract signing to first sprint planning." },
-  { id: "r10", title: "Brand Guidelines PDF",        category: "Guides",     icon: "file",   color: "var(--lime)",   ext: "PDF",   size: "4.2 MB",  updated: "14 Feb 2026", isNew: false, desc: "Complete brand identity system: logo usage, color palette, typography scale, and do/don't examples." },
-  { id: "r11", title: "Change Request Template",     category: "Templates",  icon: "edit",   color: "var(--amber)",  ext: "DOCX",  size: "67 KB",   updated: "18 Feb 2026", isNew: true,  desc: "Formal change request document template with impact analysis and approval sign-off fields." },
-  { id: "r12", title: "Post-Launch Report Template", category: "Templates",  icon: "chart",  color: "var(--green)",  ext: "DOCX",  size: "134 KB",  updated: "8 Feb 2026",  isNew: false, desc: "Template for summarising launch outcomes: metrics, wins, issues, and next-phase recommendations." },
-];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -129,16 +113,17 @@ function mapArticle(a: PortalKnowledgeArticle): ResourceItem {
   const isNew  = pubAt > 0 && Date.now() - pubAt < 14 * 24 * 60 * 60 * 1000;
 
   return {
-    id:      a.id,
-    title:   a.title,
-    category: cat,
+    id:        a.id,
+    title:     a.title,
+    category:  cat,
     icon,
     color,
     ext,
-    size:    "—",
-    updated: fmtDate(a.updatedAt),
+    size:      "—",
+    updated:   fmtDate(a.updatedAt),
     isNew,
-    desc:    a.content.slice(0, 180) + (a.content.length > 180 ? "…" : ""),
+    desc:      a.content.slice(0, 180) + (a.content.length > 180 ? "…" : ""),
+    viewCount: a.viewCount,
   };
 }
 
@@ -151,23 +136,17 @@ export function ResourceHubPage() {
   const [query,   setQuery]   = useState("");
   const [loading, setLoading] = useState(true);
   const [resources, setResources] = useState<ResourceItem[]>([]);
+  const [error, setError]     = useState<string | null>(null);
 
   // ── Load knowledge articles (category=resource) from API ──────────────────
   useEffect(() => {
-    if (!session) {
-      // No session yet — use curated list immediately (no skeleton flash)
-      setResources(CURATED);
-      setLoading(false);
-      return;
-    }
-
+    if (!session) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     loadPortalKnowledgeArticlesWithRefresh(session)
       .then((r) => {
         if (r.nextSession) saveSession(r.nextSession);
-        const articles = r.data ?? [];
-        // Filter to published articles with resource-related category/tags
-        const resourceArticles = articles.filter(
+        const articles = (r.data ?? []).filter(
           (a) =>
             a.status === "PUBLISHED" &&
             (
@@ -178,12 +157,10 @@ export function ResourceHubPage() {
               (a.tags ?? "").toLowerCase().includes("checklist")
             )
         );
-        // Use API articles when available, otherwise fall back to curated list
-        setResources(resourceArticles.length > 0 ? resourceArticles.map(mapArticle) : CURATED);
+        setResources(articles.map(mapArticle));
       })
       .catch(() => {
-        // API error — silently fall back to curated list
-        setResources(CURATED);
+        setError("Unable to load resources. Please try again later.");
       })
       .finally(() => setLoading(false));
   }, [session]);
@@ -191,6 +168,7 @@ export function ResourceHubPage() {
   // ── Derived counts for stat cards ─────────────────────────────────────────
   const templateCount  = resources.filter((r) => r.category === "Templates").length;
   const guideCount     = resources.filter((r) => r.category === "Guides").length;
+  const totalViews     = resources.reduce((s, r) => s + r.viewCount, 0);
 
   // ── Filtered list for the grid ────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -212,26 +190,15 @@ export function ResourceHubPage() {
           <h1 className={cx("pageTitle")}>Resource Hub</h1>
           <p className={cx("pageSub")}>Templates, guides, and tools to help you get the most from your project.</p>
         </div>
-        <div className={cx("pageActions")}>
-          <button
-            type="button"
-            className={cx("btnSm", "btnAccent")}
-            disabled={loading || resources.length === 0}
-            // TODO: wire to a real download-all endpoint once the files API exposes a bulk-download URL
-            onClick={() => notify("success", "Preparing download", "Your resource pack will be ready shortly.")}
-          >
-            <Ic n="download" sz={12} c="var(--bg)" /> Download All
-          </button>
-        </div>
       </div>
 
       {/* ── Stat cards ──────────────────────────────────────────────────────── */}
       <div className={cx("topCardsStack")}>
         {[
-          { label: "Total Resources", value: loading ? "—" : String(resources.length), color: "statCardAccent" },
-          { label: "Templates",       value: loading ? "—" : String(templateCount),     color: "statCardAmber"  },
-          { label: "Guides",          value: loading ? "—" : String(guideCount),         color: "statCardPurple" },
-          { label: "Total Downloads", value: "—",                                        color: "statCardGreen"  },
+          { label: "Total Resources", value: loading ? "—" : String(resources.length),                                                    color: "statCardAccent"  },
+          { label: "Templates",       value: loading ? "—" : String(templateCount),                                                        color: "statCardAmber"   },
+          { label: "Guides",          value: loading ? "—" : String(guideCount),                                                            color: "statCardPurple"  },
+          { label: "Total Views",     value: loading ? "—" : totalViews > 0 ? totalViews.toLocaleString("en-ZA") : "—",                    color: "statCardGreen"   },
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.color)}>
             <div className={cx("statLabel")}>{s.label}</div>
@@ -239,6 +206,15 @@ export function ResourceHubPage() {
           </div>
         ))}
       </div>
+
+      {/* ── Error state ─────────────────────────────────────────────────────── */}
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="alert" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>Unable to load resources</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
 
       {/* ── Search ──────────────────────────────────────────────────────────── */}
       <div className={cx("relative")}>
@@ -279,12 +255,13 @@ export function ResourceHubPage() {
             </div>
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : filtered.length === 0 && !error ? (
 
         /* ── Empty state ──────────────────────────────────────────────────── */
-        <div className={cx("textCenter", "py48_0", "colorMuted2")}>
-          <Ic n="search" sz={28} c="var(--muted2)" />
-          <div className={cx("text12", "mt12")}>No resources match your search.</div>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="file" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>No resources yet</div>
+          <div className={cx("emptyStateSub")}>Your team will publish guides, templates, and checklists here.</div>
         </div>
       ) : (
 
@@ -336,20 +313,10 @@ export function ResourceHubPage() {
                   <div className={cx("flexRow", "gap6")}>
                     <button
                       type="button"
-                      className={cx("btnSm", "btnGhost", "flex1")}
-                      // TODO: replace with window.open(r.url, "_blank") once ResourceItem has a url field from the API
-                      onClick={() => notify("info", "Preview", `Opening preview for "${r.title}"`)}
-                    >
-                      <Ic n="eye" sz={14} c="var(--muted)" /> Preview
-                    </button>
-                    <button
-                      type="button"
                       className={cx("btnSm", "btnAccent", "flex1")}
-                      // TODO: replace with window.open(r.url, "_blank") for VIDEO or anchor-download for files once ResourceItem has a url field
-                      onClick={() => notify("success", r.ext === "VIDEO" ? "Opening video" : "Download started", `"${r.title}" will open shortly.`)}
+                      onClick={() => notify("info", "Opening resource", `"${r.title}" — contact your team for the latest version.`)}
                     >
-                      <Ic n="download" sz={14} c="var(--bg)" />
-                      {r.ext === "VIDEO" ? "Watch" : "Download"}
+                      <Ic n="eye" sz={14} c="var(--bg)" /> View
                     </button>
                   </div>
                 </div>
