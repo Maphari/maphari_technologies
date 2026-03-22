@@ -13,12 +13,17 @@ import { generateAlias } from "../lib/alias.js";
 export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
 
   // ── GET /portal/forum/threads ─────────────────────────────────────────────
-  app.get("/portal/forum/threads", async (request) => {
+  app.get("/portal/forum/threads", async (request, reply) => {
     const scope = readScopeHeaders(request);
     const q = request.query as { category?: string; page?: string; limit?: string };
     const page = Math.max(1, parseInt(q.page ?? "1", 10));
     const limit = Math.min(50, Math.max(1, parseInt(q.limit ?? "20", 10)));
     const skip = (page - 1) * limit;
+
+    const validCategories = ["tips", "qa", "announcements", "general"];
+    if (q.category && !validCategories.includes(q.category)) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: `category must be one of: ${validCategories.join(", ")}` } } as ApiResponse);
+    }
 
     const where = {
       isApproved: true,
@@ -123,6 +128,9 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
     if (!body.body?.trim()) {
       return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "body is required." } } as ApiResponse);
     }
+    if (body.body.length > 10000) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "Post body must not exceed 10,000 characters." } } as ApiResponse);
+    }
 
     const thread = await prisma.forumThread.findFirst({ where: { id, isApproved: true, isRejected: false } });
     if (!thread) {
@@ -157,18 +165,29 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
     const { id } = request.params as { id: string };
     const body = request.body as { isApproved?: boolean; isRejected?: boolean; isPinned?: boolean; isLocked?: boolean };
 
-    const thread = await prisma.forumThread.update({
-      where: { id },
-      data: {
-        ...(body.isApproved !== undefined ? { isApproved: body.isApproved } : {}),
-        ...(body.isRejected !== undefined ? { isRejected: body.isRejected } : {}),
-        ...(body.isPinned !== undefined ? { isPinned: body.isPinned } : {}),
-        ...(body.isLocked !== undefined ? { isLocked: body.isLocked } : {}),
-      },
-      select: { id: true, isApproved: true, isRejected: true, isPinned: true, isLocked: true },
-    });
+    if (body.isApproved === true && body.isRejected === true) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "isApproved and isRejected cannot both be true." } } as ApiResponse);
+    }
 
-    return { success: true, data: thread, meta: { requestId: scope.requestId } } as ApiResponse<typeof thread>;
+    try {
+      const thread = await prisma.forumThread.update({
+        where: { id },
+        data: {
+          ...(body.isApproved !== undefined ? { isApproved: body.isApproved } : {}),
+          ...(body.isRejected !== undefined ? { isRejected: body.isRejected } : {}),
+          ...(body.isPinned !== undefined ? { isPinned: body.isPinned } : {}),
+          ...(body.isLocked !== undefined ? { isLocked: body.isLocked } : {}),
+        },
+        select: { id: true, isApproved: true, isRejected: true, isPinned: true, isLocked: true },
+      });
+      return { success: true, data: thread, meta: { requestId: scope.requestId } } as ApiResponse<typeof thread>;
+    } catch (err) {
+      const e = err as { code?: string };
+      if (e.code === "P2025") {
+        return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Thread not found." } } as ApiResponse);
+      }
+      throw err;
+    }
   });
 
   // ── PATCH /admin/forum/posts/:id ──────────────────────────────────────────
@@ -180,16 +199,27 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
     const { id } = request.params as { id: string };
     const body = request.body as { isApproved?: boolean; isRejected?: boolean };
 
-    const post = await prisma.forumPost.update({
-      where: { id },
-      data: {
-        ...(body.isApproved !== undefined ? { isApproved: body.isApproved } : {}),
-        ...(body.isRejected !== undefined ? { isRejected: body.isRejected } : {}),
-      },
-      select: { id: true, isApproved: true, isRejected: true },
-    });
+    if (body.isApproved === true && body.isRejected === true) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "isApproved and isRejected cannot both be true." } } as ApiResponse);
+    }
 
-    return { success: true, data: post, meta: { requestId: scope.requestId } } as ApiResponse<typeof post>;
+    try {
+      const post = await prisma.forumPost.update({
+        where: { id },
+        data: {
+          ...(body.isApproved !== undefined ? { isApproved: body.isApproved } : {}),
+          ...(body.isRejected !== undefined ? { isRejected: body.isRejected } : {}),
+        },
+        select: { id: true, isApproved: true, isRejected: true },
+      });
+      return { success: true, data: post, meta: { requestId: scope.requestId } } as ApiResponse<typeof post>;
+    } catch (err) {
+      const e = err as { code?: string };
+      if (e.code === "P2025") {
+        return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Post not found." } } as ApiResponse);
+      }
+      throw err;
+    }
   });
 
   // ── GET /admin/forum/moderation-queue ─────────────────────────────────────
@@ -199,6 +229,8 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Admin only." } } as ApiResponse);
     }
 
+    // authorId is intentionally included here — admins need to see real company identity for moderation decisions.
+    // authorId is never returned from client-facing portal routes.
     const [threads, posts, featureRequests] = await Promise.all([
       prisma.forumThread.findMany({
         where: { isApproved: false, isRejected: false },
