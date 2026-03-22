@@ -14,6 +14,19 @@ import {
   type AuthorizedResult,
 } from "./internal";
 
+// ── Calendar Event type (shared with portal calendar view) ────────────────────
+
+export interface PortalCalendarEvent {
+  id: string;
+  type: "appointment" | "milestone" | "sprint_deadline";
+  title: string;
+  date: string;
+  clientName?: string;
+  projectName?: string;
+  status?: string;
+  sourceId: string;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface PortalMeeting {
@@ -77,5 +90,31 @@ export async function ratePortalMeetingWithRefresh(
       };
     }
     return { unauthorized: false, data: response.payload.data ?? null, error: null };
+  });
+}
+
+export async function loadPortalCalendarEventsWithRefresh(
+  session: AuthSession,
+  from: string,
+  to: string
+): Promise<AuthorizedResult<PortalCalendarEvent[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const params = new URLSearchParams({ from, to });
+    const response = await callGateway<PortalCalendarEvent[]>(
+      `/calendar/events?${params.toString()}`,
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: [],
+        error: toGatewayError(
+          response.payload.error?.code ?? "CALENDAR_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load calendar events."
+        ),
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
   });
 }
