@@ -17,6 +17,10 @@ import {
   type PortalAppointment,
   type PortalMeeting,
 } from "../../../../lib/api/portal";
+import {
+  loadPortalCalendarEventsWithRefresh,
+  type PortalCalendarEvent,
+} from "../../../../lib/api/portal/meetings";
 import { saveSession } from "../../../../lib/auth/session";
 import { createInstantVideoRoomWithRefresh, type InstantVideoRoom } from "../../../../lib/api/portal/video";
 
@@ -177,6 +181,8 @@ export function BookCallPage() {
   const [instantLoading,     setInstantLoading]     = useState(false);
   const [instantError,       setInstantError]       = useState<string | null>(null);
   const [meetings,           setMeetings]           = useState<PortalMeeting[] | null>(null);
+  const [calendarEvents,     setCalendarEvents]     = useState<PortalCalendarEvent[]>([]);
+  const [calendarLoading,    setCalendarLoading]    = useState(false);
   const [bookedAppt,         setBookedAppt]         = useState<PortalAppointment | null>(null);
 
   // ── Current week (computed once per mount) ────────────────────────────────
@@ -212,6 +218,21 @@ export function BookCallPage() {
     })
     .catch((err) => setError(err?.message ?? "Failed to load"))
     .finally(() => setLoading(false));
+  }, [session]);
+
+  // ── Load calendar events (next 30 days) ──────────────────────────────────
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    setCalendarLoading(true);
+    const from = new Date().toISOString();
+    const to   = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    loadPortalCalendarEventsWithRefresh(session, from, to).then((res) => {
+      if (cancelled) return;
+      if (res.nextSession) saveSession(res.nextSession);
+      setCalendarEvents(res.data ?? []);
+    }).finally(() => { if (!cancelled) setCalendarLoading(false); });
+    return () => { cancelled = true; };
   }, [session]);
 
   // ── Stats derived from real appointment data ──────────────────────────────
@@ -958,6 +979,58 @@ export function BookCallPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* ── Upcoming Calendar Events ──────────────────────────────────────── */}
+      <div className={cx("card", "p0", "overflowHidden")}>
+        <div className={cx("cardHd", "pl18")}>
+          <div className={cx("flexRow", "flexCenter", "gap7")}>
+            <Ic n="calendar" sz={13} c="var(--muted)" />
+            <span className={cx("cardHdTitle")}>Upcoming — Next 30 Days</span>
+          </div>
+        </div>
+        {calendarLoading ? (
+          <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading calendar…</div>
+        ) : calendarEvents.length === 0 ? (
+          <div className={cx("emptyState")}>
+            <div className={cx("emptyStateIcon")}><Ic n="calendar" sz={22} c="var(--muted2)" /></div>
+            <div className={cx("emptyStateTitle")}>No upcoming events</div>
+            <div className={cx("emptyStateSub")}>Appointments, project milestones, and deadlines will appear here.</div>
+          </div>
+        ) : (
+          calendarEvents.map((ev) => {
+            const dateLabel = new Date(ev.date).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" });
+            const timeLabel = new Date(ev.date).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+            const typeBadge =
+              ev.type === "appointment"     ? "badgeAccent"  :
+              ev.type === "milestone"       ? "badgePurple"  : "badgeAmber";
+            const typeLabel =
+              ev.type === "appointment"     ? "Appointment"  :
+              ev.type === "milestone"       ? "Milestone"    : "Sprint End";
+            return (
+              <div key={ev.id} className={cx("borderTopDivider")}>
+                <div className={cx("listRowBtn")}>
+                  <div className={cx("iconBox34")}>
+                    <Ic n="calendar" sz={14} c="var(--muted2)" />
+                  </div>
+                  <div className={cx("flex1", "minW0")}>
+                    <div className={cx("flexRow", "gap7", "mb3", "flexWrap")}>
+                      <span className={cx("fw600", "text12")}>{ev.title}</span>
+                      <span className={cx("badge", typeBadge)}>{typeLabel}</span>
+                    </div>
+                    <div className={cx("text10", "colorMuted")}>
+                      {dateLabel} · {timeLabel}
+                      {ev.projectName ? ` · ${ev.projectName}` : ""}
+                    </div>
+                  </div>
+                  {ev.status && (
+                    <span className={cx("badge", "badgeMuted")}>{ev.status}</span>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
     </div>
