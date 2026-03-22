@@ -721,7 +721,19 @@ export const createPaymentSchema = z.object({
 
 export const aiGenerateSchema = z.object({
   clientId: z.uuid().optional(),
+  type: z.enum([
+    "general",
+    "proposal",
+    "estimate",
+    "summary",
+    "project-status-summary",
+    "risk-radar",
+    "delivery-prediction",
+    "budget-forecast",
+  ]).optional(),
   prompt: z.string().trim().min(2).max(8000),
+  context: z.string().trim().max(16000).optional(),
+  projectId: z.uuid().optional(),
   model: z.string().trim().min(2).max(120).optional(),
   temperature: z.number().min(0).max(2).optional()
 });

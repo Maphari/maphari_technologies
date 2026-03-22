@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { cx } from "../style";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import { saveSession } from "../../../../lib/auth/session";
-import { callPortalAiGenerateWithRefresh } from "../../../../lib/api/portal/ai";
+import { callPortalAiGenerateWithRefresh, type AiInsightType } from "../../../../lib/api/portal/ai";
 import {
   loadPortalRisksWithRefresh,
   loadPortalDeliverablesWithRefresh,
@@ -124,9 +124,11 @@ function InsightCard({ id, icon, title, state, onGenerate, tokens }: InsightCard
             {state.error}
           </p>
         ) : state.content ? (
-          <p className={cx("text12", "colorMuted", "lineH18")}>
-            {state.content}
-          </p>
+          <>
+            {state.content.split("\n\n").filter(Boolean).map((para, i) => (
+              <p key={i} className={cx("text12", "colorMuted", "lineH18")}>{para}</p>
+            ))}
+          </>
         ) : (
           <p className={cx("text12", "colorMuted")}>
             Click Generate to get AI insights.
@@ -262,7 +264,7 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
     const delivsDone  = deliverables.filter((d) => d.status === "DELIVERED" || d.status === "APPROVED").length;
     const delivsTotal = deliverables.length;
     return {
-      type: "summary" as const,
+      type: "project-status-summary" as const,
       prompt: `Write a concise 2-3 paragraph project status update for ${p.name}. Current progress: ${p.progress}%, status: ${p.status}, risk level: ${p.riskLevel}. Focus on what's going well and what needs attention.`,
       context: `Project: ${p.name}, Progress: ${p.progress}%, Status: ${p.status}, Risk: ${p.riskLevel}, Open deliverables: ${delivsTotal - delivsDone} of ${delivsTotal} remaining`,
     };
@@ -274,7 +276,7 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
     const openRisks    = risks.filter((r) => r.status === "OPEN");
     const blockerCount = openRisks.filter((r) => r.likelihood === "HIGH" || r.likelihood === "CRITICAL").length;
     return {
-      type: "general" as const,
+      type: "risk-radar" as const,
       prompt: `Analyze the top risks for project ${p.name} and provide 3 concrete risk items with severity and recommended mitigation actions.`,
       context: `Open risks: ${openRisks.map((r) => `${r.name} (${r.likelihood}/${r.impact})`).join(", ") || "None"}, High-priority blockers: ${blockerCount}, Project risk level: ${p.riskLevel}`,
     };
@@ -286,7 +288,7 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
     const delivsDone  = deliverables.filter((d) => d.status === "DELIVERED" || d.status === "APPROVED").length;
     const delivsTotal = deliverables.length;
     return {
-      type: "general" as const,
+      type: "delivery-prediction" as const,
       prompt: `Based on the project data, predict the likely delivery outcome and confidence level. Be specific about what's on track and what might slip.`,
       context: `Progress: ${p.progress}%, Deliverables done: ${delivsDone}/${delivsTotal}, Sprint velocity: derived from deliverables completion rate (${delivsTotal > 0 ? Math.round((delivsDone / delivsTotal) * 100) : 0}% complete), Risk: ${p.riskLevel}`,
     };
@@ -299,7 +301,7 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
     const paidCents        = invoices.filter((i) => i.status === "PAID").reduce((s, i) => s + (i.amountCents ?? 0), 0);
     const outstandingCents = invoices.filter((i) => i.status === "PENDING" || i.status === "OVERDUE").reduce((s, i) => s + (i.amountCents ?? 0), 0);
     return {
-      type: "general" as const,
+      type: "budget-forecast" as const,
       prompt: `Analyze the current spending rate and forecast whether the project will come in under, on, or over budget. Provide a specific recommendation.`,
       context: `Invoice count: ${invoices.length}, Invoiced so far: ${fmtR(totalCents)}, Paid: ${fmtR(paidCents)}, Outstanding: ${fmtR(outstandingCents)}, Overdue invoices: ${invoices.filter((i) => i.status === "OVERDUE").length}`,
     };
@@ -314,7 +316,7 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
     // "Generate All" + individual card button firing simultaneously)
     if (insights[id].loading) return;
 
-    type AiInput = { type: "general" | "summary"; prompt: string; context: string } | null;
+    type AiInput = { type: AiInsightType; prompt: string; context: string } | null;
     const inputBuilders: Record<InsightId, () => AiInput> = {
       summary:   buildSummaryInput,
       riskRadar: buildRiskRadarInput,

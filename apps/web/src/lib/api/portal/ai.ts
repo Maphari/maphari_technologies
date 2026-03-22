@@ -13,10 +13,21 @@ import {
   type AuthorizedResult,
 } from "./internal";
 
+export type AiInsightType =
+  | "general"
+  | "proposal"
+  | "estimate"
+  | "summary"
+  | "project-status-summary"
+  | "risk-radar"
+  | "delivery-prediction"
+  | "budget-forecast";
+
 export interface AiGenerateInput {
-  type: "general" | "proposal" | "estimate" | "summary";
+  type: AiInsightType;
   prompt: string;
   context?: string;
+  projectId?: string;
 }
 
 export interface AiGenerateResult {
@@ -49,4 +60,14 @@ export async function callPortalAiGenerateWithRefresh(
     }
     return { unauthorized: false, data: response.payload.data, error: null };
   });
+}
+
+export async function callPortalAiInsightWithRefresh(
+  session: AuthSession,
+  type: AiInsightType,
+  prompt: string,
+  context?: string,
+  projectId?: string
+): Promise<AuthorizedResult<AiGenerateResult>> {
+  return callPortalAiGenerateWithRefresh(session, { type, prompt, context, projectId });
 }
