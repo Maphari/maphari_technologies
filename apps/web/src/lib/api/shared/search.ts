@@ -6,7 +6,7 @@
 import type { AuthSession } from "../../auth/session";
 import { callGateway, isUnauthorized, toGatewayError, withAuthorizedSession, type AuthorizedResult } from "../portal/internal";
 
-export type SearchResultType = "client" | "project" | "lead" | "task" | "ticket";
+export type SearchResultType = "client" | "project" | "lead" | "task" | "ticket" | "proposal" | "deliverable" | "article";
 
 export interface SearchHit {
   id: string;

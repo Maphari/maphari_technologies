@@ -334,10 +334,12 @@ export function MaphariDashboard() {
       label: hit.title,
       meta: hit.subtitle ?? hit.status ?? "",
       action: () => {
-        if (hit.type === "client") handlePageChange("clients");
-        else if (hit.type === "project" || hit.type === "task") handlePageChange("projects");
-        else if (hit.type === "lead") handlePageChange("leads");
-        else if (hit.type === "ticket") handlePageChange("supportQueue");
+        if (hit.type === "client")       handlePageChange("clients");
+        else if (hit.type === "project" || hit.type === "task" || hit.type === "deliverable") handlePageChange("projects");
+        else if (hit.type === "lead")    handlePageChange("leads");
+        else if (hit.type === "ticket")  handlePageChange("supportQueue");
+        else if (hit.type === "proposal") handlePageChange("proposals" as Parameters<typeof handlePageChange>[0]);
+        else if (hit.type === "article") handlePageChange("knowledgeBaseAdmin" as Parameters<typeof handlePageChange>[0]);
         else handlePageChange("dashboard");
       }
     }));

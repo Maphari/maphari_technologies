@@ -228,7 +228,10 @@ export function MaphariClientDashboard() {
       label: hit.title,
       meta: [hit.status, hit.subtitle].filter(Boolean).join(" · ") || hit.type,
       action: () => {
-        if (hit.type === "project") handleNavigate("myProjects");
+        if (hit.type === "project")      handleNavigate("myProjects");
+        else if (hit.type === "ticket")  handleNavigate("knowledgeBase");
+        else if (hit.type === "proposal") handleNavigate("invoices");
+        else if (hit.type === "article") handleNavigate("resourceHub");
         else handleNavigate("dashboard");
       },
     }));
