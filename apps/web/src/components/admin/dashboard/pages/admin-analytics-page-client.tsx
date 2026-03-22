@@ -40,8 +40,14 @@ function buildMonthlyRevenueSeries(
       effectiveMonths = 12;
     } else {
       const earliest = Math.min(...paidDates);
-      const diffMs = now.getTime() - earliest;
-      effectiveMonths = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 30)));
+      // Fix 5: calendar-accurate month count instead of 30-day approximation
+      const earliestDate = new Date(earliest);
+      const nowDate = new Date();
+      effectiveMonths = Math.max(
+        1,
+        (nowDate.getFullYear() - earliestDate.getFullYear()) * 12 +
+          (nowDate.getMonth() - earliestDate.getMonth()) + 1,
+      );
     }
   }
 
@@ -110,30 +116,34 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
   const { convert: convertMoney } = useCurrencyConverter(currency);
   const [dateRange, setDateRange] = useState<DateRange>("12M");
 
-  const now = new Date();
-  const yearStart = new Date(now.getFullYear(), 0, 1).getTime();
-  const prevYearStart = new Date(now.getFullYear() - 1, 0, 1).getTime();
-  const prevYearEnd = new Date(now.getFullYear(), 0, 1).getTime();
+  // Fix 2: wrap YTD revenue computations in useMemo so they don't re-run on every render
+  const { revenueYtd, revenuePrevYtd, revenueDeltaPct } = useMemo(() => {
+    const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime();
+    const prevYearStart = new Date(new Date().getFullYear() - 1, 0, 1).getTime();
+    const prevYearEnd = yearStart; // same timestamp as yearStart
 
-  const revenueYtd = snapshot.invoices
-    .filter((invoice) => invoice.status === "PAID")
-    .filter((invoice) => {
-      const at = new Date(invoice.paidAt ?? invoice.updatedAt).getTime();
-      return !Number.isNaN(at) && at >= yearStart;
-    })
-    .reduce((sum, invoice) => sum + convertMoney(invoice.amountCents, invoice.currency), 0);
+    const revenueYtd = snapshot.invoices
+      .filter((invoice) => invoice.status === "PAID")
+      .filter((invoice) => {
+        const at = new Date(invoice.paidAt ?? invoice.updatedAt).getTime();
+        return !Number.isNaN(at) && at >= yearStart;
+      })
+      .reduce((sum, invoice) => sum + convertMoney(invoice.amountCents, invoice.currency), 0);
 
-  const revenuePrevYtd = snapshot.invoices
-    .filter((invoice) => invoice.status === "PAID")
-    .filter((invoice) => {
-      const at = new Date(invoice.paidAt ?? invoice.updatedAt).getTime();
-      return !Number.isNaN(at) && at >= prevYearStart && at < prevYearEnd;
-    })
-    .reduce((sum, invoice) => sum + convertMoney(invoice.amountCents, invoice.currency), 0);
+    const revenuePrevYtd = snapshot.invoices
+      .filter((invoice) => invoice.status === "PAID")
+      .filter((invoice) => {
+        const at = new Date(invoice.paidAt ?? invoice.updatedAt).getTime();
+        return !Number.isNaN(at) && at >= prevYearStart && at < prevYearEnd;
+      })
+      .reduce((sum, invoice) => sum + convertMoney(invoice.amountCents, invoice.currency), 0);
 
-  const revenueDeltaPct = revenuePrevYtd > 0
-    ? Math.round(((revenueYtd - revenuePrevYtd) / revenuePrevYtd) * 100)
-    : 0;
+    const revenueDeltaPct = revenuePrevYtd > 0
+      ? Math.round(((revenueYtd - revenuePrevYtd) / revenuePrevYtd) * 100)
+      : 0;
+
+    return { revenueYtd, revenuePrevYtd, revenueDeltaPct };
+  }, [snapshot.invoices, convertMoney]);
 
   const completedProjects = snapshot.projects.filter((p) => p.status === "COMPLETED");
   const projectsDelivered = completedProjects.length;
@@ -153,7 +163,11 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
   const closed = won + lost;
   const clientNpsProxy = closed > 0 ? Math.round((won / closed) * 100) : 0;
 
-  const revenueSeries = buildMonthlyRevenueSeries(snapshot, DATE_RANGE_MONTHS[dateRange], convertMoney);
+  // Fix 2: memoize revenueSeries — avoids re-building the series on unrelated renders
+  const revenueSeries = useMemo(
+    () => buildMonthlyRevenueSeries(snapshot, DATE_RANGE_MONTHS[dateRange], convertMoney),
+    [snapshot, dateRange, convertMoney],
+  );
 
   const tierRevenue = useMemo(() => {
     const clientTierById = new Map(snapshot.clients.map((c) => [c.id, c.tier ?? "STARTER"]));
@@ -173,9 +187,15 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
       enterprise: sums.ENTERPRISE,
       growth: sums.GROWTH,
       starter: sums.STARTER,
+      // Rounded percentages — used in the legend text only
       enterprisePct: Math.round((sums.ENTERPRISE / total) * 100),
       growthPct: Math.round((sums.GROWTH / total) * 100),
-      starterPct: Math.round((sums.STARTER / total) * 100)
+      starterPct: Math.round((sums.STARTER / total) * 100),
+      // Fix 3: raw (unrounded) values for SVG strokeDasharray / strokeDashoffset
+      // to prevent visible gaps caused by accumulated rounding errors
+      enterpriseRaw: (sums.ENTERPRISE / total) * 100,
+      growthRaw: (sums.GROWTH / total) * 100,
+      starterRaw: (sums.STARTER / total) * 100,
     };
   }, [convertMoney, snapshot.clients, snapshot.invoices]);
 
@@ -194,7 +214,8 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
 
   // ── Section C: Project status breakdown ────────────────────────────────
   const projectBreakdown = useMemo(() => {
-    const nowMs = now.getTime();
+    // Fix 1: compute nowMs locally so `now` is not in the dep array
+    const nowMs = Date.now();
     let active = 0, completed = 0, onHold = 0, overdue = 0;
     for (const p of snapshot.projects) {
       const st = p.status.toUpperCase();
@@ -224,7 +245,7 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
       onHoldPct: Math.round((onHold / total) * 100),
       overduePct: Math.round((overdue / total) * 100),
     };
-  }, [snapshot.projects, now]);
+  }, [snapshot.projects]);
 
   // ── Section D: Top clients by revenue ─────────────────────────────────
   const topClients = useMemo(() => {
@@ -240,7 +261,9 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5);
     const grandTotal = Math.max(1, Array.from(revenueByClient.values()).reduce((s, v) => s + v, 0));
+    // Fix 4: include clientId so we can use it as a stable React key
     return sorted.map(([clientId, rev], i) => ({
+      clientId,
       rank: i + 1,
       name: clientNameById.get(clientId) ?? "Unknown",
       revenue: rev,
@@ -266,7 +289,8 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
       ? Math.round(daysToPay.reduce((s, d) => s + d, 0) / daysToPay.length)
       : 0;
 
-    const nowMs = now.getTime();
+    // Fix 1: compute nowMs locally so `now` is not in the dep array
+    const nowMs = Date.now();
     const overdueAmount = snapshot.invoices
       .filter((inv) => inv.status !== "PAID" && inv.status !== "VOID" && inv.status !== "CANCELLED")
       .filter((inv) => {
@@ -276,7 +300,7 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
       .reduce((sum, inv) => sum + convertMoney(inv.amountCents, inv.currency), 0);
 
     return { collectionRate, avgDaysToPay, overdueAmount };
-  }, [snapshot.invoices, convertMoney, now]);
+  }, [snapshot.invoices, convertMoney]);
 
   return (
     <div className={styles.pageBody}>
@@ -340,15 +364,18 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
           <div className={`${styles.donutWrap} ${styles.donutWrapLg}`}>
             <svg className={`${styles.donutSvg} ${styles.donutSvgLg}`} viewBox="0 0 36 36">
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3.8" />
+              {/* Fix 3: use raw (unrounded) values for strokeDasharray/strokeDashoffset
+                  to prevent visible gaps from accumulated rounding errors.
+                  Pct variants are kept only for the legend labels below. */}
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--accent)" strokeWidth="3.8"
-                strokeDasharray={`${tierRevenue.enterprisePct} ${100 - tierRevenue.enterprisePct}`}
+                strokeDasharray={`${tierRevenue.enterpriseRaw} ${100 - tierRevenue.enterpriseRaw}`}
                 strokeDashoffset="25" />
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--purple)" strokeWidth="3.8"
-                strokeDasharray={`${tierRevenue.growthPct} ${100 - tierRevenue.growthPct}`}
-                strokeDashoffset={25 - tierRevenue.enterprisePct} />
+                strokeDasharray={`${tierRevenue.growthRaw} ${100 - tierRevenue.growthRaw}`}
+                strokeDashoffset={25 - tierRevenue.enterpriseRaw} />
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--amber)" strokeWidth="3.8"
-                strokeDasharray={`${tierRevenue.starterPct} ${100 - tierRevenue.starterPct}`}
-                strokeDashoffset={25 - tierRevenue.enterprisePct - tierRevenue.growthPct} />
+                strokeDasharray={`${tierRevenue.starterRaw} ${100 - tierRevenue.starterRaw}`}
+                strokeDashoffset={25 - tierRevenue.enterpriseRaw - tierRevenue.growthRaw} />
               <text x="18" y="21" textAnchor="middle" fontSize="4.5" fill="var(--text)" fontFamily="var(--font-syne)">
                 {formatMoney(tierRevenue.total, currency)}
               </text>
@@ -479,8 +506,9 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
           {topClients.length === 0 && (
             <div className={styles.analyticsEmpty}>No paid invoices yet.</div>
           )}
+          {/* Fix 4: key on clientId (stable unique id) instead of rank (positional) */}
           {topClients.map((client) => (
-            <div key={client.rank} className={styles.analyticsRankRow}>
+            <div key={client.clientId} className={styles.analyticsRankRow}>
               <span className={styles.analyticsRankNum}>{client.rank}</span>
               <div className={styles.analyticsRankInfo}>
                 <span className={styles.analyticsRankName}>{client.name}</span>
