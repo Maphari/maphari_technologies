@@ -185,10 +185,11 @@ export function useAdminWorkspace() {
     void refreshSnapshot(session, { background: true });
   }, [refreshSnapshot, session]);
 
-  useRealtimeRefresh(session, handleRealtimeRefresh);
+  const { isConnected: realtimeConnected } = useRealtimeRefresh(session, handleRealtimeRefresh);
 
   return {
     ...state,
+    realtimeConnected,
     signIn,
     signOut,
     refreshSnapshot,

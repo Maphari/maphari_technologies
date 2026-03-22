@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AuthSession } from "./session";
 
 const gatewayBaseUrl = process.env.NEXT_PUBLIC_GATEWAY_BASE_URL ?? "http://localhost:4000/api/v1";
@@ -14,11 +14,16 @@ const gatewayBaseUrl = process.env.NEXT_PUBLIC_GATEWAY_BASE_URL ?? "http://local
  * first call POST /events/stream-token with the JWT in the Authorization header
  * to obtain a 30-second one-time stream token, then open the EventSource with
  * only that short-lived opaque token in the URL.
+ *
+ * Returns `{ isConnected }` — true when the SSE connection is open and the
+ * gateway has sent a `ready` event; false while connecting, reconnecting, or
+ * when there is no session.
  */
 export function useRealtimeRefresh(
   session: AuthSession | null,
   onRefresh: () => void
-): void {
+): { isConnected: boolean } {
+  const [isConnected, setIsConnected] = useState(false);
   const onRefreshRef = useRef(onRefresh);
   const reconnectTimerRef = useRef<number | null>(null);
   const reconnectAttemptsRef = useRef(0);
@@ -29,7 +34,10 @@ export function useRealtimeRefresh(
   }, [onRefresh]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) {
+      setIsConnected(false);
+      return;
+    }
     let source: EventSource | null = null;
     let closed = false;
 
@@ -45,6 +53,11 @@ export function useRealtimeRefresh(
       if (now - refreshThrottleRef.current < 900) return;
       refreshThrottleRef.current = now;
       onRefreshRef.current();
+    };
+
+    const handleReady = () => {
+      setIsConnected(true);
+      handleRefresh();
     };
 
     const connect = async () => {
@@ -67,6 +80,7 @@ export function useRealtimeRefresh(
         streamToken = body.token;
       } catch {
         if (closed) return;
+        setIsConnected(false);
         // Back-off on token exchange failure the same as on SSE errors
         const attempt = reconnectAttemptsRef.current + 1;
         reconnectAttemptsRef.current = attempt;
@@ -84,13 +98,14 @@ export function useRealtimeRefresh(
       const streamUrl = `${gatewayBaseUrl}/events/stream?token=${encodeURIComponent(streamToken)}`;
       source = new EventSource(streamUrl);
       source.addEventListener("refresh", handleRefresh);
-      source.addEventListener("ready", handleRefresh);
+      source.addEventListener("ready", handleReady);
       source.onopen = () => {
         reconnectAttemptsRef.current = 0;
       };
       source.onerror = () => {
         source?.close();
         if (closed) return;
+        setIsConnected(false);
         const attempt = reconnectAttemptsRef.current + 1;
         reconnectAttemptsRef.current = attempt;
         const nextDelay = Math.min(10_000, 500 * Math.pow(2, Math.min(attempt, 5)));
@@ -104,10 +119,13 @@ export function useRealtimeRefresh(
     void connect();
     return () => {
       closed = true;
+      setIsConnected(false);
       clearReconnect();
       source?.removeEventListener("refresh", handleRefresh);
-      source?.removeEventListener("ready", handleRefresh);
+      source?.removeEventListener("ready", handleReady);
       source?.close();
     };
   }, [session]);
+
+  return { isConnected };
 }

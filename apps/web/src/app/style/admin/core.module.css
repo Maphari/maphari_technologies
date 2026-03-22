@@ -816,6 +816,38 @@
   background: var(--red);
 }
 
+/* Live indicator — shown in topbar when SSE stream is connected */
+.topbarLiveBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: rgba(52, 217, 139, 0.08);
+  border: 1px solid rgba(52, 217, 139, 0.15);
+  font-size: 9px;
+  font-family: var(--font-dm-mono), monospace;
+  color: rgba(52, 217, 139, 0.85);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.topbarLiveDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--green, #34d98b);
+  flex-shrink: 0;
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
 .topbarSpacer {
   flex: 1;
 }

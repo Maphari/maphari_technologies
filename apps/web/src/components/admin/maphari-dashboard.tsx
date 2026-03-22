@@ -184,7 +184,7 @@ function CmdIc({ path, size = 14, color = "currentColor" }: { path: string; size
 // ---------------------------------------------------------------------------
 
 export function MaphariDashboard() {
-  const { session, snapshot, loading, transitioningLeadId, moveLead, refreshSnapshot, signOut } =
+  const { session, snapshot, loading, transitioningLeadId, moveLead, refreshSnapshot, signOut, realtimeConnected } =
     useAdminWorkspaceContext();
 
   const clock = useClock();
@@ -454,6 +454,7 @@ export function MaphariDashboard() {
             onLogout={() => void handleLogout()}
             onMenuToggle={() => setSidebarOpen((prev) => !prev)}
             statusBar={statusBar}
+            isLive={realtimeConnected}
           />
 
           <section className={styles.content}>

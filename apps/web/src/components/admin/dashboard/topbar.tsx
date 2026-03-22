@@ -14,6 +14,7 @@ export function AdminTopbar({
   onLogout,
   onMenuToggle,
   statusBar,
+  isLive,
 }: {
   title: [string, string];
   unreadNotificationsCount: number;
@@ -24,6 +25,7 @@ export function AdminTopbar({
   onLogout: () => void;
   onMenuToggle?: () => void;
   statusBar?: { clientsActive: number; blockers: number; atRisk: number };
+  isLive?: boolean;
 }) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
@@ -103,6 +105,14 @@ export function AdminTopbar({
       ) : null}
 
       <div className={styles.topbarSpacer} />
+
+      {/* Live indicator — visible when SSE stream is connected */}
+      {isLive ? (
+        <span className={styles.topbarLiveBadge} aria-label="Real-time stream connected">
+          <span className={styles.topbarLiveDot} aria-hidden="true" />
+          LIVE
+        </span>
+      ) : null}
 
       {/* Period chip */}
       <span className={styles.topbarPeriodChip}>{periodLabel}</span>
