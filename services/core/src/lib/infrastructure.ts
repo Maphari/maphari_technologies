@@ -78,6 +78,7 @@ export const CacheKeys = {
   marketIntel:         ()                     => `core:market-intel:all`,
   contracts:           (clientId: string)     => `core:contracts:${clientId}`,
   closeoutReports:     (scope: string)        => `core:closeout-reports:${scope}`,
+  crises:              ()                     => `core:crises:all`,
 };
 
 // ── withCache — Generic read-through cache helper ─────────────────────────────

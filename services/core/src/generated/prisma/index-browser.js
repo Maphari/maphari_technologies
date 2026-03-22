@@ -1197,6 +1197,19 @@ exports.Prisma.EntityCommentScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.CrisisScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  severity: 'severity',
+  status: 'status',
+  description: 'description',
+  ownerId: 'ownerId',
+  clientId: 'clientId',
+  resolvedAt: 'resolvedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1305,7 +1318,8 @@ exports.Prisma.ModelName = {
   Competitor: 'Competitor',
   WinLossEntry: 'WinLossEntry',
   MarketRate: 'MarketRate',
-  EntityComment: 'EntityComment'
+  EntityComment: 'EntityComment',
+  Crisis: 'Crisis'
 };
 
 /**

@@ -1553,3 +1553,20 @@ model EntityComment {
   @@index([clientId, entityType, entityId, createdAt])
   @@map("entity_comments")
 }
+
+model Crisis {
+  id          String    @id @default(cuid())
+  title       String
+  severity    String // LOW | MEDIUM | HIGH | CRITICAL
+  status      String // ACTIVE | MONITORING | RESOLVED
+  description String?
+  ownerId     String?
+  clientId    String?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, severity])
+  @@index([createdAt])
+  @@map("crises")
+}

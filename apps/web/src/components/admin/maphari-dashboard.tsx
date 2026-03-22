@@ -525,7 +525,7 @@ export function MaphariDashboard() {
             {page === "referrals" ? <ReferralTrackingPage session={session} /> : null}
             {page === "interventions" ? <HealthInterventionsPage session={session} /> : null}
             {page === "team" ? <TeamStructurePage session={session} onNotify={pushToast} /> : null}
-            {page === "crisis" ? <CrisisCommandPage /> : null}
+            {page === "crisis" ? <CrisisCommandPage session={session} /> : null}
             {page === "performance" ? <PerformancePage session={session} /> : null}
             {page === "teamPerformanceReport" ? <TeamPerformanceReportPage session={session} onNotify={pushToast} /> : null}
             {page === "portfolioRiskRegister" ? <PortfolioRiskRegisterPage session={session} /> : null}

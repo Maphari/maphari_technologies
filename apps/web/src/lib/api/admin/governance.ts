@@ -483,6 +483,82 @@ export interface AdminPortfolioRisk {
   project?: { name: string };
 }
 
+// ── Crisis Command ────────────────────────────────────────────────────────────
+
+export interface AdminCrisis {
+  id:          string;
+  title:       string;
+  severity:    string;
+  status:      string;
+  description: string | null;
+  ownerId:     string | null;
+  clientId:    string | null;
+  resolvedAt:  string | null;
+  createdAt:   string;
+  updatedAt:   string;
+}
+
+export interface CreateCrisisInput {
+  title:        string;
+  severity?:    string;
+  status?:      string;
+  description?: string;
+  ownerId?:     string;
+  clientId?:    string;
+}
+
+export interface UpdateCrisisInput {
+  title?:       string;
+  severity?:    string;
+  status?:      string;
+  description?: string;
+  ownerId?:     string;
+  clientId?:    string;
+  resolvedAt?:  string;
+}
+
+export async function loadAdminCrisesWithRefresh(
+  session: AuthSession,
+  params?: { status?: string }
+): Promise<AuthorizedResult<AdminCrisis[]>> {
+  return withAuthorizedSession(session, async (token) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set("status", params.status);
+    const path = `/admin/crises${qs.toString() ? `?${qs.toString()}` : ""}`;
+    const res = await callGateway<AdminCrisis[]>(path, token);
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
+    return { unauthorized: false, data: res.payload.data ?? [], error: null };
+  });
+}
+
+export async function createCrisisWithRefresh(
+  session: AuthSession,
+  data: CreateCrisisInput
+): Promise<AuthorizedResult<AdminCrisis>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<AdminCrisis>("/admin/crises", token, { method: "POST", body: data });
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
+    return { unauthorized: false, data: res.payload.data ?? null, error: null };
+  });
+}
+
+export async function updateCrisisWithRefresh(
+  session: AuthSession,
+  id: string,
+  data: UpdateCrisisInput
+): Promise<AuthorizedResult<AdminCrisis>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<AdminCrisis>(`/admin/crises/${id}`, token, { method: "PATCH", body: data });
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
+    return { unauthorized: false, data: res.payload.data ?? null, error: null };
+  });
+}
+
+// ── Portfolio Risk Register ───────────────────────────────────────────────────
+
 export async function loadAllPortfolioRisksWithRefresh(
   session: AuthSession
 ): Promise<AuthorizedResult<AdminPortfolioRisk[]>> {

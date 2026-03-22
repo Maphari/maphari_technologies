@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { saveSession } from "../../../../lib/auth/session";
+import {
+  loadAdminCrisesWithRefresh,
+  createCrisisWithRefresh,
+  updateCrisisWithRefresh,
+  type AdminCrisis,
+} from "../../../../lib/api/admin";
 
 type Severity = "critical" | "high" | "medium" | "low";
 type CrisisTab = "active crises" | "escalation chain" | "recovery playbooks" | "resolved";
@@ -24,9 +32,51 @@ type Crisis = {
   timeline: Array<{ date: string; event: string; who: string }>;
 };
 
-const activeCrises: Crisis[] = [];
+type ResolvedCrisis = { id: string; client: string; severity: Severity; title: string; resolved: string; daysToResolve: number; outcome: string };
 
-const resolved: readonly { id: string; client: string; severity: Severity; title: string; resolved: string; daysToResolve: number; outcome: string }[] = [];
+function severityToLocal(raw: string): Severity {
+  const s = raw.toLowerCase();
+  if (s === "critical") return "critical";
+  if (s === "high")     return "high";
+  if (s === "medium")   return "medium";
+  return "low";
+}
+
+function mapApiCrisis(c: AdminCrisis): Crisis {
+  const createdAt = new Date(c.createdAt);
+  const daysOpen = Math.floor((Date.now() - createdAt.getTime()) / 86_400_000);
+  return {
+    id:         c.id,
+    client:     c.clientId ?? "Unknown",
+    color:      "var(--accent)",
+    severity:   severityToLocal(c.severity),
+    title:      c.title,
+    opened:     createdAt.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }),
+    daysOpen,
+    owner:      c.ownerId ?? "Unassigned",
+    stage:      c.status,
+    lastAction: c.description ?? "—",
+    nextAction: "—",
+    health:     100,
+    revenue:    0,
+    timeline:   []
+  };
+}
+
+function mapApiResolved(c: AdminCrisis): ResolvedCrisis {
+  const resolvedDate = c.resolvedAt ? new Date(c.resolvedAt) : new Date(c.updatedAt);
+  const created      = new Date(c.createdAt);
+  const daysToResolve = Math.max(1, Math.floor((resolvedDate.getTime() - created.getTime()) / 86_400_000));
+  return {
+    id:            c.id,
+    client:        c.clientId ?? "Unknown",
+    severity:      severityToLocal(c.severity),
+    title:         c.title,
+    resolved:      resolvedDate.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }),
+    daysToResolve,
+    outcome:       c.description ?? "Resolved"
+  };
+}
 
 const escalationChain = [
   { level: 1, role: "Account Manager", person: "Assigned AM", trigger: "Client unresponsive 3+ days", color: "var(--accent)" },
@@ -77,9 +127,46 @@ function levelToneClass(level: number): string {
   return styles.crisLevelTone3;
 }
 
-export function CrisisCommandPage() {
+export function CrisisCommandPage({ session }: { session: AuthSession | null }) {
   const [activeTab, setActiveTab] = useState<CrisisTab>("active crises");
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [expanded, setExpanded]   = useState<string | null>(null);
+  const [allCrises, setAllCrises] = useState<AdminCrisis[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
+    void loadAdminCrisesWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) setError(r.error.message ?? "Failed to load crises.");
+      else if (r.data) setAllCrises(r.data);
+      setLoading(false);
+    }).catch((err: unknown) => {
+      setError(err instanceof Error ? err.message : "Failed to load crises.");
+      setLoading(false);
+    });
+  }, [session]);
+
+  const activeCrises: Crisis[]         = allCrises.filter((c) => c.status !== "RESOLVED").map(mapApiCrisis);
+  const resolved: ResolvedCrisis[]     = allCrises.filter((c) => c.status === "RESOLVED").map(mapApiResolved);
+
+  async function handleLogCrisis() {
+    if (!session) return;
+    const title = window.prompt("Crisis title:");
+    if (!title) return;
+    const r = await createCrisisWithRefresh(session, { title, severity: "HIGH", status: "ACTIVE" });
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.data) setAllCrises((prev) => [r.data!, ...prev]);
+  }
+
+  async function handleMarkResolved(id: string) {
+    if (!session) return;
+    const r = await updateCrisisWithRefresh(session, id, { status: "RESOLVED", resolvedAt: new Date().toISOString() });
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.data) setAllCrises((prev) => prev.map((c) => (c.id === id ? r.data! : c)));
+  }
 
   return (
     <div className={cx(styles.pageBody, styles.crisRoot)}>
@@ -90,9 +177,19 @@ export function CrisisCommandPage() {
           <div className={styles.pageSub}>Active crises - Escalation chains - Recovery playbooks</div>
         </div>
         <div className={styles.pageActions}>
-          <button type="button" className={cx("btnSm", "btnAccent", styles.crisPrimaryBtn)}>+ Log New Crisis</button>
+          <button type="button" onClick={() => { void handleLogCrisis(); }} className={cx("btnSm", "btnAccent", styles.crisPrimaryBtn)}>+ Log New Crisis</button>
         </div>
       </div>
+
+      {loading ? (
+        <div className={cx(styles.card, "textCenter", "colorMuted", "text13")}>
+          <div className={styles.cardInner}>Loading crises…</div>
+        </div>
+      ) : error ? (
+        <div className={cx(styles.card, "textCenter", "colorRed", "text13")}>
+          <div className={styles.cardInner}>{error}</div>
+        </div>
+      ) : null}
 
       <div className={cx("topCardsStack", "mb28")}>
         {[
@@ -197,7 +294,7 @@ export function CrisisCommandPage() {
                     <div className={styles.crisBtnRow}>
                       <button type="button" className={cx("btnSm", "btnAccent")}>Log Action</button>
                       <button type="button" className={cx("btnSm", "btnGhost")}>Escalate</button>
-                      <button type="button" className={cx("btnSm", "btnGhost", styles.crisResolveBtn)}>Mark Resolved</button>
+                      <button type="button" onClick={() => { void handleMarkResolved(crisis.id); }} className={cx("btnSm", "btnGhost", styles.crisResolveBtn)}>Mark Resolved</button>
                     </div>
                   </div>
                 </div>

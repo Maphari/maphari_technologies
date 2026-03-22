@@ -90,6 +90,9 @@ import { registerDataPrivacyRoutes } from "./routes/data-privacy.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
 import { registerCommentRoutes } from "./routes/comments.js";
 
+// ── Crisis Command ────────────────────────────────────────────────────────────
+import { registerCrisisRoutes } from "./routes/crises.js";
+
 export async function createCoreApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
   const metrics = new ServiceMetrics();
@@ -226,6 +229,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Comments ──────────────────────────────────────────────────────────────
   await registerCommentRoutes(app);
+
+  // ── Crisis Command ────────────────────────────────────────────────────────
+  await registerCrisisRoutes(app);
 
   return app;
 }
