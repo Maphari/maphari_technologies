@@ -218,3 +218,81 @@ export async function rejectAdminFeatureRequestWithRefresh(
     return { unauthorized: false, data: response.payload.data ?? { ok: true }, error: null };
   });
 }
+
+// ── Types for feature request management ──────────────────────────────────────
+export interface AdminFeatureRequest {
+  id: string;
+  category: string;
+  title: string;
+  description: string;
+  authorId: string;
+  anonAlias: string;
+  status: string; // "under_review" | "planned" | "in_progress" | "done" | "declined"
+  voteCount: number;
+  isApproved: boolean;
+  isRejected: boolean;
+  createdAt: string;
+  realName?: string; // real company name (admin only)
+}
+
+export interface AdminFeatureRequestList {
+  requests: AdminFeatureRequest[];
+  total: number;
+}
+
+// ── Load all feature requests ─────────────────────────────────────────────────
+export async function loadAdminFeatureRequestsWithRefresh(
+  session: AuthSession,
+  params: { sort?: "votes" | "newest" } = {}
+): Promise<AuthorizedResult<AdminFeatureRequestList>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const qs = params.sort ? `?sort=${params.sort}` : "";
+    const response = await callGateway<AdminFeatureRequestList>(
+      `/admin/feature-requests${qs}`,
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "FEATURE_REQUESTS_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load feature requests."
+        ),
+      };
+    }
+    return {
+      unauthorized: false,
+      data: response.payload.data ?? { requests: [], total: 0 },
+      error: null,
+    };
+  });
+}
+
+// ── Update feature request (approve / reject / status) ────────────────────────
+export async function updateAdminFeatureRequestWithRefresh(
+  session: AuthSession,
+  requestId: string,
+  body: { isApproved?: boolean; isRejected?: boolean; status?: string }
+): Promise<AuthorizedResult<AdminFeatureRequest>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<AdminFeatureRequest>(
+      `/admin/feature-requests/${requestId}`,
+      accessToken,
+      { method: "PATCH", body }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "FEATURE_REQUEST_UPDATE_FAILED",
+          response.payload.error?.message ?? "Unable to update feature request."
+        ),
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? null, error: null };
+  });
+}
