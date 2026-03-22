@@ -312,7 +312,7 @@ export function ProposalsPage({ session }: { session: AuthSession | null }) {
         // Patch amountCents from items since backend may compute it
         const proposal: AdminProposalSummary = {
           ...result.data,
-          amountCents: result.data.amountCents || totalCents,
+          amountCents: result.data.amountCents ?? totalCents,
         };
         setProposals((prev) => [proposal, ...prev]);
       }
@@ -348,6 +348,7 @@ export function ProposalsPage({ session }: { session: AuthSession | null }) {
 
       if (result.error) {
         setDeleteError(result.error.message);
+        setDeleteId(null);
         return;
       }
 
@@ -399,7 +400,7 @@ export function ProposalsPage({ session }: { session: AuthSession | null }) {
           {proposals.map((p) => {
             const client = clients.find((c) => c.id === p.clientId);
             const clientName = client?.name ?? p.clientId;
-            const isDraft = p.status === "DRAFT" || p.status === "PENDING";
+            const isDraft = p.status === "DRAFT";
 
             return (
               <div key={p.id} className={cx("propCard")}>
@@ -437,7 +438,7 @@ export function ProposalsPage({ session }: { session: AuthSession | null }) {
       {/* Create modal */}
       {showCreate ? (
         <div className={cx("modalOverlay")}>
-          <div className={cx("modal")} style={undefined}>
+          <div className={cx("modal")}>
             {/* Modal is wider for line items */}
             <div className={cx("modalHd")}>
               <span className={cx("modalTitle")}>New Proposal</span>

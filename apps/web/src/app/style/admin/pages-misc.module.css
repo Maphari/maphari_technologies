@@ -2881,7 +2881,6 @@
 
 .propItemRow:active { cursor: grabbing; }
 
-.propDragging { opacity: 0.5; }
 
 .propSubtotal {
   font-size: 14px;
@@ -2907,19 +2906,6 @@
   margin-bottom: 4px;
 }
 
-.propDragHandle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  color: var(--muted);
-  cursor: grab;
-  border-radius: var(--r-xs);
-  flex-shrink: 0;
-}
-
-.propDragHandle:hover { color: var(--text); background: var(--s2); }
 
 .propItemsSection { margin-top: 16px; }
 
