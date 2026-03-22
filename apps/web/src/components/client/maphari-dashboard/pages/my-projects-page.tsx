@@ -8,6 +8,22 @@ import type { PageId } from "../config";
 type PTab = "Active" | "Completed" | "On Hold";
 const TABS: PTab[] = ["Active", "Completed", "On Hold"];
 
+// ── Risk score helpers ─────────────────────────────────────────────────────
+function riskScore(riskLevel: string): number {
+  if (riskLevel === "CRITICAL") return 7;
+  if (riskLevel === "HIGH")     return 5;
+  if (riskLevel === "MEDIUM")   return 3;
+  return 1;
+}
+
+function isHighRisk(riskLevel: string): boolean {
+  return riskLevel === "HIGH" || riskLevel === "CRITICAL";
+}
+
+function isActiveStatus(status: string): boolean {
+  const upper = status.toUpperCase();
+  return upper !== "COMPLETED" && upper !== "CANCELLED" && upper !== "DELIVERED" && upper !== "ARCHIVED";
+}
 
 function healthColor(h: number) {
   if (h > 80) return "var(--lime)";
@@ -18,10 +34,37 @@ function healthColor(h: number) {
 export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { projects?: ProjectCard[]; onNavigate?: (page: PageId) => void }) {
   const [tab, setTab] = useState<PTab>("Active");
 
+  // ── Portfolio KPI derivations ─────────────────────────────────────────────
+  const portfolioKpis = useMemo(() => {
+    if (apiProjects.length === 0) {
+      return { healthScore: null, totalBudgetUsed: null, activeCount: 0, alertCount: 0 };
+    }
+
+    const healthScore = Math.round(
+      apiProjects.reduce((sum, p) => sum + (100 - riskScore(p.riskLevel) * 10), 0) / apiProjects.length
+    );
+
+    const totalBudgetUsedCents = apiProjects.reduce(
+      (sum, p) => sum + p.budgetCents * (p.progressPercent / 100),
+      0
+    );
+    const totalBudgetUsed = `R ${Math.round(totalBudgetUsedCents / 100).toLocaleString("en-ZA")}`;
+
+    const activeCount = apiProjects.filter((p) => isActiveStatus(p.status)).length;
+    const alertCount = apiProjects.filter((p) => isHighRisk(p.riskLevel)).length;
+
+    return { healthScore, totalBudgetUsed, activeCount, alertCount };
+  }, [apiProjects]);
+
+  const alertProjects = useMemo(
+    () => apiProjects.filter((p) => isHighRisk(p.riskLevel)),
+    [apiProjects]
+  );
+
   // ── Map API data to display format ──────────────────────────────────────────
   const displayProjects = useMemo(() => {
     if (apiProjects.length === 0) return [];
-    return apiProjects.map((p) => {
+    const mapped = apiProjects.map((p) => {
       const tab: PTab =
         p.status === "Completed" || p.status === "Delivered" ? "Completed"
         : p.status === "On Hold" || p.status === "Paused" ? "On Hold"
@@ -41,6 +84,7 @@ export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { pro
         phase: p.status,
         progress: p.progressPercent,
         health: healthFromRisk(p.riskLevel),
+        highRisk: isHighRisk(p.riskLevel),
         team: p.collaborators.map((c) => ({
           id: c.name.split(" ").map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase(),
           name: c.name,
@@ -54,6 +98,13 @@ export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { pro
         nextMilestone: "—",
         milestoneUrgent: false,
       };
+    });
+
+    // Sort: high-risk projects float to the top
+    return mapped.sort((a, b) => {
+      if (a.highRisk && !b.highRisk) return -1;
+      if (!a.highRisk && b.highRisk) return 1;
+      return 0;
     });
   }, [apiProjects]);
 
@@ -71,6 +122,69 @@ export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { pro
           <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => onNavigate?.("projectBrief")}>+ New Project Brief</button>
         </div>
       </div>
+
+      {/* ── Portfolio KPI strip ─────────────────────────────────────────── */}
+      {apiProjects.length > 0 && (
+        <div className={cx("topCardsStack", "mb12")}>
+          {[
+            {
+              label: "Overall Health Score",
+              value: portfolioKpis.healthScore !== null ? `${portfolioKpis.healthScore}%` : "—",
+              color: portfolioKpis.healthScore !== null && portfolioKpis.healthScore > 80
+                ? "statCardGreen"
+                : portfolioKpis.healthScore !== null && portfolioKpis.healthScore > 60
+                  ? "statCardAmber"
+                  : "statCardRed",
+            },
+            {
+              label: "Total Budget Used",
+              value: portfolioKpis.totalBudgetUsed ?? "N/A",
+              color: "statCardBlue",
+            },
+            {
+              label: "Active Projects",
+              value: String(portfolioKpis.activeCount),
+              color: "statCardAccent",
+            },
+            {
+              label: "Alerts",
+              value: String(portfolioKpis.alertCount),
+              color: portfolioKpis.alertCount > 0 ? "statCardRed" : "statCardGreen",
+            },
+          ].map((s) => (
+            <div key={s.label} className={cx("statCard", s.color)}>
+              <div className={cx("statLabel")}>{s.label}</div>
+              <div className={cx("statValue")}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Alert strip (high-risk projects) ────────────────────────────── */}
+      {alertProjects.length > 0 && (
+        <div className={cx("card", "notifRowRed", "mb16", "px16", "py12")}>
+          <div className={cx("flexBetween", "mb6")}>
+            <span className={cx("fw600", "text12", "colorRed")}>
+              {alertProjects.length === 1
+                ? "1 project requires attention"
+                : `${alertProjects.length} projects require attention`}
+            </span>
+          </div>
+          <div className={cx("flexRow", "gap8", "flexWrap")}>
+            {alertProjects.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={cx("badge", "badgeRed")}
+                onClick={() => onNavigate?.("riskRegister")}
+                aria-label={`View risk details for ${p.name}`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className={cx("topCardsStack", "mb20")}>
         {[

@@ -18,7 +18,8 @@ export const notificationTopics = [
   EventTopics.notificationRequested,
   EventTopics.leadCreated,
   EventTopics.messageCreated,
-  EventTopics.invoiceOverdue
+  EventTopics.invoiceOverdue,
+  EventTopics.healthAlert
 ] as const;
 
 function defaultMessageForTopic(topic: string): string {
@@ -26,6 +27,7 @@ function defaultMessageForTopic(topic: string): string {
   if (topic === EventTopics.leadCreated) return "A new lead was created.";
   if (topic === EventTopics.messageCreated) return "A new chat message was received.";
   if (topic === EventTopics.invoiceOverdue) return "An invoice is now overdue.";
+  if (topic === EventTopics.healthAlert) return "A project health alert was triggered.";
   return "A platform event was received.";
 }
 
@@ -53,6 +55,11 @@ export function createNotificationEventHandler(metrics: EventMetrics, logger: Ev
       // fields forwarded by leads.ts for auto-reply
       contactName?: string;
       contactEmail?: string;
+      // health alert specific fields
+      projectId?: string;
+      projectName?: string;
+      alertType?: string;
+      severity?: string;
     };
     const eventClientId = event.clientId ?? payload.clientId ?? undefined;
 
@@ -72,6 +79,56 @@ export function createNotificationEventHandler(metrics: EventMetrics, logger: Ev
         metadata: {
           eventId: event.eventId,
           topic: event.topic
+        }
+      });
+      metrics.inc("notification_jobs_total", { service: "notifications", status: "QUEUED" });
+    } else if (event.topic === EventTopics.healthAlert && eventClientId) {
+      // ── Health alert: notify ADMIN ops channel + client ────────────────────
+      const projectName = payload.projectName ?? "A project";
+      const alertType   = payload.alertType ?? "health_alert";
+      const severity    = payload.severity ?? "HIGH";
+      const subject     = `[${severity}] Project health alert: ${projectName}`;
+      const alertMessages: Record<string, string> = {
+        risk_escalated:  `${projectName} has been escalated to ${severity} risk level and requires immediate attention.`,
+        invoice_overdue: `An invoice for ${projectName} is more than 14 days overdue.`,
+        sprint_at_risk:  `${projectName} sprint completion is below 50% with less than 7 days to the deadline.`
+      };
+      const message = alertMessages[alertType] ?? `Health alert triggered for ${projectName}.`;
+
+      // Notify internal ops (ADMIN)
+      await enqueueJob({
+        clientId: eventClientId,
+        channel: "EMAIL",
+        recipient: "ops@maphari.com",
+        subject,
+        message,
+        tab: "projects",
+        metadata: {
+          eventId:     event.eventId,
+          topic:       event.topic,
+          alertType,
+          severity,
+          projectId:   payload.projectId ?? "",
+          projectName
+        }
+      });
+      metrics.inc("notification_jobs_total", { service: "notifications", status: "QUEUED" });
+
+      // Notify client (in-portal notification, tab: projects)
+      await enqueueJob({
+        clientId: eventClientId,
+        channel: "PUSH",
+        recipient: eventClientId,
+        subject,
+        message,
+        tab: "projects",
+        metadata: {
+          eventId:     event.eventId,
+          topic:       event.topic,
+          alertType,
+          severity,
+          projectId:   payload.projectId ?? "",
+          projectName
         }
       });
       metrics.inc("notification_jobs_total", { service: "notifications", status: "QUEUED" });

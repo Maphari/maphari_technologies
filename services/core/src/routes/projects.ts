@@ -26,6 +26,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "../lib/prisma.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
 import { cache, CacheKeys, eventBus } from "../lib/infrastructure.js";
+import { checkAndPublishHealthAlert } from "../jobs/health-alert.job.js";
 
 function canManageInternalCollaboration(role: string): boolean {
   return role === "ADMIN" || role === "STAFF";
@@ -1123,6 +1124,15 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
           details: "Project profile updated"
         })
       ]);
+
+      // Fire-and-forget health alert check — never blocks the response
+      const traceId = (request.headers["x-trace-id"] as string | undefined) ?? undefined;
+      void checkAndPublishHealthAlert(
+        { id: existing.id, clientId: existing.clientId, name: project.name, riskLevel: existing.riskLevel, dueAt: existing.dueAt, progressPercent: existing.progressPercent },
+        parsed.data,
+        eventBus,
+        { requestId: scope.requestId ?? undefined, traceId }
+      );
 
       return { success: true, data: toProjectDto(project), meta: { requestId: scope.requestId } } as ApiResponse;
     } catch (error) {
@@ -2584,5 +2594,76 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
       reply.status(500);
       return { success: false, error: { code: "WEEKLY_SPEND_FETCH_FAILED", message: "Unable to load weekly spend." } } as ApiResponse;
     }
+  });
+
+  // ── POST /projects/bulk-status — ADMIN only ──────────────────────────────
+  // Body: { ids: string[], status: string }
+  // Returns: { updated: number, failed: string[] }
+  app.post("/projects/bulk-status", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      reply.status(403);
+      return {
+        success: false,
+        error: { code: "FORBIDDEN", message: "Only ADMIN can perform bulk status updates" }
+      } as ApiResponse;
+    }
+
+    const body = request.body as Record<string, unknown>;
+    const ids = Array.isArray(body?.ids) ? (body.ids as unknown[]).filter((id): id is string => typeof id === "string") : [];
+    const status = typeof body?.status === "string" ? body.status : null;
+
+    const validStatuses = ["PLANNING", "IN_PROGRESS", "REVIEW", "COMPLETED", "ON_HOLD", "CANCELLED"];
+    if (ids.length === 0 || !status || !validStatuses.includes(status)) {
+      reply.status(400);
+      return {
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "ids (non-empty array of strings) and a valid status are required"
+        }
+      } as ApiResponse;
+    }
+
+    const updated: string[] = [];
+    const failed: string[] = [];
+
+    await Promise.allSettled(
+      ids.map(async (projectId) => {
+        try {
+          const existing = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true, clientId: true, status: true } });
+          if (!existing) { failed.push(projectId); return; }
+
+          await prisma.project.update({
+            where: { id: projectId },
+            data: { status, completedAt: status === "COMPLETED" ? new Date() : undefined }
+          });
+
+          await Promise.all([
+            cache.delete(CacheKeys.projects(existing.clientId)),
+            cache.delete(CacheKeys.projects()),
+          ]);
+
+          await eventBus.publish({
+            eventId: randomUUID(),
+            occurredAt: new Date().toISOString(),
+            requestId: scope.requestId,
+            traceId: (request.headers["x-trace-id"] as string | undefined) ?? undefined,
+            topic: EventTopics.projectStatusUpdated,
+            payload: { projectId: existing.id, clientId: existing.clientId, previousStatus: existing.status, status }
+          });
+
+          updated.push(projectId);
+        } catch {
+          failed.push(projectId);
+        }
+      })
+    );
+
+    return {
+      success: true,
+      data: { updated: updated.length, failed },
+      meta: { requestId: scope.requestId }
+    } as ApiResponse<{ updated: number; failed: string[] }>;
   });
 }

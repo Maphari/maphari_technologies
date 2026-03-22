@@ -28,6 +28,8 @@ import {
 import { loadPortalAppointmentsWithRefresh } from "../../../../lib/api/portal/client-cx";
 import { loadPortalAnnouncementsWithRefresh } from "../../../../lib/api/portal/governance";
 import { loadPortalContractsWithRefresh, type PortalContract } from "../../../../lib/api/portal/contracts";
+import { loadPortalNotificationsWithRefresh } from "../../../../lib/api/portal/notifications";
+import type { PortalNotificationJob } from "../../../../lib/api/portal/types";
 import type { PortalInvoice, PortalMilestoneApproval } from "../../../../lib/api/portal/types";
 import type { PortalAppointment } from "../../../../lib/api/portal/client-cx";
 import type { PortalAnnouncement } from "../../../../lib/api/portal/governance";
@@ -159,6 +161,8 @@ export function HomePage({
   const [risks,              setRisks]              = useState<PortalRisk[]>([]);
   const [milestoneApprovals, setMilestoneApprovals] = useState<PortalMilestoneApproval[]>([]);
   const [unsignedContracts,  setUnsignedContracts]  = useState<PortalContract[]>([]);
+  const [healthAlerts,       setHealthAlerts]       = useState<PortalNotificationJob[]>([]);
+  const [healthAlertDismissed, setHealthAlertDismissed] = useState(false);
   const [dataLoading,        setDataLoading]        = useState(false);
 
   useEffect(() => {
@@ -189,7 +193,8 @@ export function HomePage({
       loadPortalRisksWithRefresh(session, projectId),
       loadPortalMilestoneApprovalsWithRefresh(session),
       loadPortalContractsWithRefresh(session),
-    ]).then(([phaseRes, delRes, invRes, apptRes, announceRes, riskRes, maRes, contractsRes]) => {
+      loadPortalNotificationsWithRefresh(session, { unreadOnly: true, tab: "projects" }),
+    ]).then(([phaseRes, delRes, invRes, apptRes, announceRes, riskRes, maRes, contractsRes, notifRes]) => {
       if (phaseRes.status === "fulfilled" && phaseRes.value.data?.length) {
         if (phaseRes.value.nextSession) saveSession(phaseRes.value.nextSession);
         setApiPhases(phaseRes.value.data);
@@ -206,6 +211,13 @@ export function HomePage({
       if (contractsRes.status === "fulfilled" && !contractsRes.value.error && contractsRes.value.data) {
         if (contractsRes.value.nextSession) saveSession(contractsRes.value.nextSession);
         setUnsignedContracts(contractsRes.value.data.filter(c => !c.signed && c.status !== "VOID"));
+      }
+      if (notifRes.status === "fulfilled" && notifRes.value.data) {
+        // Health alerts are project-tab notifications tagged with alertType metadata
+        const alerts = notifRes.value.data.filter(
+          (n) => n.metadata && (n.metadata["alertType"] || n.metadata["topic"] === "project.health.alert")
+        );
+        setHealthAlerts(alerts);
       }
     }).finally(() => setDataLoading(false));
   }, [session, projectId]);
@@ -348,6 +360,35 @@ export function HomePage({
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className={cx("pageBody", "rdStudioPage")}>
+
+      {/* ══ HEALTH ALERT BANNER ══════════════════════════════════════════ */}
+      {healthAlerts.length > 0 && !healthAlertDismissed && (
+        <div className={cx("cmdContextStrip", "cmdContextStripCritical")}>
+          <div className={cx("cmdContextStripIcon")}>
+            <Ic n="alert" sz={14} c="var(--red)" />
+          </div>
+          <div className={cx("cmdContextStripBody")}>
+            <strong>{healthAlerts[0]?.subject ?? `${firstActiveProject?.name ?? "Your project"} needs your attention.`}</strong>
+            {" "}{healthAlerts[0]?.message ?? "A critical project health alert has been triggered."}
+            {" "}
+            <button
+              type="button"
+              className={cx("cmdCtaGhost")}
+              onClick={() => onNavigate?.("myProjects")}
+            >
+              View project
+            </button>
+          </div>
+          <button
+            type="button"
+            className={cx("cmdContextStripDismiss")}
+            aria-label="Dismiss health alert"
+            onClick={() => setHealthAlertDismissed(true)}
+          >
+            <Ic n="x" sz={12} c="var(--muted2)" />
+          </button>
+        </div>
+      )}
 
       {/* ══ HERO COMMAND CARD ═════════════════════════════════════════════ */}
       <div className={cx("cmdHero", "rdStudioCard")}>

@@ -29,7 +29,8 @@ export const EventTopics = {
   invoicePaid: "billing.invoice.paid",
   invoiceOverdue: "billing.invoice.overdue",
   taskAssigned: "core.task.assigned",
-  appointmentCreated: "core.appointment.created"
+  appointmentCreated: "core.appointment.created",
+  healthAlert: "project.health.alert"
 } as const;
 
 export type EventTopic = (typeof EventTopics)[keyof typeof EventTopics];
