@@ -9,6 +9,7 @@ import { cx } from "../style";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { getStaffProjects, type StaffProject } from "../../../../lib/api/staff";
+import { loadStaffAuditEventsWithRefresh, type StaffAuditEvent } from "../../../../lib/api/staff/audit";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -81,11 +82,13 @@ function toProjectContext(p: StaffProject): ProjectContext {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ProjectContextPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
-  const [projects, setProjects] = useState<ProjectContext[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "phase">("overview");
-  const [search, setSearch]     = useState("");
+  const [projects,    setProjects]    = useState<ProjectContext[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [selected,    setSelected]    = useState<string | null>(null);
+  const [activeTab,   setActiveTab]   = useState<"overview" | "phase" | "activity">("overview");
+  const [search,      setSearch]      = useState("");
+  const [auditEvents, setAuditEvents] = useState<StaffAuditEvent[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
@@ -103,6 +106,21 @@ export function ProjectContextPage({ isActive, session }: { isActive: boolean; s
       setLoading(false);
     });
   }, [session]);
+
+  // ── Audit events: load when "Activity" tab is active ──────────────────────
+  useEffect(() => {
+    if (!session || !selected || activeTab !== "activity") return;
+    setAuditLoading(true);
+    setAuditEvents([]);
+    loadStaffAuditEventsWithRefresh(session, selected, { limit: 50 }).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data) setAuditEvents(r.data);
+    }).catch(() => {
+      // ignore — staff may not be collaborator; empty state shown
+    }).finally(() => {
+      setAuditLoading(false);
+    });
+  }, [session, selected, activeTab]);
 
   const filtered = projects.filter(
     (p) => p.client.toLowerCase().includes(search.toLowerCase()) || p.project.toLowerCase().includes(search.toLowerCase())
@@ -216,12 +234,12 @@ export function ProjectContextPage({ isActive, session }: { isActive: boolean; s
 
             {/* Tabs */}
             <div className={cx("staffSegControl", "pcTabs")}>
-              {[{ key: "overview", label: "Overview" }, { key: "phase", label: "Phase" }].map((tab) => (
+              {[{ key: "overview", label: "Overview" }, { key: "phase", label: "Phase" }, { key: "activity", label: "Activity Log" }].map((tab) => (
                 <button
                   type="button"
                   key={tab.key}
                   className={cx("staffSegBtn", activeTab === tab.key && "staffSegBtnActive")}
-                  onClick={() => setActiveTab(tab.key as "overview" | "phase")}
+                  onClick={() => setActiveTab(tab.key as "overview" | "phase" | "activity")}
                 >
                   {tab.label}
                 </button>
@@ -252,6 +270,46 @@ export function ProjectContextPage({ isActive, session }: { isActive: boolean; s
                 <p>Current Phase: <strong>{current.phase}</strong></p>
                 <p>Started: {current.startDate}</p>
                 <p>Deadline: {current.deadline}</p>
+              </div>
+            )}
+
+            {/* Tab: Activity Log */}
+            {activeTab === "activity" && (
+              <div className={cx("pcProseContent")}>
+                {auditLoading ? (
+                  <div className={cx("staffEmpty")}>
+                    <div className={cx("staffEmptyTitle")}>Loading activity…</div>
+                  </div>
+                ) : auditEvents.length === 0 ? (
+                  <div className={cx("staffEmpty")}>
+                    <div className={cx("staffEmptyTitle")}>No activity recorded</div>
+                    <div className={cx("staffEmptySub")}>Project-level audit events will appear here once actions are taken on this project.</div>
+                  </div>
+                ) : (
+                  <div className={cx("staffActivityList")}>
+                    {auditEvents.map((event) => (
+                      <div key={event.id} className={cx("staffListRow", "staffActivityRow")}>
+                        <div className={cx("staffActivityDot")} />
+                        <div className={cx("staffActivityInfo")}>
+                          <div className={cx("staffActivityAction")}>
+                            {event.action.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
+                          </div>
+                          {event.actorName && (
+                            <div className={cx("staffActivityMeta")}>
+                              by {event.actorName}{event.actorRole ? ` (${event.actorRole})` : ""}
+                            </div>
+                          )}
+                          {event.details && (
+                            <div className={cx("staffActivityMeta")}>{event.details}</div>
+                          )}
+                        </div>
+                        <div className={cx("staffActivityDate")}>
+                          {new Date(event.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

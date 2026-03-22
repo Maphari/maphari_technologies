@@ -159,30 +159,91 @@ export async function registerAuditEventRoutes(app: FastifyInstance): Promise<vo
   });
 
   // ── GET /audit-events ───────────────────────────────────────────────────────
-  // ADMIN only. Supports optional filters: actorId, resourceType, resourceId.
+  // ADMIN: full access with optional filters (actorId, resourceType, resourceId, limit).
+  // STAFF: scoped access — must supply ?projectId= and must be a collaborator on that
+  //        project. Returns events where resourceType=Project&resourceId=projectId.
   // No caching — audit log must always be real-time.
   app.get("/audit-events", async (request, reply) => {
     const scope = readScopeHeaders(request);
-    if (scope.role !== "ADMIN") {
+    if (scope.role !== "ADMIN" && scope.role !== "STAFF") {
       reply.status(403);
-      return { success: false, error: { code: "FORBIDDEN", message: "Admin only" } } as ApiResponse;
+      return { success: false, error: { code: "FORBIDDEN", message: "Admin or Staff only" } } as ApiResponse;
     }
 
     const query = request.query as {
       actorId?:      string;
       resourceType?: string;
       resourceId?:   string;
+      projectId?:    string;
       limit?:        string;
     };
 
     const take = Math.min(parseInt(query.limit ?? "100", 10), 500);
 
+    // ── STAFF: enforce projectId scope and collaborator check ─────────────────
+    if (scope.role === "STAFF") {
+      const projectId = query.projectId;
+      if (!projectId) {
+        reply.status(400);
+        return {
+          success: false,
+          error: { code: "VALIDATION_ERROR", message: "Staff must supply ?projectId= to scope audit events" }
+        } as ApiResponse;
+      }
+
+      // Verify the requesting staff user is a collaborator on this project
+      const isCollaborator = await prisma.projectTaskCollaborator.findFirst({
+        where: {
+          projectId,
+          staffUserId: scope.userId ?? undefined,
+          active: true
+        }
+      });
+
+      if (!isCollaborator && scope.userId) {
+        // Also allow if staff is named in the collaborator (by staffName matching userId as fallback)
+        const projectExists = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
+        if (!projectExists) {
+          reply.status(404);
+          return { success: false, error: { code: "PROJECT_NOT_FOUND", message: "Project not found" } } as ApiResponse;
+        }
+        // If no collaborator record, deny
+        reply.status(403);
+        return {
+          success: false,
+          error: { code: "FORBIDDEN", message: "Staff may only view audit events for projects they are assigned to" }
+        } as ApiResponse;
+      }
+
+      try {
+        const events = await prisma.auditEvent.findMany({
+          where: {
+            resourceType: "Project",
+            resourceId:   projectId
+          },
+          orderBy: { createdAt: "desc" },
+          take
+        });
+
+        return {
+          success: true,
+          data:    events.map(toDto),
+          meta:    { requestId: scope.requestId, count: events.length, limit: take, projectId }
+        } as ApiResponse<AuditEventDto[]>;
+      } catch (error) {
+        request.log.error(error);
+        return { success: false, error: { code: "AUDIT_FETCH_FAILED", message: "Unable to fetch audit events" } } as ApiResponse;
+      }
+    }
+
+    // ── ADMIN: full access ────────────────────────────────────────────────────
     try {
       const events = await prisma.auditEvent.findMany({
         where: {
           ...(query.actorId      ? { actorId:      query.actorId      } : {}),
           ...(query.resourceType ? { resourceType: query.resourceType } : {}),
           ...(query.resourceId   ? { resourceId:   query.resourceId   } : {}),
+          ...(query.projectId    ? { resourceId:   query.projectId, resourceType: "Project" } : {})
         },
         orderBy: { createdAt: "desc" },
         take,

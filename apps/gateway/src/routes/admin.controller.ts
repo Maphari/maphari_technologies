@@ -537,7 +537,8 @@ export class AdminController {
   // ══════════════════════════════════════════════════════════════════════════
 
   // ── GET /admin/audit-events ───────────────────────────────────────────────
-  @Roles("ADMIN")
+  // ADMIN: full access. STAFF: scoped to ?projectId= (must be collaborator).
+  @Roles("ADMIN", "STAFF")
   @Get("admin/audit-events")
   async listAuditEvents(
     @Query() query: unknown,
