@@ -12,6 +12,7 @@ import { setPortalPreferenceWithRefresh, getPortalPreferenceWithRefresh } from "
 import { requestDataExportWithRefresh, requestAccountDeletionWithRefresh } from "../../../../lib/api/portal/profile";
 import { callGateway, withAuthorizedSession } from "../../../../lib/api/portal/internal";
 import { loadPortalNotificationPrefsWithRefresh, updatePortalNotificationPrefsWithRefresh } from "../../../../lib/api/portal/notification-prefs";
+import { loadPortalTeamMembersWithRefresh } from "../../../../lib/api/portal/team";
 import { callPortalAiGenerateWithRefresh } from "../../../../lib/api/portal/ai";
 import { Ic } from "../ui";
 
@@ -328,6 +329,33 @@ export function SettingsPage({
       if (r.nextSession) saveSession(r.nextSession);
       if (r.data) setWeeklyDigestEnabled(r.data.weeklyDigest);
     }).finally(() => setDigestLoading(false));
+  }, [session]);
+
+  // Load team members for Access Control tab
+  useEffect(() => {
+    if (!session || !session.user.clientId) return;
+    const clientId = session.user.clientId;
+    void loadPortalTeamMembersWithRefresh(session, clientId).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data && r.data.length > 0) {
+        setAccessUsers(
+          r.data
+            .filter((m) => m.status === "ACTIVE" || m.status === "PENDING")
+            .map((m) => {
+              const role = (m.role as RoleName) ?? "Viewer";
+              const isOwnerOrLead = role === "Owner" || role === "Project Lead";
+              return {
+                name: m.name,
+                role,
+                view:     true,
+                comment:  true,
+                approve:  isOwnerOrLead,
+                download: isOwnerOrLead,
+              };
+            })
+        );
+      }
+    });
   }, [session]);
 
   const handleInstall = async () => {
@@ -1450,22 +1478,9 @@ export function SettingsPage({
                       <span className={cx("cardHdTitle")}>File Access Control</span>
                       <span className={cx("text10", "colorMuted", "mlAuto")}>Document-level permissions</span>
                     </div>
-                    <div className={cx("listGroup")}>
-                      {SECURITY_DOCS.map((doc) => (
-                        <div key={doc.name} className={cx("listRow", "gap10")}>
-                          <span className={cx("emoji16noShrink")}>📄</span>
-                          <div className={cx("flex1")}>
-                            <div className={cx("fw600", "text12")}>{doc.name}</div>
-                            <div className={cx("text10", "colorMuted")}>{doc.viewers}</div>
-                          </div>
-                          <select className={cx("secuPermSel")} onChange={() => notify("success", "Permission updated", doc.name)}>
-                            <option>View only</option>
-                            <option>Can comment</option>
-                            <option>Can download</option>
-                            <option>Full access</option>
-                          </select>
-                        </div>
-                      ))}
+                    <div className={cx("emptyState", "py24")}>
+                      <div className={cx("emptyStateTitle")}>No documents configured</div>
+                      <div className={cx("emptyStateSub")}>Document-level permissions will appear here once files are shared.</div>
                     </div>
                   </div>
                 </div>
@@ -1481,7 +1496,12 @@ export function SettingsPage({
                   <div className={cx("pCustom0161616")}>
                   <div className={cx("secuRbacTableHead")}><span>User</span><span>View</span><span>Comment</span><span>Approve</span><span>Download</span></div>
                   <div className={cx("secuRbacRows")}>
-                    {accessUsers.map((user, userIndex) => (
+                    {accessUsers.length === 0 ? (
+                      <div className={cx("emptyState", "py24")}>
+                        <div className={cx("emptyStateTitle")}>No team members yet</div>
+                        <div className={cx("emptyStateSub")}>Invite users to grant them portal access.</div>
+                      </div>
+                    ) : accessUsers.map((user, userIndex) => (
                       <div key={user.name} className={cx("secuRbacRow")}>
                         <div>
                           <div className={cx("fw600", "text12")}>{user.name}</div>
@@ -1509,22 +1529,14 @@ export function SettingsPage({
                         <button key={filter} type="button" className={cx("pillTab", auditFilter === filter && "pillTabActive", "p3x10", "fs11")} onClick={() => setAuditFilter(filter)}>{filter}</button>
                       ))}
                     </div>
-                    <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => notify("success", "Exported", "audit-log.csv downloaded.")}>↓ Export CSV</button>
                   </div>
                   <div className={cx("pCustom0161616")}>
                     <div className={cx("secuAuditTableHead")}><span>Timestamp</span><span>Event</span><span>User</span><span>Severity</span></div>
                     <div className={cx("secuAuditRows")}>
-                      {filteredAudit.map((entry, index) => (
-                        <div key={`${entry.time}-${index}`} className={cx("secuAuditRow")}>
-                          <div className={cx("text10", "colorMuted")}>{entry.time}</div>
-                          <div>
-                            <div className={cx("fw600", "text12")}>{entry.event}</div>
-                            <div className={cx("text10", "colorMuted")}>{entry.detail}</div>
-                          </div>
-                          <div className={cx("text10", "colorMuted")}>{entry.user}</div>
-                          <div><span className={cx("badge", entry.sev === "ok" ? "badgeGreen" : entry.sev === "info" ? "badgeAccent" : entry.sev === "warn" ? "badgeAmber" : "badgeRed")}>{entry.sev === "crit" ? "critical" : entry.sev}</span></div>
-                        </div>
-                      ))}
+                      <div className={cx("emptyState", "py24")}>
+                        <div className={cx("emptyStateTitle")}>No audit events yet</div>
+                        <div className={cx("emptyStateSub")}>Security events will appear here as they occur.</div>
+                      </div>
                     </div>
                   </div>
                 </div>
