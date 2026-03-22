@@ -98,12 +98,33 @@ export function PaymentsPage({ payments: apiPayments = [], invoices: apiInvoices
       cancelUrl: window.location.href,
     });
     if (r.nextSession) saveSession(r.nextSession);
-    if (r.error || !r.data?.redirectUrl) {
+    if (r.error || !r.data) {
       setPayError(r.error?.message ?? "Failed to initiate payment.");
       setPayLoading(false);
       return;
     }
-    window.location.href = r.data.redirectUrl;
+    if (!r.data?.url || !r.data.fields) {
+      setPayError("Failed to initiate payment — missing payment data.");
+      setPayLoading(false);
+      return;
+    }
+
+    // Build and submit a hidden form to PayFast
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = r.data.url;
+    form.style.display = "none";
+
+    Object.entries(r.data.fields).forEach(([key, value]) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = key;
+      input.value = value;
+      form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
   }
 
   const monthlyActivity = useMemo(() => {

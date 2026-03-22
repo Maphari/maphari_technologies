@@ -811,7 +811,8 @@ export async function loadPortalProjectsWithRefresh(
 }
 
 export interface PayfastInitiateResult {
-  redirectUrl: string;
+  url: string;
+  fields: Record<string, string>;
 }
 
 export async function initiatePortalPayfastWithRefresh(
