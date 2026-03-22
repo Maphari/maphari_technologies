@@ -117,23 +117,33 @@ export async function registerFeatureRequestRoutes(app: FastifyInstance): Promis
     }
 
     let voted = false;
+    let voteCount = 0;
     await prisma.$transaction(async (tx) => {
       const existing = await tx.featureVote.findUnique({
         where: { featureRequestId_voterId: { featureRequestId: id, voterId } },
       });
       if (existing) {
         await tx.featureVote.delete({ where: { id: existing.id } });
-        await tx.featureRequest.update({ where: { id }, data: { voteCount: { decrement: 1 } } });
+        const updated = await tx.featureRequest.update({
+          where: { id },
+          data: { voteCount: { decrement: 1 } },
+          select: { voteCount: true },
+        });
         voted = false;
+        voteCount = updated.voteCount;
       } else {
         await tx.featureVote.create({ data: { featureRequestId: id, voterId } });
-        await tx.featureRequest.update({ where: { id }, data: { voteCount: { increment: 1 } } });
+        const updated = await tx.featureRequest.update({
+          where: { id },
+          data: { voteCount: { increment: 1 } },
+          select: { voteCount: true },
+        });
         voted = true;
+        voteCount = updated.voteCount;
       }
     });
 
-    const updated = await prisma.featureRequest.findUnique({ where: { id }, select: { voteCount: true } });
-    return { success: true, data: { voted, voteCount: updated?.voteCount ?? 0 }, meta: { requestId: scope.requestId } } as ApiResponse;
+    return { success: true, data: { voted, voteCount }, meta: { requestId: scope.requestId } } as ApiResponse;
   });
 
   // ── PATCH /admin/feature-requests/:id ─────────────────────────────────────
