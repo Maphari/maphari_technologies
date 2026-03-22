@@ -696,7 +696,9 @@ export const confirmUploadSchema = z.object({
   storageKey: z.string().trim().min(1).max(512),
   mimeType: z.string().trim().min(3).max(120),
   sizeBytes: z.number().int().positive().max(5_000_000_000),
-  uploadToken: z.string().trim().min(16).max(2048)
+  uploadToken: z.string().trim().min(16).max(2048),
+  versionOf: z.string().optional(),
+  versionNote: z.string().optional()
 });
 
 export const createInvoiceSchema = z.object({

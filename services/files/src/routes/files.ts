@@ -349,6 +349,15 @@ export async function registerFileRoutes(app: FastifyInstance): Promise<void> {
         } as ApiResponse;
       }
 
+      // Clients may not set CHANGES_REQUESTED — only ADMIN/STAFF can request changes.
+      if (scope.role === "CLIENT" && approvalStatus === "CHANGES_REQUESTED") {
+        reply.status(403);
+        return {
+          success: false,
+          error: { code: "FORBIDDEN", message: "Clients may not set the CHANGES_REQUESTED status." }
+        } as ApiResponse;
+      }
+
       const updated = await observeDb(app, "fileRecord.update", () =>
         prisma.fileRecord.update({
           where: { id: file.id },
@@ -380,11 +389,15 @@ export async function registerFileRoutes(app: FastifyInstance): Promise<void> {
   // ── GET /files/:id/versions ───────────────────────────────────────────────
   app.get<{ Params: { id: string } }>("/files/:id/versions", async (request, reply) => {
     const scope = readScopeHeaders(request);
+    const clientId = resolveClientFilter(scope.role, scope.clientId);
 
     try {
-      // Fetch the original file first
-      const original = await observeDb(app, "fileRecord.findUnique", () =>
-        prisma.fileRecord.findUnique({ where: { id: request.params.id } })
+      // Fetch the original file first — apply clientId scope so clients can
+      // only access versions of files that belong to their own tenant.
+      const original = await observeDb(app, "fileRecord.findFirst", () =>
+        prisma.fileRecord.findFirst({
+          where: { id: request.params.id, ...(clientId ? { clientId } : {}) }
+        })
       );
       if (!original) {
         reply.status(404);

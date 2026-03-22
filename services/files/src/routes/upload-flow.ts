@@ -263,13 +263,12 @@ export async function registerUploadFlowRoutes(app: FastifyInstance): Promise<vo
       } as ApiResponse;
     }
 
-    // Optional versioning fields from request body
-    const rawBody = (parsedBody.data as unknown as Record<string, unknown>);
-    const versionOf = typeof rawBody["versionOf"] === "string" && rawBody["versionOf"].length > 0
-      ? rawBody["versionOf"]
+    // Optional versioning fields — typed directly from the schema
+    const versionOf = parsedBody.data.versionOf && parsedBody.data.versionOf.length > 0
+      ? parsedBody.data.versionOf
       : undefined;
-    const versionNote = typeof rawBody["versionNote"] === "string" && rawBody["versionNote"].length > 0
-      ? rawBody["versionNote"]
+    const versionNote = parsedBody.data.versionNote && parsedBody.data.versionNote.length > 0
+      ? parsedBody.data.versionNote
       : undefined;
 
     try {

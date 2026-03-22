@@ -1,9 +1,11 @@
 // ════════════════════════════════════════════════════════════════════════════
 // files.ts — Portal API client: File management endpoints
-// Endpoints : GET  /files                     (list)
-//             POST /files/upload-url          (presigned PUT URL)
-//             POST /files/confirm-upload      (mark uploaded)
-//             GET  /files/:id/download-url    (presigned GET URL)
+// Endpoints : GET   /files                     (list)
+//             POST  /files/upload-url          (presigned PUT URL)
+//             POST  /files/confirm-upload      (mark uploaded)
+//             GET   /files/:id/download-url    (presigned GET URL)
+//             PATCH /files/:id/approval        (approve or request changes)
+//             GET   /files/:id/versions        (list file versions)
 // Scope     : CLIENT sees own files; STAFF/ADMIN see all
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -94,13 +96,14 @@ export async function createPortalUploadUrlWithRefresh(
 
 export async function confirmPortalUploadWithRefresh(
   session: AuthSession,
-  fileId: string
+  fileId: string,
+  options?: { versionOf?: string; versionNote?: string }
 ): Promise<AuthorizedResult<PortalFile>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const response = await callGateway<PortalFile>(
       "/files/confirm-upload",
       accessToken,
-      { method: "POST", body: { fileId } }
+      { method: "POST", body: { fileId, ...options } }
     );
     if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
     if (!response.payload.success || !response.payload.data) {

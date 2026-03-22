@@ -347,8 +347,13 @@ export function FilesAssetsPage() {
     setVersions([]);
     const result = await loadPortalFileVersionsWithRefresh(session, rawId);
     if (result.nextSession) saveSession(result.nextSession);
+    if (result.error) {
+      notify("error", "Version history unavailable", result.error.message ?? "Could not load version history.");
+      setVersionsFileId(null);
+      return;
+    }
     if (result.data) setVersions(result.data);
-  }, [session]);
+  }, [session, notify]);
 
   // ── Stats ─────────────────────────────────────────────────────────────────
   const totalSizeBytes = files.reduce((acc, f) => acc + f.sizeBytes, 0);
