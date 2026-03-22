@@ -1,6 +1,6 @@
 // Deterministic @adjective-animal alias generator.
 // Given the same userId it always returns the same string.
-// ~50 × ~50 = 2,500 unique combinations.
+// 54 adjectives × 52 animals = 2,808 unique combinations.
 
 const ADJECTIVES = [
   "amber", "azure", "bold", "bright", "calm", "cobalt", "cool", "coral",
@@ -39,8 +39,9 @@ function djb2(str: string): number {
  * Example: generateAlias("user-abc-123") → "@amber-falcon"
  */
 export function generateAlias(userId: string): string {
-  const hash = djb2(userId);
-  const adj = ADJECTIVES[hash % ADJECTIVES.length];
-  const animal = ANIMALS[Math.floor(hash / ADJECTIVES.length) % ANIMALS.length];
+  const h1 = djb2(userId);
+  const h2 = djb2(userId + "\x00"); // second pass — independent selector
+  const adj    = ADJECTIVES[h1 % ADJECTIVES.length];
+  const animal = ANIMALS[h2 % ANIMALS.length];
   return `@${adj}-${animal}`;
 }
