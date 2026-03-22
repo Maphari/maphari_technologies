@@ -30,3 +30,4 @@ export * from "./prospecting";
 export * from "./webhooks";
 export * from "./calendar";
 export * from "./proposals";
+export * from "./community";
