@@ -13,12 +13,16 @@ import { randomUUID } from "crypto";
 
 interface TemplatePhase {
   name: string;
-  color?: string;
-  milestones?: Array<{ title: string }>;
+  milestones?: Array<{ name: string; days?: number }>;
+  tasks?: Array<{ name: string }>;
 }
 
 function countPhases(phases: TemplatePhase[]): number {
   return phases.length;
+}
+
+function countTasks(phases: TemplatePhase[]): number {
+  return phases.reduce((sum, p) => sum + (p.tasks?.length ?? 0), 0);
 }
 
 export async function registerProjectTemplateRoutes(app: FastifyInstance): Promise<void> {
@@ -38,6 +42,7 @@ export async function registerProjectTemplateRoutes(app: FastifyInstance): Promi
           name: t.name,
           description: t.description,
           phaseCount: countPhases(phases),
+          taskCount: countTasks(phases),
           createdAt: t.createdAt.toISOString(),
         };
       });
@@ -72,7 +77,6 @@ export async function registerProjectTemplateRoutes(app: FastifyInstance): Promi
       });
       phases = sourcePhases.map((ph) => ({
         name: ph.name,
-        color: ph.color ?? undefined,
       }));
     } else {
       const raw = body?.phases;
@@ -161,7 +165,6 @@ export async function registerProjectTemplateRoutes(app: FastifyInstance): Promi
             projectId,
             clientId: project.clientId,
             name: ph.name,
-            color: ph.color ?? null,
             sortOrder: i + 1,
           },
         });
@@ -170,7 +173,7 @@ export async function registerProjectTemplateRoutes(app: FastifyInstance): Promi
 
       return {
         success: true,
-        data: { phasesCreated },
+        data: { phasesCreated, milestonesCreated: 0, tasksCreated: 0 },
         meta: { requestId: scope.requestId },
       } as ApiResponse;
     } catch (error) {

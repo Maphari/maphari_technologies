@@ -7,12 +7,14 @@ export interface ProjectTemplateSummary {
   name: string;
   description: string | null;
   phaseCount: number;
+  taskCount: number;
   createdAt: string;
 }
 
 export interface ProjectTemplatePhase {
   name: string;
-  color?: string;
+  milestones: Array<{ name: string; days: number }>;
+  tasks: Array<{ name: string }>;
 }
 
 export async function loadAdminProjectTemplatesWithRefresh(
@@ -88,9 +90,9 @@ export async function applyAdminProjectTemplateWithRefresh(
   session: AuthSession,
   templateId: string,
   projectId: string
-): Promise<AuthorizedResult<{ phasesCreated: number }>> {
+): Promise<AuthorizedResult<{ phasesCreated: number; milestonesCreated: number; tasksCreated: number }>> {
   return withAuthorizedSession(session, async (accessToken) => {
-    const response = await callGateway<{ phasesCreated: number }>(
+    const response = await callGateway<{ phasesCreated: number; milestonesCreated: number; tasksCreated: number }>(
       `/admin/project-templates/${templateId}/apply`,
       accessToken,
       { method: "POST", body: { projectId } }

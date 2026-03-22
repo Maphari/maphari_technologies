@@ -47,7 +47,7 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
   const [applyProjectId, setApplyProjectId]     = useState("");
   const [applyBusy, setApplyBusy]               = useState(false);
   const [applyError, setApplyError]             = useState("");
-  const [applyResult, setApplyResult]           = useState<{ phasesCreated: number } | null>(null);
+  const [applyResult, setApplyResult]           = useState<{ phasesCreated: number; milestonesCreated: number; tasksCreated: number } | null>(null);
 
   // Delete confirm
   const [deleteId, setDeleteId]   = useState<string | null>(null);
@@ -117,7 +117,7 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
   // ── Phase builder ─────────────────────────────────────────────────────────
 
   function addPhase() {
-    setCreatePhases((prev) => [...prev, { name: "" }]);
+    setCreatePhases((prev) => [...prev, { name: "", milestones: [], tasks: [] }]);
   }
 
   function updatePhaseName(idx: number, name: string) {
@@ -219,7 +219,7 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
       <div className={styles.pricTableCard}>
         <div className={styles.pricTableInner}>
           <div className={cx(styles.pricTableHead, "fontMono", "text10", "colorMuted", "uppercase")}>
-            {"Name|Phases|Created|Actions|".split("|").map((h, i) => <span key={`${h}-${i}`}>{h}</span>)}
+            {"Name|Phases|Tasks|Created|Actions|".split("|").map((h, i) => <span key={`${h}-${i}`}>{h}</span>)}
           </div>
 
           {templates.map((tmpl, i) => (
@@ -230,6 +230,9 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
               </span>
               <span className={cx("fontMono", "colorMuted", "text12")}>
                 {tmpl.phaseCount} {tmpl.phaseCount === 1 ? "phase" : "phases"}
+              </span>
+              <span className={cx("fontMono", "colorMuted", "text12")}>
+                {tmpl.taskCount} {tmpl.taskCount === 1 ? "task" : "tasks"}
               </span>
               <span className={cx("text11", "colorMuted")}>{fmtDate(tmpl.createdAt)}</span>
               <div className={cx("flexRow", "gap6")}>
@@ -402,7 +405,9 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
               <div className={cx("flexCol", "gap12")}>
                 <div className={cx("colorAccent", "fw600")}>Template applied successfully</div>
                 <div className={cx("text12", "colorMuted")}>
-                  {applyResult.phasesCreated} {applyResult.phasesCreated === 1 ? "phase" : "phases"} created
+                  {applyResult.phasesCreated} {applyResult.phasesCreated === 1 ? "phase" : "phases"} created,{" "}
+                  {applyResult.milestonesCreated} {applyResult.milestonesCreated === 1 ? "milestone" : "milestones"} created,{" "}
+                  {applyResult.tasksCreated} {applyResult.tasksCreated === 1 ? "task" : "tasks"} created
                 </div>
                 <div className={cx("flexRow", "gap8", "flexEnd", "mt8")}>
                   <button type="button" className={cx("btnSm", "btnAccent")} onClick={closeApplyModal}>
