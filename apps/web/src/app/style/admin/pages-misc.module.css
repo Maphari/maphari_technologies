@@ -2790,6 +2790,16 @@
   color: #ef4444;
 }
 
+.staffSchedError {
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--r-sm);
+  color: #ef4444;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
 @media (max-width: 900px) {
   .staffSchedPanel { width: 100vw; border-left: none; border-top: 1px solid var(--b2); top: auto; bottom: 0; height: 60dvh; }
 }

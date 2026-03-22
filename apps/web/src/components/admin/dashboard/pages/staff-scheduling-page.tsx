@@ -4,7 +4,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { cx } from "../style";
 import {
   loadAdminStaffScheduleWithRefresh,
@@ -87,6 +87,7 @@ interface StaffSchedulingPageProps {
 export function StaffSchedulingPage({ session }: StaffSchedulingPageProps) {
   const [schedule, setSchedule] = useState<StaffScheduleEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
   const [selected, setSelected] = useState<SelectedCell | null>(null);
 
@@ -99,6 +100,13 @@ export function StaffSchedulingPage({ session }: StaffSchedulingPageProps) {
       const isoStart = ws.toISOString().split("T")[0] as string;
       const result = await loadAdminStaffScheduleWithRefresh(session, isoStart, 8);
       if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        const isAuthError = result.error.code === "SESSION_EXPIRED" || result.error.code === "SESSION_UNAUTHORIZED";
+        setError(isAuthError ? "Session expired. Please log in again." : (result.error.message ?? "Failed to load schedule"));
+        setLoading(false);
+        return;
+      }
+      setError(null);
       if (result.data) setSchedule(result.data);
       setLoading(false);
     },
@@ -117,11 +125,13 @@ export function StaffSchedulingPage({ session }: StaffSchedulingPageProps) {
   }, [weekStart, loadSchedule]);
 
   function handlePrev() {
+    setError(null);
     setWeekStart((prev) => getMondayOf(addWeeks(prev, -4)));
     setSelected(null);
   }
 
   function handleNext() {
+    setError(null);
     setWeekStart((prev) => getMondayOf(addWeeks(prev, 4)));
     setSelected(null);
   }
@@ -162,6 +172,10 @@ export function StaffSchedulingPage({ session }: StaffSchedulingPageProps) {
         </div>
       </div>
 
+      {error ? (
+        <div className={cx("staffSchedError")}>{error}</div>
+      ) : null}
+
       {loading ? (
         <div className={cx("staffSchedLoading")}>Loading schedule…</div>
       ) : schedule.length === 0 ? (
@@ -181,8 +195,8 @@ export function StaffSchedulingPage({ session }: StaffSchedulingPageProps) {
 
             {/* Data rows */}
             {schedule.map((entry) => (
-              <>
-                <div key={`name-${entry.staffId}`} className={cx("staffSchedNameCell")}>
+              <React.Fragment key={entry.staffId}>
+                <div className={cx("staffSchedNameCell")}>
                   <span>{entry.staffName}</span>
                   <span className={cx("staffSchedRole")}>{entry.role}</span>
                 </div>
@@ -203,7 +217,7 @@ export function StaffSchedulingPage({ session }: StaffSchedulingPageProps) {
                     {statusLabel(week.status)}
                   </button>
                 ))}
-              </>
+              </React.Fragment>
             ))}
           </div>
         </div>
