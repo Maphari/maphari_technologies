@@ -26,6 +26,9 @@ export interface NotificationPrefs {
 
 const PREF_KEY = "portal.notificationPrefs";
 
+// Internal blob shape — includes clientId so automation can resolve subscribers
+interface StoredNotifPrefs extends Omit<NotificationPrefs, "updatedAt"> {}
+
 const DEFAULT_PREFS: Omit<NotificationPrefs, "clientId" | "updatedAt"> = {
   emailEnabled: true,
   smsEnabled: false,
@@ -114,11 +117,11 @@ export async function registerNotificationPrefRoutes(app: FastifyInstance): Prom
         where: { userId_key: { userId: scope.userId, key: PREF_KEY } }
       });
 
-      const existingValues: Omit<NotificationPrefs, "clientId" | "updatedAt"> = existing?.value
-        ? (JSON.parse(existing.value) as Omit<NotificationPrefs, "clientId" | "updatedAt">)
+      const existingRaw: StoredNotifPrefs | Omit<NotificationPrefs, "clientId" | "updatedAt"> = existing?.value
+        ? (JSON.parse(existing.value) as StoredNotifPrefs)
         : DEFAULT_PREFS;
 
-      const merged = { ...existingValues, ...body };
+      const merged = { ...existingRaw, ...body, clientId: scopedClientId };
       const now = new Date();
 
       await prisma.userPreference.upsert({
@@ -129,7 +132,7 @@ export async function registerNotificationPrefRoutes(app: FastifyInstance): Prom
 
       await cache.delete(ck(scopedClientId));
 
-      const prefs: NotificationPrefs = { clientId: scopedClientId, ...merged, updatedAt: now.toISOString() };
+      const prefs: NotificationPrefs = { ...merged, clientId: scopedClientId, updatedAt: now.toISOString() };
       return { success: true, data: prefs, meta: { requestId: scope.requestId } } as ApiResponse<NotificationPrefs>;
     } catch (error) {
       request.log.error(error);
@@ -162,6 +165,38 @@ export async function registerNotificationPrefRoutes(app: FastifyInstance): Prom
     } catch (error) {
       request.log.error(error);
       return reply.status(500).send({ success: false, error: { code: "NOTIF_PREFS_FETCH_FAILED", message: "Unable to fetch notification preferences." } } as ApiResponse);
+    }
+  });
+
+  // ── GET /internal/digest-subscribers ─────────────────────────────────────
+  // Internal-only: called by automation service to find weekly digest opt-ins.
+  // No scope auth — network-level isolation is sufficient (automation → core).
+  app.get("/internal/digest-subscribers", async (request, reply) => {
+    try {
+      const rows = await prisma.userPreference.findMany({
+        where: { key: PREF_KEY },
+      });
+
+      const subscribers: Array<{ userId: string; clientId: string }> = [];
+
+      for (const row of rows) {
+        if (!row.value) continue;
+        let parsed: StoredNotifPrefs | null = null;
+        try {
+          parsed = JSON.parse(row.value) as StoredNotifPrefs;
+        } catch {
+          continue;
+        }
+        if (!parsed?.weeklyDigest) continue;
+        const clientId = parsed?.clientId ?? null;
+        if (!clientId) continue;
+        subscribers.push({ userId: row.userId, clientId });
+      }
+
+      return { success: true, data: subscribers } as ApiResponse<Array<{ userId: string; clientId: string }>>;
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ success: false, error: { code: "DIGEST_SUBSCRIBERS_FETCH_FAILED", message: "Unable to fetch digest subscribers." } } as ApiResponse);
     }
   });
 
