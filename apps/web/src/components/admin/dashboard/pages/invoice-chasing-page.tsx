@@ -56,12 +56,12 @@ function ChaseSequenceTrack({ highlightStage }: { highlightStage: ChaseStage | n
           (highlightStage === "CHASE_7D" && s.stage === "CHASE_3D") ||
           (highlightStage === "CHASE_14D" && (s.stage === "CHASE_3D" || s.stage === "CHASE_7D"));
         return (
-          <div key={s.stage} className={cx(styles.icSequenceTrackFlex)} style={{ flex: i < stages.length - 1 ? "1" : undefined }}>
-            <div className={cx(styles.icSequenceTrackFlex)} style={{ flexDirection: "column", gap: 4 }}>
+          <div key={s.stage} className={cx(styles.icSequenceTrackFlex, i < stages.length - 1 && "flex1")}>
+            <div className={cx(styles.icSequenceTrackFlex, "flexCol", "gap4")}>
               <div className={cx(styles.icStageDot, isActive && styles.icStageDotActive)}>
                 {s.label}
               </div>
-              <span className={cx("text10", "colorMuted")} style={{ whiteSpace: "nowrap" }}>{s.days}</span>
+              <span className={cx("text10", "colorMuted", "noWrap")}>{s.days}</span>
             </div>
             {i < stages.length - 1 && (
               <div className={cx(styles.icStageLine, isActive && styles.icStageLineActive)} />

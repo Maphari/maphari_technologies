@@ -32,7 +32,14 @@ type Tab = "write" | "received";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const CURRENT_QUARTER = "Q1-2026";
+function currentQuarter(): string {
+  const month = new Date().getMonth(); // 0-indexed
+  const year  = new Date().getFullYear();
+  const q = Math.floor(month / 3) + 1;
+  return `Q${q}-${year}`;
+}
+
+const CURRENT_QUARTER = currentQuarter();
 
 function buildInitials(name: string): string {
   const parts = name.trim().split(/\s+/);

@@ -120,7 +120,7 @@ export function ProjectOperationsPage({
 
   // ── Bulk selection state ──────────────────────────────────────────────────
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkStatus, setBulkStatus] = useState<string>("ON_HOLD");
+  const [bulkStatus, setBulkStatus] = useState<"PLANNING" | "IN_PROGRESS" | "REVIEW" | "COMPLETED" | "ON_HOLD" | "CANCELLED">("ON_HOLD");
   const [bulkApplying, setBulkApplying] = useState(false);
 
   const rows = useMemo(() => {
@@ -236,7 +236,8 @@ export function ProjectOperationsPage({
           ? `${updated} project${updated !== 1 ? "s" : ""} updated to ${bulkStatus}`
           : `${updated} updated, ${failed.length} failed`
       );
-      setSelectedIds(new Set());
+      // Keep failed IDs selected so the user can retry; clear only on full success.
+      setSelectedIds(failed.length > 0 ? new Set(failed) : new Set());
     }
   }
 
@@ -654,7 +655,7 @@ export function ProjectOperationsPage({
           <select
             title="New status for selected projects"
             value={bulkStatus}
-            onChange={(e) => setBulkStatus(e.target.value)}
+            onChange={(e) => setBulkStatus(e.target.value as "PLANNING" | "IN_PROGRESS" | "REVIEW" | "COMPLETED" | "ON_HOLD" | "CANCELLED")}
             className={cx("projOpsBulkSelect")}
           >
             <option value="PLANNING">Planning</option>

@@ -547,7 +547,7 @@ export async function getProjectPreferenceWithRefresh(
 export async function bulkUpdateProjectStatusWithRefresh(
   session: AuthSession,
   ids: string[],
-  newStatus: string
+  newStatus: "PLANNING" | "IN_PROGRESS" | "REVIEW" | "COMPLETED" | "ON_HOLD" | "CANCELLED"
 ): Promise<AuthorizedResult<{ updated: number; failed: string[] }>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const response = await callGateway<{ updated: number; failed: string[] }>(

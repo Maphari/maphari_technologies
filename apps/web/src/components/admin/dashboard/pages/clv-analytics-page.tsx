@@ -233,10 +233,12 @@ export function CLVAnalyticsPage({ session, onNotify }: Props) {
                       {/* Churn risk progress bar */}
                       <td>
                         <div className={styles.progressWrap}>
-                          <div className={styles.progressBar}>
+                          <div
+                            className={styles.progressBar}
+                            style={{ "--pct": `${riskPct}%` } as React.CSSProperties}
+                          >
                             <div
-                              className={`${styles.progressFill} ${churnFillClass(row.churnRisk)}`}
-                              style={{ width: `${riskPct}%` }}
+                              className={`${styles.progressFill} ${styles.progressFillDynamic} ${churnFillClass(row.churnRisk)}`}
                             />
                           </div>
                           <span className={styles.progressPct}>{riskPct}%</span>

@@ -191,16 +191,24 @@ export async function registerAuditEventRoutes(app: FastifyInstance): Promise<vo
         } as ApiResponse;
       }
 
+      // Reject immediately if the staff userId is missing — without it the
+      // collaborator query would omit the staffUserId filter and could match
+      // ANY project, bypassing the access check entirely.
+      if (!scope.userId) {
+        reply.status(401);
+        return { success: false, error: { code: "UNAUTHORIZED", message: "User identity required" } } as ApiResponse;
+      }
+
       // Verify the requesting staff user is a collaborator on this project
       const isCollaborator = await prisma.projectTaskCollaborator.findFirst({
         where: {
           projectId,
-          staffUserId: scope.userId ?? undefined,
+          staffUserId: scope.userId,
           active: true
         }
       });
 
-      if (!isCollaborator && scope.userId) {
+      if (!isCollaborator) {
         // Also allow if staff is named in the collaborator (by staffName matching userId as fallback)
         const projectExists = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
         if (!projectExists) {

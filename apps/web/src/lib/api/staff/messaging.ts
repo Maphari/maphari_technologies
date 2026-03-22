@@ -75,6 +75,12 @@ export async function createStaffClientMessageWithRefresh(
     });
     if (isUnauthorized(msgResponse)) return { unauthorized: true, data: null, error: null };
     if (!msgResponse.payload.success || !msgResponse.payload.data) {
+      // Attempt to clean up the orphaned conversation (fire-and-forget).
+      try {
+        await callGateway<void>(`/conversations/${conversation.id}`, accessToken, { method: "DELETE" });
+      } catch {
+        // Cleanup failure does not change the returned error.
+      }
       return {
         unauthorized: false,
         data:         null,
