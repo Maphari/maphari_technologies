@@ -16,61 +16,7 @@ type PulseResult = {
   openFeedback: Array<{ theme: string; sentiment: Sentiment; note: string }>;
 };
 
-const pulseResults: PulseResult[] = [
-  {
-    month: "Feb 2026",
-    enps: 42,
-    responses: 5,
-    total: 6,
-    scores: {
-      "Overall Satisfaction": 7.8,
-      "Workload Balance": 6.2,
-      "Management Support": 8.1,
-      "Career Growth": 7.0,
-      "Team Culture": 8.6,
-      "Compensation & Benefits": 6.8,
-      "Tools & Resources": 7.4
-    },
-    openFeedback: [
-      { theme: "Workload", sentiment: "negative", note: "Feeling stretched thin. Would appreciate clearer capacity limits." },
-      { theme: "Culture", sentiment: "positive", note: "Love the team energy. Client wins feel genuinely celebrated." },
-      { theme: "Growth", sentiment: "neutral", note: "Interested in more senior-level projects. When is the next review?" },
-      { theme: "Tools", sentiment: "positive", note: "The new project management setup is much better than before." }
-    ]
-  },
-  {
-    month: "Jan 2026",
-    enps: 38,
-    responses: 6,
-    total: 6,
-    scores: {
-      "Overall Satisfaction": 7.4,
-      "Workload Balance": 5.9,
-      "Management Support": 7.9,
-      "Career Growth": 6.8,
-      "Team Culture": 8.2,
-      "Compensation & Benefits": 6.6,
-      "Tools & Resources": 7.0
-    },
-    openFeedback: []
-  },
-  {
-    month: "Dec 2025",
-    enps: 51,
-    responses: 5,
-    total: 6,
-    scores: {
-      "Overall Satisfaction": 8.2,
-      "Workload Balance": 7.1,
-      "Management Support": 8.3,
-      "Career Growth": 7.2,
-      "Team Culture": 9.0,
-      "Compensation & Benefits": 7.0,
-      "Tools & Resources": 7.6
-    },
-    openFeedback: []
-  }
-];
+const pulseResults: PulseResult[] = [];
 
 const sentimentConfig: Record<Sentiment, { color: string; icon: string }> = {
   positive: { color: "var(--accent)", icon: "▲" },
@@ -104,6 +50,34 @@ function sentimentCardClass(sentiment: Sentiment): string {
 
 export function StaffSatisfactionPage() {
   const [activeTab, setActiveTab] = useState<Tab>("latest pulse");
+
+  if (pulseResults.length === 0) {
+    return (
+      <div className={cx(styles.pageBody, styles.sstRoot)}>
+        <div className={styles.pageHeader}>
+          <div>
+            <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+            <h1 className={styles.pageTitle}>Staff Satisfaction</h1>
+            <div className={styles.pageSub}>Monthly pulse surveys, eNPS, trends, and anonymous feedback</div>
+          </div>
+          <div className={styles.sstHeadActions}>
+            <button type="button" className={cx("btnSm", "btnAccent")}>Send Pulse Survey</button>
+          </div>
+        </div>
+        <div className={styles.emptyState}>
+          <div className={styles.emptyIcon}>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="12" width="4" height="9" rx="1" />
+              <rect x="10" y="7" width="4" height="14" rx="1" />
+              <rect x="17" y="3" width="4" height="18" rx="1" />
+            </svg>
+          </div>
+          <div className={styles.emptyStateHeading}>No pulse survey results yet</div>
+          <div className={styles.emptyStateSub}>Send your first pulse survey to start collecting staff satisfaction data.</div>
+        </div>
+      </div>
+    );
+  }
 
   const latest = pulseResults[0];
   const prev = pulseResults[1];
