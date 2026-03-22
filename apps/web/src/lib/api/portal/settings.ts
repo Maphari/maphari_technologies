@@ -26,6 +26,7 @@ export async function getPortalPreferenceWithRefresh(
     | "privacyConsents"
     | "settingsCurrency"
     | "readAnnouncements"
+    | "weeklyPulse"
     | "notificationMutes"
     | "portal_ftue_v1_seen"
     | "onboarding_banner_dismissed"

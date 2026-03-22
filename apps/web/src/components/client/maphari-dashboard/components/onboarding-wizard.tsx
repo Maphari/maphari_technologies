@@ -4,7 +4,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import type { AuthSession } from "@/lib/auth/session";
@@ -67,24 +67,29 @@ export function OnboardingWizard({ session, onClose }: OnboardingWizardProps) {
       clientId ? loadPortalTeamMembersWithRefresh(session, clientId) : Promise.resolve({ data: [], nextSession: null }),
     ];
 
-    Promise.all(fetches).then(([projRes, teamRes]) => {
-      if (projRes.nextSession) saveSession(projRes.nextSession);
-      if (teamRes.nextSession) saveSession(teamRes.nextSession);
-      setProject((projRes.data ?? [])[0] ?? null);
-      setTeam(teamRes.data ?? []);
-      setLoadingData(false);
-    });
+    Promise.all(fetches)
+      .then(([projRes, teamRes]) => {
+        if (projRes.nextSession) saveSession(projRes.nextSession);
+        if (teamRes.nextSession) saveSession(teamRes.nextSession);
+        setProject((projRes.data ?? [])[0] ?? null);
+        setTeam(teamRes.data ?? []);
+      })
+      .catch(() => {
+        // leave project and team in default null/[] state — empty states render correctly
+      })
+      .finally(() => setLoadingData(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
 
-  // Close on Escape
+  // Keep a ref to the latest handleClose so the Escape listener never closes over a stale copy
+  const handleCloseRef = useRef(handleClose);
+  useEffect(() => { handleCloseRef.current = handleClose; });
+
+  // Close on Escape — empty deps are safe because we use a ref
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") handleClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") handleCloseRef.current(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, []);
 
   function handleClose() {
@@ -115,27 +120,19 @@ export function OnboardingWizard({ session, onClose }: OnboardingWizardProps) {
 
   return (
     <div
-      className={cx("modalOverlay")}
+      className={cx("wizardOverlay")}
       onClick={handleClose}
       role="presentation"
     >
       <div
-        className={cx("modalBox", "modalBoxLg")}
+        className={cx("wizardPanel")}
         role="dialog"
         aria-modal="true"
         aria-labelledby="onboarding-wizard-title"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: 680, padding: "40px 40px 32px" }}
       >
         {/* ── Header row ────────────────────────────────────────────────── */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 32,
-          }}
-        >
+        <div className={cx("wizardHeader")}>
           <div className={cx("flex", "gap6", "flexCenter")}>
             <Ic n="sparkle" sz={14} c="var(--lime)" />
             <span className={cx("text13", "fw600")} style={{ color: "var(--muted)" }}>
@@ -153,7 +150,7 @@ export function OnboardingWizard({ session, onClose }: OnboardingWizardProps) {
         </div>
 
         {/* ── Step content ──────────────────────────────────────────────── */}
-        <div style={{ minHeight: 240 }}>
+        <div className={cx("wizardBody")}>
           {step === 0 && <StepWelcome firstName={firstName} />}
           {step === 1 && <StepProject project={project} loading={loadingData} />}
           {step === 2 && <StepTeam team={team} loading={loadingData} />}
@@ -161,14 +158,7 @@ export function OnboardingWizard({ session, onClose }: OnboardingWizardProps) {
         </div>
 
         {/* ── Footer ───────────────────────────────────────────────────── */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginTop: 36,
-          }}
-        >
+        <div className={cx("wizardFooter")}>
           {/* Back button */}
           <div>
             {step > 0 && (
@@ -183,17 +173,12 @@ export function OnboardingWizard({ session, onClose }: OnboardingWizardProps) {
           </div>
 
           {/* Progress dots */}
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <div className={cx("wizardDots")}>
             {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
               <div
                 key={i}
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: i === step ? "var(--lime)" : "var(--b2)",
-                  transition: "background 0.2s",
-                }}
+                className={cx("wizardDot")}
+                style={{ background: i === step ? "var(--lime)" : "var(--b2)" }}
               />
             ))}
           </div>
@@ -223,44 +208,17 @@ export function OnboardingWizard({ session, onClose }: OnboardingWizardProps) {
 function StepWelcome({ firstName }: { firstName: string }) {
   return (
     <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
-      <div
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: "50%",
-          background: "var(--lime-d, color-mix(in oklab, var(--lime) 10%, var(--s2)))",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          margin: "0 auto 24px",
-        }}
-      >
+      <div className={cx("wizardDoneCheck")}>
         <Ic n="zap" sz={22} c="var(--lime)" />
       </div>
-      <h2
-        id="onboarding-wizard-title"
-        style={{
-          fontSize: "1.5rem",
-          fontWeight: 700,
-          marginBottom: 12,
-          lineHeight: 1.2,
-        }}
-      >
+      {/* Only one step renders at a time, so this id is never duplicated in the DOM */}
+      <h2 id="onboarding-wizard-title" className={cx("wizardStepTitle")}>
         {firstName ? `Welcome, ${firstName}!` : "Welcome to your client portal"}
       </h2>
-      {!firstName && null}
-      <p
-        style={{
-          fontSize: "0.875rem",
-          color: "var(--muted)",
-          maxWidth: 460,
-          margin: "0 auto",
-          lineHeight: 1.6,
-        }}
-      >
+      <p className={cx("wizardStepSub")} style={{ maxWidth: 460, margin: "0 auto 20px" }}>
         {firstName
           ? "This is your dedicated workspace for tracking your project, approving deliverables, and communicating with your team."
-          : "This is your dedicated workspace for tracking your project, approving deliverables, and communicating with your team."}
+          : "Everything you need to manage your project is right here — milestones, deliverables, invoices, and more."}
       </p>
     </div>
   );
@@ -271,27 +229,18 @@ function StepWelcome({ firstName }: { firstName: string }) {
 function StepProject({ project, loading }: { project: PortalProject | null; loading: boolean }) {
   return (
     <div>
-      <h2
-        id="onboarding-wizard-title"
-        style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: 8 }}
-      >
+      {/* Only one step renders at a time, so this id is never duplicated in the DOM */}
+      <h2 id="onboarding-wizard-title" className={cx("wizardStepTitle")}>
         Your Project
       </h2>
-      <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 24, lineHeight: 1.6 }}>
+      <p className={cx("wizardStepSub")}>
         Your project is live. You can track progress from the Projects section.
       </p>
 
       {loading ? (
         <div className={cx("loadingCell")}>Loading your project…</div>
       ) : project ? (
-        <div
-          style={{
-            background: "var(--s1)",
-            border: "1px solid var(--b2)",
-            borderRadius: "var(--r-md)",
-            padding: "20px 24px",
-          }}
-        >
+        <div className={cx("wizardProjectCard")}>
           <div
             style={{
               display: "flex",
@@ -327,7 +276,7 @@ function StepProject({ project, loading }: { project: PortalProject | null; load
                 <div
                   style={{
                     height: "100%",
-                    width: `${project.progressPercent}%`,
+                    width: `${project.progressPercent ?? 0}%`,
                     background: "var(--lime)",
                     borderRadius: 2,
                   }}
@@ -357,13 +306,11 @@ function StepTeam({ team, loading }: { team: PortalTeamMember[]; loading: boolea
 
   return (
     <div>
-      <h2
-        id="onboarding-wizard-title"
-        style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: 8 }}
-      >
+      {/* Only one step renders at a time, so this id is never duplicated in the DOM */}
+      <h2 id="onboarding-wizard-title" className={cx("wizardStepTitle")}>
         Meet Your Team
       </h2>
-      <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 24, lineHeight: 1.6 }}>
+      <p className={cx("wizardStepSub")}>
         Your dedicated team is ready to support you throughout the project.
       </p>
 
@@ -372,34 +319,9 @@ function StepTeam({ team, loading }: { team: PortalTeamMember[]; loading: boolea
       ) : displayed.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {displayed.map((member) => (
-            <div
-              key={member.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                background: "var(--s1)",
-                border: "1px solid var(--b2)",
-                borderRadius: "var(--r-sm)",
-                padding: "12px 16px",
-              }}
-            >
+            <div key={member.id} className={cx("wizardTeamRow")}>
               {/* Avatar circle */}
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "50%",
-                  background: "color-mix(in oklab, var(--lime) 15%, var(--s2))",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "0.85rem",
-                  fontWeight: 700,
-                  color: "var(--lime)",
-                  flexShrink: 0,
-                }}
-              >
+              <div className={cx("wizardTeamAvatar")}>
                 {member.name.charAt(0).toUpperCase()}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -435,49 +357,19 @@ const QUICK_LINKS = [
 function StepDone() {
   return (
     <div style={{ textAlign: "center" }}>
-      <div
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: "50%",
-          background: "color-mix(in oklab, var(--lime) 15%, var(--s2))",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          margin: "0 auto 20px",
-        }}
-      >
+      <div className={cx("wizardDoneCheck")}>
         <Ic n="check" sz={24} c="var(--lime)" />
       </div>
 
-      <h2
-        id="onboarding-wizard-title"
-        style={{ fontSize: "1.4rem", fontWeight: 700, marginBottom: 8 }}
-      >
+      {/* Only one step renders at a time, so this id is never duplicated in the DOM */}
+      <h2 id="onboarding-wizard-title" className={cx("wizardStepTitle")}>
         You&apos;re ready to go!
       </h2>
-      <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 28, lineHeight: 1.6 }}>
-        Here are a few places to explore first.
-      </p>
+      <p className={cx("wizardStepSub")}>Here are a few places to explore first.</p>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 12,
-          textAlign: "left",
-        }}
-      >
+      <div className={cx("wizardDoneLinks")} style={{ flexDirection: "row", gap: 12 }}>
         {QUICK_LINKS.map((link) => (
-          <div
-            key={link.label}
-            style={{
-              background: "var(--s1)",
-              border: "1px solid var(--b2)",
-              borderRadius: "var(--r-sm)",
-              padding: "14px 16px",
-            }}
-          >
+          <div key={link.label} className={cx("wizardDoneLink")} style={{ flexDirection: "column", alignItems: "flex-start", gap: 0 }}>
             <div
               style={{
                 width: 30,
