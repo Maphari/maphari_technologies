@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { usePageToast } from "../hooks/use-page-toast";
 import type { NotificationPreference, ConnectedIntegration, SessionInfo } from "../types";
@@ -11,7 +11,7 @@ import { saveSession, clearSession } from "../../../../lib/auth/session";
 import { setPortalPreferenceWithRefresh, getPortalPreferenceWithRefresh } from "../../../../lib/api/portal";
 import { requestDataExportWithRefresh, requestAccountDeletionWithRefresh, revokeAllSessionsWithRefresh } from "../../../../lib/api/portal/profile";
 import { callGateway, withAuthorizedSession } from "../../../../lib/api/portal/internal";
-import { loadPortalNotificationPrefsWithRefresh, updatePortalNotificationPrefsWithRefresh } from "../../../../lib/api/portal/notification-prefs";
+import { loadPortalNotificationPrefsWithRefresh, updatePortalNotificationPrefsWithRefresh, loadPortalNotifPrefsWithRefresh, updatePortalNotifPrefWithRefresh, type NotifPrefKey } from "../../../../lib/api/portal/notification-prefs";
 import { loadPortalTeamMembersWithRefresh } from "../../../../lib/api/portal/team";
 import { callPortalAiGenerateWithRefresh } from "../../../../lib/api/portal/ai";
 import { Ic } from "../ui";
@@ -254,6 +254,10 @@ export function SettingsPage({
   const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
   const [installed, setInstalled] = useState(false);
 
+  // ── Per-channel per-event notification prefs ──────────────────────────────
+  const [notifPrefs, setNotifPrefs] = useState<Record<NotifPrefKey, boolean> | null>(null);
+  const [notifPrefsLoading, setNotifPrefsLoading] = useState(false);
+
   // ── AI Weekly Digest state ────────────────────────────────────────────────
   const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(false);
   const [digestLoading,       setDigestLoading]       = useState(false);
@@ -330,6 +334,26 @@ export function SettingsPage({
       if (r.nextSession) saveSession(r.nextSession);
       if (r.data) setWeeklyDigestEnabled(r.data.weeklyDigest);
     }).finally(() => setDigestLoading(false));
+  }, [session]);
+
+  // Load per-channel per-event notification prefs
+  useEffect(() => {
+    if (!session) return;
+    setNotifPrefsLoading(true);
+    void loadPortalNotifPrefsWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data) setNotifPrefs(r.data);
+      setNotifPrefsLoading(false);
+    });
+  }, [session]);
+
+  const handleNotifToggle = useCallback(async (key: NotifPrefKey, current: boolean) => {
+    if (!session) return;
+    const next = !current;
+    setNotifPrefs((prev) => prev ? { ...prev, [key]: next } : prev);
+    const result = await updatePortalNotifPrefWithRefresh(session, key, next);
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.error) setNotifPrefs((prev) => prev ? { ...prev, [key]: current } : prev);
   }, [session]);
 
   // Load team members for Access Control tab
@@ -1094,6 +1118,67 @@ export function SettingsPage({
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+
+              {/* ── Notification Channels card ─────────────────────────────── */}
+              <div className={cx("card")}>
+                <div className={cx("cardHd")}>
+                  <span className={cx("cardHdTitle")}>Notification Channels</span>
+                  <span className={cx("text10", "colorMuted", "mlAuto")}>Email &amp; In-App per event</span>
+                </div>
+                <div className={cx("cardBodyPad")}>
+                  {notifPrefsLoading ? (
+                    <div className={cx("text12", "colorMuted")}>Loading…</div>
+                  ) : notifPrefs === null ? (
+                    <div className={cx("text12", "colorMuted2")}>Unable to load channel preferences.</div>
+                  ) : (
+                    <table className={cx("wFull", "borderCollapse")}>
+                      <thead>
+                        <tr>
+                          <th scope="col" className={cx("thLeft")}>Event</th>
+                          <th scope="col" className={cx("thCenter80")}>Email</th>
+                          <th scope="col" className={cx("thCenter80")}>In-App</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(
+                          [
+                            { label: "Invoice updates",   emailKey: "notif_email_invoice"      as NotifPrefKey, inAppKey: "notif_inapp_invoice"      as NotifPrefKey },
+                            { label: "Milestone reached", emailKey: "notif_email_milestone"    as NotifPrefKey, inAppKey: "notif_inapp_milestone"    as NotifPrefKey },
+                            { label: "New message",       emailKey: "notif_email_message"      as NotifPrefKey, inAppKey: "notif_inapp_message"      as NotifPrefKey },
+                            { label: "Announcements",     emailKey: "notif_email_announcement" as NotifPrefKey, inAppKey: "notif_inapp_announcement" as NotifPrefKey },
+                          ] as const
+                        ).map(({ label, emailKey, inAppKey }) => (
+                          <tr key={label} className={cx("borderT")}>
+                            <td className={cx("py12_0")}>
+                              <div className={cx("fw600", "text12")}>{label}</div>
+                            </td>
+                            <td className={cx("textCenter")}>
+                              <button
+                                type="button"
+                                aria-label={`Toggle email for ${label}`}
+                                onClick={() => void handleNotifToggle(emailKey, notifPrefs[emailKey])}
+                                className={cx("profMiniToggle", notifPrefs[emailKey] && "profMiniToggleOn")}
+                              >
+                                <span className={cx("profMiniToggleKnob", notifPrefs[emailKey] && "profMiniToggleKnobOn")} />
+                              </button>
+                            </td>
+                            <td className={cx("textCenter")}>
+                              <button
+                                type="button"
+                                aria-label={`Toggle in-app for ${label}`}
+                                onClick={() => void handleNotifToggle(inAppKey, notifPrefs[inAppKey])}
+                                className={cx("profMiniToggle", notifPrefs[inAppKey] && "profMiniToggleOn")}
+                              >
+                                <span className={cx("profMiniToggleKnob", notifPrefs[inAppKey] && "profMiniToggleKnobOn")} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
 

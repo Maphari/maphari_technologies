@@ -38,6 +38,7 @@ import { AutomationController } from "../routes/automation.controller.js";
 import { GoogleCalendarController } from "../routes/google-calendar.controller.js";
 import { CommentsController } from "../routes/comments.controller.js";
 import { CalendarController } from "../routes/calendar.controller.js";
+import { NotificationPrefsController } from "../routes/notification-prefs.controller.js";
 import { RbacGuard } from "../auth/rbac.guard.js";
 import { RequestIdInterceptor } from "../common/request-id.interceptor.js";
 import { MetricsController } from "../observability/metrics.controller.js";
@@ -83,6 +84,7 @@ import { RateLimitGuard } from "../security/rate-limit.guard.js";
     GoogleCalendarController,
     CommentsController,
     CalendarController,
+    NotificationPrefsController,
     MetricsController
   ],
   providers: [

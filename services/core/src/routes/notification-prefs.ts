@@ -40,6 +40,19 @@ function ck(clientId: string): string {
   return `core:notification-prefs:${clientId}`;
 }
 
+export const NOTIF_PREF_KEYS = [
+  "notif_email_invoice",
+  "notif_email_milestone",
+  "notif_email_message",
+  "notif_email_announcement",
+  "notif_inapp_invoice",
+  "notif_inapp_milestone",
+  "notif_inapp_message",
+  "notif_inapp_announcement",
+] as const;
+
+export type NotifPrefKey = (typeof NOTIF_PREF_KEYS)[number];
+
 export async function registerNotificationPrefRoutes(app: FastifyInstance): Promise<void> {
 
   // ── GET /portal/settings/notifications ───────────────────────────────────
@@ -117,6 +130,59 @@ export async function registerNotificationPrefRoutes(app: FastifyInstance): Prom
     } catch (error) {
       request.log.error(error);
       return reply.status(500).send({ success: false, error: { code: "NOTIFICATION_PREFS_UPDATE_FAILED", message: "Unable to update notification preferences." } } as ApiResponse);
+    }
+  });
+
+  // ── GET /notification-prefs ───────────────────────────────────────────────
+  app.get("/notification-prefs", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (!scope.userId) {
+      return reply.status(401).send({ success: false, error: { code: "UNAUTHORIZED", message: "Missing user scope." } } as ApiResponse);
+    }
+
+    try {
+      const rows = await prisma.userPreference.findMany({
+        where: { userId: scope.userId, key: { in: [...NOTIF_PREF_KEYS] } },
+      });
+
+      const rowMap = new Map(rows.map((r) => [r.key, r.value === "true"]));
+      const result = Object.fromEntries(
+        NOTIF_PREF_KEYS.map((k) => [k, rowMap.has(k) ? (rowMap.get(k) as boolean) : true])
+      ) as Record<NotifPrefKey, boolean>;
+
+      return { success: true, data: result, meta: { requestId: scope.requestId } } as ApiResponse<Record<NotifPrefKey, boolean>>;
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ success: false, error: { code: "NOTIF_PREFS_FETCH_FAILED", message: "Unable to fetch notification preferences." } } as ApiResponse);
+    }
+  });
+
+  // ── PATCH /notification-prefs ─────────────────────────────────────────────
+  app.patch("/notification-prefs", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (!scope.userId) {
+      return reply.status(401).send({ success: false, error: { code: "UNAUTHORIZED", message: "Missing user scope." } } as ApiResponse);
+    }
+
+    const body = request.body as { key: unknown; value: unknown };
+    const key = body.key as string;
+    const value = body.value;
+
+    if (!NOTIF_PREF_KEYS.includes(key as NotifPrefKey)) {
+      return reply.status(400).send({ success: false, error: { code: "INVALID_KEY", message: `Invalid notification preference key: ${key}` } } as ApiResponse);
+    }
+
+    try {
+      await prisma.userPreference.upsert({
+        where: { userId_key: { userId: scope.userId, key } },
+        update: { value: String(value) },
+        create: { userId: scope.userId, key, value: String(value) },
+      });
+
+      return { success: true, data: { success: true }, meta: { requestId: scope.requestId } } as ApiResponse<{ success: boolean }>;
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ success: false, error: { code: "NOTIF_PREF_UPDATE_FAILED", message: "Unable to update notification preference." } } as ApiResponse);
     }
   });
 }
