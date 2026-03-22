@@ -544,6 +544,32 @@ export async function getProjectPreferenceWithRefresh(
   });
 }
 
+export async function bulkUpdateProjectStatusWithRefresh(
+  session: AuthSession,
+  ids: string[],
+  newStatus: string
+): Promise<AuthorizedResult<{ updated: number; failed: string[] }>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ updated: number; failed: string[] }>(
+      "/admin/projects/bulk-status",
+      accessToken,
+      { method: "POST", body: { ids, status: newStatus } }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code    ?? "BULK_STATUS_UPDATE_FAILED",
+          response.payload.error?.message ?? "Unable to bulk-update project statuses."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
 export async function setProjectPreferenceWithRefresh(
   session: AuthSession,
   input: {

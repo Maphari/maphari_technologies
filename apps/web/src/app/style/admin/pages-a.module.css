@@ -589,6 +589,31 @@
   transition: all 0.12s ease;
 }
 
+/* ─── Contract Renewal Page ─────────────────────────────────────── */
+
+.crtHead {
+  display: grid;
+  grid-template-columns: 90px 1fr 80px 110px 140px 90px 1fr;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.crtRow {
+  display: grid;
+  grid-template-columns: 90px 1fr 80px 110px 140px 90px 1fr;
+  gap: 10px;
+  padding: 12px 16px;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .crtHead,
+  .crtRow {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ─── Messages Page ─────────────────────────────────────────────── */
 
 /* Base definition — ensures padding is applied when this module's class wins the spread */
@@ -2422,7 +2447,7 @@
 
 .projOpsQueueGrid {
   display: grid;
-  grid-template-columns: 1.4fr 100px 80px 60px 60px 1fr;
+  grid-template-columns: 28px 1.4fr 100px 80px 60px 60px 1fr;
   gap: 10px;
   align-items: center;
 }
@@ -2439,7 +2464,7 @@
 
 .projOpsCheckGrid {
   display: grid;
-  grid-template-columns: 1.4fr 100px 80px 100px 120px;
+  grid-template-columns: 28px 1.4fr 100px 80px 100px 120px;
   gap: 10px;
   align-items: center;
 }
@@ -7970,4 +7995,48 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   .execLayout {
     padding: 12px 16px;
   }
+}
+
+/* ══ Bulk Action Bar ══════════════════════════════════════════════════════════ */
+
+.projOpsBulkBar {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--s1);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.32);
+  z-index: 500;
+  white-space: nowrap;
+}
+
+.projOpsBulkCount {
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-syne);
+  color: var(--accent);
+}
+
+.projOpsBulkLabel {
+  font-size: 12px;
+  font-family: var(--font-dm-mono);
+  color: var(--muted);
+}
+
+.projOpsBulkSelect {
+  background: var(--s3);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-xs);
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: var(--font-dm-mono);
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
 }

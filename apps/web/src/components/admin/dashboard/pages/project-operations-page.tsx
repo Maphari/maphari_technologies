@@ -7,7 +7,7 @@ import { saveSession } from "../../../../lib/auth/session";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
-import { updateProjectWithRefresh } from "../../../../lib/api/admin/projects";
+import { updateProjectWithRefresh, bulkUpdateProjectStatusWithRefresh } from "../../../../lib/api/admin/projects";
 import { queueAutomationJobWithRefresh } from "../../../../lib/api/admin/automation";
 
 type ViewMode = "execution board" | "ops queue" | "checkpoint tracker";
@@ -118,6 +118,11 @@ export function ProjectOperationsPage({
   const [riskFilter, setRiskFilter] = useState<"ALL" | "LOW" | "MEDIUM" | "HIGH">("ALL");
   const [checkpointFilter, setCheckpointFilter] = useState<"ALL" | "ON_RHYTHM" | "DUE_SOON" | "AT_RISK" | "MISSED" | "STALE">("ALL");
 
+  // ── Bulk selection state ──────────────────────────────────────────────────
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<string>("ON_HOLD");
+  const [bulkApplying, setBulkApplying] = useState(false);
+
   const rows = useMemo(() => {
     return snapshot.projects.map((project) => {
       const client = snapshot.clients.find((c) => c.id === project.clientId);
@@ -195,6 +200,45 @@ export function ProjectOperationsPage({
       onNotify("error", result.error.message ?? "Failed to queue job.");
     }
   }, [session, onNotify]);
+
+  // ── Bulk selection helpers ────────────────────────────────────────────────
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((p) => p.id)));
+    }
+  }
+
+  async function handleBulkApply() {
+    if (!session || selectedIds.size === 0) return;
+    setBulkApplying(true);
+    const ids = Array.from(selectedIds);
+    const result = await bulkUpdateProjectStatusWithRefresh(session, ids, bulkStatus);
+    if (result.nextSession) saveSession(result.nextSession);
+    setBulkApplying(false);
+    if (result.error) {
+      onNotify("error", result.error.message);
+    } else {
+      const { updated, failed } = result.data ?? { updated: 0, failed: [] };
+      onNotify(
+        failed.length === 0 ? "success" : "error",
+        failed.length === 0
+          ? `${updated} project${updated !== 1 ? "s" : ""} updated to ${bulkStatus}`
+          : `${updated} updated, ${failed.length} failed`
+      );
+      setSelectedIds(new Set());
+    }
+  }
 
   // ── Edit project state ────────────────────────────────────────────────────
   const [showEditProject, setShowEditProject] = useState(false);
@@ -469,6 +513,14 @@ export function ProjectOperationsPage({
       {view === "ops queue" ? (
         <div className={cx("card", "overflowHidden", "p0")}>
           <div className={cx(styles.projOpsQueueGrid, "px20", "borderB", "fontMono", "text10", "colorMuted", "uppercase", "tracking")}>
+            <span>
+              <input
+                type="checkbox"
+                title="Select all"
+                checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                onChange={toggleSelectAll}
+              />
+            </span>
             {["Project", "Status", "Risk", "Due", "Idle", "Recommended Action"].map((h) => (
               <span key={h}>{h}</span>
             ))}
@@ -476,6 +528,15 @@ export function ProjectOperationsPage({
           {queue.length > 0 ? (
             queue.map((p, i) => (
               <div key={p.id} className={cx(styles.projOpsQueueGrid, styles.projOpsQueueRowAlign, "px20", "py12", i < queue.length - 1 && "borderB")}>
+                <span>
+                  <input
+                    type="checkbox"
+                    title={`Select ${p.name}`}
+                    checked={selectedIds.has(p.id)}
+                    onChange={() => toggleSelect(p.id)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </span>
                 <div>
                   <div className={cx("text12", "fw700")}>{p.name}</div>
                   <div className={cx("text11", "colorMuted")}>{p.clientName}</div>
@@ -505,6 +566,21 @@ export function ProjectOperationsPage({
         <div className={styles.projOpsCheckpointSplit}>
           <div className={cx("card", "overflowHidden", "p0")}>
             <div className={cx(styles.projOpsCheckGrid, "px20", "borderB", "fontMono", "text10", "colorMuted", "uppercase", "tracking")}>
+              <span>
+                <input
+                  type="checkbox"
+                  title="Select all"
+                  checked={checkpoints.length > 0 && checkpoints.every((p) => selectedIds.has(p.id))}
+                  onChange={() => {
+                    const allSelected = checkpoints.every((p) => selectedIds.has(p.id));
+                    setSelectedIds((prev) => {
+                      const next = new Set(prev);
+                      checkpoints.forEach((p) => { if (allSelected) next.delete(p.id); else next.add(p.id); });
+                      return next;
+                    });
+                  }}
+                />
+              </span>
               {["Project", "Status", "Risk", "Checkpoint", "Due"].map((h) => (
                 <span key={h}>{h}</span>
               ))}
@@ -512,6 +588,15 @@ export function ProjectOperationsPage({
             {checkpoints.length > 0 ? (
               checkpoints.map((p, i) => (
                 <div key={p.id} className={cx(styles.projOpsCheckGrid, styles.projOpsQueueRowAlign, "px20", "py12", i < checkpoints.length - 1 && "borderB")}>
+                  <span>
+                    <input
+                      type="checkbox"
+                      title={`Select ${p.name}`}
+                      checked={selectedIds.has(p.id)}
+                      onChange={() => toggleSelect(p.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </span>
                   <div>
                     <div className={cx("text12", "fw700")}>{p.name}</div>
                     <div className={cx("text11", "colorMuted")}>{p.clientName}</div>
@@ -558,6 +643,44 @@ export function ProjectOperationsPage({
           </div>
         </div>
       ) : null}
+
+      {/* ── Floating Bulk Action Bar ─────────────────────────────────────── */}
+      {selectedIds.size > 0 && (
+        <div className={cx("projOpsBulkBar")}>
+          <span className={cx("projOpsBulkCount")}>
+            {selectedIds.size} project{selectedIds.size !== 1 ? "s" : ""} selected
+          </span>
+          <span className={cx("projOpsBulkLabel")}>Move to:</span>
+          <select
+            title="New status for selected projects"
+            value={bulkStatus}
+            onChange={(e) => setBulkStatus(e.target.value)}
+            className={cx("projOpsBulkSelect")}
+          >
+            <option value="PLANNING">Planning</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="REVIEW">Review</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="ON_HOLD">On Hold</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+          <button
+            type="button"
+            className={cx("btnSm", "btnAccent")}
+            disabled={bulkApplying || !canOperate}
+            onClick={() => void handleBulkApply()}
+          >
+            {bulkApplying ? "Applying…" : "Apply"}
+          </button>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost")}
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear Selection
+          </button>
+        </div>
+      )}
 
       {/* ── Edit Project Modal ─────────────────────────────────────────────── */}
       {showEditProject && selected && (
