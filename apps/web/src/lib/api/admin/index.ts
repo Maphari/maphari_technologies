@@ -28,3 +28,4 @@ export * from "./documents";
 export * from "./pipeline";
 export * from "./prospecting";
 export * from "./webhooks";
+export * from "./calendar";

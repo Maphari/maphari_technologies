@@ -15,6 +15,7 @@ import { saveSession } from "../../../../lib/auth/session";
 import type { AdminClient, AdminProject, AdminInvoice } from "../../../../lib/api/admin/types";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
 import { loadAllStaffWithRefresh } from "../../../../lib/api/admin/hr";
+import { loadAdminContractsWithRefresh, type LegalContract } from "../../../../lib/api/admin/contracts";
 import type { PageId } from "../config";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -94,6 +95,7 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
   const [projects, setProjects] = useState<AdminProject[]>([]);
   const [invoices, setInvoices] = useState<AdminInvoice[]>([]);
   const [staffCount, setStaffCount] = useState(0);
+  const [contracts, setContracts] = useState<LegalContract[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -101,9 +103,10 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
     let cancelled = false;
     void (async () => {
       try {
-        const [snap, staff] = await Promise.all([
+        const [snap, staff, contractsResult] = await Promise.all([
           loadAdminSnapshotWithRefresh(session),
-          loadAllStaffWithRefresh(session)
+          loadAllStaffWithRefresh(session),
+          loadAdminContractsWithRefresh(session)
         ]);
         if (cancelled) return;
         if (snap.nextSession) saveSession(snap.nextSession);
@@ -113,6 +116,7 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
         setProjects(snap.data?.projects ?? []);
         setInvoices(snap.data?.invoices ?? []);
         setStaffCount((staff.data ?? []).filter((s) => s.isActive).length);
+        setContracts(contractsResult.data ?? []);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -142,6 +146,16 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
   );
 
   const atRiskClients = useMemo(() => clients.filter((c) => c.status === "AT_RISK" || c.status === "CHURNED").length, [clients]);
+
+  const contractsExpiringSoon = useMemo(() => {
+    const now = Date.now();
+    const in30Days = now + 30 * 24 * 60 * 60 * 1000;
+    return contracts.filter((c) => {
+      if (!c.expiresAt) return false;
+      const exp = new Date(c.expiresAt).getTime();
+      return exp <= in30Days;
+    }).length;
+  }, [contracts]);
 
   const kpis = useMemo(() => [
     { label: "Monthly Revenue", value: centsToK(monthlyRevenue), prev: "—", change: "—", color: "var(--accent)", up: null as boolean | null },
@@ -373,6 +387,30 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
                 <span className={cx(styles.exdCashValue, colorClass(r.color), "rdStudioMetric", r.color === "var(--red)" ? "rdStudioMetricNeg" : "rdStudioMetricPos")}>{r.value}</span>
               </div>
             ))}
+          </div>
+
+          {/* ── Contracts Expiring Soon widget ──────────────────────────── */}
+          <div className={cx("card", "p24")}>
+            <div className={styles.exdSecTitle}>Contracts Expiring Soon</div>
+            <div className={cx(styles.exdCashRow, "borderB")}>
+              <span className={cx(styles.exdCashLabel)}>Expiring within 30 days</span>
+              <span className={cx(styles.exdCashValue, contractsExpiringSoon > 0 ? "colorRed" : "colorAccent")}>
+                {contractsExpiringSoon}
+              </span>
+            </div>
+            <div className={cx(styles.exdCashRow)}>
+              <span className={cx(styles.exdCashLabel)}>Total contracts</span>
+              <span className={cx(styles.exdCashValue, "colorText")}>{contracts.length}</span>
+            </div>
+            {onNavigate && (
+              <button
+                type="button"
+                className={cx("btnSm", "btnGhost", "mt12")}
+                onClick={() => onNavigate("contractRenewal")}
+              >
+                View All Contracts
+              </button>
+            )}
           </div>
         </div>
       )}

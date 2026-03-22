@@ -13,6 +13,7 @@ export interface LegalContract {
   status: string;        // PENDING | SIGNED | VOID
   signed: boolean;
   signedAt: string | null;
+  expiresAt: string | null;
   notes: string | null;
   sortOrder: number;
   createdAt: string;

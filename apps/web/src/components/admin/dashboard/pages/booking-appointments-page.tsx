@@ -7,10 +7,11 @@ import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { loadAllAppointmentsWithRefresh, type AdminAppointment } from "../../../../lib/api/admin/client-ops";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
+import { loadAdminCalendarEventsWithRefresh, type CalendarEvent } from "../../../../lib/api/admin/calendar";
 
 type MeetingType = "Consultation" | "Kickoff" | "Review" | "Check-in";
 type MeetingStatus = "confirmed" | "pending" | "rescheduled";
-type Tab = "upcoming" | "pending" | "past" | "settings";
+type Tab = "upcoming" | "pending" | "past" | "calendar" | "settings";
 
 type Meeting = {
   id: string;
@@ -25,7 +26,7 @@ type Meeting = {
   videoRoomUrl: string | null;
 };
 
-const tabs: Tab[] = ["upcoming", "pending", "past", "settings"];
+const tabs: Tab[] = ["upcoming", "pending", "past", "calendar", "settings"];
 const NOW = Date.now();
 
 function mapStatus(s: string): MeetingStatus {
@@ -70,10 +71,37 @@ function statusBadge(status: MeetingStatus): string {
   return "badgeMuted";
 }
 
+function calendarEventTypeLabel(type: CalendarEvent["type"]): string {
+  if (type === "appointment")     return "Appointment";
+  if (type === "milestone")       return "Milestone";
+  if (type === "sprint_deadline") return "Sprint End";
+  return type;
+}
+
+function calendarEventTypeBadge(type: CalendarEvent["type"]): string {
+  if (type === "appointment")     return "badgeAccent";
+  if (type === "milestone")       return "badgePurple";
+  if (type === "sprint_deadline") return "badgeAmber";
+  return "badgeMuted";
+}
+
+function groupByDate(events: CalendarEvent[]): Map<string, CalendarEvent[]> {
+  const map = new Map<string, CalendarEvent[]>();
+  for (const ev of events) {
+    const key = new Date(ev.date).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    const existing = map.get(key) ?? [];
+    existing.push(ev);
+    map.set(key, existing);
+  }
+  return map;
+}
+
 export function BookingAppointmentsPage({ session }: { session: AuthSession | null }) {
-  const [meetings, setMeetings]   = useState<Meeting[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>("upcoming");
+  const [meetings, setMeetings]           = useState<Meeting[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [activeTab, setActiveTab]         = useState<Tab>("upcoming");
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
@@ -103,6 +131,26 @@ export function BookingAppointmentsPage({ session }: { session: AuthSession | nu
   const weekCount     = meetings.length;
   const pendingCount  = meetings.filter(m => m.status === "pending").length;
   const cancelledCount = meetings.filter(m => m.status === "rescheduled").length;
+
+  // Load calendar events when "calendar" tab is activated
+  useEffect(() => {
+    if (activeTab !== "calendar" || !session) return;
+    let cancelled = false;
+    setCalendarLoading(true);
+    const from = new Date().toISOString();
+    const to   = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
+    (async () => {
+      try {
+        const res = await loadAdminCalendarEventsWithRefresh(session, from, to);
+        if (cancelled) return;
+        if (res.nextSession) saveSession(res.nextSession);
+        setCalendarEvents(res.data ?? []);
+      } finally {
+        if (!cancelled) setCalendarLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeTab, session]);
 
   const filtered =
     activeTab === "upcoming" ? meetings.filter(m => m.status !== "rescheduled" && m.scheduledMs >= NOW - 86_400_000)
@@ -170,15 +218,41 @@ export function BookingAppointmentsPage({ session }: { session: AuthSession | nu
             {activeTab === "upcoming" ? "Upcoming Appointments"
               : activeTab === "pending" ? "Pending Confirmation"
               : activeTab === "past"    ? "Past Meetings"
+              : activeTab === "calendar" ? "Calendar — Next 60 Days"
               : "Settings"}
           </span>
-          <span className={styles.teamSectionMeta}>{filtered.length} MEETINGS</span>
+          {activeTab !== "calendar" && (
+            <span className={styles.teamSectionMeta}>{filtered.length} MEETINGS</span>
+          )}
         </div>
 
         {activeTab === "settings" ? (
           <div className={cx("p24", "colorMuted", "text12", "textCenter")}>
             Booking settings are managed in the platform configuration.
           </div>
+        ) : activeTab === "calendar" ? (
+          calendarLoading ? (
+            <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading calendar…</div>
+          ) : calendarEvents.length === 0 ? (
+            <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No events in the next 60 days.</div>
+          ) : (
+            <div className={cx("flexCol", "gap4")}>
+              {Array.from(groupByDate(calendarEvents)).map(([dateLabel, dayEvents]) => (
+                <div key={dateLabel}>
+                  <div className={cx("text11", "colorMuted", "fw600", "p12", "bb1")}>{dateLabel}</div>
+                  {dayEvents.map(ev => (
+                    <div key={ev.id} className={cx("flexRow", "gap8", "p12", "alignCenter", "bb1")}>
+                      <span className={cx("badge", calendarEventTypeBadge(ev.type))}>{calendarEventTypeLabel(ev.type)}</span>
+                      <span className={cx("text13", "fw500", "flex1")}>{ev.title}</span>
+                      {ev.clientName && <span className={cx("text12", "colorMuted")}>{ev.clientName}</span>}
+                      {ev.projectName && <span className={cx("text12", "colorMuted")}>{ev.projectName}</span>}
+                      {ev.status && <span className={cx("badge", "badgeMuted")}>{ev.status}</span>}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )
         ) : (
           <>
             <div className={styles.bkngHead}>

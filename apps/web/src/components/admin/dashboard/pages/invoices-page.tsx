@@ -11,7 +11,8 @@ import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin";
 import type { AdminInvoice, AdminClient, AdminProject } from "../../../../lib/api/admin";
-import { createInvoiceWithRefresh, updateInvoiceWithRefresh, createPaymentWithRefresh } from "../../../../lib/api/admin/billing";
+import { createInvoiceWithRefresh, updateInvoiceWithRefresh, createPaymentWithRefresh, triggerInvoiceChaseWithRefresh, loadOverdueChaseStatusWithRefresh } from "../../../../lib/api/admin/billing";
+import type { OverdueInvoice } from "../../../../lib/api/admin/billing";
 import { queueAutomationJobWithRefresh } from "../../../../lib/api/admin/automation";
 import { callGateway, isUnauthorized, withAuthorizedSession } from "../../../../lib/api/admin/_shared";
 import { cx, styles } from "../style";
@@ -64,6 +65,19 @@ function isoDatePlusDays(days: number): string {
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
 }
+
+function computeEscalationLevel(daysOverdue: number): 0 | 1 | 2 | 3 {
+  if (daysOverdue <= 0) return 0;
+  if (daysOverdue < 14) return 1;
+  if (daysOverdue < 30) return 2;
+  return 3;
+}
+
+const ESCALATION_LABELS: Record<1 | 2 | 3, string> = {
+  1: "Gentle",
+  2: "Firm",
+  3: "Director",
+};
 
 function detectStage(description: string | null | undefined): MilestoneStage | null {
   if (!description) return null;
@@ -147,6 +161,11 @@ export function InvoicesPage({
   // ── Inline expansion ────────────────────────────────────────────────────────
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
 
+  // ── Chase workflow ───────────────────────────────────────────────────────────
+  const [chasingIds, setChasingIds] = useState<Set<string>>(new Set());
+  const [chasingAll, setChasingAll] = useState(false);
+  const [chaseHistory, setChaseHistory] = useState<Map<string, OverdueInvoice>>(new Map());
+
   // ── CSV export ──────────────────────────────────────────────────────────────
   function handleExportCsv() {
     const headers = ["Number", "Client ID", "Amount", "Currency", "Status", "Issued", "Due", "Paid"];
@@ -175,7 +194,10 @@ export function InvoicesPage({
     setLoading(true);
     setError(null);
     try {
-      const r = await loadAdminSnapshotWithRefresh(session);
+      const [r, chaseR] = await Promise.all([
+        loadAdminSnapshotWithRefresh(session),
+        loadOverdueChaseStatusWithRefresh(session),
+      ]);
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error) {
         const msg = r.error.message;
@@ -186,10 +208,59 @@ export function InvoicesPage({
         setClients(r.data.clients);
         setProjects(r.data.projects);
       }
+      if (chaseR.data?.invoices) {
+        setChaseHistory(new Map(chaseR.data.invoices.map((inv) => [inv.id, inv])));
+      }
     } finally {
       setLoading(false);
     }
   }, [session, onNotify]);
+
+  async function handleChase(invoiceId: string) {
+    if (!session || chasingIds.has(invoiceId)) return;
+    setChasingIds((prev) => new Set([...prev, invoiceId]));
+    try {
+      const r = await triggerInvoiceChaseWithRefresh(session, invoiceId, "send");
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) {
+        onNotify("error", r.error.message ?? "Chase failed.");
+      } else {
+        onNotify("success", "Chase reminder sent.");
+        // Reload chase history
+        const chaseR = await loadOverdueChaseStatusWithRefresh(session);
+        if (chaseR.data?.invoices) {
+          setChaseHistory(new Map(chaseR.data.invoices.map((inv) => [inv.id, inv])));
+        }
+      }
+    } finally {
+      setChasingIds((prev) => { const next = new Set(prev); next.delete(invoiceId); return next; });
+    }
+  }
+
+  async function handleChaseAll() {
+    if (!session || chasingAll) return;
+    const overdueInvoices = invoices.filter((i) => i.status === "OVERDUE");
+    if (overdueInvoices.length === 0) return;
+    setChasingAll(true);
+    let succeeded = 0;
+    let failed = 0;
+    for (const inv of overdueInvoices) {
+      const r = await triggerInvoiceChaseWithRefresh(session, inv.id, "send");
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) { failed++; } else { succeeded++; }
+    }
+    setChasingAll(false);
+    if (failed === 0) {
+      onNotify("success", `Chase reminders sent for ${succeeded} overdue invoice${succeeded > 1 ? "s" : ""}.`);
+    } else {
+      onNotify("warning", `Chased ${succeeded} invoices; ${failed} failed.`);
+    }
+    // Reload chase history
+    const chaseR = await loadOverdueChaseStatusWithRefresh(session);
+    if (chaseR.data?.invoices) {
+      setChaseHistory(new Map(chaseR.data.invoices.map((inv) => [inv.id, inv])));
+    }
+  }
 
   useEffect(() => { void load(); }, [load]);
 
@@ -398,6 +469,16 @@ export function InvoicesPage({
         </div>
         <div className={cx("flexRow", "gap8")}>
           <button type="button" className={cx("btnSm", "btnGhost")} onClick={handleExportCsv}>Export CSV</button>
+          {overdue.length > 0 && (
+            <button
+              type="button"
+              className={styles.invcChaseBtn}
+              onClick={() => void handleChaseAll()}
+              disabled={chasingAll}
+            >
+              {chasingAll ? "Chasing…" : `Chase All Overdue (${overdue.length})`}
+            </button>
+          )}
           <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setShowMilestone(true)}>+ Generate Invoice</button>
           <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setShowCreate(true)}>+ New Invoice</button>
         </div>
@@ -507,17 +588,49 @@ export function InvoicesPage({
                       </div>
                       <span className={cx("fontMono", "fw700", "colorAccent")}>{formatMoneyCents(inv.amountCents, { currency: inv.currency, maximumFractionDigits: 0 })}</span>
                       <span className={cx("text11", "fontMono", "colorMuted")}>{fmtDate(inv.issuedAt)}</span>
-                      <span className={cx("text11", "fontMono", isOverdue ? "colorRed" : "colorMuted")}>
-                        {fmtDate(inv.dueAt)}
-                        {isOverdue && diff < 0 && (
-                          <div className={cx("text10", "colorRed")}>{Math.abs(diff)}d overdue</div>
-                        )}
-                      </span>
+                      <div className={cx("flexCol", "gap4")}>
+                        <span className={cx("text11", "fontMono", isOverdue ? "colorRed" : "colorMuted")}>
+                          {fmtDate(inv.dueAt)}
+                        </span>
+                        {isOverdue && diff < 0 && (() => {
+                          const daysOver = Math.abs(diff);
+                          const level = computeEscalationLevel(daysOver);
+                          const chaseInfo = chaseHistory.get(inv.id);
+                          const lastChasedDaysAgo = chaseInfo?.lastChasedAt
+                            ? Math.floor((Date.now() - new Date(chaseInfo.lastChasedAt).getTime()) / 86_400_000)
+                            : null;
+                          return (
+                            <>
+                              <span className={cx(styles.invcStatusBadge, toneClass("var(--red)"))}>{daysOver}d overdue</span>
+                              {level > 0 && (
+                                <span className={cx(styles.invcStatusBadge, toneClass(level === 3 ? "var(--red)" : level === 2 ? "var(--amber)" : "var(--muted)"))}>
+                                  {ESCALATION_LABELS[level as 1 | 2 | 3]}
+                                </span>
+                              )}
+                              {lastChasedDaysAgo !== null && (
+                                <span className={cx("text10", "colorMuted")}>
+                                  Last chased: {lastChasedDaysAgo === 0 ? "today" : `${lastChasedDaysAgo}d ago`}
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
                       <StatusBadge status={inv.status} />
                       <div className={cx("flexRow", "gap6")}>
                         <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setExpandedInvoiceId(expandedInvoiceId === inv.id ? null : inv.id)}>{expandedInvoiceId === inv.id ? "Close" : "View"}</button>
+                        {isOverdue && (
+                          <button
+                            type="button"
+                            className={styles.invcChaseBtn}
+                            onClick={() => void handleChase(inv.id)}
+                            disabled={chasingIds.has(inv.id) || chasingAll}
+                          >
+                            {chasingIds.has(inv.id) ? "Chasing…" : "Chase"}
+                          </button>
+                        )}
                         {(isOverdue || inv.status === "ISSUED") && (
-                          <button type="button" className={styles.invcChaseBtn} onClick={() => setPayInvoice(inv)}>Record Payment</button>
+                          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setPayInvoice(inv)}>Record Payment</button>
                         )}
                       </div>
                     </div>
