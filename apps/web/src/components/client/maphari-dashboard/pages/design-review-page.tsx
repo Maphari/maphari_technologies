@@ -87,17 +87,21 @@ export function DesignReviewPage() {
   const [tab,      setTab]      = useState<DRTab>("All");
   const [screens,  setScreens]  = useState<ScreenRow[]>([]);
   const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState<string | null>(null);
   const [approved, setApproved] = useState<Record<string, boolean>>({});
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!session || !projectId) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     void getPortalDesignReviewsWithRefresh(session, projectId).then(r => {
       if (r.nextSession) saveSession(r.nextSession);
       if (r.data && r.data.length > 0) {
         setScreens(r.data.map(apiToScreen));
       }
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load");
     }).finally(() => setLoading(false));
   }, [session, projectId]);
 
@@ -129,6 +133,16 @@ export function DesignReviewPage() {
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );

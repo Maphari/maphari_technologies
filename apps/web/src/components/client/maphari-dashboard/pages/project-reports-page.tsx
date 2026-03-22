@@ -82,6 +82,7 @@ export function ProjectReportsPage() {
   const [sprintTasks,   setSprintTasks]   = useState<Record<string, PortalSprintTask[]>>({});
   const [activeTab,     setActiveTab]     = useState<ReportTab>("Value Realized");
   const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState<string | null>(null);
   const [loadingTasks,  setLoadingTasks]  = useState(false);
 
   // Track which sprint IDs we've already started loading (avoids duplicate fetches)
@@ -91,6 +92,7 @@ export function ProjectReportsPage() {
   useEffect(() => {
     if (!session || !projectId) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
 
     Promise.all([
       loadPortalDeliverablesWithRefresh(session, projectId),
@@ -100,8 +102,9 @@ export function ProjectReportsPage() {
       if (sprintRes.nextSession) saveSession(sprintRes.nextSession);
       setDeliverables(delivRes.data  ?? []);
       setSprints(sprintRes.data      ?? []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load");
+    }).finally(() => setLoading(false));
   }, [session, projectId]);
 
   // ── Lazy-load tasks when a sprint tab is selected ───────────────────────────
@@ -162,6 +165,16 @@ export function ProjectReportsPage() {
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );

@@ -37,13 +37,17 @@ export function ProjectBriefPage({ onNavigate }: { onNavigate?: (page: PageId) =
   const { session, projectId } = useProjectLayer();
   const [brief, setBrief] = useState<PortalBrief | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState<string | null>(null);
 
   useEffect(() => {
     if (!session || !projectId) { setLoading(false); return; }
     setLoading(true);
+    setError(null);
     void loadPortalBriefWithRefresh(session, projectId).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
       setBrief(result.data ?? null);
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load");
     }).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken, projectId]);
@@ -63,6 +67,16 @@ export function ProjectBriefPage({ onNavigate }: { onNavigate?: (page: PageId) =
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
         </div>
       </div>
     );
