@@ -66,6 +66,7 @@ function minutesToHours(minutes: number): string {
 const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   REVENUE: { label: "Revenue & Invoicing", color: "var(--accent)" },
   TAX:     { label: "Tax & SARS",          color: "var(--red)"    },
+  PAYROLL: { label: "Payroll & HR",        color: "var(--amber)"  },
   ARCHIVE: { label: "Year-End Admin",      color: "var(--blue)"   },
 };
 
@@ -77,7 +78,7 @@ const TASK_NOTES: Record<string, string> = {
 };
 
 // Category sort order
-const CATEGORY_ORDER = ["REVENUE", "TAX", "ARCHIVE"];
+const CATEGORY_ORDER = ["REVENUE", "TAX", "PAYROLL", "ARCHIVE"];
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -139,6 +140,7 @@ export function FinancialYearCloseoutPage({
       if (result.nextSession) saveSession(result.nextSession);
       if (result.error) {
         setChecklistError(result.error.message);
+        onNotify?.("error", "Failed to load checklist");
       } else {
         setChecklist(result.data ?? []);
       }
