@@ -18,6 +18,7 @@ export interface AuthorizedResult<T> {
   data: T | null;
   nextSession: AuthSession | null;
   error: GatewayError | null;
+  unauthorized?: boolean;
 }
 
 async function attemptGateway<T>(
@@ -128,6 +129,7 @@ export async function withAuthorizedSession<T>(
     return {
       data: null,
       nextSession: null,
+      unauthorized: true,
       error: toGatewayError("SESSION_EXPIRED", "Session expired. Please sign in again.")
     };
   }
@@ -139,6 +141,7 @@ export async function withAuthorizedSession<T>(
     return {
       data: null,
       nextSession,
+      unauthorized: true,
       error: toGatewayError("SESSION_UNAUTHORIZED", "Session is valid but authorization failed for admin resources.")
     };
   }

@@ -10,9 +10,9 @@ import {
   loadAdminStaffScheduleWithRefresh,
   type StaffScheduleEntry,
   type StaffScheduleWeek,
-  saveSession,
 } from "@/lib/api/admin/staff-schedule";
 import type { AuthSession } from "@/lib/auth/session";
+import { saveSession } from "@/lib/auth/session";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -100,6 +100,11 @@ export function StaffSchedulingPage({ session }: StaffSchedulingPageProps) {
       const isoStart = ws.toISOString().split("T")[0] as string;
       const result = await loadAdminStaffScheduleWithRefresh(session, isoStart, 8);
       if (result.nextSession) saveSession(result.nextSession);
+      if (result.unauthorized) {
+        setError("Session expired. Please log in again.");
+        setLoading(false);
+        return;
+      }
       if (result.error) {
         const isAuthError = result.error.code === "SESSION_EXPIRED" || result.error.code === "SESSION_UNAUTHORIZED";
         setError(isAuthError ? "Session expired. Please log in again." : (result.error.message ?? "Failed to load schedule"));

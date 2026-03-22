@@ -120,30 +120,32 @@ export async function registerStaffScheduleRoutes(app: FastifyInstance): Promise
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekEnd.getDate() + 7);
 
-        const leave = staffLeaves.find(
-          (l) => l.startDate <= weekEnd && l.endDate >= weekStart
-        );
+        const leave = staffLeaves.find((l) => {
+          const leaveEndExclusive = new Date(l.endDate);
+          leaveEndExclusive.setDate(leaveEndExclusive.getDate() + 1);
+          return l.startDate < weekEnd && leaveEndExclusive > weekStart;
+        });
 
         let status: "available" | "partial" | "on-leave" = "available";
         let leaveReason: string | undefined;
 
         if (leave) {
-          // Full week on leave if leave spans the entire week
-          if (leave.startDate <= weekStart && leave.endDate >= weekEnd) {
-            status = "on-leave";
-          } else {
-            status = "partial";
-          }
+          const leaveEndExclusive = new Date(leave.endDate);
+          leaveEndExclusive.setDate(leaveEndExclusive.getDate() + 1);
+          const fullWeek = leave.startDate <= weekStart && leaveEndExclusive >= weekEnd;
+          status = fullWeek ? "on-leave" : "partial";
           leaveReason = leave.type;
         } else if (staffProjects.length > 0) {
           status = "partial"; // Has active assignments
         }
 
+        const isFullLeave = leave !== undefined && status === "on-leave";
+
         return {
           weekStart: weekStart.toISOString().split("T")[0] as string,
           status,
           leaveReason,
-          projectAssignments: leave ? [] : staffProjects,
+          projectAssignments: isFullLeave ? [] : staffProjects,
         };
       });
 
@@ -151,6 +153,7 @@ export async function registerStaffScheduleRoutes(app: FastifyInstance): Promise
         staffId: s.id,
         staffName: s.name,
         role: s.role,
+        // TODO: drive from StaffProfile.weeklyHours once that field is added to schema
         weeklyCapacity: 40,
         weeks: weekData,
       };

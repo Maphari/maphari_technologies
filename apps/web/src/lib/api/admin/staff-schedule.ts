@@ -11,8 +11,6 @@ import {
   withAuthorizedSession,
   type AuthorizedResult
 } from "./_shared";
-import { saveSession } from "../../auth/session";
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface StaffScheduleWeek {
@@ -71,4 +69,3 @@ export async function loadAdminStaffScheduleWithRefresh(
   });
 }
 
-export { saveSession };
