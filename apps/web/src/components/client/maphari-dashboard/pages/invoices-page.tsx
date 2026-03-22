@@ -296,8 +296,14 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
       form.appendChild(input);
     });
 
-    document.body.appendChild(form);
-    form.submit();
+    try {
+      document.body.appendChild(form);
+      form.submit();
+    } catch {
+      document.body.removeChild(form);
+      setPayError("Failed to redirect to PayFast. Please try again.");
+      setPayLoading(false);
+    }
   }
 
   const invoiceData = useMemo<Invoice[]>(() => {
