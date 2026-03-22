@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
 import { StaffEmptyState, EmptyIcons } from "../empty-state";
+import type { AuthSession } from "../../../../lib/auth/session";
+import { getStaffAllComms } from "../../../../lib/api/staff/clients";
 
 // ─── Type icons (SVG) ────────────────────────────────────────────────────────
 
@@ -60,60 +62,22 @@ type EventType = "message" | "milestone" | "invoice" | "call" | "file";
 type Direction = "outbound" | "inbound" | "both";
 
 type ClientRow = {
-  id: number;
+  id: string;
   name: string;
   avatar: string;
-  project: string;
 };
 
 type TimelineEvent = {
-  id: number;
-  clientId: number;
+  id: string;
+  clientId: string;
+  clientName: string;
   type: EventType;
   direction: Direction;
   title: string;
   excerpt: string;
   date: string;
   time: string;
-  read: boolean;
 };
-
-const clients: ClientRow[] = [
-  { id: 1, name: "Volta Studios", avatar: "VS", project: "Brand Identity System" },
-  { id: 2, name: "Kestrel Capital", avatar: "KC", project: "Q1 Campaign Strategy" },
-  { id: 3, name: "Mira Health", avatar: "MH", project: "Website Redesign" },
-  { id: 4, name: "Dune Collective", avatar: "DC", project: "Editorial Design System" },
-  { id: 5, name: "Okafor & Sons", avatar: "OS", project: "Annual Report 2025" }
-];
-
-const allEvents: TimelineEvent[] = [
-  { id: 1, clientId: 1, type: "message", direction: "outbound", title: "Sent brand direction brief", excerpt: "Hi Lena - attached is the brand direction brief covering mood board, tone, and three initial concept directions.", date: "Feb 22", time: "9:14 AM", read: true },
-  { id: 2, clientId: 1, type: "message", direction: "inbound", title: "Client replied: concept feedback", excerpt: "Really love the direction on B. Can we tweak the secondary colour slightly warmer?", date: "Feb 22", time: "11:32 AM", read: true },
-  { id: 3, clientId: 1, type: "milestone", direction: "outbound", title: "Milestone submitted: Logo & Visual Direction", excerpt: "Submitted for client approval - value R3,200. Includes primary logo suite, colour palette, typography, mood board.", date: "Feb 22", time: "2:00 PM", read: true },
-  { id: 4, clientId: 1, type: "message", direction: "outbound", title: "Sent revised colour palette", excerpt: "Updated version attached - the amber is warmer as discussed.", date: "Feb 22", time: "2:05 PM", read: true },
-  { id: 5, clientId: 1, type: "invoice", direction: "outbound", title: "Invoice #INV-0041 sent", excerpt: "R8,750 - Brand identity phase 1 - Due Mar 7", date: "Feb 18", time: "10:00 AM", read: true },
-  { id: 6, clientId: 1, type: "invoice", direction: "inbound", title: "Invoice paid", excerpt: "R8,750 received - 3 days early. Payment confirmed.", date: "Feb 19", time: "3:45 PM", read: true },
-  { id: 7, clientId: 1, type: "milestone", direction: "inbound", title: "Milestone approved: Colour Palette", excerpt: "Client approved with no changes. Proceeding to brand guidelines phase.", date: "Feb 18", time: "4:00 PM", read: true },
-  { id: 8, clientId: 1, type: "call", direction: "both", title: "Kickoff call completed", excerpt: "45 min - Google Meet - Discussed brand direction, timeline, and asset requirements. Decision: 3 concepts minimum.", date: "Jan 9", time: "10:00 AM", read: true },
-  { id: 9, clientId: 1, type: "file", direction: "inbound", title: "Client uploaded brand assets", excerpt: "12 files - Existing logos, brand photos, competitor references.", date: "Jan 10", time: "2:30 PM", read: true },
-  { id: 10, clientId: 2, type: "milestone", direction: "outbound", title: "Milestone submitted: Campaign Strategy Deck", excerpt: "Submitted for approval - value R5,800. Audience segmentation, channel strategy, content calendar, KPI framework.", date: "Feb 17", time: "10:00 AM", read: false },
-  { id: 11, clientId: 2, type: "message", direction: "outbound", title: "Follow-up: strategy approval", excerpt: "Following up - have you had a chance to review the deck?", date: "Feb 19", time: "9:00 AM", read: false },
-  { id: 12, clientId: 2, type: "message", direction: "outbound", title: "Second follow-up", excerpt: "Hi Marcus - wanted to check in one more time before escalating to the account manager.", date: "Feb 21", time: "2:00 PM", read: false },
-  { id: 13, clientId: 2, type: "invoice", direction: "outbound", title: "Invoice #INV-0038 sent", excerpt: "R21,000 - Monthly retainer - Feb 2026 - Due Feb 14", date: "Feb 1", time: "9:00 AM", read: false },
-  { id: 14, clientId: 2, type: "message", direction: "inbound", title: "Client replied: AP delays", excerpt: "Sorry for the delay - AP department has been chaotic. Reviewing now.", date: "Feb 20", time: "11:00 AM", read: true },
-  { id: 15, clientId: 3, type: "milestone", direction: "outbound", title: "Milestone submitted: Mobile Wireframes", excerpt: "4 screens - home, patient dashboard, booking flow, navigation. Submitted for review.", date: "Feb 19", time: "11:00 AM", read: true },
-  { id: 16, clientId: 3, type: "message", direction: "inbound", title: "Client feedback: wireframes", excerpt: "Great work overall! Two things: booking step 3 is a bit confusing, and can we simplify the nav labels?", date: "Feb 19", time: "3:30 PM", read: true },
-  { id: 17, clientId: 3, type: "message", direction: "outbound", title: "Acknowledged revisions", excerpt: "On it - revisions underway. Will have updates by Thursday.", date: "Feb 19", time: "4:00 PM", read: true },
-  { id: 18, clientId: 3, type: "file", direction: "outbound", title: "Sent revised wireframes", excerpt: "Booking flow simplified to 4-step wizard. Navigation labels updated to patient-friendly language.", date: "Feb 20", time: "10:00 AM", read: true },
-  { id: 19, clientId: 3, type: "call", direction: "both", title: "UX review call scheduled", excerpt: "60 min - Zoom - Tomorrow 9:00 AM - reviewing revised wireframes and desktop scope.", date: "Feb 22", time: "3:00 PM", read: true },
-  { id: 20, clientId: 4, type: "milestone", direction: "outbound", title: "Milestone submitted: Type & Grid System", excerpt: "Full InDesign package with documentation - 12-column grid, 8pt baseline, usage guide.", date: "Feb 9", time: "10:00 AM", read: false },
-  { id: 21, clientId: 4, type: "message", direction: "outbound", title: "Follow-up: approval request", excerpt: "Hi - just checking in on the approval for the grid system.", date: "Feb 12", time: "9:00 AM", read: false },
-  { id: 22, clientId: 4, type: "message", direction: "outbound", title: "Second follow-up", excerpt: "Following up again. Happy to hop on a call if that would help.", date: "Feb 14", time: "11:00 AM", read: false },
-  { id: 23, clientId: 4, type: "message", direction: "outbound", title: "Final follow-up before escalation", excerpt: "Last follow-up before I loop in the account manager.", date: "Feb 17", time: "2:00 PM", read: false },
-  { id: 24, clientId: 5, type: "milestone", direction: "inbound", title: "Milestone approved: Data Visualisation", excerpt: "These look excellent. Approving all - please proceed to next milestone.", date: "Feb 19", time: "4:45 PM", read: true },
-  { id: 25, clientId: 5, type: "invoice", direction: "inbound", title: "Invoice paid early", excerpt: "R2,900 received - 5 days early. Payment confirmed.", date: "Feb 15", time: "11:00 AM", read: true },
-  { id: 26, clientId: 5, type: "message", direction: "inbound", title: "Positive feedback", excerpt: "The charts look exceptional - exactly what the board needed to see. Thank you.", date: "Feb 20", time: "9:30 AM", read: true }
-];
 
 const typeConfig: Record<EventType, { icon: string; label: string; iconClass: string; badgeClass: string }> = {
   message: { icon: "✉", label: "Message", iconClass: "commsTypeMessage", badgeClass: "commsTypeBadgeMessage" },
@@ -129,12 +93,52 @@ const directionConfig: Record<Direction, { label: string; toneClass: string }> =
   both: { label: "Joint", toneClass: "commsDirectionBoth" }
 };
 
-export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
-  const [selectedClient, setSelectedClient] = useState<"all" | number>("all");
+export function CommunicationHistoryPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
+  const [allEvents, setAllEvents] = useState<TimelineEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [selectedClient, setSelectedClient] = useState<"all" | string>("all");
   const [filterType, setFilterType] = useState<"all" | EventType>("all");
   const [filterDir, setFilterDir] = useState<"all" | "inbound" | "outbound">("all");
   const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    void getStaffAllComms(session).then((r) => {
+      if (r.data) {
+        setAllEvents(r.data.map((log): TimelineEvent => {
+          const d = new Date(log.occurredAt);
+          return {
+            id: log.id,
+            clientId: log.clientId,
+            clientName: log.clientName,
+            type: (["message", "milestone", "invoice", "call", "file"].includes(log.type) ? log.type : "message") as EventType,
+            direction: (log.direction === "inbound" || log.direction === "outbound" ? log.direction : "outbound") as Direction,
+            title: log.subject,
+            excerpt: log.actionLabel ?? "",
+            date: d.toLocaleDateString("en-ZA", { day: "numeric", month: "short" }),
+            time: d.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" }),
+          };
+        }));
+      }
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load");
+    }).finally(() => setLoading(false));
+  }, [session]);
+
+  const clients = useMemo((): ClientRow[] => {
+    const seen = new Map<string, ClientRow>();
+    for (const ev of allEvents) {
+      if (!seen.has(ev.clientId)) {
+        const initials = ev.clientName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+        seen.set(ev.clientId, { id: ev.clientId, name: ev.clientName, avatar: initials });
+      }
+    }
+    return Array.from(seen.values());
+  }, [allEvents]);
 
   const events = useMemo(
     () =>
@@ -148,11 +152,9 @@ export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
             || event.title.toLowerCase().includes(search.toLowerCase())
             || event.excerpt.toLowerCase().includes(search.toLowerCase())
         )
-        .sort((a, b) => b.id - a.id),
-    [filterDir, filterType, search, selectedClient]
+        .sort((a, b) => b.id.localeCompare(a.id)),
+    [allEvents, filterDir, filterType, search, selectedClient]
   );
-
-  const unreadCount = allEvents.filter((event) => !event.read && event.direction === "inbound").length;
 
   const groupedByDate = useMemo(() => {
     return events.reduce<Record<string, TimelineEvent[]>>((accumulator, event) => {
@@ -161,6 +163,34 @@ export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
       return accumulator;
     }, {});
   }, [events]);
+
+  if (loading) {
+    return (
+      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
+        <div className={cx("pageHeaderBar", "borderB", "commsHeaderBar")}>
+          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
+          <h1 className={cx("pageTitleText")}>Communication History</h1>
+        </div>
+        <div className={cx("commsContent")}>
+          <StaffEmptyState icon={EmptyIcons.notes} title="Loading..." sub="Fetching communication history." />
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
+        <div className={cx("pageHeaderBar", "borderB", "commsHeaderBar")}>
+          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
+          <h1 className={cx("pageTitleText")}>Communication History</h1>
+        </div>
+        <div className={cx("commsContent")}>
+          <StaffEmptyState icon={EmptyIcons.notes} title="Failed to load" sub={error} />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
@@ -172,9 +202,9 @@ export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
         {/* Stats strip */}
         <div className={cx("staffKpiStrip", "mb16")}>
           {[
-            { label: "Total events",   value: allEvents.length, cls: "" },
-            { label: "Unread inbound", value: unreadCount,      cls: unreadCount > 0 ? "colorRed" : "colorAccent" },
-            { label: "Clients",        value: clients.length,   cls: "" },
+            { label: "Total events", value: allEvents.length, cls: "" },
+            { label: "Clients",      value: clients.length,   cls: "" },
+            { label: "Types",        value: new Set(allEvents.map(e => e.type)).size, cls: "" },
           ].map((stat) => (
             <div key={stat.label} className={cx("staffKpiCell")}>
               <div className={cx("staffKpiLabel")}>{stat.label}</div>
@@ -188,15 +218,12 @@ export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
           <select
             className={cx("staffFilterInput")}
             aria-label="Filter by client"
-            value={selectedClient === "all" ? "all" : String(selectedClient)}
-            onChange={(event) => {
-              const value = event.target.value;
-              setSelectedClient(value === "all" ? "all" : Number.parseInt(value, 10));
-            }}
+            value={selectedClient === "all" ? "all" : selectedClient}
+            onChange={(e) => setSelectedClient(e.target.value === "all" ? "all" : e.target.value)}
           >
             <option value="all">All clients</option>
             {clients.map((client) => (
-              <option key={client.id} value={String(client.id)}>
+              <option key={client.id} value={client.id}>
                 {client.name}
               </option>
             ))}
@@ -256,10 +283,8 @@ export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
               {dateEvents.map((event, index) => {
                 const tCfg = typeConfig[event.type];
                 const dCfg = directionConfig[event.direction];
-                const clientName = clients.find((row) => row.id === event.clientId)?.name;
                 const isExpanded = expanded === event.id;
                 const isLast = index === dateEvents.length - 1;
-                const isUnread = !event.read && event.direction === "inbound";
 
                 // map type to staffChip variant
                 const chipCls =
@@ -274,7 +299,6 @@ export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
                     key={event.id}
                     className={cx(
                       "staffListRow",
-                      isUnread && "staffNotifUnread",
                       isLast && "staffCommsRowLast"
                     )}
                     style={{ cursor: "pointer", borderBottom: isLast ? "none" : "1px solid var(--border)", flexDirection: "column", alignItems: "stretch", gap: 0 }}
@@ -285,8 +309,7 @@ export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
                       <div
                         className={cx(
                           "commsTimelineIcon",
-                          tCfg.iconClass,
-                          isUnread && "commsTimelineIconUnread"
+                          tCfg.iconClass
                         )}
                       >
                         {TYPE_ICONS[event.type]}
@@ -294,11 +317,10 @@ export function CommunicationHistoryPage({ isActive }: { isActive: boolean }) {
                       <span className={cx("staffCommsTitle", "flex1")}>{event.title}</span>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                         {selectedClient === "all" && (
-                          <span className={cx("staffRoleLabel")}>{clientName}</span>
+                          <span className={cx("staffRoleLabel")}>{event.clientName}</span>
                         )}
                         <span className={cx("staffChip", chipCls)}>{tCfg.label}</span>
                         <span className={cx("staffChip", dCfg.toneClass === "commsDirectionOutbound" ? "" : dCfg.toneClass === "commsDirectionInbound" ? "staffChipGreen" : "staffChipPurple")}>{dCfg.label}</span>
-                        {isUnread && <div className={cx("commsUnreadPing")} />}
                         <span className={cx("staffCommsTimeCol")}>{event.time}</span>
                       </div>
                     </div>
