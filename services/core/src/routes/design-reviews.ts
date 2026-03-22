@@ -110,15 +110,26 @@ export async function registerDesignReviewRoutes(app: FastifyInstance): Promise<
   // ── PATCH /design-reviews/:id/resolve ──────────────────────────────────────
   app.patch("/design-reviews/:id/resolve", async (request, reply) => {
     const scope = readScopeHeaders(request);
-    if (scope.role !== "ADMIN") {
-      reply.status(403);
-      return { success: false, error: { code: "FORBIDDEN", message: "Admin only" } } as ApiResponse;
-    }
-
     const { id } = request.params as { id: string };
     const body = request.body as { notes?: string };
 
     try {
+      // For CLIENT role, verify they own the review
+      if (scope.role === "CLIENT") {
+        const existing = await prisma.designReview.findUnique({ where: { id } });
+        if (!existing) {
+          reply.status(404);
+          return { success: false, error: { code: "NOT_FOUND", message: "Design review not found" } } as ApiResponse;
+        }
+        if (existing.clientId !== scope.clientId) {
+          reply.status(403);
+          return { success: false, error: { code: "FORBIDDEN", message: "Access denied" } } as ApiResponse;
+        }
+      } else if (scope.role !== "ADMIN" && scope.role !== "STAFF") {
+        reply.status(403);
+        return { success: false, error: { code: "FORBIDDEN", message: "Insufficient permissions" } } as ApiResponse;
+      }
+
       const review = await prisma.designReview.update({
         where: { id },
         data:  { status: "RESOLVED", resolvedAt: new Date(), ...(body.notes ? { notes: body.notes } : {}) },
@@ -133,6 +144,43 @@ export async function registerDesignReviewRoutes(app: FastifyInstance): Promise<
     } catch (error) {
       request.log.error(error);
       return { success: false, error: { code: "DESIGN_REVIEW_RESOLVE_FAILED", message: "Unable to resolve design review" } } as ApiResponse;
+    }
+  });
+
+  // ── GET /projects/:projectId/design-reviews (portal-facing) ─────────────────
+  app.get<{ Params: { projectId: string } }>("/projects/:projectId/design-reviews", async (request) => {
+    const scope = readScopeHeaders(request);
+    const { projectId } = request.params;
+    const clientFilter = resolveClientFilter(scope.role, scope.clientId);
+
+    try {
+      const rows = await prisma.designReview.findMany({
+        where: {
+          projectId,
+          ...(clientFilter ? { clientId: clientFilter } : {}),
+        },
+        orderBy: { submittedAt: "desc" },
+      });
+
+      const data = rows.map((r) => ({
+        id:           r.id,
+        projectId:    r.projectId,
+        title:        r.notes ?? `Round ${r.round} Review`,
+        description:  null,
+        status:       r.status === "RESOLVED" ? "APPROVED" : r.status,
+        figmaUrl:     null,
+        screensCount: null,
+        designerNote: null,
+        requestedAt:  r.submittedAt.toISOString(),
+        resolvedAt:   r.resolvedAt?.toISOString() ?? null,
+        createdAt:    r.createdAt.toISOString(),
+        updatedAt:    r.updatedAt.toISOString(),
+      }));
+
+      return { success: true, data } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      return { success: false, error: { code: "DESIGN_REVIEWS_FETCH_FAILED", message: "Unable to fetch design reviews" } } as ApiResponse;
     }
   });
 }
