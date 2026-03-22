@@ -161,6 +161,8 @@ export function ProjectReportsPage() {
   if (loading) {
     return (
       <div className={cx("pageBody")}>
+        <div className={cx("printHeader")}>Maphari Technologies</div>
+        <div className={cx("printFooter")}>Printed: {new Date().toLocaleDateString("en-ZA")}</div>
         <div className={cx("flexCol", "gap12")}>
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
@@ -172,6 +174,8 @@ export function ProjectReportsPage() {
   if (error) {
     return (
       <div className={cx("pageBody")}>
+        <div className={cx("printHeader")}>Maphari Technologies</div>
+        <div className={cx("printFooter")}>Printed: {new Date().toLocaleDateString("en-ZA")}</div>
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateTitle")}>Something went wrong</div>
           <div className={cx("emptyStateSub")}>{error}</div>
