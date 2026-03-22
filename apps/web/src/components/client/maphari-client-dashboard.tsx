@@ -522,7 +522,7 @@ export function MaphariClientDashboard() {
           <div className={styles.content} style={contentStyle}>
             <DashboardErrorBoundary>
             {/* ── FTUE: No-project holding page ───────────────────────── */}
-            {hasNoProjects ? (
+            {hasNoProjects && nav.activePage !== "projectRequest" ? (
               <FtueHoldingPage session={session ?? null} navigateTo={handleNavigate} />
             ) : (
               <>

@@ -92,6 +92,9 @@ export function FtueHoldingPage({ session, navigateTo }: FtueHoldingPageProps) {
 
       {/* ── CTA strip ───────────────────────────────────────────────── */}
       <div className={cx("ftueCtas")}>
+        <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => navigateTo("projectRequest")}>
+          <Ic n="plus" sz={13} c="var(--bg)" /> Request a Project
+        </button>
         <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => navigateTo("messages")}>
           <Ic n="message" sz={13} c="var(--muted)" /> Get in touch
         </button>
@@ -108,7 +111,7 @@ export function FtueHoldingPage({ session, navigateTo }: FtueHoldingPageProps) {
         <div className={cx("cardBodyPad")}>
           <div className={cx("ftueStepList")}>
             {[
-              { n: "1", label: "Proposal review",  sub: "We'll walk you through scope, timeline, and investment." },
+              { n: "1", label: "Request or await a proposal",  sub: "Submit a project brief or wait for your team to send a proposal." },
               { n: "2", label: "Contract signing",  sub: "Once approved, your contract is sent for e-signature."   },
               { n: "3", label: "Project kickoff",   sub: "Your dedicated team is assigned and your portal activates." },
             ].map((s) => (
