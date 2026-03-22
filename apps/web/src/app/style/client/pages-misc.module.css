@@ -1751,6 +1751,8 @@
 .skeleH260Pulse { height: 260px; border-radius: var(--r-sm); background: var(--s3); animation: skeletonPulse 1.4s ease infinite; }
 .skeleBarW85 { width: 85%; height: 10px; border-radius: 5px; background: var(--s3); animation: skeletonPulse 1.4s ease infinite; }
 .skeleBarW68 { width: 68%; height: 10px; border-radius: 5px; background: var(--s3); animation: skeletonPulse 1.4s ease infinite; }
+.skeleBarSm  { height: 12px; border-radius: 6px; }
+.aiCardContent { min-height: 120px; }
 
 /* ── Online indicator ────────────────────────────────────────────────────── */
 .onlineIndicator { width: 8px; height: 8px; border-radius: 50%; background: var(--green); border: 1.5px solid var(--s1); }

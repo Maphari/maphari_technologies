@@ -112,15 +112,15 @@ function InsightCard({ id, icon, title, state, onGenerate, tokens }: InsightCard
       </button>
 
       {/* Content area */}
-      <div style={{ minHeight: "120px" }}>
+      <div className={cx("aiCardContent")}>
         {state.loading ? (
           <div className={cx("flexCol", "gap8")}>
-            <div className={cx("skeletonBlock", "skeleBarW85")} style={{ height: "12px", borderRadius: "6px" }} />
-            <div className={cx("skeletonBlock", "skeleBarW68")} style={{ height: "12px", borderRadius: "6px" }} />
-            <div className={cx("skeletonBlock", "skeleBarW55")} style={{ height: "12px", borderRadius: "6px" }} />
+            <div className={cx("skeletonBlock", "skeleBarW85", "skeleBarSm")} />
+            <div className={cx("skeletonBlock", "skeleBarW68", "skeleBarSm")} />
+            <div className={cx("skeletonBlock", "skeleBarW55", "skeleBarSm")} />
           </div>
         ) : state.error ? (
-          <p className={cx("text12", "colorMuted")} style={{ color: "var(--red)" }}>
+          <p className={cx("text12", "colorRed")}>
             {state.error}
           </p>
         ) : state.content ? (
@@ -199,7 +199,9 @@ function DigestModal({ insights, onClose }: DigestModalProps) {
             .map((s) => (
               <div key={s.id} className={cx("mb16")}>
                 <div className={cx("fw600", "text12", "mb4")}>{s.label}</div>
-                <p className={cx("text12", "colorMuted", "lineH18")}>{insights[s.id].content}</p>
+                {insights[s.id].content!.split("\n\n").filter(Boolean).map((para, i) => (
+                  <p key={i} className={cx("text12", "colorMuted", "lineH18")}>{para}</p>
+                ))}
               </div>
             ))
         )}
