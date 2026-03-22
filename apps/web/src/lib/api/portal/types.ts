@@ -30,6 +30,9 @@ export interface PortalFile {
   storageKey: string;
   mimeType: string;
   sizeBytes: number;
+  approvalStatus: string;
+  versionOf: string | null;
+  versionNote: string | null;
   createdAt: string;
   updatedAt: string;
 }

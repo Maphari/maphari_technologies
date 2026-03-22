@@ -9,16 +9,20 @@ datasource db {
 }
 
 model FileRecord {
-  id         String   @id @default(uuid())
-  clientId   String
-  fileName   String
-  storageKey String
-  mimeType   String
-  sizeBytes  BigInt
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String   @id @default(uuid())
+  clientId       String
+  fileName       String
+  storageKey     String
+  mimeType       String
+  sizeBytes      BigInt
+  approvalStatus String   @default("PENDING_REVIEW") // PENDING_REVIEW | APPROVED | CHANGES_REQUESTED
+  versionOf      String? // id of the parent FileRecord this is a new version of
+  versionNote    String? // short note from uploader about what changed
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([clientId, createdAt])
+  @@index([versionOf])
   @@map("files")
 }
 

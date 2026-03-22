@@ -263,6 +263,15 @@ export async function registerUploadFlowRoutes(app: FastifyInstance): Promise<vo
       } as ApiResponse;
     }
 
+    // Optional versioning fields from request body
+    const rawBody = (parsedBody.data as unknown as Record<string, unknown>);
+    const versionOf = typeof rawBody["versionOf"] === "string" && rawBody["versionOf"].length > 0
+      ? rawBody["versionOf"]
+      : undefined;
+    const versionNote = typeof rawBody["versionNote"] === "string" && rawBody["versionNote"].length > 0
+      ? rawBody["versionNote"]
+      : undefined;
+
     try {
       const fileRecord = await observeDb(app, "fileRecord.create", () =>
         prisma.fileRecord.create({
@@ -271,7 +280,9 @@ export async function registerUploadFlowRoutes(app: FastifyInstance): Promise<vo
             fileName: parsedBody.data.fileName,
             storageKey: parsedBody.data.storageKey,
             mimeType: parsedBody.data.mimeType,
-            sizeBytes: BigInt(parsedBody.data.sizeBytes)
+            sizeBytes: BigInt(parsedBody.data.sizeBytes),
+            ...(versionOf ? { versionOf } : {}),
+            ...(versionNote ? { versionNote } : {})
           }
         })
       );
@@ -301,7 +312,10 @@ export async function registerUploadFlowRoutes(app: FastifyInstance): Promise<vo
         success: true,
         data: {
           ...fileRecord,
-          sizeBytes: Number(fileRecord.sizeBytes)
+          sizeBytes: Number(fileRecord.sizeBytes),
+          approvalStatus: fileRecord.approvalStatus,
+          versionOf: fileRecord.versionOf ?? null,
+          versionNote: fileRecord.versionNote ?? null
         },
         meta: { requestId: scope.requestId }
       } as ApiResponse;

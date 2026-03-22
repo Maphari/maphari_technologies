@@ -26,6 +26,8 @@ export {
   loadPortalFilesWithRefresh,
   createPortalUploadUrlWithRefresh,
   confirmPortalUploadWithRefresh,
-  getPortalFileDownloadUrlWithRefresh
+  getPortalFileDownloadUrlWithRefresh,
+  updatePortalFileApprovalWithRefresh,
+  loadPortalFileVersionsWithRefresh
 } from "./files";
-export type { PortalUploadUrlResult, PortalDownloadUrlResult } from "./files";
+export type { PortalUploadUrlResult, PortalDownloadUrlResult, FileApprovalStatus } from "./files";

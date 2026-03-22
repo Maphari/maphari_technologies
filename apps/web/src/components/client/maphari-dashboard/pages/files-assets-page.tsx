@@ -4,6 +4,8 @@
 //            createPortalUploadUrlWithRefresh → POST /files/upload-url
 //            confirmPortalUploadWithRefresh   → POST /files/confirm-upload
 //            getPortalFileDownloadUrlWithRefresh → GET /files/:id/download-url
+//            updatePortalFileApprovalWithRefresh → PATCH /files/:id/approval
+//            loadPortalFileVersionsWithRefresh   → GET /files/:id/versions
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -15,7 +17,10 @@ import {
   createPortalUploadUrlWithRefresh,
   confirmPortalUploadWithRefresh,
   getPortalFileDownloadUrlWithRefresh,
-  type PortalFile
+  updatePortalFileApprovalWithRefresh,
+  loadPortalFileVersionsWithRefresh,
+  type PortalFile,
+  type FileApprovalStatus
 } from "../../../../lib/api/portal";
 import { saveSession } from "../../../../lib/auth/session";
 import { usePageToast } from "../hooks/use-page-toast";
@@ -92,24 +97,97 @@ function toFType(mimeType: string): FType {
   return "Documents"; // PDF, docx, zip, etc.
 }
 
+// ── Approval status helpers ───────────────────────────────────────────────────
+
+function approvalBadgeClass(status: string): string {
+  if (status === "APPROVED") return "badgeGreen";
+  if (status === "CHANGES_REQUESTED") return "badgeRed";
+  return "badgeAmber"; // PENDING_REVIEW
+}
+
+function approvalBadgeLabel(status: string): string {
+  if (status === "APPROVED") return "Approved";
+  if (status === "CHANGES_REQUESTED") return "Changes Requested";
+  return "Awaiting Review";
+}
+
 // ── Derived display type ──────────────────────────────────────────────────────
 
 interface FileRow {
   id: string;
+  rawId: string;
   name: string;
   type: FType;
   size: string;
   date: string;
+  approvalStatus: string;
 }
 
 function toFileRow(f: PortalFile): FileRow {
   return {
-    id:   f.id.slice(0, 8).toUpperCase(),
-    name: f.fileName,
-    type: toFType(f.mimeType),
-    size: formatBytes(f.sizeBytes),
-    date: formatDate(f.createdAt),
+    id:             f.id.slice(0, 8).toUpperCase(),
+    rawId:          f.id,
+    name:           f.fileName,
+    type:           toFType(f.mimeType),
+    size:           formatBytes(f.sizeBytes),
+    date:           formatDate(f.createdAt),
+    approvalStatus: f.approvalStatus ?? "PENDING_REVIEW",
   };
+}
+
+// ── Version Panel ─────────────────────────────────────────────────────────────
+
+interface VersionPanelProps {
+  fileName: string;
+  versions: PortalFile[];
+  onClose: () => void;
+}
+
+function VersionPanel({ fileName, versions, onClose }: VersionPanelProps) {
+  return (
+    <>
+      <div className={cx("faVersionPanelOverlay")} onClick={onClose} />
+      <aside className={cx("faVersionPanel")}>
+        <div className={cx("faVersionPanelHeader")}>
+          <div className={cx("faVersionPanelTitle")}>Version History</div>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={onClose}>
+            <Ic n="x" sz={14} c="var(--muted)" />
+          </button>
+        </div>
+        <div className={cx("faVersionPanelBody")}>
+          <div className={cx("text11", "colorMuted", "mb4")}>{fileName}</div>
+          {versions.length <= 1 ? (
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}><Ic n="git-branch" sz={20} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateTitle")}>No previous versions</div>
+              <div className={cx("emptyStateSub")}>This is the only version of this file.</div>
+            </div>
+          ) : (
+            versions.map((v, idx) => (
+              <div
+                key={v.id}
+                className={cx("faVersionRow", idx === versions.length - 1 && "faVersionRowCurrent")}
+              >
+                {idx === versions.length - 1 && (
+                  <div className={cx("faVersionRowLabel")}>Current</div>
+                )}
+                <div className={cx("fw600", "text12")}>{v.fileName}</div>
+                <div className={cx("text10", "colorMuted")}>{formatDate(v.createdAt)}</div>
+                {v.versionNote && (
+                  <div className={cx("faVersionNote")}>{v.versionNote}</div>
+                )}
+                <div className={cx("flexRow", "gap5", "mt6")}>
+                  <span className={cx("badge", approvalBadgeClass(v.approvalStatus ?? "PENDING_REVIEW"))}>
+                    {approvalBadgeLabel(v.approvalStatus ?? "PENDING_REVIEW")}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </aside>
+    </>
+  );
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -119,17 +197,27 @@ export function FilesAssetsPage() {
   const notify = usePageToast();
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  const [files,      setFiles]      = useState<PortalFile[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState<string | null>(null);
-  const [tab,        setTab]        = useState<FTab>("All");
-  const [viewMode,   setViewMode]   = useState<"list" | "grid">("list");
-  const [query,      setQuery]      = useState("");
-  const [uploading,  setUploading]  = useState(false);
-  const [uploadPct,  setUploadPct]  = useState(0);
+  const [files,           setFiles]           = useState<PortalFile[]>([]);
+  const [loading,         setLoading]         = useState(true);
+  const [error,           setError]           = useState<string | null>(null);
+  const [tab,             setTab]             = useState<FTab>("All");
+  const [viewMode,        setViewMode]        = useState<"list" | "grid">("list");
+  const [query,           setQuery]           = useState("");
+  const [uploading,       setUploading]       = useState(false);
+  const [uploadPct,       setUploadPct]       = useState(0);
+
+  // Approval inline state: fileId → pending note input
+  const [pendingNoteId,   setPendingNoteId]   = useState<string | null>(null);
+  const [pendingNote,     setPendingNote]      = useState("");
+  const [approving,       setApproving]       = useState<string | null>(null);
+
+  // Versions panel state
+  const [versionsFileId,  setVersionsFileId]  = useState<string | null>(null);
+  const [versions,        setVersions]        = useState<PortalFile[]>([]);
+  const [versionsName,    setVersionsName]    = useState("");
 
   // ── Load files on mount ───────────────────────────────────────────────────
-  useEffect(() => {
+  const loadFiles = useCallback(() => {
     if (!session) { setLoading(false); return; }
     setError(null);
     loadPortalFilesWithRefresh(session).then((result) => {
@@ -138,6 +226,8 @@ export function FilesAssetsPage() {
       if (result.data) setFiles([...result.data]);
     }).finally(() => setLoading(false));
   }, [session]);
+
+  useEffect(() => { loadFiles(); }, [loadFiles]);
 
   // ── Map to display rows ───────────────────────────────────────────────────
   const rows = useMemo(() => files.map(toFileRow), [files]);
@@ -227,6 +317,39 @@ export function FilesAssetsPage() {
     window.open(result.data.downloadUrl, "_blank", "noopener,noreferrer");
   }, [session, files, notify]);
 
+  // ── Approval handler ──────────────────────────────────────────────────────
+  const handleApprove = useCallback(async (rawId: string, status: FileApprovalStatus, note?: string) => {
+    if (!session) return;
+    setApproving(rawId);
+    try {
+      const result = await updatePortalFileApprovalWithRefresh(session, rawId, { status, note });
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        notify("error", "Approval failed", result.error.message);
+        return;
+      }
+      if (result.data) {
+        setFiles((prev) => prev.map((f) => f.id === rawId ? { ...f, approvalStatus: result.data!.approvalStatus } : f));
+      }
+      notify("success", status === "APPROVED" ? "File approved" : "Changes requested", "");
+      setPendingNoteId(null);
+      setPendingNote("");
+    } finally {
+      setApproving(null);
+    }
+  }, [session, notify]);
+
+  // ── Version panel handler ─────────────────────────────────────────────────
+  const handleOpenVersions = useCallback(async (rawId: string, fileName: string) => {
+    if (!session) return;
+    setVersionsName(fileName);
+    setVersionsFileId(rawId);
+    setVersions([]);
+    const result = await loadPortalFileVersionsWithRefresh(session, rawId);
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.data) setVersions(result.data);
+  }, [session]);
+
   // ── Stats ─────────────────────────────────────────────────────────────────
   const totalSizeBytes = files.reduce((acc, f) => acc + f.sizeBytes, 0);
   const designCount    = rows.filter((f) => f.type === "Design").length;
@@ -243,6 +366,15 @@ export function FilesAssetsPage() {
         className={cx("dNone")}
         onChange={handleFileSelect}
       />
+
+      {/* ── Version panel ───────────────────────────────────────────────── */}
+      {versionsFileId && (
+        <VersionPanel
+          fileName={versionsName}
+          versions={versions}
+          onClose={() => { setVersionsFileId(null); setVersions([]); }}
+        />
+      )}
 
       {/* ── Page header ─────────────────────────────────────────────────── */}
       <div className={cx("pageHeader", "mb0")}>
@@ -345,6 +477,7 @@ export function FilesAssetsPage() {
             const color    = TYPE_COLOR[f.type];
             const ext      = getExt(f.name);
             const extColor = EXT_COLOR[ext] ?? "var(--muted2)";
+            const isLoading = approving === f.rawId;
             return (
               <div key={f.id} className={cx("card", "p0", "overflowHidden", "flexCol")}>
                 <div className={cx("h3", "dynBgColor", "noShrink")} style={{ "--bg-color": color } as React.CSSProperties} />
@@ -359,8 +492,63 @@ export function FilesAssetsPage() {
                   <div className={cx("text10", "colorMuted", "mb10")}>{f.size} · {f.date}</div>
                   <div className={cx("flexRow", "gap5", "flexWrap", "mb12")}>
                     <span className={cx("badge", TYPE_BADGE[f.type])}>{f.type}</span>
+                    <span className={cx("badge", approvalBadgeClass(f.approvalStatus))}>{approvalBadgeLabel(f.approvalStatus)}</span>
                   </div>
-                  <div className={cx("flexRow", "justifyEnd", "mtAuto")}>
+                  {/* Approval actions for PENDING_REVIEW */}
+                  {f.approvalStatus === "PENDING_REVIEW" && (
+                    <div className={cx("faApprovalActions", "mb8")}>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnAccent")}
+                        disabled={isLoading}
+                        onClick={() => handleApprove(f.rawId, "APPROVED")}
+                      >
+                        Approve
+                      </button>
+                      {pendingNoteId === f.rawId ? (
+                        <div className={cx("faNoteInputWrap")}>
+                          <input
+                            className={cx("input", "faNoteInput")}
+                            placeholder="Note (optional)"
+                            value={pendingNote}
+                            onChange={(e) => setPendingNote(e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className={cx("btnSm", "btnGhost")}
+                            disabled={isLoading}
+                            onClick={() => handleApprove(f.rawId, "CHANGES_REQUESTED", pendingNote || undefined)}
+                          >
+                            Send
+                          </button>
+                          <button
+                            type="button"
+                            className={cx("btnSm", "btnGhost")}
+                            onClick={() => { setPendingNoteId(null); setPendingNote(""); }}
+                          >
+                            <Ic n="x" sz={11} c="var(--muted)" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className={cx("btnSm", "btnGhost")}
+                          onClick={() => { setPendingNoteId(f.rawId); setPendingNote(""); }}
+                        >
+                          Request Changes
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <div className={cx("flexRow", "justifyEnd", "mtAuto", "gap5")}>
+                    <button
+                      type="button"
+                      className={cx("btnSm", "btnGhost", "py4_px", "px10_px")}
+                      title="Version history"
+                      onClick={() => handleOpenVersions(f.rawId, f.name)}
+                    >
+                      <Ic n="git-branch" sz={12} c="var(--muted)" />
+                    </button>
                     <button
                       type="button"
                       className={cx("btnSm", "btnGhost", "py4_px", "px10_px")}
@@ -383,6 +571,7 @@ export function FilesAssetsPage() {
             const color    = TYPE_COLOR[f.type];
             const ext      = getExt(f.name);
             const extColor = EXT_COLOR[ext] ?? "var(--muted2)";
+            const isLoading = approving === f.rawId;
             return (
               <div
                 key={f.id}
@@ -398,10 +587,66 @@ export function FilesAssetsPage() {
                     <span className={cx("fw600", "text12", "truncate")}>{f.name}</span>
                   </div>
                   <span className={cx("text10", "colorMuted")}>{f.size} · {f.date}</span>
+                  {/* Approval inline note input (CHANGES_REQUESTED flow) */}
+                  {pendingNoteId === f.rawId && (
+                    <div className={cx("faNoteInputWrap", "mt6")}>
+                      <input
+                        className={cx("input", "faNoteInput")}
+                        placeholder="Note (optional)"
+                        value={pendingNote}
+                        onChange={(e) => setPendingNote(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnGhost")}
+                        disabled={isLoading}
+                        onClick={() => handleApprove(f.rawId, "CHANGES_REQUESTED", pendingNote || undefined)}
+                      >
+                        Send
+                      </button>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnGhost")}
+                        onClick={() => { setPendingNoteId(null); setPendingNote(""); }}
+                      >
+                        <Ic n="x" sz={11} c="var(--muted)" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className={cx("flexRow", "gap8", "noShrink")}>
+                <div className={cx("flexRow", "gap8", "noShrink", "flexWrap")}>
                   <span className={cx("faExtBadge", "dynColor", "dynBgColor", "dynBorderColor")} style={{ "--color": extColor, "--bg-color": `color-mix(in oklab, ${extColor} 10%, transparent)`, "--border-color": `color-mix(in oklab, ${extColor} 22%, transparent)` } as React.CSSProperties}>{ext}</span>
                   <span className={cx("badge", TYPE_BADGE[f.type])}>{f.type}</span>
+                  <span className={cx("badge", approvalBadgeClass(f.approvalStatus))}>{approvalBadgeLabel(f.approvalStatus)}</span>
+                  {/* Approve / Request Changes (PENDING_REVIEW only) */}
+                  {f.approvalStatus === "PENDING_REVIEW" && pendingNoteId !== f.rawId && (
+                    <>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnAccent")}
+                        disabled={isLoading}
+                        onClick={() => handleApprove(f.rawId, "APPROVED")}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnGhost")}
+                        onClick={() => { setPendingNoteId(f.rawId); setPendingNote(""); }}
+                      >
+                        Request Changes
+                      </button>
+                    </>
+                  )}
+                  {/* History button */}
+                  <button
+                    type="button"
+                    className={cx("btnSm", "btnGhost")}
+                    title="Version history"
+                    onClick={() => handleOpenVersions(f.rawId, f.name)}
+                  >
+                    <Ic n="git-branch" sz={13} c="var(--muted)" />
+                  </button>
                   <button
                     type="button"
                     className={cx("btnSm", "btnAccent")}

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Headers, Param, Post } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Headers, Param, Patch, Post } from "@nestjs/common";
 import {
   confirmUploadSchema,
   createFileSchema,
@@ -121,6 +121,47 @@ export class FilesController {
     }
     const baseUrl = process.env.FILES_SERVICE_URL ?? "http://localhost:4005";
     return proxyRequest(`${baseUrl}/files/inline`, "POST", payload, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Patch("files/:fileId/approval")
+  async updateFileApproval(
+    @Param("fileId") fileId: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.FILES_SERVICE_URL ?? "http://localhost:4005";
+    return proxyRequest(`${baseUrl}/files/${fileId}/approval`, "PATCH", body, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("files/:fileId/versions")
+  async listFileVersions(
+    @Param("fileId") fileId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.FILES_SERVICE_URL ?? "http://localhost:4005";
+    return proxyRequest(`${baseUrl}/files/${fileId}/versions`, "GET", undefined, {
       "x-user-id": userId ?? "",
       "x-user-role": role ?? "CLIENT",
       "x-client-id": clientId ?? "",

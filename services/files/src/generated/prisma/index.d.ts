@@ -981,6 +981,9 @@ export namespace Prisma {
     storageKey: string | null
     mimeType: string | null
     sizeBytes: bigint | null
+    approvalStatus: string | null
+    versionOf: string | null
+    versionNote: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -992,6 +995,9 @@ export namespace Prisma {
     storageKey: string | null
     mimeType: string | null
     sizeBytes: bigint | null
+    approvalStatus: string | null
+    versionOf: string | null
+    versionNote: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -1003,6 +1009,9 @@ export namespace Prisma {
     storageKey: number
     mimeType: number
     sizeBytes: number
+    approvalStatus: number
+    versionOf: number
+    versionNote: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -1024,6 +1033,9 @@ export namespace Prisma {
     storageKey?: true
     mimeType?: true
     sizeBytes?: true
+    approvalStatus?: true
+    versionOf?: true
+    versionNote?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1035,6 +1047,9 @@ export namespace Prisma {
     storageKey?: true
     mimeType?: true
     sizeBytes?: true
+    approvalStatus?: true
+    versionOf?: true
+    versionNote?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1046,6 +1061,9 @@ export namespace Prisma {
     storageKey?: true
     mimeType?: true
     sizeBytes?: true
+    approvalStatus?: true
+    versionOf?: true
+    versionNote?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -1144,6 +1162,9 @@ export namespace Prisma {
     storageKey: string
     mimeType: string
     sizeBytes: bigint
+    approvalStatus: string
+    versionOf: string | null
+    versionNote: string | null
     createdAt: Date
     updatedAt: Date
     _count: FileRecordCountAggregateOutputType | null
@@ -1174,6 +1195,9 @@ export namespace Prisma {
     storageKey?: boolean
     mimeType?: boolean
     sizeBytes?: boolean
+    approvalStatus?: boolean
+    versionOf?: boolean
+    versionNote?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["fileRecord"]>
@@ -1185,6 +1209,9 @@ export namespace Prisma {
     storageKey?: boolean
     mimeType?: boolean
     sizeBytes?: boolean
+    approvalStatus?: boolean
+    versionOf?: boolean
+    versionNote?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["fileRecord"]>
@@ -1196,6 +1223,9 @@ export namespace Prisma {
     storageKey?: boolean
     mimeType?: boolean
     sizeBytes?: boolean
+    approvalStatus?: boolean
+    versionOf?: boolean
+    versionNote?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["fileRecord"]>
@@ -1207,11 +1237,14 @@ export namespace Prisma {
     storageKey?: boolean
     mimeType?: boolean
     sizeBytes?: boolean
+    approvalStatus?: boolean
+    versionOf?: boolean
+    versionNote?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type FileRecordOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "clientId" | "fileName" | "storageKey" | "mimeType" | "sizeBytes" | "createdAt" | "updatedAt", ExtArgs["result"]["fileRecord"]>
+  export type FileRecordOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "clientId" | "fileName" | "storageKey" | "mimeType" | "sizeBytes" | "approvalStatus" | "versionOf" | "versionNote" | "createdAt" | "updatedAt", ExtArgs["result"]["fileRecord"]>
 
   export type $FileRecordPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "FileRecord"
@@ -1223,6 +1256,9 @@ export namespace Prisma {
       storageKey: string
       mimeType: string
       sizeBytes: bigint
+      approvalStatus: string
+      versionOf: string | null
+      versionNote: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["fileRecord"]>
@@ -1654,6 +1690,9 @@ export namespace Prisma {
     readonly storageKey: FieldRef<"FileRecord", 'String'>
     readonly mimeType: FieldRef<"FileRecord", 'String'>
     readonly sizeBytes: FieldRef<"FileRecord", 'BigInt'>
+    readonly approvalStatus: FieldRef<"FileRecord", 'String'>
+    readonly versionOf: FieldRef<"FileRecord", 'String'>
+    readonly versionNote: FieldRef<"FileRecord", 'String'>
     readonly createdAt: FieldRef<"FileRecord", 'DateTime'>
     readonly updatedAt: FieldRef<"FileRecord", 'DateTime'>
   }
@@ -3202,6 +3241,9 @@ export namespace Prisma {
     storageKey: 'storageKey',
     mimeType: 'mimeType',
     sizeBytes: 'sizeBytes',
+    approvalStatus: 'approvalStatus',
+    versionOf: 'versionOf',
+    versionNote: 'versionNote',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -3342,6 +3384,9 @@ export namespace Prisma {
     storageKey?: StringFilter<"FileRecord"> | string
     mimeType?: StringFilter<"FileRecord"> | string
     sizeBytes?: BigIntFilter<"FileRecord"> | bigint | number
+    approvalStatus?: StringFilter<"FileRecord"> | string
+    versionOf?: StringNullableFilter<"FileRecord"> | string | null
+    versionNote?: StringNullableFilter<"FileRecord"> | string | null
     createdAt?: DateTimeFilter<"FileRecord"> | Date | string
     updatedAt?: DateTimeFilter<"FileRecord"> | Date | string
   }
@@ -3353,6 +3398,9 @@ export namespace Prisma {
     storageKey?: SortOrder
     mimeType?: SortOrder
     sizeBytes?: SortOrder
+    approvalStatus?: SortOrder
+    versionOf?: SortOrderInput | SortOrder
+    versionNote?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -3367,6 +3415,9 @@ export namespace Prisma {
     storageKey?: StringFilter<"FileRecord"> | string
     mimeType?: StringFilter<"FileRecord"> | string
     sizeBytes?: BigIntFilter<"FileRecord"> | bigint | number
+    approvalStatus?: StringFilter<"FileRecord"> | string
+    versionOf?: StringNullableFilter<"FileRecord"> | string | null
+    versionNote?: StringNullableFilter<"FileRecord"> | string | null
     createdAt?: DateTimeFilter<"FileRecord"> | Date | string
     updatedAt?: DateTimeFilter<"FileRecord"> | Date | string
   }, "id">
@@ -3378,6 +3429,9 @@ export namespace Prisma {
     storageKey?: SortOrder
     mimeType?: SortOrder
     sizeBytes?: SortOrder
+    approvalStatus?: SortOrder
+    versionOf?: SortOrderInput | SortOrder
+    versionNote?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: FileRecordCountOrderByAggregateInput
@@ -3397,6 +3451,9 @@ export namespace Prisma {
     storageKey?: StringWithAggregatesFilter<"FileRecord"> | string
     mimeType?: StringWithAggregatesFilter<"FileRecord"> | string
     sizeBytes?: BigIntWithAggregatesFilter<"FileRecord"> | bigint | number
+    approvalStatus?: StringWithAggregatesFilter<"FileRecord"> | string
+    versionOf?: StringNullableWithAggregatesFilter<"FileRecord"> | string | null
+    versionNote?: StringNullableWithAggregatesFilter<"FileRecord"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"FileRecord"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"FileRecord"> | Date | string
   }
@@ -3512,6 +3569,9 @@ export namespace Prisma {
     storageKey: string
     mimeType: string
     sizeBytes: bigint | number
+    approvalStatus?: string
+    versionOf?: string | null
+    versionNote?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -3523,6 +3583,9 @@ export namespace Prisma {
     storageKey: string
     mimeType: string
     sizeBytes: bigint | number
+    approvalStatus?: string
+    versionOf?: string | null
+    versionNote?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -3534,6 +3597,9 @@ export namespace Prisma {
     storageKey?: StringFieldUpdateOperationsInput | string
     mimeType?: StringFieldUpdateOperationsInput | string
     sizeBytes?: BigIntFieldUpdateOperationsInput | bigint | number
+    approvalStatus?: StringFieldUpdateOperationsInput | string
+    versionOf?: NullableStringFieldUpdateOperationsInput | string | null
+    versionNote?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -3545,6 +3611,9 @@ export namespace Prisma {
     storageKey?: StringFieldUpdateOperationsInput | string
     mimeType?: StringFieldUpdateOperationsInput | string
     sizeBytes?: BigIntFieldUpdateOperationsInput | bigint | number
+    approvalStatus?: StringFieldUpdateOperationsInput | string
+    versionOf?: NullableStringFieldUpdateOperationsInput | string | null
+    versionNote?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -3556,6 +3625,9 @@ export namespace Prisma {
     storageKey: string
     mimeType: string
     sizeBytes: bigint | number
+    approvalStatus?: string
+    versionOf?: string | null
+    versionNote?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -3567,6 +3639,9 @@ export namespace Prisma {
     storageKey?: StringFieldUpdateOperationsInput | string
     mimeType?: StringFieldUpdateOperationsInput | string
     sizeBytes?: BigIntFieldUpdateOperationsInput | bigint | number
+    approvalStatus?: StringFieldUpdateOperationsInput | string
+    versionOf?: NullableStringFieldUpdateOperationsInput | string | null
+    versionNote?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -3578,6 +3653,9 @@ export namespace Prisma {
     storageKey?: StringFieldUpdateOperationsInput | string
     mimeType?: StringFieldUpdateOperationsInput | string
     sizeBytes?: BigIntFieldUpdateOperationsInput | bigint | number
+    approvalStatus?: StringFieldUpdateOperationsInput | string
+    versionOf?: NullableStringFieldUpdateOperationsInput | string | null
+    versionNote?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -3734,6 +3812,21 @@ export namespace Prisma {
     not?: NestedBigIntFilter<$PrismaModel> | bigint | number
   }
 
+  export type StringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -3745,6 +3838,11 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
+  export type SortOrderInput = {
+    sort: SortOrder
+    nulls?: NullsOrder
+  }
+
   export type FileRecordCountOrderByAggregateInput = {
     id?: SortOrder
     clientId?: SortOrder
@@ -3752,6 +3850,9 @@ export namespace Prisma {
     storageKey?: SortOrder
     mimeType?: SortOrder
     sizeBytes?: SortOrder
+    approvalStatus?: SortOrder
+    versionOf?: SortOrder
+    versionNote?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -3767,6 +3868,9 @@ export namespace Prisma {
     storageKey?: SortOrder
     mimeType?: SortOrder
     sizeBytes?: SortOrder
+    approvalStatus?: SortOrder
+    versionOf?: SortOrder
+    versionNote?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -3778,6 +3882,9 @@ export namespace Prisma {
     storageKey?: SortOrder
     mimeType?: SortOrder
     sizeBytes?: SortOrder
+    approvalStatus?: SortOrder
+    versionOf?: SortOrder
+    versionNote?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -3820,6 +3927,24 @@ export namespace Prisma {
     _max?: NestedBigIntFilter<$PrismaModel>
   }
 
+  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -3832,21 +3957,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
-  }
-
-  export type StringNullableFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    mode?: QueryMode
-    not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -3866,11 +3976,6 @@ export namespace Prisma {
     hasEvery?: string[] | ListStringFieldRefInput<$PrismaModel>
     hasSome?: string[] | ListStringFieldRefInput<$PrismaModel>
     isEmpty?: boolean
-  }
-
-  export type SortOrderInput = {
-    sort: SortOrder
-    nulls?: NullsOrder
   }
 
   export type VaultDocumentCountOrderByAggregateInput = {
@@ -3935,24 +4040,6 @@ export namespace Prisma {
     version?: SortOrder
   }
 
-  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    mode?: QueryMode
-    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedStringNullableFilter<$PrismaModel>
-    _max?: NestedStringNullableFilter<$PrismaModel>
-  }
-
   export type IntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -3981,16 +4068,16 @@ export namespace Prisma {
     divide?: bigint | number
   }
 
+  export type NullableStringFieldUpdateOperationsInput = {
+    set?: string | null
+  }
+
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
   }
 
   export type VaultDocumentCreatetagsInput = {
     set: string[]
-  }
-
-  export type NullableStringFieldUpdateOperationsInput = {
-    set?: string | null
   }
 
   export type IntFieldUpdateOperationsInput = {
@@ -4029,6 +4116,20 @@ export namespace Prisma {
     gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     not?: NestedBigIntFilter<$PrismaModel> | bigint | number
+  }
+
+  export type NestedStringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
   export type NestedDateTimeFilter<$PrismaModel = never> = {
@@ -4097,34 +4198,6 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
-  export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedDateTimeFilter<$PrismaModel>
-    _max?: NestedDateTimeFilter<$PrismaModel>
-  }
-
-  export type NestedStringNullableFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringNullableFilter<$PrismaModel> | string | null
-  }
-
   export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -4151,6 +4224,20 @@ export namespace Prisma {
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedDateTimeFilter<$PrismaModel>
+    _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {

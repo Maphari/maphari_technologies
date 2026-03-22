@@ -128,6 +128,9 @@ exports.Prisma.FileRecordScalarFieldEnum = {
   storageKey: 'storageKey',
   mimeType: 'mimeType',
   sizeBytes: 'sizeBytes',
+  approvalStatus: 'approvalStatus',
+  versionOf: 'versionOf',
+  versionNote: 'versionNote',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

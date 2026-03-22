@@ -117,6 +117,64 @@ export async function confirmPortalUploadWithRefresh(
   });
 }
 
+// ── Approval status type ──────────────────────────────────────────────────────
+
+export type FileApprovalStatus = "PENDING_REVIEW" | "APPROVED" | "CHANGES_REQUESTED";
+
+// ── Update approval status ────────────────────────────────────────────────────
+
+export async function updatePortalFileApprovalWithRefresh(
+  session: AuthSession,
+  fileId: string,
+  body: { status: FileApprovalStatus; note?: string }
+): Promise<AuthorizedResult<PortalFile>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalFile>(
+      `/files/${fileId}/approval`,
+      accessToken,
+      { method: "PATCH", body }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "FILE_APPROVAL_FAILED",
+          response.payload.error?.message ?? "Unable to update approval status."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+// ── Load file version history ─────────────────────────────────────────────────
+
+export async function loadPortalFileVersionsWithRefresh(
+  session: AuthSession,
+  fileId: string
+): Promise<AuthorizedResult<PortalFile[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalFile[]>(
+      `/files/${fileId}/versions`,
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: [],
+        error: toGatewayError(
+          response.payload.error?.code ?? "FILE_VERSIONS_FAILED",
+          response.payload.error?.message ?? "Unable to load file versions."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
 // ── Request presigned download URL ────────────────────────────────────────────
 
 export async function getPortalFileDownloadUrlWithRefresh(

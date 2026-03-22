@@ -16,6 +16,9 @@ type FileRecordDto = {
   storageKey: string;
   mimeType: string;
   sizeBytes: number;
+  approvalStatus: string;
+  versionOf: string | null;
+  versionNote: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -23,7 +26,10 @@ type FileRecordDto = {
 function toFileRecordDto(fileRecord: Awaited<ReturnType<typeof prisma.fileRecord.create>>): FileRecordDto {
   return {
     ...fileRecord,
-    sizeBytes: Number(fileRecord.sizeBytes)
+    sizeBytes: Number(fileRecord.sizeBytes),
+    approvalStatus: fileRecord.approvalStatus,
+    versionOf: fileRecord.versionOf ?? null,
+    versionNote: fileRecord.versionNote ?? null
   };
 }
 
@@ -299,6 +305,117 @@ export async function registerFileRoutes(app: FastifyInstance): Promise<void> {
       return {
         success: false,
         error: { code: "FILE_DOWNLOAD_URL_FAILED", message: "Unable to issue file download URL" }
+      } as ApiResponse;
+    }
+  });
+
+  // ── PATCH /files/:id/approval ─────────────────────────────────────────────
+  app.patch<{ Params: { id: string } }>("/files/:id/approval", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const body = request.body as { status?: string; note?: string } | undefined ?? {};
+    const validStatuses = ["APPROVED", "CHANGES_REQUESTED"] as const;
+    if (!body.status || !(validStatuses as readonly string[]).includes(body.status)) {
+      reply.status(400);
+      return {
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "status must be APPROVED or CHANGES_REQUESTED"
+        }
+      } as ApiResponse;
+    }
+    const approvalStatus = body.status as "APPROVED" | "CHANGES_REQUESTED";
+
+    try {
+      const file = await observeDb(app, "fileRecord.findUnique", () =>
+        prisma.fileRecord.findUnique({ where: { id: request.params.id } })
+      );
+      if (!file) {
+        reply.status(404);
+        return {
+          success: false,
+          error: { code: "FILE_NOT_FOUND", message: "File not found" }
+        } as ApiResponse;
+      }
+
+      // CLIENT can only approve files that belong to their tenant;
+      // ADMIN/STAFF can approve any file.
+      const isAdminOrStaff = scope.role === "ADMIN" || scope.role === "STAFF";
+      if (!isAdminOrStaff && scope.clientId !== file.clientId) {
+        reply.status(403);
+        return {
+          success: false,
+          error: { code: "FORBIDDEN", message: "Not authorised to update this file" }
+        } as ApiResponse;
+      }
+
+      const updated = await observeDb(app, "fileRecord.update", () =>
+        prisma.fileRecord.update({
+          where: { id: file.id },
+          data: { approvalStatus }
+        })
+      );
+
+      // Invalidate cache for this tenant
+      await Promise.all([
+        cache.delete(CacheKeys.files(file.clientId)),
+        cache.delete(CacheKeys.files())
+      ]);
+
+      return {
+        success: true,
+        data: toFileRecordDto(updated),
+        meta: { requestId: scope.requestId }
+      } as ApiResponse<FileRecordDto>;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return {
+        success: false,
+        error: { code: "FILE_APPROVAL_FAILED", message: "Unable to update approval status" }
+      } as ApiResponse;
+    }
+  });
+
+  // ── GET /files/:id/versions ───────────────────────────────────────────────
+  app.get<{ Params: { id: string } }>("/files/:id/versions", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+
+    try {
+      // Fetch the original file first
+      const original = await observeDb(app, "fileRecord.findUnique", () =>
+        prisma.fileRecord.findUnique({ where: { id: request.params.id } })
+      );
+      if (!original) {
+        reply.status(404);
+        return {
+          success: false,
+          error: { code: "FILE_NOT_FOUND", message: "File not found" }
+        } as ApiResponse;
+      }
+
+      // Fetch all versions that point to this original
+      const versions = await observeDb(app, "fileRecord.findMany.versions", () =>
+        prisma.fileRecord.findMany({
+          where: { versionOf: original.id },
+          orderBy: { createdAt: "asc" }
+        })
+      );
+
+      // Return original first, then subsequent versions (oldest → newest)
+      const all = [original, ...versions].map(toFileRecordDto);
+
+      return {
+        success: true,
+        data: all,
+        meta: { requestId: scope.requestId }
+      } as ApiResponse<FileRecordDto[]>;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return {
+        success: false,
+        error: { code: "FILE_VERSIONS_FAILED", message: "Unable to fetch file versions" }
       } as ApiResponse;
     }
   });
