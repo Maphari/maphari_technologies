@@ -830,10 +830,11 @@ export function MaphariStaffDashboard() {
       label: hit.title,
       meta: hit.subtitle ?? hit.status ?? "",
       action: () => {
-        if (hit.type === "project" || hit.type === "task") setActivePage("context");
-        else if (hit.type === "client") setActivePage("clients");
-        else if (hit.type === "lead") setActivePage("dashboard");
-        else if (hit.type === "ticket") setActivePage("comms");
+        if (hit.type === "project" || hit.type === "task" || hit.type === "deliverable") setActivePage("context");
+        else if (hit.type === "client")  setActivePage("clients");
+        else if (hit.type === "lead")    setActivePage("dashboard");
+        else if (hit.type === "ticket")  setActivePage("comms");
+        else if (hit.type === "article") setActivePage("knowledge" as Parameters<typeof setActivePage>[0]);
         else setActivePage("dashboard");
       }
     }));
@@ -1310,6 +1311,8 @@ export function MaphariStaffDashboard() {
             <WorkloadHeatmapPage isActive={activePage === "workloadheatmap"} session={session ?? null} />
 
             <MyGoalsPage isActive={activePage === "mygoals"} session={session ?? null} />
+
+            <PeerReviewPage isActive={activePage === "peerreview"} session={session ?? null} />
 
             <PersonalPerformancePage isActive={activePage === "performance"} session={session ?? null} />
 

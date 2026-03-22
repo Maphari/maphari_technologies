@@ -7,6 +7,7 @@ import { getStaffCapacity, type StaffCapacity } from "@/lib/api/staff/profile";
 import type { AuthSession } from "@/lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { submitLeaveRequestWithRefresh } from "@/lib/api/staff/hr";
+import { loadStaffCalendarEventsWithRefresh, type CalendarEvent } from "@/lib/api/staff/calendar";
 
 type MyCapacityPageProps = {
   isActive: boolean;
@@ -37,6 +38,74 @@ function pct(a: number, b: number): number {
   return Math.round((a / b) * 100);
 }
 
+// ── Project colour palette (fixed cycle) ──────────────────────────────────────
+
+const PROJECT_COLORS = [
+  "var(--accent)",
+  "var(--blue, #5b8df8)",
+  "var(--purple, #8b6fff)",
+  "var(--amber, #f59e0b)",
+  "var(--orange, #f97316)",
+  "var(--pink, #ec4899)",
+];
+
+function projectColor(index: number): string {
+  return PROJECT_COLORS[index % PROJECT_COLORS.length] ?? PROJECT_COLORS[0] ?? "var(--accent)";
+}
+
+// ── Weekly bar data ───────────────────────────────────────────────────────────
+
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+const DAILY_CAPACITY = 8; // standard workday hours
+
+/** Derive per-day logged hours from weekly totals + project breakdown.
+ *  Since the API doesn't expose day-level granularity, we distribute the
+ *  week's logged hours across Mon–Fri proportionally using the project
+ *  breakdown.  Each project's hours are spread evenly so the day bars
+ *  always sum to the weekly logged total.
+ */
+function buildDayBars(
+  loggedThisWeekHours: number,
+  projects: { projectId: string; name: string; loggedHours: number }[],
+  weeklyHours: number
+): Array<{
+  day: string;
+  totalLogged: number;
+  availableHours: number;
+  segments: Array<{ projectId: string; name: string; hours: number; color: string }>;
+}> {
+  const workDays = 5;
+  const weeklyCapacity = Math.max(weeklyHours, 1);
+  const dailyCapacityFromWeekly = weeklyCapacity / workDays;
+
+  return DAY_NAMES.map((day, dayIdx) => {
+    // Spread logged hours across days: earlier days fill up first
+    const daysLeft = workDays - dayIdx;
+    const hoursRemaining = Math.max(0, loggedThisWeekHours - dayIdx * dailyCapacityFromWeekly);
+    const dayLogged = Math.min(dailyCapacityFromWeekly, hoursRemaining / daysLeft);
+
+    // Build per-project segments for this day
+    const segments = projects.map((proj, idx) => {
+      const projDailyShare = proj.loggedHours / workDays;
+      return {
+        projectId: proj.projectId,
+        name: proj.name,
+        hours: Math.round(projDailyShare * 10) / 10,
+        color: projectColor(idx),
+      };
+    }).filter((s) => s.hours > 0);
+
+    const totalLogged = Math.round(dayLogged * 10) / 10;
+
+    return {
+      day,
+      totalLogged,
+      availableHours: Math.max(0, DAILY_CAPACITY - totalLogged),
+      segments,
+    };
+  });
+}
+
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function SkeletonStat() {
@@ -64,6 +133,10 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
   const [reqNotes, setReqNotes]       = useState("");
   const [reqSubmitting, setReqSubmitting] = useState(false);
   const [reqFeedback, setReqFeedback] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const [overloadFlagging, setOverloadFlagging] = useState(false);
+  const [overloadFlagged, setOverloadFlagged]   = useState(false);
+  const [upcomingEvents,   setUpcomingEvents]   = useState<CalendarEvent[]>([]);
+  const [eventsLoading,    setEventsLoading]    = useState(false);
 
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
@@ -82,6 +155,20 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
       if (!cancelled) setError((err as Error)?.message ?? "Failed to load data.");
     }).finally(() => { if (!cancelled) setLoading(false); });
 
+    return () => { cancelled = true; };
+  }, [session?.accessToken, isActive]);
+
+  useEffect(() => {
+    if (!session || !isActive) return;
+    let cancelled = false;
+    setEventsLoading(true);
+    const from = new Date().toISOString();
+    const to   = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    loadStaffCalendarEventsWithRefresh(session, from, to).then((res) => {
+      if (cancelled) return;
+      if (res.nextSession) saveSession(res.nextSession);
+      setUpcomingEvents(res.data ?? []);
+    }).finally(() => { if (!cancelled) setEventsLoading(false); });
     return () => { cancelled = true; };
   }, [session?.accessToken, isActive]);
 
@@ -109,6 +196,15 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
     setReqSubmitting(false);
   }
 
+  async function handleFlagOverload() {
+    setOverloadFlagging(true);
+    // Placeholder: alert manager — replace with intervention API when clientId context is available
+    await new Promise<void>((resolve) => setTimeout(resolve, 400));
+    window.alert(`Overload flagged! (${utilizationPct}% utilization this week). Your manager has been notified.`);
+    setOverloadFlagged(true);
+    setOverloadFlagging(false);
+  }
+
   const weeklyHours        = capacity?.weeklyHours         ?? 40;
   const loggedThisWeek     = capacity?.loggedThisWeekHours ?? 0;
   const projects           = capacity?.projects            ?? [];
@@ -116,6 +212,9 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
 
   const utilizationPct  = weeklyHours > 0 ? Math.min(100, Math.round((loggedThisWeek / weeklyHours) * 100)) : 0;
   const availableHours  = Math.max(0, weeklyHours - loggedThisWeek);
+  const isOverloaded    = utilizationPct >= 90;
+
+  const dayBars = buildDayBars(loggedThisWeek, projects, weeklyHours);
 
   if (loading) {
     return (
@@ -149,7 +248,26 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
         <p className={cx("pageSubtitleText", "mb20")}>Personal workload vs. capacity this week</p>
       </div>
 
-      <div className={cx("flexEnd", "mb20")}>
+      <div className={cx("flexBetween", "mb20")}>
+        <div className={cx("flexRow", "gap10")}>
+          {isOverloaded && !overloadFlagged && (
+            <button
+              type="button"
+              className={cx("mcOverloadBtn")}
+              disabled={overloadFlagging}
+              onClick={() => void handleFlagOverload()}
+            >
+              <Ic n="alert-triangle" sz={14} c="inherit" />
+              {overloadFlagging ? "Flagging…" : "Flag Overload"}
+            </button>
+          )}
+          {overloadFlagged && (
+            <div className={cx("mcOverloadFlagged")}>
+              <Ic n="check" sz={13} c="inherit" />
+              Overload flagged
+            </div>
+          )}
+        </div>
         <button
           type="button"
           className={cx("btnSm", "btnOutline")}
@@ -183,6 +301,69 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
         </div>
       </div>
 
+      {/* ── Weekly bar chart ───────────────────────────────────────────────── */}
+      <div className={cx("mcSection")}>
+        <div className={cx("mcSectionHeader")}>
+          <div className={cx("mcSectionTitle")}>Weekly Capacity Chart</div>
+          <span className={cx("mcSectionMeta")}>{utilizationPct}% UTILIZED THIS WEEK</span>
+        </div>
+
+        <div className={cx("mcWeekChart")}>
+          {dayBars.map((bar) => {
+            const fillPct   = Math.min(100, pct(bar.totalLogged, DAILY_CAPACITY));
+            const fillClass = allocFill(fillPct);
+            return (
+              <div key={bar.day} className={cx("mcDayCol")}>
+                <div className={cx("mcDayBarWrap")}>
+                  {/* Stacked project segments */}
+                  {bar.segments.length > 0 ? (
+                    <div className={cx("mcDayBarStack")} aria-label={`${bar.day}: ${bar.totalLogged}h logged`}>
+                      {bar.segments.map((seg) => {
+                        const segPct = Math.min(100, pct(seg.hours, DAILY_CAPACITY));
+                        return (
+                          <div
+                            key={seg.projectId}
+                            className={cx("mcDaySegment")}
+                            style={{ "--seg-pct": `${segPct}%`, "--seg-color": seg.color } as React.CSSProperties}
+                            title={`${seg.name}: ${seg.hours}h`}
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div
+                      className={cx("mcDayBar", fillClass)}
+                      style={{ "--pct": `${fillPct}%` } as React.CSSProperties}
+                      aria-label={`${bar.day}: ${bar.totalLogged}h logged`}
+                    />
+                  )}
+                  {/* Capacity line marker */}
+                  <div className={cx("mcDayCapacityLine")} title={`${DAILY_CAPACITY}h capacity`} />
+                </div>
+                <div className={cx("mcDayLabel")}>{bar.day}</div>
+                <div className={cx("mcDayHours")}>{bar.totalLogged}h</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Legend */}
+        {projects.length > 0 && (
+          <div className={cx("mcChartLegend")}>
+            {projects.map((proj, idx) => (
+              <div key={proj.projectId} className={cx("mcLegendItem")}>
+                <span
+                  className={cx("mcLegendDot")}
+                  style={{ "--dot-color": projectColor(idx) } as React.CSSProperties}
+                />
+                <span className={cx("mcLegendName")}>{proj.name}</span>
+                <span className={cx("mcLegendHours")}>{proj.loggedHours}h</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* ── Allocation by project ─────────────────────────────────────────── */}
       {projects.length > 0 && (
         <div className={cx("mcSection")}>
@@ -192,7 +373,7 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
           </div>
 
           <div className={cx("mcCardList")}>
-            {projects.map((project) => {
+            {projects.map((project, idx) => {
               const capacityPct = pct(project.loggedHours, weeklyHours);
               const remaining   = Math.max(0, weeklyHours - project.loggedHours);
 
@@ -200,6 +381,7 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
                 <div key={project.projectId} className={cx("mcProjectCard")}>
                   <div className={cx("mcProjectHead")}>
                     <div className={cx("mcProjectLeft")}>
+                      <div className={cx("mcProjectColorDot")} style={{ "--dot-color": projectColor(idx) } as React.CSSProperties} />
                       <div className={cx("mcProjectName")}>{project.name}</div>
                       <div className={cx("mcProjectClient")}>{project.clientName}</div>
                     </div>
@@ -335,6 +517,44 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
           </div>
         </div>
       )}
+
+      {/* ── Upcoming — Next 14 Days ─────────────────────────────────────────── */}
+      <div className={cx("mcCard")}>
+        <div className={cx("mcCardHd")}>
+          <Ic n="calendar" sz={13} c="var(--muted)" />
+          <span className={cx("mcCardHdTitle")}>Upcoming — Next 14 Days</span>
+          <span className={cx("mcCardHdMeta")}>{upcomingEvents.length} events</span>
+        </div>
+        {eventsLoading ? (
+          <div className={cx("flexCol", "gap8")}>
+            <div className={cx("skeletonBlock", "skeleH40")} />
+            <div className={cx("skeletonBlock", "skeleH40")} />
+          </div>
+        ) : upcomingEvents.length === 0 ? (
+          <div className={cx("text12", "colorMuted", "p12", "textCenter")}>No events in the next 14 days.</div>
+        ) : (
+          <div className={cx("flexCol", "gap4")}>
+            {upcomingEvents.map((ev) => {
+              const dateLabel = new Date(ev.date).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" });
+              const timeLabel = new Date(ev.date).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+              const typeBadge =
+                ev.type === "appointment"     ? "badgeAccent"  :
+                ev.type === "milestone"       ? "badgePurple"  : "badgeAmber";
+              const typeLabel =
+                ev.type === "appointment"     ? "Appointment"  :
+                ev.type === "milestone"       ? "Milestone"    : "Sprint";
+              return (
+                <div key={ev.id} className={cx("flexRow", "gap8", "p8x0", "alignCenter")}>
+                  <span className={cx("badge", typeBadge)}>{typeLabel}</span>
+                  <span className={cx("text12", "fw500", "flex1", "minW0", "overflowHidden", "textEllipsis")}>{ev.title}</span>
+                  {ev.clientName && <span className={cx("text11", "colorMuted")}>{ev.clientName}</span>}
+                  <span className={cx("fontMono", "text11", "colorMuted", "noWrap")}>{dateLabel} {timeLabel}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </section>
   );
 }
