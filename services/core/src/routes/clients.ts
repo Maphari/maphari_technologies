@@ -949,22 +949,23 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
         select: { id: true, billingEmail: true, name: true },
       });
 
+      const clientsWithEmail = clients.filter((c) => !!c.billingEmail);
+
       const results = await Promise.allSettled(
-        clients.map((client) => {
-          if (!client.billingEmail) return Promise.resolve();
-          return eventBus.publish({
+        clientsWithEmail.map((client) =>
+          eventBus.publish({
             eventId: randomUUID(),
             occurredAt: new Date().toISOString(),
             requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined,
             topic: EventTopics.notificationRequested,
             payload: {
               channel: "EMAIL",
-              recipientEmail: client.billingEmail,
+              recipientEmail: client.billingEmail!,
               subject,
               message: messageBody,
             },
-          });
-        })
+          })
+        )
       );
 
       const sent = results.filter((r) => r.status === "fulfilled").length;

@@ -946,6 +946,13 @@ export function ClientsAndProjectsPage({
                 value={broadcastBody}
                 onChange={(e) => setBroadcastBody(e.target.value)}
               />
+              {broadcastSubject.trim() && broadcastBody.trim() ? (
+                <div className={cx("summaryPreview")}>
+                  <p className={cx("text11", "colorMuted")}>Preview</p>
+                  <p className={cx("text12")}><strong>{broadcastSubject}</strong></p>
+                  <p className={cx("text12", "colorMuted")}>{broadcastBody}</p>
+                </div>
+              ) : null}
               {broadcastError ? (
                 <p className={cx("text12", "colorRed")}>{broadcastError}</p>
               ) : null}
