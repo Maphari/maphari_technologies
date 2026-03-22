@@ -77,6 +77,9 @@ import { HealthScorePage } from "./maphari-dashboard/pages/health-score-page";
 import { PerformanceDashboardPage } from "./maphari-dashboard/pages/performance-dashboard-page";
 import { ExecutiveSummaryPage } from "./maphari-dashboard/pages/executive-summary-page";
 import { AiInsightsPage } from "./maphari-dashboard/pages/ai-insights-page";
+// Community
+import CommunityForumPage from "./maphari-dashboard/pages/community-forum-page";
+import FeatureRequestsPage from "./maphari-dashboard/pages/feature-requests-page";
 // Growth
 import { ServiceCatalogPage } from "./maphari-dashboard/pages/service-catalog-page";
 import { ReferralProgramPage } from "./maphari-dashboard/pages/referral-program-page";
@@ -644,6 +647,10 @@ export function MaphariClientDashboard() {
             {nav.activePage === "serviceCatalog" && <ServiceCatalogPage />}
             {nav.activePage === "referralProgram" && <ReferralProgramPage />}
             {nav.activePage === "loyaltyCredits" && <LoyaltyCreditsPage />}
+
+            {/* ── Community ───────────────────────────────────────────── */}
+            {nav.activePage === "communityForum" && <CommunityForumPage />}
+            {nav.activePage === "featureRequests" && <FeatureRequestsPage />}
 
             {/* ── Support ─────────────────────────────────────────────── */}
             {nav.activePage === "progressKnowledge" && <ProgressKnowledgePage />}
