@@ -103,6 +103,7 @@ import { FtueHoldingPage } from "./maphari-dashboard/pages/ftue-holding-page";
 import { FtueWelcomeModal } from "./maphari-dashboard/components/ftue-welcome-modal";
 import { OnboardingBanner } from "./maphari-dashboard/components/onboarding-banner";
 import { CompletionBanner } from "./maphari-dashboard/components/completion-banner";
+import { OnboardingWizard } from "./maphari-dashboard/components/onboarding-wizard";
 
 import type { NotificationPreference } from "./maphari-dashboard/types";
 
@@ -310,6 +311,18 @@ export function MaphariClientDashboard() {
     void getPortalPreferenceWithRefresh(session, "portal_ftue_v1_seen").then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
       if (!r.data?.value) setShowWelcomeModal(true);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+
+  // ── Onboarding wizard (self-service setup, shown once per client) ────────
+  const [showWizard, setShowWizard] = useState(false);
+
+  useEffect(() => {
+    if (!session) return;
+    void getPortalPreferenceWithRefresh(session, "onboarding_wizard_seen").then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data?.value !== "true") setShowWizard(true);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
@@ -994,6 +1007,11 @@ export function MaphariClientDashboard() {
       {/* ── FTUE Welcome Modal ──────────────────────────────────────────── */}
       {showWelcomeModal && (
         <FtueWelcomeModal onDismiss={handleWelcomeModalDismiss} />
+      )}
+
+      {/* ── Onboarding Wizard (first-login self-service setup) ───────────── */}
+      {showWizard && !showWelcomeModal && (
+        <OnboardingWizard session={session ?? null} onClose={() => setShowWizard(false)} />
       )}
 
       {/* ── Toast stack ─────────────────────────────────────────────────── */}

@@ -30,6 +30,7 @@ export async function getPortalPreferenceWithRefresh(
     | "portal_ftue_v1_seen"
     | "onboarding_banner_dismissed"
     | "completion_banner_dismissed"
+    | "onboarding_wizard_seen"
 ): Promise<AuthorizedResult<PortalPreference | null>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const response = await callGateway<PortalPreference | null>(`/project-preferences?key=${key}`, accessToken);
@@ -71,7 +72,8 @@ export async function setPortalPreferenceWithRefresh(
       | "notificationMutes"
       | "portal_ftue_v1_seen"
       | "onboarding_banner_dismissed"
-      | "completion_banner_dismissed";
+      | "completion_banner_dismissed"
+      | "onboarding_wizard_seen";
     value: string;
   }
 ): Promise<AuthorizedResult<PortalPreference>> {
