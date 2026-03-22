@@ -11,17 +11,14 @@ import {
   type PortalProjectChangeRequest,
   type PortalInvoice,
 } from "../../../../lib/api/portal";
+import {
+  loadPortalWeeklySpendWithRefresh,
+  type PortalWeeklySpendWeek,
+} from "../../../../lib/api/portal/projects";
 import { saveSession } from "../../../../lib/auth/session";
 import { formatMoneyCents } from "../../../../lib/i18n/currency";
 
-// ── Weekly chart constants (no weekly spend API yet) ──────────────────────
-const TODAY_WEEK = 0;
-
-// ── Weekly spend (no weekly aggregation endpoint yet — chart renders empty) ─
-const WEEKLY_SPEND: { week: string; spend: number; forecast: boolean }[] = [];
-const WEEKLY_BUDGET_CAP = 0;
-const MAX_WEEK_SPEND = WEEKLY_SPEND.length > 0 ? Math.max(...WEEKLY_SPEND.map((w) => w.spend)) : 0;
-const CHART_MAX = Math.max(MAX_WEEK_SPEND, WEEKLY_BUDGET_CAP) * 1.15 || 1;
+// ── Weekly chart constants ─────────────────────────────────────────────────
 const CHART_H = 120;
 
 // ── Change request risk colour map ────────────────────────────────────────
@@ -91,11 +88,14 @@ export interface BudgetTrackerPageProps {
 
 export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTrackerPageProps) {
   const { session, projectId } = useProjectLayer();
-  const [loading, setLoading]       = useState(true);
-  const [error,   setError]         = useState<string | null>(null);
-  const [phaseRows, setPhaseRows]   = useState<BudgetPhaseRow[]>([]);
-  const [pendingCRs, setPendingCRs] = useState<CrRow[]>([]);
-  const [activeCRs, setActiveCRs]   = useState<Set<string>>(new Set());
+  const [loading, setLoading]           = useState(true);
+  const [error,   setError]             = useState<string | null>(null);
+  const [phaseRows, setPhaseRows]       = useState<BudgetPhaseRow[]>([]);
+  const [pendingCRs, setPendingCRs]     = useState<CrRow[]>([]);
+  const [activeCRs, setActiveCRs]       = useState<Set<string>>(new Set());
+  const [weeklySpend, setWeeklySpend]   = useState<PortalWeeklySpendWeek[]>([]);
+  const [weeklyBudgetCap, setWeeklyBudgetCap] = useState(0); // ZAR
+  const [todayWeekLabel, setTodayWeekLabel]   = useState("");
 
   const fmt = (v: number) => formatMoneyCents(Math.round(v) * 100, { currency: "ZAR", maximumFractionDigits: 0 });
   const fmtk = (v: number) => formatMoneyCents(Math.round(v) * 100, { currency: "ZAR", maximumFractionDigits: 0 });
@@ -107,12 +107,23 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
     Promise.all([
       loadPortalPhasesWithRefresh(session, projectId),
       loadPortalChangeRequestsWithRefresh(session, { projectId, status: "ESTIMATED" }),
-    ]).then(([phaseR, crR]) => {
+      loadPortalWeeklySpendWithRefresh(session, projectId),
+    ]).then(([phaseR, crR, weeklyR]) => {
       if (phaseR.nextSession) saveSession(phaseR.nextSession);
       if (crR.nextSession) saveSession(crR.nextSession);
+      if (weeklyR.nextSession) saveSession(weeklyR.nextSession);
       if (phaseR.error) { setError(phaseR.error.message ?? "Failed to load."); return; }
       if (phaseR.data) setPhaseRows(phaseR.data.map(apiToPhaseRow));
       if (crR.data) setPendingCRs(crR.data.map(crToRow));
+      if (weeklyR.data) {
+        setWeeklySpend(weeklyR.data.weeks.map((w) => ({
+          week: w.week,
+          amountCents: w.amountCents,
+          forecast: w.forecast,
+        })));
+        setWeeklyBudgetCap(weeklyR.data.weeklyBudgetCapCents / 100);
+        setTodayWeekLabel(weeklyR.data.currentWeekLabel);
+      }
     }).finally(() => setLoading(false));
   }, [session, projectId]);
 
@@ -148,6 +159,14 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
   const headroomPct      = totalBudget > 0 ? Math.round((headroom          / totalBudget) * 100) : 0;
   const crImpactPct      = totalBudget > 0 ? Math.round((crTotal           / totalBudget) * 100) : 0;
   const isOverBudget     = adjustedForecast > totalBudget;
+
+  // ── Weekly chart derived values ───────────────────────────────────────────
+  const weeklySpendZar = useMemo(
+    () => weeklySpend.map((w) => ({ week: w.week, spend: w.amountCents / 100, forecast: w.forecast })),
+    [weeklySpend]
+  );
+  const maxWeekSpend = weeklySpendZar.length > 0 ? Math.max(...weeklySpendZar.map((w) => w.spend)) : 0;
+  const chartMax     = Math.max(maxWeekSpend, weeklyBudgetCap) * 1.15 || 1;
 
   if (loading) {
     return (
@@ -267,15 +286,18 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
         <div className={cx("card", "p0", "overflowHidden")}>
           <div className={cx("cardHd")}>
             <span className={cx("cardHdTitle")}>Weekly Spend</span>
-            <span className={cx("badge", "badgeAccent", "mlAuto")}>W{TODAY_WEEK} · live</span>
+            <span className={cx("badge", "badgeAccent", "mlAuto")}>{todayWeekLabel || "—"} · live</span>
           </div>
           <div className={cx("p0x16x16", "relative")}>
 
-            {/* Y-axis + gridlines */}
+            {weeklySpendZar.length === 0 ? (
+              <p className={cx("text11", "colorMuted", "py16_px")}>No time log data yet for this project.</p>
+            ) : (
+            /* Y-axis + gridlines */
             <div className={cx("flexRow", "gap8")}>
               {/* Y labels */}
               <div className={cx("chartYAxis")} style={{ "--chart-h": `${CHART_H}px` } as React.CSSProperties}>
-                {[CHART_MAX, CHART_MAX * 0.75, CHART_MAX * 0.5, CHART_MAX * 0.25].map((v) => (
+                {[chartMax, chartMax * 0.75, chartMax * 0.5, chartMax * 0.25].map((v) => (
                   <span key={v} className={cx("chartYLabel")}>
                     {fmtk(v)}
                   </span>
@@ -289,16 +311,18 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
                   <div key={f} className={cx("chartGridLine")} style={{ "--top": `${(1 - f) * CHART_H}px` } as React.CSSProperties} />
                 ))}
                 {/* Weekly budget cap dashed line */}
-                <div className={cx("absWkBudgetLine")} style={{ "--top": `${(1 - WEEKLY_BUDGET_CAP / CHART_MAX) * CHART_H}px` } as React.CSSProperties}>
-                  <span className={cx("absLabelAmber")}>Budget</span>
-                </div>
+                {weeklyBudgetCap > 0 && (
+                  <div className={cx("absWkBudgetLine")} style={{ "--top": `${(1 - weeklyBudgetCap / chartMax) * CHART_H}px` } as React.CSSProperties}>
+                    <span className={cx("absLabelAmber")}>Budget</span>
+                  </div>
+                )}
 
                 {/* Bars */}
                 <div className={cx("chartBarArea")} style={{ "--chart-area-h": `${CHART_H}px` } as React.CSSProperties}>
-                  {WEEKLY_SPEND.map((w, i) => {
-                    const barH = Math.round((w.spend / CHART_MAX) * CHART_H);
-                    const isToday = i + 1 === TODAY_WEEK;
-                    const isOver = w.spend > WEEKLY_BUDGET_CAP && !w.forecast;
+                  {weeklySpendZar.map((w) => {
+                    const barH = Math.round((w.spend / chartMax) * CHART_H);
+                    const isToday = w.week === todayWeekLabel;
+                    const isOver = weeklyBudgetCap > 0 && w.spend > weeklyBudgetCap && !w.forecast;
                     const barBg = isOver ? "var(--red)" : w.forecast ? "color-mix(in oklab, var(--lime) 25%, transparent)" : "var(--lime)";
                     const labelColor = isOver ? "var(--red)" : w.forecast ? "var(--muted2)" : "var(--lime)";
                     return (
@@ -320,14 +344,15 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
 
                 {/* Week labels */}
                 <div className={cx("flexRow", "gap4", "mt4")}>
-                  {WEEKLY_SPEND.map((w, i) => (
-                    <div key={w.week} className={cx("chartWeekLabel", "dynColor")} style={{ "--color": i + 1 === TODAY_WEEK ? "var(--lime)" : "var(--muted2)", "--fw": i + 1 === TODAY_WEEK ? "700" : "400" } as React.CSSProperties}>
+                  {weeklySpendZar.map((w) => (
+                    <div key={w.week} className={cx("chartWeekLabel", "dynColor")} style={{ "--color": w.week === todayWeekLabel ? "var(--lime)" : "var(--muted2)", "--fw": w.week === todayWeekLabel ? "700" : "400" } as React.CSSProperties}>
                       {w.week}
                     </div>
                   ))}
                 </div>
               </div>
             </div>
+            )}
 
             {/* Legend */}
             <div className={cx("flexRow", "gap14", "mt12", "flexWrap")}>

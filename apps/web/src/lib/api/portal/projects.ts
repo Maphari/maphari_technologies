@@ -838,6 +838,44 @@ export async function initiatePortalPayfastWithRefresh(
   });
 }
 
+// ── Weekly Spend ──────────────────────────────────────────────────────────────
+
+export interface PortalWeeklySpendWeek {
+  week: string;
+  amountCents: number;
+  forecast: boolean;
+}
+
+export interface PortalWeeklySpend {
+  weeks: PortalWeeklySpendWeek[];
+  weeklyBudgetCapCents: number;
+  currentWeekLabel: string;
+}
+
+export async function loadPortalWeeklySpendWithRefresh(
+  session: AuthSession,
+  projectId: string
+): Promise<AuthorizedResult<PortalWeeklySpend>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalWeeklySpend>(
+      `/portal/projects/${projectId}/weekly-spend`,
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "WEEKLY_SPEND_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load weekly spend."
+        ),
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
 // ── Standalone invoice list loader ────────────────────────────────────────────
 
 export async function loadPortalInvoicesWithRefresh(

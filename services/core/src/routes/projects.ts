@@ -2507,4 +2507,82 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
       return { success: false, error: { code: "ROADMAP_FETCH_FAILED", message: "Unable to load project roadmap." } } as ApiResponse;
     }
   });
+
+  // ── Portal Weekly Spend ─────────────────────────────────────────────────────
+  app.get<{ Params: { projectId: string } }>("/portal/projects/:projectId/weekly-spend", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const clientId = resolveClientFilter(scope.role, scope.clientId);
+    const { projectId } = request.params;
+
+    const getIsoWeekNum = (d: Date): { year: number; week: number } => {
+      const date = new Date(d);
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+      const week1 = new Date(date.getFullYear(), 0, 4);
+      const week = 1 + Math.round(((date.getTime() - week1.getTime()) / 86_400_000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+      return { year: date.getFullYear(), week };
+    };
+
+    try {
+      const project = await prisma.project.findFirst({
+        where: { id: projectId, ...(clientId ? { clientId } : {}) },
+        select: { budgetCents: true, startAt: true, dueAt: true },
+      });
+      if (!project) {
+        reply.status(404);
+        return { success: false, error: { code: "NOT_FOUND", message: "Project not found." } } as ApiResponse;
+      }
+
+      const entries = await prisma.projectTimeEntry.findMany({
+        where: { projectId },
+        select: { minutes: true, startedAt: true, createdAt: true },
+      });
+
+      // Build map: isoKey -> totalMinutes
+      const byWeek = new Map<string, number>();
+      for (const e of entries) {
+        const d = e.startedAt ?? e.createdAt;
+        const { year, week } = getIsoWeekNum(d);
+        const key = `${year}-W${String(week).padStart(2, "0")}`;
+        byWeek.set(key, (byWeek.get(key) ?? 0) + e.minutes);
+      }
+
+      // Generate last 8 weeks + next 4 weeks (forecast)
+      const HOURLY_RATE_CENTS = 100_000; // R 1 000 / hr (estimated)
+      const now = new Date();
+      const { week: nowWeek } = getIsoWeekNum(now);
+      const currentLabel = `W${String(nowWeek).padStart(2, "0")}`;
+
+      const weeks: { week: string; amountCents: number; forecast: boolean }[] = [];
+      for (let offset = -7; offset <= 4; offset++) {
+        const d = new Date(now);
+        d.setDate(d.getDate() + offset * 7);
+        const { year, week } = getIsoWeekNum(d);
+        const key = `${year}-W${String(week).padStart(2, "0")}`;
+        const label = `W${String(week).padStart(2, "0")}`;
+        const minutes = byWeek.get(key) ?? 0;
+        const amountCents = Math.round((minutes / 60) * HOURLY_RATE_CENTS);
+        const isForecast = offset > 0;
+        weeks.push({ week: label, amountCents, forecast: isForecast });
+      }
+
+      // Weekly budget cap from project budget / project duration in weeks
+      let weeklyBudgetCapCents = 0;
+      if (Number(project.budgetCents) > 0 && project.startAt && project.dueAt) {
+        const totalMs = project.dueAt.getTime() - project.startAt.getTime();
+        const totalWeeks = Math.max(Math.ceil(totalMs / (7 * 24 * 3600 * 1000)), 1);
+        weeklyBudgetCapCents = Math.round(Number(project.budgetCents) / totalWeeks);
+      }
+
+      return {
+        success: true,
+        data: { weeks, weeklyBudgetCapCents, currentWeekLabel: currentLabel },
+        meta: { requestId: scope.requestId },
+      } as ApiResponse<{ weeks: typeof weeks; weeklyBudgetCapCents: number; currentWeekLabel: string }>;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "WEEKLY_SPEND_FETCH_FAILED", message: "Unable to load weekly spend." } } as ApiResponse;
+    }
+  });
 }
