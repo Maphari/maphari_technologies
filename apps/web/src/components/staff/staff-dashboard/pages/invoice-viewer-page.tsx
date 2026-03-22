@@ -108,7 +108,10 @@ export function InvoiceViewerPage({ isActive, session, onNotify }: PageProps) {
         setClients(clientsResult.data ?? []);
         setInvoices(invoicesResult.data ?? []);
       }
-      setLoading(false);
+    }).catch((err) => {
+      if (!cancelled) setError(err?.message ?? "Failed to load");
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };

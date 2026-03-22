@@ -97,6 +97,9 @@ export function ProjectContextPage({ isActive, session }: { isActive: boolean; s
         setProjects(mapped);
         setSelected((prev) => prev ?? (mapped[0]?.id ?? null));
       }
+    }).catch(() => {
+      // ignore
+    }).finally(() => {
       setLoading(false);
     });
   }, [session]);
