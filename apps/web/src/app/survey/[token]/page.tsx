@@ -6,12 +6,7 @@
 import type { Metadata } from "next";
 import { SurveyForm } from "./survey-form";
 
-export const metadata: Metadata = {
-  title: "Share Your Feedback | Maphari Technologies",
-  description: "Share your experience with Maphari Technologies."
-};
-
-interface SurveyData {
+export interface SurveyData {
   surveyId: string;
   clientId: string;
   companyName: string;
@@ -19,7 +14,29 @@ interface SurveyData {
   periodEnd: string;
 }
 
-function SurveyInvalid() {
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params;
+  const gatewayUrl = process.env.GATEWAY_BASE_URL ?? process.env.GATEWAY_INTERNAL_URL ?? "http://localhost:4000/api/v1";
+  const res = await fetch(`${gatewayUrl}/public/survey/${token}`, { cache: "no-store" });
+  if (!res.ok) return { title: "Survey | Maphari Technologies" };
+  const json = await res.json() as { data?: { companyName?: string } };
+  const company = json.data?.companyName;
+  return {
+    title: company ? `${company} — Share Your Feedback` : "Share Your Feedback | Maphari Technologies",
+    description: "Share your experience with Maphari Technologies."
+  };
+}
+
+type InvalidReason = "not_found" | "gone" | "error";
+
+function SurveyInvalid({ reason }: { reason: InvalidReason }) {
+  const message =
+    reason === "not_found"
+      ? "This survey link doesn't exist."
+      : reason === "gone"
+      ? "This survey has already been completed or the link has expired. Thank you!"
+      : "Something went wrong. Please try again later or contact your account manager.";
+
   return (
     <div
       style={{
@@ -28,14 +45,19 @@ function SurveyInvalid() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontFamily: "'Inter', system-ui, sans-serif",
-        padding: "24px"
+        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+        padding: "32px 16px"
       }}
     >
       <div
         style={{
-          maxWidth: 480,
+          maxWidth: 600,
           width: "100%",
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: 20,
+          padding: "40px 36px",
+          boxShadow: "0 24px 48px rgba(0,0,0,0.4)",
           textAlign: "center"
         }}
       >
@@ -62,7 +84,8 @@ function SurveyInvalid() {
             fontSize: 22,
             fontWeight: 600,
             color: "#fff",
-            margin: "0 0 12px"
+            margin: "0 0 12px",
+            letterSpacing: "-0.02em"
           }}
         >
           Survey unavailable
@@ -75,7 +98,7 @@ function SurveyInvalid() {
             margin: 0
           }}
         >
-          This survey link has expired, already been used, or does not exist. Please contact your account manager if you believe this is an error.
+          {message}
         </p>
       </div>
     </div>
@@ -87,6 +110,7 @@ export default async function SurveyPage({ params }: { params: Promise<{ token: 
   const gatewayBase = process.env.GATEWAY_BASE_URL ?? process.env.GATEWAY_INTERNAL_URL ?? "http://localhost:4000/api/v1";
 
   let surveyData: SurveyData | null = null;
+  let invalidReason: InvalidReason = "error";
 
   try {
     const res = await fetch(`${gatewayBase}/public/survey/${token}`, { cache: "no-store" });
@@ -95,13 +119,20 @@ export default async function SurveyPage({ params }: { params: Promise<{ token: 
       if (json.success && json.data) {
         surveyData = json.data;
       }
+    } else if (res.status === 404) {
+      invalidReason = "not_found";
+    } else if (res.status === 410) {
+      invalidReason = "gone";
+    } else {
+      invalidReason = "error";
     }
   } catch {
-    // Network error — treat as invalid
+    // Network error — treat as generic error
+    invalidReason = "error";
   }
 
   if (!surveyData) {
-    return <SurveyInvalid />;
+    return <SurveyInvalid reason={invalidReason} />;
   }
 
   return <SurveyForm token={token} survey={surveyData} />;

@@ -6,14 +6,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState } from "react";
-
-interface SurveyData {
-  surveyId: string;
-  clientId: string;
-  companyName: string;
-  periodStart: string;
-  periodEnd: string;
-}
+import type { SurveyData } from "./page";
 
 interface Props {
   token: string;

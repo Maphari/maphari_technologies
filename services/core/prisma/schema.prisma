@@ -717,7 +717,6 @@ model SurveyToken {
   survey     SatisfactionSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
   client     Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  @@index([token])
   @@map("survey_tokens")
 }
 

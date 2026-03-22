@@ -296,9 +296,11 @@ export async function registerSatisfactionRoutes(app: FastifyInstance): Promise<
     const { token } = request.params as { token: string };
     const body = request.body as { npsScore: number; comment?: string };
 
-    if (body.npsScore === undefined || body.npsScore === null || body.npsScore < 0 || body.npsScore > 10) {
+    if (!Number.isInteger(body.npsScore) || body.npsScore < 0 || body.npsScore > 10) {
       return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "npsScore must be an integer from 0 to 10." } } as ApiResponse);
     }
+
+    const comment = typeof body.comment === "string" ? body.comment.trim().slice(0, 2000) : undefined;
 
     const tokenRecord = await prisma.surveyToken.findUnique({
       where: { token },
@@ -317,34 +319,40 @@ export async function registerSatisfactionRoutes(app: FastifyInstance): Promise<
       return reply.code(410).send({ success: false, error: { code: "GONE", message: "This survey link has expired." } } as ApiResponse);
     }
 
-    const npsScore = Math.round(body.npsScore);
-    const comment = body.comment?.trim();
+    const npsScore = body.npsScore;
+    const surveyId = tokenRecord.surveyId;
+    const clientId = tokenRecord.clientId;
 
-    await prisma.satisfactionResponse.create({
-      data: {
-        surveyId: tokenRecord.surveyId,
-        question: "NPS",
-        answer: String(npsScore),
-        ...(comment ? { comment } : {})
-      }
-    });
+    try {
+      await prisma.$transaction([
+        prisma.surveyToken.update({
+          where: { token, usedAt: null },
+          data: { usedAt: new Date() }
+        }),
+        prisma.satisfactionResponse.create({
+          data: {
+            surveyId,
+            question: "NPS",
+            answer: String(npsScore),
+            ...(comment ? { comment } : {})
+          }
+        }),
+        prisma.satisfactionSurvey.update({
+          where: { id: surveyId },
+          data: {
+            status: "COMPLETED",
+            completedAt: new Date(),
+            npsScore
+          }
+        })
+      ]);
+    } catch {
+      // Token was already consumed by a concurrent request
+      return reply.code(410).send({ success: false, error: { code: "GONE", message: "This survey has already been completed." } } as ApiResponse);
+    }
 
-    await prisma.satisfactionSurvey.update({
-      where: { id: tokenRecord.surveyId },
-      data: {
-        status: "COMPLETED",
-        completedAt: new Date(),
-        npsScore
-      }
-    });
-
-    await prisma.surveyToken.update({
-      where: { token },
-      data: { usedAt: new Date() }
-    });
-
-    await cache.delete(CacheKeys.surveys(tokenRecord.clientId));
-    await cache.delete(CacheKeys.surveyResponses(tokenRecord.surveyId));
+    await cache.delete(CacheKeys.surveys(clientId));
+    await cache.delete(CacheKeys.surveyResponses(surveyId));
 
     return { success: true, data: { success: true } } as ApiResponse<{ success: boolean }>;
   });
