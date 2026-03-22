@@ -21,6 +21,8 @@ export * from "./services";
 export * from "./ai";
 export * from "./notification-prefs";
 export * from "./integrations";
+export * from "./forum";
+export * from "./feature-requests";
 // Named exports from files.ts avoid re-exporting PortalFile which lives in ./types
 export {
   loadPortalFilesWithRefresh,
