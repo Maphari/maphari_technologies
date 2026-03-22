@@ -1,10 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { useCurrencyConverter } from "../../../../lib/i18n/exchange-rates";
 import { formatMoneyCents } from "../../../../lib/i18n/currency";
-import { styles } from "../style";
+import { styles, cx } from "../style";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type DateRange = "3M" | "6M" | "12M" | "All";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -16,13 +22,30 @@ function formatMoney(cents: number, currency: string): string {
 
 function buildMonthlyRevenueSeries(
   snapshot: ReturnType<typeof useAdminWorkspaceContext>["snapshot"],
-  months: number,
+  months: number | null,
   convertMoney: (cents: number, currency: string) => number
 ): { labels: string[]; values: number[] } {
   const now = new Date();
   const labels: string[] = [];
   const values: number[] = [];
-  for (let i = months - 1; i >= 0; i--) {
+
+  let effectiveMonths = months;
+  if (effectiveMonths === null) {
+    // "All" — compute from earliest paid invoice
+    const paidDates = snapshot.invoices
+      .filter((inv) => inv.status === "PAID")
+      .map((inv) => new Date(inv.paidAt ?? inv.updatedAt).getTime())
+      .filter((t) => !Number.isNaN(t));
+    if (paidDates.length === 0) {
+      effectiveMonths = 12;
+    } else {
+      const earliest = Math.min(...paidDates);
+      const diffMs = now.getTime() - earliest;
+      effectiveMonths = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 30)));
+    }
+  }
+
+  for (let i = effectiveMonths - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     labels.push(d.toLocaleString("default", { month: "short" }));
     const start = d.getTime();
@@ -66,9 +89,26 @@ function RevenueBars({ id, labels, values }: { id: string; labels: string[]; val
 // Component
 // ---------------------------------------------------------------------------
 
+const LEAD_STAGES = ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL", "WON"] as const;
+const LEAD_STAGE_LABELS: Record<string, string> = {
+  NEW: "New",
+  CONTACTED: "Contacted",
+  QUALIFIED: "Qualified",
+  PROPOSAL: "Proposal",
+  WON: "Won",
+};
+
+const DATE_RANGE_MONTHS: Record<DateRange, number | null> = {
+  "3M": 3,
+  "6M": 6,
+  "12M": 12,
+  "All": null,
+};
+
 export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
   const { snapshot } = useAdminWorkspaceContext();
   const { convert: convertMoney } = useCurrencyConverter(currency);
+  const [dateRange, setDateRange] = useState<DateRange>("12M");
 
   const now = new Date();
   const yearStart = new Date(now.getFullYear(), 0, 1).getTime();
@@ -113,7 +153,7 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
   const closed = won + lost;
   const clientNpsProxy = closed > 0 ? Math.round((won / closed) * 100) : 0;
 
-  const revenueSeries = buildMonthlyRevenueSeries(snapshot, 7, convertMoney);
+  const revenueSeries = buildMonthlyRevenueSeries(snapshot, DATE_RANGE_MONTHS[dateRange], convertMoney);
 
   const tierRevenue = useMemo(() => {
     const clientTierById = new Map(snapshot.clients.map((c) => [c.id, c.tier ?? "STARTER"]));
@@ -138,6 +178,105 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
       starterPct: Math.round((sums.STARTER / total) * 100)
     };
   }, [convertMoney, snapshot.clients, snapshot.invoices]);
+
+  // ── Section B: Lead funnel ──────────────────────────────────────────────
+  const leadFunnel = useMemo(() => {
+    const stageCounts = LEAD_STAGES.reduce<Record<string, number>>((acc, s) => {
+      acc[s] = snapshot.leads.filter((l) => l.status === s).length;
+      return acc;
+    }, {});
+    const lostCount = snapshot.leads.filter((l) => l.status === "LOST").length;
+    const maxCount = Math.max(...Object.values(stageCounts), 1);
+    const activeLeadCount = snapshot.leads.filter((l) => l.status !== "LOST").length;
+    const winRate = closed > 0 ? Math.round((won / closed) * 100) : 0;
+    return { stageCounts, lostCount, maxCount, activeLeadCount, winRate };
+  }, [snapshot.leads, won, closed]);
+
+  // ── Section C: Project status breakdown ────────────────────────────────
+  const projectBreakdown = useMemo(() => {
+    const nowMs = now.getTime();
+    let active = 0, completed = 0, onHold = 0, overdue = 0;
+    for (const p of snapshot.projects) {
+      const st = p.status.toUpperCase();
+      if (st === "COMPLETED") {
+        completed++;
+      } else if (st === "ON_HOLD" || st === "PAUSED" || st === "HOLD") {
+        onHold++;
+      } else {
+        // Active / In Progress — check if overdue
+        const due = p.dueAt ? new Date(p.dueAt).getTime() : NaN;
+        if (!Number.isNaN(due) && due < nowMs) {
+          overdue++;
+        } else {
+          active++;
+        }
+      }
+    }
+    const total = Math.max(1, active + completed + onHold + overdue);
+    return {
+      total: snapshot.projects.length,
+      active,
+      completed,
+      onHold,
+      overdue,
+      activePct: Math.round((active / total) * 100),
+      completedPct: Math.round((completed / total) * 100),
+      onHoldPct: Math.round((onHold / total) * 100),
+      overduePct: Math.round((overdue / total) * 100),
+    };
+  }, [snapshot.projects, now]);
+
+  // ── Section D: Top clients by revenue ─────────────────────────────────
+  const topClients = useMemo(() => {
+    const clientNameById = new Map(snapshot.clients.map((c) => [c.id, c.name]));
+    const revenueByClient = new Map<string, number>();
+    snapshot.invoices
+      .filter((inv) => inv.status === "PAID")
+      .forEach((inv) => {
+        const converted = convertMoney(inv.amountCents, inv.currency);
+        revenueByClient.set(inv.clientId, (revenueByClient.get(inv.clientId) ?? 0) + converted);
+      });
+    const sorted = Array.from(revenueByClient.entries())
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5);
+    const grandTotal = Math.max(1, Array.from(revenueByClient.values()).reduce((s, v) => s + v, 0));
+    return sorted.map(([clientId, rev], i) => ({
+      rank: i + 1,
+      name: clientNameById.get(clientId) ?? "Unknown",
+      revenue: rev,
+      sharePct: Math.round((rev / grandTotal) * 100),
+    }));
+  }, [snapshot.clients, snapshot.invoices, convertMoney]);
+
+  // ── Section E: Invoice health ──────────────────────────────────────────
+  const invoiceHealth = useMemo(() => {
+    const total = snapshot.invoices.length;
+    const paidInvoices = snapshot.invoices.filter((inv) => inv.status === "PAID");
+    const collectionRate = total > 0 ? Math.round((paidInvoices.length / total) * 100) : 0;
+
+    const daysToPay = paidInvoices
+      .map((inv) => {
+        const paid = inv.paidAt ? new Date(inv.paidAt).getTime() : NaN;
+        const created = new Date(inv.createdAt).getTime();
+        if (Number.isNaN(paid) || Number.isNaN(created) || paid < created) return NaN;
+        return (paid - created) / (1000 * 60 * 60 * 24);
+      })
+      .filter((d) => !Number.isNaN(d));
+    const avgDaysToPay = daysToPay.length > 0
+      ? Math.round(daysToPay.reduce((s, d) => s + d, 0) / daysToPay.length)
+      : 0;
+
+    const nowMs = now.getTime();
+    const overdueAmount = snapshot.invoices
+      .filter((inv) => inv.status !== "PAID" && inv.status !== "VOID" && inv.status !== "CANCELLED")
+      .filter((inv) => {
+        const due = inv.dueAt ? new Date(inv.dueAt).getTime() : NaN;
+        return !Number.isNaN(due) && due < nowMs;
+      })
+      .reduce((sum, inv) => sum + convertMoney(inv.amountCents, inv.currency), 0);
+
+    return { collectionRate, avgDaysToPay, overdueAmount };
+  }, [snapshot.invoices, convertMoney, now]);
 
   return (
     <div className={styles.pageBody}>
@@ -173,6 +312,20 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
           <div className={styles.statValue}>{clientNpsProxy}</div>
           <div className={`${styles.statDelta} ${styles.deltaUp}`}>Closed lead win rate</div>
         </div>
+      </div>
+
+      {/* Section A — Date range filter */}
+      <div className={styles.analyticsTabRow}>
+        {(["3M", "6M", "12M", "All"] as DateRange[]).map((r) => (
+          <button
+            key={r}
+            type="button"
+            className={cx("analyticsTab", dateRange === r && "analyticsTabActive")}
+            onClick={() => setDateRange(r)}
+          >
+            {r}
+          </button>
+        ))}
       </div>
 
       <div className={styles.twoCol}>
@@ -215,6 +368,156 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
               </div>
             </div>
           </div>
+        </article>
+      </div>
+
+      {/* Section B — Lead conversion funnel */}
+      <article className={styles.card}>
+        <div className={styles.cardHd}>
+          <span className={styles.cardHdTitle}>Lead Conversion Funnel</span>
+          <div className={styles.analyticsMetaPair}>
+            <span className={styles.analyticsMetaItem}>
+              Active: <strong>{leadFunnel.activeLeadCount}</strong>
+            </span>
+            <span className={styles.analyticsMetaItem}>
+              Win rate: <strong className={styles.analyticsAccentText}>{leadFunnel.winRate}%</strong>
+            </span>
+            <span className={styles.analyticsMetaItem}>
+              Lost: <strong className={styles.analyticsRedText}>{leadFunnel.lostCount}</strong>
+            </span>
+          </div>
+        </div>
+        <div className={styles.analyticsFunnelWrap}>
+          {LEAD_STAGES.map((stage) => {
+            const count = leadFunnel.stageCounts[stage] ?? 0;
+            const pct = Math.round((count / leadFunnel.maxCount) * 100);
+            return (
+              <div key={stage} className={styles.analyticsFunnelRow}>
+                <span className={styles.analyticsFunnelLabel}>{LEAD_STAGE_LABELS[stage]}</span>
+                <div className={styles.analyticsFunnelTrack}>
+                  <div
+                    className={cx("analyticsFunnelFill", stage === "WON" && "analyticsFunnelFillWon")}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className={styles.analyticsFunnelCount}>{count}</span>
+              </div>
+            );
+          })}
+        </div>
+      </article>
+
+      {/* Section C — Project status breakdown */}
+      <article className={styles.card}>
+        <div className={styles.cardHd}>
+          <span className={styles.cardHdTitle}>Project Status Breakdown</span>
+          <span className={styles.analyticsMetaItem}>{projectBreakdown.total} total</span>
+        </div>
+        <div className={styles.analyticsStripWrap}>
+          <div className={styles.analyticsStrip}>
+            {projectBreakdown.activePct > 0 && (
+              <div
+                className={cx("analyticsStripSeg", "analyticsStripAccent")}
+                style={{ width: `${projectBreakdown.activePct}%` }}
+                title={`Active: ${projectBreakdown.activePct}%`}
+              />
+            )}
+            {projectBreakdown.completedPct > 0 && (
+              <div
+                className={cx("analyticsStripSeg", "analyticsStripGreen")}
+                style={{ width: `${projectBreakdown.completedPct}%` }}
+                title={`Completed: ${projectBreakdown.completedPct}%`}
+              />
+            )}
+            {projectBreakdown.onHoldPct > 0 && (
+              <div
+                className={cx("analyticsStripSeg", "analyticsStripAmber")}
+                style={{ width: `${projectBreakdown.onHoldPct}%` }}
+                title={`On Hold: ${projectBreakdown.onHoldPct}%`}
+              />
+            )}
+            {projectBreakdown.overduePct > 0 && (
+              <div
+                className={cx("analyticsStripSeg", "analyticsStripRed")}
+                style={{ width: `${projectBreakdown.overduePct}%` }}
+                title={`Overdue: ${projectBreakdown.overduePct}%`}
+              />
+            )}
+          </div>
+        </div>
+        <div className={styles.analyticsStripLegend}>
+          <div className={styles.analyticsStripLegendItem}>
+            <span className={cx("analyticsStripDot", "analyticsStripDotAccent")} />
+            <span>Active</span>
+            <span className={styles.analyticsStripLegendCount}>{projectBreakdown.active} · {projectBreakdown.activePct}%</span>
+          </div>
+          <div className={styles.analyticsStripLegendItem}>
+            <span className={cx("analyticsStripDot", "analyticsStripDotGreen")} />
+            <span>Completed</span>
+            <span className={styles.analyticsStripLegendCount}>{projectBreakdown.completed} · {projectBreakdown.completedPct}%</span>
+          </div>
+          <div className={styles.analyticsStripLegendItem}>
+            <span className={cx("analyticsStripDot", "analyticsStripDotAmber")} />
+            <span>On Hold</span>
+            <span className={styles.analyticsStripLegendCount}>{projectBreakdown.onHold} · {projectBreakdown.onHoldPct}%</span>
+          </div>
+          <div className={styles.analyticsStripLegendItem}>
+            <span className={cx("analyticsStripDot", "analyticsStripDotRed")} />
+            <span>Overdue</span>
+            <span className={styles.analyticsStripLegendCount}>{projectBreakdown.overdue} · {projectBreakdown.overduePct}%</span>
+          </div>
+        </div>
+      </article>
+
+      {/* Section D — Top clients by revenue */}
+      <article className={styles.card}>
+        <div className={styles.cardHd}>
+          <span className={styles.cardHdTitle}>Top Clients by Revenue</span>
+          <span className={styles.analyticsMetaItem}>All time · top 5</span>
+        </div>
+        <div className={styles.analyticsRankList}>
+          {topClients.length === 0 && (
+            <div className={styles.analyticsEmpty}>No paid invoices yet.</div>
+          )}
+          {topClients.map((client) => (
+            <div key={client.rank} className={styles.analyticsRankRow}>
+              <span className={styles.analyticsRankNum}>{client.rank}</span>
+              <div className={styles.analyticsRankInfo}>
+                <span className={styles.analyticsRankName}>{client.name}</span>
+                <div className={styles.analyticsRankBarTrack}>
+                  <div
+                    className={styles.analyticsRankBarFill}
+                    style={{ width: `${client.sharePct}%` }}
+                  />
+                </div>
+              </div>
+              <div className={styles.analyticsRankMeta}>
+                <span className={styles.analyticsRankRev}>{formatMoney(client.revenue, currency)}</span>
+                <span className={styles.analyticsRankShare}>{client.sharePct}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </article>
+
+      {/* Section E — Invoice health summary */}
+      <div className={styles.analyticsHealthGrid}>
+        <article className={styles.card}>
+          <div className={styles.analyticsHealthLabel}>Collection Rate</div>
+          <div className={styles.analyticsHealthValue}>{invoiceHealth.collectionRate}%</div>
+          <div className={styles.analyticsHealthSub}>Paid invoices / total</div>
+        </article>
+        <article className={styles.card}>
+          <div className={styles.analyticsHealthLabel}>Avg. Days to Payment</div>
+          <div className={styles.analyticsHealthValue}>{invoiceHealth.avgDaysToPay}d</div>
+          <div className={styles.analyticsHealthSub}>From issued to paid</div>
+        </article>
+        <article className={styles.card}>
+          <div className={styles.analyticsHealthLabel}>Overdue Amount</div>
+          <div className={cx("analyticsHealthValue", invoiceHealth.overdueAmount > 0 && "analyticsHealthValueRed")}>
+            {formatMoney(invoiceHealth.overdueAmount, currency)}
+          </div>
+          <div className={styles.analyticsHealthSub}>Outstanding past due date</div>
         </article>
       </div>
     </div>

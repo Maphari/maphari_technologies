@@ -511,6 +511,336 @@
 }
 
 
+/* ─── Section A: Date range tab filter ─────────────────────────────── */
+
+/* Row of date range filter tabs */
+.analyticsTabRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+/* Individual tab button */
+.analyticsTab {
+  padding: 5px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--b2);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.analyticsTab:hover {
+  color: var(--text);
+  border-color: var(--b3);
+  background: var(--s2);
+}
+
+/* Active tab state */
+.analyticsTabActive {
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+  background: color-mix(in oklab, var(--accent) 8%, transparent);
+}
+
+.analyticsTabActive:hover {
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+
+/* Inline meta pair in card header */
+.analyticsMetaPair {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Single meta item: label + value */
+.analyticsMetaItem {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* Accent-colored strong text */
+.analyticsAccentText {
+  color: var(--accent);
+}
+
+/* Red-colored strong text */
+.analyticsRedText {
+  color: var(--red);
+}
+
+/* ─── Section B: Lead funnel ─────────────────────────────────────────── */
+
+/* Wrapper for all funnel rows */
+.analyticsFunnelWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+/* One funnel stage row: label | track | count */
+.analyticsFunnelRow {
+  display: grid;
+  grid-template-columns: 90px 1fr 36px;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Stage label */
+.analyticsFunnelLabel {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Background track */
+.analyticsFunnelTrack {
+  height: 10px;
+  background: var(--s2);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+/* Filled portion of the funnel bar */
+.analyticsFunnelFill {
+  height: 100%;
+  background: var(--accent);
+  opacity: 0.55;
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+/* Won stage fill — full opacity accent */
+.analyticsFunnelFillWon {
+  opacity: 1;
+}
+
+/* Count label at end of row */
+.analyticsFunnelCount {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.72rem;
+  color: var(--text);
+  text-align: right;
+}
+
+/* ─── Section C: Project status strip ──────────────────────────────── */
+
+/* Outer padding wrapper */
+.analyticsStripWrap {
+  padding: 0 16px 16px;
+}
+
+/* Full-width segmented proportion bar */
+.analyticsStrip {
+  display: flex;
+  height: 14px;
+  border-radius: var(--r-xs);
+  overflow: hidden;
+  background: var(--s2);
+}
+
+/* One colored segment of the strip */
+.analyticsStripSeg {
+  height: 100%;
+  transition: width 0.3s ease;
+  min-width: 2px;
+}
+
+/* Segment color variants */
+.analyticsStripAccent { background: var(--accent); opacity: 0.85; }
+.analyticsStripGreen  { background: var(--green);  opacity: 0.85; }
+.analyticsStripAmber  { background: var(--amber);  opacity: 0.85; }
+.analyticsStripRed    { background: var(--red);    opacity: 0.85; }
+
+/* Legend below the strip */
+.analyticsStripLegend {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 0 16px 16px;
+}
+
+/* One legend entry */
+.analyticsStripLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* Color dot in legend */
+.analyticsStripDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.analyticsStripDotAccent { background: var(--accent); }
+.analyticsStripDotGreen  { background: var(--green);  }
+.analyticsStripDotAmber  { background: var(--amber);  }
+.analyticsStripDotRed    { background: var(--red);    }
+
+/* Count+pct portion of legend entry */
+.analyticsStripLegendCount {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.65rem;
+  color: var(--text);
+}
+
+/* ─── Section D: Top clients ranking ──────────────────────────────── */
+
+/* Ranked list container */
+.analyticsRankList {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+/* One ranked client row */
+.analyticsRankRow {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--b1);
+}
+
+.analyticsRankRow:last-child {
+  border-bottom: none;
+}
+
+/* Rank number badge */
+.analyticsRankNum {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Client name + thin bar track */
+.analyticsRankInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+/* Client name */
+.analyticsRankName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Bar track under client name */
+.analyticsRankBarTrack {
+  height: 4px;
+  background: var(--s2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+/* Bar fill — accent colored */
+.analyticsRankBarFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  opacity: 0.65;
+  transition: width 0.3s ease;
+}
+
+/* Revenue + share on the right */
+.analyticsRankMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+/* Revenue value */
+.analyticsRankRev {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* Share percentage */
+.analyticsRankShare {
+  font-size: 0.62rem;
+  color: var(--muted2);
+}
+
+/* Empty state inside ranked list */
+.analyticsEmpty {
+  padding: 20px 16px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ─── Section E: Invoice health grid ──────────────────────────────── */
+
+/* Three-column grid for the 3 health cards */
+.analyticsHealthGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* Label above the large value */
+.analyticsHealthLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+  padding: 16px 16px 0;
+}
+
+/* Large numeric value */
+.analyticsHealthValue {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text);
+  padding: 0 16px;
+  line-height: 1.1;
+}
+
+/* Red variant for overdue amount */
+.analyticsHealthValueRed {
+  color: var(--red);
+}
+
+/* Sub-label below value */
+.analyticsHealthSub {
+  font-size: 0.65rem;
+  color: var(--muted2);
+  padding: 4px 16px 16px;
+}
+
 /* ─── Responsive ───────────────────────────────────────────────────── */
 
 @media (max-width: 1200px) {
@@ -597,5 +927,28 @@
   .settingsLogRow > *:nth-child(1),
   .settingsLogRow > *:nth-child(2) {
     display: none;
+  }
+
+  .analyticsHealthGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .analyticsFunnelRow {
+    grid-template-columns: 70px 1fr 32px;
+    gap: 8px;
+  }
+
+  .analyticsStripLegend {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .analyticsHealthGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .analyticsTabRow {
+    flex-wrap: wrap;
   }
 }
