@@ -5852,3 +5852,106 @@
   font-weight: 500;
   color: var(--text);
 }
+
+/* ── Wizard step content helpers ── */
+.wizardStepCenterWrap {
+  text-align: center;
+  padding: 8px 0 16px;
+}
+.wizardStepSubCentered {
+  max-width: 460px;
+  margin: 0 auto 20px;
+}
+.wizardProjCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.wizardProjName {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.wizardStatusBadge {
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.wizardProjDesc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+.wizardProgressTrack {
+  height: 4px;
+  background: var(--b2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.wizardProgressFill {
+  height: 100%;
+  background: var(--lime);
+  border-radius: 2px;
+}
+.wizardProgressLabel {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 4px;
+  display: block;
+}
+.wizardTeamInfo {
+  flex: 1;
+  min-width: 0;
+}
+.wizardTeamName {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+.wizardTeamRole {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.wizardDoneLinksRow {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  margin-top: 16px;
+}
+.wizardDoneLinkCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 12px 14px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.wizardDoneLinkIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-xs);
+  background: color-mix(in oklab, var(--lime) 10%, var(--s2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+.wizardDoneLinkLabel {
+  font-weight: 600;
+  font-size: 0.82rem;
+  margin-bottom: 3px;
+}
+.wizardDoneLinkSub {
+  font-size: 0.73rem;
+  color: var(--muted);
+  line-height: 1.4;
+}

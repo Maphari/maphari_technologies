@@ -135,7 +135,7 @@ export function OnboardingWizard({ session, onClose }: OnboardingWizardProps) {
         <div className={cx("wizardHeader")}>
           <div className={cx("flex", "gap6", "flexCenter")}>
             <Ic n="sparkle" sz={14} c="var(--lime)" />
-            <span className={cx("text13", "fw600")} style={{ color: "var(--muted)" }}>
+            <span className={cx("text13", "fw600", "textMuted")}>
               Getting started — Step {step + 1} of {TOTAL_STEPS}
             </span>
           </div>
@@ -207,7 +207,7 @@ export function OnboardingWizard({ session, onClose }: OnboardingWizardProps) {
 
 function StepWelcome({ firstName }: { firstName: string }) {
   return (
-    <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
+    <div className={cx("wizardStepCenterWrap")}>
       <div className={cx("wizardDoneCheck")}>
         <Ic n="zap" sz={22} c="var(--lime)" />
       </div>
@@ -215,7 +215,7 @@ function StepWelcome({ firstName }: { firstName: string }) {
       <h2 id="onboarding-wizard-title" className={cx("wizardStepTitle")}>
         {firstName ? `Welcome, ${firstName}!` : "Welcome to your client portal"}
       </h2>
-      <p className={cx("wizardStepSub")} style={{ maxWidth: 460, margin: "0 auto 20px" }}>
+      <p className={cx("wizardStepSub", "wizardStepSubCentered")}>
         {firstName
           ? "This is your dedicated workspace for tracking your project, approving deliverables, and communicating with your team."
           : "Everything you need to manage your project is right here — milestones, deliverables, invoices, and more."}
@@ -241,50 +241,26 @@ function StepProject({ project, loading }: { project: PortalProject | null; load
         <div className={cx("loadingCell")}>Loading your project…</div>
       ) : project ? (
         <div className={cx("wizardProjectCard")}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: 12,
-              marginBottom: 8,
-            }}
-          >
-            <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>{project.name}</span>
-            <span
-              className={cx(statusBadgeClass(project.status))}
-              style={{ fontSize: "0.7rem", padding: "3px 8px", borderRadius: 4, flexShrink: 0, whiteSpace: "nowrap" }}
-            >
+          <div className={cx("wizardProjCardHeader")}>
+            <span className={cx("wizardProjName")}>{project.name}</span>
+            <span className={cx(statusBadgeClass(project.status), "wizardStatusBadge")}>
               {statusLabel(project.status)}
             </span>
           </div>
           {project.description && (
-            <p style={{ fontSize: "0.82rem", color: "var(--muted)", lineHeight: 1.5, margin: 0 }}>
+            <p className={cx("wizardProjDesc")}>
               {project.description}
             </p>
           )}
           {project.progressPercent > 0 && (
-            <div style={{ marginTop: 12 }}>
-              <div
-                style={{
-                  height: 4,
-                  background: "var(--b2)",
-                  borderRadius: 2,
-                  overflow: "hidden",
-                }}
-              >
+            <div className={cx("mt12")}>
+              <div className={cx("wizardProgressTrack")}>
                 <div
-                  style={{
-                    height: "100%",
-                    width: `${project.progressPercent ?? 0}%`,
-                    background: "var(--lime)",
-                    borderRadius: 2,
-                  }}
+                  className={cx("wizardProgressFill")}
+                  style={{ width: `${project.progressPercent ?? 0}%` }}
                 />
               </div>
-              <span
-                style={{ fontSize: "0.72rem", color: "var(--muted)", marginTop: 4, display: "block" }}
-              >
+              <span className={cx("wizardProgressLabel")}>
                 {project.progressPercent}% complete
               </span>
             </div>
@@ -317,21 +293,18 @@ function StepTeam({ team, loading }: { team: PortalTeamMember[]; loading: boolea
       {loading ? (
         <div className={cx("loadingCell")}>Loading your team…</div>
       ) : displayed.length > 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className={cx("flexCol", "gap10")}>
           {displayed.map((member) => (
             <div key={member.id} className={cx("wizardTeamRow")}>
               {/* Avatar circle */}
               <div className={cx("wizardTeamAvatar")}>
                 {member.name.charAt(0).toUpperCase()}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{member.name}</div>
-                <div style={{ fontSize: "0.75rem", color: "var(--muted)" }}>{member.role}</div>
+              <div className={cx("wizardTeamInfo")}>
+                <div className={cx("wizardTeamName")}>{member.name}</div>
+                <div className={cx("wizardTeamRole")}>{member.role}</div>
               </div>
-              <span
-                className={cx("badgeMuted")}
-                style={{ fontSize: "0.7rem", padding: "3px 8px", borderRadius: 4, flexShrink: 0 }}
-              >
+              <span className={cx("badgeMuted", "wizardStatusBadge")}>
                 {member.status === "ACTIVE" ? "Active" : member.status}
               </span>
             </div>
@@ -356,7 +329,7 @@ const QUICK_LINKS = [
 
 function StepDone() {
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className={cx("textCenter")}>
       <div className={cx("wizardDoneCheck")}>
         <Ic n="check" sz={24} c="var(--lime)" />
       </div>
@@ -367,27 +340,16 @@ function StepDone() {
       </h2>
       <p className={cx("wizardStepSub")}>Here are a few places to explore first.</p>
 
-      <div className={cx("wizardDoneLinks")} style={{ flexDirection: "row", gap: 12 }}>
+      <div className={cx("wizardDoneLinksRow")}>
         {QUICK_LINKS.map((link) => (
-          <div key={link.label} className={cx("wizardDoneLink")} style={{ flexDirection: "column", alignItems: "flex-start", gap: 0 }}>
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: "var(--r-xs)",
-                background: "color-mix(in oklab, var(--lime) 10%, var(--s2))",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 10,
-              }}
-            >
+          <div key={link.label} className={cx("wizardDoneLinkCard")}>
+            <div className={cx("wizardDoneLinkIcon")}>
               <Ic n={link.icon} sz={14} c="var(--lime)" />
             </div>
-            <div style={{ fontWeight: 600, fontSize: "0.82rem", marginBottom: 3 }}>
+            <div className={cx("wizardDoneLinkLabel")}>
               {link.label}
             </div>
-            <div style={{ fontSize: "0.73rem", color: "var(--muted)", lineHeight: 1.4 }}>
+            <div className={cx("wizardDoneLinkSub")}>
               {link.sub}
             </div>
           </div>
