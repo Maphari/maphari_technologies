@@ -91,31 +91,6 @@ export async function hydrateSession(): Promise<AuthSession | null> {
   // SSR guard: cookies are not available server-side
   if (typeof window === "undefined") return null;
 
-  // ── Dev mock: bypass gateway when NEXT_PUBLIC_DEV_MOCK_SESSION=staff|admin|client ──
-  const devMock =
-    (typeof process !== "undefined" &&
-      (process.env as Record<string, string | undefined>)
-        .NEXT_PUBLIC_DEV_MOCK_SESSION) ?? "";
-  if (devMock === "staff" || devMock === "admin" || devMock === "client") {
-    const roleMap: Record<string, Role> = {
-      staff: "STAFF",
-      admin: "ADMIN",
-      client: "CLIENT",
-    };
-    const mockSession: AuthSession = {
-      accessToken: "dev-mock-token",
-      expiresInSeconds: 3600,
-      user: {
-        id: "dev-mock-user-id",
-        email: `dev@maphari.io`,
-        role: roleMap[devMock],
-        clientId: devMock === "client" ? "dev-mock-client-id" : null,
-      },
-    };
-    saveSession(mockSession);
-    return mockSession;
-  }
-
   try {
     const baseUrl =
       (typeof process !== "undefined" &&
