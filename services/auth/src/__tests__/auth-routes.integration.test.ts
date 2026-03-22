@@ -19,6 +19,7 @@ const TEST_CONFIG: AuthConfig = {
   adminPassword: "",
   staffPassword: "",
   authBootstrapLogs: false,
+  idleTimeoutHours: 2,
 };
 
 const mockEventBus = new NatsEventBus("nats://localhost:4222");

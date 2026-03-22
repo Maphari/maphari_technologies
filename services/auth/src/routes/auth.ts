@@ -1357,12 +1357,28 @@ export async function registerAuthRoutes(
         } as ApiResponse;
       }
 
+      const IDLE_TIMEOUT_MS = config.idleTimeoutHours * 60 * 60 * 1000;
+      if (Date.now() - existingToken.lastUsedAt.getTime() > IDLE_TIMEOUT_MS) {
+        await prisma.refreshToken.update({
+          where: { id: existingToken.id },
+          data: { revokedAt: new Date() },
+        });
+        reply.code(401);
+        return {
+          success: false,
+          error: {
+            code: "SESSION_IDLE_TIMEOUT",
+            message: "Session expired due to inactivity. Please log in again."
+          }
+        } as ApiResponse;
+      }
+
       const { token: nextRefreshToken, tokenHash: nextRefreshTokenHash, expiresAt } = buildRefreshToken(
         config.refreshTokenTtlDays
       );
       const accessToken = signAccessToken(existingToken.user, config);
 
-      await prisma.$transaction([
+      const [, newRefreshTokenRecord] = await prisma.$transaction([
         prisma.refreshToken.update({
           where: { id: existingToken.id },
           data: { revokedAt: new Date() }
@@ -1375,6 +1391,11 @@ export async function registerAuthRoutes(
           }
         })
       ]);
+
+      await prisma.refreshToken.update({
+        where: { id: newRefreshTokenRecord.id },
+        data: { lastUsedAt: new Date() },
+      });
 
       await deps.eventBus.publish({
         eventId: randomUUID(),
