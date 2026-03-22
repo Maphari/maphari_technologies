@@ -7,6 +7,12 @@ import { useProjectLayer } from "../hooks/use-project-layer";
 import { loadPortalDeliverablesWithRefresh, approvePortalDeliverableWithRefresh, requestChangesPortalDeliverableWithRefresh, type PortalDeliverable } from "../../../../lib/api/portal/project-layer";
 import { saveSession } from "../../../../lib/auth/session";
 import { CommentThread } from "../../../shared/ui/comment-thread";
+import {
+  getPortalAnnotationsWithRefresh,
+  createPortalAnnotationWithRefresh,
+  resolvePortalAnnotationWithRefresh,
+  type PortalAnnotation,
+} from "../../../../lib/api/portal/annotations";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -139,6 +145,13 @@ export function DeliverablesPage() {
   const [revised,       setRevised]       = useState<Record<string, boolean>>({});
   const [submitting,    setSubmitting]    = useState<Record<string, boolean>>({});
 
+  // ── Annotations per deliverable ────────────────────────────────────────────
+  const [annotations,     setAnnotations]     = useState<Record<string, PortalAnnotation[]>>({});
+  const [annotLoading,    setAnnotLoading]    = useState<Record<string, boolean>>({});
+  const [annotComment,    setAnnotComment]    = useState<Record<string, string>>({});
+  const [annotPage,       setAnnotPage]       = useState<Record<string, string>>({});
+  const [annotSubmitting, setAnnotSubmitting] = useState<Record<string, boolean>>({});
+
   async function handleApprove(d: Deliverable): Promise<void> {
     if (!session || !projectId || submitting[d.id]) return;
     setSubmitting(p => ({ ...p, [d.id]: true }));
@@ -168,6 +181,48 @@ export function DeliverablesPage() {
       }
     } finally {
       setSubmitting(p => ({ ...p, [d.id]: false }));
+    }
+  }
+
+  async function loadAnnotations(deliverableId: string): Promise<void> {
+    if (!session || annotations[deliverableId] !== undefined || annotLoading[deliverableId]) return;
+    setAnnotLoading(p => ({ ...p, [deliverableId]: true }));
+    const r = await getPortalAnnotationsWithRefresh(session, deliverableId);
+    if (r.nextSession) saveSession(r.nextSession);
+    setAnnotations(p => ({ ...p, [deliverableId]: r.data ?? [] }));
+    setAnnotLoading(p => ({ ...p, [deliverableId]: false }));
+  }
+
+  async function handleAddAnnotation(deliverableId: string): Promise<void> {
+    const comment = annotComment[deliverableId]?.trim();
+    if (!session || !comment || annotSubmitting[deliverableId]) return;
+    const rawPage = annotPage[deliverableId]?.trim();
+    const pageNumber = rawPage ? parseInt(rawPage, 10) : undefined;
+    setAnnotSubmitting(p => ({ ...p, [deliverableId]: true }));
+    const r = await createPortalAnnotationWithRefresh(session, deliverableId, {
+      comment,
+      ...(pageNumber && !isNaN(pageNumber) ? { pageNumber } : {}),
+    });
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.data) {
+      setAnnotations(p => ({ ...p, [deliverableId]: [...(p[deliverableId] ?? []), r.data!] }));
+      setAnnotComment(p => ({ ...p, [deliverableId]: "" }));
+      setAnnotPage(p => ({ ...p, [deliverableId]: "" }));
+    }
+    setAnnotSubmitting(p => ({ ...p, [deliverableId]: false }));
+  }
+
+  async function handleResolveAnnotation(deliverableId: string, annotationId: string): Promise<void> {
+    if (!session) return;
+    const r = await resolvePortalAnnotationWithRefresh(session, annotationId);
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.data) {
+      setAnnotations(p => ({
+        ...p,
+        [deliverableId]: (p[deliverableId] ?? []).map(a =>
+          a.id === annotationId ? { ...a, resolvedAt: r.data!.resolvedAt } : a,
+        ),
+      }));
     }
   }
 
@@ -413,7 +468,12 @@ export function DeliverablesPage() {
                 aria-expanded={isOpen}
                 disabled={!isClickable}
                 className={cx("gridRowBtn6colV5", !isClickable && "opacity60", isClickable && "cursorPointer")}
-                onClick={() => isClickable && setExpanded(isOpen ? null : d.id)}
+                onClick={() => {
+                  if (!isClickable) return;
+                  const nextOpen = !isOpen;
+                  setExpanded(nextOpen ? d.id : null);
+                  if (nextOpen) void loadAnnotations(d.id);
+                }}
               >
                 {/* Type icon box */}
                 <div className={cx("pmIconBox36", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${cfg.color} 12%, var(--s2))`, "--color": `color-mix(in oklab, ${cfg.color} 25%, transparent)` } as React.CSSProperties}>
@@ -507,6 +567,86 @@ export function DeliverablesPage() {
                         currentUserName={session?.user?.email?.split("@")[0] ?? "You"}
                         compact
                       />
+
+                      {/* Annotations */}
+                      <div className={cx("borderT", "pt14", "mt14")}>
+                        <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01", "mb10")}>
+                          Annotations
+                        </div>
+
+                        {/* Annotation list */}
+                        {annotLoading[d.id] ? (
+                          <div className={cx("text11", "colorMuted")}>Loading…</div>
+                        ) : (annotations[d.id] ?? []).length === 0 ? (
+                          <div className={cx("text11", "colorMuted", "mb10")}>No annotations yet.</div>
+                        ) : (
+                          <div className={cx("flexCol", "gap8", "mb12")}>
+                            {(annotations[d.id] ?? []).map(ann => (
+                              <div key={ann.id} className={cx("cardRowS1", "p10x12")}>
+                                <div className={cx("flexCol", "gap4", "flex1")}>
+                                  <div className={cx("text11", "lineH165")}>{ann.comment}</div>
+                                  <div className={cx("flexRow", "gap8")}>
+                                    {ann.pageNumber !== null && (
+                                      <span className={cx("fontMono", "text10", "colorMuted2")}>
+                                        p.{ann.pageNumber}
+                                      </span>
+                                    )}
+                                    <span className={cx("fontMono", "text10", "colorMuted2")}>
+                                      {new Date(ann.createdAt).toLocaleDateString("en-ZA", {
+                                        day: "numeric", month: "short", year: "numeric"
+                                      })}
+                                    </span>
+                                    {ann.resolvedAt && (
+                                      <span className={cx("badge", "badgeAccent", "fs06")}>Resolved</span>
+                                    )}
+                                  </div>
+                                </div>
+                                {!ann.resolvedAt && (
+                                  <button
+                                    type="button"
+                                    className={cx("btnSm", "btnGhost")}
+                                    onClick={() => void handleResolveAnnotation(d.id, ann.id)}
+                                    title="Mark as resolved"
+                                  >
+                                    <Ic n="check" sz={11} c="var(--lime)" />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Add annotation form */}
+                        <div className={cx("flexCol", "gap6")}>
+                          <textarea
+                            className={cx("input")}
+                            placeholder="Add a comment or annotation…"
+                            value={annotComment[d.id] ?? ""}
+                            onChange={e => setAnnotComment(p => ({ ...p, [d.id]: e.target.value }))}
+                            rows={2}
+                            title="Annotation comment"
+                          />
+                          <div className={cx("flexRow", "gap6")}>
+                            <input
+                              className={cx("input")}
+                              type="number"
+                              min={1}
+                              placeholder="Page #"
+                              value={annotPage[d.id] ?? ""}
+                              onChange={e => setAnnotPage(p => ({ ...p, [d.id]: e.target.value }))}
+                              title="Optional page number"
+                            />
+                            <button
+                              type="button"
+                              className={cx("btnSm", "btnAccent")}
+                              onClick={() => void handleAddAnnotation(d.id)}
+                              disabled={annotSubmitting[d.id] || !(annotComment[d.id]?.trim())}
+                            >
+                              {annotSubmitting[d.id] ? "Saving…" : "Add Comment"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* ── Right col ── */}

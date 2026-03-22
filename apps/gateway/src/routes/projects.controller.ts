@@ -1241,4 +1241,82 @@ export class ProjectsController {
       }
     );
   }
+
+  // ── Deliverable Annotations ───────────────────────────────────────────────
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("deliverables/:deliverableId/annotations")
+  async listDeliverableAnnotations(
+    @Param("deliverableId") deliverableId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/deliverables/${deliverableId}/annotations`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Post("deliverables/:deliverableId/annotations")
+  async createDeliverableAnnotation(
+    @Param("deliverableId") deliverableId: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/deliverables/${deliverableId}/annotations`, "POST", body as Record<string, unknown>, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Patch("annotations/:annotationId/resolve")
+  async resolveAnnotation(
+    @Param("annotationId") annotationId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/annotations/${annotationId}/resolve`, "PATCH", {}, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN")
+  @Post("admin/projects/bulk-status")
+  async bulkUpdateProjectStatus(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    if (!body || typeof body !== "object" || !Array.isArray((body as Record<string, unknown>).ids) || typeof (body as Record<string, unknown>).status !== "string") {
+      throw new BadRequestException("ids (array) and status (string) are required");
+    }
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/projects/bulk-status`, "POST", body as Record<string, unknown>, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "ADMIN",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
 }
