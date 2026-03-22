@@ -109,6 +109,9 @@ import { registerAnnotationRoutes } from "./routes/annotations.js";
 // ── Shared Calendar ───────────────────────────────────────────────────────────
 import { registerCalendarRoutes } from "./routes/calendar.js";
 
+// ── Project Templates ─────────────────────────────────────────────────────────
+import { registerProjectTemplateRoutes } from "./routes/project-templates.js";
+
 export async function createCoreApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
   const metrics = new ServiceMetrics();
@@ -264,6 +267,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Deliverable Annotations ────────────────────────────────────────────────
   await registerAnnotationRoutes(app);
+
+  // ── Project Templates ─────────────────────────────────────────────────────
+  await registerProjectTemplateRoutes(app);
 
   return app;
 }

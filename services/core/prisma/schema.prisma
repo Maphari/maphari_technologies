@@ -1651,3 +1651,15 @@ model DeliverableAnnotation {
   @@index([deliverableId])
   @@map("deliverable_annotations")
 }
+
+model ProjectTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  phases      Json
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("project_templates")
+}

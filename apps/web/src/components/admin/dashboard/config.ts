@@ -89,6 +89,7 @@ export type PageId =
   | "webhookHub"
   | "contractRenewal"
   | "clvAnalytics"
+  | "projectTemplates"
   | "settings";
 
 // ─── Re-exports for backward compatibility ───
@@ -111,6 +112,7 @@ export const navItems: NavItem[] = [
   { id: "prospecting", label: "Prospecting", section: "Operations" },
   { id: "clients", label: "Clients", section: "Operations", badgeRed: true },
   { id: "projects", label: "Proj. Ops", section: "Operations" },
+  { id: "projectTemplates", label: "Templates", section: "Operations" },
   { id: "portfolio", label: "Portfolio", section: "Operations" },
   { id: "resources", label: "Resources", section: "Operations" },
   { id: "gantt", label: "Gantt", section: "Operations" },

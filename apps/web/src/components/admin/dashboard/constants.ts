@@ -92,5 +92,6 @@ export const pageTitles: Record<PageId, [string, string]> = {
   pipelineAnalytics: ["Finance", "Pipeline Analytics"],
   webhookHub: ["Automation", "Webhook & Integration Hub"],
   clvAnalytics: ["Finance", "CLV & Churn Risk Analytics"],
+  projectTemplates: ["Operations", "Project Templates"],
   settings: ["Account", "Settings"]
 };

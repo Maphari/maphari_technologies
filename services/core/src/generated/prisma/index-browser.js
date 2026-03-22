@@ -1273,6 +1273,16 @@ exports.Prisma.DeliverableAnnotationScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.ProjectTemplateScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  description: 'description',
+  phases: 'phases',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1387,7 +1397,8 @@ exports.Prisma.ModelName = {
   DataRetentionPolicy: 'DataRetentionPolicy',
   FyChecklistItem: 'FyChecklistItem',
   StaffGoal: 'StaffGoal',
-  DeliverableAnnotation: 'DeliverableAnnotation'
+  DeliverableAnnotation: 'DeliverableAnnotation',
+  ProjectTemplate: 'ProjectTemplate'
 };
 
 /**
