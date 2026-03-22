@@ -115,6 +115,10 @@ import { registerProjectTemplateRoutes } from "./routes/project-templates.js";
 // ── Staff Schedule ────────────────────────────────────────────────────────────
 import { registerStaffScheduleRoutes } from "./routes/staff-schedule.js";
 
+// ── Community Forum & Feature Requests ────────────────────────────────────
+import { registerForumRoutes } from "./routes/forum.js";
+import { registerFeatureRequestRoutes } from "./routes/feature-requests.js";
+
 export async function createCoreApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
   const metrics = new ServiceMetrics();
@@ -276,6 +280,10 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Staff Schedule ────────────────────────────────────────────────────────
   await registerStaffScheduleRoutes(app);
+
+  // ── Community Forum & Feature Requests ────────────────────────────────────
+  await registerForumRoutes(app);
+  await registerFeatureRequestRoutes(app);
 
   return app;
 }
