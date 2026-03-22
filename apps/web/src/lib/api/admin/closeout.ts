@@ -2,6 +2,20 @@ import type { AuthSession } from "../../auth/session";
 import { callGateway, isUnauthorized, toGatewayError, withAuthorizedSession } from "./_shared";
 import type { AuthorizedResult } from "./_shared";
 
+// ── Types — FY Checklist ──────────────────────────────────────────────────────
+
+export interface FyChecklistItem {
+  id:         string;
+  fiscalYear: string;
+  label:      string;
+  category:   string;
+  done:       boolean;
+  doneAt:     string | null;
+  doneBy:     string | null;
+  createdAt:  string;
+  updatedAt:  string;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface CloseoutReport {
@@ -69,5 +83,32 @@ export async function approveCloseoutReport(
       };
     }
     return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+// ── FY Checklist ──────────────────────────────────────────────────────────────
+
+export async function loadFyChecklistWithRefresh(
+  session: AuthSession,
+  year: string
+): Promise<AuthorizedResult<FyChecklistItem[]>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<FyChecklistItem[]>(`/admin/fy-checklist?year=${encodeURIComponent(year)}`, token);
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "FY_CHECKLIST_FETCH_FAILED", res.payload.error?.message ?? "Unable to load FY checklist.") };
+    return { unauthorized: false, data: res.payload.data ?? [], error: null };
+  });
+}
+
+export async function toggleFyChecklistItemWithRefresh(
+  session: AuthSession,
+  id: string,
+  done: boolean
+): Promise<AuthorizedResult<FyChecklistItem>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<FyChecklistItem>(`/admin/fy-checklist/${id}`, token, { method: "PATCH", body: { done } });
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "FY_CHECKLIST_UPDATE_FAILED", res.payload.error?.message ?? "Unable to toggle checklist item.") };
+    return { unauthorized: false, data: res.payload.data ?? null, error: null };
   });
 }

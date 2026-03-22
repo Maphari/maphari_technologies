@@ -97,6 +97,9 @@ import { registerCrisisRoutes } from "./routes/crises.js";
 import { registerComplianceRoutes } from "./routes/compliance.js";
 import { registerDataRetentionRoutes } from "./routes/data-retention.js";
 
+// ── FY Closeout Checklist ─────────────────────────────────────────────────────
+import { registerFyChecklistRoutes } from "./routes/fy-checklist.js";
+
 export async function createCoreApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
   const metrics = new ServiceMetrics();
@@ -240,6 +243,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
   // ── Compliance & Data Retention ───────────────────────────────────────────
   await registerComplianceRoutes(app);
   await registerDataRetentionRoutes(app);
+
+  // ── FY Closeout Checklist ─────────────────────────────────────────────────
+  await registerFyChecklistRoutes(app);
 
   return app;
 }

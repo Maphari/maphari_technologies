@@ -2,6 +2,7 @@
 // financial-year-closeout-page.tsx — Admin Financial Year Closeout page
 // Data sources: loadAdminSnapshotWithRefresh (invoices + payments)
 //               loadTimeEntriesWithRefresh (hours logged)
+//               loadFyChecklistWithRefresh (checklist — persisted in DB)
 // SA Financial Year: April 1 – March 31
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -15,6 +16,11 @@ import {
   loadTimeEntriesWithRefresh,
 } from "../../../../lib/api/admin";
 import type { AdminInvoice, AdminPayment, ProjectTimeEntry } from "../../../../lib/api/admin";
+import type { FyChecklistItem } from "../../../../lib/api/admin/closeout";
+import {
+  loadFyChecklistWithRefresh,
+  toggleFyChecklistItemWithRefresh,
+} from "../../../../lib/api/admin/closeout";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
 import { AdminTabs } from "./shared";
@@ -26,7 +32,7 @@ const tabs = ["fy summary", "key metrics", "fy checklist"] as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getFyBounds(now: Date): { start: Date; end: Date; label: string } {
+function getFyBounds(now: Date): { start: Date; end: Date; label: string; key: string } {
   const year = now.getFullYear();
   const month = now.getMonth(); // 0-indexed
   // SA FY starts April (month 3) — if we're before April, FY started last year
@@ -34,7 +40,8 @@ function getFyBounds(now: Date): { start: Date; end: Date; label: string } {
   const start = new Date(fyStartYear, 3, 1);       // April 1
   const end = new Date(fyStartYear + 1, 2, 31, 23, 59, 59); // March 31 EOD
   const label = `FY${String(fyStartYear).slice(2)}/${String(fyStartYear + 1).slice(2)}`;
-  return { start, end, label };
+  const key = `${fyStartYear}-${fyStartYear + 1}`;
+  return { start, end, label, key };
 }
 
 function inFy(isoDate: string | null, start: Date, end: Date): boolean {
@@ -54,40 +61,23 @@ function minutesToHours(minutes: number): string {
   return `${h.toLocaleString()}h`;
 }
 
-// ── Checklist (structural, not mock data) ────────────────────────────────────
+// ── Category display config ───────────────────────────────────────────────────
 
-const fyChecklist = [
-  {
-    category: "Revenue & Invoicing",
-    color: "var(--accent)",
-    tasks: [
-      { task: "All invoices issued for FY", done: false, note: "Verify from Invoices page" },
-      { task: "Outstanding invoices chased", done: false, note: "Check overdue status" },
-      { task: "Final retainer invoices reconciled", done: false, note: null },
-      { task: "Credit notes issued where applicable", done: false, note: null },
-    ]
-  },
-  {
-    category: "Tax & SARS",
-    color: "var(--red)",
-    tasks: [
-      { task: "PAYE submissions up to date (EMP201)", done: false, note: null },
-      { task: "UIF contributions up to date", done: false, note: null },
-      { task: "VAT returns submitted (VAT201)", done: false, note: null },
-      { task: "Provisional tax (IRP6) submitted", done: false, note: "Confirm with accountant" },
-    ]
-  },
-  {
-    category: "Year-End Admin",
-    color: "var(--blue)",
-    tasks: [
-      { task: "Bank reconciliation completed", done: false, note: null },
-      { task: "All contracts filed and archived", done: false, note: null },
-      { task: "Asset register updated", done: false, note: null },
-      { task: "Accountant briefed for annual audit", done: false, note: null },
-    ]
-  },
-] as const;
+const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
+  REVENUE: { label: "Revenue & Invoicing", color: "var(--accent)" },
+  TAX:     { label: "Tax & SARS",          color: "var(--red)"    },
+  ARCHIVE: { label: "Year-End Admin",      color: "var(--blue)"   },
+};
+
+// Static notes for specific tasks (stored here, not in DB — labels are unique keys)
+const TASK_NOTES: Record<string, string> = {
+  "All invoices issued for FY":          "Verify from Invoices page",
+  "Outstanding invoices chased":         "Check overdue status",
+  "Provisional tax (IRP6) submitted":    "Confirm with accountant",
+};
+
+// Category sort order
+const CATEGORY_ORDER = ["REVENUE", "TAX", "ARCHIVE"];
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -103,6 +93,14 @@ export function FinancialYearCloseoutPage({
   const [payments, setPayments] = useState<AdminPayment[]>([]);
   const [timeEntries, setTimeEntries] = useState<ProjectTimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ── Checklist state ────────────────────────────────────────────────────────
+  const [checklist, setChecklist] = useState<FyChecklistItem[]>([]);
+  const [checklistLoading, setChecklistLoading] = useState(true);
+  const [checklistError, setChecklistError] = useState<string | null>(null);
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
+
+  const fy = useMemo(() => getFyBounds(new Date()), []);
 
   const load = useCallback(async () => {
     if (!session) { setLoading(false); return; }
@@ -132,9 +130,25 @@ export function FinancialYearCloseoutPage({
     }
   }, [session, onNotify]);
 
-  useEffect(() => { void load(); }, [load]);
+  const loadChecklist = useCallback(async () => {
+    if (!session) { setChecklistLoading(false); return; }
+    setChecklistLoading(true);
+    setChecklistError(null);
+    try {
+      const result = await loadFyChecklistWithRefresh(session, fy.key);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        setChecklistError(result.error.message);
+      } else {
+        setChecklist(result.data ?? []);
+      }
+    } finally {
+      setChecklistLoading(false);
+    }
+  }, [session, fy.key]);
 
-  const fy = useMemo(() => getFyBounds(new Date()), []);
+  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void loadChecklist(); }, [loadChecklist]);
 
   const fyInvoices = useMemo(
     () => invoices.filter((i) => inFy(i.issuedAt, fy.start, fy.end)),
@@ -161,6 +175,56 @@ export function FinancialYearCloseoutPage({
   const totalMinutes = fyTimeEntries.reduce((s, t) => s + t.minutes, 0);
   const overdueCount = fyInvoices.filter((i) => i.status === "OVERDUE").length;
   const collectionRate = totalInvoiced > 0 ? Math.round((totalCollected / totalInvoiced) * 100) : 0;
+
+  // Group checklist items by category, preserving order
+  const checklistSections = useMemo(() => {
+    const byCategory: Record<string, FyChecklistItem[]> = {};
+    for (const item of checklist) {
+      if (!byCategory[item.category]) byCategory[item.category] = [];
+      byCategory[item.category].push(item);
+    }
+    return CATEGORY_ORDER
+      .filter((cat) => byCategory[cat]?.length)
+      .map((cat) => ({
+        category: cat,
+        config:   CATEGORY_CONFIG[cat] ?? { label: cat, color: "var(--muted)" },
+        tasks:    byCategory[cat],
+      }));
+  }, [checklist]);
+
+  const handleToggle = useCallback(async (item: FyChecklistItem) => {
+    if (!session) return;
+    const newDone = !item.done;
+
+    // Optimistic update
+    setChecklist((prev) =>
+      prev.map((i) => i.id === item.id ? { ...i, done: newDone } : i)
+    );
+    setTogglingIds((prev) => new Set(prev).add(item.id));
+
+    try {
+      const result = await toggleFyChecklistItemWithRefresh(session, item.id, newDone);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        // Revert optimistic update on error
+        setChecklist((prev) =>
+          prev.map((i) => i.id === item.id ? { ...i, done: item.done } : i)
+        );
+        onNotify("error", result.error.message);
+      } else if (result.data) {
+        // Apply server response
+        setChecklist((prev) =>
+          prev.map((i) => i.id === item.id ? result.data! : i)
+        );
+      }
+    } finally {
+      setTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+    }
+  }, [session, onNotify]);
 
   if (loading) {
     return (
@@ -296,44 +360,68 @@ export function FinancialYearCloseoutPage({
         )}
 
         {activeTab === "fy checklist" && (
-          <div className={cx("grid2", "gap16")}>
-            {fyChecklist.map((section) => {
-              const taskList = [...section.tasks];
-              const done = taskList.filter((t) => t.done).length;
-              const total = taskList.length;
-              const sectionPct = Math.round((done / total) * 100);
-              return (
-                <div key={section.category} className={cx("card", "p24", styles.fySectionCard, toneClass(section.color))}>
-                  <div className={cx("flexBetween", "mb16")}>
-                    <div className={cx("fw700", "uppercase", "text12", styles.fyToneText, toneClass(section.color))}>
-                      {section.category}
-                    </div>
-                    <span className={cx("fontMono", "text12", styles.fyToneText, sectionPct === 100 ? "toneAccent" : "toneAmber")}>
-                      {done}/{total}
-                    </span>
-                  </div>
-                  <div className={cx("progressBar", "mb16")}>
-                    <progress
-                      className={cx("barFill", "uiProgress", sectionPct === 100 ? "toneAccent" : toneClass(section.color))}
-                      max={100}
-                      value={sectionPct}
-                    />
-                  </div>
-                  {taskList.map((task, i) => (
-                    <div key={i} className={cx("flexRow", "gap10", "mb10", styles.fyAlignStart)}>
-                      <div className={cx("flexCenter", "noShrink", styles.fyTaskBox, task.done && styles.fyTaskBoxDone)}>
-                        {task.done ? <span className={styles.fyTaskCheck}>&#10003;</span> : null}
+          checklistError ? (
+            <div className={cx("card", "p24")}>
+              <div className={cx("text13", "colorMuted")}>Unable to load checklist: {checklistError}</div>
+            </div>
+          ) : checklistLoading ? (
+            <div className={cx("grid2", "gap16")}>
+              <div className={cx("skeletonBlock", "skeleH68")} />
+              <div className={cx("skeletonBlock", "skeleH68")} />
+            </div>
+          ) : (
+            <div className={cx("grid2", "gap16")}>
+              {checklistSections.map((section) => {
+                const done = section.tasks.filter((t) => t.done).length;
+                const total = section.tasks.length;
+                const sectionPct = total > 0 ? Math.round((done / total) * 100) : 0;
+                return (
+                  <div key={section.category} className={cx("card", "p24", styles.fySectionCard, toneClass(section.config.color))}>
+                    <div className={cx("flexBetween", "mb16")}>
+                      <div className={cx("fw700", "uppercase", "text12", styles.fyToneText, toneClass(section.config.color))}>
+                        {section.config.label}
                       </div>
-                      <div className={styles.fyFlex1}>
-                        <div className={cx("text12", task.done && styles.fyLineThrough)}>{task.task}</div>
-                        {task.note && <div className={cx("text10", "mt4", "colorMuted")}>{task.note}</div>}
-                      </div>
+                      <span className={cx("fontMono", "text12", styles.fyToneText, sectionPct === 100 ? "toneAccent" : "toneAmber")}>
+                        {done}/{total}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
+                    <div className={cx("progressBar", "mb16")}>
+                      <progress
+                        className={cx("barFill", "uiProgress", sectionPct === 100 ? "toneAccent" : toneClass(section.config.color))}
+                        max={100}
+                        value={sectionPct}
+                      />
+                    </div>
+                    {section.tasks.map((task) => {
+                      const isToggling = togglingIds.has(task.id);
+                      const note = TASK_NOTES[task.label] ?? null;
+                      return (
+                        <div
+                          key={task.id}
+                          className={cx("flexRow", "gap10", "mb10", styles.fyAlignStart)}
+                          style={{ opacity: isToggling ? 0.6 : 1 }}
+                        >
+                          <button
+                            type="button"
+                            disabled={isToggling}
+                            onClick={() => { void handleToggle(task); }}
+                            className={cx("flexCenter", "noShrink", styles.fyTaskBox, task.done && styles.fyTaskBoxDone)}
+                            aria-label={task.done ? `Uncheck ${task.label}` : `Check ${task.label}`}
+                          >
+                            {task.done ? <span className={styles.fyTaskCheck}>&#10003;</span> : null}
+                          </button>
+                          <div className={styles.fyFlex1}>
+                            <div className={cx("text12", task.done && styles.fyLineThrough)}>{task.label}</div>
+                            {note && <div className={cx("text10", "mt4", "colorMuted")}>{note}</div>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          )
         )}
       </div>
     </div>

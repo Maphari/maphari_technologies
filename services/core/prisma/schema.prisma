@@ -1599,3 +1599,19 @@ model DataRetentionPolicy {
   @@index([status])
   @@map("data_retention_policies")
 }
+
+model FyChecklistItem {
+  id         String    @id @default(cuid())
+  fiscalYear String    // e.g. "2025-2026"
+  label      String
+  category   String    // "REVENUE" | "TAX" | "PAYROLL" | "ARCHIVE"
+  done       Boolean   @default(false)
+  doneAt     DateTime?
+  doneBy     String?   // userId of who checked it
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([fiscalYear, label])
+  @@index([fiscalYear])
+  @@map("fy_checklist_items")
+}

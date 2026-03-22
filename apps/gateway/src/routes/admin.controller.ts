@@ -1015,4 +1015,54 @@ export class AdminController {
       adminHeaders(userId, role, clientId, requestId, traceId)
     );
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // FY CLOSEOUT CHECKLIST
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /admin/fy-checklist?year= ─────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("admin/fy-checklist")
+  async listFyChecklist(
+    @Query() query: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    if (query && typeof query === "object") {
+      Object.entries(query as Record<string, unknown>).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) params.set(k, String(v));
+      });
+    }
+    const qs = params.size > 0 ? `?${params.toString()}` : "";
+    return proxyRequest(
+      `${CORE()}/fy-checklist${qs}`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PATCH /admin/fy-checklist/:id — toggle done ───────────────────────────
+  @Roles("ADMIN")
+  @Patch("admin/fy-checklist/:id")
+  async toggleFyChecklistItem(
+    @Param("id")              id: string,
+    @Body()                   body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/fy-checklist/${id}`,
+      "PATCH",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
 }

@@ -81,6 +81,7 @@ export const CacheKeys = {
   crises:              ()                     => `core:crises:all`,
   compliance:          ()                     => `core:compliance:all`,
   dataRetention:       ()                     => `core:data-retention:all`,
+  fyChecklist:         (year: string)         => `core:fy-checklist:${year}`,
 };
 
 // ── withCache — Generic read-through cache helper ─────────────────────────────
