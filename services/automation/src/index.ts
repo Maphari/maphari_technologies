@@ -87,7 +87,7 @@ let lastDigestDate = "";
 const digestInterval = setInterval(async () => {
   const now = new Date();
   const isMonday = now.getUTCDay() === 1;
-  const isDigestHour = now.getUTCHours() === 6 && now.getUTCMinutes() === 0;
+  const isDigestHour = now.getUTCHours() === 6 && now.getUTCMinutes() < 5;
   const todayKey = now.toISOString().slice(0, 10); // YYYY-MM-DD
   if (!isMonday || !isDigestHour || lastDigestDate === todayKey || digestRunning) return;
   digestRunning = true;

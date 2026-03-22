@@ -2666,4 +2666,35 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
       meta: { requestId: scope.requestId }
     } as ApiResponse<{ updated: number; failed: string[] }>;
   });
+
+  // ── GET /internal/projects/latest ─────────────────────────────────────────
+  // Internal-only: called by automation service to resolve a client's most
+  // recent project for the weekly digest. No scope auth — network isolation
+  // is sufficient (automation → core direct).
+  app.get("/internal/projects/latest", async (request, reply) => {
+    const { clientId } = request.query as { clientId?: string };
+    if (!clientId) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: "CLIENT_ID_REQUIRED", message: "clientId query param is required." }
+      } as ApiResponse);
+    }
+    try {
+      const project = await prisma.project.findFirst({
+        where: { clientId },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true, status: true }
+      });
+      return {
+        success: true,
+        data: project ?? null
+      } as ApiResponse<{ id: string; name: string; status: string } | null>;
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({
+        success: false,
+        error: { code: "INTERNAL_PROJECT_FETCH_FAILED", message: "Unable to fetch latest project." }
+      } as ApiResponse);
+    }
+  });
 }

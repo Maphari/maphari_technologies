@@ -61,16 +61,15 @@ export async function runWeeklyDigestJob(options: WeeklyDigestJobOptions): Promi
     const { clientId } = subscriber;
 
     try {
-      // Fetch the client's most recent active project (best-effort — no project is fine)
+      // Fetch the client's most recent project via internal endpoint (best-effort — no project is fine)
       let projectId: string | null = null;
       try {
         const projRes = await fetch(
-          `${coreServiceUrl}/portal/projects?clientId=${encodeURIComponent(clientId)}&limit=1`
+          `${coreServiceUrl}/internal/projects/latest?clientId=${encodeURIComponent(clientId)}`
         );
         if (projRes.ok) {
-          const projJson = (await projRes.json()) as { success: boolean; data?: ProjectListItem[] };
-          const projects = projJson.data ?? [];
-          projectId = projects[0]?.id ?? null;
+          const projJson = (await projRes.json()) as { success: boolean; data?: ProjectListItem | null };
+          projectId = projJson.data?.id ?? null;
         }
       } catch {
         // Non-fatal — proceed without projectId

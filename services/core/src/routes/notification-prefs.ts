@@ -180,6 +180,7 @@ export async function registerNotificationPrefRoutes(app: FastifyInstance): Prom
       const subscribers: Array<{ userId: string; clientId: string }> = [];
 
       for (const row of rows) {
+        // defensive: value is non-nullable in schema but guard against corrupt rows
         if (!row.value) continue;
         let parsed: StoredNotifPrefs | null = null;
         try {
@@ -188,7 +189,7 @@ export async function registerNotificationPrefRoutes(app: FastifyInstance): Prom
           continue;
         }
         if (!parsed?.weeklyDigest) continue;
-        const clientId = parsed?.clientId ?? null;
+        const clientId = parsed.clientId ?? null;
         if (!clientId) continue;
         subscribers.push({ userId: row.userId, clientId });
       }
