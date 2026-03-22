@@ -1294,6 +1294,54 @@ exports.Prisma.ProjectTemplateScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.ForumThreadScalarFieldEnum = {
+  id: 'id',
+  category: 'category',
+  title: 'title',
+  authorId: 'authorId',
+  anonAlias: 'anonAlias',
+  isPinned: 'isPinned',
+  isLocked: 'isLocked',
+  isApproved: 'isApproved',
+  isRejected: 'isRejected',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ForumPostScalarFieldEnum = {
+  id: 'id',
+  threadId: 'threadId',
+  authorId: 'authorId',
+  anonAlias: 'anonAlias',
+  body: 'body',
+  isApproved: 'isApproved',
+  isRejected: 'isRejected',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.FeatureRequestScalarFieldEnum = {
+  id: 'id',
+  category: 'category',
+  title: 'title',
+  description: 'description',
+  authorId: 'authorId',
+  anonAlias: 'anonAlias',
+  status: 'status',
+  voteCount: 'voteCount',
+  isApproved: 'isApproved',
+  isRejected: 'isRejected',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.FeatureVoteScalarFieldEnum = {
+  id: 'id',
+  featureRequestId: 'featureRequestId',
+  voterId: 'voterId',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1410,7 +1458,11 @@ exports.Prisma.ModelName = {
   FyChecklistItem: 'FyChecklistItem',
   StaffGoal: 'StaffGoal',
   DeliverableAnnotation: 'DeliverableAnnotation',
-  ProjectTemplate: 'ProjectTemplate'
+  ProjectTemplate: 'ProjectTemplate',
+  ForumThread: 'ForumThread',
+  ForumPost: 'ForumPost',
+  FeatureRequest: 'FeatureRequest',
+  FeatureVote: 'FeatureVote'
 };
 
 /**

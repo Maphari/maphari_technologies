@@ -717,7 +717,6 @@ model SurveyToken {
   survey    SatisfactionSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
   client    Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  @@index([token])
   @@map("survey_tokens")
 }
 
@@ -1680,4 +1679,70 @@ model ProjectTemplate {
   updatedAt   DateTime @updatedAt
 
   @@map("project_templates")
+}
+
+model ForumThread {
+  id         String      @id @default(uuid())
+  category   String // "tips" | "qa" | "announcements" | "general"
+  title      String      @db.VarChar(200)
+  authorId   String // real userId — never exposed to other clients
+  anonAlias  String      @db.VarChar(60) // e.g. "@amber-falcon"
+  isPinned   Boolean     @default(false)
+  isLocked   Boolean     @default(false)
+  isApproved Boolean     @default(false)
+  isRejected Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  posts      ForumPost[]
+
+  @@index([category, isApproved])
+  @@index([isApproved, createdAt])
+  @@map("forum_threads")
+}
+
+model ForumPost {
+  id         String      @id @default(uuid())
+  threadId   String
+  thread     ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId   String
+  anonAlias  String      @db.VarChar(60)
+  body       String      @db.Text
+  isApproved Boolean     @default(false)
+  isRejected Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([threadId, isApproved])
+  @@map("forum_posts")
+}
+
+model FeatureRequest {
+  id          String        @id @default(uuid())
+  category    String // "portal-ux" | "reporting" | "integrations" | "delivery" | "billing" | "other"
+  title       String        @db.VarChar(200)
+  description String        @db.Text
+  authorId    String
+  anonAlias   String        @db.VarChar(60)
+  status      String        @default("under_review") // "under_review" | "planned" | "in_progress" | "done" | "declined"
+  voteCount   Int           @default(0)
+  isApproved  Boolean       @default(false)
+  isRejected  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  votes       FeatureVote[]
+
+  @@index([category, status, isApproved])
+  @@index([isApproved, voteCount])
+  @@map("feature_requests")
+}
+
+model FeatureVote {
+  id               String         @id @default(uuid())
+  featureRequestId String
+  featureRequest   FeatureRequest @relation(fields: [featureRequestId], references: [id], onDelete: Cascade)
+  voterId          String
+  createdAt        DateTime       @default(now())
+
+  @@unique([featureRequestId, voterId])
+  @@map("feature_votes")
 }
