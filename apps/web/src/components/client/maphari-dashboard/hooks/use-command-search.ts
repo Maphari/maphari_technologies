@@ -259,9 +259,8 @@ export function useCommandSearch({
   }, []);
 
   const selectHistory = useCallback((q: string) => {
-    setQuery(q);
-    setActiveIndex(0);
-  }, []);
+    setQueryWrapped(q);
+  }, [setQueryWrapped]);
 
   return {
     isOpen,
