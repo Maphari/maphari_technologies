@@ -87,6 +87,8 @@ export type PageId =
   | "invoiceChasing"
   | "pipelineAnalytics"
   | "webhookHub"
+  | "contractRenewal"
+  | "clvAnalytics"
   | "settings";
 
 // ─── Re-exports for backward compatibility ───
@@ -136,6 +138,7 @@ export const navItems: NavItem[] = [
   { id: "payroll", label: "Payroll", section: "Finance" },
   { id: "pricing", label: "Pricing", section: "Finance" },
   { id: "vendors", label: "Vendors", section: "Finance" },
+  { id: "clvAnalytics", label: "CLV Analytics", section: "Finance" },
   { id: "announcementsManager", label: "Announcements", section: "Communication" },
   { id: "messages", label: "Messages", section: "Communication" },
   { id: "notifications", label: "Notifications", section: "Communication" },
@@ -164,6 +167,7 @@ export const navItems: NavItem[] = [
   { id: "teamPerformanceReport", label: "Team Report", section: "Governance" },
   { id: "portfolioRiskRegister", label: "Risk Register", section: "Governance" },
   { id: "legal", label: "Legal", section: "Governance" },
+  { id: "contractRenewal", label: "Contract Renewal", section: "Governance" },
   { id: "crisis", label: "Crisis", section: "Governance" },
   { id: "analytics", label: "Analytics", section: "Governance" },
   { id: "reports", label: "Reports", section: "Governance" },

@@ -24,6 +24,7 @@ import { getStaffApprovals, type StaffApprovalItem } from "../../lib/api/staff/a
 import { searchGlobal } from "../../lib/api/shared/search";
 import { getStaffAllHealthScores, type StaffHealthScoreEntry } from "../../lib/api/staff/clients";
 import { getMyProfile } from "../../lib/api/staff/profile";
+import { submitWeekTimesheetWithRefresh, getIsoWeekString, getIsoWeekNumber } from "../../lib/api/staff/time";
 import { saveSession } from "../../lib/auth/session";
 import { pageTitles } from "./staff-dashboard/constants";
 import { StaffSidebar } from "./staff-dashboard/sidebar";
@@ -176,6 +177,12 @@ export function MaphariStaffDashboard() {
     return currencyFromCountry(country) ?? "USD";
   }, []);
 
+  // ─── Timesheet submit state ───
+  const [submittingWeek, setSubmittingWeek] = useState(false);
+  const currentWeek = getIsoWeekString(new Date());
+  const currentWeekNumber = getIsoWeekNumber(new Date());
+  void currentWeekNumber; // used via currentWeek string
+
   // ─── Automations page state (not extracted into a hook yet) ───
   const [processingAutomationQueue, setProcessingAutomationQueue] = useState(false);
   const [acknowledgingAutomationFailures, setAcknowledgingAutomationFailures] = useState(false);
@@ -212,6 +219,14 @@ export function MaphariStaffDashboard() {
   // ─── Derived workspace values ───
   const projects = useMemo(() => snapshot.projects ?? [], [snapshot.projects]);
   const clients = useMemo(() => snapshot.clients ?? [], [snapshot.clients]);
+
+  // ─── Timesheet: does current week have any DRAFT entries? ───
+  const weekAlreadySubmitted = useMemo(() => {
+    const entries = timeEntries ?? [];
+    const thisWeekEntries = entries.filter((e) => e.submittedWeek === currentWeek);
+    if (thisWeekEntries.length === 0) return false;
+    return thisWeekEntries.every((e) => e.status !== "DRAFT" && e.status !== undefined);
+  }, [timeEntries, currentWeek]);
 
   const staffEmail = session?.user.email ?? "staff@maphari.co.za";
   const staffEmailFallbackName = staffEmail.split("@")[0]?.replace(/\./g, " ") ?? "Staff";
@@ -696,6 +711,23 @@ export function MaphariStaffDashboard() {
     }
     setActivePage("timelog");
   }, [selectConversation]);
+
+  const handleSubmitWeek = useCallback(async () => {
+    if (!session || submittingWeek) return;
+    setSubmittingWeek(true);
+    try {
+      const result = await submitWeekTimesheetWithRefresh(session, currentWeek);
+      if (!result.data && !result.error) { setSubmittingWeek(false); return; }
+      if (result.error) {
+        setFeedback({ tone: "error", message: result.error.message ?? "Unable to submit timesheet." });
+      } else {
+        const count = result.data?.count ?? 0;
+        setFeedback({ tone: "success", message: count > 0 ? `Week ${currentWeek} submitted — ${count} entr${count === 1 ? "y" : "ies"} sent for approval.` : "No DRAFT entries to submit for this week." });
+      }
+    } finally {
+      setSubmittingWeek(false);
+    }
+  }, [session, submittingWeek, currentWeek, setFeedback]);
 
   const handleProcessAutomationQueue = useCallback(async () => {
     if (!session || processingAutomationQueue) return;
@@ -1348,6 +1380,10 @@ export function MaphariStaffDashboard() {
                 await addTimeEntry({ projectId: primaryProjectId, minutes: 480, taskLabel: "Quick-log (8h)", staffName });
                 setFeedback({ tone: "success", message: `8h logged to ${projectById.get(primaryProjectId)?.name ?? "project"}.` });
               }}
+              currentWeek={currentWeek}
+              weekAlreadySubmitted={weekAlreadySubmitted}
+              submittingWeek={submittingWeek}
+              onSubmitWeek={handleSubmitWeek}
             />
 
             <AutomationsPage

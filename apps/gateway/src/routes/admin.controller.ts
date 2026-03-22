@@ -23,6 +23,7 @@ import { Roles } from "../auth/roles.decorator.js";
 import { proxyRequest } from "../utils/proxy-request.js";
 
 const CORE = () => process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+const BILLING = () => process.env.BILLING_SERVICE_URL ?? "http://localhost:4006";
 
 /** Shared admin scope headers */
 function adminHeaders(
@@ -1062,6 +1063,28 @@ export class AdminController {
       `${CORE()}/fy-checklist/${id}`,
       "PATCH",
       body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CLV ANALYTICS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /admin/analytics/clv ──────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("admin/analytics/clv")
+  async getClientCLV(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${BILLING()}/analytics/clv`,
+      "GET",
+      undefined,
       adminHeaders(userId, role, clientId, requestId, traceId)
     );
   }

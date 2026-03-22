@@ -42,6 +42,7 @@ export const pageTitles: Record<PageId, [string, string]> = {
   teamPerformanceReport: ["Governance", "Team Performance Report"],
   portfolioRiskRegister: ["Governance", "Portfolio Risk Register"],
   legal: ["Governance", "Legal Control Center"],
+  contractRenewal: ["Governance", "Contract Renewal Tracker"],
   intelligence: ["Governance", "Strategic Client Intelligence"],
   healthScorecard: ["Governance", "Client Health Scorecard"],
   access: ["Governance", "Access Control"],
@@ -90,5 +91,6 @@ export const pageTitles: Record<PageId, [string, string]> = {
   invoiceChasing: ["Finance", "Invoice Chasing"],
   pipelineAnalytics: ["Finance", "Pipeline Analytics"],
   webhookHub: ["Automation", "Webhook & Integration Hub"],
+  clvAnalytics: ["Finance", "CLV & Churn Risk Analytics"],
   settings: ["Account", "Settings"]
 };

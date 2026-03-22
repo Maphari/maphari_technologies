@@ -469,6 +469,48 @@
 }
 
 
+/* ─── CLV Analytics Page ───────────────────────────────────────────── */
+
+/* Three-column KPI strip for CLV summary metrics */
+.clvKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+/* Sub-label below the KPI value */
+.kpiSub {
+  font-size: 0.65rem;
+  color: var(--muted2);
+  margin-top: 2px;
+}
+
+/* Footer row in the CLV table: misc / sorted-by note */
+.clvTableFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.68rem;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .clvKpiGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .clvKpiGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 /* ─── Responsive ───────────────────────────────────────────────────── */
 
 @media (max-width: 1200px) {

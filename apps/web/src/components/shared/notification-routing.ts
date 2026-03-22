@@ -241,5 +241,7 @@ export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotifi
   capacityForecast: "operations",
   invoiceChasing: "invoices",
   pipelineAnalytics: "operations",
-  webhookHub: "settings"
+  webhookHub: "settings",
+  contractRenewal: "operations",
+  clvAnalytics: "invoices"
 };
