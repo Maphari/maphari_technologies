@@ -145,12 +145,13 @@ export function RiskRegisterPage() {
     setError(null);
     void loadPortalRisksWithRefresh(session, projectId).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (result.error) { setError(result.error.message ?? "Failed to load."); return; }
       if (result.data && result.data.length > 0) {
         setRisks(result.data.map((r, i) => mapApiRisk(r, i)));
       }
-      setLoading(false);
-    });
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load");
+    }).finally(() => setLoading(false));
   }, [session, projectId]);
 
   // ── UI state ──────────────────────────────────────────────────────────────

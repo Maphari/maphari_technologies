@@ -93,7 +93,7 @@ export function TeamAccessPage() {
 
   // ── Load team members on mount ─────────────────────────────────────────
   useEffect(() => {
-    if (!session) return;
+    if (!session) { setLoading(false); return; }
     const clientId = session.user.clientId ?? session.user.id;
     if (!clientId) { setLoading(false); return; }
     loadPortalTeamMembersWithRefresh(session, clientId).then(r => {

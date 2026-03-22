@@ -113,10 +113,11 @@ export function SlaEscalationPage() {
     setError(null);
     loadPortalSupportTicketsWithRefresh(session).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.error) { setError(result.error.message ?? "Failed to load."); setLoading(false); return; }
+      if (result.error) { setError(result.error.message ?? "Failed to load."); return; }
       if (result.data) setTickets(result.data.map(mapTicket));
-      setLoading(false);
-    });
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load");
+    }).finally(() => setLoading(false));
   }, [session]);
 
   const openTickets = tickets.filter((t) => t.status !== "Resolved");
