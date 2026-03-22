@@ -1,9 +1,14 @@
 "use client";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { cx } from "../style";
 import { Ic, Av } from "../ui";
 import type { PortalPayment, PortalInvoice } from "../../../../lib/api/portal/types";
 import { usePageToast } from "../hooks/use-page-toast";
+import { formatMoneyCents } from "../../../../lib/i18n/currency";
+import { useProjectLayer } from "../hooks/use-project-layer";
+import { saveSession } from "../../../../lib/auth/session";
+import { loadPortalProjectPaymentMilestonesWithRefresh } from "../../../../lib/api/portal";
+import type { PortalProjectPaymentMilestone } from "../../../../lib/api/portal";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -39,25 +44,10 @@ const STATUS_COLOR: Record<PStatus, string> = {
 
 // ── Data ───────────────────────────────────────────────────────────────────────
 
-// Monthly payment activity — populated from API in a future batch
 const CHART_H = 104;
-const ACTIVITY: { month: string; paid: number; pending: number; overdue: number }[] = [];
-const CHART_MAX = ACTIVITY.length > 0
-  ? Math.max(...ACTIVITY.map((m) => m.paid + m.pending + m.overdue), 1)
-  : 1;
-
-// Upcoming schedule — populated from API in a future batch
-const UPCOMING: { id: string; desc: string; date: string; amountRaw: number; status: PStatus }[] = [];
 
 const TABS: PTab[] = ["All", "Paid", "Pending", "Overdue"];
 
-// Saved payment methods — populated from API in a future batch
-const SAVED_METHODS: { id: PayMethod; last4: string; expiry: string; gradient: string; network: string }[] = [];
-
-const CURRENCY_SYMBOL = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL ?? "R";
-const LOCALE          = process.env.NEXT_PUBLIC_LOCALE          ?? "en-ZA";
-const fmt    = (n: number) => `${CURRENCY_SYMBOL} ${n.toLocaleString(LOCALE)}`;
-const fmtDec = (n: number) => `${CURRENCY_SYMBOL} ${n.toLocaleString(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const daysAgo = (dateStr: string, now: number) => {
   const d = new Date(dateStr.split(" ").reverse().join("-").replace("Apr","04").replace("Mar","03").replace("Feb","02").replace("Jan","01"));
   return Math.max(0, Math.floor((now - d.getTime()) / 86_400_000));
@@ -749,8 +739,8 @@ function PayModal({ amount, desc, method, onClose }: { amount: number; desc: str
   const [cvv, setCvv]           = useState("");
   const [receiptNum]            = useState(() => "RCP-" + Date.now().toString().slice(-6));
 
-  const selectedMethod = SAVED_METHODS.find((m) => m.id === method) ?? null;
   const installment    = Math.ceil(amount / 3);
+  const fmtDec = (n: number) => formatMoneyCents(Math.round(n * 100), { currency: "ZAR" });
 
   useEffect(() => {
     if (payState !== "processing") return;
@@ -798,14 +788,13 @@ function PayModal({ amount, desc, method, onClose }: { amount: number; desc: str
 
             {payState === "idle" && (
               <>
-                <div className={cx("pmCardFace", "dynBgColor")} style={{ "--bg-color": method !== "bank" ? (selectedMethod?.gradient ?? "var(--s3)") : "var(--s3)" } as React.CSSProperties}>
+                <div className={cx("pmCardFace", "dynBgColor")} style={{ "--bg-color": "var(--s3)" } as React.CSSProperties}>
                   <div className={cx("flexBetween")}>
                     <div className={cx("cardChipAmber")} />
-                    {method !== "bank" && <span className={cx("pmCardNetworkLabel", "dynColor")}>{selectedMethod?.network ?? ""}</span>}
                     {method === "bank" && <Ic n="bank" sz={16} c="var(--muted2)" />}
                   </div>
                   <div className={cx("pmCardNumberLabel", "dynColor")} style={{ "--color": method !== "bank" ? "rgba(255,255,255,0.8)" : "var(--muted2)" } as React.CSSProperties}>
-                    {method !== "bank" ? `•••• •••• •••• ${selectedMethod?.last4 ?? "????"}` : `FNB Business •••• ${selectedMethod?.last4 ?? "?????"}`}
+                    {method !== "bank" ? `•••• •••• •••• ????` : `FNB Business •••• ?????`}
                   </div>
                 </div>
 
@@ -897,23 +886,40 @@ function PayModal({ amount, desc, method, onClose }: { amount: number; desc: str
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
-export function PaymentsPage({ payments: apiPayments = [], invoices: apiInvoices = [] }: { payments?: PortalPayment[]; invoices?: PortalInvoice[] }) {
+export function PaymentsPage({ payments: apiPayments = [], invoices: apiInvoices = [], currency = "ZAR" }: { payments?: PortalPayment[]; invoices?: PortalInvoice[]; currency?: string }) {
   const notify = usePageToast();
+
+  const { session, projectId } = useProjectLayer();
+  const [milestones, setMilestones] = useState<PortalProjectPaymentMilestone[] | null>(null);
+
+  useEffect(() => {
+    if (!session || !projectId) return;
+    loadPortalProjectPaymentMilestonesWithRefresh(session, projectId).then(r => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.data) setMilestones(r.data);
+    });
+  }, [session, projectId]);
 
   const [tab, setTab]                   = useState<PTab>("All");
   const [search, setSearch]             = useState("");
   const [expanded, setExpanded]         = useState<string | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<PayMethod>(SAVED_METHODS[0]?.id ?? "visa");
+  const [selectedMethod]                = useState<PayMethod>("visa");
   const [payModal, setPayModal]         = useState<{ amount: number; desc: string } | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [localMethods, setLocalMethods] = useState<SavedMethodRecord[]>([]);
 
-  const handleMethodSaved = useCallback((record: SavedMethodRecord) => {
-    setLocalMethods((prev) => [...prev, record]);
-    setShowPaymentModal(false);
-  }, []);
-
-  const now = new Date("2026-03-05").getTime();
+  const monthlyActivity = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const label = d.toLocaleDateString("en-ZA", { month: "short" });
+      const total = (apiPayments ?? [])
+        .filter(p => {
+          const pd = new Date(p.createdAt);
+          return pd.getMonth() === d.getMonth() && pd.getFullYear() === d.getFullYear();
+        })
+        .reduce((s, p) => s + p.amountCents, 0);
+      return { label, amountCents: total };
+    });
+  }, [apiPayments]);
 
   const paymentData: Payment[] = useMemo(() => {
     if (apiPayments.length === 0) return [];
@@ -951,10 +957,10 @@ const statusMap: Record<string, PStatus> = {
     return list;
   }, [tab, search, paymentData]);
 
-  const overdueItems   = paymentData.filter((p) => p.status === "Overdue");
-  const totalPaid      = paymentData.filter((p) => p.status === "Paid").reduce((s, p) => s + p.amountRaw, 0);
-  const totalPending   = paymentData.filter((p) => p.status === "Pending").reduce((s, p) => s + p.amountRaw, 0);
-  const totalOverdue   = paymentData.filter((p) => p.status === "Overdue").reduce((s, p) => s + p.amountRaw, 0);
+  const overdueItems     = paymentData.filter((p) => p.status === "Overdue");
+  const totalPaidCents   = apiPayments.filter((p) => p.status === "COMPLETED" || p.status === "REFUNDED").reduce((s, p) => s + p.amountCents, 0);
+  const totalPendingCents = apiPayments.filter((p) => p.status === "PENDING").reduce((s, p) => s + p.amountCents, 0);
+  const totalOverdueCents = apiPayments.filter((p) => p.status === "FAILED").reduce((s, p) => s + p.amountCents, 0);
 
   const statusBadge = (s: PStatus) => s === "Paid" ? "badgeGreen" : s === "Pending" ? "badgeAmber" : "badgeRed";
 
@@ -982,9 +988,9 @@ const statusMap: Record<string, PStatus> = {
       {/* ── Stat cards ───────────────────────────────────────────────────── */}
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Total Paid",   value: paymentData.length > 0 ? fmt(totalPaid)    : "—", color: "statCardGreen", icon: "check",    iconColor: "var(--green)", trend: `${paymentData.filter(p => p.status === "Paid").length} transactions` },
-          { label: "Outstanding",  value: paymentData.length > 0 ? fmt(totalPending) : "—", color: "statCardAmber", icon: "clock",    iconColor: "var(--amber)", trend: `${paymentData.filter(p => p.status === "Pending").length} pending` },
-          { label: "Overdue",      value: paymentData.length > 0 ? fmt(totalOverdue) : "—", color: "statCardRed",   icon: "alert",    iconColor: "var(--red)",   trend: paymentData.length > 0 ? "See payment list" : "No overdue items" },
+          { label: "Total Paid",   value: apiPayments.length > 0 ? formatMoneyCents(totalPaidCents,    { currency })    : "—", color: "statCardGreen", icon: "check",    iconColor: "var(--green)", trend: `${paymentData.filter(p => p.status === "Paid").length} transactions` },
+          { label: "Outstanding",  value: apiPayments.length > 0 ? formatMoneyCents(totalPendingCents, { currency }) : "—", color: "statCardAmber", icon: "clock",    iconColor: "var(--amber)", trend: `${paymentData.filter(p => p.status === "Pending").length} pending` },
+          { label: "Overdue",      value: apiPayments.length > 0 ? formatMoneyCents(totalOverdueCents, { currency }) : "—", color: "statCardRed",   icon: "alert",    iconColor: "var(--red)",   trend: paymentData.length > 0 ? "See payment list" : "No overdue items" },
           { label: "Next Due",     value: "—",                                               color: "statCardBlue",  icon: "calendar", iconColor: "var(--cyan)",  trend: "No upcoming payments" },
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.color)}>
@@ -1016,7 +1022,7 @@ const statusMap: Record<string, PStatus> = {
           </div>
 
           {/* Chart */}
-          {ACTIVITY.length === 0 ? (
+          {monthlyActivity.every(m => m.amountCents === 0) ? (
             <div className={cx("emptyState")}>
               <div className={cx("emptyStateIcon")}><Ic n="activity" sz={22} c="var(--muted2)" /></div>
               <div className={cx("emptyStateTitle")}>No payment activity yet</div>
@@ -1026,11 +1032,11 @@ const statusMap: Record<string, PStatus> = {
           <div className={cx("relative")}>
             {/* Amount labels row — separate from bar columns to avoid overflow */}
             <div className={cx("flexRow", "gap16", "mb4")}>
-              {ACTIVITY.map((m) => {
-                const isEmpty = m.paid + m.pending + m.overdue === 0;
+              {monthlyActivity.map((m) => {
+                const isEmpty = m.amountCents === 0;
                 return (
-                  <span key={m.month} className={cx("actBarLabel", "fontMono", "dynColor")} style={{ "--color": isEmpty ? "var(--muted2)" : "var(--lime)" } as React.CSSProperties}>
-                    {isEmpty ? "—" : fmt(m.paid + m.pending + m.overdue)}
+                  <span key={m.label} className={cx("actBarLabel", "fontMono", "dynColor")} style={{ "--color": isEmpty ? "var(--muted2)" : "var(--lime)" } as React.CSSProperties}>
+                    {isEmpty ? "—" : formatMoneyCents(m.amountCents, { currency })}
                   </span>
                 );
               })}
@@ -1038,35 +1044,33 @@ const statusMap: Record<string, PStatus> = {
 
             {/* Bars */}
             <div className={cx("actBarContainer")}>
-              {ACTIVITY.map((m) => {
-                const totalH   = ((m.paid + m.pending + m.overdue) / CHART_MAX) * CHART_H;
-                const paidH    = (m.paid    / CHART_MAX) * CHART_H;
-                const pendingH = (m.pending / CHART_MAX) * CHART_H;
-                const overdueH = (m.overdue / CHART_MAX) * CHART_H;
-                const isEmpty  = totalH === 0;
-                return (
-                  <div key={m.month} className={cx("actMonthCol")}>
-                    {/* Bar stack */}
-                    <div className={cx("chartContainerBase", "dynBgColor")} style={{ "--bg-color": isEmpty ? "var(--s3)" : "transparent", "--pct": `${CHART_H}px` } as React.CSSProperties}>
-                      {paidH > 0 && <div className={cx("colBarFill", "dotBgAccent")}  />}
-                      {overdueH > 0 && <div className={cx("colBarFill", "dotBgRed", "colBarHeightVar")} style={{ "--pct": `${overdueH}px` } as React.CSSProperties} />}
-                      {pendingH > 0 && <div className={cx("colBarFill", "colBarAmber")} style={{ "--pct": `${pendingH}px` } as React.CSSProperties} />}
+              {(() => {
+                const chartMax = Math.max(...monthlyActivity.map(b => b.amountCents), 1);
+                return monthlyActivity.map((m) => {
+                  const totalH = (m.amountCents / chartMax) * CHART_H;
+                  const isEmpty = totalH === 0;
+                  return (
+                    <div key={m.label} className={cx("actMonthCol")}>
+                      {/* Bar */}
+                      <div className={cx("chartContainerBase", "dynBgColor")} style={{ "--bg-color": isEmpty ? "var(--s3)" : "transparent", "--pct": `${CHART_H}px` } as React.CSSProperties}>
+                        {!isEmpty && <div className={cx("colBarFill", "dotBgAccent")} style={{ "--pct": `${totalH}px` } as React.CSSProperties} />}
+                      </div>
+                      {/* Month label */}
+                      <span className={cx("fontMono", "text10", "colorMuted2")}>{m.label}</span>
                     </div>
-                    {/* Month label */}
-                    <span className={cx("fontMono", "text10", "colorMuted2")}>{m.month}</span>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           </div>
           )}
 
           {/* Footer summary */}
-          {ACTIVITY.length > 0 && (
+          {!monthlyActivity.every(m => m.amountCents === 0) && (
           <div className={cx("pt10", "borderT", "flexRow", "justifyBetween")}>
             <span className={cx("text10", "colorMuted2")}>Activity summary</span>
             <span className={cx("fontMono", "fw700", "text10", "colorAccent", "tabularNums")}>
-              {fmt(ACTIVITY.reduce((s, m) => s + m.paid, 0))} collected
+              {formatMoneyCents(monthlyActivity.reduce((s, m) => s + m.amountCents, 0), { currency })} collected
             </span>
           </div>
           )}
@@ -1076,12 +1080,16 @@ const statusMap: Record<string, PStatus> = {
         <div className={cx("card", "p16x20")}>
           <div className={cx("cardHd", "mb14")}>
             <span className={cx("cardHdTitle")}>Upcoming Schedule</span>
-            {UPCOMING.length > 0 && (
-              <span className={cx("fontMono", "text10", "colorMuted2")}>{fmt(UPCOMING.reduce((s, u) => s + u.amountRaw, 0))} due</span>
+            {milestones !== null && milestones.filter(m => !m.paid).length > 0 && (
+              <span className={cx("fontMono", "text10", "colorMuted2")}>{formatMoneyCents(milestones.filter(m => !m.paid).reduce((s, m) => s + m.amountCents, 0), { currency })} due</span>
             )}
           </div>
 
-          {UPCOMING.length === 0 ? (
+          {milestones === null ? (
+            <div className={cx("flexCol", "gap8")}>
+              {[1, 2, 3].map(n => <div key={n} className={cx("skeletonRow")} />)}
+            </div>
+          ) : milestones.filter(m => !m.paid).length === 0 ? (
             <div className={cx("emptyState")}>
               <div className={cx("emptyStateIcon")}><Ic n="calendar" sz={22} c="var(--muted2)" /></div>
               <div className={cx("emptyStateTitle")}>No upcoming payments</div>
@@ -1089,167 +1097,22 @@ const statusMap: Record<string, PStatus> = {
             </div>
           ) : (
           <div className={cx("flexCol", "gap8")}>
-            {UPCOMING.map((u) => {
-              const sc = STATUS_COLOR[u.status];
-              return (
-                <div key={u.id} className={cx("upcomingRowCard", "dynBorderLeft3")} style={{ "--color": sc } as React.CSSProperties}>
-                  <div className={cx("dot8", "noShrink", "dynBgColor")} style={{ "--bg-color": sc } as React.CSSProperties} />
-                  <div className={cx("flex1", "minW0")}>
-                    <div className={cx("fw600", "text11", "truncate")}>{u.desc}</div>
-                    <div className={cx("fontMono", "text10", "colorMuted2", "mt1")}>{u.date}</div>
-                  </div>
-                  <div className={cx("flexColEndRight")}>
-                    <span className={cx("fontMono", "fw700", "text11", "tabularNums")}>{fmt(u.amountRaw)}</span>
-                    {u.status === "Overdue" ? (
-                      <button type="button" className={cx("btnSm", "btnPayOverdue")}
-                        onClick={() => setPayModal({ amount: u.amountRaw, desc: u.desc })}
-                      >
-                        <Ic n="creditCard" sz={10} c="var(--red)" /> Pay
-                      </button>
-                    ) : (
-                      <span className={cx("badge", "badgeAmber", "badgeSm2")}>Upcoming</span>
-                    )}
+            {milestones.filter(m => !m.paid).map((m) => (
+              <div key={m.stage} className={cx("upcomingRowCard", "dynBorderLeft3")} style={{ "--color": "var(--amber)" } as React.CSSProperties}>
+                <div className={cx("dot8", "noShrink", "dynBgColor")} style={{ "--bg-color": "var(--amber)" } as React.CSSProperties} />
+                <div className={cx("flex1", "minW0")}>
+                  <div className={cx("fw600", "text11", "truncate")}>
+                    {m.stage === "MILESTONE_30" ? "Milestone Payment (30%)" : m.stage === "FINAL_20" ? "Final Payment (20%)" : m.stage}
                   </div>
                 </div>
-              );
-            })}
+                <div className={cx("flexColEndRight")}>
+                  <span className={cx("fontMono", "fw700", "text11", "tabularNums")}>{formatMoneyCents(m.amountCents, { currency })}</span>
+                  <span className={cx("badge", "badgeAmber", "badgeSm2")}>Upcoming</span>
+                </div>
+              </div>
+            ))}
           </div>
           )}
-        </div>
-      </div>
-
-      {/* ── Payment Methods ───────────────────────────────────────────────── */}
-      <div className={cx("card", "mb16")}>
-        <div className={cx("cardHd")}>
-          <span className={cx("cardHdTitle")}>Saved Payment Methods</span>
-          <span className={cx("flexRow", "gap5")}>
-            <Ic n="shieldCheck" sz={11} c="var(--lime)" />
-            <span className={cx("fontMono", "text10", "colorAccent")}>PCI-DSS Compliant</span>
-          </span>
-        </div>
-
-        <div className={cx("p12x20x20", "flexRow", "gap12", "flexWrap")}>
-          {SAVED_METHODS.map((m) => {
-            const active = selectedMethod === m.id;
-            const isBank = m.id === "bank";
-            return (
-              <div
-                key={m.id}
-                onClick={() => setSelectedMethod(m.id)}
-                className={cx("pmSavedCard", "dynBgColor")} style={{ "--bg-color": isBank ? "var(--s3)" : m.gradient, "--color": active ? "var(--lime)" : isBank ? "var(--b2)" : "transparent", "--box-shadow": active ? "0 0 0 1px color-mix(in oklab, var(--lime) 30%, transparent)" : "none" } as React.CSSProperties}
-              >
-                {/* Top row */}
-                <div className={cx("flexBetween")}>
-                  {isBank ? (
-                    <Ic n="bank" sz={18} c="var(--muted2)" />
-                  ) : (
-                    <div className={cx("cardChipAmber")} />
-                  )}
-                  <div className={cx("flexRow", "gap5")}>
-                    {active && (
-                      <span className={cx("pmDefaultBadge", "fontMono")}>
-                        DEFAULT
-                      </span>
-                    )}
-                    {m.id === "visa" && <span className={cx("pmNetworkLabel")}>VISA</span>}
-                    {m.id === "mc" && (
-                      <div className={cx("flexRow")}>
-                        <div className={cx("mcRed")} />
-                        <div className={cx("mcYellow")} />
-                      </div>
-                    )}
-                    {isBank && <span className={cx("pmBankLabel", "fontMono")}>FNB</span>}
-                  </div>
-                </div>
-
-                {/* Bottom row */}
-                <div>
-                  {isBank ? (
-                    <>
-                      <div className={cx("text10", "colorMuted2", "mb2")}>FNB Business</div>
-                      <div className={cx("fontMono", "fw600", "text11")}>•••• {m.last4}</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className={cx("pmCardMasked", "dynColor")} style={{ "--color": "rgba(255,255,255,0.55)" } as React.CSSProperties}>•••• •••• •••• {m.last4}</div>
-                      <div className={cx("flexBetween")}>
-                        <span className={cx("pmCardExpiry", "dynColor")} style={{ "--color": "rgba(255,255,255,0.4)" } as React.CSSProperties}>{m.expiry}</span>
-                        <div className={cx("flexRow", "flexCenter", "gap3")}>
-                          <Ic n="shieldCheck" sz={9} c="rgba(200,241,53,0.6)" />
-                          <span className={cx("pmCardVerified", "dynColor")} style={{ "--color": "rgba(200,241,53,0.6)" } as React.CSSProperties}>VERIFIED</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Locally-added reference methods */}
-          {localMethods.map((m) => {
-            const typeIcon  = m.type === "card" ? "creditCard" : m.type === "bank" ? "bank" : "zap";
-            const typeLabel = m.type === "card" ? (m.network && m.network !== "unknown" ? NETWORK_LABELS[m.network] : "CARD") : m.type === "bank" ? "BANK" : "EFT";
-            const bg = m.type === "card" && m.network && m.network !== "unknown" ? NETWORK_GRADIENTS[m.network] : "var(--s3)";
-            const isColorCard = m.type === "card" && m.network && m.network !== "unknown";
-            return (
-              <div
-                key={m.id}
-                className={cx("pmSavedCard")}
-                style={{
-                  background: bg,
-                  border: isColorCard ? "none" : "1px solid var(--b2)",
-                  borderRadius: "var(--r-md)",
-                  padding: "12px 14px",
-                  minWidth: "160px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                  boxShadow: isColorCard ? "0 4px 14px rgba(0,0,0,0.35)" : "none",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
-                {m.isDefault && (
-                  <div style={{ position: "absolute", top: "6px", right: "8px", fontSize: "8px", fontWeight: 800, letterSpacing: "0.5px", color: isColorCard ? "rgba(255,255,255,0.6)" : "var(--lime)", background: isColorCard ? "rgba(0,0,0,0.25)" : "color-mix(in oklab, var(--lime) 12%, var(--s3))", padding: "1px 5px", borderRadius: "3px" }}>DEFAULT</div>
-                )}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <Ic n={typeIcon} sz={16} c={isColorCard ? "rgba(255,255,255,0.6)" : "var(--muted2)"} />
-                  <span style={{ fontSize: "9px", fontWeight: 800, letterSpacing: "1px", color: isColorCard ? "rgba(255,255,255,0.55)" : "var(--muted2)" }}>{typeLabel}</span>
-                </div>
-                <div>
-                  <div style={{ fontSize: "10px", color: isColorCard ? "rgba(255,255,255,0.5)" : "var(--muted2)", marginBottom: "2px" }}>{m.bankName ?? m.holderName}</div>
-                  <div style={{ fontFamily: "'Courier New', monospace", fontWeight: 700, fontSize: "12px", color: isColorCard ? "rgba(255,255,255,0.85)" : "var(--text)", letterSpacing: "1px" }}>{m.maskedNumber}</div>
-                  {m.expiry && <div style={{ fontSize: "10px", color: isColorCard ? "rgba(255,255,255,0.4)" : "var(--muted2)", marginTop: "2px" }}>{m.expiry}</div>}
-                  {m.accountType && <div style={{ fontSize: "9px", color: "var(--muted2)", marginTop: "2px" }}>{m.accountType}</div>}
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Add card */}
-          <button
-            type="button"
-            className={cx("btnOutline", "gap6", "text11", "fw500")}
-            onClick={() => setShowPaymentModal(true)}
-          >
-            <Ic n="plus" sz={14} c="currentColor" />
-            Add Payment Method
-          </button>
-        </div>
-
-        {/* Security row */}
-        <div className={cx("p10x20x14", "borderT", "flexRow", "gap16", "flexWrap")}>
-          {[
-            { icon: "shieldCheck", label: "256-bit SSL" },
-            { icon: "lock",        label: "3D Secure" },
-            { icon: "check",       label: "PCI-DSS Level 1" },
-          ].map(({ icon, label }) => (
-            <span key={label} className={cx("flexRow", "gap5")}>
-              <Ic n={icon} sz={11} c="var(--lime)" />
-              <span className={cx("fontMono", "text10", "colorMuted2")}>{label}</span>
-            </span>
-          ))}
         </div>
       </div>
 
@@ -1260,7 +1123,7 @@ const statusMap: Record<string, PStatus> = {
           <div className={cx("flex1")}>
             <div className={cx("fs078")}>
               <strong className={cx("fontMono")}>{overdueItems[0].id}</strong>
-              <span className={cx("colorMuted")}> — {overdueItems[0].description} · {fmt(overdueItems[0].amountRaw)}</span>
+              <span className={cx("colorMuted")}> — {overdueItems[0].description} · {formatMoneyCents(Math.round(overdueItems[0].amountRaw * 100), { currency })}</span>
             </div>
             <div className={cx("fontMono", "text10", "colorMuted2", "mt2")}>
               Due {overdueItems[0].dueDate} · {overdueItems[0].project}
@@ -1272,7 +1135,7 @@ const statusMap: Record<string, PStatus> = {
             onClick={() => setPayModal({ amount: overdueItems[0].amountRaw, desc: overdueItems[0].description })}
           >
             <Ic n="creditCard" sz={12} c="var(--red)" />
-            Pay {fmt(overdueItems[0].amountRaw)} Now
+            Pay {formatMoneyCents(Math.round(overdueItems[0].amountRaw * 100), { currency })} Now
           </button>
         </div>
       )}
@@ -1363,7 +1226,7 @@ const statusMap: Record<string, PStatus> = {
                   </span>
 
                   {/* Amount */}
-                  <span className={cx("fontMono", "fw700", "text12", "textRight", "tabularNums")}>{fmt(p.amountRaw)}</span>
+                  <span className={cx("fontMono", "fw700", "text12", "textRight", "tabularNums")}>{formatMoneyCents(Math.round(p.amountRaw * 100), { currency })}</span>
 
                   {/* Status badge */}
                   <span className={cx("badge", statusBadge(p.status))}>{p.status}</span>
@@ -1453,7 +1316,7 @@ const statusMap: Record<string, PStatus> = {
                               className={cx("btnSm", "btnAccent", "wFull", "flexRow", "flexCenter", "justifyCenter", "gap5")}
                               onClick={() => setPayModal({ amount: p.amountRaw, desc: p.description })}
                             >
-                              <Ic n="creditCard" sz={12} /> Pay {fmt(p.amountRaw)} Now
+                              <Ic n="creditCard" sz={12} /> Pay {formatMoneyCents(Math.round(p.amountRaw * 100), { currency })} Now
                             </button>
                           )}
                           {p.status === "Paid" && (
@@ -1483,13 +1346,6 @@ const statusMap: Record<string, PStatus> = {
         />
       )}
 
-      {/* ── Add Payment Method Modal ──────────────────────────────────────── */}
-      {showPaymentModal && (
-        <AddPaymentMethodModal
-          onClose={() => setShowPaymentModal(false)}
-          onSaved={handleMethodSaved}
-        />
-      )}
     </div>
   );
 }
