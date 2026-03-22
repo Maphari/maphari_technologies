@@ -2549,3 +2549,247 @@
 
 /* ── Invoice Chasing — sequence track container ───────────────── */
 .icSequenceTrackFlex { display: flex; align-items: center; gap: 6px; }
+
+/* ─── Staff Scheduling Timeline (staffSched) ──────────────────────────────── */
+
+.staffSchedPage {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.staffSchedHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.staffSchedTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+
+.staffSchedNav {
+  display: flex;
+  gap: 8px;
+}
+
+.staffSchedNavBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--b2);
+  background: var(--s2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.staffSchedNavBtn:hover {
+  background: var(--s3);
+  border-color: var(--b3);
+}
+
+.staffSchedTable {
+  overflow-x: auto;
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  background: var(--s1);
+}
+
+.staffSchedGrid {
+  display: grid;
+  grid-template-columns: 200px repeat(8, 110px);
+  gap: 2px;
+  min-width: fit-content;
+  padding: 8px;
+}
+
+.staffSchedHead {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 6px 8px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.staffSchedNameCell {
+  padding: 10px 8px;
+  background: var(--s2);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+}
+
+.staffSchedRole {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.staffSchedCell {
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  transition: opacity 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.staffSchedCell:hover {
+  opacity: 0.8;
+}
+
+.schedAvailable {
+  background: var(--lime-d, rgba(200, 241, 53, 0.12));
+  color: var(--lime, #c8f135);
+}
+
+.schedPartial {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.schedLeave {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.staffSchedPanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100dvh;
+  width: 320px;
+  background: var(--s1);
+  border-left: 1px solid var(--b2);
+  padding: 24px;
+  z-index: 200;
+  overflow-y: auto;
+  box-shadow: var(--shadow-modal, -4px 0 24px rgba(0, 0, 0, 0.3));
+}
+
+.staffSchedPanelTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.staffSchedPanelSub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.staffSchedPanelClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--b2);
+  background: var(--s2);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s ease;
+}
+
+.staffSchedPanelClose:hover {
+  background: var(--s3);
+  color: var(--text);
+}
+
+.staffSchedPanelRow {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--b1);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.staffSchedPanelRow:last-child {
+  border-bottom: none;
+}
+
+.staffSchedPanelLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.staffSchedPanelVal {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.staffSchedEmptyAssign {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.staffSchedLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.staffSchedStatusChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.staffSchedStatusAvailable {
+  background: var(--lime-d, rgba(200, 241, 53, 0.12));
+  color: var(--lime, #c8f135);
+}
+
+.staffSchedStatusPartial {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.staffSchedStatusLeave {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+@media (max-width: 900px) {
+  .staffSchedPanel { width: 100vw; border-left: none; border-top: 1px solid var(--b2); top: auto; bottom: 0; height: 60dvh; }
+}

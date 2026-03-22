@@ -112,6 +112,9 @@ import { registerCalendarRoutes } from "./routes/calendar.js";
 // ── Project Templates ─────────────────────────────────────────────────────────
 import { registerProjectTemplateRoutes } from "./routes/project-templates.js";
 
+// ── Staff Schedule ────────────────────────────────────────────────────────────
+import { registerStaffScheduleRoutes } from "./routes/staff-schedule.js";
+
 export async function createCoreApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
   const metrics = new ServiceMetrics();
@@ -270,6 +273,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Project Templates ─────────────────────────────────────────────────────
   await registerProjectTemplateRoutes(app);
+
+  // ── Staff Schedule ────────────────────────────────────────────────────────
+  await registerStaffScheduleRoutes(app);
 
   return app;
 }

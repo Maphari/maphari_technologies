@@ -246,5 +246,6 @@ export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotifi
   webhookHub: "settings",
   contractRenewal: "operations",
   clvAnalytics: "invoices",
-  projectTemplates: "projects"
+  projectTemplates: "projects",
+  staffScheduling: "operations"
 };

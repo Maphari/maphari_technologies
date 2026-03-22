@@ -101,6 +101,7 @@ import { WebhookHubPage } from "./dashboard/pages/webhook-hub-page";
 import { ContractRenewalPage } from "./dashboard/pages/contract-renewal-page";
 import { CLVAnalyticsPage } from "./dashboard/pages/clv-analytics-page";
 import { ProjectTemplatesPage } from "./dashboard/pages/project-templates-page";
+import { StaffSchedulingPage } from "./dashboard/pages/staff-scheduling-page";
 import { createMaintenanceCheckWithRefresh, markAllAdminNotificationsReadWithRefresh, setNotificationReadStateWithRefresh } from "../../lib/api/admin";
 import { saveSession } from "../../lib/auth/session";
 import { searchGlobal } from "../../lib/api/shared/search";
@@ -704,6 +705,7 @@ export function MaphariDashboard() {
             {page === "contractRenewal" ? <ContractRenewalPage /> : null}
             {page === "clvAnalytics" ? <CLVAnalyticsPage session={session} onNotify={pushToast} /> : null}
             {page === "projectTemplates" ? <ProjectTemplatesPage projects={snapshot.projects ?? []} /> : null}
+            {page === "staffScheduling" ? <StaffSchedulingPage session={session} /> : null}
             </DashboardErrorBoundary>
           </section>
         </main>

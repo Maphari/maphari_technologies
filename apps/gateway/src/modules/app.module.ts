@@ -40,6 +40,7 @@ import { CommentsController } from "../routes/comments.controller.js";
 import { CalendarController } from "../routes/calendar.controller.js";
 import { NotificationPrefsController } from "../routes/notification-prefs.controller.js";
 import { ProjectTemplatesController } from "../routes/project-templates.controller.js";
+import { StaffScheduleController } from "../routes/staff-schedule.controller.js";
 import { RbacGuard } from "../auth/rbac.guard.js";
 import { RequestIdInterceptor } from "../common/request-id.interceptor.js";
 import { MetricsController } from "../observability/metrics.controller.js";
@@ -87,6 +88,7 @@ import { RateLimitGuard } from "../security/rate-limit.guard.js";
     CalendarController,
     NotificationPrefsController,
     ProjectTemplatesController,
+    StaffScheduleController,
     MetricsController
   ],
   providers: [

@@ -90,6 +90,7 @@ export type PageId =
   | "contractRenewal"
   | "clvAnalytics"
   | "projectTemplates"
+  | "staffScheduling"
   | "settings";
 
 // ─── Re-exports for backward compatibility ───
@@ -147,6 +148,7 @@ export const navItems: NavItem[] = [
   { id: "staff", label: "Staff", section: "Communication" },
   { id: "staffOnboarding", label: "Staff Onboard.", section: "Communication" },
   { id: "leaveAbsence", label: "Leave", section: "Communication" },
+  { id: "staffScheduling", label: "Schedule", section: "Communication" },
   { id: "recruitment", label: "Recruitment", section: "Communication" },
   { id: "learningDev", label: "L&D", section: "Communication" },
   { id: "contentApproval", label: "Content", section: "Communication" },

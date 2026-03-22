@@ -6,7 +6,7 @@ import { Ic } from "../ui";
 import { getStaffCapacity, type StaffCapacity } from "@/lib/api/staff/profile";
 import type { AuthSession } from "@/lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
-import { submitLeaveRequestWithRefresh } from "@/lib/api/staff/hr";
+import { submitLeaveRequestWithRefresh, loadMyLeaveRequestsWithRefresh, type StaffLeaveRecord } from "@/lib/api/staff/hr";
 import { loadStaffCalendarEventsWithRefresh, type CalendarEvent } from "@/lib/api/staff/calendar";
 
 type MyCapacityPageProps = {
@@ -137,6 +137,8 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
   const [overloadFlagged, setOverloadFlagged]   = useState(false);
   const [upcomingEvents,   setUpcomingEvents]   = useState<CalendarEvent[]>([]);
   const [eventsLoading,    setEventsLoading]    = useState(false);
+  const [approvedLeave,    setApprovedLeave]    = useState<StaffLeaveRecord[]>([]);
+  const [leaveLoading,     setLeaveLoading]     = useState(false);
 
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
@@ -169,6 +171,19 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
       if (res.nextSession) saveSession(res.nextSession);
       setUpcomingEvents(res.data ?? []);
     }).finally(() => { if (!cancelled) setEventsLoading(false); });
+    return () => { cancelled = true; };
+  }, [session?.accessToken, isActive]);
+
+  useEffect(() => {
+    if (!session || !isActive) return;
+    let cancelled = false;
+    setLeaveLoading(true);
+    loadMyLeaveRequestsWithRefresh(session).then((res) => {
+      if (cancelled) return;
+      if (res.nextSession) saveSession(res.nextSession);
+      const approved = (res.data ?? []).filter((l) => l.status === "APPROVED");
+      setApprovedLeave(approved);
+    }).finally(() => { if (!cancelled) setLeaveLoading(false); });
     return () => { cancelled = true; };
   }, [session?.accessToken, isActive]);
 
@@ -517,6 +532,39 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
           </div>
         </div>
       )}
+
+      {/* ── Approved Leave ──────────────────────────────────────────────────── */}
+      <div className={cx("mcCard")}>
+        <div className={cx("mcCardHd")}>
+          <Ic n="calendar" sz={13} c="var(--muted)" />
+          <span className={cx("mcCardHdTitle")}>Approved Leave</span>
+          {!leaveLoading && (
+            <span className={cx("mcCardHdMeta")}>{approvedLeave.length} record{approvedLeave.length !== 1 ? "s" : ""}</span>
+          )}
+        </div>
+        {leaveLoading ? (
+          <div className={cx("flexCol", "gap8")}>
+            <div className={cx("skeletonBlock", "skeleH40")} />
+          </div>
+        ) : approvedLeave.length === 0 ? (
+          <div className={cx("text12", "colorMuted", "p12", "textCenter")}>No approved leave on record.</div>
+        ) : (
+          <div className={cx("flexCol", "gap4")}>
+            {approvedLeave.map((lr) => {
+              const from = new Date(lr.startDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+              const to   = new Date(lr.endDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+              const typeLabel = lr.type.charAt(0).toUpperCase() + lr.type.slice(1).toLowerCase().replace(/_/g, " ");
+              return (
+                <div key={lr.id} className={cx("flexRow", "gap8", "p8x0", "alignCenter")}>
+                  <span className={cx("badge", "badgeAccent")}>{typeLabel}</span>
+                  <span className={cx("text12", "fw500", "flex1")}>{from} — {to}</span>
+                  <span className={cx("fontMono", "text11", "colorMuted", "noWrap")}>{lr.days}d</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* ── Upcoming — Next 14 Days ─────────────────────────────────────────── */}
       <div className={cx("mcCard")}>

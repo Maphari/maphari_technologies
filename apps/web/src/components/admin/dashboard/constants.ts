@@ -93,5 +93,6 @@ export const pageTitles: Record<PageId, [string, string]> = {
   webhookHub: ["Automation", "Webhook & Integration Hub"],
   clvAnalytics: ["Finance", "CLV & Churn Risk Analytics"],
   projectTemplates: ["Operations", "Project Templates"],
+  staffScheduling: ["Communication", "Staff Scheduling"],
   settings: ["Account", "Settings"]
 };
