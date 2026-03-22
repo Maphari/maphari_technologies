@@ -165,8 +165,8 @@ export function RecruitmentPipelinePage({ session }: { session: AuthSession | nu
     setError(null);
     loadJobPostingsWithRefresh(session).then(async (pr) => {
       if (pr.nextSession) saveSession(pr.nextSession);
-      if (pr.error) { setError(pr.error.message ?? "Failed to load."); setLoading(false); return; }
-      if (!pr.data) { setLoading(false); return; }
+      if (pr.error) { setError(pr.error.message ?? "Failed to load."); return; }
+      if (!pr.data) { return; }
       const postings = pr.data;
       setApiPostings(postings);
       if (postings.length > 0) setExpanded(postings[0].id.slice(0, 8).toUpperCase());
@@ -181,6 +181,9 @@ export function RecruitmentPipelinePage({ session }: { session: AuthSession | nu
         appMap[postings[i].id] = r.data ?? [];
       }
       setApiApps(appMap);
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load.");
+    }).finally(() => {
       setLoading(false);
     });
   }, [session]);

@@ -93,20 +93,24 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
 
   const refreshAll = useCallback(async (currentSession: AuthSession) => {
     setLoading(true);
-    const [requestsResult, usersResult] = await Promise.all([
-      loadStaffAccessRequestsWithRefresh(currentSession),
-      loadStaffUsersWithRefresh(currentSession)
-    ]);
-    if (!requestsResult.nextSession || !usersResult.nextSession) {
-      onNotify("error", requestsResult.error?.message ?? usersResult.error?.message ?? "Session expired.");
+    try {
+      const [requestsResult, usersResult] = await Promise.all([
+        loadStaffAccessRequestsWithRefresh(currentSession),
+        loadStaffUsersWithRefresh(currentSession)
+      ]);
+      if (!requestsResult.nextSession || !usersResult.nextSession) {
+        onNotify("error", requestsResult.error?.message ?? usersResult.error?.message ?? "Session expired.");
+        return;
+      }
+      if (requestsResult.error) onNotify("error", requestsResult.error.message);
+      if (usersResult.error) onNotify("error", usersResult.error.message);
+      setRequests(requestsResult.data ?? []);
+      setUsers(usersResult.data ?? []);
+    } catch (err: unknown) {
+      onNotify("error", (err as Error)?.message ?? "Failed to load.");
+    } finally {
       setLoading(false);
-      return;
     }
-    if (requestsResult.error) onNotify("error", requestsResult.error.message);
-    if (usersResult.error) onNotify("error", usersResult.error.message);
-    setRequests(requestsResult.data ?? []);
-    setUsers(usersResult.data ?? []);
-    setLoading(false);
   }, [onNotify]);
 
   useEffect(() => {

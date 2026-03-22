@@ -64,15 +64,20 @@ export function ServiceCatalogManagerPage() {
     if (loaded.current || !session) { setLoading(false); return; }
     loaded.current = true;
     void (async () => {
-      const result = await loadAdminServiceCatalogWithRefresh(session);
-      if (result.nextSession) saveSession(result.nextSession);
-      if (result.data) {
-        setPackages(result.data.packages);
-        setAddons(result.data.addons);
-      } else if (result.error) {
-        setError(result.error.message ?? "Failed to load service catalog.");
+      try {
+        const result = await loadAdminServiceCatalogWithRefresh(session);
+        if (result.nextSession) saveSession(result.nextSession);
+        if (result.data) {
+          setPackages(result.data.packages);
+          setAddons(result.data.addons);
+        } else if (result.error) {
+          setError(result.error.message ?? "Failed to load service catalog.");
+        }
+      } catch (err: unknown) {
+        setError((err as Error)?.message ?? "Failed to load service catalog.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     })();
   }, [session]);
 

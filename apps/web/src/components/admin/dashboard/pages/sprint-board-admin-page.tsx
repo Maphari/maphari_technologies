@@ -128,20 +128,27 @@ export function SprintBoardAdminPage({ session, onNotify }: Props) {
     setError(null);
     setSprints([]);
     setTasks([]);
-    const r = await getSprints(session, selectedProjectId);
-    if (r.nextSession) saveSession(r.nextSession);
-    if (r.error) { setError(r.error.message ?? "Failed to load."); onNotify("error", r.error.message); setLoading(false); return; }
-    const sprintList = r.data ?? [];
-    setSprints(sprintList);
+    try {
+      const r = await getSprints(session, selectedProjectId);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) { setError(r.error.message ?? "Failed to load."); onNotify("error", r.error.message); return; }
+      const sprintList = r.data ?? [];
+      setSprints(sprintList);
 
-    // Load tasks for the first active sprint
-    const activeSprint = sprintList.find((s) => s.status.toLowerCase() === "active");
-    if (activeSprint) {
-      const tr = await loadSprintTasks(session, selectedProjectId, activeSprint.id);
-      if (tr.nextSession) saveSession(tr.nextSession);
-      if (!tr.error) setTasks(tr.data ?? []);
+      // Load tasks for the first active sprint
+      const activeSprint = sprintList.find((s) => s.status.toLowerCase() === "active");
+      if (activeSprint) {
+        const tr = await loadSprintTasks(session, selectedProjectId, activeSprint.id);
+        if (tr.nextSession) saveSession(tr.nextSession);
+        if (!tr.error) setTasks(tr.data ?? []);
+      }
+    } catch (err: unknown) {
+      const msg = (err as Error)?.message ?? "Failed to load sprints";
+      setError(msg);
+      onNotify("error", msg);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [session, selectedProjectId, onNotify]);
 
   useEffect(() => { void loadSprints(); }, [loadSprints]);

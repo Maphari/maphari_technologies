@@ -61,18 +61,22 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
     if (!session) { setLoading(false); return; }
     let cancelled = false;
     void (async () => {
-      const r = await loadPipelineAnalyticsWithRefresh(session);
-      if (cancelled) return;
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.error || !r.data) {
-        setLoadError(r.error?.message ?? "Failed to load pipeline analytics. Please try again.");
-        onNotify("error", r.error?.message ?? "Failed to load pipeline analytics.");
-        setLoading(false);
-        return;
+      try {
+        const r = await loadPipelineAnalyticsWithRefresh(session);
+        if (cancelled) return;
+        if (r.nextSession) saveSession(r.nextSession);
+        if (r.error || !r.data) {
+          setLoadError(r.error?.message ?? "Failed to load pipeline analytics. Please try again.");
+          onNotify("error", r.error?.message ?? "Failed to load pipeline analytics.");
+          return;
+        }
+        setLoadError(null);
+        setData(r.data);
+      } catch (err: unknown) {
+        if (!cancelled) setLoadError((err as Error)?.message ?? "Failed to load pipeline analytics.");
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoadError(null);
-      setData(r.data);
-      setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [session, onNotify]);

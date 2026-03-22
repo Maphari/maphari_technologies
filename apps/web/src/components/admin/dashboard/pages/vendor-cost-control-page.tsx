@@ -37,6 +37,9 @@ export function VendorCostControlPage({ session }: { session: AuthSession | null
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error) setError(r.error.message ?? "Failed to load.");
       else if (r.data) setApiVendors(r.data);
+    }).catch((err: unknown) => {
+      setError((err as Error)?.message ?? "Failed to load.");
+    }).finally(() => {
       setLoading(false);
     });
   }, [session]);
