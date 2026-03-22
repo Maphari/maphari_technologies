@@ -1387,15 +1387,11 @@ export async function registerAuthRoutes(
           data: {
             tokenHash: nextRefreshTokenHash,
             userId: existingToken.userId,
-            expiresAt
+            expiresAt,
+            lastUsedAt: new Date()
           }
         })
       ]);
-
-      await prisma.refreshToken.update({
-        where: { id: newRefreshTokenRecord.id },
-        data: { lastUsedAt: new Date() },
-      });
 
       await deps.eventBus.publish({
         eventId: randomUUID(),
