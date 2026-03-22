@@ -30,6 +30,7 @@ import {
   recordLoginFailure,
   resetLoginRateLimit,
   checkTotpRateLimit,
+  recordTotpFailure,
   resetTotpRateLimit,
 } from "../lib/rate-limit.js";
 
@@ -1225,6 +1226,20 @@ export async function registerAuthRoutes(
       } as ApiResponse;
     }
 
+    // ── Rate limit: 5 attempts per 5 minutes per userId ────────────────────
+    const totpRateCheck = await checkTotpRateLimit(redis, userId);
+    if (!totpRateCheck.allowed) {
+      reply.status(429);
+      reply.header("retry-after", String(Math.ceil((totpRateCheck.resetAt - Date.now()) / 1000)));
+      return {
+        success: false,
+        error: {
+          code: "TOTP_RATE_LIMITED",
+          message: "Too many 2FA attempts. Please wait before trying again."
+        }
+      } as ApiResponse;
+    }
+
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -1249,12 +1264,16 @@ export async function registerAuthRoutes(
 
       const isValid = verifyTotpCode(totpCode.trim(), user.totpSecret);
       if (!isValid) {
+        await recordTotpFailure(redis, userId);
         reply.status(401);
         return {
           success: false,
           error: { code: "INVALID_TOTP_CODE", message: "Incorrect authenticator code. Please try again." }
         } as ApiResponse;
       }
+
+      // Successful verification — clear the attempt counter
+      await resetTotpRateLimit(redis, userId);
 
       // Issue full session
       const refreshTokenPayload = buildRefreshToken(config.refreshTokenTtlDays);
@@ -1530,6 +1549,7 @@ export async function registerAuthRoutes(
 
       const isValid = verifyTotpCode(code, user.totpSecret);
       if (!isValid) {
+        await recordTotpFailure(redis, userId);
         reply.status(401);
         return { success: false, error: { code: "INVALID_TOTP_CODE", message: "Invalid or expired 2FA code" } } as ApiResponse;
       }

@@ -2,6 +2,7 @@
 // Replaces in-memory Maps that were per-instance and reset on restart.
 
 import { RedisCache } from "@maphari/platform";
+import { createHash } from "crypto";
 
 const LOGIN_MAX = 5;
 const LOGIN_WINDOW_S = 60 * 15; // 15 minutes
@@ -13,8 +14,12 @@ interface AttemptBucket {
   resetAt: number;
 }
 
+function hashEmail(email: string): string {
+  return createHash("sha256").update(email.toLowerCase()).digest("hex").slice(0, 16);
+}
+
 function loginKey(email: string, ip: string): string {
-  return `rl:login:${email}:${ip}`;
+  return `rl:login:${hashEmail(email)}:${ip}`;
 }
 
 function totpKey(userId: string): string {
@@ -69,16 +74,26 @@ export async function checkTotpRateLimit(
   const now = Date.now();
   const raw = await redis.getJson<AttemptBucket>(key);
   if (!raw || raw.resetAt <= now) {
-    // First attempt or window expired — record count: 1 and allow
-    const resetAt = now + TOTP_WINDOW_S * 1000;
-    await redis.setJson<AttemptBucket>(key, { count: 1, resetAt }, TOTP_WINDOW_S);
-    return { allowed: true, resetAt };
+    return { allowed: true, resetAt: now + TOTP_WINDOW_S * 1000 };
   }
   if (raw.count >= TOTP_MAX) {
     return { allowed: false, resetAt: raw.resetAt };
   }
-  await redis.setJson<AttemptBucket>(key, { count: raw.count + 1, resetAt: raw.resetAt }, TOTP_WINDOW_S);
   return { allowed: true, resetAt: raw.resetAt };
+}
+
+export async function recordTotpFailure(
+  redis: RedisCache,
+  userId: string
+): Promise<void> {
+  const key = totpKey(userId);
+  const raw = await redis.getJson<AttemptBucket>(key);
+  const now = Date.now();
+  if (!raw || raw.resetAt <= now) {
+    await redis.setJson<AttemptBucket>(key, { count: 1, resetAt: now + TOTP_WINDOW_S * 1000 }, TOTP_WINDOW_S);
+  } else {
+    await redis.setJson<AttemptBucket>(key, { count: raw.count + 1, resetAt: raw.resetAt }, TOTP_WINDOW_S);
+  }
 }
 
 export async function resetTotpRateLimit(
