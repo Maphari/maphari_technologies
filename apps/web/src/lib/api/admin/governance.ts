@@ -560,6 +560,94 @@ export async function updateCrisisWithRefresh(
 
 // ── Portfolio Risk Register ───────────────────────────────────────────────────
 
+// ── Compliance Records ────────────────────────────────────────────────────────
+
+export interface ComplianceRecord {
+  id:        string;
+  area:      string;
+  status:    string;
+  riskLevel: string;
+  lastAudit: string;
+  nextAudit: string;
+  notes:     string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateComplianceInput {
+  status?:    string;
+  riskLevel?: string;
+  notes?:     string;
+  lastAudit?: string;
+  nextAudit?: string;
+}
+
+export async function loadAdminComplianceWithRefresh(session: AuthSession): Promise<AuthorizedResult<ComplianceRecord[]>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<ComplianceRecord[]>("/admin/compliance", token);
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
+    return { unauthorized: false, data: res.payload.data ?? [], error: null };
+  });
+}
+
+export async function updateComplianceStatusWithRefresh(
+  session: AuthSession,
+  id: string,
+  data: UpdateComplianceInput
+): Promise<AuthorizedResult<ComplianceRecord>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<ComplianceRecord>(`/admin/compliance/${id}`, token, { method: "PATCH", body: data });
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
+    return { unauthorized: false, data: res.payload.data ?? null, error: null };
+  });
+}
+
+// ── Data Retention Policies ───────────────────────────────────────────────────
+
+export interface DataRetentionPolicy {
+  id:          string;
+  dataType:    string;
+  retainYears: number;
+  lastPurge:   string | null;
+  nextPurge:   string;
+  status:      string;
+  createdAt:   string;
+  updatedAt:   string;
+}
+
+export interface UpdateDataRetentionInput {
+  status?:      string;
+  retainYears?: number;
+  lastPurge?:   string;
+  nextPurge?:   string;
+}
+
+export async function loadAdminDataRetentionWithRefresh(session: AuthSession): Promise<AuthorizedResult<DataRetentionPolicy[]>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<DataRetentionPolicy[]>("/admin/data-retention", token);
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
+    return { unauthorized: false, data: res.payload.data ?? [], error: null };
+  });
+}
+
+export async function updateDataRetentionStatusWithRefresh(
+  session: AuthSession,
+  id: string,
+  data: UpdateDataRetentionInput
+): Promise<AuthorizedResult<DataRetentionPolicy>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<DataRetentionPolicy>(`/admin/data-retention/${id}`, token, { method: "PATCH", body: data });
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
+    return { unauthorized: false, data: res.payload.data ?? null, error: null };
+  });
+}
+
+// ── Portfolio Risk Register ───────────────────────────────────────────────────
+
 export async function loadAllPortfolioRisksWithRefresh(
   session: AuthSession
 ): Promise<AuthorizedResult<AdminPortfolioRisk[]>> {

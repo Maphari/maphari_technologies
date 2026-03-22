@@ -93,6 +93,10 @@ import { registerCommentRoutes } from "./routes/comments.js";
 // ── Crisis Command ────────────────────────────────────────────────────────────
 import { registerCrisisRoutes } from "./routes/crises.js";
 
+// ── Compliance & Data Retention ───────────────────────────────────────────────
+import { registerComplianceRoutes } from "./routes/compliance.js";
+import { registerDataRetentionRoutes } from "./routes/data-retention.js";
+
 export async function createCoreApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
   const metrics = new ServiceMetrics();
@@ -232,6 +236,10 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Crisis Command ────────────────────────────────────────────────────────
   await registerCrisisRoutes(app);
+
+  // ── Compliance & Data Retention ───────────────────────────────────────────
+  await registerComplianceRoutes(app);
+  await registerDataRetentionRoutes(app);
 
   return app;
 }

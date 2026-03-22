@@ -1570,3 +1570,32 @@ model Crisis {
   @@index([createdAt])
   @@map("crises")
 }
+
+model ComplianceRecord {
+  id        String   @id @default(cuid())
+  area      String // e.g. "GDPR", "POPIA", "SARS", "ISO27001"
+  status    String // "COMPLIANT" | "AT_RISK" | "NON_COMPLIANT"
+  riskLevel String // "LOW" | "MEDIUM" | "HIGH"
+  lastAudit DateTime
+  nextAudit DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, riskLevel])
+  @@map("compliance_records")
+}
+
+model DataRetentionPolicy {
+  id          String    @id @default(cuid())
+  dataType    String
+  retainYears Int
+  lastPurge   DateTime?
+  nextPurge   DateTime
+  status      String // "CURRENT" | "DUE" | "OVERDUE"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@map("data_retention_policies")
+}

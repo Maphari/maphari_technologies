@@ -931,4 +931,88 @@ export class AdminController {
       adminHeaders(userId, role, clientId, requestId, traceId)
     );
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // COMPLIANCE RECORDS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /admin/compliance ─────────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("admin/compliance")
+  async listCompliance(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/compliance`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PATCH /admin/compliance/:id ───────────────────────────────────────────
+  @Roles("ADMIN")
+  @Patch("admin/compliance/:id")
+  async updateCompliance(
+    @Param("id")              id: string,
+    @Body()                   body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/compliance/${id}`,
+      "PATCH",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // DATA RETENTION POLICIES
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /admin/data-retention ─────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("admin/data-retention")
+  async listDataRetention(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/data-retention`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PATCH /admin/data-retention/:id ──────────────────────────────────────
+  @Roles("ADMIN")
+  @Patch("admin/data-retention/:id")
+  async updateDataRetention(
+    @Param("id")              id: string,
+    @Body()                   body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/data-retention/${id}`,
+      "PATCH",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
 }

@@ -1210,6 +1210,29 @@ exports.Prisma.CrisisScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.ComplianceRecordScalarFieldEnum = {
+  id: 'id',
+  area: 'area',
+  status: 'status',
+  riskLevel: 'riskLevel',
+  lastAudit: 'lastAudit',
+  nextAudit: 'nextAudit',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.DataRetentionPolicyScalarFieldEnum = {
+  id: 'id',
+  dataType: 'dataType',
+  retainYears: 'retainYears',
+  lastPurge: 'lastPurge',
+  nextPurge: 'nextPurge',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1319,7 +1342,9 @@ exports.Prisma.ModelName = {
   WinLossEntry: 'WinLossEntry',
   MarketRate: 'MarketRate',
   EntityComment: 'EntityComment',
-  Crisis: 'Crisis'
+  Crisis: 'Crisis',
+  ComplianceRecord: 'ComplianceRecord',
+  DataRetentionPolicy: 'DataRetentionPolicy'
 };
 
 /**

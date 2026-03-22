@@ -79,6 +79,8 @@ export const CacheKeys = {
   contracts:           (clientId: string)     => `core:contracts:${clientId}`,
   closeoutReports:     (scope: string)        => `core:closeout-reports:${scope}`,
   crises:              ()                     => `core:crises:all`,
+  compliance:          ()                     => `core:compliance:all`,
+  dataRetention:       ()                     => `core:data-retention:all`,
 };
 
 // ── withCache — Generic read-through cache helper ─────────────────────────────

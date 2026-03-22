@@ -2,27 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { fetchContracts, type LegalContract } from "../../../../lib/api/admin/contracts";
+import {
+  loadAdminComplianceWithRefresh,
+  loadAdminDataRetentionWithRefresh,
+  type ComplianceRecord,
+  type DataRetentionPolicy,
+} from "../../../../lib/api/admin/governance";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { AdminTabs } from "./shared";
 import { colorClass } from "./admin-page-utils";
-
-const compliance = [
-  { area: "POPIA Compliance", status: "compliant", lastReview: "Jan 2026", nextReview: "Jan 2027", risk: "low" },
-  { area: "BBBEE Certification", status: "compliant", lastReview: "Oct 2025", nextReview: "Oct 2026", risk: "low" },
-  { area: "CIPC Registration", status: "compliant", lastReview: "Mar 2025", nextReview: "Mar 2026", risk: "medium" },
-  { area: "Employment Contracts", status: "attention", lastReview: "Aug 2025", nextReview: "Overdue", risk: "high" },
-  { area: "Terms of Service", status: "compliant", lastReview: "Dec 2025", nextReview: "Dec 2026", risk: "low" },
-  { area: "Privacy Policy", status: "attention", lastReview: "Sep 2025", nextReview: "Overdue", risk: "medium" }
-] as const;
-
-const dataRetention = [
-  { category: "Client Contracts", retentionYears: 7, policy: "POPIA §14", records: 24, lastAudit: "Jan 2026" },
-  { category: "Financial Records", retentionYears: 5, policy: "SARS Requirement", records: 412, lastAudit: "Jan 2026" },
-  { category: "Employee Records", retentionYears: 10, policy: "Employment Act", records: 18, lastAudit: "Oct 2025" },
-  { category: "Client Communications", retentionYears: 3, policy: "Internal Policy", records: 2840, lastAudit: "Nov 2025" },
-  { category: "Project Files", retentionYears: 5, policy: "Client Agreements", records: 156, lastAudit: "Jan 2026" }
-] as const;
 
 // ── Display helpers ────────────────────────────────────────────────────────────
 
@@ -38,12 +27,74 @@ function contractSignedDate(c: LegalContract): string {
   return new Date(c.signedAt).toLocaleDateString("en-ZA", { month: "short", year: "numeric" });
 }
 
+// ── Compliance mappers ─────────────────────────────────────────────────────────
+
+interface ComplianceRow {
+  id:         string;
+  area:       string;
+  status:     string;
+  lastReview: string;
+  risk:       "low" | "medium" | "high";
+  nextReview: string;
+}
+
+function formatAuditDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-ZA", { month: "short", year: "numeric" });
+}
+
+function mapComplianceStatus(status: string): string {
+  if (status === "COMPLIANT")     return "compliant";
+  if (status === "AT_RISK")       return "attention";
+  if (status === "NON_COMPLIANT") return "attention";
+  return "attention";
+}
+
+function mapRiskLevel(level: string): "low" | "medium" | "high" {
+  if (level === "HIGH")   return "high";
+  if (level === "MEDIUM") return "medium";
+  return "low";
+}
+
+function mapComplianceRow(c: ComplianceRecord): ComplianceRow {
+  const now         = Date.now();
+  const nextAuditMs = new Date(c.nextAudit).getTime();
+  const nextReview  = nextAuditMs < now ? "Overdue" : formatAuditDate(c.nextAudit);
+  return {
+    id:         c.id,
+    area:       c.area,
+    status:     mapComplianceStatus(c.status),
+    lastReview: formatAuditDate(c.lastAudit),
+    risk:       mapRiskLevel(c.riskLevel),
+    nextReview,
+  };
+}
+
+// ── Data retention mappers ─────────────────────────────────────────────────────
+
+interface DataRetentionRow {
+  id:             string;
+  category:       string;
+  retentionYears: number;
+  status:         string;
+  lastAudit:      string;
+}
+
+function mapDataRetentionRow(d: DataRetentionPolicy): DataRetentionRow {
+  return {
+    id:             d.id,
+    category:       d.dataType,
+    retentionYears: d.retainYears,
+    status:         d.status,
+    lastAudit:      d.lastPurge ? formatAuditDate(d.lastPurge) : "—",
+  };
+}
+
 // ── Status/Risk badges ─────────────────────────────────────────────────────────
 
 function statusBadgeClass(status: string): string {
-  if (status === "active" || status === "compliant" || status === "resolved") return styles.lglStatusAccent;
-  if (status === "expiring-soon" || status === "attention" || status === "open" || status === "pending") return styles.lglStatusAmber;
-  if (status === "expired") return styles.lglStatusRed;
+  if (status === "active" || status === "compliant" || status === "resolved" || status === "CURRENT") return styles.lglStatusAccent;
+  if (status === "expiring-soon" || status === "attention" || status === "open" || status === "pending" || status === "DUE") return styles.lglStatusAmber;
+  if (status === "expired" || status === "OVERDUE") return styles.lglStatusRed;
   return styles.lglStatusMuted;
 }
 
@@ -68,9 +119,21 @@ const tabs = ["contracts", "compliance", "data retention", "legal incidents"] as
 export function LegalPage() {
   const { session } = useAdminWorkspaceContext();
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("contracts");
+
+  // ── Contracts state ─────────────────────────────────────────────────────────
   const [contracts, setContracts] = useState<LegalContract[]>([]);
   const [loadingContracts, setLoadingContracts] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Compliance state ────────────────────────────────────────────────────────
+  const [complianceRows, setComplianceRows] = useState<ComplianceRow[]>([]);
+  const [loadingCompliance, setLoadingCompliance] = useState(true);
+  const [complianceError, setComplianceError] = useState<string | null>(null);
+
+  // ── Data retention state ────────────────────────────────────────────────────
+  const [dataRetentionRows, setDataRetentionRows] = useState<DataRetentionRow[]>([]);
+  const [loadingDataRetention, setLoadingDataRetention] = useState(true);
+  const [dataRetentionError, setDataRetentionError] = useState<string | null>(null);
 
   const loadContracts = useCallback(async () => {
     if (!session) { setLoadingContracts(false); return; }
@@ -87,15 +150,53 @@ export function LegalPage() {
     }
   }, [session]);
 
+  const loadCompliance = useCallback(async () => {
+    if (!session) { setLoadingCompliance(false); return; }
+    setLoadingCompliance(true);
+    setComplianceError(null);
+    try {
+      const result = await loadAdminComplianceWithRefresh(session);
+      if (result.data) setComplianceRows(result.data.map(mapComplianceRow));
+      else if (result.error) setComplianceError(result.error.message ?? "Failed to load compliance data");
+    } catch (err) {
+      setComplianceError((err as Error)?.message ?? "Failed to load compliance data");
+    } finally {
+      setLoadingCompliance(false);
+    }
+  }, [session]);
+
+  const loadDataRetention = useCallback(async () => {
+    if (!session) { setLoadingDataRetention(false); return; }
+    setLoadingDataRetention(true);
+    setDataRetentionError(null);
+    try {
+      const result = await loadAdminDataRetentionWithRefresh(session);
+      if (result.data) setDataRetentionRows(result.data.map(mapDataRetentionRow));
+      else if (result.error) setDataRetentionError(result.error.message ?? "Failed to load data retention policies");
+    } catch (err) {
+      setDataRetentionError((err as Error)?.message ?? "Failed to load data retention policies");
+    } finally {
+      setLoadingDataRetention(false);
+    }
+  }, [session]);
+
   useEffect(() => {
     void loadContracts();
   }, [loadContracts]);
+
+  useEffect(() => {
+    void loadCompliance();
+  }, [loadCompliance]);
+
+  useEffect(() => {
+    void loadDataRetention();
+  }, [loadDataRetention]);
 
   // ── Derived counts ─────────────────────────────────────────────────────────
   const expiringCount = contracts.filter((c) => contractDisplayStatus(c) === "expiring-soon").length;
   const expiredCount  = contracts.filter((c) => contractDisplayStatus(c) === "expired").length;
   const activeCount   = contracts.filter((c) => contractDisplayStatus(c) === "active").length;
-  const highRisk      = compliance.filter((c) => c.risk === "high").length;
+  const highRisk      = complianceRows.filter((c) => c.risk === "high").length;
 
   if (loadingContracts) {
     return (
@@ -229,8 +330,21 @@ export function LegalPage() {
             <div className={cx(styles.lglComplianceHead, "fontMono", "text10", "colorMuted", "uppercase")}>
               {["Area", "Status", "Last Review", "Risk", "Next Review"].map((h) => <span key={h}>{h}</span>)}
             </div>
-            {compliance.map((c, i) => (
-              <div key={c.area} className={cx(styles.lglComplianceRow, i < compliance.length - 1 && "borderB", c.status === "attention" && styles.lglWarnRow)}>
+
+            {loadingCompliance && (
+              <div className={cx("text12", "colorMuted", "p16")}>Loading compliance data…</div>
+            )}
+
+            {!loadingCompliance && complianceError && (
+              <div className={cx("text12", "colorMuted", "p16")}>{complianceError}</div>
+            )}
+
+            {!loadingCompliance && !complianceError && complianceRows.length === 0 && (
+              <div className={cx("text12", "colorMuted", "p16")}>No compliance records found.</div>
+            )}
+
+            {!loadingCompliance && !complianceError && complianceRows.map((c, i) => (
+              <div key={c.id} className={cx(styles.lglComplianceRow, i < complianceRows.length - 1 && "borderB", c.status === "attention" && styles.lglWarnRow)}>
                 <span className={styles.lglCellStrong}>{c.area}</span>
                 <StatusBadge status={c.status} />
                 <span className={styles.lglMonoMuted}>{c.lastReview}</span>
@@ -243,22 +357,31 @@ export function LegalPage() {
             <div className={styles.lglAlertCard}>
               <div className={styles.lglAlertTitle}>Requires Action</div>
               <div className={styles.lglActionList}>
-                {compliance.filter((c) => c.status === "attention").map((c) => (
-                  <div key={c.area} className={styles.lglActionItem}>
+                {complianceRows.filter((c) => c.status === "attention").map((c) => (
+                  <div key={c.id} className={styles.lglActionItem}>
                     <div className={styles.lglCellStrong}>{c.area}</div>
                     <div className={styles.lglCellMuted}>Review overdue · {c.risk} risk</div>
                     <button type="button" className={styles.lglScheduleBtn}>Schedule Review</button>
                   </div>
                 ))}
+                {!loadingCompliance && complianceRows.filter((c) => c.status === "attention").length === 0 && (
+                  <div className={cx("text12", "colorMuted")}>No items require action.</div>
+                )}
               </div>
             </div>
             <div className={cx("card", "p24")}>
               <div className={styles.lglSectionTitle}>Overall Compliance Score</div>
-              <div className={styles.lglScore}>78/100</div>
+              <div className={styles.lglScore}>
+                {complianceRows.length === 0
+                  ? "—"
+                  : `${Math.round((complianceRows.filter((c) => c.status === "compliant").length / complianceRows.length) * 100)}/100`}
+              </div>
               <div className={styles.progressBar}>
                 <div className={cx(styles.barFill, styles.lglScoreFill)} />
               </div>
-              <div className={cx("text12", "colorMuted", "mt8")}>2 items require attention to reach 90+ score</div>
+              <div className={cx("text12", "colorMuted", "mt8")}>
+                {complianceRows.filter((c) => c.status === "attention").length} item{complianceRows.filter((c) => c.status === "attention").length !== 1 ? "s" : ""} require attention
+              </div>
             </div>
           </div>
         </div>
@@ -274,14 +397,26 @@ export function LegalPage() {
           <div className={styles.lglTableCard}>
             <div className={styles.lglTableMin900}>
               <div className={cx(styles.lglDataHead, "fontMono", "text10", "colorMuted", "uppercase")}>
-                {["Data Category", "Retain (yrs)", "Policy Basis", "Records", "Last Audit", "Action"].map((h) => <span key={h}>{h}</span>)}
+                {["Data Category", "Retain (yrs)", "Status", "Last Purge", "Action"].map((h) => <span key={h}>{h}</span>)}
               </div>
-              {dataRetention.map((d, i) => (
-                <div key={d.category} className={cx(styles.lglDataRow, i < dataRetention.length - 1 && "borderB")}>
+
+              {loadingDataRetention && (
+                <div className={cx("text12", "colorMuted", "p16")}>Loading data retention policies…</div>
+              )}
+
+              {!loadingDataRetention && dataRetentionError && (
+                <div className={cx("text12", "colorMuted", "p16")}>{dataRetentionError}</div>
+              )}
+
+              {!loadingDataRetention && !dataRetentionError && dataRetentionRows.length === 0 && (
+                <div className={cx("text12", "colorMuted", "p16")}>No data retention policies found.</div>
+              )}
+
+              {!loadingDataRetention && !dataRetentionError && dataRetentionRows.map((d, i) => (
+                <div key={d.id} className={cx(styles.lglDataRow, i < dataRetentionRows.length - 1 && "borderB")}>
                   <span className={styles.lglCellStrong}>{d.category}</span>
                   <span className={styles.lglRetain}>{d.retentionYears}y</span>
-                  <span className={styles.lglCellMuted}>{d.policy}</span>
-                  <span className={styles.lglRecords}>{d.records}</span>
+                  <StatusBadge status={d.status} />
                   <span className={styles.lglMonoMuted}>{d.lastAudit}</span>
                   <button type="button" className={cx("btnSm", "btnGhost")}>Audit Now</button>
                 </div>
