@@ -584,7 +584,11 @@ export function ClientsAndProjectsPage({
                       if (e.target.checked) {
                         setSelectedClientIds(new Set(filtered.map((c) => c.id)));
                       } else {
-                        setSelectedClientIds(new Set());
+                        setSelectedClientIds((prev) => {
+                          const next = new Set(prev);
+                          filtered.forEach((c) => next.delete(c.id));
+                          return next;
+                        });
                       }
                     }}
                   />
@@ -921,13 +925,13 @@ export function ClientsAndProjectsPage({
 
       {/* ── Broadcast Modal ─────────────────────────────────────────────── */}
       {broadcastOpen ? (
-        <div className={styles.modalOverlay} onClick={() => setBroadcastOpen(false)}>
+        <div className={styles.modalOverlay} onClick={() => { if (!broadcastBusy) setBroadcastOpen(false); }}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHd}>
               <span className={styles.modalTitle}>
                 Broadcast to {selectedClientIds.size} Client{selectedClientIds.size !== 1 ? "s" : ""}
               </span>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setBroadcastOpen(false)}>✕</button>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => { if (!broadcastBusy) setBroadcastOpen(false); }}>✕</button>
             </div>
             <div className={styles.modalBody}>
               <label className={styles.fieldLabel}>Subject</label>
@@ -937,6 +941,7 @@ export function ClientsAndProjectsPage({
                 placeholder="Email subject…"
                 value={broadcastSubject}
                 onChange={(e) => setBroadcastSubject(e.target.value)}
+                maxLength={200}
               />
               <label className={styles.fieldLabel}>Message</label>
               <textarea
@@ -945,8 +950,9 @@ export function ClientsAndProjectsPage({
                 rows={5}
                 value={broadcastBody}
                 onChange={(e) => setBroadcastBody(e.target.value)}
+                maxLength={10000}
               />
-              {broadcastSubject.trim() && broadcastBody.trim() ? (
+              {broadcastSubject.trim() && broadcastBody.trim().length >= 10 ? (
                 <div className={cx("summaryPreview")}>
                   <p className={cx("text11", "colorMuted")}>Preview</p>
                   <p className={cx("text12")}><strong>{broadcastSubject}</strong></p>
@@ -961,7 +967,7 @@ export function ClientsAndProjectsPage({
               <button
                 type="button"
                 className={cx("btnSm", "btnGhost")}
-                onClick={() => setBroadcastOpen(false)}
+                onClick={() => { if (!broadcastBusy) setBroadcastOpen(false); }}
               >
                 Cancel
               </button>

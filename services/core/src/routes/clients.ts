@@ -936,11 +936,20 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
     if (clientIds.length === 0) {
       return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "clientIds must be a non-empty array of strings." } } as ApiResponse);
     }
+    if (clientIds.length > 500) {
+      return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "Cannot broadcast to more than 500 clients at once." } } as ApiResponse);
+    }
     if (!subject) {
       return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "subject is required." } } as ApiResponse);
     }
+    if (subject.length > 200) {
+      return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "subject must be 200 characters or fewer." } } as ApiResponse);
+    }
     if (messageBody.length < 10) {
       return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "body must be at least 10 characters." } } as ApiResponse);
+    }
+    if (messageBody.length > 10000) {
+      return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "body must be 10,000 characters or fewer." } } as ApiResponse);
     }
 
     try {
@@ -969,7 +978,7 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
       );
 
       const sent = results.filter((r) => r.status === "fulfilled").length;
-      return { success: true, data: { sent, total: clientIds.length }, meta: { requestId: scope.requestId } } as ApiResponse;
+      return { success: true, data: { sent, total: clientsWithEmail.length }, meta: { requestId: scope.requestId } } as ApiResponse;
     } catch (error) {
       request.log.error(error);
       return reply.status(500).send({ success: false, error: { code: "BROADCAST_FAILED", message: "Broadcast failed." } } as ApiResponse);
