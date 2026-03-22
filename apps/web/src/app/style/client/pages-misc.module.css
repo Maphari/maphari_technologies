@@ -1,6 +1,12 @@
 /* BATCH PAGES — CLIENT (4 new pages)
    ================================================================ */
 
+/* ── Print utilities (hidden on screen, shown via print.css) ── */
+.printHeader,
+.printFooter {
+  display: none;
+}
+
 /* ── Onboarding Status ── */
 .obsKpiRow {
   display: grid;

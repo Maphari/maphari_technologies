@@ -160,6 +160,8 @@ export function FinancialReportsPage({ invoices: allInvoices }: { invoices: Port
 
   return (
     <div className={cx("pageBody")}>
+      <div className={cx("printHeader")}>Maphari Technologies</div>
+      <div className={cx("printFooter")}>Printed: {new Date().toLocaleDateString("en-ZA")}</div>
 
       {/* ── Page header ─────────────────────────────────────────────────── */}
       <div className={cx("pageHeader", "mb0")}>

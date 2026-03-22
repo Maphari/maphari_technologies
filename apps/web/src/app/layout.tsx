@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DM_Mono, DM_Sans, Instrument_Serif, Syne } from "next/font/google";
 import { cookies } from "next/headers";
 import "./style/globals.css";
+import "./style/print.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),

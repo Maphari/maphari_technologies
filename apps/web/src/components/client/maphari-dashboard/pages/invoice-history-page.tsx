@@ -104,6 +104,8 @@ export function InvoiceHistoryPage({ invoices: allInvoices }: { invoices: Portal
 
   return (
     <div className={cx("pageBody")}>
+      <div className={cx("printHeader")}>Maphari Technologies</div>
+      <div className={cx("printFooter")}>Printed: {new Date().toLocaleDateString("en-ZA")}</div>
       <div className={cx("pageHeader", "mb0")}>
         <div>
           <div className={cx("pageEyebrow")}>Finance · Invoices</div>

@@ -1,0 +1,95 @@
+@media print {
+  /* Hide dashboard chrome */
+  [class*="sidebar"],
+  [class*="topbar"],
+  [class*="actionBtn"],
+  [class*="navBtn"],
+  [class*="printHide"],
+  [class*="modalBackdrop"],
+  button {
+    display: none !important;
+  }
+
+  /* Reset layout to single column */
+  body,
+  [class*="dashRoot"],
+  [class*="mainContent"],
+  [class*="pageRoot"] {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Cards full width, clean borders */
+  [class*="card"],
+  [class*="invoiceCard"],
+  [class*="reportSection"],
+  [class*="section"] {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    background: white !important;
+    color: black !important;
+    page-break-inside: avoid;
+    margin-bottom: 16px !important;
+  }
+
+  /* Page breaks before major sections */
+  [class*="pageBreakBefore"] {
+    page-break-before: always;
+  }
+
+  /* Branding header — hidden in screen mode, shown in print */
+  [class*="printHeader"] {
+    display: block !important;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  /* Footer with date — hidden in screen mode, shown in print */
+  [class*="printFooter"] {
+    display: block !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    font-size: 11px;
+    color: #666;
+    border-top: 1px solid #ddd;
+    padding: 4px 0;
+  }
+
+  /* Typography */
+  * {
+    font-family: serif !important;
+    font-size: 12pt !important;
+  }
+
+  h1 { font-size: 18pt !important; }
+  h2 { font-size: 14pt !important; }
+  h3 { font-size: 12pt !important; }
+
+  /* Links: show URLs */
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 10pt;
+    color: #666;
+  }
+
+  /* Tables */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  th, td {
+    border: 1px solid #ccc !important;
+    padding: 6px 8px !important;
+    text-align: left !important;
+  }
+}
