@@ -19,6 +19,7 @@ import {
   withAuthorizedSession,
   type AuthorizedResult
 } from "./_shared";
+import { loadProjectDirectoryWithRefresh } from "./projects";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface ProjectDeliverable {
@@ -163,6 +164,85 @@ export async function updateDeliverable(
     }
     return { unauthorized: false, data: response.payload.data, error: null };
   });
+}
+
+export async function approveDeliverableWithRefresh(
+  session: AuthSession,
+  projectId: string,
+  deliverableId: string
+): Promise<AuthorizedResult<ProjectDeliverable>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<ProjectDeliverable>(
+      `/projects/${projectId}/deliverables/${deliverableId}/approve`,
+      accessToken,
+      { method: "POST", body: {} }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "DELIVERABLE_APPROVE_FAILED", response.payload.error?.message ?? "Unable to approve deliverable.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function requestDeliverableChangesWithRefresh(
+  session: AuthSession,
+  projectId: string,
+  deliverableId: string,
+  reason?: string
+): Promise<AuthorizedResult<ProjectDeliverable>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<ProjectDeliverable>(
+      `/projects/${projectId}/deliverables/${deliverableId}/request-changes`,
+      accessToken,
+      { method: "POST", body: { reason } }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "DELIVERABLE_CHANGES_FAILED", response.payload.error?.message ?? "Unable to request changes.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export interface ProjectDeliverableWithContext extends ProjectDeliverable {
+  projectName: string;
+  clientId: string;
+}
+
+export async function loadAllProjectDeliverablesWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<ProjectDeliverableWithContext[]>> {
+  // Step 1: load the project directory (up to 200 projects for admin QA view)
+  const dirResult = await loadProjectDirectoryWithRefresh(session, { pageSize: 200 });
+  if (dirResult.error && !dirResult.data) {
+    return { data: [], nextSession: dirResult.nextSession, error: dirResult.error };
+  }
+  const projects = dirResult.data?.items ?? [];
+  if (projects.length === 0) {
+    return { data: [], nextSession: dirResult.nextSession, error: null };
+  }
+
+  // Step 2: fetch deliverables for all projects in parallel
+  const results = await Promise.all(
+    projects.map(async (project) => {
+      const r = await getDeliverables(session, project.id);
+      const items: ProjectDeliverableWithContext[] = (r.data ?? []).map((d) => ({
+        ...d,
+        projectName: project.name,
+        clientId: project.clientId
+      }));
+      return { items, nextSession: r.nextSession };
+    })
+  );
+
+  const allDeliverables = results.flatMap((r) => r.items);
+  // Use the last non-null nextSession from any call (or from the directory call)
+  const nextSession =
+    results.map((r) => r.nextSession).reverse().find((s) => s != null) ??
+    dirResult.nextSession;
+
+  return { data: allDeliverables, nextSession, error: null };
 }
 
 // ── Risks ─────────────────────────────────────────────────────────────────────
