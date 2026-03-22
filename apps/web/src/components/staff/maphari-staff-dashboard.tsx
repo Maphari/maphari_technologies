@@ -1402,6 +1402,7 @@ export function MaphariStaffDashboard() {
 
             <SettingsPage
               isActive={activePage === "settings"}
+              session={session ?? null}
               staffInitials={staffInitials}
               staffName={staffName}
               staffEmail={staffEmail}

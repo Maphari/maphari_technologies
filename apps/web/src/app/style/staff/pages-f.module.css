@@ -2176,3 +2176,174 @@
 .rbFillGreen { background: var(--green); }
 .rbFillAmber { background: var(--amber); }
 .rbFillRed   { background: var(--red); }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SETTINGS — Security / 2FA
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.stgv2SecurityRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+}
+
+.stgv2SecurityRowInfo { display: flex; flex-direction: column; gap: 3px; }
+
+.stgv2SecurityRowLabel {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.stgv2SecurityRowSub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.stgv2BtnDanger {
+  padding: 7px 14px;
+  background: transparent;
+  color: var(--red, #f87171);
+  border: 1px solid var(--red, #f87171);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+  flex-shrink: 0;
+}
+.stgv2BtnDanger:hover:not(:disabled) { background: color-mix(in oklab, var(--red, #f87171) 12%, transparent); }
+.stgv2BtnDanger:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.stgv2BtnSecondary {
+  padding: 7px 14px;
+  background: var(--s2);
+  color: var(--text);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.stgv2BtnSecondary:hover { background: var(--s3); }
+
+/* Modal backdrop + box */
+.stgv2ModalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.stgv2Modal {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-top-color: rgba(255, 255, 255, 0.10);
+  border-radius: var(--r-lg);
+  padding: 28px 24px 24px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.50);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stgv2ModalTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.stgv2ModalActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.stgv2QrImg {
+  width: 160px;
+  height: 160px;
+  border-radius: var(--r-sm);
+  align-self: center;
+  border: 1px solid var(--b2);
+}
+
+.stgv2InlineCode {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 11px;
+  color: var(--accent);
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-xs);
+  padding: 2px 6px;
+  word-break: break-all;
+  display: inline-block;
+}
+
+.stgv2OtpInput {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-align: center;
+  outline: none;
+  transition: border-color 120ms;
+}
+.stgv2OtpInput:focus { border-color: var(--b3); }
+
+.stgv2PasswordInput {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 120ms;
+}
+.stgv2PasswordInput:focus { border-color: var(--b3); }
+
+.stgv2ErrMsg {
+  font-size: 11px;
+  color: var(--red, #f87171);
+  font-family: var(--font-dm-mono), monospace;
+}
+
+.stgv2BackupGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.stgv2BackupItem {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 11px;
+  color: var(--text);
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-xs);
+  padding: 5px 8px;
+  text-align: center;
+  letter-spacing: 0.08em;
+}

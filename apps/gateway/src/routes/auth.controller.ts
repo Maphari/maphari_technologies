@@ -472,6 +472,80 @@ export class AuthController {
     });
   }
 
+  // ── GET /auth/staff/2fa/status ─────────────────────────────────────────────
+  @Roles("STAFF")
+  @Get("staff/2fa/status")
+  async getStaff2faStatus(
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.AUTH_SERVICE_URL ?? "http://localhost:4001";
+    return proxyRequest(`${baseUrl}/auth/staff/2fa/status`, "GET", undefined, {
+      "x-user-role": role ?? "STAFF",
+      "x-user-id": userId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  // ── POST /auth/staff/2fa/setup ─────────────────────────────────────────────
+  @Roles("STAFF")
+  @Post("staff/2fa/setup")
+  async setupStaff2fa(
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.AUTH_SERVICE_URL ?? "http://localhost:4001";
+    return proxyRequest(`${baseUrl}/auth/staff/2fa/setup`, "POST", undefined, {
+      "x-user-role": role ?? "STAFF",
+      "x-user-id": userId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  // ── POST /auth/staff/2fa/verify ────────────────────────────────────────────
+  @Roles("STAFF")
+  @Post("staff/2fa/verify")
+  async verifyStaff2fa(
+    @Body() body: unknown,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.AUTH_SERVICE_URL ?? "http://localhost:4001";
+    return proxyRequest(`${baseUrl}/auth/staff/2fa/verify`, "POST", body, {
+      "x-user-role": role ?? "STAFF",
+      "x-user-id": userId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  // ── POST /auth/staff/2fa/disable ───────────────────────────────────────────
+  @Roles("STAFF")
+  @Post("staff/2fa/disable")
+  async disableStaff2fa(
+    @Body() body: unknown,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.AUTH_SERVICE_URL ?? "http://localhost:4001";
+    return proxyRequest(`${baseUrl}/auth/staff/2fa/disable`, "POST", body, {
+      "x-user-role": role ?? "STAFF",
+      "x-user-id": userId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
   @Roles("ADMIN", "STAFF")
   @Post("client/provision")
   async provisionClientAccess(

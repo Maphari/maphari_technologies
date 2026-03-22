@@ -118,6 +118,15 @@ function ensureAdmin(request: { headers: Record<string, unknown> }, reply: { sta
   return true;
 }
 
+function ensureStaff(request: { headers: Record<string, unknown> }, reply: { status: (code: number) => unknown }): boolean {
+  const actor = currentActor(request);
+  if (actor.role !== "STAFF") {
+    reply.status(403);
+    return false;
+  }
+  return true;
+}
+
 // ── Phone OTP store ───────────────────────────────────────────────────────────
 // In-memory map keyed by userId.  Expires after 10 minutes.
 // Swap for Redis on multi-instance deployments.
@@ -2258,6 +2267,231 @@ export async function registerAuthRoutes(
       request.log.error(error);
       reply.status(500);
       return { success: false, error: { code: "REVOKE_ALL_FAILED", message: "Unable to revoke all sessions" } } as ApiResponse;
+    }
+  });
+
+  // ── GET /auth/staff/2fa/status ─────────────────────────────────────────────
+  // Returns the current TOTP 2FA status for the authenticated staff member.
+  app.get("/auth/staff/2fa/status", async (request, reply) => {
+    if (!ensureStaff(request, reply)) return;
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "User ID missing" } } as ApiResponse;
+    }
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { totpEnabledAt: true }
+      });
+      if (!user) {
+        reply.status(404);
+        return { success: false, error: { code: "USER_NOT_FOUND", message: "User not found" } } as ApiResponse;
+      }
+      return {
+        success: true,
+        data: {
+          enabled: user.totpEnabledAt !== null,
+          enabledAt: user.totpEnabledAt?.toISOString() ?? null
+        }
+      } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "TOTP_STATUS_FAILED", message: "Unable to fetch 2FA status" } } as ApiResponse;
+    }
+  });
+
+  // ── POST /auth/staff/2fa/setup ─────────────────────────────────────────────
+  // Generates a TOTP secret + QR code for the staff member to scan with their
+  // authenticator app. The setup is NOT activated until /2fa/verify is called.
+  app.post("/auth/staff/2fa/setup", async (request, reply) => {
+    if (!ensureStaff(request, reply)) return;
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "User ID missing" } } as ApiResponse;
+    }
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, totpEnabledAt: true }
+      });
+      if (!user) {
+        reply.status(404);
+        return { success: false, error: { code: "USER_NOT_FOUND", message: "User not found" } } as ApiResponse;
+      }
+
+      const secret = generateTotpSecret();
+      const backupCodes = generateBackupCodes();
+      const totpUri = buildTotpUri(user.email, secret);
+      const qrCodeDataUrl = await generateQrDataUrl(totpUri);
+
+      const hashedBackupCodes = backupCodes.map((code) =>
+        createHash("sha256").update(code).digest("hex")
+      );
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          totpSecret: secret,
+          totpBackupCodes: JSON.stringify(hashedBackupCodes),
+          totpEnabledAt: null
+        }
+      });
+
+      return {
+        success: true,
+        data: { secret, qrCodeDataUrl, backupCodes }
+      } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "TOTP_SETUP_FAILED", message: "Unable to initiate 2FA setup" } } as ApiResponse;
+    }
+  });
+
+  // ── POST /auth/staff/2fa/verify ────────────────────────────────────────────
+  // Verifies the 6-digit TOTP code from the authenticator app to confirm
+  // the setup was successful, then activates 2FA for this account.
+  app.post("/auth/staff/2fa/verify", async (request, reply) => {
+    if (!ensureStaff(request, reply)) return;
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "User ID missing" } } as ApiResponse;
+    }
+
+    const rateCheck = await checkTotpRateLimit(redis, userId);
+    if (!rateCheck.allowed) {
+      reply.status(429);
+      reply.header("retry-after", String(Math.ceil((rateCheck.resetAt - Date.now()) / 1000)));
+      return {
+        success: false,
+        error: {
+          code: "TOTP_RATE_LIMITED",
+          message: "Too many 2FA attempts. Please wait before trying again."
+        }
+      } as ApiResponse;
+    }
+
+    const body = request.body as Record<string, unknown> | null;
+    const code = typeof body?.code === "string" ? body.code.trim() : "";
+    if (!code) {
+      reply.status(400);
+      return { success: false, error: { code: "VALIDATION_ERROR", message: "code is required" } } as ApiResponse;
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { totpSecret: true, totpEnabledAt: true }
+      });
+      if (!user) {
+        reply.status(404);
+        return { success: false, error: { code: "USER_NOT_FOUND", message: "User not found" } } as ApiResponse;
+      }
+      if (!user.totpSecret) {
+        reply.status(409);
+        return { success: false, error: { code: "TOTP_NOT_INITIATED", message: "2FA setup has not been initiated. Call /2fa/setup first." } } as ApiResponse;
+      }
+
+      const isValid = verifyTotpCode(code, user.totpSecret);
+      if (!isValid) {
+        await recordTotpFailure(redis, userId);
+        reply.status(401);
+        return { success: false, error: { code: "INVALID_TOTP_CODE", message: "Invalid or expired 2FA code" } } as ApiResponse;
+      }
+
+      await resetTotpRateLimit(redis, userId);
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: { totpEnabledAt: new Date() }
+      });
+
+      await deps.eventBus.publish({
+        eventId: randomUUID(),
+        occurredAt: new Date().toISOString(),
+        requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined,
+        traceId: (request.headers["x-trace-id"] as string | undefined) ?? undefined,
+        topic: EventTopics.notificationRequested,
+        payload: {
+          channel: "EMAIL",
+          recipientEmail: process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@maphari.com",
+          subject: "Security: Staff 2FA Enabled",
+          message: `Staff user (ID: ${userId}) has successfully enabled Two-Factor Authentication. This was completed at ${new Date().toISOString()}.`
+        }
+      });
+
+      return { success: true, data: { enabled: true } } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "TOTP_VERIFY_FAILED", message: "Unable to verify 2FA code" } } as ApiResponse;
+    }
+  });
+
+  // ── POST /auth/staff/2fa/disable ───────────────────────────────────────────
+  // Disables TOTP 2FA for this account. Requires the current password as
+  // a second confirmation to prevent unauthorised disabling of 2FA.
+  app.post("/auth/staff/2fa/disable", async (request, reply) => {
+    if (!ensureStaff(request, reply)) return;
+    const { userId } = currentActor(request);
+    if (!userId) {
+      reply.status(401);
+      return { success: false, error: { code: "UNAUTHORIZED", message: "User ID missing" } } as ApiResponse;
+    }
+
+    const body = request.body as Record<string, unknown> | null;
+    const password = typeof body?.password === "string" ? body.password : "";
+    if (!password) {
+      reply.status(400);
+      return { success: false, error: { code: "VALIDATION_ERROR", message: "password is required to disable 2FA" } } as ApiResponse;
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { passwordHash: true, passwordSalt: true, totpEnabledAt: true }
+      });
+      if (!user) {
+        reply.status(404);
+        return { success: false, error: { code: "USER_NOT_FOUND", message: "User not found" } } as ApiResponse;
+      }
+      if (!user.totpEnabledAt) {
+        reply.status(409);
+        return { success: false, error: { code: "TOTP_NOT_ENABLED", message: "2FA is not currently enabled" } } as ApiResponse;
+      }
+      if (!user.passwordHash || !user.passwordSalt || !verifyPassword(password, user.passwordHash, user.passwordSalt)) {
+        reply.status(401);
+        return { success: false, error: { code: "INVALID_PASSWORD", message: "Incorrect password" } } as ApiResponse;
+      }
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: { totpSecret: null, totpBackupCodes: null, totpEnabledAt: null }
+      });
+
+      await deps.eventBus.publish({
+        eventId: randomUUID(),
+        occurredAt: new Date().toISOString(),
+        requestId: (request.headers["x-request-id"] as string | undefined) ?? undefined,
+        traceId: (request.headers["x-trace-id"] as string | undefined) ?? undefined,
+        topic: EventTopics.notificationRequested,
+        payload: {
+          channel: "EMAIL",
+          recipientEmail: process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@maphari.com",
+          subject: "Security: Staff 2FA Disabled",
+          message: `Staff user (ID: ${userId}) has disabled Two-Factor Authentication at ${new Date().toISOString()}. If this was not you, revoke all sessions immediately via the admin dashboard.`
+        }
+      });
+
+      return { success: true, data: { disabled: true } } as ApiResponse;
+    } catch (error) {
+      request.log.error(error);
+      reply.status(500);
+      return { success: false, error: { code: "TOTP_DISABLE_FAILED", message: "Unable to disable 2FA" } } as ApiResponse;
     }
   });
 }

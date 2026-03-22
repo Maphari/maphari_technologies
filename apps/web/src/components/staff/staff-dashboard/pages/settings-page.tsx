@@ -1,16 +1,24 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ToggleRow } from "../ui";
 import { cx } from "../style";
+import type { AuthSession } from "../../../../lib/auth/session";
+import {
+  getStaff2faStatusWithRefresh,
+  setupStaff2faWithRefresh,
+  verifyStaff2faWithRefresh,
+  disableStaff2faWithRefresh,
+} from "../../../../lib/api/staff/auth-2fa";
 
 type ProjectOption = { id: string; name: string };
 
-type SettingsTab = "profile" | "notifications" | "workspace" | "appearance" | "kanban" | "focus";
+type SettingsTab = "profile" | "notifications" | "workspace" | "appearance" | "kanban" | "focus" | "security";
 
 type SettingsPageProps = {
   isActive: boolean;
+  session?: AuthSession | null;
   staffInitials: string;
   staffName: string;
   staffEmail: string;
@@ -137,6 +145,16 @@ const TABS: Array<{ id: SettingsTab; label: string; icon: React.ReactNode; desc:
       </svg>
     ),
   },
+  {
+    id: "security",
+    label: "Security",
+    desc: "Two-factor authentication",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 1.5L2.5 4v4c0 3.3 2.4 6.4 5.5 7 3.1-.6 5.5-3.7 5.5-7V4L8 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+      </svg>
+    ),
+  },
 ];
 
 /* ── Icons ── */
@@ -232,6 +250,7 @@ function IcoDigest() {
 
 export function SettingsPage({
   isActive,
+  session,
   staffInitials,
   staffName,
   staffEmail,
@@ -271,6 +290,72 @@ export function SettingsPage({
 }: SettingsPageProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // ── 2FA state ──────────────────────────────────────────────────────────────
+  const [twoFaEnabled, setTwoFaEnabled] = useState(false);
+  const [twoFaLoading, setTwoFaLoading] = useState(false);
+  const [twoFaSetupOpen, setTwoFaSetupOpen] = useState(false);
+  const [twoFaQrUrl, setTwoFaQrUrl] = useState("");
+  const [twoFaSecret, setTwoFaSecret] = useState("");
+  const [twoFaBackupCodes, setTwoFaBackupCodes] = useState<string[]>([]);
+  const [twoFaVerifyCode, setTwoFaVerifyCode] = useState("");
+  const [twoFaVerifyBusy, setTwoFaVerifyBusy] = useState(false);
+  const [twoFaVerifyError, setTwoFaVerifyError] = useState("");
+  const [twoFaDisableOpen, setTwoFaDisableOpen] = useState(false);
+  const [twoFaDisablePassword, setTwoFaDisablePassword] = useState("");
+  const [twoFaDisableBusy, setTwoFaDisableBusy] = useState(false);
+  const [twoFaDisableError, setTwoFaDisableError] = useState("");
+  const [twoFaSetupStep, setTwoFaSetupStep] = useState<"qr" | "verify" | "codes">("qr");
+
+  // Load 2FA status on mount
+  useEffect(() => {
+    if (!session) return;
+    setTwoFaLoading(true);
+    void getStaff2faStatusWithRefresh(session)
+      .then((r) => { if (r.data) setTwoFaEnabled(r.data.enabled); })
+      .finally(() => setTwoFaLoading(false));
+  }, [session?.accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSetup2fa = useCallback(async () => {
+    if (!session) return;
+    setTwoFaSetupStep("qr");
+    const r = await setupStaff2faWithRefresh(session);
+    if (r.data) {
+      setTwoFaSecret(r.data.secret);
+      setTwoFaQrUrl(r.data.qrCodeDataUrl);
+      setTwoFaBackupCodes(r.data.backupCodes);
+      setTwoFaSetupOpen(true);
+    }
+  }, [session?.accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleVerify2fa = useCallback(async () => {
+    if (!session || !twoFaVerifyCode.trim()) return;
+    setTwoFaVerifyBusy(true);
+    setTwoFaVerifyError("");
+    const r = await verifyStaff2faWithRefresh(session, twoFaVerifyCode.trim());
+    if (r.data?.enabled) {
+      setTwoFaEnabled(true);
+      setTwoFaSetupStep("codes");
+    } else {
+      setTwoFaVerifyError(r.error?.message ?? "Invalid code");
+    }
+    setTwoFaVerifyBusy(false);
+  }, [session?.accessToken, twoFaVerifyCode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDisable2fa = useCallback(async () => {
+    if (!session || !twoFaDisablePassword.trim()) return;
+    setTwoFaDisableBusy(true);
+    setTwoFaDisableError("");
+    const r = await disableStaff2faWithRefresh(session, twoFaDisablePassword.trim());
+    if (r.data?.disabled) {
+      setTwoFaEnabled(false);
+      setTwoFaDisableOpen(false);
+      setTwoFaDisablePassword("");
+    } else {
+      setTwoFaDisableError(r.error?.message ?? "Failed to disable 2FA");
+    }
+    setTwoFaDisableBusy(false);
+  }, [session?.accessToken, twoFaDisablePassword]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const displayName = profileName.trim() || staffName;
   const displayEmail = profileEmail.trim() || staffEmail;
@@ -862,6 +947,158 @@ export function SettingsPage({
               <div className={cx("stgv2FocusNote")}>
                 Focus areas are managed by your team lead and reflect your current assignments.
               </div>
+            </div>
+          )}
+
+          {/* ═══ SECURITY TAB ═══ */}
+          {activeTab === "security" && (
+            <div className={cx("stgv2Panel")}>
+              <div className={cx("stgv2PanelHead")}>
+                <div className={cx("stgv2PanelTitle")}>Two-Factor Authentication</div>
+                <div className={cx("stgv2PanelSub")}>Add an extra layer of security to your account using an authenticator app.</div>
+              </div>
+
+              {twoFaLoading ? (
+                <div className={cx("stgv2SecurityRow")}>
+                  <span className={cx("colorMuted")}>Loading...</span>
+                </div>
+              ) : twoFaEnabled ? (
+                <div className={cx("stgv2SecurityRow")}>
+                  <div className={cx("stgv2SecurityRowInfo")}>
+                    <div className={cx("stgv2SecurityRowLabel")}>Status</div>
+                    <div className={cx("stgv2SecurityRowSub")}>Two-factor authentication is active on this account.</div>
+                  </div>
+                  <button type="button" className={cx("stgv2BtnDanger")} onClick={() => setTwoFaDisableOpen(true)}>
+                    Disable 2FA
+                  </button>
+                </div>
+              ) : (
+                <div className={cx("stgv2SecurityRow")}>
+                  <div className={cx("stgv2SecurityRowInfo")}>
+                    <div className={cx("stgv2SecurityRowLabel")}>Status</div>
+                    <div className={cx("stgv2SecurityRowSub")}>Two-factor authentication is not enabled.</div>
+                  </div>
+                  <button type="button" className={cx("stgv2BtnPrimary")} onClick={() => void handleSetup2fa()}>
+                    Enable 2FA
+                  </button>
+                </div>
+              )}
+
+              {/* Setup modal */}
+              {twoFaSetupOpen ? (
+                <div className={cx("stgv2ModalBackdrop")} onClick={() => setTwoFaSetupOpen(false)}>
+                  <div className={cx("stgv2Modal")} onClick={(e) => e.stopPropagation()}>
+                    {twoFaSetupStep === "qr" ? (
+                      <>
+                        <div className={cx("stgv2ModalTitle")}>Set Up Two-Factor Authentication</div>
+                        <p className={cx("colorMuted")}>Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)</p>
+                        {twoFaQrUrl ? (
+                          <img src={twoFaQrUrl} alt="QR Code" className={cx("stgv2QrImg")} />
+                        ) : null}
+                        <p className={cx("colorMuted")}>
+                          Or enter this secret manually:{" "}
+                          <code className={cx("stgv2InlineCode")}>{twoFaSecret}</code>
+                        </p>
+                        <button type="button" className={cx("stgv2BtnPrimary")} onClick={() => setTwoFaSetupStep("verify")}>
+                          Next: Verify Code
+                        </button>
+                      </>
+                    ) : twoFaSetupStep === "verify" ? (
+                      <>
+                        <div className={cx("stgv2ModalTitle")}>Verify Setup</div>
+                        <p className={cx("colorMuted")}>Enter the 6-digit code from your authenticator app to activate 2FA.</p>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          className={cx("stgv2OtpInput")}
+                          placeholder="000000"
+                          maxLength={6}
+                          value={twoFaVerifyCode}
+                          onChange={(e) => setTwoFaVerifyCode(e.target.value.replace(/\D/g, ""))}
+                        />
+                        {twoFaVerifyError ? <p className={cx("stgv2ErrMsg")}>{twoFaVerifyError}</p> : null}
+                        <button
+                          type="button"
+                          className={cx("stgv2BtnPrimary")}
+                          onClick={() => void handleVerify2fa()}
+                          disabled={twoFaVerifyBusy || twoFaVerifyCode.length !== 6}
+                        >
+                          {twoFaVerifyBusy ? "Verifying..." : "Verify & Activate"}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className={cx("stgv2ModalTitle")}>Save Your Backup Codes</div>
+                        <p className={cx("colorMuted")}>Store these codes safely. Each can only be used once.</p>
+                        <div className={cx("stgv2BackupGrid")}>
+                          {twoFaBackupCodes.map((code) => (
+                            <code key={code} className={cx("stgv2BackupItem")}>{code}</code>
+                          ))}
+                        </div>
+                        <div className={cx("stgv2ModalActions")}>
+                          <button
+                            type="button"
+                            className={cx("stgv2BtnSecondary")}
+                            onClick={() => {
+                              const blob = new Blob([twoFaBackupCodes.join("\n")], { type: "text/plain" });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = "maphari-backup-codes.txt";
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                          >
+                            Download Codes
+                          </button>
+                          <button
+                            type="button"
+                            className={cx("stgv2BtnPrimary")}
+                            onClick={() => { setTwoFaSetupOpen(false); setTwoFaVerifyCode(""); }}
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Disable modal */}
+              {twoFaDisableOpen ? (
+                <div className={cx("stgv2ModalBackdrop")} onClick={() => setTwoFaDisableOpen(false)}>
+                  <div className={cx("stgv2Modal")} onClick={(e) => e.stopPropagation()}>
+                    <div className={cx("stgv2ModalTitle")}>Disable Two-Factor Authentication</div>
+                    <p className={cx("colorMuted")}>Enter your password to confirm you want to remove 2FA protection.</p>
+                    <input
+                      type="password"
+                      className={cx("stgv2PasswordInput")}
+                      placeholder="Current password"
+                      value={twoFaDisablePassword}
+                      onChange={(e) => setTwoFaDisablePassword(e.target.value)}
+                    />
+                    {twoFaDisableError ? <p className={cx("stgv2ErrMsg")}>{twoFaDisableError}</p> : null}
+                    <div className={cx("stgv2ModalActions")}>
+                      <button
+                        type="button"
+                        className={cx("stgv2BtnSecondary")}
+                        onClick={() => { setTwoFaDisableOpen(false); setTwoFaDisablePassword(""); setTwoFaDisableError(""); }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        className={cx("stgv2BtnDanger")}
+                        onClick={() => void handleDisable2fa()}
+                        disabled={twoFaDisableBusy || !twoFaDisablePassword.trim()}
+                      >
+                        {twoFaDisableBusy ? "Disabling..." : "Disable 2FA"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
 
