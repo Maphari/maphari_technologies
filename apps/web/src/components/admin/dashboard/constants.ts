@@ -95,5 +95,7 @@ export const pageTitles: Record<PageId, [string, string]> = {
   clvAnalytics: ["Finance", "CLV & Churn Risk Analytics"],
   projectTemplates: ["Operations", "Project Templates"],
   staffScheduling: ["Communication", "Staff Scheduling"],
+  communityModeration: ["Community", "Community Moderation"],
+  communityFeatureRequests: ["Community", "Community Feature Requests"],
   settings: ["Account", "Settings"]
 };

@@ -251,5 +251,7 @@ export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotifi
   clvAnalytics: "invoices",
   projectTemplates: "projects",
   staffScheduling: "operations",
-  proposals: "invoices"
+  proposals: "invoices",
+  communityModeration: "operations",
+  communityFeatureRequests: "operations"
 };
