@@ -50,6 +50,9 @@ export const CLIENT_PAGE_TO_NOTIFICATION_TAB: Record<ClientPageId, DashboardNoti
   serviceCatalog:       "operations",
   referralProgram:      "operations",
   loyaltyCredits:       "operations",
+  // Community
+  communityForum:       "operations",
+  featureRequests:      "operations",
   // Support
   knowledgeBase:        "operations",
   slaEscalation:        "operations",

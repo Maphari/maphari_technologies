@@ -45,6 +45,9 @@ export type PageId =
   | "serviceCatalog"
   | "referralProgram"
   | "loyaltyCredits"
+  // Community
+  | "communityForum"
+  | "featureRequests"
   // Support
   | "knowledgeBase"
   | "knowledgeAccess"
@@ -140,6 +143,13 @@ export const navSections: NavSection[] = [
       { id: "serviceCatalog", label: "Service Catalog" },
       { id: "referralProgram", label: "Referral Program" },
       { id: "loyaltyCredits", label: "Loyalty & Credits" },
+    ],
+  },
+  {
+    title: "Community",
+    items: [
+      { id: "communityForum", label: "Forum" },
+      { id: "featureRequests", label: "Feature Requests" },
     ],
   },
   {

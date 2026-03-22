@@ -47,6 +47,9 @@ export const pageTitles: Record<PageId, string> = {
   serviceCatalog:       "Growth / Service Catalog",
   referralProgram:      "Growth / Referral Program",
   loyaltyCredits:       "Growth / Loyalty & Credits",
+  // Community
+  communityForum:       "Community / Forum",
+  featureRequests:      "Community / Feature Requests",
   // Support
   knowledgeBase:        "Support / Knowledge Base",
   slaEscalation:        "Support / SLA & Escalation",
