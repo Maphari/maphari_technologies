@@ -180,15 +180,15 @@ async function fetchSerpApiResults(
 // ── Industry value tiers ──────────────────────────────────────────────────────
 
 const HIGH_VALUE_INDUSTRIES = new Set([
-  "dental practice", "optometrist", "pharmacy",
-  "physiotherapy clinic", "accounting firm", "tax consultant",
-  "real estate agent", "property developer",
+  "restaurant", "dental practice", "optometrist",
+  "gym and fitness", "wedding photographer",
+  "real estate agent", "accounting firm", "tax consultant",
 ]);
 
 const MID_VALUE_INDUSTRIES = new Set([
-  "gym and fitness", "personal trainer",
-  "wedding photographer", "driving school",
-  "tutoring centre", "daycare centre",
+  "physiotherapy clinic", "plumbing services", "electrician",
+  "cleaning services", "car wash", "auto repair",
+  "tutoring centre", "pharmacy",
 ]);
 
 // ── Build typed prospects from raw SerpAPI results ────────────────────────────
@@ -335,8 +335,8 @@ function scoreProspect(prospect: Omit<ProspectResult, "pitch">): number {
   if (prospect.contactEmail)  score += 25;
 
   // Business quality signals
-  if ((prospect.rating ?? 0) >= 4.5)      score += 20;
-  else if ((prospect.rating ?? 0) >= 4.0) score += 10;
+  if ((prospect.rating ?? 0) >= 4.5)      score += 15;
+  else if ((prospect.rating ?? 0) >= 4.0) score += 8;
 
   // Opportunity urgency (no website = highest impact)
   if (prospect.opportunityType === "no_website") score += 15;
