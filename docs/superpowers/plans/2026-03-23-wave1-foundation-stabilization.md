@@ -405,7 +405,7 @@ Check if `services/core/prisma/seed.ts` or `services/core/src/seeds/` exists. Re
 Create `services/core/src/seeds/compliance-seed.ts`:
 
 ```typescript
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '../generated/prisma/index.js';
 
 const prisma = new PrismaClient();
 
@@ -432,7 +432,7 @@ export async function seedCompliance() {
 Create `services/core/src/seeds/fy-checklist-seed.ts`:
 
 ```typescript
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '../generated/prisma/index.js';
 
 const prisma = new PrismaClient();
 
@@ -2181,13 +2181,18 @@ git commit -m "feat(core): verify staff goals and peer reviews routes; add submi
 
 Read `services/core/src/routes/time-entries.ts` in full. Check if `/:id/submit`, `/:id/approve`, and `/:id/reject` endpoints already exist. If they do, confirm they use `projectTimeEntry` (not `timeEntry`) and that the approve endpoint sets `approvedBy`. If all three exist and are correct, skip Step 2 entirely and go straight to the TypeScript check.
 
-- [ ] **Step 2: Add submit, approve, reject endpoints (only if missing)**
+- [ ] **Step 2: Add/update submit, approve, reject endpoints**
+
+Read the existing `registerTimeEntriesRoutes` function body. For each endpoint:
+
+- If `PATCH /time-entries/:id/submit` is **missing** → add it.
+- If `PATCH /time-entries/:id/approve` **exists** → update its `data` block to include the new Task 18 fields (`approvedAt`, `approvedBy`).
+- If `PATCH /time-entries/:id/reject` **exists** → update its `data` block to include the new Task 18 fields (`rejectedAt`, `rejectionReason`).
 
 ```typescript
-// Add these inside the existing registerTimeEntriesRoutes function using full paths.
-// `prisma` is already imported at the top of the file — do NOT use `fastify.prisma`.
+// `prisma` is the imported singleton — do NOT use `fastify.prisma`.
 
-// PATCH /time-entries/:id/submit — staff submits
+// PATCH /time-entries/:id/submit — staff submits (add if missing)
 app.patch<{ Params: { id: string } }>('/time-entries/:id/submit', async (request, reply) => {
   const role = request.headers['x-user-role'];
   if (role !== 'STAFF') return reply.status(403).send({ error: 'Forbidden' });
@@ -2198,25 +2203,25 @@ app.patch<{ Params: { id: string } }>('/time-entries/:id/submit', async (request
   });
 });
 
-// PATCH /time-entries/:id/approve — admin approves
-app.patch<{ Params: { id: string }; Body: { approvedBy: string } }>('/time-entries/:id/approve', async (request, reply) => {
+// PATCH /time-entries/:id/approve — admin approves (update existing to set approvedAt/approvedBy)
+app.patch<{ Params: { id: string }; Body: { approvedBy?: string } }>('/time-entries/:id/approve', async (request, reply) => {
   const role = request.headers['x-user-role'];
   if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
   const { id } = request.params;
   return prisma.projectTimeEntry.update({
     where: { id },
-    data: { status: 'APPROVED', approvedAt: new Date(), approvedBy: request.body.approvedBy },
+    data: { status: 'APPROVED', approvedAt: new Date(), approvedBy: request.body?.approvedBy ?? null },
   });
 });
 
-// PATCH /time-entries/:id/reject — admin rejects
-app.patch<{ Params: { id: string }; Body: { reason: string } }>('/time-entries/:id/reject', async (request, reply) => {
+// PATCH /time-entries/:id/reject — admin rejects (update existing to set rejectedAt/rejectionReason)
+app.patch<{ Params: { id: string }; Body: { reason?: string } }>('/time-entries/:id/reject', async (request, reply) => {
   const role = request.headers['x-user-role'];
   if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
   const { id } = request.params;
   return prisma.projectTimeEntry.update({
     where: { id },
-    data: { status: 'REJECTED', rejectedAt: new Date(), rejectionReason: request.body.reason },
+    data: { status: 'REJECTED', rejectedAt: new Date(), rejectionReason: request.body?.reason ?? null },
   });
 });
 ```
@@ -2977,7 +2982,7 @@ Create `services/core/src/cron/peer-review-cycle.ts`:
 
 ```typescript
 import cron from 'node-cron';
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '../generated/prisma/index.js';
 
 // Runs at 00:01 on day 1 of months: Jan, Apr, Jul, Oct (quarter start)
 // Cron: "1 0 1 1,4,7,10 *"
