@@ -1345,6 +1345,25 @@ exports.Prisma.FeatureVoteScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.AdminProposedActionScalarFieldEnum = {
+  id: 'id',
+  proposedBy: 'proposedBy',
+  proposedByName: 'proposedByName',
+  action: 'action',
+  resourceType: 'resourceType',
+  resourceId: 'resourceId',
+  payload: 'payload',
+  reason: 'reason',
+  status: 'status',
+  reviewedBy: 'reviewedBy',
+  reviewedByName: 'reviewedByName',
+  reviewedAt: 'reviewedAt',
+  reviewNote: 'reviewNote',
+  executedAt: 'executedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1465,7 +1484,8 @@ exports.Prisma.ModelName = {
   ForumThread: 'ForumThread',
   ForumPost: 'ForumPost',
   FeatureRequest: 'FeatureRequest',
-  FeatureVote: 'FeatureVote'
+  FeatureVote: 'FeatureVote',
+  AdminProposedAction: 'AdminProposedAction'
 };
 
 /**

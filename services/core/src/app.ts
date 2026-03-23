@@ -119,6 +119,9 @@ import { registerStaffScheduleRoutes } from "./routes/staff-schedule.js";
 import { registerForumRoutes } from "./routes/forum.js";
 import { registerFeatureRequestRoutes } from "./routes/feature-requests.js";
 
+// ── Admin Proposed-Action Approval Workflow ────────────────────────────────
+import { registerAdminProposedActionRoutes } from "./routes/admin-proposed-actions.js";
+
 export async function createCoreApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
   const metrics = new ServiceMetrics();
@@ -284,6 +287,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
   // ── Community Forum & Feature Requests ────────────────────────────────────
   await registerForumRoutes(app);
   await registerFeatureRequestRoutes(app);
+
+  // ── Admin Proposed-Action Approval Workflow ────────────────────────────────
+  await registerAdminProposedActionRoutes(app);
 
   return app;
 }

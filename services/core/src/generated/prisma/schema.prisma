@@ -1749,3 +1749,22 @@ model FeatureVote {
   @@unique([featureRequestId, voterId])
   @@map("feature_votes")
 }
+
+model AdminProposedAction {
+  id             String    @id @default(cuid())
+  proposedBy     String
+  proposedByName String?
+  action         String
+  resourceType   String
+  resourceId     String?
+  payload        String?
+  reason         String?
+  status         String    @default("PENDING")
+  reviewedBy     String?
+  reviewedByName String?
+  reviewedAt     DateTime?
+  reviewNote     String?
+  executedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
