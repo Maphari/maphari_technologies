@@ -705,7 +705,7 @@ export async function registerAiRoutes(app: FastifyInstance): Promise<void> {
     const prompt = `You are a meeting assistant. Summarise the following meeting transcript in 3-5 bullet points, then list action items with owner names where mentioned. Be concise.\n\nTranscript:\n${content}`;
 
     const clientId = scope.clientId ?? "system";
-    const job = await createAiWorkflowJob("auto-draft", { clientId, prompt, model: "claude-sonnet-4-6" });
+    const job = await createAiWorkflowJob("meeting-summary", { clientId, prompt, model: "claude-sonnet-4-6" });
     metrics?.inc("ai_jobs_total", { service: "ai", status: job.status });
     metrics?.observe("ai_job_latency_ms", job.latencyMs, { service: "ai", model: job.model });
 

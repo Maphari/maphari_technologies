@@ -119,7 +119,7 @@ export async function getTranscriptText(recordingId: string): Promise<string | n
     const raw = await vtt.text();
     return raw
       .split("\n")
-      .filter(line => line && !line.startsWith("WEBVTT") && !/^\d\d:\d\d/.test(line) && !/-->/.test(line))
+      .filter(line => line && !line.startsWith("WEBVTT") && !/^\d\d:\d\d/.test(line) && !/-->/.test(line) && !/^\d+$/.test(line))
       .join(" ")
       .replace(/\s+/g, " ")
       .trim();
