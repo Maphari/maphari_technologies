@@ -48,6 +48,7 @@ import { VideoRoomsController } from "../routes/video-rooms.controller.js";
 import { AdminProposedActionsController } from "../routes/admin-proposed-actions.controller.js";
 import { AvailabilityController } from "../routes/availability.controller.js";
 import { BudgetBurnController } from "../routes/budget-burn.controller.js";
+import { ChurnRiskController } from "../routes/churn-risk.controller.js";
 import { RbacGuard } from "../auth/rbac.guard.js";
 import { RequestIdInterceptor } from "../common/request-id.interceptor.js";
 import { MetricsController } from "../observability/metrics.controller.js";
@@ -104,6 +105,7 @@ import { RateLimitGuard } from "../security/rate-limit.guard.js";
     AdminProposedActionsController,
     AvailabilityController,
     BudgetBurnController,
+    ChurnRiskController,
   ],
   providers: [
     RealtimeEventsService,

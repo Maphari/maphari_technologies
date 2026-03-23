@@ -128,6 +128,9 @@ import { registerAvailabilityRoutes } from "./routes/availability.js";
 // ── Budget Burn Tracker ────────────────────────────────────────────────────
 import { registerBudgetBurnRoutes } from "./routes/budget-burn.js";
 
+// ── Churn Risk Score ───────────────────────────────────────────────────────
+import { registerChurnRiskRoutes } from "./routes/churn-risk.js";
+
 // ── Standup Crons ──────────────────────────────────────────────────────────
 import { scheduleStandupReminder, scheduleStandupDigest } from "./cron/standup-reminder.js";
 
@@ -305,6 +308,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Budget Burn Tracker ────────────────────────────────────────────────────
   await registerBudgetBurnRoutes(app);
+
+  // ── Churn Risk Score ───────────────────────────────────────────────────────
+  await registerChurnRiskRoutes(app);
 
   // ── Standup Crons ──────────────────────────────────────────────────────────
   scheduleStandupReminder();
