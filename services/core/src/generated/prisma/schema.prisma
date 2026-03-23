@@ -123,6 +123,8 @@ model Project {
   slaDueAt           DateTime?
   createdAt          DateTime                   @default(now())
   updatedAt          DateTime                   @updatedAt
+  referenceCode      String?                    @unique // PRJ-XXXXXX — human-readable reference, generated server-side
+  eftVerification    EftVerification?
   client             Client                     @relation(fields: [clientId], references: [id], onDelete: Cascade)
   milestones         ProjectMilestone[]
   tasks              ProjectTask[]
@@ -438,7 +440,7 @@ model ProjectChangeRequest {
 
 model Lead {
   id             String         @id @default(uuid())
-  clientId       String
+  clientId       String?
   title          String
   source         String?
   status         String         @default("NEW")
@@ -452,7 +454,7 @@ model Lead {
   lostReason     String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  client         Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client         Client?        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   activities     LeadActivity[]
 
   @@index([clientId, createdAt])
@@ -1776,6 +1778,8 @@ model AdminProposedAction {
   executedAt     DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  @@map("admin_proposed_actions")
 }
 
 model AvailabilitySlot {
@@ -1786,6 +1790,8 @@ model AvailabilitySlot {
   booked        Boolean  @default(false)
   appointmentId String?
   createdAt     DateTime @default(now())
+
+  @@map("availability_slots")
 }
 
 model WebhookEndpoint {
@@ -1798,4 +1804,30 @@ model WebhookEndpoint {
   updatedAt DateTime @updatedAt
 
   @@map("webhook_endpoints")
+}
+
+enum EftVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model EftVerification {
+  id              String                @id @default(cuid())
+  projectId       String                @unique
+  clientId        String
+  proofFileId     String
+  proofFileName   String
+  status          EftVerificationStatus @default(PENDING)
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  notes           String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("eft_verifications")
 }

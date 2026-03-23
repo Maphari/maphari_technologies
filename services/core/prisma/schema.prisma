@@ -123,6 +123,8 @@ model Project {
   slaDueAt        DateTime?
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
+  referenceCode   String?             @unique  // PRJ-XXXXXX — human-readable reference, generated server-side
+  eftVerification EftVerification?
   client          Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
   milestones      ProjectMilestone[]
   tasks           ProjectTask[]
@@ -1802,4 +1804,30 @@ model WebhookEndpoint {
   updatedAt DateTime @updatedAt
 
   @@map("webhook_endpoints")
+}
+
+enum EftVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model EftVerification {
+  id              String                @id @default(cuid())
+  projectId       String                @unique
+  clientId        String
+  proofFileId     String
+  proofFileName   String
+  status          EftVerificationStatus @default(PENDING)
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  notes           String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("eft_verifications")
 }
