@@ -33,6 +33,24 @@ function canManageInternalCollaboration(role: string): boolean {
   return role === "ADMIN" || role === "STAFF";
 }
 
+/** Generates a unique PRJ-XXXXXX reference code with collision check. */
+async function generateReferenceCode(): Promise<string> {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const rand = () => Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  let code = `PRJ-${rand()}`;
+  const existing = await prisma.project.findUnique({ where: { referenceCode: code }, select: { id: true } });
+  if (existing) {
+    code = `PRJ-${rand()}`;
+    const existing2 = await prisma.project.findUnique({ where: { referenceCode: code }, select: { id: true } });
+    if (existing2) {
+      // Guaranteed unique fallback using Node crypto — no extra deps
+      const { randomUUID } = await import("crypto");
+      code = `PRJ-${randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+    }
+  }
+  return code;
+}
+
 /**
  * Converts BigInt fields returned by Prisma to JSON-serializable numbers.
  * Prisma maps `budgetCents BigInt` to a JS BigInt — JSON.stringify throws on
@@ -831,6 +849,7 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
         depositPaymentStatus: depositPayment.status
       };
 
+      const referenceCode = await generateReferenceCode();
       const project = await prisma.project.create({
         data: {
           clientId,
@@ -842,7 +861,8 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
           riskLevel: "LOW",
           startAt: parsedBody.data.desiredStartAt ? new Date(parsedBody.data.desiredStartAt) : null,
           dueAt: parsedBody.data.desiredDueAt ? new Date(parsedBody.data.desiredDueAt) : null,
-          budgetCents: BigInt(parsedBody.data.estimatedQuoteCents)
+          budgetCents: BigInt(parsedBody.data.estimatedQuoteCents),
+          referenceCode
         }
       });
 
