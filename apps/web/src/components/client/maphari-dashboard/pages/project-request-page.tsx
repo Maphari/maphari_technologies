@@ -4,7 +4,7 @@
 // project-request-page.tsx — Request a New Project (revamped)
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { saveSession } from "../../../../lib/auth/session";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import {
@@ -275,6 +275,7 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
   const [payMethod,       setPayMethod]       = useState<"EFT" | "PAYFAST" | null>(null);
   const [submitting,      setSubmitting]      = useState(false);
   const [submitError,     setSubmitError]     = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Brief fields
   const [name,           setName]           = useState("");
@@ -518,6 +519,7 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                     </div>
                     <label className={cx("prqUploadZone")}>
                       <input
+                        ref={fileInputRef}
                         type="file"
                         accept="application/pdf"
                         style={{ display: "none" }}
@@ -552,7 +554,7 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                     <button
                       className={cx("prqUploadBtn", proofUploading ? "prqUploadBtnLoading" : "")}
                       disabled={proofUploading}
-                      onClick={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}
+                      onClick={() => fileInputRef.current?.click()}
                     >
                       {proofUploading ? "Uploading…" : "Upload proof of payment"}
                     </button>
@@ -1336,9 +1338,13 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                   }
 
                   if (reqRes.data) {
+                    if (!reqRes.data.referenceCode) {
+                      setSubmitError("Request submitted but reference code was missing. Please contact support.");
+                      return;
+                    }
                     setSubmittedProject({
                       id: reqRes.data.id,
-                      referenceCode: reqRes.data.referenceCode ?? `PRJ-${Date.now().toString().slice(-6)}`
+                      referenceCode: reqRes.data.referenceCode
                     });
                   }
                 } catch {
