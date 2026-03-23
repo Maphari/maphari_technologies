@@ -467,7 +467,7 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
       await cache.delete(CacheKeys.contracts(existing.clientId));
       await cache.delete(CacheKeys.contracts("all"));
 
-      if (body.signedAt || body.signedByName) {
+      if (body.signed) {
         writeAuditEvent({
           actorId:      scope.userId,
           actorRole:    scope.role,
