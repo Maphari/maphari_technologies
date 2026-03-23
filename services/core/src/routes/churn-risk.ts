@@ -85,10 +85,10 @@ export async function registerChurnRiskRoutes(app: FastifyInstance): Promise<voi
     }
 
     // Signal 2: NPS average (max 30 pts)
-    const avgNps =
-      surveys.length > 0
-        ? surveys.reduce((s, sv) => s + (sv.npsScore ?? 0), 0) / surveys.length
-        : null;
+    const nonNullSurveys = surveys.filter((sv) => sv.npsScore != null);
+    const avgNps = nonNullSurveys.length > 0
+      ? nonNullSurveys.reduce((s, sv) => s + sv.npsScore!, 0) / nonNullSurveys.length
+      : null;
     if (avgNps !== null && avgNps < 7) {
       riskScore += 30;
       signals.push(`Low NPS: ${avgNps.toFixed(1)}`);

@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminPageHeader, AdminSectionCard, AdminEmptyState } from "../../admin-primitives";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import styles from "@/app/style/admin.module.css";
 import { cx } from "../style";
 import { styles as dashboardStyles } from "../style";
-import { callGateway } from "../../../../lib/api/admin/_shared";
 import type { AuthSession } from "../../../../lib/auth/session";
 
 // ── Churn risk response shape ─────────────────────────────────────────────
@@ -24,57 +23,38 @@ type ChurnRiskData = {
 
 function ChurnRiskBadge({ clientId, session }: { clientId: string; session: AuthSession | null }) {
   const [data, setData] = useState<ChurnRiskData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // Capture accessToken as stable primitive dep to avoid object-reference churn
-  const accessToken = session?.accessToken ?? null;
-
-  const fetchRisk = useCallback(async () => {
-    if (!accessToken) { setLoading(false); return; }
-    try {
-      const res = await callGateway<ChurnRiskData>(
-        `/clients/${clientId}/churn-risk`,
-        accessToken,
-      );
-      if (res.payload.success && res.payload.data) {
-        setData(res.payload.data);
-      }
-    } catch {
-      // non-fatal — badge stays hidden on error
-    } finally {
-      setLoading(false);
-    }
-  }, [clientId, accessToken]);
+  const [triggered, setTriggered] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  const accessToken = session?.accessToken as string | undefined;
 
   useEffect(() => {
-    void fetchRisk();
-  }, [fetchRisk]);
-
-  if (loading) {
-    return (
-      <span className={cx("churnBadge", "churnBadgeLoading")}>
-        …
-      </span>
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setTriggered(true); observer.disconnect(); } },
+      { threshold: 0.1 }
     );
-  }
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
 
-  if (!data) return null;
+  const load = useCallback(async () => {
+    if (!triggered || !accessToken) return;
+    try {
+      const r = await fetch(`${process.env.NEXT_PUBLIC_GATEWAY_URL ?? "http://localhost:4000"}/clients/${clientId}/churn-risk`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!r.ok) return;
+      const body = await r.json() as { success: boolean; data?: ChurnRiskData };
+      if (body.success && body.data) setData(body.data);
+    } catch { /* non-fatal */ }
+  }, [triggered, clientId, accessToken]);
 
-  const levelKey =
-    data.level === "HIGH"
-      ? "churnBadgeHigh"
-      : data.level === "MEDIUM"
-        ? "churnBadgeMedium"
-        : "churnBadgeLow";
+  useEffect(() => { void load(); }, [load]);
 
-  return (
-    <span
-      className={cx("churnBadge", levelKey)}
-      title={data.signals.length > 0 ? data.signals.join(" · ") : "No risk signals detected"}
-    >
-      {data.level}
-    </span>
-  );
+  const cls = data?.level === "HIGH" ? "churnBadgeHigh" : data?.level === "MEDIUM" ? "churnBadgeMedium" : data?.level === "LOW" ? "churnBadgeLow" : "churnBadgeLoading";
+  const label = data?.level ?? "…";
+
+  return <span ref={ref} className={cx(cls)} title={data?.signals?.join("; ") ?? "Loading…"}>{label}</span>;
 }
 
 // ── Page component ────────────────────────────────────────────────────────
