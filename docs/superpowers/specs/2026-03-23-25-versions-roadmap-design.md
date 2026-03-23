@@ -277,6 +277,8 @@ model PeerReviewAnswer {
 
 ### v1.5 — Client Portal Enrichment
 
+**Depends on:** v1.2 (Ably realtime for milestone toast), v1.3 (`CalendarEvent` model for video room calendar entry)
+
 **Theme:** The client portal goes from informational to interactive.
 
 #### Database — New Models
@@ -376,11 +378,27 @@ model ContractRenewal {
 
 ### v1.7 — Bulk Operations & Admin Efficiency
 
-**Theme:** Power-user admin workflows. No more clicking one item at a time.
+**Theme:** Power-user admin workflows. No more clicking one item at a time. Labels, saved filters, and bulk actions across every major table.
 
-#### Database
+#### Database — New Models
 
-No new models.
+```prisma
+model ProjectLabel {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   // hex — e.g. "#c8f135"
+  createdAt DateTime @default(now())
+}
+
+model SavedFilter {
+  id        String   @id @default(cuid())
+  userId    String
+  tableName String   // "projects" | "invoices" | "leads" | "clients"
+  name      String
+  filters   Json     // { status: "ACTIVE", label: "urgent", assignedTo: "..." }
+  createdAt DateTime @default(now())
+}
+```
 
 #### Backend — New Routes
 
@@ -388,13 +406,18 @@ No new models.
 - `POST /invoices/bulk-action` — `{ ids: string[], action: "SEND" | "MARK_PAID" | "VOID" }`
 - `POST /leads/bulk-assign` — `{ ids: string[], staffId: string }`
 - `GET /audit-events?role=&projectId=` — extend with role-based scope filtering
+- `GET|POST|DELETE /project-labels` — CRUD for labels
+- `POST /projects/bulk-label` — `{ ids: string[], labelId: string }` — assign label to multiple projects
+- `GET|POST|DELETE /saved-filters?tableName=` — save/load/delete filter presets per user per table
 
 #### Frontend — UI Changes
 
-- Admin: `project-operations-page.tsx` — multi-select checkboxes; sticky "Move Selected To →" dropdown; selection count badge
+- Admin: `project-operations-page.tsx` — multi-select checkboxes; sticky "Move Selected To →" dropdown; selection count badge; label filter chips in filter bar; "Add Label" button on bulk action bar
 - Admin: `invoices-page.tsx` — multi-select + floating bulk action bar (Send / Mark Paid / Void)
 - Admin: `leads-page.tsx` — multi-select + "Assign To" dropdown
+- Admin: `clients-page.tsx` — label chips on client rows; label filter in filter bar
 - All data tables — keyboard: `Space` select, `Shift+Click` range, `Escape` clear
+- All data tables — "Save Filter" button in filter bar; saved filters appear as chip presets below the filter bar on next load; "×" to delete a saved preset
 - Staff: new `audit-log-page.tsx` — events scoped to assigned projects
 - Client: `activity-feed-page.tsx` — extended to cover all relevant event types
 - All portals: floating bulk action bar slides up from bottom when items selected
@@ -404,10 +427,14 @@ No new models.
 - Bulk operations transactional — all succeed or all fail with partial failure reporting
 - Every bulk operation logs one audit event per affected record
 - STAFF audit: project-level events only; CLIENT audit: own project/invoice events only
+- Saved filters stored per `userId` + `tableName` — each user has their own filter presets
+- Labels are global (admin-defined); any project can have multiple labels
 
 ---
 
 ### v1.8 — Automated Project Health Alerts
+
+**Depends on:** v1.2 (EventBus topics established), v1.1 (`crisis-command-page.tsx` wired — v1.8 extends it with a second tab)
 
 **Theme:** The platform proactively tells you when something is going wrong.
 
@@ -447,7 +474,7 @@ model AlertRule {
 
 #### Frontend — UI Changes
 
-- Admin: `crisis-command-page.tsx` — auto-populated with `HealthAlert` records; "Resolve" button
+- Admin: `crisis-command-page.tsx` — now shows two sections: (1) manually logged `Crisis` records (introduced v1.1) and (2) automated `HealthAlert` records from the new health-alert job. `Crisis` = human-declared incident; `HealthAlert` = system-detected condition. Both are displayed in separate tabs; "Resolve" button available on each type
 - Admin: new `alert-rules-page.tsx` — rule list with enable/disable toggle; threshold editor per type
 - Staff: `incident-alerts-page.tsx` — health alerts for assigned projects
 - Client: home page — sticky dismissible alert banner when active health alert exists
@@ -514,6 +541,8 @@ model ServiceUpgradeRequest {
 ---
 
 ### v1.10 — AI Insights Expansion
+
+**Depends on:** v1.2 (EventBus for nightly re-run triggers), services/ai foundation (already exists at v1.0 baseline)
 
 **Theme:** Every portal gets AI contextually aware of its user's role and data.
 
@@ -622,6 +651,8 @@ model CohortSnapshot {
 
 ### v1.12 — Automation Engine
 
+**Depends on:** v1.2 (EventBus topics — automation evaluator subscribes to all topics), v1.8 (health alert event as an example trigger available in rule builder)
+
 **Theme:** A visual rule builder that any admin can configure without code.
 
 #### Database — New Models
@@ -703,10 +734,26 @@ model NotificationDigest {
 }
 ```
 
+#### Database — Additional New Model
+
+```prisma
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+```
+
+> **Note:** `PushSubscription` is defined here (v1.13) where push delivery is first implemented. v1.22 references this model when adding the PWA install flow — no migration needed at that point.
+
 #### Backend — New Routes + Jobs
 
 - `GET|PATCH /notification-preferences` — user fetches/updates own preferences
-- `POST /notifications/subscribe-push` — save Web Push subscription
+- `POST|DELETE /push-subscriptions` — save/remove Web Push subscription (persisted to `PushSubscription`)
 - `GET /notification-analytics` — open rates, action rates, channel distribution (admin)
 - `notifications-digest.job.ts` — daily at each user's `digestTime`; collects + sends digest
 
@@ -727,6 +774,8 @@ model NotificationDigest {
 ---
 
 ### v1.14 — Document Intelligence
+
+**Depends on:** v1.5 (`DeliverableAnnotation` model already exists; v1.14 adds the page-number UI — `pageNumber Int?` field is already in the model from v1.5, no migration needed)
 
 **Theme:** Files become smart assets — automatically tagged, versioned, comparable, AI-assisted.
 
@@ -922,6 +971,8 @@ model WebhookDelivery {
 
 ### v1.17 — Third-Party Integrations
 
+**Depends on:** v1.3 (`CalendarEvent` model — Google Calendar syncs from this table), v1.16 (webhook infrastructure — Zapier uses existing webhooks, no custom Zapier app needed)
+
 **Theme:** The platform plugs into tools the team already uses.
 
 #### Database — New Models
@@ -1073,7 +1124,9 @@ model TenantBranding {
 - `GET|PATCH /admin/branding/:clientId` — admin CRUD
 - `GET /branding/check-domain?domain=` — validates DNS config
 
-#### Backend — Proxy Changes (`apps/web/src/proxy.ts`)
+#### Infrastructure — Web App Changes (`apps/web/src/proxy.ts`)
+
+> Note: `proxy.ts` lives in `apps/web/`, not in backend services — ownership is the frontend team.
 
 - Custom domain detection: `host` header matches `TenantBranding.customDomain` → set `x-client-id`
 - Branding CSS variables injected via `<style>` in client portal layout
@@ -1157,10 +1210,10 @@ model AbTest {
 
 - Landing: new `case-studies-section.tsx` — card carousel; logo, industry, headline metric, "Read More" modal
 - Landing: new `blog-section.tsx` — 3-column grid; cover image, tags, title, excerpt
-- Landing: `pricing-section.tsx` — billing cycle toggle; annual savings badge
+- Landing: `pricing-section.tsx` — already DB-driven with billing toggle + annual savings badge (added v1.9); v1.20 adds "Trusted by X clients" social proof strip below pricing tiers
 - Landing: `nav-bar.tsx` — add "Blog" and "Case Studies" links; sticky with blur backdrop
 - Landing: `hero-section.tsx` — A/B test hook (variant A = current, variant B = metrics-led)
-- Landing: `contact-section.tsx` — add budget range + company size for lead qualification
+- Landing: `contact-section.tsx` — `budgetRange` and `companyName` already exist at baseline; v1.20 adds `companySize` field (STARTUP | SMB | ENTERPRISE) for better lead segmentation
 - Admin: new `marketing-page.tsx` — tabs: Case Studies CRUD, Blog CRUD, A/B Tests results
 - SEO: dynamic `<meta>`, Open Graph, Twitter Card, JSON-LD per page
 - Performance: all images via `next/image` with AVIF/WebP
@@ -1198,9 +1251,21 @@ No new routes.
 - Audit all existing shared components — align to token system, remove hardcoded hex values
 - New extracted components: `data-table.tsx`, `command-palette.tsx`, `drawer.tsx`, `skeleton.tsx`, `toast.tsx`
 
+#### Database — New Model
+
+```prisma
+model UserPreference {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  theme     String   @default("dark") // "dark" | "light"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+
 #### Frontend — Dark Mode
 
-- User settings: `theme` preference stored in `UserPreference`
+- User settings: `theme` preference stored in `UserPreference` (model added this version)
 - `apps/web/src/proxy.ts` — reads theme cookie, sets `data-theme` on `<html>` SSR (no flash)
 - All portals — fix any hardcoded colours that break in dark mode
 
@@ -1229,6 +1294,8 @@ No new routes.
 ---
 
 ### v1.22 — Mobile-Responsive Polish
+
+**Depends on:** v1.13 (`PushSubscription` model already exists; push infrastructure already built — v1.22 adds the PWA install flow and service worker on top)
 
 **Theme:** Every portal works beautifully on a phone. Client portal becomes a PWA.
 
@@ -1393,7 +1460,7 @@ No new models.
 - GitHub Actions: contract test job (Zod validation)
 - GitHub Actions: bundle size check (fail if main bundle grows >10KB gzipped)
 - `scripts/verify-staging-parity.ts` — validates env vars, service endpoints, DB migrations on staging
-- `scripts/v2-planning.md` — v2.0 scoping: multi-workspace support, native mobile app, integration marketplace
+- `docs/v2-planning.md` — v2.0 scoping document: multi-workspace support, native mobile app, integration marketplace
 
 #### Functional
 
@@ -1415,13 +1482,13 @@ No new models.
 | v1.4 | Staff Empowerment Suite | 1 | StaffGoal, PeerReview models, timesheet approval workflow, OKR page |
 | v1.5 | Client Portal Enrichment | 2 | DeliverableAnnotation model, portfolio KPIs, video room modal |
 | v1.6 | Admin Finance Intelligence | 2 | InvoiceChaseLog, ContractRenewal models, CLV analytics, chase escalation |
-| v1.7 | Bulk Operations & Efficiency | 2 | Bulk routes for projects/invoices/leads, scoped audit trail |
+| v1.7 | Bulk Operations & Efficiency | 2 | ProjectLabel, SavedFilter models, bulk routes, label system, saved filter presets, scoped audit trail |
 | v1.8 | Automated Health Alerts | 2 | HealthAlert, AlertRule models, health-alert job, cross-portal alert UI |
 | v1.9 | Service Catalog & Pricing Engine | 2 | ServiceUpgradeRequest model, public pricing endpoint, dynamic landing pricing |
 | v1.10 | AI Insights Expansion | 3 | AiInsight model, risk-predict/task-suggest/summarize routes, AI widgets |
 | v1.11 | Analytics Deep Dive | 3 | AnalyticsSnapshot, CohortSnapshot models, MRR/ARR/cohort/delivery analytics |
 | v1.12 | Automation Engine | 3 | AutomationRule, AutomationLog models, visual rule builder, template gallery |
-| v1.13 | Notification Intelligence | 3 | NotificationPreference, NotificationDigest models, digest job, web push |
+| v1.13 | Notification Intelligence | 3 | NotificationPreference, NotificationDigest, PushSubscription models, digest job, web push |
 | v1.14 | Document Intelligence | 3 | FileMetadata, DeliverableVersionDiff models, AI file analysis, version comparison |
 | v1.15 | Community Forum & Feature Requests | 4 | ForumBadge, ForumReaction models, full forum UI, feature voting board |
 | v1.16 | Public API Platform | 4 | ApiKey, Webhook, WebhookDelivery models, developer portal, Swagger UI |
@@ -1429,8 +1496,8 @@ No new models.
 | v1.18 | Client Self-Service Expansion | 4 | ScopeChangeRequest, ContractAmendment, ClientReportConfig models, Gantt view |
 | v1.19 | Multi-Tenancy & White-Label | 4 | TenantBranding model, custom domain routing, white-label admin UI |
 | v1.20 | Landing Page & Marketing Overhaul | 5 | CaseStudy, BlogPost, AbTest models, case studies, blog, A/B testing |
-| v1.21 | UI Design System Unification | 5 | tokens.css, dark mode, animation system, accessibility, 5 new shared components |
-| v1.22 | Mobile-Responsive Polish | 5 | PushSubscription model, PWA manifest, service worker, bottom nav, offline support |
+| v1.21 | UI Design System Unification | 5 | UserPreference model, tokens.css, dark mode, animation system, accessibility, 5 new shared components |
+| v1.22 | Mobile-Responsive Polish | 5 | PWA manifest, service worker, bottom nav, offline support (PushSubscription from v1.13) |
 | v1.23 | Performance & Reliability | 5 | ServiceHealthCheck, PerformanceBudget models, N+1 fixes, Sentry, health dashboard |
 | v1.24 | Developer Experience & Platform Maturity | 5 | Playwright E2E suite, contract tests, Storybook, CHANGELOG, 3 new ADRs, runbooks |
 
@@ -1441,12 +1508,12 @@ No new models.
 | Wave | New Prisma Models |
 |------|------------------|
 | Wave 1 | Crisis, ComplianceRecord, DataRetentionPolicy, FyChecklistItem, CalendarEvent, StaffGoal, PeerReview, PeerReviewAnswer |
-| Wave 2 | DeliverableAnnotation, InvoiceChaseLog, ContractRenewal, HealthAlert, AlertRule, ServiceUpgradeRequest |
-| Wave 3 | AiInsight, AnalyticsSnapshot, CohortSnapshot, AutomationRule, AutomationLog, NotificationPreference, NotificationDigest, FileMetadata, DeliverableVersionDiff |
+| Wave 2 | DeliverableAnnotation, InvoiceChaseLog, ContractRenewal, ProjectLabel, SavedFilter, HealthAlert, AlertRule, ServiceUpgradeRequest |
+| Wave 3 | AiInsight, AnalyticsSnapshot, CohortSnapshot, AutomationRule, AutomationLog, NotificationPreference, NotificationDigest, PushSubscription, FileMetadata, DeliverableVersionDiff |
 | Wave 4 | ForumBadge, ForumReaction, ApiKey, Webhook, WebhookDelivery, Integration, IntegrationEvent, ScopeChangeRequest, ContractAmendment, ClientReportConfig, TenantBranding |
-| Wave 5 | PushSubscription, CaseStudy, BlogPost, AbTest, ServiceHealthCheck, PerformanceBudget |
+| Wave 5 | UserPreference, CaseStudy, BlogPost, AbTest, ServiceHealthCheck, PerformanceBudget |
 
-**Total new models: 35** (plus ForumThread, ForumPost, FeatureRequest, FeatureVote already added)
+**Total new models: 38** (plus ForumThread, ForumPost, FeatureRequest, FeatureVote already added; PushSubscription moved to Wave 3 v1.13)
 
 ---
 
