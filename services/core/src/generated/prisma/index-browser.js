@@ -666,6 +666,7 @@ exports.Prisma.ReferralScalarFieldEnum = {
   rewardAmountCents: 'rewardAmountCents',
   rewardedAt: 'rewardedAt',
   notes: 'notes',
+  creditApplied: 'creditApplied',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1369,6 +1370,16 @@ exports.Prisma.AdminProposedActionScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.AvailabilitySlotScalarFieldEnum = {
+  id: 'id',
+  adminId: 'adminId',
+  startsAt: 'startsAt',
+  endsAt: 'endsAt',
+  booked: 'booked',
+  appointmentId: 'appointmentId',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1490,7 +1501,8 @@ exports.Prisma.ModelName = {
   ForumPost: 'ForumPost',
   FeatureRequest: 'FeatureRequest',
   FeatureVote: 'FeatureVote',
-  AdminProposedAction: 'AdminProposedAction'
+  AdminProposedAction: 'AdminProposedAction',
+  AvailabilitySlot: 'AvailabilitySlot'
 };
 
 /**

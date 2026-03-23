@@ -121,8 +121,23 @@ export interface PortalReferral {
   rewardAmountCents: number | null;
   rewardedAt: string | null;
   notes: string | null;
+  creditApplied: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PortalReferralSummary {
+  totalRewardRand: number;
+  availableRand:   number;
+  referralCount:   number;
+  referrals: Array<{
+    id:               string;
+    referredByName:   string;
+    status:           string;
+    rewardAmountCents: number | null;
+    creditApplied:    boolean;
+    createdAt:        string;
+  }>;
 }
 
 export interface PortalSupportTicket {
@@ -347,6 +362,19 @@ export async function createPortalReferralWithRefresh(
     if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
     if (!response.payload.success || !response.payload.data) {
       return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "REFERRAL_CREATE_FAILED", response.payload.error?.message ?? "Unable to submit referral.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function loadPortalReferralSummaryWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<PortalReferralSummary>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalReferralSummary>(`/portal/referrals/summary`, accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "REFERRAL_SUMMARY_FETCH_FAILED", response.payload.error?.message ?? "Unable to load referral summary.") };
     }
     return { unauthorized: false, data: response.payload.data, error: null };
   });

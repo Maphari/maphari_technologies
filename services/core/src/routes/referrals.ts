@@ -15,6 +15,57 @@ import { readScopeHeaders } from "../lib/scope.js";
 // ── Route registration ────────────────────────────────────────────────────────
 export async function registerReferralRoutes(app: FastifyInstance): Promise<void> {
 
+  // ── GET /portal/referrals/summary ────────────────────────────────────────
+  // CLIENT: summary of referrals submitted by this client's email
+  // Static route registered BEFORE :id parameterized routes to avoid shadowing
+  app.get("/portal/referrals/summary", async (request) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "CLIENT") {
+      return { success: false, error: { code: "FORBIDDEN", message: "Client access required" } } as ApiResponse;
+    }
+
+    // Referral has no clientId FK — match by email via primary ClientContact
+    const primaryContact = scope.clientId
+      ? await prisma.clientContact.findFirst({
+          where: { clientId: scope.clientId, isPrimary: true },
+          select: { email: true },
+        })
+      : null;
+    // Fall back to any contact if no primary is set
+    const fallbackContact = (!primaryContact && scope.clientId)
+      ? await prisma.clientContact.findFirst({
+          where: { clientId: scope.clientId },
+          select: { email: true },
+          orderBy: { createdAt: "asc" },
+        })
+      : null;
+    const clientEmail = (primaryContact ?? fallbackContact)?.email ?? null;
+
+    const referrals = clientEmail
+      ? await prisma.referral.findMany({
+          where: { referredByEmail: clientEmail },
+          select: { id: true, referredByName: true, status: true, rewardAmountCents: true, creditApplied: true, createdAt: true },
+          orderBy: { createdAt: "desc" },
+        })
+      : [];
+
+    const totalRewardCents = referrals.reduce((sum, r) => sum + (r.rewardAmountCents ?? 0), 0);
+    const availableCents   = referrals
+      .filter((r) => r.rewardAmountCents && !r.creditApplied)
+      .reduce((sum, r) => sum + (r.rewardAmountCents ?? 0), 0);
+
+    return {
+      success: true,
+      data: {
+        totalRewardRand:  totalRewardCents / 100,
+        availableRand:    availableCents / 100,
+        referralCount:    referrals.length,
+        referrals,
+      },
+      meta: { requestId: scope.requestId },
+    } as ApiResponse;
+  });
+
   // ── GET /referrals ────────────────────────────────────────────────────────
   app.get("/referrals", async (request) => {
     const scope = readScopeHeaders(request);

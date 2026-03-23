@@ -5,14 +5,16 @@
 // Mobile   : single-column layout below 768px
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import {
   loadPortalReferralsWithRefresh,
+  loadPortalReferralSummaryWithRefresh,
   createPortalReferralWithRefresh,
   type PortalReferral,
+  type PortalReferralSummary,
 } from "../../../../lib/api/portal";
 import { saveSession } from "../../../../lib/auth/session";
 
@@ -24,6 +26,7 @@ interface ReferralRow {
   date: string;
   status: string;
   reward: string;
+  creditApplied: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -37,11 +40,12 @@ function mapReferral(r: PortalReferral): ReferralRow {
     ? `R ${(r.rewardAmountCents / 100).toLocaleString("en-ZA")}`
     : "Pending";
   return {
-    id:     `REF-${r.id.slice(-4).toUpperCase()}`,
-    name:   r.referredByName,
-    date:   new Date(r.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }),
-    status: statusLabel,
+    id:           `REF-${r.id.slice(-4).toUpperCase()}`,
+    name:         r.referredByName,
+    date:         new Date(r.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }),
+    status:       statusLabel,
     reward,
+    creditApplied: r.creditApplied ?? false,
   };
 }
 
@@ -65,9 +69,15 @@ export function ReferralProgramPage() {
     ? `MAPHARI-${(session.user.clientId ?? session.user.id).slice(-6).toUpperCase()}`
     : "MAPHARI-REF";
 
+  const referralLink = session?.user?.id
+    ? `https://maphari.co.za/ref/${session.user.id}`
+    : "https://maphari.co.za/ref/";
+
   const [apiReferrals, setApiReferrals] = useState<PortalReferral[]>([]);
+  const [summary,      setSummary]      = useState<PortalReferralSummary | null>(null);
   const [dataLoading,  setDataLoading]  = useState(false);
   const [copied,       setCopied]       = useState(false);
+  const [copiedLink,   setCopiedLink]   = useState(false);
 
   // Submit new referral form
   const [submitName,  setSubmitName]  = useState("");
@@ -75,14 +85,24 @@ export function ReferralProgramPage() {
   const [submitting,  setSubmitting]  = useState(false);
   const [submitDone,  setSubmitDone]  = useState(false);
 
+  const fetchSummary = useCallback(async (sess: typeof session) => {
+    if (!sess) return;
+    const r = await loadPortalReferralSummaryWithRefresh(sess);
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.data) setSummary(r.data);
+  }, []);
+
   useEffect(() => {
     if (!session) return;
     setDataLoading(true);
-    void loadPortalReferralsWithRefresh(session).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.data) setApiReferrals(r.data);
-    }).finally(() => setDataLoading(false));
-  }, [session]);
+    void Promise.all([
+      loadPortalReferralsWithRefresh(session).then((r) => {
+        if (r.nextSession) saveSession(r.nextSession);
+        if (r.data) setApiReferrals(r.data);
+      }),
+      fetchSummary(session),
+    ]).finally(() => setDataLoading(false));
+  }, [session, fetchSummary]);
 
   const displayReferrals = apiReferrals.map(mapReferral);
   const convertedCount   = apiReferrals.filter(r => r.status === "CONVERTED").length;
@@ -90,6 +110,11 @@ export function ReferralProgramPage() {
   const creditsEarnedCents = apiReferrals.reduce((sum, r) => sum + (r.rewardAmountCents ?? 0), 0);
   const creditsStr       = creditsEarnedCents > 0
     ? `R ${(creditsEarnedCents / 100).toLocaleString("en-ZA")}`
+    : "—";
+  const availableStr     = summary
+    ? summary.availableRand > 0
+      ? `R ${summary.availableRand.toLocaleString("en-ZA")}`
+      : "—"
     : "—";
 
   async function handleSubmitReferral() {
@@ -126,10 +151,11 @@ export function ReferralProgramPage() {
       {/* ── Stat cards ─────────────────────────────────────────────────────── */}
       <div className={cx("topCardsStack", "mb20")}>
         {[
-          { label: "Referrals Sent", value: String(apiReferrals.length), color: "statCardAccent" },
-          { label: "Converted",      value: String(convertedCount),       color: "statCardGreen"  },
-          { label: "Pending",        value: String(pendingCount),          color: "statCardAmber"  },
-          { label: "Credits Earned", value: creditsStr,                    color: "statCardBlue"   },
+          { label: "Referrals Sent",     value: String(apiReferrals.length), color: "statCardAccent" },
+          { label: "Converted",          value: String(convertedCount),       color: "statCardGreen"  },
+          { label: "Pending",            value: String(pendingCount),          color: "statCardAmber"  },
+          { label: "Credits Earned",     value: creditsStr,                    color: "statCardBlue"   },
+          { label: "Available Credits",  value: availableStr,                  color: "statCardGreen"  },
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.color)}>
             <div className={cx("statLabel")}>{s.label}</div>
@@ -143,6 +169,9 @@ export function ReferralProgramPage() {
         <div className={cx("cardBodyPad", "textCenter", "p32x24")}>
           <div className={cx("fw700", "text12", "mb4")}>Your Referral Code</div>
           <div className={cx("refCodeDisplay")}>{referralCode}</div>
+          <div className={cx("text11", "colorMuted", "mb8")}>
+            Referral link: <span className={cx("fw600")}>{referralLink}</span>
+          </div>
           <div className={cx("flexRow", "gap8", "justifyCenter")}>
             <button
               type="button"
@@ -164,14 +193,30 @@ export function ReferralProgramPage() {
             <button
               type="button"
               className={cx("btnSm", "btnGhost")}
-              onClick={() => window.open(`mailto:?subject=Join via my referral&body=Use my code: ${referralCode}`, "_blank")}
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(referralLink);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                } catch {
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                }
+              }}
+            >
+              {copiedLink ? "Link Copied!" : "Copy Link"}
+            </button>
+            <button
+              type="button"
+              className={cx("btnSm", "btnGhost")}
+              onClick={() => window.open(`mailto:?subject=Join via my referral&body=Use my code: ${referralCode} or visit ${referralLink}`, "_blank")}
             >
               Share via Email
             </button>
             <button
               type="button"
               className={cx("btnSm", "btnGhost")}
-              onClick={() => window.open(`https://wa.me/?text=Join via my referral code: ${referralCode}`, "_blank")}
+              onClick={() => window.open(`https://wa.me/?text=Join via my referral code: ${referralCode} or visit ${referralLink}`, "_blank")}
             >
               Share via WhatsApp
             </button>
@@ -200,10 +245,11 @@ export function ReferralProgramPage() {
           <div className={cx("cardHd")}><span className={cx("cardHdTitle")}>Your Earnings</span></div>
           <div className={cx("cardBodyPad")}>
             {[
-              { label: "Total Referrals",  value: String(apiReferrals.length) },
-              { label: "Converted",        value: String(convertedCount)       },
-              { label: "Earned Credits",   value: creditsStr                   },
-              { label: "Pending Rewards",  value: String(pendingCount)          },
+              { label: "Total Referrals",    value: String(apiReferrals.length) },
+              { label: "Converted",          value: String(convertedCount)       },
+              { label: "Earned Credits",     value: creditsStr                   },
+              { label: "Available Credits",  value: availableStr                 },
+              { label: "Pending Rewards",    value: String(pendingCount)          },
             ].map((s) => (
               <div key={s.label} className={cx("flexBetween", "py8_0", "borderB")}>
                 <span className={cx("text12", "colorMuted")}>{s.label}</span>
@@ -277,6 +323,9 @@ export function ReferralProgramPage() {
                 <div className={cx("flexRow", "gap10")}>
                   <span className={cx("fw600", "text12")}>{r.reward}</span>
                   <span className={cx("badge", r.status === "Converted" ? "badgeGreen" : r.status === "Proposal Sent" ? "badgeAmber" : "badgeMuted")}>{r.status}</span>
+                  {r.creditApplied && (
+                    <span className={cx("badge", "badgeGreen")}>Applied</span>
+                  )}
                 </div>
               </div>
             ))}

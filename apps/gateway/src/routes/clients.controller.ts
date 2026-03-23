@@ -523,6 +523,25 @@ export class ClientsController {
 
   // ── CX: Referrals ────────────────────────────────────────────────────────────
 
+  @Roles("CLIENT")
+  @Get("portal/referrals/summary")
+  async getReferralSummary(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string,
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/portal/referrals/summary`, "GET", undefined, {
+      "x-user-id":    userId  ?? "",
+      "x-user-role":  role    ?? "CLIENT",
+      "x-client-id":  clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id":   traceId ?? "",
+    });
+  }
+
   @Roles("ADMIN", "STAFF", "CLIENT")
   @Get("referrals")
   async listReferrals(

@@ -823,6 +823,7 @@ model Referral {
   rewardAmountCents Int?
   rewardedAt        DateTime?
   notes             String?
+  creditApplied     Boolean   @default(false) // set true when credit applied to invoice
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
