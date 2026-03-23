@@ -6,7 +6,7 @@ import {
 } from "@maphari/contracts";
 import { prisma } from "../lib/prisma.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
-import { writeAuditEvent } from "../lib/audit.js";
+import { writeAuditEvent, writeAuditEventAndDispatch } from "../lib/audit.js";
 
 export async function registerMilestoneApprovalRoutes(app: FastifyInstance): Promise<void> {
   app.get("/milestone-approvals", async (request, reply) => {
@@ -96,7 +96,7 @@ export async function registerMilestoneApprovalRoutes(app: FastifyInstance): Pro
         }
       });
       if (parsed.data.status === "APPROVED") {
-        writeAuditEvent({
+        writeAuditEventAndDispatch({
           actorId:      scope.userId,
           actorRole:    scope.role,
           action:       "MILESTONE_APPROVED",

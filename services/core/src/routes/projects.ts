@@ -27,7 +27,7 @@ import { prisma } from "../lib/prisma.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
 import { cache, CacheKeys, eventBus } from "../lib/infrastructure.js";
 import { checkAndPublishHealthAlert } from "../jobs/health-alert.job.js";
-import { writeAuditEvent } from "../lib/audit.js";
+import { writeAuditEvent, writeAuditEventAndDispatch } from "../lib/audit.js";
 
 function canManageInternalCollaboration(role: string): boolean {
   return role === "ADMIN" || role === "STAFF";
@@ -637,7 +637,7 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
         })
       ]);
 
-      writeAuditEvent({
+      writeAuditEventAndDispatch({
         actorId:      scope.userId,
         actorRole:    scope.role,
         action:       "PROJECT_CREATED",

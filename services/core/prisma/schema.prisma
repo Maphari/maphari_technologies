@@ -1787,3 +1787,14 @@ model AvailabilitySlot {
   appointmentId String?
   createdAt     DateTime  @default(now())
 }
+
+model WebhookEndpoint {
+  id        String   @id @default(cuid())
+  url       String
+  events    String   // comma-separated: "project.created,invoice.paid"
+  secret    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("webhook_endpoints")
+}

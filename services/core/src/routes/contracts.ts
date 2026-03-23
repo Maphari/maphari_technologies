@@ -18,7 +18,7 @@ import type { ApiResponse } from "@maphari/contracts";
 import { prisma } from "../lib/prisma.js";
 import { cache, CacheKeys, withCache } from "../lib/infrastructure.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
-import { writeAuditEvent } from "../lib/audit.js";
+import { writeAuditEvent, writeAuditEventAndDispatch } from "../lib/audit.js";
 
 // ── Legal document templates (South African law) ──────────────────────────────
 
@@ -448,7 +448,7 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
         const updated = await prisma.clientContract.update({ where: { id }, data: clientUpdate });
         await cache.delete(CacheKeys.contracts(existing.clientId));
         if (body.signed) {
-          writeAuditEvent({
+          writeAuditEventAndDispatch({
             actorId:      scope.userId,
             actorRole:    scope.role,
             action:       "CONTRACT_SIGNED",
@@ -483,7 +483,7 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
       await cache.delete(CacheKeys.contracts("all"));
 
       if (body.signed) {
-        writeAuditEvent({
+        writeAuditEventAndDispatch({
           actorId:      scope.userId,
           actorRole:    scope.role,
           action:       "CONTRACT_SIGNED",
@@ -551,7 +551,7 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
       await cache.delete(CacheKeys.contracts(existing.clientId));
       await cache.delete(CacheKeys.contracts("all"));
 
-      writeAuditEvent({
+      writeAuditEventAndDispatch({
         actorId:      scope.userId,
         actorRole:    scope.role,
         action:       "CONTRACT_SIGNED",

@@ -1383,6 +1383,15 @@ exports.Prisma.AvailabilitySlotScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.WebhookEndpointScalarFieldEnum = {
+  id: 'id',
+  url: 'url',
+  events: 'events',
+  secret: 'secret',
+  active: 'active',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1505,7 +1514,8 @@ exports.Prisma.ModelName = {
   FeatureRequest: 'FeatureRequest',
   FeatureVote: 'FeatureVote',
   AdminProposedAction: 'AdminProposedAction',
-  AvailabilitySlot: 'AvailabilitySlot'
+  AvailabilitySlot: 'AvailabilitySlot',
+  WebhookEndpoint: 'WebhookEndpoint'
 };
 
 /**

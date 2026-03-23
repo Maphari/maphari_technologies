@@ -10,7 +10,7 @@ import type { ApiResponse } from "@maphari/contracts";
 import { cache, CacheKeys, withCache } from "../lib/infrastructure.js";
 import { prisma } from "../lib/prisma.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
-import { writeAuditEvent } from "../lib/audit.js";
+import { writeAuditEvent, writeAuditEventAndDispatch } from "../lib/audit.js";
 
 // ── Route registration ────────────────────────────────────────────────────────
 export async function registerDeliverableRoutes(app: FastifyInstance): Promise<void> {
@@ -192,7 +192,7 @@ export async function registerDeliverableRoutes(app: FastifyInstance): Promise<v
     // Cache invalidation
     await cache.delete(CacheKeys.deliverables(deliverable.projectId));
 
-    writeAuditEvent({
+    writeAuditEventAndDispatch({
       actorId:      scope.userId,
       actorRole:    "CLIENT",
       action:       body.decision === "APPROVED" ? "DELIVERABLE_APPROVED" : "DELIVERABLE_CHANGES_REQUESTED",
@@ -237,7 +237,7 @@ export async function registerDeliverableRoutes(app: FastifyInstance): Promise<v
         data: { status: "ACCEPTED" }
       });
       await cache.delete(CacheKeys.deliverables(projectId));
-      writeAuditEvent({
+      writeAuditEventAndDispatch({
         actorId:      scope.userId,
         actorRole:    scope.role,
         action:       "DELIVERABLE_APPROVED",
