@@ -9,6 +9,7 @@ export interface SendEmailOptions {
   to: string | string[];
   subject: string;
   text: string;
+  from?: string;  // if omitted, uses NOTIFICATION_FROM_EMAIL env var
 }
 
 export interface SendEmailResult {
@@ -44,7 +45,7 @@ function buildHtml(text: string): string {
   <hr style="margin:32px 0;border:none;border-top:1px solid #e5e5e5"/>
   <p style="font-size:12px;color:#999;margin:0">
     This email was sent by Maphari. Questions? Contact
-    <a href="mailto:support@maphari.com" style="color:#8b6fff">support@maphari.com</a>.
+    <a href="mailto:support@mapharitechnologies.com" style="color:#8b6fff">support@mapharitechnologies.com</a>.
   </p>
 </body>
 </html>`;
@@ -65,7 +66,10 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     return { success: true, skipped: true };
   }
 
-  const from = process.env.NOTIFICATION_FROM_EMAIL ?? "Maphari <notifications@maphari.com>";
+  const from =
+    options.from ??
+    process.env.NOTIFICATION_FROM_EMAIL ??
+    "Maphari <notifications@mapharitechnologies.com>";
   const to   = Array.isArray(options.to) ? options.to : [options.to];
 
   const payload = {

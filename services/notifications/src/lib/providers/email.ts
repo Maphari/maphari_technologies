@@ -42,7 +42,7 @@ export async function sendEmail(options: {
     return { success: true, skipped: true };
   }
 
-  const from = process.env.NOTIFICATION_FROM_EMAIL ?? "Maphari <notifications@maphari.com>";
+  const from = process.env.NOTIFICATION_FROM_EMAIL ?? "Maphari <notifications@mapharitechnologies.com>";
 
   // Convert plain-text newlines to a simple HTML layout
   const htmlBody = options.text
@@ -58,7 +58,7 @@ export async function sendEmail(options: {
   <hr style="margin:32px 0;border:none;border-top:1px solid #e5e5e5"/>
   <p style="font-size:12px;color:#999;margin:0">
     This email was sent by Maphari. If you have questions, reply to this email or contact
-    <a href="mailto:support@maphari.com" style="color:#8b6fff">support@maphari.com</a>.
+    <a href="mailto:support@mapharitechnologies.com" style="color:#8b6fff">support@mapharitechnologies.com</a>.
   </p>
 </body>
 </html>`;
