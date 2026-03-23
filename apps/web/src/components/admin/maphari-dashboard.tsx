@@ -87,6 +87,8 @@ import { AutomationAuditTrailPage } from "./dashboard/pages/automation-audit-tra
 import { ProjectBriefingPage } from "./dashboard/pages/project-briefing-page";
 import { ActiveHealthMonitorPage } from "./dashboard/pages/active-health-monitor-page";
 import { AnnouncementsManagerPage } from "./dashboard/pages/announcements-manager-page";
+import { AdminCommunityModerationPage } from "./dashboard/pages/admin-community-moderation-page";
+import { AdminCommunityFeatureRequestsPage } from "./dashboard/pages/admin-community-feature-requests-page";
 import { LoyaltyCreditsPage } from "./dashboard/pages/loyalty-credits-page";
 import { BookingAppointmentsPage } from "./dashboard/pages/booking-appointments-page";
 import { DesignReviewAdminPage } from "./dashboard/pages/design-review-admin-page";
@@ -708,6 +710,8 @@ export function MaphariDashboard() {
             {page === "clvAnalytics" ? <CLVAnalyticsPage session={session} onNotify={pushToast} /> : null}
             {page === "projectTemplates" ? <ProjectTemplatesPage projects={snapshot.projects ?? []} /> : null}
             {page === "staffScheduling" ? <StaffSchedulingPage session={session} /> : null}
+            {page === "communityModeration" ? <AdminCommunityModerationPage session={session} /> : null}
+            {page === "communityFeatureRequests" ? <AdminCommunityFeatureRequestsPage session={session} /> : null}
             </DashboardErrorBoundary>
           </section>
         </main>
