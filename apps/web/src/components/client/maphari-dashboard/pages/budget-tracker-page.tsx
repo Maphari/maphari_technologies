@@ -156,7 +156,6 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
   const [todayWeekLabel, setTodayWeekLabel]   = useState("");
 
   const fmt = (v: number) => formatMoneyCents(Math.round(v) * 100, { currency: "ZAR", maximumFractionDigits: 0 });
-  const fmtk = (v: number) => formatMoneyCents(Math.round(v) * 100, { currency: "ZAR", maximumFractionDigits: 0 });
 
   useEffect(() => {
     if (!session || !projectId) { setLoading(false); return; }
@@ -360,7 +359,7 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
               <div className={cx("chartYAxis")} style={{ "--chart-h": `${CHART_H}px` } as React.CSSProperties}>
                 {[chartMax, chartMax * 0.75, chartMax * 0.5, chartMax * 0.25].map((v) => (
                   <span key={v} className={cx("chartYLabel")}>
-                    {fmtk(v)}
+                    {fmt(v)}
                   </span>
                 ))}
               </div>
@@ -395,7 +394,7 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
                           <div className={cx("chartMidline")} />
                         )}
                         <span className={cx("chartBarLabel", "dynColor")} style={{ "--color": labelColor } as React.CSSProperties}>
-                          {fmtk(w.spend)}
+                          {fmt(w.spend)}
                         </span>
                         <div className={cx("chartBarBlock", "dynBgColor")} style={{ "--bar-h": `${barH}px`, "--bg-color": barBg, "--outline": isToday ? "1.5px solid var(--lime)" : "none", "--border-top": w.forecast ? "1.5px dashed color-mix(in oklab, var(--lime) 50%, transparent)" : "none" } as React.CSSProperties} />
                       </div>

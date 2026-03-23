@@ -24,7 +24,8 @@ async function fetchClientInvoices(
 ): Promise<BillingInvoiceResponse[]> {
   const baseUrl = process.env.BILLING_SERVICE_URL ?? "http://localhost:4006";
   try {
-    const res = await fetch(`${baseUrl}/invoices`, {
+    const url = `${baseUrl}/invoices`;
+    const res = await fetch(url, {
       method: "GET",
       headers: {
         "content-type": "application/json",
@@ -34,7 +35,12 @@ async function fetchClientInvoices(
         "x-request-id": headers.requestId,
         "x-trace-id":   headers.traceId   ?? headers.requestId,
       },
+      signal: AbortSignal.timeout(3000),
     });
+    if (!res.ok) {
+      console.warn(`[budget-burn] Billing service returned ${res.status} for client ${clientId}`);
+      return [];
+    }
     const body = (await res.json()) as ApiResponse<BillingInvoiceResponse[]>;
     return body.success ? (body.data ?? []) : [];
   } catch {
@@ -89,12 +95,11 @@ export async function registerBudgetBurnRoutes(app: FastifyInstance): Promise<vo
 
     // ── 3. Weekly burn rate from time entries (last 4 weeks) ─────────────────
     const fourWeeksAgo = new Date(Date.now() - 28 * 24 * 3600_000);
-    const recentEntries = await prisma.projectTimeEntry.findMany({
+    const recentAgg = await prisma.projectTimeEntry.aggregate({
       where: { projectId, createdAt: { gte: fourWeeksAgo } },
-      select: { minutes: true },
+      _sum: { minutes: true },
     });
-    const totalMinutesLast4Weeks = recentEntries.reduce((sum, e) => sum + (e.minutes ?? 0), 0);
-    const weeklyBurnHours = (totalMinutesLast4Weeks / 60) / 4;
+    const weeklyBurnHours = ((recentAgg._sum.minutes ?? 0) / 60) / 4;
 
     // ── 4. Compute budget metrics ─────────────────────────────────────────────
     // budgetCents is BigInt — convert to number
