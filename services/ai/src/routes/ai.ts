@@ -12,6 +12,7 @@ import { eventBus } from "../lib/infrastructure.js";
 import { createAiJob, createAiWorkflowJob, listAiJobs } from "../lib/store.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
 import { searchProspects, generatePitches } from "../lib/prospecting.js";
+import { sendEmail } from "../scripts/lib/send-email.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -810,24 +811,22 @@ export async function registerAiRoutes(app: FastifyInstance): Promise<void> {
       } as ApiResponse;
     }
 
-    try {
-      await eventBus.publish({
-        eventId: randomUUID(),
-        occurredAt: new Date().toISOString(),
-        requestId: scope.requestId ?? undefined,
-        traceId:   scope.requestId ?? undefined,
-        topic: EventTopics.notificationRequested,
-        payload: {
-          channel: "EMAIL",
-          recipientEmail: to,
-          message: `Subject: ${subject}\n\n${message}`
-        }
-      });
-    } catch {
+    const outreachFrom =
+      process.env.OUTREACH_FROM_EMAIL ??
+      "Maphari Technologies <outreach@mapharitechnologies.com>";
+
+    const result = await sendEmail({
+      to,
+      subject,
+      text: message,
+      from: outreachFrom,
+    });
+
+    if (!result.success && !result.skipped) {
       reply.status(500);
       return {
         success: false,
-        error: { code: "SEND_ERROR", message: "Failed to queue pitch email." }
+        error: { code: "SEND_ERROR", message: result.error ?? "Failed to send pitch email." },
       } as ApiResponse;
     }
 
