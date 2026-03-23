@@ -41,6 +41,23 @@ const SERVICES = [
 
 type ServiceId = (typeof SERVICES)[number]["id"];
 
+// ── Maps local service IDs to the contract enum values ────────────────────
+const SERVICE_TO_CONTRACT: Record<ServiceId, PortalProjectRequestServiceOption> = {
+  bizWebsite:   "WEB_DEVELOPMENT",
+  landingPage:  "WEB_DEVELOPMENT",
+  seoMarketing: "SEO_TECHNICAL",
+  socialMedia:  "CONTENT_MIGRATION",
+  crmSystems:   "THIRD_PARTY_INTEGRATIONS",
+  startupMvp:   "DISCOVERY_CONSULTING",
+  webApp:       "CUSTOM_WEB_APP_DEVELOPMENT",
+  mobileApp:    "MOBILE_APP_CROSS_PLATFORM",
+  ecommerce:    "ECOMMERCE_DEVELOPMENT",
+  designBrand:  "UI_UX_DESIGN",
+  aiAutomation: "AI_LLM_AUTOMATIONS",
+  analytics:    "ANALYTICS_TRACKING",
+  retainer:     "MAINTENANCE_SUPPORT",
+};
+
 // ── Service groups (for visual grouping in step 1) ────────────────────────
 
 const SERVICE_GROUPS: { label: string; sub: string; color: string; ids: ServiceId[] }[] = [
@@ -1057,7 +1074,7 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                 <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
                   <Ic n="layers" sz={16} c={payMethod === "EFT" ? "var(--lime)" : "var(--muted2)"} />
                   <div>
-                    <div className={cx("fw600", "text12")}>EFT / Bank Transfer</div>
+                    <div className={cx("fw600", "text12", "colorText")}>EFT / Bank Transfer</div>
                     <div className={cx("colorMuted", "text11")}>Transfer to our account. We&apos;ll confirm receipt within 24h.</div>
                   </div>
                   {payMethod === "EFT" && <span style={{ marginLeft: "auto" }}><Ic n="check" sz={14} c="var(--lime)" /></span>}
@@ -1077,7 +1094,7 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                 <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
                   <Ic n="zap" sz={16} c={payMethod === "PAYFAST" ? "var(--lime)" : "var(--muted2)"} />
                   <div>
-                    <div className={cx("fw600", "text12")}>PayFast — Instant Online Payment</div>
+                    <div className={cx("fw600", "text12", "colorText")}>PayFast — Instant Online Payment</div>
                     <div className={cx("colorMuted", "text11")}>Credit/debit card, EFT, or SnapScan via PayFast.</div>
                   </div>
                   {payMethod === "PAYFAST" && <span style={{ marginLeft: "auto" }}><Ic n="check" sz={14} c="var(--lime)" /></span>}
@@ -1088,17 +1105,17 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
               {payMethod === "EFT" && (
                 <div className={cx("card", "mb14")} style={{ background: "var(--lime-g)" }}>
                   <div className={cx("cardBodyPad")}>
-                    <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb10")}>Bank Details</div>
+                    <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb10")} style={{ marginTop: 4 }}>Bank Details</div>
                     {([
-                      ["Bank", "FNB (First National Bank)"],
-                      ["Account Name", "Maphari Technologies (Pty) Ltd"],
-                      ["Account Number", "62896xxxxx"],
-                      ["Branch Code", "250655"],
+                      ["Bank", process.env.NEXT_PUBLIC_BANK_NAME ?? "Nedbank"],
+                      ["Account Name", process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME ?? "Maphari Technologies (Pty) Ltd"],
+                      ["Account Number", process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER ?? "—"],
+                      ["Branch Code", process.env.NEXT_PUBLIC_BANK_BRANCH_CODE ?? "198765"],
                       ["Reference", `DEP-${(name || "PROJECT").toUpperCase().replace(/\s+/g, "-").slice(0, 12)}-${Date.now().toString().slice(-6)}`],
                     ] as [string, string][]).map(([label, value]) => (
                       <div key={label} className={cx("flexRow", "gap12", "mb6")}>
                         <span className={cx("colorMuted", "text11")} style={{ minWidth: 120 }}>{label}</span>
-                        <span className={cx("fontMono", "text12", "fw600")}>{value}</span>
+                        <span className={cx("fontMono", "text12", "fw600", "colorText")}>{value}</span>
                       </div>
                     ))}
                   </div>
@@ -1152,7 +1169,9 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                   const paymentId = payRes.data.id;
 
                   // 3. Submit project request
-                  const selectedServices = SERVICES.filter(s => selected.has(s.id)).map(s => s.label) as unknown as PortalProjectRequestServiceOption[];
+                  const selectedServices = [...new Set(
+                    SERVICES.filter(s => selected.has(s.id)).map(s => SERVICE_TO_CONTRACT[s.id])
+                  )];
                   const reqRes = await createPortalProjectRequestWithRefresh(session, {
                     name: name || [...selected].map(id => SERVICES.find(s => s.id === id)?.label ?? id).join(" + "),
                     description: overview || undefined,

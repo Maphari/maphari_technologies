@@ -773,7 +773,11 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
           }
         } as ApiResponse;
       }
-      if (depositPayment.status !== "COMPLETED") {
+      // EFT payments are PENDING at submission time — the client does the bank
+      // transfer after submitting, and admin marks it COMPLETED on receipt.
+      // Non-EFT payments (e.g. PayFast) must be COMPLETED before submission.
+      const isEftPayment = depositPayment.provider === "EFT";
+      if (!isEftPayment && depositPayment.status !== "COMPLETED") {
         reply.status(400);
         return {
           success: false,
