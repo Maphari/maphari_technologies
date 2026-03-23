@@ -241,6 +241,7 @@ export function RequestInboxPage({
   const [eftNotes, setEftNotes]           = useState<Record<string, string>>({});
   const [eftRejReason, setEftRejReason]   = useState<Record<string, string>>({});
   const [eftFilter, setEftFilter]         = useState<"ALL" | "PENDING" | "VERIFIED" | "REJECTED">("ALL");
+  const [eftActionLoading, setEftActionLoading] = useState<string | null>(null); // tracks verificationId being actioned
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
@@ -267,7 +268,7 @@ export function RequestInboxPage({
     }).catch((err: unknown) => {
       if (!cancelled) setError((err as Error)?.message ?? "Failed to load.");
     }).finally(() => {
-      if (!cancelled) setLoading(false);
+      if (!cancelled) { setLoading(false); setEftLoading(false); }
     });
     return () => { cancelled = true; };
   }, [session]);
@@ -277,20 +278,29 @@ export function RequestInboxPage({
   const medium = items.filter((r) => r.priority === "MEDIUM").length;
 
   async function handleEftVerify(verificationId: string, action: "VERIFY" | "REJECT") {
+    if (eftActionLoading === verificationId) return; // prevent double-submit
+    setEftActionLoading(verificationId);
     const rejectionReason = eftRejReason[verificationId]?.trim();
     if (action === "REJECT" && !rejectionReason) {
-      alert("Please enter a rejection reason.");
+      onNotify?.("error", "Please enter a rejection reason.");
+      setEftActionLoading(null);
       return;
     }
-    const res = await verifyAdminEftDepositWithRefresh(session, verificationId, { action, rejectionReason });
-    if (res.nextSession) saveSession(res.nextSession);
-    if (res.error) { alert(res.error.message); return; }
-    setEftItems(prev => prev.map(item =>
-      item.id === verificationId
-        ? { ...item, status: action === "VERIFY" ? "VERIFIED" : "REJECTED", rejectionReason: rejectionReason ?? null }
-        : item
-    ));
-    setExpandedEftId(null);
+    try {
+      const res = await verifyAdminEftDepositWithRefresh(session, verificationId, { action, rejectionReason });
+      if (res.nextSession) saveSession(res.nextSession);
+      if (res.error) { onNotify?.("error", res.error.message ?? "Failed to verify deposit."); return; }
+      setEftItems(prev => prev.map(item =>
+        item.id === verificationId
+          ? { ...item, status: action === "VERIFY" ? "VERIFIED" : "REJECTED", rejectionReason: rejectionReason ?? null }
+          : item
+      ));
+      setExpandedEftId(null);
+    } catch (err) {
+      console.error("[eft] handleEftVerify error:", err);
+    } finally {
+      setEftActionLoading(null);
+    }
   }
 
   function handleTriageSuccess(projectId: string) {
@@ -415,9 +425,9 @@ export function RequestInboxPage({
                         </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        {ageHrs < 24 && item.status === "PENDING" && (
+                        {item.status === "PENDING" && (
                           <span style={{ fontSize: 11, color: "#fbbf24", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 4, padding: "2px 8px" }}>
-                            {ageHrs}h ago
+                            {ageHrs < 1 ? "< 1h ago" : ageHrs < 24 ? `${ageHrs}h ago` : `${Math.floor(ageHrs / 24)}d ago`}
                           </span>
                         )}
                         <span style={{ color: "var(--muted)", transform: isExpanded ? "rotate(90deg)" : "none", transition: "transform 0.2s" }}>›</span>
@@ -488,15 +498,15 @@ export function RequestInboxPage({
                             <div style={{ display: "flex", gap: 8 }}>
                               {/* STAFF can see but not act — only ADMIN may verify/reject (spec §7) */}
                               <button
-                                disabled={session?.user.role !== "ADMIN"}
+                                disabled={session?.user.role !== "ADMIN" || eftActionLoading === item.id}
                                 onClick={() => handleEftVerify(item.id, "VERIFY")}
-                                style={{ flex: 1, padding: 10, background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 8, color: "#4ade80", fontSize: 13, fontWeight: 600, cursor: session?.user.role !== "ADMIN" ? "not-allowed" : "pointer", opacity: session?.user.role !== "ADMIN" ? 0.4 : 1 }}>
+                                style={{ flex: 1, padding: 10, background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 8, color: "#4ade80", fontSize: 13, fontWeight: 600, cursor: session?.user.role !== "ADMIN" || eftActionLoading === item.id ? "not-allowed" : "pointer", opacity: session?.user.role !== "ADMIN" || eftActionLoading === item.id ? 0.4 : 1 }}>
                                 ✓ Verify deposit
                               </button>
                               <button
-                                disabled={session?.user.role !== "ADMIN"}
+                                disabled={session?.user.role !== "ADMIN" || eftActionLoading === item.id}
                                 onClick={() => handleEftVerify(item.id, "REJECT")}
-                                style={{ flex: 1, padding: 10, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 8, color: "#f87171", fontSize: 13, fontWeight: 600, cursor: session?.user.role !== "ADMIN" ? "not-allowed" : "pointer", opacity: session?.user.role !== "ADMIN" ? 0.4 : 1 }}>
+                                style={{ flex: 1, padding: 10, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 8, color: "#f87171", fontSize: 13, fontWeight: 600, cursor: session?.user.role !== "ADMIN" || eftActionLoading === item.id ? "not-allowed" : "pointer", opacity: session?.user.role !== "ADMIN" || eftActionLoading === item.id ? 0.4 : 1 }}>
                                 ✕ Reject — request new proof
                               </button>
                             </div>
