@@ -287,7 +287,7 @@ export function RequestInboxPage({
       return;
     }
     try {
-      const res = await verifyAdminEftDepositWithRefresh(session, verificationId, { action, rejectionReason });
+      const res = await verifyAdminEftDepositWithRefresh(session!, verificationId, { action, rejectionReason });
       if (res.nextSession) saveSession(res.nextSession);
       if (res.error) { onNotify?.("error", res.error.message ?? "Failed to verify deposit."); return; }
       setEftItems(prev => prev.map(item =>
