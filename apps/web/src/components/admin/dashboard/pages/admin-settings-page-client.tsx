@@ -18,6 +18,7 @@ import {
 } from "../../../../lib/api/admin/auth-2fa";
 import { saveSession } from "../../../../lib/auth/session";
 import { formatDate, formatDateTime } from "./admin-page-utils";
+import { ThemeToggle } from "@/components/shared/ui/theme-toggle";
 
 export function AdminSettingsPageClient({
   jobs,
@@ -1194,6 +1195,18 @@ export function AdminSettingsPageClient({
           </div>
         </div>
       </article>
+
+      {activeTab === "appearance" ? (
+        <article className={styles.card}>
+          <div className={styles.cardHd}>
+            <span className={styles.cardHdTitle}>Appearance</span>
+          </div>
+          <div className={styles.cardInner}>
+            <p className={cx("text13", "colorMuted")}>Choose your preferred colour scheme.</p>
+            <ThemeToggle />
+          </div>
+        </article>
+      ) : null}
     </div>
   );
 }

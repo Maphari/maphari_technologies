@@ -50,9 +50,9 @@ export type UseAdminSettingsReturn = {
   lastSavedSecurity: string | null;
   lastSavedNotifications: string | null;
   lastSavedApiAccess: string | null;
-  settingsTabs: readonly ["profile", "workspace", "security", "notifications", "integrations", "system"];
-  activeTab: "profile" | "workspace" | "security" | "notifications" | "integrations" | "system";
-  setActiveTab: React.Dispatch<React.SetStateAction<"profile" | "workspace" | "security" | "notifications" | "integrations" | "system">>;
+  settingsTabs: readonly ["profile", "workspace", "security", "notifications", "integrations", "system", "appearance"];
+  activeTab: "profile" | "workspace" | "security" | "notifications" | "integrations" | "system" | "appearance";
+  setActiveTab: React.Dispatch<React.SetStateAction<"profile" | "workspace" | "security" | "notifications" | "integrations" | "system" | "appearance">>;
   logScope: "all" | "security" | "operations";
   setLogScope: React.Dispatch<React.SetStateAction<"all" | "security" | "operations">>;
   logQuery: string;
@@ -97,7 +97,7 @@ export function useAdminSettings({ session, publicApiKeys, pushToast, setAdminDi
   const [lastSavedSecurity, setLastSavedSecurity] = useState<string | null>(null);
   const [lastSavedNotifications, setLastSavedNotifications] = useState<string | null>(null);
   const [lastSavedApiAccess, setLastSavedApiAccess] = useState<string | null>(null);
-  const settingsTabs = ["profile", "workspace", "security", "notifications", "integrations", "system"] as const;
+  const settingsTabs = ["profile", "workspace", "security", "notifications", "integrations", "system", "appearance"] as const;
   type SettingsTab = (typeof settingsTabs)[number];
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const [logScope, setLogScope] = useState<"all" | "security" | "operations">("all");

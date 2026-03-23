@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { cx, styles } from "./style";
 import { DashboardUtilityIcon } from "@/components/shared/dashboard-utility-icon";
 import { Ic } from "./ui";
-import { ThemeToggle } from "@/components/shared/ui/theme-toggle";
 import { ProjectSwitcher } from "./components/project-switcher";
 
 type ClientTopbarProps = {
