@@ -106,6 +106,7 @@ import { FtueHoldingPage } from "./maphari-dashboard/pages/ftue-holding-page";
 import { FtueWelcomeModal } from "./maphari-dashboard/components/ftue-welcome-modal";
 import { OnboardingBanner } from "./maphari-dashboard/components/onboarding-banner";
 import { CompletionBanner } from "./maphari-dashboard/components/completion-banner";
+import { OnboardingChecklist } from "./maphari-dashboard/onboarding-checklist";
 
 import type { NotificationPreference } from "./maphari-dashboard/types";
 
@@ -307,6 +308,9 @@ export function MaphariClientDashboard() {
 
   // ── FTUE: welcome modal ─────────────────────────────────────────────────
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
+  // ── Onboarding checklist ─────────────────────────────────────────────────
+  const [showOnboarding, setShowOnboarding] = useState(true);
 
   useEffect(() => {
     if (!session) return;
@@ -1001,6 +1005,14 @@ export function MaphariClientDashboard() {
       {/* ── FTUE Welcome Modal ──────────────────────────────────────────── */}
       {showWelcomeModal && (
         <FtueWelcomeModal onDismiss={handleWelcomeModalDismiss} />
+      )}
+
+      {/* ── Onboarding Checklist ─────────────────────────────────────────── */}
+      {showOnboarding && (
+        <OnboardingChecklist
+          session={session ?? null}
+          onDismiss={() => setShowOnboarding(false)}
+        />
       )}
 
 

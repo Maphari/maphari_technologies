@@ -34,6 +34,32 @@ export async function registerClientOnboardingCxRoutes(app: FastifyInstance): Pr
     return { success: true, data, meta: { requestId: scope.requestId } } as ApiResponse<typeof data>;
   });
 
+  // ── GET /portal/onboarding/checklist ─────────────────────────────────────
+  app.get("/portal/onboarding/checklist", async (request) => {
+    const scope = readScopeHeaders(request);
+    const clientId = scope.clientId ?? "unknown";
+
+    const [profile, appointments, projects, messages, contracts] = await Promise.all([
+      prisma.clientProfile.findFirst({ where: { clientId }, select: { id: true } }),
+      prisma.appointment.findFirst({ where: { clientId } }),
+      prisma.project.findFirst({ where: { clientId } }),
+      prisma.communicationLog.findFirst({ where: { clientId, direction: "OUTBOUND" } }),
+      prisma.clientContract.findFirst({ where: { clientId, signedAt: { not: null } } }),
+    ]);
+
+    const steps = [
+      { id: "profile",  label: "Complete your profile",  done: !!profile },
+      { id: "meeting",  label: "Book your first meeting", done: !!appointments },
+      { id: "project",  label: "View your project",       done: !!projects },
+      { id: "message",  label: "Send a message",          done: !!messages },
+      { id: "contract", label: "Sign your contract",      done: !!contracts },
+    ];
+
+    const allDone = steps.every((s) => s.done);
+    const checklist = { steps, allDone, completedCount: steps.filter((s) => s.done).length };
+    return { success: true, data: checklist, meta: { requestId: scope.requestId } } as ApiResponse<typeof checklist>;
+  });
+
   // ── PATCH /clients/:clientId/onboarding/:id ───────────────────────────────
   app.patch("/clients/:clientId/onboarding/:id", async (request, reply) => {
     const scope = readScopeHeaders(request);
