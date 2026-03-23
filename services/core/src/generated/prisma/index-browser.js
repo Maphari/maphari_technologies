@@ -866,6 +866,9 @@ exports.Prisma.MeetingRecordScalarFieldEnum = {
   actionItemStatus: 'actionItemStatus',
   notes: 'notes',
   clientMoodRating: 'clientMoodRating',
+  transcriptText: 'transcriptText',
+  aiSummary: 'aiSummary',
+  recordingId: 'recordingId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

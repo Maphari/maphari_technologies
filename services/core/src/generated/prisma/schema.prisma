@@ -1100,6 +1100,9 @@ model MeetingRecord {
   actionItemStatus String   @default("NONE")
   notes            String?
   clientMoodRating Int?
+  transcriptText   String?
+  aiSummary        String?
+  recordingId      String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

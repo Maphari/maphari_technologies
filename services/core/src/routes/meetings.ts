@@ -10,6 +10,7 @@ import type { ApiResponse } from "@maphari/contracts";
 import { cache, CacheKeys, withCache } from "../lib/infrastructure.js";
 import { prisma } from "../lib/prisma.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
+import { getTranscriptText } from "../lib/daily.js";
 
 // ── Route registration ────────────────────────────────────────────────────────
 export async function registerMeetingRoutes(app: FastifyInstance): Promise<void> {
@@ -77,5 +78,62 @@ export async function registerMeetingRoutes(app: FastifyInstance): Promise<void>
       reply.status(500);
       return { success: false, error: { code: "MOOD_UPDATE_FAILED", message: "Unable to update meeting rating." } } as ApiResponse;
     }
+  });
+
+  // POST /meetings/:id/transcribe
+  app.post("/meetings/:id/transcribe", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN" && scope.role !== "STAFF") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Admin or Staff only." } } as ApiResponse);
+    }
+
+    const { id } = request.params as { id: string };
+    const body = request.body as { recordingId?: string };
+
+    const meeting = await prisma.meetingRecord.findUnique({ where: { id } });
+    if (!meeting) {
+      return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Meeting not found." } } as ApiResponse);
+    }
+
+    const recordingId = body.recordingId ?? meeting.recordingId ?? null;
+    if (!recordingId) {
+      return reply.code(400).send({ success: false, error: { code: "NO_RECORDING", message: "No recording ID. Pass recordingId in body." } } as ApiResponse);
+    }
+
+    const transcriptText = await getTranscriptText(recordingId);
+    if (!transcriptText) {
+      return reply.code(503).send({ success: false, error: { code: "TRANSCRIPT_UNAVAILABLE", message: "Transcript not yet available or transcription disabled." } } as ApiResponse);
+    }
+
+    let aiSummary: string | null = null;
+    try {
+      const aiRes = await fetch(
+        `${process.env.AI_SERVICE_URL ?? "http://localhost:4007"}/ai/meeting-summary`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-user-role": "ADMIN" },
+          body: JSON.stringify({
+            content: transcriptText.slice(0, 8000),
+          }),
+          signal: AbortSignal.timeout(30_000),
+        }
+      );
+      if (aiRes.ok) {
+        const aiData = (await aiRes.json()) as { success?: boolean; data?: { text?: string } };
+        aiSummary = aiData?.data?.text ?? null;
+      }
+    } catch {
+      // Non-fatal
+    }
+
+    const updated = await prisma.meetingRecord.update({
+      where: { id },
+      data: { transcriptText, aiSummary, recordingId },
+    });
+
+    await cache.delete(CacheKeys.meetings(updated.clientId));
+    await cache.delete(CacheKeys.meetings("all"));
+
+    return reply.code(200).send({ success: true, data: updated, meta: { requestId: scope.requestId } } as ApiResponse<typeof updated>);
   });
 }

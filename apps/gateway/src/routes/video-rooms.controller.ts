@@ -57,4 +57,18 @@ export class VideoRoomsController {
   ): Promise<ApiResponse> {
     return proxyRequest(`${this.baseUrl}/video-rooms/${roomName}/recordings`, "GET", undefined, this.headers(userId, role, clientId, requestId, traceId));
   }
+
+  @Roles("ADMIN", "STAFF")
+  @Post("meetings/:id/transcribe")
+  async transcribeMeeting(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string,
+  ): Promise<ApiResponse> {
+    return proxyRequest(`${this.baseUrl}/meetings/${id}/transcribe`, "POST", body, this.headers(userId, role, clientId, requestId, traceId));
+  }
 }

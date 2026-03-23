@@ -682,6 +682,40 @@ export async function registerAiRoutes(app: FastifyInstance): Promise<void> {
     } as ApiResponse<{ prospects: typeof prospects; totalFound: number; jobId: string }>;
   });
 
+  // ── POST /ai/meeting-summary ─────────────────────────────────────────────
+  // Generates a bullet-point summary + action items from a meeting transcript.
+  // ADMIN + STAFF only — enforced at the gateway layer.
+
+  app.post("/ai/meeting-summary", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const body = request.body as {
+      content?: unknown;
+    } | null;
+
+    const content = typeof body?.content === "string" ? body.content.trim() : "";
+
+    if (!content) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "content is required." }
+      } as ApiResponse;
+    }
+
+    const prompt = `You are a meeting assistant. Summarise the following meeting transcript in 3-5 bullet points, then list action items with owner names where mentioned. Be concise.\n\nTranscript:\n${content}`;
+
+    const clientId = scope.clientId ?? "system";
+    const job = await createAiWorkflowJob("auto-draft", { clientId, prompt, model: "claude-sonnet-4-6" });
+    metrics?.inc("ai_jobs_total", { service: "ai", status: job.status });
+    metrics?.observe("ai_job_latency_ms", job.latencyMs, { service: "ai", model: job.model });
+
+    return {
+      success: true,
+      data: { text: job.response, jobId: job.id },
+      meta: { requestId: scope.requestId }
+    } as ApiResponse<{ text: string; jobId: string }>;
+  });
+
   // ── POST /ai/prospect/send-pitch ──────────────────────────────────────────
   // Sends a personalised pitch email to a prospect contact via the
   // notifications service (NATS event). ADMIN + STAFF only — enforced at
