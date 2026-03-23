@@ -681,10 +681,11 @@ export class FyChecklistController {
 In `apps/gateway/src/modules/app.module.ts`, import and add to the `controllers` array:
 
 ```typescript
-import { CrisesController } from './routes/crises.controller';
-import { ComplianceController } from './routes/compliance.controller';
-import { FyChecklistController } from './routes/fy-checklist.controller';
-// Add to controllers: [..., CrisesController, ComplianceController, FyChecklistController]
+// Note: app.module.ts lives in modules/ — use ../routes/ prefix + .js extension (NodeNext moduleResolution)
+import { CrisesController } from '../routes/crises.controller.js';
+import { ComplianceController } from '../routes/compliance.controller.js';
+import { FyChecklistController } from '../routes/fy-checklist.controller.js';
+// Add to controllers array: [..., CrisesController, ComplianceController, FyChecklistController]
 ```
 
 - [ ] **Step 6: TypeScript check**
@@ -1755,12 +1756,24 @@ git commit -m "feat(core): allow STAFF to create conversations; add createdByRol
 ### Task 15: Gateway Controller — Calendar
 
 **Files:**
-- Create: `apps/gateway/src/routes/calendar.controller.ts`
+- Create/Verify: `apps/gateway/src/routes/calendar.controller.ts`
 - Modify: `apps/gateway/src/modules/app.module.ts`
 
-- [ ] **Step 1: Create calendar controller**
+> **Discovery note:** `calendar.controller.ts` may already exist in the gateway. Check:
+> ```bash
+> ls apps/gateway/src/routes/calendar.controller.ts 2>&1
+> ```
+> If it exists, read it to understand the pattern it uses (`proxyRequest`/`@Roles` or `HttpService`/`firstValueFrom`). If both GET `/events` and GET `/export.ics` endpoints already exist, skip Step 1 entirely.
 
-Create `apps/gateway/src/routes/calendar.controller.ts`:
+- [ ] **Step 1: Read existing calendar controller (or create if absent)**
+
+If the file exists:
+- Read it in full
+- Confirm `GET /calendar/events` and `GET /calendar/export.ics` both proxy to the core service
+- If any endpoint is missing, add it using the **same pattern as the rest of the file** (do NOT mix patterns)
+- If the file uses `proxyRequest` + `@Roles`, follow that. If it uses `HttpService`/`firstValueFrom`, follow that
+
+If the file does NOT exist, create it using the `HttpService`/`firstValueFrom` pattern consistent with other newly created controllers in this plan:
 
 ```typescript
 import { Controller, Get, Query, Req, UseGuards, Res } from '@nestjs/common';
@@ -1796,7 +1809,7 @@ export class CalendarController {
 
   @Get('export.ics')
   async exportIcs(@Req() req: Request, @Res() res: Response) {
-    const { data, headers } = await firstValueFrom(
+    const { data } = await firstValueFrom(
       this.http.get(`${process.env.CORE_URL}/calendar/export.ics`, {
         headers: this.headers(req),
         responseType: 'text',
@@ -1809,11 +1822,12 @@ export class CalendarController {
 }
 ```
 
-- [ ] **Step 2: Register in app.module.ts**
+- [ ] **Step 2: Register in app.module.ts (if not already registered)**
 
 ```typescript
-import { CalendarController } from './routes/calendar.controller';
-// Add CalendarController to controllers array
+// Note: app.module.ts lives in modules/ — use ../routes/ prefix + .js extension (NodeNext moduleResolution)
+import { CalendarController } from '../routes/calendar.controller.js';
+// Add CalendarController to controllers array (if not already present)
 ```
 
 - [ ] **Step 3: TypeScript check + commit**
@@ -1821,7 +1835,7 @@ import { CalendarController } from './routes/calendar.controller';
 ```bash
 cd apps/gateway && pnpm exec tsc --noEmit
 git add apps/gateway/src/routes/calendar.controller.ts apps/gateway/src/modules/app.module.ts
-git commit -m "feat(gateway): add calendar controller with events + iCal export"
+git commit -m "feat(gateway): verify/extend calendar controller with events + iCal export"
 ```
 
 ---
@@ -2552,8 +2566,9 @@ async rejectTimesheet(@Param('id') id: string, @Body() body: any, @Req() req: Re
 - [ ] **Step 4: Register in app.module.ts**
 
 ```typescript
-import { StaffGoalsController } from './routes/staff-goals.controller';
-import { PeerReviewsController } from './routes/peer-reviews.controller';
+// Note: app.module.ts lives in modules/ — use ../routes/ prefix + .js extension (NodeNext moduleResolution)
+import { StaffGoalsController } from '../routes/staff-goals.controller.js';
+import { PeerReviewsController } from '../routes/peer-reviews.controller.js';
 // Add to controllers array: StaffGoalsController, PeerReviewsController
 // time-entries controller already registered — no change needed to module for it
 ```
@@ -3102,7 +3117,7 @@ git commit -m "feat(staff): add My Goals, Peer Reviews pages; enhance capacity c
 - Create: `services/core/src/cron/peer-review-cycle.ts`
 - Modify: `services/core/src/app.ts`
 
-> **Spec requirement:** "Peer review cycle: quarterly auto-open/close via cron." On the first day of each quarter, all active staff members receive a new PeerReview record with `status=OPEN`. On the last day of the quarter, all OPEN reviews are automatically closed to `status=CLOSED`.
+> **Spec requirement:** "Peer review cycle: quarterly auto-open/close via cron." On the first day of each quarter, the cron announces the review window is open. Staff submit peer reviews voluntarily through the UI during the quarter window. On the last day of the quarter, all unsubmitted PENDING reviews are automatically closed to `status=SUBMITTED`. Note: `PeerReview.reviewerId` is a non-nullable FK to `StaffProfile` — only real staff-submitted records can exist; the cron cannot auto-create placeholder records.
 
 - [ ] **Step 1: Discover the existing cron/scheduler pattern**
 
@@ -3122,6 +3137,8 @@ cd services/core && pnpm add node-cron && pnpm add -D @types/node-cron
 
 - [ ] **Step 3: Create peer-review-cycle.ts**
 
+> **Design note:** `PeerReview.reviewerId` is a required FK to `StaffProfile.id` — there is no system user and no sentinel value is valid. The cron therefore does NOT auto-create `PeerReview` records. Instead, `scheduleQuarterOpen` announces the cycle via a log (and can emit an event for a future notification hook). Staff submit their own reviews through the UI during the window. `scheduleQuarterClose` auto-closes any PENDING reviews that were legitimately created by real staff members before the window ended.
+
 Create `services/core/src/cron/peer-review-cycle.ts`:
 
 ```typescript
@@ -3130,37 +3147,13 @@ import { PrismaClient } from '../generated/prisma';
 
 // Runs at 00:01 on day 1 of months: Jan, Apr, Jul, Oct (quarter start)
 // Cron: "1 0 1 1,4,7,10 *"
+// Does NOT auto-create PeerReview records — reviewerId is a required FK to StaffProfile
+// and there is no valid system user. Staff create their own reviews via the UI.
 export function scheduleQuarterOpen(prisma: PrismaClient) {
   cron.schedule('1 0 1 1,4,7,10 *', async () => {
     const quarter = getCurrentQuarter();
-    console.log(`[peer-review-cron] Opening review cycle for ${quarter}`);
-
-    // StaffProfile is the authoritative staff record (not a User model — there is none)
-    const staffProfiles = await prisma.staffProfile.findMany({
-      where: { isActive: true },
-      select: { id: true },
-    });
-
-    // Create a PeerReview record for each staff member (as reviewee)
-    // Idempotent: skip if record already exists for this quarter
-    for (const profile of staffProfiles) {
-      const existing = await prisma.peerReview.findFirst({
-        where: { revieweeId: profile.id, quarter },
-      });
-      if (!existing) {
-        await prisma.peerReview.create({
-          data: {
-            revieweeId: profile.id,
-            // reviewerId is required by the schema — use a sentinel SYSTEM id for auto-created records
-            reviewerId: 'SYSTEM',
-            quarter,
-            status: 'PENDING', // existing default status value in the schema
-          },
-        });
-      }
-    }
-
-    console.log(`[peer-review-cron] Opened ${staffProfiles.length} review slots for ${quarter}`);
+    console.log(`[peer-review-cron] Peer review window OPEN for ${quarter}. Staff may now submit reviews.`);
+    // Future: emit an EventBus event here to trigger in-app notifications to all active staff.
   });
 }
 
@@ -3171,8 +3164,8 @@ export function scheduleQuarterClose(prisma: PrismaClient) {
     const quarter = getCurrentQuarter();
     console.log(`[peer-review-cron] Closing review cycle for ${quarter}`);
 
-    // Mark unsubmitted PENDING reviews for this quarter as SUBMITTED with no score
-    // (indicates the cycle passed without a voluntary review being filed)
+    // Auto-close any PENDING reviews created by staff during the window.
+    // These records have a valid reviewerId (real StaffProfile.id) so the update is safe.
     const result = await prisma.peerReview.updateMany({
       where: { quarter, status: 'PENDING' },
       data: { status: 'SUBMITTED', submittedAt: new Date() },
