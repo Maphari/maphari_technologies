@@ -131,6 +131,7 @@ import { useStaffSla } from "./staff-dashboard/hooks/use-staff-sla";
 import { useStaffNav } from "./staff-dashboard/hooks/use-staff-nav";
 import { useStaffTour, STAFF_TOUR_STEPS } from "./staff-dashboard/hooks/use-staff-tour";
 import { DashboardTour } from "../shared/dashboard-tour";
+import { FtueWelcomeModal } from "./staff-dashboard/components/ftue-welcome-modal";
 
 // ── CMD+K search type → icon name ────────────────────────────────────────────
 const STAFF_CMD_TYPE_ICON: Record<string, string> = {
@@ -188,6 +189,9 @@ export function MaphariStaffDashboard() {
   // ─── Automations page state (not extracted into a hook yet) ───
   const [processingAutomationQueue, setProcessingAutomationQueue] = useState(false);
   const [acknowledgingAutomationFailures, setAcknowledgingAutomationFailures] = useState(false);
+
+  // ─── FTUE Welcome Modal state ───
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   const cursorRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
@@ -249,6 +253,12 @@ export function MaphariStaffDashboard() {
   useEffect(() => {
     if (activePage !== "tasks") setFilterProjectId(undefined);
   }, [activePage]);
+
+  useEffect(() => {
+    if (!localStorage.getItem("staff_ftue_v1_seen")) {
+      setShowWelcomeModal(true);
+    }
+  }, []);
 
   const staffName = staffProfileName ?? staffEmailFallbackName;
   const staffInitials = getInitials(staffName);
@@ -772,6 +782,11 @@ export function MaphariStaffDashboard() {
     setAcknowledgingAutomationFailures(false);
     setFeedback({ tone: "success", message: `${failedUnread.length} failed alert${failedUnread.length === 1 ? "" : "s"} acknowledged.` });
   }, [acknowledgingAutomationFailures, notificationJobs, session, setNotificationJobs]);
+
+  function handleWelcomeModalDismiss() {
+    setShowWelcomeModal(false);
+    localStorage.setItem("staff_ftue_v1_seen", "true");
+  }
 
   // ─── Topbar / page titles ───
   const [topbarEyebrow, topbarTitle] = pageTitles[activePage];
@@ -1707,6 +1722,11 @@ export function MaphariStaffDashboard() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* ── FTUE Welcome Modal ──────────────────────────────────────────── */}
+      {showWelcomeModal && (
+        <FtueWelcomeModal onDismiss={handleWelcomeModalDismiss} />
       )}
 
       {/* ── Toast stack ─────────────────────────────────────────────────── */}
