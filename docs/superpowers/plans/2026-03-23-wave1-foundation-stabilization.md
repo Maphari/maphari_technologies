@@ -1528,13 +1528,14 @@ export async function calendarRoutes(fastify: FastifyInstance) {
           ...(userRole === 'CLIENT' && clientId ? { clientId } : {}),
         },
       });
-      events.push(...appointments.map(a => {
-        const endAt = new Date(a.scheduledAt.getTime() + (a.durationMins ?? 60) * 60_000);
-        return {
-          id: a.id, title: a.type ?? 'Appointment', startAt: a.scheduledAt, endAt,
-          type: 'APPOINTMENT', sourceId: a.id, sourceType: 'Appointment', roles: ['ADMIN', 'STAFF', 'CLIENT'],
-        };
-      }));
+      // CalendarEvent shape must use `date: string` to match existing web API clients
+      // (staff/calendar.ts, admin/calendar.ts, portal/meetings.ts all use `date` not `startAt`)
+      events.push(...appointments.map(a => ({
+        id: a.id, title: a.type ?? 'Appointment',
+        date: a.scheduledAt.toISOString(), // single date field, not startAt/endAt
+        type: 'appointment' as const, sourceId: a.id,
+        status: a.status ?? undefined,
+      })));
 
       // Project milestones — uses `dueAt` (not `dueDate`)
       const milestones = await fastify.prisma.projectMilestone.findMany({
@@ -1544,13 +1545,15 @@ export async function calendarRoutes(fastify: FastifyInstance) {
         },
         include: { project: true },
       });
-      events.push(...milestones.map(m => ({
-        id: m.id, title: m.title, startAt: m.dueAt, endAt: m.dueAt,
-        type: 'MILESTONE', sourceId: m.id, sourceType: 'ProjectMilestone', roles: ['ADMIN', 'STAFF', 'CLIENT'],
-        clientId: m.project.clientId,
+      events.push(...milestones.filter(m => m.dueAt).map(m => ({
+        id: m.id, title: m.title,
+        date: m.dueAt!.toISOString(), // single date field
+        type: 'milestone' as const, sourceId: m.id,
+        projectName: m.project?.name ?? undefined,
+        clientId: m.project?.clientId ?? undefined,
       })));
 
-      return events.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+      return events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }
   );
 
@@ -2348,7 +2351,7 @@ export class StaffGoalsController {
   ): Promise<ApiResponse> {
     const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
     const qs = quarter ? `?quarter=${encodeURIComponent(quarter)}` : "";
-    return proxyRequest(`${baseUrl}/staff/goals${qs}`, "GET", undefined, {
+    return proxyRequest(`${baseUrl}/staff-goals${qs}`, "GET", undefined, {
       "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
       "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
     });
@@ -2364,7 +2367,7 @@ export class StaffGoalsController {
     @Headers("x-trace-id") traceId?: string
   ): Promise<ApiResponse> {
     const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
-    return proxyRequest(`${baseUrl}/staff/goals`, "POST", body, {
+    return proxyRequest(`${baseUrl}/staff-goals`, "POST", body, {
       "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
       "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
     });
@@ -2381,7 +2384,7 @@ export class StaffGoalsController {
     @Headers("x-trace-id") traceId?: string
   ): Promise<ApiResponse> {
     const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
-    return proxyRequest(`${baseUrl}/staff/goals/${id}`, "PATCH", body, {
+    return proxyRequest(`${baseUrl}/staff-goals/${id}`, "PATCH", body, {
       "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
       "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
     });
@@ -2397,7 +2400,7 @@ export class StaffGoalsController {
     @Headers("x-trace-id") traceId?: string
   ): Promise<ApiResponse> {
     const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
-    return proxyRequest(`${baseUrl}/staff/goals/${id}`, "DELETE", undefined, {
+    return proxyRequest(`${baseUrl}/staff-goals/${id}`, "DELETE", undefined, {
       "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
       "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
     });
