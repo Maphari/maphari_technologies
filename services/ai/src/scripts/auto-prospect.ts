@@ -1,9 +1,10 @@
 // ════════════════════════════════════════════════════════════════════════════
-// auto-prospect.ts — Daily automated prospecting script
+// auto-prospect.ts — Automated prospecting script
 //
-// Runs daily at 08:00. Picks a random industry category from an international
-// pool of cities, and opportunity filters, then runs the full AI prospecting
-// pipeline and sends pitch emails to each lead that has a contact email.
+// Runs hourly. Each run picks a fresh random industry + location combination.
+// Picks a random industry category from an international pool of cities, and
+// opportunity filters, then runs the full AI prospecting pipeline, persists
+// each prospect to the DB, and sends pitch emails to leads with a contact email.
 //
 // Usage: npx tsx services/ai/src/scripts/auto-prospect.ts
 // ════════════════════════════════════════════════════════════════════════════
@@ -82,6 +83,71 @@ function pickRandomN<T>(arr: readonly T[], n: number): T[] {
   return shuffled.slice(0, n);
 }
 
+async function fetchExistingLeadNames(coreBaseUrl: string): Promise<Set<string>> {
+  try {
+    const res = await fetch(`${coreBaseUrl}/leads`, {
+      headers: { "x-user-role": "ADMIN" },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!res.ok) return new Set();
+    const json = (await res.json()) as { data?: { company?: string | null }[] };
+    const leads = json.data ?? [];
+    return new Set(
+      leads
+        .map((l) => (l.company ?? "").toLowerCase().trim())
+        .filter((c) => c.length > 0)
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+async function saveLead(
+  coreBaseUrl: string,
+  prospect: {
+    company: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    rating?: number;
+    opportunityType: string;
+    opportunityReason: string;
+    leadScore?: number;
+    address?: string;
+  }
+): Promise<boolean> {
+  // Fields the Lead schema doesn't have columns for are stored in notes as JSON.
+  const notes = JSON.stringify({
+    opportunityType: prospect.opportunityType,
+    opportunityReason: prospect.opportunityReason,
+    address: prospect.address,
+    rating: prospect.rating,
+    leadScore: prospect.leadScore,
+  });
+
+  try {
+    const res = await fetch(`${coreBaseUrl}/leads`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-user-role": "ADMIN",
+      },
+      body: JSON.stringify({
+        title: `[Auto] ${prospect.company}`,
+        company: prospect.company,
+        contactEmail: prospect.contactEmail,
+        contactPhone: prospect.contactPhone,
+        source: "auto-prospect",
+        status: "NEW",
+        notes,
+      }),
+      signal: AbortSignal.timeout(8_000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 // ── Email dispatch via prospect/send-pitch endpoint ────────────────────────
 
 async function sendPitch(
@@ -115,56 +181,71 @@ async function sendPitch(
 // ── Main ──────────────────────────────────────────────────────────────────
 
 async function run(): Promise<void> {
-  const baseUrl = process.env.SERVICE_AI_BASE_URL ?? "http://localhost:3003";
+  const aiBaseUrl   = process.env.SERVICE_AI_BASE_URL ?? "http://localhost:3003";
+  const coreBaseUrl = process.env.CORE_SERVICE_URL    ?? "http://localhost:4002";
 
   // 1. Random selections
-  const industry  = pickRandom(INDUSTRIES);
-  const location  = pickRandom(LOCATIONS);
+  const industry   = pickRandom(INDUSTRIES);
+  const location   = pickRandom(LOCATIONS);
   const numFilters = Math.random() < 0.5 ? 1 : 2;
-  const filters   = pickRandomN(ALL_FILTERS, numFilters);
+  const filters    = pickRandomN(ALL_FILTERS, numFilters);
 
-  console.log(`[auto-prospect] Starting daily run`);
+  console.log(`[auto-prospect] ── Hourly run ──`);
   console.log(`[auto-prospect] Industry : ${industry}`);
   console.log(`[auto-prospect] Location : ${location}`);
   console.log(`[auto-prospect] Filters  : ${filters.join(", ")}`);
 
-  // 2. Run prospecting pipeline (search + enrich + pitch)
+  // 2. Cross-run dedup
+  const existing = await fetchExistingLeadNames(coreBaseUrl);
+  console.log(`[auto-prospect] Existing leads in DB: ${existing.size}`);
+
+  // 3. Run prospecting pipeline
   const rawProspects = await searchProspects(industry, location, 20, filters);
   const prospects    = await generatePitches(rawProspects, true);
+  console.log(`[auto-prospect] Prospects found: ${prospects.length}`);
 
-  console.log(`[auto-prospect] Found ${prospects.length} prospects`);
-
-  // 3. Send pitches to leads with a contact email
-  const sendable = prospects.filter((p) => p.contactEmail);
-  console.log(`[auto-prospect] ${sendable.length} prospects have email addresses`);
-
+  let saved   = 0;
   let sent    = 0;
   let skipped = 0;
 
-  for (const prospect of sendable) {
-    if (!prospect.contactEmail || !prospect.pitch) {
+  for (const prospect of prospects) {
+    const key = prospect.company.toLowerCase().trim();
+
+    if (existing.has(key)) {
+      console.log(`[auto-prospect] ⟳ Duplicate skipped: ${prospect.company}`);
       skipped++;
       continue;
     }
 
-    const subject = `Quick question for ${prospect.company}`;
-    const success = await sendPitch(baseUrl, prospect.contactEmail, subject, prospect.pitch);
-
-    if (success) {
-      sent++;
-      console.log(`[auto-prospect] ✓ Sent to ${prospect.company} <${prospect.contactEmail}>`);
+    // Persist to DB
+    const didSave = await saveLead(coreBaseUrl, prospect);
+    if (didSave) {
+      saved++;
+      existing.add(key); // prevent double-save within the same run
+      console.log(`[auto-prospect] ✓ Saved: ${prospect.company}`);
     } else {
-      skipped++;
+      console.warn(`[auto-prospect] ✗ DB save failed: ${prospect.company}`);
+    }
+
+    // Send pitch email if contact email is available
+    if (prospect.contactEmail && prospect.pitch) {
+      const subject = `Quick question for ${prospect.company}`;
+      const success = await sendPitch(aiBaseUrl, prospect.contactEmail, subject, prospect.pitch);
+      if (success) {
+        sent++;
+        console.log(`[auto-prospect] ✉ Pitched: ${prospect.company} <${prospect.contactEmail}>`);
+      }
     }
   }
 
-  // 4. Summary
+  // Summary
   console.log(`\n[auto-prospect] ── Run complete ──`);
   console.log(`[auto-prospect] Prospects found : ${prospects.length}`);
+  console.log(`[auto-prospect] Saved to DB     : ${saved}`);
   console.log(`[auto-prospect] Emails sent     : ${sent}`);
-  console.log(`[auto-prospect] Skipped         : ${skipped + (prospects.length - sendable.length)} (no email or send error)`);
-  console.log(`[auto-prospect] Filters used    : ${filters.join(", ")}`);
+  console.log(`[auto-prospect] Duplicates skip : ${skipped}`);
   console.log(`[auto-prospect] Industry        : ${industry} in ${location}`);
+  console.log(`[auto-prospect] Filters         : ${filters.join(", ")}`);
 }
 
 run().catch((err: unknown) => {
