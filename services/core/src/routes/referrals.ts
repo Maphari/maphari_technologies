@@ -67,8 +67,12 @@ export async function registerReferralRoutes(app: FastifyInstance): Promise<void
   });
 
   // ── GET /referrals ────────────────────────────────────────────────────────
-  app.get("/referrals", async (request) => {
+  app.get("/referrals", async (request, reply) => {
     const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN" && scope.role !== "STAFF") {
+      reply.status(403);
+      return { success: false, error: { code: "FORBIDDEN", message: "Admin or staff access required" } } as ApiResponse;
+    }
 
     const data = await withCache(CacheKeys.referrals(), 120, () =>
       prisma.referral.findMany({

@@ -23,7 +23,7 @@ export interface WebhookConfig {
   id: string;
   url: string;
   events: string[];
-  secret: string | null;
+  hasSecret: boolean;
   active: boolean;
   createdAt: string;
 }
@@ -51,7 +51,7 @@ function toConfig(ep: {
     id: ep.id,
     url: ep.url,
     events: ep.events.split(",").map((e) => e.trim()).filter(Boolean),
-    secret: ep.secret ?? null,
+    hasSecret: ep.secret !== null,
     active: ep.active,
     createdAt: ep.createdAt.toISOString(),
   };
