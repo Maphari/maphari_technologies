@@ -68,7 +68,7 @@ export function createNotificationEventHandler(metrics: EventMetrics, logger: Ev
       const recipient =
         payload.recipientEmail ??
         payload.recipient ??
-        (payload.recipientRole ? `${payload.recipientRole.toLowerCase()}@maphari.com` : "ops@maphari.com");
+        (payload.recipientRole ? `${payload.recipientRole.toLowerCase()}@mapharitechnologies.com` : "ops@mapharitechnologies.com");
       await enqueueJob({
         clientId: eventClientId ?? "system",
         channel,
@@ -99,7 +99,7 @@ export function createNotificationEventHandler(metrics: EventMetrics, logger: Ev
       await enqueueJob({
         clientId: eventClientId,
         channel: "EMAIL",
-        recipient: "ops@maphari.com",
+        recipient: "ops@mapharitechnologies.com",
         subject,
         message,
         tab: "projects",
@@ -137,7 +137,7 @@ export function createNotificationEventHandler(metrics: EventMetrics, logger: Ev
       await enqueueJob({
         clientId: eventClientId,
         channel: "EMAIL",
-        recipient: "ops@maphari.com",
+        recipient: "ops@mapharitechnologies.com",
         subject: `Event: ${event.topic}`,
         message: defaultMessageForTopic(event.topic),
         metadata: {

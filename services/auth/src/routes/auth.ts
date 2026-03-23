@@ -1598,7 +1598,7 @@ export async function registerAuthRoutes(
         topic: EventTopics.notificationRequested,
         payload: {
           channel: "EMAIL",
-          recipientEmail: process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@maphari.com",
+          recipientEmail: process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@mapharitechnologies.com",
           subject: "Security: 2FA Enabled",
           message: `Admin user (ID: ${userId}) has successfully enabled Two-Factor Authentication. This was completed at ${new Date().toISOString()}.`
         }
@@ -1662,7 +1662,7 @@ export async function registerAuthRoutes(
         topic: EventTopics.notificationRequested,
         payload: {
           channel: "EMAIL",
-          recipientEmail: process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@maphari.com",
+          recipientEmail: process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@mapharitechnologies.com",
           subject: "Security Alert: 2FA Disabled",
           message: `Admin user (ID: ${userId}) has disabled Two-Factor Authentication at ${new Date().toISOString()}. If this was not you, revoke all sessions immediately via the admin dashboard.`
         }
@@ -2418,7 +2418,7 @@ export async function registerAuthRoutes(
         topic: EventTopics.notificationRequested,
         payload: {
           channel: "EMAIL",
-          recipientEmail: process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@maphari.com",
+          recipientEmail: process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@mapharitechnologies.com",
           subject: "Security: Staff 2FA Enabled",
           message: `Staff user (ID: ${userId}) has successfully enabled Two-Factor Authentication. This was completed at ${new Date().toISOString()}.`
         }
@@ -2497,7 +2497,7 @@ export async function registerAuthRoutes(
         topic: EventTopics.notificationRequested,
         payload: {
           channel: "EMAIL",
-          recipientEmail: process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@maphari.com",
+          recipientEmail: process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@mapharitechnologies.com",
           subject: "Security: Staff 2FA Disabled",
           message: `Staff user (ID: ${userId}) has disabled Two-Factor Authentication at ${new Date().toISOString()}. If this was not you, revoke all sessions immediately via the admin dashboard.`
         }
