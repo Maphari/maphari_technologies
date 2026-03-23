@@ -235,7 +235,7 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
         topic: EventTopics.leadStatusUpdated,
         payload: {
           leadId: lead.id,
-          clientId: lead.clientId,
+          clientId: lead.clientId ?? undefined,
           previousStatus: existingLead.status,
           status: lead.status
         }
