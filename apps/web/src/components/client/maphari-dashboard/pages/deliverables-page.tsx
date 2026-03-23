@@ -83,7 +83,8 @@ const TABS: DTab[] = ["All", "Pending Review", "In Progress", "Accepted", "Upcom
 function apiStatusToUi(status: string): DStatus {
   switch (status) {
     case "ACCEPTED":           return "Accepted";
-    case "DELIVERED":          return "Pending Review";
+    case "DELIVERED":
+    case "PENDING_REVIEW":     return "Pending Review";
     case "IN_PROGRESS":        return "In Progress";
     case "CHANGES_REQUESTED":  return "Pending Review";
     default:                   return "Upcoming";

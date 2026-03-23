@@ -161,6 +161,10 @@ export async function registerDeliverableRoutes(app: FastifyInstance): Promise<v
     const { id } = request.params as { id: string };
     const body = request.body as { decision: "APPROVED" | "CHANGES_REQUESTED"; feedback?: string; reviewedByName?: string };
 
+    if (!body || typeof body !== "object") {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "Request body required." } } as ApiResponse);
+    }
+
     if (!["APPROVED", "CHANGES_REQUESTED"].includes(body.decision)) {
       return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "decision must be APPROVED or CHANGES_REQUESTED." } } as ApiResponse);
     }
@@ -171,7 +175,7 @@ export async function registerDeliverableRoutes(app: FastifyInstance): Promise<v
       include: { project: { select: { clientId: true } } },
     });
     if (!deliverable) return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Deliverable not found." } } as ApiResponse);
-    if (scope.clientId && deliverable.project?.clientId !== scope.clientId) {
+    if (!scope.clientId || deliverable.project?.clientId !== scope.clientId) {
       return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
     }
 
