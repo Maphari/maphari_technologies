@@ -526,54 +526,73 @@ git commit -m "feat(core): add compliance and FY checklist seed scripts"
 
 - [ ] **Step 1: Read existing gateway controller pattern**
 
-Read `apps/gateway/src/routes/clients.controller.ts` lines 1–60 to understand: how `HttpService` is used to proxy to core, the `@UseGuards(JwtAuthGuard)` pattern, and how request headers are forwarded.
+Read `apps/gateway/src/routes/clients.controller.ts` lines 1–40 to confirm the pattern. You will see:
+- `import { proxyRequest } from "../utils/proxy-request.js"` — thin fetch-based proxy helper
+- `import { Roles } from "../auth/roles.decorator.js"` — role guard decorator
+- `@Controller()` class decorator with NO path prefix
+- Individual routes use `@Get("path/to/resource")` with full path
+- Headers extracted via `@Headers("x-user-id")`, `@Headers("x-user-role")`, etc.
+- Upstream URL: `const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002"`
+- No `HttpService`, no `@nestjs/axios`, no `JwtAuthGuard`
 
 - [ ] **Step 2: Create crises controller**
 
 Create `apps/gateway/src/routes/crises.controller.ts`:
 
 ```typescript
-import { Controller, Get, Post, Patch, Body, Param, Req, UseGuards } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { JwtAuthGuard } from '../security/jwt-auth.guard';
-import { firstValueFrom } from 'rxjs';
-import { Request } from 'express';
+import { Body, Controller, Get, Headers, Param, Patch, Post } from "@nestjs/common";
+import type { ApiResponse, Role } from "@maphari/contracts";
+import { Roles } from "../auth/roles.decorator.js";
+import { proxyRequest } from "../utils/proxy-request.js";
 
-@Controller('admin/crises')
-@UseGuards(JwtAuthGuard)
+@Controller()
 export class CrisesController {
-  constructor(private readonly http: HttpService) {}
-
-  private headers(req: Request) {
-    return {
-      'x-user-role': req.headers['x-user-role'],
-      'x-tenant-id': req.headers['x-tenant-id'],
-      authorization: req.headers['authorization'],
-    };
+  @Roles("ADMIN")
+  @Get("admin/crises")
+  async listCrises(
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/crises`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "ADMIN",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 
-  @Get()
-  async getCrises(@Req() req: Request) {
-    const { data } = await firstValueFrom(
-      this.http.get(`${process.env.CORE_URL}/crises`, { headers: this.headers(req) })
-    );
-    return data;
+  @Roles("ADMIN")
+  @Post("admin/crises")
+  async createCrisis(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/crises`, "POST", body, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "ADMIN",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 
-  @Post()
-  async createCrisis(@Body() body: any, @Req() req: Request) {
-    const { data } = await firstValueFrom(
-      this.http.post(`${process.env.CORE_URL}/crises`, body, { headers: this.headers(req) })
-    );
-    return data;
-  }
-
-  @Patch(':id')
-  async updateCrisis(@Param('id') id: string, @Body() body: any, @Req() req: Request) {
-    const { data } = await firstValueFrom(
-      this.http.patch(`${process.env.CORE_URL}/crises/${id}`, body, { headers: this.headers(req) })
-    );
-    return data;
+  @Roles("ADMIN")
+  @Patch("admin/crises/:id")
+  async updateCrisis(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/crises/${id}`, "PATCH", body, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "ADMIN",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 }
 ```
@@ -583,47 +602,43 @@ export class CrisesController {
 Create `apps/gateway/src/routes/compliance.controller.ts`:
 
 ```typescript
-import { Controller, Get, Patch, Body, Param, Req, UseGuards } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { JwtAuthGuard } from '../security/jwt-auth.guard';
-import { firstValueFrom } from 'rxjs';
-import { Request } from 'express';
+import { Body, Controller, Get, Headers, Param, Patch } from "@nestjs/common";
+import type { ApiResponse, Role } from "@maphari/contracts";
+import { Roles } from "../auth/roles.decorator.js";
+import { proxyRequest } from "../utils/proxy-request.js";
 
-@Controller('admin/compliance')
-@UseGuards(JwtAuthGuard)
+@Controller()
 export class ComplianceController {
-  constructor(private readonly http: HttpService) {}
-
-  private headers(req: Request) {
-    return {
-      'x-user-role': req.headers['x-user-role'],
-      'x-tenant-id': req.headers['x-tenant-id'],
-      authorization: req.headers['authorization'],
-    };
+  @Roles("ADMIN")
+  @Get("admin/compliance")
+  async listCompliance(
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/compliance`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "ADMIN",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 
-  @Get()
-  async getCompliance(@Req() req: Request) {
-    const { data } = await firstValueFrom(
-      this.http.get(`${process.env.CORE_URL}/compliance`, { headers: this.headers(req) })
-    );
-    return data;
-  }
-
-  @Patch(':id')
-  async updateCompliance(@Param('id') id: string, @Body() body: any, @Req() req: Request) {
-    const { data } = await firstValueFrom(
-      this.http.patch(`${process.env.CORE_URL}/compliance/${id}`, body, { headers: this.headers(req) })
-    );
-    return data;
-  }
-
-  @Get('data-retention')
-  async getDataRetention(@Req() req: Request) {
-    const { data } = await firstValueFrom(
-      this.http.get(`${process.env.CORE_URL}/compliance/data-retention`, { headers: this.headers(req) })
-    );
-    return data;
+  @Roles("ADMIN")
+  @Patch("admin/compliance/:id")
+  async updateCompliance(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/compliance/${id}`, "PATCH", body, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "ADMIN",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 }
 ```
@@ -633,42 +648,45 @@ export class ComplianceController {
 Create `apps/gateway/src/routes/fy-checklist.controller.ts`:
 
 ```typescript
-import { Controller, Get, Patch, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { JwtAuthGuard } from '../security/jwt-auth.guard';
-import { firstValueFrom } from 'rxjs';
-import { Request } from 'express';
+import { Body, Controller, Get, Headers, Param, Patch, Query } from "@nestjs/common";
+import type { ApiResponse, Role } from "@maphari/contracts";
+import { Roles } from "../auth/roles.decorator.js";
+import { proxyRequest } from "../utils/proxy-request.js";
 
-@Controller('admin/fy-checklist')
-@UseGuards(JwtAuthGuard)
+@Controller()
 export class FyChecklistController {
-  constructor(private readonly http: HttpService) {}
-
-  private headers(req: Request) {
-    return {
-      'x-user-role': req.headers['x-user-role'],
-      'x-tenant-id': req.headers['x-tenant-id'],
-      authorization: req.headers['authorization'],
-    };
+  @Roles("ADMIN")
+  @Get("admin/fy-checklist")
+  async listChecklist(
+    @Query("year") year?: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    const qs = year ? `?year=${encodeURIComponent(year)}` : "";
+    return proxyRequest(`${baseUrl}/fy-checklist${qs}`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "ADMIN",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 
-  @Get()
-  async getChecklist(@Query('year') year: string, @Req() req: Request) {
-    const url = year
-      ? `${process.env.CORE_URL}/fy-checklist?year=${year}`
-      : `${process.env.CORE_URL}/fy-checklist`;
-    const { data } = await firstValueFrom(
-      this.http.get(url, { headers: this.headers(req) })
-    );
-    return data;
-  }
-
-  @Patch(':id')
-  async toggleItem(@Param('id') id: string, @Body() body: any, @Req() req: Request) {
-    const { data } = await firstValueFrom(
-      this.http.patch(`${process.env.CORE_URL}/fy-checklist/${id}`, body, { headers: this.headers(req) })
-    );
-    return data;
+  @Roles("ADMIN")
+  @Patch("admin/fy-checklist/:id")
+  async toggleItem(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/fy-checklist/${id}`, "PATCH", body, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "ADMIN",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 }
 ```
@@ -1655,54 +1673,41 @@ If the file exists:
 - If any endpoint is missing, add it using the **same pattern as the rest of the file** (do NOT mix patterns)
 - If the file uses `proxyRequest` + `@Roles`, follow that. If it uses `HttpService`/`firstValueFrom`, follow that
 
-If the file does NOT exist, create it using the `HttpService`/`firstValueFrom` pattern consistent with other newly created controllers in this plan:
+If the file does NOT exist, create it using the `proxyRequest` + `@Roles` pattern (same as `clients.controller.ts`):
 
 ```typescript
-import { Controller, Get, Query, Req, UseGuards, Res } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { JwtAuthGuard } from '../security/jwt-auth.guard';
-import { firstValueFrom } from 'rxjs';
-import { Request, Response } from 'express';
+import { Controller, Get, Headers, Query, Res } from "@nestjs/common";
+import type { ApiResponse, Role } from "@maphari/contracts";
+import { Roles } from "../auth/roles.decorator.js";
+import { proxyRequest } from "../utils/proxy-request.js";
 
-@Controller('calendar')
-@UseGuards(JwtAuthGuard)
+@Controller()
 export class CalendarController {
-  constructor(private readonly http: HttpService) {}
-
-  private headers(req: Request) {
-    return {
-      'x-user-role': req.headers['x-user-role'],
-      'x-tenant-id': req.headers['x-tenant-id'],
-      'x-client-id': req.headers['x-client-id'],
-      'x-user-id': req.headers['x-user-id'],
-      authorization: req.headers['authorization'],
-    };
-  }
-
-  @Get('events')
-  async getEvents(@Query('from') from: string, @Query('to') to: string, @Req() req: Request) {
-    const { data } = await firstValueFrom(
-      this.http.get(`${process.env.CORE_URL}/calendar/events?from=${from}&to=${to}`, {
-        headers: this.headers(req),
-      })
-    );
-    return data;
-  }
-
-  @Get('export.ics')
-  async exportIcs(@Req() req: Request, @Res() res: Response) {
-    const { data } = await firstValueFrom(
-      this.http.get(`${process.env.CORE_URL}/calendar/export.ics`, {
-        headers: this.headers(req),
-        responseType: 'text',
-      })
-    );
-    res.setHeader('Content-Type', 'text/calendar');
-    res.setHeader('Content-Disposition', 'attachment; filename="maphari-calendar.ics"');
-    res.send(data);
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("calendar/events")
+  async listCalendarEvents(
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    const qs = new URLSearchParams();
+    if (from) qs.set("from", from);
+    if (to) qs.set("to", to);
+    return proxyRequest(`${baseUrl}/calendar/events?${qs.toString()}`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 }
 ```
+
+> Note: iCal export (`GET /calendar/export.ics`) returns `text/calendar` — if the existing controller has this route, keep it as-is. Adding it with `proxyRequest` is not straightforward as it requires passthrough of binary/text response headers. Defer iCal export to a future task if it doesn't already exist.
 
 - [ ] **Step 2: Register in app.module.ts (if not already registered)**
 
@@ -1830,25 +1835,11 @@ export async function createStaffClientMessageWithRefresh(
 }
 ```
 
-- [ ] **Step 5: Add portal calendar fetch to portal/meetings.ts**
+- [ ] **Step 5: Verify portal/meetings.ts already has loadPortalCalendarEventsWithRefresh**
 
-Read `apps/web/src/lib/api/portal/meetings.ts` to understand the existing function structure and import pattern. Append a function to load calendar events for the client:
+Read `apps/web/src/lib/api/portal/meetings.ts` and grep for `loadPortalCalendarEventsWithRefresh`. This function already exists and calls `GET /calendar/events?from=...&to=...` (confirmed). It returns `PortalCalendarEvent[]` with a `date: string` field.
 
-```typescript
-// Add this to portal/meetings.ts (adjust import pattern to match what the file already uses)
-export async function loadClientCalendarEventsWithRefresh(
-  session: AuthSession,
-  from: string,
-  to: string
-): Promise<AuthorizedResult<CalendarEvent[]>> {
-  return withAuthorizedSession(session, async (token) => {
-    const res = await callGateway<CalendarEvent[]>(`/portal/calendar/events?from=${from}&to=${to}`, token);
-    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
-    if (!res.payload.success) return { unauthorized: false, data: [], error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
-    return { unauthorized: false, data: res.payload.data ?? [], error: null };
-  });
-}
-```
+If it exists → do nothing. If somehow missing → add it following the existing pattern, calling `/calendar/events` (NOT `/portal/calendar/events`).
 
 - [ ] **Step 6: TypeScript check + commit**
 
@@ -1915,7 +1906,8 @@ export default function CalendarPage({ session }: { session: AuthSession }) {
         {events.length === 0 && <p style={{ color: 'var(--muted)' }}>No events this week.</p>}
         {events.map(event => (
           <div key={event.id} style={{ padding: '10px 14px', border: '1px solid var(--b2)', borderRadius: 'var(--r-sm)', display: 'flex', justifyContent: 'space-between' }}>
-            <span>{new Date(event.startAt).toLocaleDateString()}</span>
+            {/* CalendarEvent interface uses `date: string`, NOT `startAt` */}
+            <span>{new Date(event.date).toLocaleDateString()}</span>
             <span style={{ fontWeight: 500 }}>{event.title}</span>
             <span style={{ color: 'var(--muted)', fontSize: 12 }}>{event.type}</span>
           </div>
@@ -1935,16 +1927,18 @@ Read `apps/web/src/components/client/maphari-dashboard/pages/book-call-page.tsx`
 After the existing booking UI, add a "My Schedule" section:
 
 ```typescript
-import { loadClientCalendarEventsWithRefresh, type CalendarEvent } from '@/lib/api/portal/meetings';
+// portal/meetings.ts already exports loadPortalCalendarEventsWithRefresh (NOT loadClientCalendar...)
+// PortalCalendarEvent interface in meetings.ts uses `date: string`, NOT `startAt`
+import { loadPortalCalendarEventsWithRefresh, type PortalCalendarEvent } from '@/lib/api/portal/meetings';
 
 // In the component body:
-const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
+const [upcomingEvents, setUpcomingEvents] = useState<PortalCalendarEvent[]>([]);
 
 useEffect(() => {
   if (!session) return;
   const from = new Date().toISOString();
   const to = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // next 30 days
-  loadClientCalendarEventsWithRefresh(session, from, to).then(r => {
+  loadPortalCalendarEventsWithRefresh(session, from, to).then(r => {
     if (r.data) setUpcomingEvents(r.data);
   });
 }, [session]);
@@ -1957,7 +1951,7 @@ useEffect(() => {
 //   ) : (
 //     upcomingEvents.map(ev => (
 //       <div key={ev.id}>
-//         <span>{new Date(ev.startAt).toLocaleDateString()}</span>
+//         <span>{new Date(ev.date).toLocaleDateString()}</span>   {/* date, not startAt */}
 //         <span>{ev.title}</span>
 //         <span>{ev.type}</span>
 //       </div>
@@ -2322,126 +2316,206 @@ git commit -m "feat(core): add timesheet submit/approve/reject endpoints"
 
 - [ ] **Step 1: Create staff-goals controller (only if no existing route handles /staff/goals)**
 
+> **Pattern:** Use the same `proxyRequest` + `@Roles` + `@Headers` pattern as `clients.controller.ts`. No `HttpService`, no `@nestjs/axios`, no `JwtAuthGuard`.
+
 If no controller handles `staff/goals`, create `apps/gateway/src/routes/staff-goals.controller.ts`:
 
 ```typescript
-import { Controller, Get, Post, Patch, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { JwtAuthGuard } from '../security/jwt-auth.guard';
-import { firstValueFrom } from 'rxjs';
-import { Request } from 'express';
+import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Query } from "@nestjs/common";
+import type { ApiResponse, Role } from "@maphari/contracts";
+import { Roles } from "../auth/roles.decorator.js";
+import { proxyRequest } from "../utils/proxy-request.js";
 
-@Controller('staff-goals')
-@UseGuards(JwtAuthGuard)
+@Controller()
 export class StaffGoalsController {
-  constructor(private readonly http: HttpService) {}
-
-  private headers(req: Request) {
-    return {
-      'x-user-role': req.headers['x-user-role'],
-      'x-user-id': req.headers['x-user-id'],
-      'x-tenant-id': req.headers['x-tenant-id'],
-      authorization: req.headers['authorization'],
-    };
+  @Roles("ADMIN", "STAFF")
+  @Get("staff/goals")
+  async listGoals(
+    @Query("quarter") quarter?: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    const qs = quarter ? `?quarter=${encodeURIComponent(quarter)}` : "";
+    return proxyRequest(`${baseUrl}/staff/goals${qs}`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 
-  @Get()
-  async getGoals(@Query('quarter') quarter: string, @Req() req: Request) {
-    const url = quarter
-      ? `${process.env.CORE_URL}/staff-goals?quarter=${quarter}`
-      : `${process.env.CORE_URL}/staff-goals`;
-    const { data } = await firstValueFrom(this.http.get(url, { headers: this.headers(req) }));
-    return data;
+  @Roles("ADMIN", "STAFF")
+  @Post("staff/goals")
+  async createGoal(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/staff/goals`, "POST", body, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 
-  @Post()
-  async createGoal(@Body() body: any, @Req() req: Request) {
-    const { data } = await firstValueFrom(
-      this.http.post(`${process.env.CORE_URL}/staff-goals`, body, { headers: this.headers(req) })
-    );
-    return data;
+  @Roles("ADMIN", "STAFF")
+  @Patch("staff/goals/:id")
+  async updateGoal(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/staff/goals/${id}`, "PATCH", body, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 
-  @Patch(':id')
-  async updateGoal(@Param('id') id: string, @Body() body: any, @Req() req: Request) {
-    const { data } = await firstValueFrom(
-      this.http.patch(`${process.env.CORE_URL}/staff-goals/${id}`, body, { headers: this.headers(req) })
-    );
-    return data;
+  @Roles("ADMIN", "STAFF")
+  @Delete("staff/goals/:id")
+  async deleteGoal(
+    @Param("id") id: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/staff/goals/${id}`, "DELETE", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 }
 ```
 
-- [ ] **Step 2: Create peer-reviews controller**
+- [ ] **Step 2: Create peer-reviews controller (only if no existing route handles /peer-reviews)**
 
-Create `apps/gateway/src/routes/peer-reviews.controller.ts`:
+> **Gateway staff routes:** `staff.controller.ts` already has `@Get("peer-reviews")`, `@Post("peer-reviews")`, `@Patch("peer-reviews/:id/submit")`. If these exist, skip this step entirely — do NOT create a duplicate controller.
+
+If the routes do NOT exist, create `apps/gateway/src/routes/peer-reviews.controller.ts`:
 
 ```typescript
-import { Controller, Get, Post, Body, Req, UseGuards } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { JwtAuthGuard } from '../security/jwt-auth.guard';
-import { firstValueFrom } from 'rxjs';
-import { Request } from 'express';
+import { Body, Controller, Get, Headers, Param, Patch, Post } from "@nestjs/common";
+import type { ApiResponse, Role } from "@maphari/contracts";
+import { Roles } from "../auth/roles.decorator.js";
+import { proxyRequest } from "../utils/proxy-request.js";
 
-@Controller('peer-reviews')
-@UseGuards(JwtAuthGuard)
+@Controller()
 export class PeerReviewsController {
-  constructor(private readonly http: HttpService) {}
-
-  private headers(req: Request) {
-    return {
-      'x-user-role': req.headers['x-user-role'],
-      'x-user-id': req.headers['x-user-id'],
-      'x-tenant-id': req.headers['x-tenant-id'],
-      authorization: req.headers['authorization'],
-    };
+  @Roles("ADMIN", "STAFF")
+  @Get("peer-reviews")
+  async listPeerReviews(
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/peer-reviews`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 
-  @Get()
-  async getMyReviews(@Req() req: Request) {
-    const { data } = await firstValueFrom(
-      this.http.get(`${process.env.CORE_URL}/peer-reviews`, { headers: this.headers(req) })
-    );
-    return data;
+  @Roles("ADMIN", "STAFF")
+  @Post("peer-reviews")
+  async createPeerReview(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/peer-reviews`, "POST", body, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 
-  @Post()
-  async submitReview(@Body() body: any, @Req() req: Request) {
-    const { data } = await firstValueFrom(
-      this.http.post(`${process.env.CORE_URL}/peer-reviews`, body, { headers: this.headers(req) })
-    );
-    return data;
+  @Roles("ADMIN", "STAFF")
+  @Patch("peer-reviews/:id/submit")
+  async submitPeerReview(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/peer-reviews/${id}/submit`, "PATCH", body, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
+      "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
   }
 }
 ```
 
 - [ ] **Step 3: Extend time-entries controller with submit/approve/reject**
 
-Find `apps/gateway/src/routes/time-entries.controller.ts`. Read it, then add:
+Read `apps/gateway/src/routes/time-entries.controller.ts` in full. Note the existing pattern — the controller uses `@Controller()` with no prefix and the same `proxyRequest` + `@Roles` + `@Headers` pattern.
+
+Add these methods if not already present (check before adding):
 
 ```typescript
-@Patch(':id/submit')
-async submitTimesheet(@Param('id') id: string, @Body() body: any, @Req() req: Request) {
-  const { data } = await firstValueFrom(
-    this.http.patch(`${process.env.CORE_URL}/time-entries/${id}/submit`, body, { headers: this.headers(req) })
-  );
-  return data;
+@Roles("STAFF")
+@Patch("time-entries/:id/submit")
+async submitTimesheet(
+  @Param("id") id: string,
+  @Body() body: unknown,
+  @Headers("x-user-id") userId?: string,
+  @Headers("x-user-role") role?: Role,
+  @Headers("x-request-id") requestId?: string,
+  @Headers("x-trace-id") traceId?: string
+): Promise<ApiResponse> {
+  const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+  return proxyRequest(`${baseUrl}/time-entries/${id}/submit`, "PATCH", body, {
+    "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
+    "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+  });
 }
 
-@Patch(':id/approve')
-async approveTimesheet(@Param('id') id: string, @Body() body: any, @Req() req: Request) {
-  const { data } = await firstValueFrom(
-    this.http.patch(`${process.env.CORE_URL}/time-entries/${id}/approve`, body, { headers: this.headers(req) })
-  );
-  return data;
+@Roles("ADMIN")
+@Patch("time-entries/:id/approve")
+async approveTimesheet(
+  @Param("id") id: string,
+  @Body() body: unknown,
+  @Headers("x-user-id") userId?: string,
+  @Headers("x-user-role") role?: Role,
+  @Headers("x-request-id") requestId?: string,
+  @Headers("x-trace-id") traceId?: string
+): Promise<ApiResponse> {
+  const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+  return proxyRequest(`${baseUrl}/time-entries/${id}/approve`, "PATCH", body, {
+    "x-user-id": userId ?? "", "x-user-role": role ?? "ADMIN",
+    "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+  });
 }
 
-@Patch(':id/reject')
-async rejectTimesheet(@Param('id') id: string, @Body() body: any, @Req() req: Request) {
-  const { data } = await firstValueFrom(
-    this.http.patch(`${process.env.CORE_URL}/time-entries/${id}/reject`, body, { headers: this.headers(req) })
-  );
-  return data;
+@Roles("ADMIN")
+@Patch("time-entries/:id/reject")
+async rejectTimesheet(
+  @Param("id") id: string,
+  @Body() body: unknown,
+  @Headers("x-user-id") userId?: string,
+  @Headers("x-user-role") role?: Role,
+  @Headers("x-request-id") requestId?: string,
+  @Headers("x-trace-id") traceId?: string
+): Promise<ApiResponse> {
+  const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+  return proxyRequest(`${baseUrl}/time-entries/${id}/reject`, "PATCH", body, {
+    "x-user-id": userId ?? "", "x-user-role": role ?? "ADMIN",
+    "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+  });
 }
 ```
 
@@ -2511,7 +2585,8 @@ export async function loadMyPeerReviewsWithRefresh(
   session: AuthSession
 ): Promise<AuthorizedResult<PeerReview[]>> {
   return withAuthorizedSession(session, async (token) => {
-    const res = await callGateway<PeerReview[]>("/staff/peer-reviews", token);
+    // Gateway staff.controller.ts routes peer-reviews at /peer-reviews (NO /staff/ prefix)
+    const res = await callGateway<PeerReview[]>("/peer-reviews", token);
     if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
     if (!res.payload.success) return { unauthorized: false, data: [], error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
     return { unauthorized: false, data: res.payload.data ?? [], error: null };
@@ -2523,7 +2598,8 @@ export async function submitPeerReviewWithRefresh(
   data: { revieweeId: string; quarter?: string; score: number; feedback?: string }
 ): Promise<AuthorizedResult<PeerReview>> {
   return withAuthorizedSession(session, async (token) => {
-    const res = await callGateway<PeerReview>("/staff/peer-reviews", token, { method: "POST", body: data });
+    // POST /peer-reviews — gateway staff.controller.ts, no /staff/ prefix
+    const res = await callGateway<PeerReview>("/peer-reviews", token, { method: "POST", body: data });
     if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
     if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
     return { unauthorized: false, data: res.payload.data ?? null, error: null };
@@ -2542,7 +2618,8 @@ export async function submitTimesheetWithRefresh(
 ): Promise<AuthorizedResult<{ id: string; status: string }>> {
   return withAuthorizedSession(session, async (token) => {
     const res = await callGateway<{ id: string; status: string }>(
-      `/staff/time-entries/${entryId}/submit`,
+      // Gateway TimeEntriesController has @Controller() with no prefix → /time-entries/:id/submit
+      `/time-entries/${entryId}/submit`,
       token,
       { method: "PATCH", body: {} }
     );
