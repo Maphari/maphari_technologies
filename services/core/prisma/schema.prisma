@@ -1157,6 +1157,7 @@ model HandoverRecord {
   clientId      String?
   status        String    @default("PENDING")
   notes         String?
+  aiSummary     String?   // AI-generated structured summary
   transferDate  DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

@@ -716,6 +716,40 @@ export async function registerAiRoutes(app: FastifyInstance): Promise<void> {
     } as ApiResponse<{ text: string; jobId: string }>;
   });
 
+  // ── POST /ai/handover-summary ─────────────────────────────────────────────
+  // Generates a structured 3-bullet summary + action items from handover notes.
+  // ADMIN + STAFF only — enforced at the gateway layer.
+
+  app.post("/ai/handover-summary", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const body = request.body as {
+      content?: unknown;
+    } | null;
+
+    const content = typeof body?.content === "string" ? body.content.trim() : "";
+
+    if (!content) {
+      reply.status(400);
+      return {
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "content is required." }
+      } as ApiResponse;
+    }
+
+    const prompt = `Summarise this shift handover in 3 bullet points (what was done, what's in progress, what to watch). Then list any open action items.\n\nHandover notes:\n${content}`;
+
+    const clientId = scope.clientId ?? "system";
+    const job = await createAiWorkflowJob("handover-summary", { clientId, prompt, model: "claude-sonnet-4-6" });
+    metrics?.inc("ai_jobs_total", { service: "ai", status: job.status });
+    metrics?.observe("ai_job_latency_ms", job.latencyMs, { service: "ai", model: job.model });
+
+    return {
+      success: true,
+      data: { text: job.response, jobId: job.id },
+      meta: { requestId: scope.requestId }
+    } as ApiResponse<{ text: string; jobId: string }>;
+  });
+
   // ── POST /ai/prospect/send-pitch ──────────────────────────────────────────
   // Sends a personalised pitch email to a prospect contact via the
   // notifications service (NATS event). ADMIN + STAFF only — enforced at

@@ -21,6 +21,7 @@ type HandoverDto = {
   clientId: string | null;
   status: string;
   notes: string | null;
+  aiSummary: string | null;
   transferDate: string | null;
   createdAt: string;
   updatedAt: string;
@@ -34,6 +35,11 @@ function toDto(h: HandoverRecord): HandoverDto {
     updatedAt:    h.updatedAt.toISOString(),
   };
 }
+
+// Narrow the generated Prisma type to what we actually use from it.
+// (HandoverRecord from generated client may or may not include aiSummary
+//  depending on whether a migration was applied; this cast keeps TS happy.)
+type HandoverRecordWithAi = HandoverRecord & { aiSummary?: string | null };
 
 // ── Route registration ────────────────────────────────────────────────────────
 export async function registerHandoverRoutes(app: FastifyInstance): Promise<void> {
@@ -145,5 +151,49 @@ export async function registerHandoverRoutes(app: FastifyInstance): Promise<void
       request.log.error(error);
       return { success: false, error: { code: "HANDOVER_UPDATE_FAILED", message: "Unable to update handover" } } as ApiResponse;
     }
+  });
+
+  // ── POST /handovers/:id/summarise ───────────────────────────────────────────
+  app.post("/handovers/:id/summarise", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Not available for clients." } } as ApiResponse);
+    }
+
+    const { id } = request.params as { id: string };
+    const record = await prisma.handoverRecord.findUnique({ where: { id } });
+    if (!record) return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Handover not found." } } as ApiResponse);
+    if (!record.notes) return reply.code(400).send({ success: false, error: { code: "NO_NOTES", message: "Handover has no notes to summarise." } } as ApiResponse);
+
+    let aiSummary: string | null = null;
+    try {
+      const aiRes = await fetch(
+        `${process.env.AI_SERVICE_URL ?? "http://localhost:4007"}/ai/handover-summary`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-user-role": "ADMIN" },
+          body: JSON.stringify({ content: record.notes.slice(0, 4000) }),
+          signal: AbortSignal.timeout(20_000),
+        }
+      );
+      if (aiRes.ok) {
+        const d = (await aiRes.json()) as { success?: boolean; data?: { text?: string } };
+        aiSummary = d?.data?.text ?? null;
+      }
+    } catch {
+      return reply.code(503).send({ success: false, error: { code: "AI_UNAVAILABLE", message: "AI service unavailable." } } as ApiResponse);
+    }
+
+    const updated = (await prisma.handoverRecord.update({
+      where: { id },
+      data: { aiSummary } as Record<string, unknown>,
+    })) as HandoverRecordWithAi;
+
+    await Promise.all([
+      cache.delete(CacheKeys.handovers("admin")),
+      cache.delete(CacheKeys.handovers(`staff:${scope.userId ?? "unknown"}`)),
+    ]);
+
+    return { success: true, data: toDto(updated as HandoverRecord), meta: { requestId: scope.requestId } } as ApiResponse<HandoverDto>;
   });
 }

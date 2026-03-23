@@ -911,6 +911,7 @@ exports.Prisma.HandoverRecordScalarFieldEnum = {
   clientId: 'clientId',
   status: 'status',
   notes: 'notes',
+  aiSummary: 'aiSummary',
   transferDate: 'transferDate',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
