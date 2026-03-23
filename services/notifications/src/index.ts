@@ -33,7 +33,7 @@ async function drainQueue(): Promise<void> {
   for (let i = 0; i < MAX_JOBS_PER_TICK; i++) {
     try {
       const job = await processNextJob();
-      if (!job || job.status !== "QUEUED") break; // no more ready jobs
+      if (!job) break; // no more ready jobs
     } catch (err) {
       app.log.error({ err }, "notification queue drain error");
       break;
