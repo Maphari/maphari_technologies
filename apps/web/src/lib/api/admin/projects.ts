@@ -608,3 +608,75 @@ export async function setProjectPreferenceWithRefresh(
     return { unauthorized: false, data: response.payload.data, error: null };
   });
 }
+
+// ── EFT Verification ──────────────────────────────────────────────────────────
+
+export interface AdminEftPendingItem {
+  id: string;
+  projectId: string;
+  referenceCode: string | null;
+  clientId: string;
+  clientName: string;
+  projectName: string;
+  depositCents: number;
+  proofFileId: string;
+  proofFileName: string;
+  status: "PENDING" | "VERIFIED" | "REJECTED";
+  createdAt: string;
+  verifiedBy: string | null;
+  verifiedAt: string | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
+}
+
+export async function loadAdminEftPendingWithRefresh(
+  session: AuthSession,
+  options: { status?: "PENDING" | "VERIFIED" | "REJECTED" } = {}
+): Promise<AuthorizedResult<AdminEftPendingItem[]>> {
+  const params = new URLSearchParams();
+  if (options.status) params.set("status", options.status);
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<AdminEftPendingItem[]>(
+      `/admin/eft-pending${params.size ? `?${params}` : ""}`,
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: [],
+        error: toGatewayError(
+          response.payload.error?.code ?? "EFT_PENDING_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load EFT verifications."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+export async function verifyAdminEftDepositWithRefresh(
+  session: AuthSession,
+  verificationId: string,
+  input: { action: "VERIFY" | "REJECT"; rejectionReason?: string }
+): Promise<AuthorizedResult<{ status: string }>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ status: string }>(
+      `/admin/eft-pending/${verificationId}/verify`,
+      accessToken,
+      { method: "POST", body: input }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "EFT_VERIFY_FAILED",
+          response.payload.error?.message ?? "Unable to process verification."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
