@@ -94,6 +94,7 @@ export type PageId =
   | "proposals"
   | "communityModeration"
   | "communityFeatureRequests"
+  | "proposedActions"
   | "settings";
 
 // ─── Re-exports for backward compatibility ───
@@ -203,6 +204,7 @@ export const navItems: NavItem[] = [
   { id: "pipelineAnalytics", label: "Pipeline Analytics", section: "Finance" },
   { id: "communityModeration", label: "Moderation Queue", section: "Community", badgeRed: true },
   { id: "communityFeatureRequests", label: "Feature Requests", section: "Community" },
+  { id: "proposedActions", label: "Pending Approvals", section: "Governance" },
   { id: "settings", label: "Settings", section: "Governance" }
 ];
 

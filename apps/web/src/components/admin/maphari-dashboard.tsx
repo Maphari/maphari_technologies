@@ -90,6 +90,7 @@ import { ActiveHealthMonitorPage } from "./dashboard/pages/active-health-monitor
 import { AnnouncementsManagerPage } from "./dashboard/pages/announcements-manager-page";
 import { AdminCommunityModerationPage } from "./dashboard/pages/admin-community-moderation-page";
 import { AdminCommunityFeatureRequestsPage } from "./dashboard/pages/admin-community-feature-requests-page";
+import { ProposedActionsPage } from "./dashboard/pages/proposed-actions-page";
 import { LoyaltyCreditsPage } from "./dashboard/pages/loyalty-credits-page";
 import { BookingAppointmentsPage } from "./dashboard/pages/booking-appointments-page";
 import { DesignReviewAdminPage } from "./dashboard/pages/design-review-admin-page";
@@ -727,6 +728,7 @@ export function MaphariDashboard() {
             {page === "staffScheduling" ? <StaffSchedulingPage session={session} /> : null}
             {page === "communityModeration" ? <AdminCommunityModerationPage session={session} /> : null}
             {page === "communityFeatureRequests" ? <AdminCommunityFeatureRequestsPage session={session} /> : null}
+            {page === "proposedActions" ? <ProposedActionsPage session={session} /> : null}
             </DashboardErrorBoundary>
           </section>
         </main>

@@ -97,5 +97,6 @@ export const pageTitles: Record<PageId, [string, string]> = {
   staffScheduling: ["Communication", "Staff Scheduling"],
   communityModeration: ["Community", "Community Moderation"],
   communityFeatureRequests: ["Community", "Community Feature Requests"],
+  proposedActions: ["Governance", "Pending Approvals"],
   settings: ["Account", "Settings"]
 };
