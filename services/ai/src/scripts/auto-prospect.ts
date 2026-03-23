@@ -6,7 +6,7 @@
 // opportunity filters, then runs the full AI prospecting pipeline, persists
 // each prospect to the DB, and sends pitch emails to leads with a contact email.
 //
-// Usage: npx tsx services/ai/src/scripts/auto-prospect.ts
+// Usage: node_modules/.bin/tsx services/ai/src/scripts/auto-prospect.ts
 // ════════════════════════════════════════════════════════════════════════════
 
 import { searchProspects, generatePitches } from "../lib/prospecting.js";
