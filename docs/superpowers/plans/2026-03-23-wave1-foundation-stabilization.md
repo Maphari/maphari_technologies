@@ -2494,7 +2494,14 @@ Read `apps/web/src/lib/api/staff/hr.ts` and confirm these exports exist with the
 - `submitPeerReviewWithRefresh(session, reviewId: string, body: { score?: number; feedback?: string }): Promise<AuthorizedResult<StaffPeerReview>>`
 - `interface StaffPeerReview` — has `id, reviewerId, revieweeId, status, score, feedback, dueAt, submittedAt, createdAt, updatedAt`
 
-If they exist → do nothing. Proceed to Step 3.
+**After Task 18 runs the migration** (which adds `quarter String?` to PeerReview), also add `quarter?: string | null` to the `StaffPeerReview` interface in `hr.ts`:
+
+```typescript
+// In the StaffPeerReview interface, add this field after the existing fields:
+quarter?: string | null;
+```
+
+This is needed because `peer-review-page.tsx` renders `r.quarter` — without updating the interface TypeScript will fail the typecheck in Task 23 Step 8.
 
 > **Note for Task 23:** The `peer-review-page.tsx` should import from `@/lib/api/staff/hr`, not `@/lib/api/staff/peer-reviews`.
 
