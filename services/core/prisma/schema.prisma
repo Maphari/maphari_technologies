@@ -1773,3 +1773,13 @@ model AdminProposedAction {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
+
+model AvailabilitySlot {
+  id            String    @id @default(cuid())
+  adminId       String
+  startsAt      DateTime
+  endsAt        DateTime
+  booked        Boolean   @default(false)
+  appointmentId String?
+  createdAt     DateTime  @default(now())
+}
