@@ -35,9 +35,12 @@ export async function registerClientOnboardingCxRoutes(app: FastifyInstance): Pr
   });
 
   // ── GET /portal/onboarding/checklist ─────────────────────────────────────
-  app.get("/portal/onboarding/checklist", async (request) => {
+  app.get("/portal/onboarding/checklist", async (request, reply) => {
     const scope = readScopeHeaders(request);
-    const clientId = scope.clientId ?? "unknown";
+    if (!scope.clientId) {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Client access required" } });
+    }
+    const clientId = scope.clientId;
 
     const [profile, appointments, projects, messages, contracts] = await Promise.all([
       prisma.clientProfile.findFirst({ where: { clientId }, select: { id: true } }),
