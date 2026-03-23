@@ -131,6 +131,9 @@ import { registerBudgetBurnRoutes } from "./routes/budget-burn.js";
 // ── Churn Risk Score ───────────────────────────────────────────────────────
 import { registerChurnRiskRoutes } from "./routes/churn-risk.js";
 
+// ── EFT Verification ───────────────────────────────────────────────────────
+import { registerEftVerificationRoutes } from "./routes/eft-verification.js";
+
 // ── Standup Crons ──────────────────────────────────────────────────────────
 import { scheduleStandupReminder, scheduleStandupDigest } from "./cron/standup-reminder.js";
 
@@ -311,6 +314,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Churn Risk Score ───────────────────────────────────────────────────────
   await registerChurnRiskRoutes(app);
+
+  // ── EFT Verification ───────────────────────────────────────────────────────
+  await registerEftVerificationRoutes(app);
 
   // ── Standup Crons ──────────────────────────────────────────────────────────
   scheduleStandupReminder();
