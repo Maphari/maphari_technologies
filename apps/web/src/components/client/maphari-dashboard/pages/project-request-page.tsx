@@ -12,6 +12,8 @@ import {
   createPortalInvoiceWithRefresh,
   createPortalPaymentWithRefresh,
   initiatePortalPayfastWithRefresh,
+  uploadPortalFileWithRefresh,
+  submitPortalEftProofWithRefresh,
 } from "../../../../lib/api/portal/projects";
 import type { PortalProjectRequestServiceOption } from "../../../../lib/api/portal/types";
 import type { PageId } from "../config";
@@ -259,7 +261,13 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
   const [goal,          setGoal]          = useState<GoalId | null>(null);
   const [selected,      setSelected]      = useState<Set<ServiceId>>(new Set());
   const [addons,        setAddons]        = useState<Set<AddonId>>(new Set());
-  const [submitted,     setSubmitted]     = useState(false);
+  const [submittedProject, setSubmittedProject] = useState<{
+    id: string;
+    referenceCode: string;
+  } | null>(null);
+  const [proofUploaded,    setProofUploaded]    = useState(false);
+  const [proofUploading,   setProofUploading]   = useState(false);
+  const [proofUploadError, setProofUploadError] = useState<string | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [agreedToTerms,   setAgreedToTerms]   = useState(false);
   const [signatureText,   setSignatureText]   = useState("");
@@ -410,66 +418,175 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
 
   // ── Success screen ─────────────────────────────────────────────────────────
 
-  if (submitted) {
-    const refCode = `PRJ-${Date.now().toString().slice(-6)}`;
+  if (submittedProject) {
+    const refCode   = submittedProject.referenceCode;
+    const projectId = submittedProject.id;
+    const isEft     = payMethod === "EFT";
+
     return (
-      <div className={cx("pageBody")}>
-        <div className={cx("pageHeader", "mb0")}>
-          <div>
-            <div className={cx("pageEyebrow")}>Projects · New Request</div>
-            <h1 className={cx("pageTitle")}>Start a New Project</h1>
-          </div>
-        </div>
-        <div className={cx("card", "mt24", "borderLeftAccent")}>
-          <div className={cx("prqSuccessCard")}>
-            <div className={cx("prqSuccessCircle")}>
-              <Ic n="check" sz={26} c="var(--lime)" />
+      <div className={cx("prqSuccessShell")}>
+        {/* Main card */}
+        <div className={cx("prqCard")}>
+          {/* Header */}
+          <div className={cx("prqHeader")}>
+            <div className={cx("prqCheckRing")}>
+              <Ic n="check" sz={24} c="var(--lime)" />
             </div>
-            <div className={cx("prqSuccessTitle")}>Request received!</div>
-            <p className={cx("prqSuccessSub")}>
-              Your project brief has been submitted. Your dedicated PM will reach out within <strong>24 hours</strong> with a tailored proposal.
+            <div className={cx("prqTitle")}>Request submitted!</div>
+            <p className={cx("prqSub")}>
+              {isEft
+                ? "Your project request is in. Upload your proof of payment below to move it to the top of the queue."
+                : "Your project request has been submitted. Your dedicated PM will reach out within 24 hours."}
             </p>
-            <div className={cx("prqRefBox")}>
-              <Ic n="hash" sz={16} c="var(--lime)" />
-              <div className={cx("textLeft")}>
-                <div className={cx("text10", "colorMuted", "mb2")}>Your Reference Number</div>
-                <div className={cx("fw700", "text13", "colorAccent", "fontMono", "fs11rem", "ls006")}>{refCode}</div>
-              </div>
+          </div>
+
+          {/* Reference strip */}
+          <div className={cx("prqRefStrip")}>
+            <div>
+              <div className={cx("prqRefLabel")}>Reference</div>
+              <div className={cx("prqRefCode")}>{refCode}</div>
             </div>
-            {/* ── Request Status Timeline ───────────────────────────────── */}
-            <div className={cx("wFull", "maxW480", "m0auto28", "textLeft")}>
-              <div className={cx("text10", "fw700", "colorMuted", "uppercase", "ls008", "mb14")}>Request Status</div>
-              {([
-                { step: 1, label: "Request Submitted",    sub: "Your brief has been received by our team.",               done: true,  active: false },
-                { step: 2, label: "Under Admin Review",   sub: "Our team is reviewing your brief — typically 24–48 hrs.", done: false, active: true  },
-                { step: 3, label: "Decision & Proposal",  sub: "You'll be notified once we've reviewed your request.",    done: false, active: false },
-              ] as const).map((stage, i, arr) => (
-                <div key={stage.step} className={cx("flexRow", "gap14", "relative", i < arr.length - 1 && "pb18")}>
-                  {i < arr.length - 1 && (
-                    <div className={cx("stageConnector", "dynBgColor")} style={{ "--bg-color": stage.done ? "var(--lime)" : "var(--b2)" } as React.CSSProperties} />
-                  )}
-                  <div className={cx("stageCircle36", "dynBgColor")} style={{ "--bg-color": stage.done ? "color-mix(in oklab, var(--lime) 15%, transparent)" : stage.active ? "color-mix(in oklab, var(--accent) 10%, transparent)" : "var(--s3)", "--border-color": stage.done ? "var(--lime)" : stage.active ? "var(--accent)" : "var(--b2)" } as React.CSSProperties}>
-                    {stage.done
-                      ? <Ic n="check" sz={14} c="var(--lime)" />
-                      : stage.active
-                        ? <Ic n="clock" sz={14} c="var(--accent)" />
-                        : <span className={cx("dot8")} style={{ "--bg-color": "var(--b2)" } as React.CSSProperties} />
-                    }
+            <button className={cx("prqCopyBtn")} onClick={() => navigator.clipboard.writeText(refCode)}>Copy</button>
+          </div>
+
+          {/* Summary row */}
+          <div className={cx("prqSummaryRow")}>
+            <div className={cx("prqSummaryItem")}>
+              <span className={cx("prqSummaryLabel")}>Quote</span>
+              <span className={cx("prqSummaryValue")}>{fmtR(Math.round(quoteCents / 100))}</span>
+            </div>
+            <div className={cx("prqSummaryItem")}>
+              <span className={cx("prqSummaryLabel")}>Deposit</span>
+              <span className={cx("prqSummaryValueAccent")}>{fmtR(Math.round(depositCents / 100))}</span>
+            </div>
+            <div className={cx("prqSummaryItem")}>
+              <span className={cx("prqSummaryLabel")}>Method</span>
+              <span className={cx("prqSummaryValue")}>{payMethod}</span>
+            </div>
+          </div>
+
+          {/* Timeline */}
+          <div className={cx("prqTimelineLabel")}>Project status</div>
+          <div className={cx("prqTimeline")}>
+            {(isEft
+              ? ["Request submitted", "Deposit verification", "Proposal review", "Project kickoff"]
+              : ["Request submitted", "Proposal review", "Project kickoff"]
+            ).map((label, i) => {
+              const stepNum = i + 1;
+              const activeStep = isEft ? (proofUploaded ? 3 : 2) : 2;
+              const isDone = stepNum < activeStep;
+              const isActive = stepNum === activeStep;
+              return (
+                <div key={label} className={cx("prqStep", isDone ? "prqStepDone" : "")}>
+                  <div className={cx("prqDot", isDone ? "prqDotDone" : isActive ? "prqDotActive" : "prqDotPending")}>
+                    {isDone ? <Ic n="check" sz={12} c="var(--lime)" /> : stepNum}
                   </div>
-                  <div className={cx("pt7")}>
-                    <div className={cx("fw600", "text12", "dynColor")} style={{ "--color": stage.done ? "var(--lime)" : stage.active ? "var(--text)" : "var(--muted2)" } as React.CSSProperties}>
-                      {stage.label}
-                    </div>
-                    <div className={cx("text11", "colorMuted")}>{stage.sub}</div>
+                  <div className={cx("prqStepText", isDone ? "prqStepTextDone" : isActive ? "prqStepTextActive" : "")}>
+                    {label}
                   </div>
                 </div>
-              ))}
+              );
+            })}
+          </div>
+
+          {/* EFT section — only for EFT payments */}
+          {isEft && (
+            <div className={cx("prqEftSection")}>
+              <div className={cx("prqEftHeader")}>
+                <span className={cx(proofUploaded ? "prqEftBadgeDone" : "prqEftBadge")}>
+                  {proofUploaded ? "✓ Uploaded" : "EFT"}
+                </span>
+                <span className={cx("prqEftTitle")}>
+                  {proofUploaded ? "Proof of payment received" : "Upload proof of payment"}
+                </span>
+              </div>
+              <div className={cx("prqEftBody")}>
+                {proofUploaded ? (
+                  <p className={cx("prqEftInfo")}>
+                    We&apos;ve received your proof of payment and notified our team. You&apos;ll get an email confirmation once it&apos;s verified — usually within 1 business day.
+                  </p>
+                ) : (
+                  <>
+                    <p className={cx("prqEftInfo")}>
+                      Transfer your deposit of <strong>{fmtR(Math.round(depositCents / 100))}</strong> to the account below, then upload your bank confirmation PDF.
+                    </p>
+                    <div className={cx("prqBankGrid")}>
+                      <div><div className={cx("prqBankLabel")}>Bank</div><div className={cx("prqBankVal")}>FNB</div></div>
+                      <div><div className={cx("prqBankLabel")}>Account name</div><div className={cx("prqBankVal")}>Maphari Technologies</div></div>
+                      <div><div className={cx("prqBankLabel")}>Account no.</div><div className={cx("prqBankVal")}>6271 004 8341</div></div>
+                      <div><div className={cx("prqBankLabel")}>Reference</div><div className={cx("prqBankVal")}>{refCode}</div></div>
+                    </div>
+                    <label className={cx("prqUploadZone")}>
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        style={{ display: "none" }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.type !== "application/pdf") { setProofUploadError("Only PDF files are accepted."); return; }
+                          if (file.size > 10 * 1024 * 1024) { setProofUploadError("File must be 10 MB or smaller."); return; }
+                          setProofUploading(true);
+                          setProofUploadError(null);
+                          try {
+                            const uploaded = await uploadPortalFileWithRefresh(session!, file);
+                            if (uploaded.nextSession) saveSession(uploaded.nextSession);
+                            if (!uploaded.data) { setProofUploadError(uploaded.error?.message ?? "Upload failed."); return; }
+                            const submitRes = await submitPortalEftProofWithRefresh(session!, projectId, {
+                              proofFileId: uploaded.data.id,
+                              proofFileName: file.name
+                            });
+                            if (submitRes.nextSession) saveSession(submitRes.nextSession);
+                            if (submitRes.error) { setProofUploadError(submitRes.error.message); return; }
+                            setProofUploaded(true);
+                          } finally {
+                            setProofUploading(false);
+                          }
+                        }}
+                      />
+                      <div className={cx("prqUploadIcon")}><Ic n="upload" sz={18} c="var(--muted)" /></div>
+                      <div>Drag your PDF here</div>
+                      <div style={{ fontSize: 11.5, color: "var(--muted)" }}>or <span style={{ color: "var(--lime)" }}>browse to upload</span> · PDF only · max 10 MB</div>
+                    </label>
+                    {proofUploadError && <p style={{ fontSize: 12, color: "#f87171", marginTop: 8 }}>{proofUploadError}</p>}
+                    <button
+                      className={cx("prqUploadBtn", proofUploading ? "prqUploadBtnLoading" : "")}
+                      disabled={proofUploading}
+                      onClick={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}
+                    >
+                      {proofUploading ? "Uploading…" : "Upload proof of payment"}
+                    </button>
+                    <a className={cx("prqSkipLink")} onClick={() => props.onNavigate?.("myProjects")}>
+                      I&apos;ll upload this later from my dashboard →
+                    </a>
+                  </>
+                )}
+              </div>
             </div>
-            <div className={cx("prqSuccessActions")}>
-              <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => props.onNavigate?.("messages")}><Ic n="message" sz={12} c="var(--bg)" /> Message Your PM</button>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => props.onNavigate?.("bookCall")}><Ic n="calendar" sz={12} c="var(--muted2)" /> Book Kickoff Call</button>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => props.onNavigate?.("serviceCatalog")}>View Services</button>
-            </div>
+          )}
+        </div>
+
+        {/* What happens next */}
+        <div className={cx("prqNextCard")}>
+          <div className={cx("prqNextTitle")}>What happens next</div>
+          <div className={cx("prqNextList")}>
+            {(isEft
+              ? [
+                  "Our team reviews your proof of payment within 1 business day",
+                  "Once confirmed, your dedicated project lead will schedule a kickoff call",
+                  `Track your project in your dashboard — reference ${refCode}`
+                ]
+              : [
+                  "Your dedicated PM will reach out within 24 hours with a tailored proposal",
+                  "Once approved, your project kickoff is scheduled",
+                  `Track your project in your dashboard — reference ${refCode}`
+                ]
+            ).map((text, i) => (
+              <div key={i} className={cx("prqNextItem")}>
+                <div className={cx("prqNextNum")}>{i + 1}</div>
+                <div className={cx("prqNextText")}>{text}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -1218,7 +1335,12 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                     }
                   }
 
-                  setSubmitted(true);
+                  if (reqRes.data) {
+                    setSubmittedProject({
+                      id: reqRes.data.id,
+                      referenceCode: reqRes.data.referenceCode ?? `PRJ-${Date.now().toString().slice(-6)}`
+                    });
+                  }
                 } catch {
                   setSubmitError("An unexpected error occurred. Please try again.");
                 } finally {
