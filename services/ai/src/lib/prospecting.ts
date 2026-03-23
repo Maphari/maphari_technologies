@@ -29,6 +29,7 @@ export interface ProspectResult {
   contactPhone?: string;
   address?: string;
   rating?: number;
+  industry?: string;
   opportunityType: OpportunityFilter;
   opportunityReason: string;
   pitch: string;
@@ -176,12 +177,27 @@ async function fetchSerpApiResults(
   }
 }
 
+// ── Industry value tiers ──────────────────────────────────────────────────────
+
+const HIGH_VALUE_INDUSTRIES = new Set([
+  "dental practice", "optometrist", "pharmacy",
+  "physiotherapy clinic", "accounting firm", "tax consultant",
+  "real estate agent", "property developer",
+]);
+
+const MID_VALUE_INDUSTRIES = new Set([
+  "gym and fitness", "personal trainer",
+  "wedding photographer", "driving school",
+  "tutoring centre", "daycare centre",
+]);
+
 // ── Build typed prospects from raw SerpAPI results ────────────────────────────
 
 function classifyResults(
   results: SerpApiLocalResult[],
   filters: OpportunityFilter[],
-  count: number
+  count: number,
+  industry: string,
 ): Omit<ProspectResult, "pitch">[] {
   const noWebsiteResults = results.filter((r) => !r.website);
   const hasWebsiteResults = results.filter((r) => !!r.website);
@@ -199,6 +215,7 @@ function classifyResults(
         contactPhone: r.phone,
         address: r.address,
         rating: r.rating,
+        industry,
         opportunityType: "no_website",
         opportunityReason: "No website listed on Google Maps",
         source: "serpapi"
@@ -231,6 +248,7 @@ function classifyResults(
         contactPhone: r.phone,
         address: r.address,
         rating: r.rating,
+        industry,
         opportunityType: filterType,
         opportunityReason: reasons[filterType],
         source: "serpapi"
@@ -313,20 +331,26 @@ function scoreProspect(prospect: Omit<ProspectResult, "pitch">): number {
   let score = 0;
 
   // Contact completeness
-  if (prospect.contactPhone) score += 20;
-  if (prospect.contactEmail) score += 25;
+  if (prospect.contactPhone)  score += 20;
+  if (prospect.contactEmail)  score += 25;
 
   // Business quality signals
-  if ((prospect.rating ?? 0) >= 4.0) score += 15;
+  if ((prospect.rating ?? 0) >= 4.5)      score += 20;
+  else if ((prospect.rating ?? 0) >= 4.0) score += 10;
 
   // Opportunity urgency (no website = highest impact)
   if (prospect.opportunityType === "no_website") score += 15;
 
-  // Website health (low score = high opportunity for us)
+  // Website health (low score = big opportunity)
   if (prospect.healthScore !== undefined) {
-    if (prospect.healthScore < 50) score += 25;
-    else if (prospect.healthScore < 90) score += 10;
+    if (prospect.healthScore < 50)      score += 20;
+    else if (prospect.healthScore < 80) score += 10;
   }
+
+  // Industry value bonus
+  const ind = (prospect.industry ?? "").toLowerCase();
+  if (HIGH_VALUE_INDUSTRIES.has(ind))      score += 15;
+  else if (MID_VALUE_INDUSTRIES.has(ind))  score += 8;
 
   return Math.min(100, score);
 }
@@ -347,14 +371,24 @@ async function generateOnePitch(
   const system = PITCH_SYSTEM[prospect.opportunityType];
   const contextLines = [
     `Business name: ${prospect.company}`,
+    `Industry: ${prospect.industry ?? "local business"}`,
     `Location: ${prospect.address ?? "South Africa"}`,
-    `Industry context: local business`,
+    prospect.rating !== undefined
+      ? `Google Maps rating: ${prospect.rating}/5 — this business has real customer traction.`
+      : "",
+    prospect.contactPhone
+      ? `Phone on file: ${prospect.contactPhone} — you may invite them to call or reply.`
+      : "",
     prospect.website ? `Current website: ${prospect.website}` : "No current website.",
     prospect.healthScore !== undefined
-      ? `Website performance score (mobile): ${prospect.healthScore}/100${prospect.healthIssues?.length ? ` — Issues: ${prospect.healthIssues.join(", ")}` : ""}`
+      ? `Website performance score (mobile): ${prospect.healthScore}/100${
+          prospect.healthIssues?.length
+            ? ` — Key issues: ${prospect.healthIssues.join(", ")}`
+            : ""
+        }`
       : "",
     ``,
-    `Write the pitch email now.`
+    `Write the pitch email now. Mention the business name and location naturally. Keep it under 130 words. Be warm, not pushy.`,
   ].filter(Boolean);
 
   try {
@@ -402,7 +436,7 @@ export async function searchProspects(
     const raw = await fetchSerpApiResults(industry, location);
     base =
       raw.length > 0
-        ? classifyResults(raw, filters, count)
+        ? classifyResults(raw, filters, count, industry)
         : buildMockProspects(filters).slice(0, count).map(({ pitch: _pitch, ...rest }) => rest);
   }
 
