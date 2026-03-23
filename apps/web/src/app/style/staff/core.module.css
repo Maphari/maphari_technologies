@@ -1356,7 +1356,220 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── 16. Responsive ───────────────────────────────────────────────────── */
+/* ── 16. Topbar user menu ─────────────────────────────────────────────── */
+.topbarUserMenu {
+  position: relative;
+}
+
+.topbarUserBtn {
+  height: 32px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--s2);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.topbarUserBtn:hover {
+  background: var(--accent-d);
+}
+
+.topbarUserAvatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #04040a;
+  display: grid;
+  place-items: center;
+  font-size: 0.6rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.topbarUserChevron {
+  font-size: 0.6rem;
+  color: var(--muted);
+  transition: transform 150ms;
+}
+
+.topbarUserChevronOpen {
+  transform: rotate(180deg);
+}
+
+.topbarUserDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 200px;
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  background: var(--s1);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  z-index: 50;
+  padding: 8px;
+  animation: topbarDropdownIn 120ms ease;
+}
+
+@keyframes topbarDropdownIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.topbarUserInfo {
+  padding: 6px 8px 10px;
+  border-bottom: 1px solid var(--b1);
+  margin-bottom: 6px;
+}
+
+.topbarUserName {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.topbarUserEmail {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.topbarUserItem {
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background 150ms;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbarUserItem:hover {
+  background: var(--s2);
+}
+
+.topbarSignOut {
+  color: #f87171;
+  margin-top: 4px;
+  border-top: 1px solid var(--b1);
+  padding-top: 10px;
+}
+
+.topbarSignOut:hover {
+  background: rgba(248, 113, 113, 0.08);
+}
+
+/* ── 18. Welcome Modal (FTUE) ──────────────────────────────────────────── */
+
+.welcomeModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.welcomeModal {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-lg);
+  padding: 32px;
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: var(--shadow-modal);
+}
+
+.welcomeModalHeader {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.welcomeModalLogo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--accent) 12%, var(--s2));
+  border: 1px solid color-mix(in oklab, var(--accent) 25%, var(--b2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcomeModalTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.welcomeModalSub {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.welcomeModalGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.welcomeModalTile {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.welcomeModalTileIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--accent) 12%, var(--s2));
+  border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--b2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.welcomeModalCta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--r-md);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* ── 19. Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .rail { display: none; }
   .topbarHamburger { display: flex; }
