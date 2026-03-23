@@ -949,7 +949,7 @@ model WebhookDelivery {
 - `GET|POST /api-keys` — list and create keys; `DELETE /api-keys/:id` — revoke
 - `GET|POST /webhooks`, `PATCH|DELETE /webhooks/:id`, `POST /webhooks/:id/test`
 - `GET /webhook-deliveries?webhookId=` — delivery history
-- `GET /api-docs` — OpenAPI spec JSON
+- `GET /api-docs` — serves Swagger UI HTML (browser-facing developer docs page)
 - `ApiKeyAuthGuard` — validates `Authorization: Bearer mk_live_...` header; enforces scopes
 
 #### Frontend — UI Changes
@@ -1299,24 +1299,14 @@ model UserPreference {
 
 **Theme:** Every portal works beautifully on a phone. Client portal becomes a PWA.
 
-#### Database — New Models
+#### Database
 
-```prisma
-model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  userAgent String?
-  createdAt DateTime @default(now())
-}
-```
+No new models. `PushSubscription` was defined and migrated in v1.13 — no migration needed here.
 
 #### Backend — New Routes
 
-- `POST|DELETE /push-subscriptions` — save/remove Web Push subscription
 - `GET /manifest.json` — PWA manifest per portal
+- `POST|DELETE /push-subscriptions` route already exists from v1.13; v1.22 wires the browser-side `beforeinstallprompt` flow to call it
 
 #### Frontend — Mobile Audit (all portals)
 
@@ -1426,7 +1416,7 @@ No new models.
 
 #### Backend — New Routes
 
-- `GET /openapi.json` — auto-generated OpenAPI spec from gateway controller decorators
+- `GET /openapi.json` — machine-readable OpenAPI 3.x JSON spec auto-generated from NestJS `@nestjs/swagger` controller decorators. Distinct from v1.16's `GET /api-docs` (which serves Swagger UI HTML); this endpoint serves the raw JSON consumed by external tools and code generators
 - `GET /api/v1/changelog` — version history parsed from `CHANGELOG.md`
 
 #### Testing — New
