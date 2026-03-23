@@ -70,7 +70,7 @@
 | Create | `apps/web/src/lib/api/staff/calendar.ts` |
 | Modify | `apps/web/src/lib/api/portal/meetings.ts` |
 | Create | `apps/web/src/lib/api/staff/messages.ts` |
-| Modify | `apps/web/src/components/admin/dashboard/pages/admin-integrations-page-client.tsx` |
+| Modify | `apps/web/src/components/admin/dashboard/pages/booking-appointments-page.tsx` |
 | Create | `apps/web/src/components/staff/staff-dashboard/pages/calendar-page.tsx` |
 | Modify | `apps/web/src/components/client/maphari-dashboard/pages/book-call-page.tsx` |
 | Modify | `apps/web/src/components/client/maphari-dashboard/pages/messages-page.tsx` |
@@ -1093,7 +1093,7 @@ const [fiscalYear, setFiscalYear] = useState(getCurrentFiscalYear());
 useEffect(() => {
   if (!session) return;
   loadFyChecklistWithRefresh(session, fiscalYear)
-    .then(setItems)
+    .then(r => { if (r.data) setItems(r.data); })
     .finally(() => setLoading(false));
 }, [session, fiscalYear]);
 
@@ -1112,7 +1112,7 @@ async function handleToggle(item: FyChecklistItem) {
     done: !item.done,
     doneBy: session.user.name,
   });
-  setItems(prev => prev.map(i => (i.id === item.id ? updated : i)));
+  setItems(prev => prev.map(i => (i.id === item.id ? (updated.data ?? i) : i)));
 }
 ```
 
@@ -1312,14 +1312,41 @@ git commit -m "feat(gateway): add Ably broadcast helpers for project/invoice/lea
 ### Task 10: Admin Portal — Live Indicator & Auto-Refresh
 
 **Files:**
+- Create: `apps/web/src/lib/api/admin/realtime.ts`
 - Modify: `apps/web/src/components/admin/dashboard/chrome.tsx`
 - Modify: `apps/web/src/components/admin/dashboard/pages/owners-workspace-page.tsx`
 
-- [ ] **Step 1: Read chrome.tsx**
+- [ ] **Step 1: Create admin/realtime.ts**
+
+Create `apps/web/src/lib/api/admin/realtime.ts`:
+
+```typescript
+import type { AuthSession } from "../../auth/session";
+import { callGateway, isUnauthorized, toGatewayError, withAuthorizedSession, type AuthorizedResult } from "./_shared";
+
+export interface RealtimeToken {
+  token: string;
+}
+
+export async function loadRealtimeTokenWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<RealtimeToken>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const res = await callGateway<RealtimeToken>("/admin/realtime/token", accessToken);
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
+    return { unauthorized: false, data: res.payload.data ?? null, error: null };
+  });
+}
+```
+
+> **Note:** The Ably token endpoint (`GET /admin/realtime/token`) must exist in `realtime.controller.ts`. Read that controller to confirm the route. If the endpoint is at a different path, adjust the path above.
+
+- [ ] **Step 2: Read chrome.tsx**
 
 Read `apps/web/src/components/admin/dashboard/chrome.tsx` to find the topbar area where the "Live" indicator will live.
 
-- [ ] **Step 2: Add Ably connection hook**
+- [ ] **Step 3: Add Ably connection hook**
 
 Create a minimal hook inline or in a new file `apps/web/src/lib/hooks/use-ably-channel.ts`:
 
@@ -1358,7 +1385,9 @@ useEffect(() => {
   if (!session) return;
   let cancelled = false;
 
-  loadRealtimeTokenWithRefresh(session).then(({ token }) => {
+  loadRealtimeTokenWithRefresh(session).then((r) => {
+    const token = r.data?.token;
+    if (!token) return;
     if (cancelled) return; // component unmounted before promise resolved
     const client = new Ably.Realtime({ token });
     ablyRef.current = client;
@@ -1393,7 +1422,7 @@ pnpm --filter @maphari/web exec tsc --noEmit
 - [ ] **Step 6: Commit**
 
 ```bash
-git add apps/web/src/components/admin/dashboard/chrome.tsx apps/web/src/components/admin/dashboard/pages/owners-workspace-page.tsx apps/web/src/lib/hooks/use-ably-channel.ts
+git add apps/web/src/lib/api/admin/realtime.ts apps/web/src/components/admin/dashboard/chrome.tsx apps/web/src/components/admin/dashboard/pages/owners-workspace-page.tsx apps/web/src/lib/hooks/use-ably-channel.ts
 git commit -m "feat(admin): add Live indicator and auto-refresh on realtime events"
 ```
 
@@ -1428,7 +1457,9 @@ useEffect(() => {
   if (!clientId) return;
   let cancelled = false;
 
-  loadRealtimeTokenWithRefresh(session).then(({ token }) => {
+  loadRealtimeTokenWithRefresh(session).then((r) => {
+    const token = r.data?.token;
+    if (!token) return;
     if (cancelled) return;
     const client = new Ably.Realtime({ token });
     ablyRef.current = client;
@@ -1507,6 +1538,9 @@ pnpm --filter @maphari/web exec tsc --noEmit
 
 ```bash
 git add apps/web/src/components/client/maphari-client-dashboard.tsx apps/web/src/components/admin/dashboard/pages/admin-leads-page-client.tsx
+# Also stage the revenue page and staff presence page you identified and modified in Steps 1 and 3:
+# git add apps/web/src/components/admin/dashboard/pages/<revenue-page>.tsx
+# git add apps/web/src/components/staff/staff-dashboard/pages/<team-page>.tsx
 git commit -m "feat(v1.2): realtime subscriptions — client milestone toast, invoice badge, admin leads badge, revenue refresh, staff presence"
 ```
 
@@ -1585,29 +1619,32 @@ export async function calendarRoutes(fastify: FastifyInstance) {
       // Aggregate from multiple sources based on role
       const events: any[] = [];
 
-      // Appointments (all roles see appointments they're part of)
+      // Appointments — uses `scheduledAt` (not `startAt`); duration stored as `durationMins`
+      // `Appointment` has no `staffId` field; scoped to `clientId` only for CLIENT role
       const appointments = await fastify.prisma.appointment.findMany({
         where: {
-          startAt: { gte: fromDate, lte: toDate },
+          scheduledAt: { gte: fromDate, lte: toDate },
           ...(userRole === 'CLIENT' && clientId ? { clientId } : {}),
-          ...(userRole === 'STAFF' && staffId ? { staffId } : {}),
         },
       });
-      events.push(...appointments.map(a => ({
-        id: a.id, title: a.title ?? 'Appointment', startAt: a.startAt, endAt: a.endAt,
-        type: 'APPOINTMENT', sourceId: a.id, sourceType: 'Appointment', roles: ['ADMIN', 'STAFF', 'CLIENT'],
-      })));
+      events.push(...appointments.map(a => {
+        const endAt = new Date(a.scheduledAt.getTime() + (a.durationMins ?? 60) * 60_000);
+        return {
+          id: a.id, title: a.title ?? 'Appointment', startAt: a.scheduledAt, endAt,
+          type: 'APPOINTMENT', sourceId: a.id, sourceType: 'Appointment', roles: ['ADMIN', 'STAFF', 'CLIENT'],
+        };
+      }));
 
-      // Project milestones
+      // Project milestones — uses `dueAt` (not `dueDate`)
       const milestones = await fastify.prisma.projectMilestone.findMany({
         where: {
-          dueDate: { gte: fromDate, lte: toDate },
+          dueAt: { gte: fromDate, lte: toDate },
           ...(userRole === 'CLIENT' && clientId ? { project: { clientId } } : {}),
         },
         include: { project: true },
       });
       events.push(...milestones.map(m => ({
-        id: m.id, title: m.title, startAt: m.dueDate, endAt: m.dueDate,
+        id: m.id, title: m.title, startAt: m.dueAt, endAt: m.dueAt,
         type: 'MILESTONE', sourceId: m.id, sourceType: 'ProjectMilestone', roles: ['ADMIN', 'STAFF', 'CLIENT'],
         clientId: m.project.clientId,
       })));
@@ -1622,21 +1659,21 @@ export async function calendarRoutes(fastify: FastifyInstance) {
     const now = new Date();
     const future = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
     const milestones = await fastify.prisma.projectMilestone.findMany({
-      where: { dueDate: { gte: now, lte: future } },
+      where: { dueAt: { gte: now, lte: future } },
     });
 
     const ical = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
       'PRODID:-//Maphari Technologies//Calendar//EN',
-      ...milestones.map(m => [
+      ...milestones.flatMap(m => m.dueAt ? [
         'BEGIN:VEVENT',
         `UID:milestone-${m.id}@maphari`,
         `SUMMARY:${m.title}`,
-        `DTSTART:${formatIcalDate(m.dueDate)}`,
-        `DTEND:${formatIcalDate(m.dueDate)}`,
+        `DTSTART:${formatIcalDate(m.dueAt)}`,
+        `DTEND:${formatIcalDate(m.dueAt)}`,
         'END:VEVENT',
-      ].join('\r\n')),
+      ].join('\r\n') : []),
       'END:VCALENDAR',
     ].join('\r\n');
 
@@ -1930,7 +1967,7 @@ git commit -m "feat(web): add calendar and staff messaging API functions"
 ### Task 17: Calendar Pages — Admin, Staff, Client
 
 **Files:**
-- Modify: `apps/web/src/components/admin/dashboard/pages/admin-integrations-page-client.tsx` (or booking-appointments page — check which has the calendar)
+- Modify: `apps/web/src/components/admin/dashboard/pages/booking-appointments-page.tsx` (or booking-appointments page — check which has the calendar)
 - Create: `apps/web/src/components/staff/staff-dashboard/pages/calendar-page.tsx`
 - Modify: `apps/web/src/components/client/maphari-dashboard/pages/book-call-page.tsx`
 
@@ -2076,8 +2113,60 @@ async function handleSendMessage(e: React.FormEvent) {
 
 ```bash
 pnpm --filter @maphari/web exec tsc --noEmit
-git add apps/web/src/components/staff/staff-dashboard/pages/calendar-page.tsx apps/web/src/components/client/maphari-dashboard/pages/book-call-page.tsx
+git add apps/web/src/components/staff/staff-dashboard/pages/calendar-page.tsx apps/web/src/components/client/maphari-dashboard/pages/book-call-page.tsx apps/web/src/components/admin/dashboard/pages/booking-appointments-page.tsx apps/web/src/components/staff/staff-dashboard/pages/communication-history-page.tsx
 git commit -m "feat(v1.3): add calendar pages across all portals and staff→client messaging"
+```
+
+---
+
+### Task 17b: Client Messages Page + Command Palette Wiring
+
+**Files:**
+- Modify: `apps/web/src/components/client/maphari-dashboard/pages/messages-page.tsx`
+- Modify: `services/core/src/routes/search.ts`
+- Modify: `apps/gateway/src/routes/search.controller.ts`
+
+> **Spec requirements:**
+> - Client `messages-page.tsx`: surface staff-initiated threads (conversations with `createdByRole=STAFF`)
+> - Search: add role-based scope so admin gets `?role=ADMIN`, staff gets `?role=STAFF`
+
+- [ ] **Step 1: Read client messages-page.tsx**
+
+Read `apps/web/src/components/client/maphari-dashboard/pages/messages-page.tsx` to understand its current structure and what conversations it already loads.
+
+- [ ] **Step 2: Show staff-initiated threads**
+
+Find where conversations are fetched. Ensure the query includes conversations where `createdByRole=STAFF` in addition to any existing filter. If the existing fetch already loads all conversations for the client, no change is needed — confirm by checking the API response includes `createdByRole`. If filtered, add a note/section to display staff-initiated threads distinctly:
+
+```typescript
+const staffThreads = conversations.filter(c => c.createdByRole === 'STAFF');
+// Render these in a "Messages from Maphari" section
+```
+
+- [ ] **Step 3: Read and extend search route**
+
+Read `services/core/src/routes/search.ts` to understand how results are scoped. Add `role` query param handling:
+
+```typescript
+// In the GET /search handler, read `role` from headers or query:
+const userRole = request.headers['x-user-role'] as string;
+// Use userRole to filter which models are searched:
+// ADMIN: all results
+// STAFF: projects, clients, conversations
+// CLIENT: only own projects, milestones, invoices
+```
+
+- [ ] **Step 4: Update search controller to pass role header**
+
+Read `apps/gateway/src/routes/search.controller.ts`. Ensure `x-user-role` is forwarded in the proxy request headers (it likely is via the existing `headers(req)` helper — confirm and leave a comment if already correct).
+
+- [ ] **Step 5: TypeScript check + commit**
+
+```bash
+pnpm --filter @maphari/web exec tsc --noEmit
+cd services/core && pnpm exec tsc --noEmit
+git add apps/web/src/components/client/maphari-dashboard/pages/messages-page.tsx services/core/src/routes/search.ts apps/gateway/src/routes/search.controller.ts
+git commit -m "feat(v1.3): client messages show staff threads; search adds role-based scope"
 ```
 
 ---
@@ -2139,13 +2228,19 @@ git commit -m "feat(db): add quarter to PeerReview; add approval fields to Proje
 ### Task 19: Core Routes — Staff Goals & Peer Reviews
 
 **Files:**
-- Create: `services/core/src/routes/staff-goals.ts`
-- Create: `services/core/src/routes/peer-reviews.ts`
+- Create/Verify: `services/core/src/routes/staff-goals.ts`
+- Create/Verify: `services/core/src/routes/peer-reviews.ts`
 - Modify: `services/core/src/app.ts`
 
-- [ ] **Step 1: Create staff-goals route**
+> **Discovery note:** These route files may already exist. Check before creating:
+> ```bash
+> ls services/core/src/routes/staff-goals.ts services/core/src/routes/peer-reviews.ts 2>&1
+> ```
+> If they exist, read them and verify the endpoint shapes match what the plan expects. Only create from the snippets below if the files are absent.
 
-Create `services/core/src/routes/staff-goals.ts`:
+- [ ] **Step 1: Create staff-goals route (if not already present)**
+
+If `services/core/src/routes/staff-goals.ts` does not exist, create it:
 
 ```typescript
 import { FastifyInstance } from 'fastify';
@@ -2192,7 +2287,7 @@ export async function staffGoalsRoutes(fastify: FastifyInstance) {
 }
 ```
 
-- [ ] **Step 2: Create peer-reviews route**
+- [ ] **Step 2: Create peer-reviews route (if not already present)**
 
 > **Data model note:** The existing `PeerReview` model is flat — it uses `score: Int?` and `feedback: String?` directly on the review, not a separate answers table. There is no `PeerReviewAnswer` model. The route reflects this flat structure.
 
@@ -2262,9 +2357,9 @@ git commit -m "feat(core): add staff goals and peer reviews routes"
 
 - [ ] **Step 1: Read existing time-entries route**
 
-Read `services/core/src/routes/time-entries.ts` to find the PATCH endpoint and understand the current model shape.
+Read `services/core/src/routes/time-entries.ts` in full. Check if `/:id/submit`, `/:id/approve`, and `/:id/reject` endpoints already exist. If they do, confirm they use `projectTimeEntry` (not `timeEntry`) and that the approve endpoint sets `approvedBy`. If all three exist and are correct, skip Step 2 entirely and go straight to the TypeScript check.
 
-- [ ] **Step 2: Add submit, approve, reject endpoints**
+- [ ] **Step 2: Add submit, approve, reject endpoints (only if missing)**
 
 ```typescript
 // PATCH /time-entries/:id/submit — staff submits
@@ -2317,14 +2412,21 @@ git commit -m "feat(core): add timesheet submit/approve/reject endpoints"
 ### Task 21: Gateway Controllers — Staff Goals, Peer Reviews, Timesheet Actions
 
 **Files:**
-- Create: `apps/gateway/src/routes/staff-goals.controller.ts`
-- Create: `apps/gateway/src/routes/peer-reviews.controller.ts`
+- Create/Verify: `apps/gateway/src/routes/staff-goals.controller.ts`
+- Create/Verify: `apps/gateway/src/routes/peer-reviews.controller.ts`
 - Modify: `apps/gateway/src/routes/time-entries.controller.ts`
 - Modify: `apps/gateway/src/modules/app.module.ts`
 
-- [ ] **Step 1: Create staff-goals controller**
+> **Discovery note:** These controllers may already exist (the existing `staff.controller.ts` handles staff/goals routes). Check before creating:
+> ```bash
+> ls apps/gateway/src/routes/staff-goals.controller.ts apps/gateway/src/routes/peer-reviews.controller.ts 2>&1
+> grep -r "staff/goals\|peer-reviews" apps/gateway/src/routes --include="*.ts" -l
+> ```
+> If routes for staff goals and peer reviews already exist in any controller, do NOT add duplicate controllers — instead verify the routes are complete and move to timesheet actions (Step 3).
 
-Create `apps/gateway/src/routes/staff-goals.controller.ts`:
+- [ ] **Step 1: Create staff-goals controller (only if no existing route handles /staff/goals)**
+
+If no controller handles `staff/goals`, create `apps/gateway/src/routes/staff-goals.controller.ts`:
 
 ```typescript
 import { Controller, Get, Post, Patch, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
@@ -2559,13 +2661,19 @@ export async function submitTimesheetWithRefresh(
 Read `apps/web/src/lib/api/admin/hr.ts` to confirm its import pattern (it uses `_shared`). Append:
 
 ```typescript
+// NOTE: Before adding these functions, run:
+//   grep -n "approve\|reject\|timesheet\|Timesheet" apps/web/src/lib/api/admin/hr.ts
+// If approveTimesheetWithRefresh/rejectTimesheetWithRefresh already exist, do NOT add duplicates.
+// The gateway time-entries controller is at @Controller() (no prefix), so routes are /time-entries/:id/approve
+// NOT /admin/time-entries/:id/approve
+
 export async function approveTimesheetWithRefresh(
   session: AuthSession,
   entryId: string
 ): Promise<AuthorizedResult<{ id: string; status: string }>> {
   return withAuthorizedSession(session, async (token) => {
     const res = await callGateway<{ id: string; status: string }>(
-      `/admin/time-entries/${entryId}/approve`,
+      `/time-entries/${entryId}/approve`,
       token,
       { method: "PATCH", body: { approvedBy: session.user.email } }
     );
@@ -2582,7 +2690,7 @@ export async function rejectTimesheetWithRefresh(
 ): Promise<AuthorizedResult<{ id: string; status: string }>> {
   return withAuthorizedSession(session, async (token) => {
     const res = await callGateway<{ id: string; status: string }>(
-      `/admin/time-entries/${entryId}/reject`,
+      `/time-entries/${entryId}/reject`,
       token,
       { method: "PATCH", body: { reason } }
     );
@@ -2927,7 +3035,9 @@ const [rejectReason, setRejectReason] = useState('');
 
 useEffect(() => {
   if (!session) return;
-  loadAdminTimesheetsPendingWithRefresh(session)
+  // Check actual function name: grep -n "pending\|Pending\|submit" apps/web/src/lib/api/admin/hr.ts
+  // The function may be called loadPendingTimesheetsWithRefresh — use whatever you find
+  loadPendingTimesheetsWithRefresh(session)
     .then(r => { if (r.data) setPendingEntries(r.data); });
 }, [session]);
 
