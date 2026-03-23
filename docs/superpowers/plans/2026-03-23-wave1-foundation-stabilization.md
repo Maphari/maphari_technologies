@@ -57,7 +57,7 @@
 |--------|------|
 | Modify | `services/core/prisma/schema.prisma` |
 | Create | `services/core/src/routes/calendar.ts` |
-| Modify | `services/core/src/routes/conversations.ts` |
+| Modify | `services/chat/src/routes/conversations.ts` |
 | Modify | `services/core/src/routes/search.ts` |
 | Create | `apps/gateway/src/routes/calendar.controller.ts` |
 | Modify | `apps/gateway/src/routes/conversation-management.controller.ts` |
@@ -1609,27 +1609,30 @@ git commit -m "feat(core): add calendar aggregation and iCal export routes"
 ### Task 14: Extend Conversations — Allow STAFF Origin
 
 **Files:**
-- Modify: `services/core/src/routes/conversations.ts`
+- Modify: `services/chat/src/routes/conversations.ts`
+- Modify: `services/chat/prisma/schema.prisma`
+
+> **Service location:** Conversations live in `services/chat` (NOT `services/core`). The `Conversation` model is in `services/chat/prisma/schema.prisma`. All edits in this task target `services/chat`, not `services/core`.
 
 - [ ] **Step 1: Read existing conversations route**
 
-Read `services/core/src/routes/conversations.ts` to understand how `POST /conversations` is guarded and what fields exist on the conversation model.
+Read `services/chat/src/routes/conversations.ts` to understand how `POST /conversations` is guarded and what fields exist on the conversation model.
 
 - [ ] **Step 2: Add createdByRole field to Prisma schema**
 
-In `schema.prisma`, find the `Conversation` model and add (if missing):
+In `services/chat/prisma/schema.prisma`, find the `Conversation` model and add (if `createdByRole` is missing):
 ```prisma
 createdByRole String @default("ADMIN") // ADMIN | STAFF
 ```
 
 Run migration:
 ```bash
-cd services/core && pnpm prisma migrate dev --name add-conversation-created-by-role
+cd services/chat && pnpm prisma migrate dev --name add-conversation-created-by-role
 ```
 
 - [ ] **Step 3: Allow STAFF to create conversations**
 
-In `conversations.ts` POST handler, change the role guard from:
+In `services/chat/src/routes/conversations.ts` POST handler, change the role guard from:
 ```typescript
 if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
 ```
@@ -1643,12 +1646,14 @@ And set `createdByRole` from the header:
 data: { ...body, createdByRole: role }
 ```
 
+> If STAFF is already allowed in the POST handler, skip Step 3 — just confirm `createdByRole` is set.
+
 - [ ] **Step 4: TypeScript check + commit**
 
 ```bash
-cd services/core && pnpm exec tsc --noEmit
-git add services/core/src/routes/conversations.ts services/core/prisma/schema.prisma services/core/src/generated/
-git commit -m "feat(core): allow STAFF to create conversations; add createdByRole field"
+cd services/chat && pnpm exec tsc --noEmit
+git add services/chat/src/routes/conversations.ts services/chat/prisma/schema.prisma services/chat/src/generated/
+git commit -m "feat(chat): allow STAFF to create conversations; add createdByRole field"
 ```
 
 ---
@@ -1827,7 +1832,8 @@ export async function createStaffClientMessageWithRefresh(
   data: { clientId: string; subject: string; body: string }
 ): Promise<AuthorizedResult<StaffConversation>> {
   return withAuthorizedSession(session, async (token) => {
-    const res = await callGateway<StaffConversation>("/staff/conversations", token, {
+    // Gateway chat routes at /conversations (no /staff/ prefix)
+    const res = await callGateway<StaffConversation>("/conversations", token, {
       method: "POST",
       body: { ...data, createdByRole: "STAFF" },
     });
