@@ -6827,3 +6827,16 @@
     align-items: flex-start;
   }
 }
+
+/* ── Budget Burn Gauge ─────────────────────────────────────────────────── */
+.budgetBurnCard { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 16px 20px; margin-bottom: 16px; }
+.budgetBurnHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.budgetBurnLabel { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
+.budgetBurnValues { font-size: 13px; color: var(--text-2); }
+.budgetBurnTrack { height: 6px; background: var(--s3); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+.budgetBurnFillGreen  { height: 100%; background: var(--green, #4ade80); border-radius: 3px; transition: width 400ms; }
+.budgetBurnFillAmber  { height: 100%; background: var(--amber, #f59e0b); border-radius: 3px; transition: width 400ms; }
+.budgetBurnFillRed    { height: 100%; background: var(--red,   #ef4444); border-radius: 3px; transition: width 400ms; }
+.budgetBurnFooter { display: flex; justify-content: space-between; align-items: center; }
+.budgetBurnPct  { font-size: 12px; color: var(--text-3); }
+.budgetBurnEst  { font-size: 12px; color: var(--text-3); }

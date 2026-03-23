@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
@@ -13,7 +13,9 @@ import {
 } from "../../../../lib/api/portal";
 import {
   loadPortalWeeklySpendWithRefresh,
+  loadBudgetBurnWithRefresh,
   type PortalWeeklySpendWeek,
+  type PortalBudgetBurn,
 } from "../../../../lib/api/portal/projects";
 import { saveSession } from "../../../../lib/auth/session";
 import { formatMoneyCents } from "../../../../lib/i18n/currency";
@@ -78,6 +80,62 @@ function computeMonthlySpend(invoices: PortalInvoice[]): MonthRow[] {
       const status: MonthRow["status"] = key > currentKey ? "forecast" : key === currentKey ? "current" : "done";
       return { month: label, actual, status };
     });
+}
+
+// ── BudgetBurnGauge ───────────────────────────────────────────────────────
+interface BudgetBurnGaugeProps {
+  projectId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  session: any;
+}
+
+function BudgetBurnGauge({ projectId, session }: BudgetBurnGaugeProps) {
+  const [data, setData]       = useState<PortalBudgetBurn | null>(null);
+  const [loading, setLoading] = useState(true);
+  const accessToken: string | undefined = session?.accessToken;
+
+  const fetchBurn = useCallback(() => {
+    if (!projectId || !session) { setLoading(false); return; }
+    setLoading(true);
+    loadBudgetBurnWithRefresh(session, projectId).then((result) => {
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.data) setData(result.data);
+    }).finally(() => setLoading(false));
+  // stable deps: projectId string + accessToken string (not session object)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, accessToken]);
+
+  useEffect(() => { fetchBurn(); }, [fetchBurn]);
+
+  if (loading || !data) return null;
+
+  const pct        = Math.min(data.burnPercent, 100);
+  const fillClass  = pct >= 90 ? "budgetBurnFillRed" : pct >= 70 ? "budgetBurnFillAmber" : "budgetBurnFillGreen";
+  const fmtR       = (v: number) => `R${v.toLocaleString("en-ZA", { maximumFractionDigits: 0 })}`;
+
+  return (
+    <div className={cx("budgetBurnCard")}>
+      <div className={cx("budgetBurnHeader")}>
+        <span className={cx("budgetBurnLabel")}>Budget Burn</span>
+        <span className={cx("budgetBurnValues")}>
+          {fmtR(data.billedRand)} / {fmtR(data.budgetRand)}
+        </span>
+      </div>
+      <div className={cx("budgetBurnTrack")}>
+        <div className={cx(fillClass)} style={{ width: `${pct}%` }} />
+      </div>
+      <div className={cx("budgetBurnFooter")}>
+        <span className={cx("budgetBurnPct")}>{pct}% used</span>
+        <span className={cx("budgetBurnEst")}>
+          {data.projectedEndDate
+            ? `Est. end: ${data.projectedEndDate}`
+            : data.dueAt
+            ? `Due: ${data.dueAt}`
+            : "No projection available"}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────
@@ -207,6 +265,9 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
           </button>
         </div>
       </div>
+
+      {/* ── Budget Burn Gauge ────────────────────────────────────────────── */}
+      {projectId && <BudgetBurnGauge projectId={projectId} session={session} />}
 
       {/* ── Stat cards ──────────────────────────────────────────────────── */}
       <div className={cx("topCardsStack", "mb20")}>

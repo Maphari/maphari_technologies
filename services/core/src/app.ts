@@ -125,6 +125,9 @@ import { registerAdminProposedActionRoutes } from "./routes/admin-proposed-actio
 // ── Client Self-Serve Meeting Booking ─────────────────────────────────────
 import { registerAvailabilityRoutes } from "./routes/availability.js";
 
+// ── Budget Burn Tracker ────────────────────────────────────────────────────
+import { registerBudgetBurnRoutes } from "./routes/budget-burn.js";
+
 // ── Standup Crons ──────────────────────────────────────────────────────────
 import { scheduleStandupReminder, scheduleStandupDigest } from "./cron/standup-reminder.js";
 
@@ -299,6 +302,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Client Self-Serve Meeting Booking ─────────────────────────────────────
   await registerAvailabilityRoutes(app);
+
+  // ── Budget Burn Tracker ────────────────────────────────────────────────────
+  await registerBudgetBurnRoutes(app);
 
   // ── Standup Crons ──────────────────────────────────────────────────────────
   scheduleStandupReminder();

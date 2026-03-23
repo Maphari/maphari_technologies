@@ -898,3 +898,42 @@ export async function loadPortalInvoicesWithRefresh(
     return { unauthorized: false, data: response.payload.data ?? [], error: null };
   });
 }
+
+// ── Budget Burn Tracker ────────────────────────────────────────────────────────
+
+export interface PortalBudgetBurn {
+  projectId: string;
+  projectName: string;
+  budgetRand: number;
+  billedRand: number;
+  paidRand: number;
+  remainingRand: number;
+  burnPercent: number;
+  weeklyBurnHours: number;
+  projectedEndDate: string | null;
+  dueAt: string | null;
+}
+
+export async function loadBudgetBurnWithRefresh(
+  session: AuthSession,
+  projectId: string
+): Promise<AuthorizedResult<PortalBudgetBurn>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalBudgetBurn>(
+      `/portal/projects/${projectId}/budget-burn`,
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "BUDGET_BURN_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load budget burn data."
+        ),
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
