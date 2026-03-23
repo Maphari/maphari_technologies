@@ -6,7 +6,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { styles } from "../style";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
@@ -42,47 +42,50 @@ export function ProposedActionsPage({ session }: { session: AuthSession | null }
   const [error, setError]     = useState<string | null>(null);
   const [working, setWorking] = useState<string | null>(null);
 
-  function load(s: AuthSession): void {
+  const load = useCallback(async (s: typeof session) => {
+    if (!s) return;
     setLoading(true);
     setError(null);
-    void listProposedActionsWithRefresh(s, "PENDING")
-      .then((res) => {
-        if (res.nextSession) saveSession(res.nextSession);
-        if (res.error) {
-          setError(res.error.message ?? "Failed to load pending approvals.");
-        } else if (res.data) {
-          setItems(res.data);
-        }
-      })
-      .catch((err: unknown) => {
-        setError((err as Error)?.message ?? "Failed to load pending approvals.");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }
+    const res = await listProposedActionsWithRefresh(s, "PENDING");
+    if (res.unauthorized) return;
+    if (res.nextSession) saveSession(res.nextSession);
+    if (res.error) {
+      setError(res.error.message ?? "Failed to load pending approvals.");
+    } else if (res.data) {
+      setItems(res.data);
+    }
+    setLoading(false);
+  }, []); // stable — only depends on stable setState dispatchers
 
-  useEffect(() => {
-    if (!session) { setLoading(false); return; }
-    load(session);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]);
+  useEffect(() => { void load(session); }, [session, load]);
 
   async function handleApprove(id: string): Promise<void> {
     if (!session || working) return;
+    setError(null);
     setWorking(id);
     const res = await approveProposedActionWithRefresh(session, id);
     if (res.nextSession) saveSession(res.nextSession);
-    if (session) load(session);
+    if (res.error) {
+      setError(res.error.message ?? "Failed to approve action.");
+      setWorking(null);
+      return;
+    }
+    await load(session);
     setWorking(null);
   }
 
   async function handleReject(id: string): Promise<void> {
     if (!session || working) return;
+    setError(null);
     setWorking(id);
     const res = await rejectProposedActionWithRefresh(session, id, "Rejected via dashboard");
     if (res.nextSession) saveSession(res.nextSession);
-    if (session) load(session);
+    if (res.error) {
+      setError(res.error.message ?? "Failed to reject action.");
+      setWorking(null);
+      return;
+    }
+    await load(session);
     setWorking(null);
   }
 
@@ -96,22 +99,11 @@ export function ProposedActionsPage({ session }: { session: AuthSession | null }
     );
   }
 
-  if (error) {
-    return (
-      <div className={styles.pageBody}>
-        <div className={styles.errorState}>
-          <div className={styles.errorStateIcon}>✕</div>
-          <div className={styles.errorStateTitle}>Failed to load</div>
-          <div className={styles.errorStateSub}>{error}</div>
-        </div>
-      </div>
-    );
-  }
-
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className={styles.pageBody}>
+      {error && <p className={styles.errorStateSub}>{error}</p>}
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
