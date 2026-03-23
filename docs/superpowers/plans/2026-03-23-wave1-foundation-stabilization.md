@@ -539,7 +539,7 @@ import { JwtAuthGuard } from '../security/jwt-auth.guard';
 import { firstValueFrom } from 'rxjs';
 import { Request } from 'express';
 
-@Controller('crises')
+@Controller('admin/crises')
 @UseGuards(JwtAuthGuard)
 export class CrisesController {
   constructor(private readonly http: HttpService) {}
@@ -589,7 +589,7 @@ import { JwtAuthGuard } from '../security/jwt-auth.guard';
 import { firstValueFrom } from 'rxjs';
 import { Request } from 'express';
 
-@Controller('compliance')
+@Controller('admin/compliance')
 @UseGuards(JwtAuthGuard)
 export class ComplianceController {
   constructor(private readonly http: HttpService) {}
@@ -639,7 +639,7 @@ import { JwtAuthGuard } from '../security/jwt-auth.guard';
 import { firstValueFrom } from 'rxjs';
 import { Request } from 'express';
 
-@Controller('fy-checklist')
+@Controller('admin/fy-checklist')
 @UseGuards(JwtAuthGuard)
 export class FyChecklistController {
   constructor(private readonly http: HttpService) {}
@@ -860,7 +860,7 @@ export async function toggleFyChecklistItemWithRefresh(
 }
 ```
 
-> **Gateway path note:** The gateway routes crises under `/admin/crises` (matching the `@Controller('crises')` with `/admin` prefix) — confirm in Tasks 5/gateway by checking the controller prefix set in `app.module.ts`.
+> **Gateway path note:** The three new controllers use `@Controller('admin/crises')`, `@Controller('admin/compliance')`, `@Controller('admin/fy-checklist')` — so gateway routes are `/admin/crises`, `/admin/compliance`, `/admin/fy-checklist`, matching what the web API clients call.
 
 - [ ] **Step 3: TypeScript check**
 
@@ -1108,7 +1108,7 @@ function getCurrentFiscalYear() {
 async function handleToggle(item: FyChecklistItem) {
   const updated = await toggleFyChecklistItemWithRefresh(session, item.id, {
     done: !item.done,
-    doneBy: session.user.name,
+    doneBy: session.user.email,
   });
   setItems(prev => prev.map(i => (i.id === item.id ? (updated.data ?? i) : i)));
 }
@@ -2903,7 +2903,9 @@ async function handleSubmitWeek() {
     await submitTimesheetWithRefresh(session, entry.id);
   }
   // Re-fetch entries to reflect SUBMITTED status
-  const updated = await loadTimeEntriesWithRefresh(session, weekStart, weekEnd);
+  // Use whatever function loads time entries in this page — check the existing useEffect.
+  // The staff/time.ts module exports getMyTimeEntries(session) with no date params.
+  const updated = await getMyTimeEntries(session);
   if (updated.data) setEntries(updated.data);
 }
 
