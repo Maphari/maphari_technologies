@@ -312,12 +312,9 @@ export async function complianceRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // GET /compliance/data-retention — list retention policies
-  fastify.get('/data-retention', async (request, reply) => {
-    const role = request.headers['x-user-role'];
-    if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
-    return fastify.prisma.dataRetentionPolicy.findMany({ orderBy: { dataType: 'asc' } });
-  });
+  // NOTE: Data retention policies are served by the existing services/core/src/routes/data-retention.ts
+  // route (already registered in app.ts), proxied by gateway at GET /admin/data-retention.
+  // Do NOT add a /data-retention sub-route here — that would create a duplicate.
 }
 ```
 
@@ -844,7 +841,8 @@ export async function loadAdminDataRetentionWithRefresh(
   session: AuthSession
 ): Promise<AuthorizedResult<DataRetentionPolicy[]>> {
   return withAuthorizedSession(session, async (token) => {
-    const res = await callGateway<DataRetentionPolicy[]>("/admin/compliance/data-retention", token);
+    // Existing gateway admin.controller.ts exposes GET /admin/data-retention (NOT /admin/compliance/data-retention)
+    const res = await callGateway<DataRetentionPolicy[]>("/admin/data-retention", token);
     if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
     if (!res.payload.success) return { unauthorized: false, data: [], error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
     return { unauthorized: false, data: res.payload.data ?? [], error: null };
