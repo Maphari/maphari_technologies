@@ -31,7 +31,7 @@ interface ReferralRow {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function mapReferral(r: PortalReferral): ReferralRow {
+function mapReferral(r: Pick<PortalReferral, "id" | "referredByName" | "status" | "rewardAmountCents" | "creditApplied" | "createdAt">): ReferralRow {
   const statusLabel = r.status === "CONVERTED" ? "Converted"
     : r.status === "PROPOSAL_SENT" ? "Proposal Sent"
     : r.status === "IN_PROGRESS" ? "In Progress"
