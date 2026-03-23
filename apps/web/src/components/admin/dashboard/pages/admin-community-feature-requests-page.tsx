@@ -59,7 +59,7 @@ export function AdminCommunityFeatureRequestsPage({ session }: { session: AuthSe
         if (r.error) {
           setError(r.error.message ?? "Failed to load feature requests.");
         } else if (r.data) {
-          setRequests(r.data.requests);
+          setRequests(r.data);
         }
       })
       .catch((err: unknown) => {

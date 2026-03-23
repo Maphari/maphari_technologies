@@ -293,7 +293,7 @@ export default function FeatureRequestsPage() {
                       >
                         {STATUS_LABELS[req.status] ?? req.status}
                       </span>
-                      <span className={cx("frAlias")}>@{req.anonAlias}</span>
+                      <span className={cx("frAlias")}>{req.anonAlias}</span>
                       <span className={cx("frTimestamp")}>{relTime(req.createdAt)}</span>
                     </div>
                     {req.description && (

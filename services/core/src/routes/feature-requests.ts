@@ -125,12 +125,12 @@ export async function registerFeatureRequestRoutes(app: FastifyInstance): Promis
       if (existing) {
         await tx.featureVote.delete({ where: { id: existing.id } });
         const updated = await tx.featureRequest.update({
-          where: { id },
+          where: { id, voteCount: { gt: 0 } },
           data: { voteCount: { decrement: 1 } },
           select: { voteCount: true },
-        });
+        }).catch(() => null);
         voted = false;
-        voteCount = updated.voteCount;
+        voteCount = updated?.voteCount ?? 0;
       } else {
         await tx.featureVote.create({ data: { featureRequestId: id, voterId } });
         const updated = await tx.featureRequest.update({

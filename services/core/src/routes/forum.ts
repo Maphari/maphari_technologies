@@ -132,28 +132,42 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "Post body must not exceed 10,000 characters." } } as ApiResponse);
     }
 
-    const thread = await prisma.forumThread.findFirst({ where: { id, isApproved: true, isRejected: false } });
-    if (!thread) {
-      return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Thread not found." } } as ApiResponse);
-    }
-    if (thread.isLocked) {
-      return reply.code(409).send({ success: false, error: { code: "LOCKED", message: "Thread is locked." } } as ApiResponse);
-    }
-
     const anonAlias = generateAlias(scope.userId ?? scope.clientId ?? "unknown");
-    const post = await prisma.forumPost.create({
-      data: {
-        threadId: id,
-        authorId: scope.userId ?? scope.clientId ?? "unknown",
-        anonAlias,
-        body: body.body,
-        isApproved: false,
-        isRejected: false,
-      },
-      select: { id: true, anonAlias: true, body: true, createdAt: true },
-    });
+    const authorId = scope.userId ?? scope.clientId ?? "unknown";
 
-    return reply.code(201).send({ success: true, data: post, meta: { requestId: scope.requestId } } as ApiResponse<typeof post>);
+    let newPost: { id: string; anonAlias: string; body: string; createdAt: Date };
+    try {
+      newPost = await prisma.$transaction(async (tx) => {
+        const thread = await tx.forumThread.findFirst({
+          where: { id, isApproved: true, isRejected: false },
+          select: { isLocked: true },
+        });
+        if (!thread) throw Object.assign(new Error("NOT_FOUND"), { code: "NOT_FOUND" });
+        if (thread.isLocked) throw Object.assign(new Error("LOCKED"), { code: "LOCKED" });
+        return tx.forumPost.create({
+          data: {
+            threadId: id,
+            authorId,
+            anonAlias,
+            body: body.body,
+            isApproved: false,
+            isRejected: false,
+          },
+          select: { id: true, anonAlias: true, body: true, createdAt: true },
+        });
+      });
+    } catch (err: unknown) {
+      const e = err as { code?: string };
+      if (e.code === "NOT_FOUND") {
+        return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Thread not found." } } as ApiResponse);
+      }
+      if (e.code === "LOCKED") {
+        return reply.code(423).send({ success: false, error: { code: "LOCKED", message: "Thread is locked." } } as ApiResponse);
+      }
+      throw err;
+    }
+
+    return reply.code(201).send({ success: true, data: newPost, meta: { requestId: scope.requestId } } as ApiResponse<typeof newPost>);
   });
 
   // ── PATCH /admin/forum/threads/:id ────────────────────────────────────────

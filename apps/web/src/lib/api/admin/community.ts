@@ -28,10 +28,19 @@ export interface ModerationItem {
   anonAlias: string;
   createdAt: string;
   realName?: string;
+  threadId?: string;
 }
 
 export interface ModerationQueue {
   items: ModerationItem[];
+  total: number;
+}
+
+// Raw shape returned by the backend
+interface ModerationQueueRaw {
+  threads: Array<{ id: string; category: string; title: string; anonAlias: string; authorId: string; createdAt: string; type: "thread" }>;
+  posts: Array<{ id: string; threadId: string; body: string; anonAlias: string; authorId: string; createdAt: string; type: "post" }>;
+  featureRequests: Array<{ id: string; category: string; title: string; description: string; anonAlias: string; authorId: string; createdAt: string; type: "feature_request" }>;
   total: number;
 }
 
@@ -40,7 +49,7 @@ export async function loadAdminModerationQueueWithRefresh(
   session: AuthSession
 ): Promise<AuthorizedResult<ModerationQueue>> {
   return withAuthorizedSession(session, async (accessToken) => {
-    const response = await callGateway<ModerationQueue>(
+    const response = await callGateway<ModerationQueueRaw>(
       "/admin/forum/moderation-queue",
       accessToken
     );
@@ -55,9 +64,15 @@ export async function loadAdminModerationQueueWithRefresh(
         ),
       };
     }
+    const raw = response.payload.data ?? { threads: [], posts: [], featureRequests: [], total: 0 };
+    const items: ModerationItem[] = [
+      ...raw.threads.map((t) => ({ id: t.id, type: t.type, category: t.category, title: t.title, anonAlias: t.anonAlias, authorId: t.authorId, createdAt: t.createdAt })),
+      ...raw.posts.map((p) => ({ id: p.id, type: p.type, category: "reply", body: p.body, anonAlias: p.anonAlias, authorId: p.authorId, createdAt: p.createdAt, threadId: p.threadId })),
+      ...raw.featureRequests.map((fr) => ({ id: fr.id, type: fr.type, category: fr.category, title: fr.title, description: fr.description, anonAlias: fr.anonAlias, authorId: fr.authorId, createdAt: fr.createdAt })),
+    ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     return {
       unauthorized: false,
-      data: response.payload.data ?? { items: [], total: 0 },
+      data: { items, total: raw.total },
       error: null,
     };
   });
@@ -235,19 +250,14 @@ export interface AdminFeatureRequest {
   realName?: string; // real company name (admin only)
 }
 
-export interface AdminFeatureRequestList {
-  requests: AdminFeatureRequest[];
-  total: number;
-}
-
 // ── Load all feature requests ─────────────────────────────────────────────────
 export async function loadAdminFeatureRequestsWithRefresh(
   session: AuthSession,
   params: { sort?: "votes" | "newest" } = {}
-): Promise<AuthorizedResult<AdminFeatureRequestList>> {
+): Promise<AuthorizedResult<AdminFeatureRequest[]>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const qs = params.sort ? `?sort=${params.sort}` : "";
-    const response = await callGateway<AdminFeatureRequestList>(
+    const response = await callGateway<AdminFeatureRequest[]>(
       `/admin/feature-requests${qs}`,
       accessToken
     );
@@ -264,7 +274,7 @@ export async function loadAdminFeatureRequestsWithRefresh(
     }
     return {
       unauthorized: false,
-      data: response.payload.data ?? { requests: [], total: 0 },
+      data: response.payload.data ?? [],
       error: null,
     };
   });
