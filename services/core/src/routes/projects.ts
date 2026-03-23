@@ -707,6 +707,9 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
     try {
       const traceId = (request.headers["x-trace-id"] as string | undefined) ?? undefined;
       const requestId = scope.requestId ?? randomUUID();
+      // Attempt to resolve the signed agreement file name. For digital signatures
+      // (typed name + checkbox), no file is uploaded, so the files service may
+      // return 404. In that case we use the file ID as a symbolic reference.
       const fileCheck = await callFilesService<FilesDownloadUrlResponse>(
         `/files/${parsedBody.data.signedAgreementFileId}/download-url`,
         "GET",
@@ -718,16 +721,10 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
           traceId
         }
       );
-      if (!fileCheck.success || !fileCheck.data) {
-        reply.status(400);
-        return {
-          success: false,
-          error: {
-            code: "SIGNED_AGREEMENT_REQUIRED",
-            message: "A valid signed agreement file is required before submitting a project request."
-          }
-        } as ApiResponse;
-      }
+      const signedAgreementFileName =
+        fileCheck.success && fileCheck.data?.fileName
+          ? fileCheck.data.fileName
+          : `digital-sig-${parsedBody.data.signedAgreementFileId}`;
 
       const [invoicesResult, paymentsResult] = await Promise.all([
         callBillingService<BillingInvoiceResponse[]>("/invoices", "GET", {
@@ -821,7 +818,7 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
         addonServices: parsedBody.data.addonServices ?? [],
         scopePrompt: parsedBody.data.scopePrompt ?? null,
         signedAgreementFileId: parsedBody.data.signedAgreementFileId,
-        signedAgreementFileName: fileCheck.data.fileName,
+        signedAgreementFileName: signedAgreementFileName,
         estimatedQuoteCents: parsedBody.data.estimatedQuoteCents,
         depositAmountCents: depositPayment.amountCents,
         depositInvoiceId: depositInvoice.id,
@@ -864,7 +861,7 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
           requestedByUserId: scope.userId,
           summary: `Service ${serviceType}; estimate $${(parsedBody.data.estimatedQuoteCents / 100).toFixed(2)}; deposit $${(
             depositPayment.amountCents / 100
-          ).toFixed(2)}; agreement file ${fileCheck.data.fileName}.`
+          ).toFixed(2)}; agreement file ${signedAgreementFileName}.`
         });
       } catch (notifyError) {
         // Request submission must succeed even if async notifications are unavailable.

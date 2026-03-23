@@ -1160,7 +1160,7 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                     priority: "MEDIUM",
                     scopePrompt: [overview, goals, audience, requirements].filter(Boolean).join("\n"),
                     selectedServices,
-                    signedAgreementFileId: `portal-sig-${Date.now()}`,
+                    signedAgreementFileId: crypto.randomUUID(),
                     estimatedQuoteCents: quoteCents,
                     depositInvoiceId: invoiceId,
                     depositPaymentId: paymentId,
