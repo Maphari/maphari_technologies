@@ -86,7 +86,7 @@ export async function registerEftVerificationRoutes(app: FastifyInstance): Promi
     }
 
     // Auth scope: project must belong to this client
-    const project = await prisma.project.findUnique({ where: { id }, select: { id: true, clientId: true, referenceCode: true, budgetCents: true } });
+    const project = await prisma.project.findUnique({ where: { id }, select: { id: true, clientId: true, referenceCode: true, budgetCents: true, client: { select: { name: true } } } });
     if (!project || project.clientId !== scope.clientId) {
       return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Project not found." } } as ApiResponse);
     }
@@ -121,7 +121,9 @@ export async function registerEftVerificationRoutes(app: FastifyInstance): Promi
             proofFileName: body.proofFileName,
             status: "PENDING",
             rejectedAt: null,
-            rejectionReason: null
+            rejectionReason: null,
+            verifiedAt: null,
+            verifiedBy: null
           }
         })
       : await prisma.eftVerification.create({
@@ -135,9 +137,8 @@ export async function registerEftVerificationRoutes(app: FastifyInstance): Promi
         });
 
     // Fire-and-forget admin email
-    const client = await prisma.client.findUnique({ where: { id: project.clientId }, select: { name: true } });
     notifyAdminEftProofUploaded({
-      clientName: client?.name ?? project.clientId,
+      clientName: project.client.name ?? project.clientId,
       depositCents: Number(project.budgetCents),
       referenceCode: project.referenceCode
     });
@@ -150,6 +151,10 @@ export async function registerEftVerificationRoutes(app: FastifyInstance): Promi
   app.get("/clients/:clientId/projects/:id/eft-status", async (request, reply) => {
     const scope = readScopeHeaders(request);
     const { clientId, id } = request.params as { clientId: string; id: string };
+
+    if (!scope.role) {
+      return reply.code(401).send({ success: false, error: { code: "UNAUTHORIZED", message: "Authentication required." } } as ApiResponse);
+    }
 
     if (scope.role === "CLIENT" && scope.clientId !== clientId) {
       return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
@@ -179,6 +184,12 @@ export async function registerEftVerificationRoutes(app: FastifyInstance): Promi
     }
 
     const { status } = request.query as { status?: string };
+
+    const VALID_STATUSES = ["PENDING", "VERIFIED", "REJECTED"];
+    if (status && !VALID_STATUSES.includes(status)) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "status must be PENDING, VERIFIED, or REJECTED." } } as ApiResponse);
+    }
+
     const where = status ? { status: status as "PENDING" | "VERIFIED" | "REJECTED" } : {};
 
     const rows = await prisma.eftVerification.findMany({
