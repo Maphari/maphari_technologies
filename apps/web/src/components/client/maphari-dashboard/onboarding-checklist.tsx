@@ -11,6 +11,11 @@ interface ChecklistStep {
   done: boolean;
 }
 
+interface ChecklistResponse {
+  success: boolean;
+  data?: { steps: ChecklistStep[]; allDone: boolean; completedCount: number };
+}
+
 interface Props {
   session: { accessToken?: string } | null;
   onDismiss: () => void;
@@ -24,16 +29,14 @@ export function OnboardingChecklist({ session, onDismiss }: Props) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!session?.accessToken) return;
+    if (!session?.accessToken) { setLoading(false); return; }
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_GATEWAY_URL ?? "http://localhost:4000"}/portal/onboarding/checklist`,
         { headers: { Authorization: `Bearer ${session.accessToken}` } },
       );
-      const d = (await res.json()) as {
-        success: boolean;
-        data?: { steps: ChecklistStep[]; allDone: boolean };
-      };
+      if (!res.ok) { setLoading(false); return; }
+      const d = (await res.json()) as ChecklistResponse;
       if (d.success && d.data) {
         setSteps(d.data.steps);
         setAllDone(d.data.allDone);

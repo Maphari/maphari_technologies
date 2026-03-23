@@ -310,7 +310,10 @@ export function MaphariClientDashboard() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   // ── Onboarding checklist ─────────────────────────────────────────────────
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("maphari_onboarding_dismissed") !== "true";
+  });
 
   useEffect(() => {
     if (!session) return;
@@ -1011,7 +1014,7 @@ export function MaphariClientDashboard() {
       {showOnboarding && (
         <OnboardingChecklist
           session={session ?? null}
-          onDismiss={() => setShowOnboarding(false)}
+          onDismiss={() => { localStorage.setItem("maphari_onboarding_dismissed", "true"); setShowOnboarding(false); }}
         />
       )}
 
