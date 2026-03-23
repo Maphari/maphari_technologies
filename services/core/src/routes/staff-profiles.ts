@@ -29,7 +29,10 @@ export async function registerStaffProfileRoutes(app: FastifyInstance): Promise<
 
     const matrix = staff.map((s) => ({
       ...s,
-      skills: s.skills ? (JSON.parse(s.skills) as string[]) : [],
+      skills: (() => {
+        try { return s.skills ? (JSON.parse(s.skills) as string[]) : []; }
+        catch { return []; }
+      })(),
     }));
 
     return { success: true, data: matrix, meta: { requestId: scope.requestId } } as ApiResponse<typeof matrix>;
@@ -49,6 +52,10 @@ export async function registerStaffProfileRoutes(app: FastifyInstance): Promise<
       return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "skills must be an array." } } as ApiResponse);
     }
 
+    if (!body.skills.every((s) => typeof s === "string" && s.trim().length > 0)) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "skills must be an array of non-empty strings." } } as ApiResponse);
+    }
+
     const updated = await prisma.staffProfile.update({
       where: { id },
       data: { skills: JSON.stringify(body.skills) },
@@ -59,7 +66,8 @@ export async function registerStaffProfileRoutes(app: FastifyInstance): Promise<
       cache.delete(CacheKeys.staffProfile(id)),
     ]);
 
-    return { success: true, data: updated, meta: { requestId: scope.requestId } } as ApiResponse<typeof updated>;
+    const updatedWithParsed = { ...updated, skills: body.skills };
+    return { success: true, data: updatedWithParsed, meta: { requestId: scope.requestId } } as ApiResponse<typeof updatedWithParsed>;
   });
 
   // ── GET /staff ─────────────────────────────────────────────────────────────
