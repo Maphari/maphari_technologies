@@ -66,7 +66,7 @@
 | Create | `apps/web/src/lib/api/admin/calendar.ts` |
 | Create | `apps/web/src/lib/api/staff/calendar.ts` |
 | Modify | `apps/web/src/lib/api/portal/meetings.ts` |
-| Create | `apps/web/src/lib/api/staff/messages.ts` |
+| Modify | `apps/web/src/lib/api/staff/messaging.ts` |
 | Modify | `apps/web/src/components/admin/dashboard/pages/booking-appointments-page.tsx` |
 | Create | `apps/web/src/components/staff/staff-dashboard/pages/calendar-page.tsx` |
 | Modify | `apps/web/src/components/client/maphari-dashboard/pages/book-call-page.tsx` |
@@ -1741,7 +1741,7 @@ git commit -m "feat(gateway): verify/extend calendar controller with events + iC
 - Create: `apps/web/src/lib/api/admin/calendar.ts`
 - Create: `apps/web/src/lib/api/staff/calendar.ts`
 - Modify: `apps/web/src/lib/api/portal/meetings.ts`
-- Create/Modify: `apps/web/src/lib/api/staff/messages.ts`
+- Verify/Modify: `apps/web/src/lib/api/staff/messaging.ts`
 
 > **Pattern:** Admin files use `withAuthorizedSession`/`callGateway` from `./_shared` and `import type { AuthSession } from "../../auth/session"`. Staff files use the same utilities from `./internal`. Do NOT use `withRefresh`, `fetch`, or `GATEWAY_URL`.
 
@@ -1813,32 +1813,22 @@ export async function loadStaffCalendarEventsWithRefresh(
 }
 ```
 
-- [ ] **Step 4: Add staff message creation function**
+- [ ] **Step 4: Verify staff messaging function exists in messaging.ts**
 
-Read `apps/web/src/lib/api/staff/messages.ts` if it exists; otherwise create it. Add (or append) this function:
+Read `apps/web/src/lib/api/staff/messaging.ts`. The function `createStaffClientMessageWithRefresh` already exists there. Do NOT create a new `messages.ts` file.
+
+If for any reason the function is missing, add it to the existing `messaging.ts` (do not create a new file):
 
 ```typescript
-import type { AuthSession } from "../../auth/session";
-import { callGateway, isUnauthorized, toGatewayError, withAuthorizedSession, type AuthorizedResult } from "./internal";
-
-export interface StaffConversation {
-  id: string;
-  clientId: string;
-  subject: string;
-  status: string;
-  createdByRole: string;
-  createdAt: string;
-}
-
 export async function createStaffClientMessageWithRefresh(
   session: AuthSession,
   data: { clientId: string; subject: string; body: string }
-): Promise<AuthorizedResult<StaffConversation>> {
+): Promise<AuthorizedResult<{ id: string; clientId: string; subject: string; status: string; createdAt: string }>> {
   return withAuthorizedSession(session, async (token) => {
     // Gateway chat routes at /conversations (no /staff/ prefix)
-    const res = await callGateway<StaffConversation>("/conversations", token, {
+    const res = await callGateway<{ id: string; clientId: string; subject: string; status: string; createdAt: string }>("/conversations", token, {
       method: "POST",
-      body: { ...data, createdByRole: "STAFF" },
+      body: data,
     });
     if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
     if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
@@ -1857,7 +1847,7 @@ If it exists → do nothing. If somehow missing → add it following the existin
 
 ```bash
 pnpm --filter @maphari/web exec tsc --noEmit
-git add apps/web/src/lib/api/admin/calendar.ts apps/web/src/lib/api/staff/calendar.ts apps/web/src/lib/api/staff/messages.ts apps/web/src/lib/api/portal/meetings.ts
+git add apps/web/src/lib/api/admin/calendar.ts apps/web/src/lib/api/staff/calendar.ts apps/web/src/lib/api/staff/messaging.ts apps/web/src/lib/api/portal/meetings.ts
 git commit -m "feat(web): add calendar and staff messaging API functions"
 ```
 
@@ -1982,7 +1972,7 @@ find apps/web/src/components/staff/staff-dashboard/pages -name "*communication*"
 Read the found file (`communication-history-page.tsx`). Add a "New Message" button that opens a modal:
 
 ```typescript
-import { createStaffClientMessageWithRefresh } from '@/lib/api/staff/messages';
+import { createStaffClientMessageWithRefresh } from '@/lib/api/staff/messaging';
 
 // State:
 const [showMsgModal, setShowMsgModal] = useState(false);
@@ -2140,114 +2130,50 @@ git commit -m "feat(db): add quarter to PeerReview; add approval fields to Proje
 > ```
 > If they exist, read them and verify the endpoint shapes match what the plan expects. Only create from the snippets below if the files are absent.
 
-- [ ] **Step 1: Create staff-goals route (if not already present)**
+- [ ] **Step 1: Verify staff-goals route exists and review its shape**
 
-If `services/core/src/routes/staff-goals.ts` does not exist, create it:
+Read `services/core/src/routes/staff-goals.ts`. This file already exists and exports `registerStaffGoalRoutes` (not `staffGoalsRoutes`). It is already registered in `app.ts` via `await registerStaffGoalRoutes(app)` (not `app.register`). Do NOT recreate this file or add another registration.
+
+Verify it exposes at minimum:
+- `GET /` — list goals by staffUserId
+- `POST /` — create goal
+- `PATCH /:id` — update goal progress/status
+- `DELETE /:id` — cancel goal
+
+If any of these are missing, add them to the existing function body (do not replace the file).
+
+- [ ] **Step 2: Verify peer-reviews route exists and review its shape**
+
+Read `services/core/src/routes/peer-reviews.ts`. This file already exists and is already registered in `app.ts`. Note that `POST /peer-reviews` in the existing file is **ADMIN-only** (used by admins to create review assignments). Staff submission uses a separate `PATCH /:id/submit` endpoint.
+
+Verify it exposes at minimum:
+- `GET /` — list peer reviews (filtered by reviewerId header or ADMIN sees all)
+- `PATCH /:id/submit` — staff submits score/feedback on a review assigned to them
+- `PATCH /:id` — admin updates review
+- `POST /` — ADMIN-only, creates review assignment
+
+If `PATCH /:id/submit` is missing, add it to the existing file:
 
 ```typescript
-import { FastifyInstance } from 'fastify';
-
-export async function staffGoalsRoutes(fastify: FastifyInstance) {
-  const getStaffId = (req: any) => req.headers['x-user-id'] as string;
-
-  fastify.get('/', async (request) => {
-    const staffUserId = getStaffId(request);
-    const quarter = (request.query as any).quarter;
-    return fastify.prisma.staffGoal.findMany({
-      where: { staffUserId, ...(quarter ? { quarter } : {}) },
-      orderBy: { targetDate: 'asc' },
+fastify.patch<{ Params: { id: string }; Body: { score: number; feedback?: string } }>(
+  '/:id/submit',
+  async (request) => {
+    const { id } = request.params;
+    const { score, feedback } = request.body;
+    return fastify.prisma.peerReview.update({
+      where: { id },
+      data: { score, feedback: feedback ?? null, status: 'SUBMITTED', submittedAt: new Date() },
     });
-  });
-
-  fastify.post<{ Body: { title: string; description?: string; targetDate: string; quarter: string } }>(
-    '/',
-    async (request, reply) => {
-      const staffUserId = getStaffId(request);
-      const { title, description, targetDate, quarter } = request.body;
-      const goal = await fastify.prisma.staffGoal.create({
-        data: { staffUserId, title, description, targetDate: new Date(targetDate), quarter },
-      });
-      return reply.status(201).send(goal);
-    }
-  );
-
-  fastify.patch<{ Params: { id: string }; Body: { progress?: number; status?: string; title?: string } }>(
-    '/:id',
-    async (request) => {
-      const { id } = request.params;
-      const { progress, status, title } = request.body;
-      return fastify.prisma.staffGoal.update({
-        where: { id },
-        data: {
-          ...(progress !== undefined && { progress }),
-          ...(status && { status }),
-          ...(title && { title }),
-        },
-      });
-    }
-  );
-}
+  }
+);
 ```
 
-- [ ] **Step 2: Create peer-reviews route (if not already present)**
-
-> **Data model note:** The existing `PeerReview` model is flat — it uses `score: Int?` and `feedback: String?` directly on the review, not a separate answers table. There is no `PeerReviewAnswer` model. The route reflects this flat structure.
-
-Create `services/core/src/routes/peer-reviews.ts`:
-
-```typescript
-import { FastifyInstance } from 'fastify';
-
-export async function peerReviewsRoutes(fastify: FastifyInstance) {
-  const getReviewerId = (req: any) => req.headers['x-user-id'] as string;
-
-  // GET /peer-reviews — reviews submitted by this staff member
-  fastify.get('/', async (request) => {
-    const reviewerId = getReviewerId(request);
-    return fastify.prisma.peerReview.findMany({
-      where: { reviewerId },
-      orderBy: { createdAt: 'desc' },
-    });
-  });
-
-  // POST /peer-reviews — submit a new review
-  fastify.post<{ Body: { revieweeId: string; quarter?: string; score: number; feedback?: string } }>(
-    '/',
-    async (request, reply) => {
-      const reviewerId = getReviewerId(request);
-      const { revieweeId, quarter, score, feedback } = request.body;
-      const review = await fastify.prisma.peerReview.create({
-        data: {
-          reviewerId,
-          revieweeId,
-          quarter: quarter ?? null,
-          score,
-          feedback: feedback ?? null,
-          status: 'SUBMITTED',
-          submittedAt: new Date(),
-        },
-      });
-      return reply.status(201).send(review);
-    }
-  );
-}
-```
-
-- [ ] **Step 3: Register routes**
-
-```typescript
-import { staffGoalsRoutes } from './routes/staff-goals';
-import { peerReviewsRoutes } from './routes/peer-reviews';
-app.register(staffGoalsRoutes, { prefix: '/staff-goals' });
-app.register(peerReviewsRoutes, { prefix: '/peer-reviews' });
-```
-
-- [ ] **Step 4: TypeScript check + commit**
+- [ ] **Step 3: TypeScript check + commit**
 
 ```bash
 cd services/core && pnpm exec tsc --noEmit
-git add services/core/src/routes/staff-goals.ts services/core/src/routes/peer-reviews.ts services/core/src/app.ts
-git commit -m "feat(core): add staff goals and peer reviews routes"
+git add services/core/src/routes/staff-goals.ts services/core/src/routes/peer-reviews.ts
+git commit -m "feat(core): verify staff goals and peer reviews routes; add submit endpoint if missing"
 ```
 
 ---
@@ -2607,11 +2533,12 @@ export async function loadMyPeerReviewsWithRefresh(
 
 export async function submitPeerReviewWithRefresh(
   session: AuthSession,
-  data: { revieweeId: string; quarter?: string; score: number; feedback?: string }
+  reviewId: string,
+  data: { score: number; feedback?: string }
 ): Promise<AuthorizedResult<PeerReview>> {
   return withAuthorizedSession(session, async (token) => {
-    // POST /peer-reviews — gateway staff.controller.ts, no /staff/ prefix
-    const res = await callGateway<PeerReview>("/peer-reviews", token, { method: "POST", body: data });
+    // Staff submit: PATCH /peer-reviews/:id/submit (NOT POST /peer-reviews — that is ADMIN-only)
+    const res = await callGateway<PeerReview>(`/peer-reviews/${reviewId}/submit`, token, { method: "PATCH", body: data });
     if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
     if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
     return { unauthorized: false, data: res.payload.data ?? null, error: null };
@@ -2868,41 +2795,59 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
 
 export default function PeerReviewPage({ session }: { session: AuthSession }) {
   const [reviews, setReviews] = useState<PeerReview[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [revieweeId, setRevieweeId] = useState('');
+  const [activeReview, setActiveReview] = useState<PeerReview | null>(null);
   const [score, setScore] = useState(3);
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    // loadMyPeerReviewsWithRefresh returns reviews assigned TO this staff member (reviewerId = me)
     loadMyPeerReviewsWithRefresh(session).then(r => { if (r.data) setReviews(r.data); });
   }, [session]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!activeReview) return;
     setSubmitting(true);
-    await submitPeerReviewWithRefresh(session, { revieweeId, score, feedback: feedback || undefined });
+    // Staff submits score/feedback on an admin-assigned review via PATCH /peer-reviews/:id/submit
+    await submitPeerReviewWithRefresh(session, activeReview.id, { score, feedback: feedback || undefined });
     const updated = await loadMyPeerReviewsWithRefresh(session);
     if (updated.data) setReviews(updated.data);
-    setShowForm(false);
-    setRevieweeId('');
+    setActiveReview(null);
     setScore(3);
     setFeedback('');
     setSubmitting(false);
   }
 
+  // Separate pending (PENDING) from already submitted
+  const pending = reviews.filter(r => r.status === 'PENDING');
+  const submitted = reviews.filter(r => r.status !== 'PENDING');
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h2>Peer Reviews</h2>
-        <button onClick={() => setShowForm(true)}>+ New Review</button>
-      </div>
+      <h2 style={{ marginBottom: 24 }}>Peer Reviews</h2>
 
-      {reviews.length === 0 ? (
-        <p style={{ color: 'var(--muted)' }}>No reviews submitted yet.</p>
+      <h3 style={{ marginBottom: 12 }}>Assigned to Me</h3>
+      {pending.length === 0 ? (
+        <p style={{ color: 'var(--muted)' }}>No pending reviews assigned.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {reviews.map(r => (
+          {pending.map(r => (
+            <div key={r.id} style={{ padding: '12px 16px', border: '1px solid var(--b2)', borderRadius: 'var(--r-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Reviewee: {r.revieweeId}</span>
+              <span style={{ color: 'var(--muted)' }}>{r.quarter ?? '—'}</span>
+              <button onClick={() => { setActiveReview(r); setScore(3); setFeedback(''); }}>Submit Review</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <h3 style={{ marginTop: 32, marginBottom: 12 }}>Submitted</h3>
+      {submitted.length === 0 ? (
+        <p style={{ color: 'var(--muted)' }}>No submitted reviews yet.</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {submitted.map(r => (
             <div key={r.id} style={{ padding: '12px 16px', border: '1px solid var(--b2)', borderRadius: 'var(--r-sm)', display: 'flex', justifyContent: 'space-between' }}>
               <span>Reviewee: {r.revieweeId}</span>
               <span style={{ color: 'var(--muted)' }}>{r.quarter ?? '—'}</span>
@@ -2913,21 +2858,10 @@ export default function PeerReviewPage({ session }: { session: AuthSession }) {
         </div>
       )}
 
-      {showForm && (
+      {activeReview && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
           <form onSubmit={handleSubmit} style={{ background: 'var(--s1)', padding: 24, borderRadius: 'var(--r-md)', width: 440 }}>
-            <h2>New Peer Review</h2>
-
-            <label style={{ display: 'block', marginBottom: 16 }}>
-              Reviewee Staff Profile ID
-              <input
-                required
-                value={revieweeId}
-                onChange={e => setRevieweeId(e.target.value)}
-                placeholder="Staff profile ID"
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
-              />
-            </label>
+            <h2>Submit Review — {activeReview.revieweeId}</h2>
 
             <label style={{ display: 'block', marginBottom: 16 }}>
               Overall Score
@@ -2948,7 +2882,7 @@ export default function PeerReviewPage({ session }: { session: AuthSession }) {
               <button type="submit" disabled={submitting}>
                 {submitting ? 'Submitting…' : 'Submit Review'}
               </button>
-              <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
+              <button type="button" onClick={() => setActiveReview(null)}>Cancel</button>
             </div>
           </form>
         </div>
@@ -3018,8 +2952,13 @@ Read the found page. Add a "Pending Timesheets" section with approve/reject:
 ```typescript
 import { approveTimesheetWithRefresh, rejectTimesheetWithRefresh } from '@/lib/api/admin/hr';
 
-// State
-const [pendingEntries, setPendingEntries] = useState<ProjectTimeEntry[]>([]);
+// First, check what loadPendingTimesheetsWithRefresh returns. Run:
+//   grep -A5 "loadPendingTimesheets\|PendingTimesheet\|ProjectTimeEntry" apps/web/src/lib/api/admin/hr.ts
+// Use the actual return type from that function. The entries likely include staffName, taskLabel, minutes.
+// Define a local type that matches:
+type PendingEntry = { id: string; staffName?: string; taskLabel?: string; minutes: number; status: string };
+
+const [pendingEntries, setPendingEntries] = useState<PendingEntry[]>([]);
 const [rejectModal, setRejectModal] = useState<{ id: string } | null>(null);
 const [rejectReason, setRejectReason] = useState('');
 
@@ -3028,7 +2967,7 @@ useEffect(() => {
   // Check actual function name: grep -n "pending\|Pending\|submit" apps/web/src/lib/api/admin/hr.ts
   // The function may be called loadPendingTimesheetsWithRefresh — use whatever you find
   loadPendingTimesheetsWithRefresh(session)
-    .then(r => { if (r.data) setPendingEntries(r.data); });
+    .then(r => { if (r.data) setPendingEntries(r.data as PendingEntry[]); });
 }, [session]);
 
 async function handleApprove(id: string) {
