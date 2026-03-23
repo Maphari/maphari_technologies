@@ -779,9 +779,9 @@ export async function registerAiRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // ── POST /ai/prospect/send-pitch ──────────────────────────────────────────
-  // Sends a personalised pitch email to a prospect contact via the
-  // notifications service (NATS event). ADMIN + STAFF only — enforced at
-  // the gateway layer.
+  // Sends a personalised pitch email to a prospect contact directly via
+  // Resend (OUTREACH_FROM_EMAIL). ADMIN + STAFF only — enforced at the
+  // gateway layer.
 
   app.post("/ai/prospect/send-pitch", async (request, reply) => {
     const scope = readScopeHeaders(request);
