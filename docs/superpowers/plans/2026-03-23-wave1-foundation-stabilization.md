@@ -1753,16 +1753,17 @@ Create `apps/web/src/lib/api/admin/calendar.ts`:
 import type { AuthSession } from "../../auth/session";
 import { callGateway, isUnauthorized, toGatewayError, withAuthorizedSession, type AuthorizedResult } from "./_shared";
 
+// CalendarEvent interface matches the existing staff/calendar.ts and admin/calendar.ts files:
+// `date: string` (NOT startAt/endAt) — confirmed from existing codebase
 export interface CalendarEvent {
   id: string;
+  type: "appointment" | "milestone" | "sprint_deadline";
   title: string;
-  startAt: string;
-  endAt: string;
-  type: string;
+  date: string;
+  clientName?: string;
+  projectName?: string;
+  status?: string;
   sourceId: string;
-  sourceType: string;
-  clientId: string | null;
-  roles: string[];
 }
 
 export async function loadAdminCalendarEventsWithRefresh(
@@ -1771,7 +1772,8 @@ export async function loadAdminCalendarEventsWithRefresh(
   to: string
 ): Promise<AuthorizedResult<CalendarEvent[]>> {
   return withAuthorizedSession(session, async (token) => {
-    const res = await callGateway<CalendarEvent[]>(`/admin/calendar/events?from=${from}&to=${to}`, token);
+    // Gateway CalendarController uses @Get("calendar/events") — no /admin/ prefix
+    const res = await callGateway<CalendarEvent[]>(`/calendar/events?from=${from}&to=${to}`, token);
     if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
     if (!res.payload.success) return { unauthorized: false, data: [], error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
     return { unauthorized: false, data: res.payload.data ?? [], error: null };
@@ -1794,7 +1796,8 @@ export async function loadStaffCalendarEventsWithRefresh(
   to: string
 ): Promise<AuthorizedResult<CalendarEvent[]>> {
   return withAuthorizedSession(session, async (token) => {
-    const res = await callGateway<CalendarEvent[]>(`/staff/calendar/events?from=${from}&to=${to}`, token);
+    // Gateway CalendarController uses @Get("calendar/events") — no /staff/ prefix
+    const res = await callGateway<CalendarEvent[]>(`/calendar/events?from=${from}&to=${to}`, token);
     if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
     if (!res.payload.success) return { unauthorized: false, data: [], error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
     return { unauthorized: false, data: res.payload.data ?? [], error: null };
