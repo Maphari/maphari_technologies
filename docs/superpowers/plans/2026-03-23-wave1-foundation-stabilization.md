@@ -2954,7 +2954,9 @@ Add weekly bar chart: for each day of the current week, show:
 
 Use a simple CSS bar chart (no external charting library needed):
 ```typescript
-const allocated = entries.filter(e => isSameDay(e.date, day)).reduce((sum, e) => sum + e.hours, 0);
+// StaffTimeEntry uses `minutes: number` (NOT hours) and `loggedAt: string` (NOT date)
+const allocatedMins = entries.filter(e => isSameDay(e.loggedAt, day)).reduce((sum, e) => sum + e.minutes, 0);
+const allocated = allocatedMins / 60;
 const available = 8;
 const pct = Math.min((allocated / available) * 100, 100);
 // <div style={{ width: `${pct}%` }} className={cx(s.barFill, allocated > available && s.barOverload)} />
