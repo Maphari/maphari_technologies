@@ -12,7 +12,7 @@ export class VideoRoomsController {
   private headers(userId?: string, role?: Role, clientId?: string, requestId?: string, traceId?: string) {
     return {
       "x-user-id": userId ?? "",
-      "x-user-role": role ?? "ADMIN",
+      "x-user-role": role ?? "CLIENT",
       "x-client-id": clientId ?? "",
       "x-request-id": requestId ?? "",
       "x-trace-id": traceId ?? requestId ?? "",
