@@ -78,17 +78,16 @@
 | Action | File |
 |--------|------|
 | Modify | `services/core/prisma/schema.prisma` |
-| Create | `services/core/src/routes/staff-goals.ts` |
-| Create | `services/core/src/routes/peer-reviews.ts` |
+| Verify | `services/core/src/routes/staff-goals.ts` (already exists — registerStaffGoalRoutes) |
+| Verify | `services/core/src/routes/peer-reviews.ts` (already exists — verify/add submit endpoint) |
 | Modify | `services/core/src/routes/time-entries.ts` |
-| Create | `apps/gateway/src/routes/staff-goals.controller.ts` |
-| Create | `apps/gateway/src/routes/peer-reviews.controller.ts` |
+| Verify/Create | `apps/gateway/src/routes/staff-goals.controller.ts` |
+| Verify/Create | `apps/gateway/src/routes/peer-reviews.controller.ts` |
 | Modify | `apps/gateway/src/routes/time-entries.controller.ts` |
 | Modify | `apps/gateway/src/modules/app.module.ts` |
-| Create | `apps/web/src/lib/api/staff/goals.ts` |
-| Create | `apps/web/src/lib/api/staff/peer-reviews.ts` |
+| Verify | `apps/web/src/lib/api/staff/goals.ts` (already exists) |
+| Verify | `apps/web/src/lib/api/staff/hr.ts` (peer-review functions already here) |
 | Modify | `apps/web/src/lib/api/staff/time.ts` |
-| Modify | `apps/web/src/lib/api/admin/hr.ts` |
 | Create | `apps/web/src/components/staff/staff-dashboard/pages/my-goals-page.tsx` |
 | Create | `apps/web/src/components/staff/staff-dashboard/pages/peer-review-page.tsx` |
 | Modify | `apps/web/src/components/staff/staff-dashboard/pages/mycapacity-page.tsx` |
@@ -1971,7 +1970,8 @@ const [msgForm, setMsgForm] = useState({ clientId: '', subject: '', body: '' });
 
 async function handleSendMessage(e: React.FormEvent) {
   e.preventDefault();
-  await createStaffClientMessageWithRefresh(session, msgForm);
+  // Actual signature: (session, clientId, subject, body) — four positional args, not an object
+  await createStaffClientMessageWithRefresh(session, msgForm.clientId, msgForm.subject, msgForm.body);
   setShowMsgModal(false);
   setMsgForm({ clientId: '', subject: '', body: '' });
   // Optionally re-fetch conversation list
@@ -2475,7 +2475,7 @@ git commit -m "feat(gateway): add staff goals, peer reviews, timesheet action co
 
 **Files:**
 - Confirm: `apps/web/src/lib/api/staff/goals.ts` (already exists — verify exports only)
-- Create: `apps/web/src/lib/api/staff/peer-reviews.ts`
+- Verify: `apps/web/src/lib/api/staff/hr.ts` (peer review functions already exist here)
 - Modify: `apps/web/src/lib/api/staff/time.ts`
 - Modify: `apps/web/src/lib/api/admin/hr.ts`
 
@@ -2485,60 +2485,18 @@ git commit -m "feat(gateway): add staff goals, peer reviews, timesheet action co
 
 Read `apps/web/src/lib/api/staff/goals.ts`. Verify it exports: `loadStaffGoalsWithRefresh`, `createStaffGoalWithRefresh`, `updateStaffGoalWithRefresh`, and the `StaffGoal` interface. If any are missing, add them following the existing pattern in the file. Do NOT overwrite the file.
 
-- [ ] **Step 2: Create peer-reviews API**
+- [ ] **Step 2: Verify peer-reviews functions in staff/hr.ts**
 
-> **Data model:** The existing `PeerReview` model is flat — `score: Int?` and `feedback: String?` directly on the review. No nested answers table.
+`loadMyPeerReviewsWithRefresh` and `submitPeerReviewWithRefresh` already exist in `apps/web/src/lib/api/staff/hr.ts`. The type used is `StaffPeerReview`. Do NOT create a new `peer-reviews.ts` file.
 
-Create `apps/web/src/lib/api/staff/peer-reviews.ts`:
+Read `apps/web/src/lib/api/staff/hr.ts` and confirm these exports exist with these signatures:
+- `loadMyPeerReviewsWithRefresh(session: AuthSession): Promise<AuthorizedResult<StaffPeerReview[]>>`
+- `submitPeerReviewWithRefresh(session, reviewId: string, body: { score?: number; feedback?: string }): Promise<AuthorizedResult<StaffPeerReview>>`
+- `interface StaffPeerReview` — has `id, reviewerId, revieweeId, status, score, feedback, dueAt, submittedAt, createdAt, updatedAt`
 
-```typescript
-import type { AuthSession } from "../../auth/session";
-import {
-  callGateway,
-  isUnauthorized,
-  toGatewayError,
-  withAuthorizedSession,
-  type AuthorizedResult
-} from "./internal";
+If they exist → do nothing. Proceed to Step 3.
 
-export interface PeerReview {
-  id: string;
-  reviewerId: string;
-  revieweeId: string;
-  quarter: string | null;
-  score: number | null;
-  feedback: string | null;
-  status: string;
-  submittedAt: string | null;
-  createdAt: string;
-}
-
-export async function loadMyPeerReviewsWithRefresh(
-  session: AuthSession
-): Promise<AuthorizedResult<PeerReview[]>> {
-  return withAuthorizedSession(session, async (token) => {
-    // Gateway staff.controller.ts routes peer-reviews at /peer-reviews (NO /staff/ prefix)
-    const res = await callGateway<PeerReview[]>("/peer-reviews", token);
-    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
-    if (!res.payload.success) return { unauthorized: false, data: [], error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
-    return { unauthorized: false, data: res.payload.data ?? [], error: null };
-  });
-}
-
-export async function submitPeerReviewWithRefresh(
-  session: AuthSession,
-  reviewId: string,
-  data: { score: number; feedback?: string }
-): Promise<AuthorizedResult<PeerReview>> {
-  return withAuthorizedSession(session, async (token) => {
-    // Staff submit: PATCH /peer-reviews/:id/submit (NOT POST /peer-reviews — that is ADMIN-only)
-    const res = await callGateway<PeerReview>(`/peer-reviews/${reviewId}/submit`, token, { method: "PATCH", body: data });
-    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
-    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
-    return { unauthorized: false, data: res.payload.data ?? null, error: null };
-  });
-}
-```
+> **Note for Task 23:** The `peer-review-page.tsx` should import from `@/lib/api/staff/hr`, not `@/lib/api/staff/peer-reviews`.
 
 - [ ] **Step 3: Extend time.ts — add submit function**
 
@@ -2563,57 +2521,22 @@ export async function submitTimesheetWithRefresh(
 }
 ```
 
-- [ ] **Step 4: Extend hr.ts — add approve/reject functions**
+- [ ] **Step 4: Verify approve/reject functions in admin/hr.ts**
 
-Read `apps/web/src/lib/api/admin/hr.ts` to confirm its import pattern (it uses `_shared`). Append:
+`approveTimesheetEntryWithRefresh` and `rejectTimesheetEntryWithRefresh` already exist in `apps/web/src/lib/api/admin/hr.ts` with these signatures:
+- `approveTimesheetEntryWithRefresh(session, id: string): Promise<AuthorizedResult<AdminPendingTimeEntry>>`
+- `rejectTimesheetEntryWithRefresh(session, id: string, reason?: string): Promise<AuthorizedResult<AdminPendingTimeEntry>>`
 
-```typescript
-// NOTE: Before adding these functions, run:
-//   grep -n "approve\|reject\|timesheet\|Timesheet" apps/web/src/lib/api/admin/hr.ts
-// If approveTimesheetWithRefresh/rejectTimesheetWithRefresh already exist, do NOT add duplicates.
-// The gateway time-entries controller is at @Controller() (no prefix), so routes are /time-entries/:id/approve
-// NOT /admin/time-entries/:id/approve
+Also verify `loadPendingTimesheetsWithRefresh(session)` exists and returns `AdminPendingTimeEntry[]`. It calls `GET /time-entries/pending`.
 
-export async function approveTimesheetWithRefresh(
-  session: AuthSession,
-  entryId: string
-): Promise<AuthorizedResult<{ id: string; status: string }>> {
-  return withAuthorizedSession(session, async (token) => {
-    const res = await callGateway<{ id: string; status: string }>(
-      `/time-entries/${entryId}/approve`,
-      token,
-      { method: "PATCH", body: { approvedBy: session.user.email } }
-    );
-    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
-    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
-    return { unauthorized: false, data: res.payload.data ?? null, error: null };
-  });
-}
-
-export async function rejectTimesheetWithRefresh(
-  session: AuthSession,
-  entryId: string,
-  reason: string
-): Promise<AuthorizedResult<{ id: string; status: string }>> {
-  return withAuthorizedSession(session, async (token) => {
-    const res = await callGateway<{ id: string; status: string }>(
-      `/time-entries/${entryId}/reject`,
-      token,
-      { method: "PATCH", body: { reason } }
-    );
-    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
-    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
-    return { unauthorized: false, data: res.payload.data ?? null, error: null };
-  });
-}
-```
+If all three exist → do nothing. Proceed to Step 5.
 
 - [ ] **Step 5: TypeScript check + commit**
 
 ```bash
 pnpm --filter @maphari/web exec tsc --noEmit
-git add apps/web/src/lib/api/staff/peer-reviews.ts apps/web/src/lib/api/staff/time.ts apps/web/src/lib/api/admin/hr.ts
-git commit -m "feat(web): add peer reviews API; extend time.ts and hr.ts with submit/approve/reject"
+git add apps/web/src/lib/api/staff/time.ts
+git commit -m "feat(web): add submitTimesheetWithRefresh to time.ts (peer-review and hr approve/reject already exist)"
 ```
 
 ---
@@ -2767,8 +2690,9 @@ import type { AuthSession } from '@/lib/auth/session';
 import {
   loadMyPeerReviewsWithRefresh,
   submitPeerReviewWithRefresh,
-  type PeerReview,
-} from '@/lib/api/staff/peer-reviews';
+  type StaffPeerReview,
+} from '@/lib/api/staff/hr';
+// loadMyPeerReviewsWithRefresh and submitPeerReviewWithRefresh live in hr.ts, not peer-reviews.ts
 
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
@@ -2788,8 +2712,8 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
 }
 
 export default function PeerReviewPage({ session }: { session: AuthSession }) {
-  const [reviews, setReviews] = useState<PeerReview[]>([]);
-  const [activeReview, setActiveReview] = useState<PeerReview | null>(null);
+  const [reviews, setReviews] = useState<StaffPeerReview[]>([]);
+  const [activeReview, setActiveReview] = useState<StaffPeerReview | null>(null);
   const [score, setScore] = useState(3);
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -2944,34 +2868,29 @@ find apps/web/src/components/admin/dashboard/pages -name "*hr*" -o -name "*payro
 Read the found page. Add a "Pending Timesheets" section with approve/reject:
 
 ```typescript
-import { approveTimesheetWithRefresh, rejectTimesheetWithRefresh } from '@/lib/api/admin/hr';
+import { approveTimesheetEntryWithRefresh, rejectTimesheetEntryWithRefresh, loadPendingTimesheetsWithRefresh, type AdminPendingTimeEntry } from '@/lib/api/admin/hr';
 
-// First, check what loadPendingTimesheetsWithRefresh returns. Run:
-//   grep -A5 "loadPendingTimesheets\|PendingTimesheet\|ProjectTimeEntry" apps/web/src/lib/api/admin/hr.ts
-// Use the actual return type from that function. The entries likely include staffName, taskLabel, minutes.
-// Define a local type that matches:
-type PendingEntry = { id: string; staffName?: string; taskLabel?: string; minutes: number; status: string };
-
-const [pendingEntries, setPendingEntries] = useState<PendingEntry[]>([]);
+// `AdminPendingTimeEntry` from `admin/hr.ts` has: id, staffName, taskLabel, minutes, status, etc.
+// Use it directly — no custom local type needed.
+const [pendingEntries, setPendingEntries] = useState<AdminPendingTimeEntry[]>([]);
 const [rejectModal, setRejectModal] = useState<{ id: string } | null>(null);
 const [rejectReason, setRejectReason] = useState('');
 
 useEffect(() => {
   if (!session) return;
-  // Check actual function name: grep -n "pending\|Pending\|submit" apps/web/src/lib/api/admin/hr.ts
-  // The function may be called loadPendingTimesheetsWithRefresh — use whatever you find
+  // loadPendingTimesheetsWithRefresh already exists in admin/hr.ts
   loadPendingTimesheetsWithRefresh(session)
-    .then(r => { if (r.data) setPendingEntries(r.data as PendingEntry[]); });
+    .then(r => { if (r.data) setPendingEntries(r.data); });
 }, [session]);
 
 async function handleApprove(id: string) {
-  await approveTimesheetWithRefresh(session, id);
+  await approveTimesheetEntryWithRefresh(session, id);
   setPendingEntries(prev => prev.filter(e => e.id !== id));
 }
 
 async function handleReject() {
   if (!rejectModal) return;
-  await rejectTimesheetWithRefresh(session, rejectModal.id, rejectReason);
+  await rejectTimesheetEntryWithRefresh(session, rejectModal.id, rejectReason || undefined);
   setPendingEntries(prev => prev.filter(e => e.id !== rejectModal.id));
   setRejectModal(null);
   setRejectReason('');
