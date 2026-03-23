@@ -6840,3 +6840,65 @@
 .budgetBurnFooter { display: flex; justify-content: space-between; align-items: center; }
 .budgetBurnPct  { font-size: 12px; color: var(--text-3); }
 .budgetBurnEst  { font-size: 12px; color: var(--text-3); }
+
+/* ── Project Request Success Screen ────────────────────────────────────────── */
+.prqSuccessShell       { display: flex; flex-direction: column; gap: 20px; max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+.prqCard               { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-lg); padding: 32px; }
+.prqHeader             { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--b1); margin-bottom: 28px; }
+.prqCheckRing          { width: 60px; height: 60px; border-radius: 50%; background: rgba(200,241,53,0.08); border: 1.5px solid rgba(200,241,53,0.25); display: flex; align-items: center; justify-content: center; color: var(--lime); }
+.prqTitle              { font-size: 22px; font-weight: 600; color: var(--text, #f0f0f0); letter-spacing: -0.3px; }
+.prqSub                { font-size: 13.5px; color: var(--muted, #888); line-height: 1.55; max-width: 420px; }
+.prqRefStrip           { display: flex; align-items: center; justify-content: space-between; background: var(--s2); border: 1px solid var(--b2); border-radius: var(--r-sm); padding: 14px 18px; margin-bottom: 24px; }
+.prqRefLabel           { font-size: 11px; color: var(--muted, #555); text-transform: uppercase; letter-spacing: 0.08em; }
+.prqRefCode            { font-size: 18px; font-weight: 700; color: var(--lime); font-family: var(--font-mono, monospace); letter-spacing: 0.04em; }
+.prqCopyBtn            { font-size: 11px; color: var(--muted, #666); background: var(--s3); border: 1px solid var(--b2); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.prqSummaryRow         { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.prqSummaryItem        { background: var(--s2); border: 1px solid var(--b2); border-radius: var(--r-sm); padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+.prqSummaryLabel       { font-size: 10.5px; color: var(--muted, #555); text-transform: uppercase; letter-spacing: 0.07em; }
+.prqSummaryValue       { font-size: 14px; font-weight: 600; color: var(--text, #d4d4d4); }
+.prqSummaryValueAccent { font-size: 14px; font-weight: 600; color: var(--lime); }
+.prqTimelineLabel      { font-size: 11px; color: var(--muted, #555); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+.prqTimeline           { display: flex; align-items: flex-start; margin-bottom: 28px; }
+.prqStep               { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; gap: 8px; }
+.prqStep::before       { content: ''; position: absolute; top: 14px; left: calc(50% + 14px); right: calc(-50% + 14px); height: 1px; background: var(--b2); }
+.prqStep:last-child::before { display: none; }
+.prqStepDone::before   { background: rgba(200,241,53,0.25); }
+.prqDot                { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; position: relative; z-index: 1; flex-shrink: 0; }
+.prqDotDone            { background: rgba(200,241,53,0.12); border: 1.5px solid var(--lime); color: var(--lime); }
+.prqDotActive          { background: rgba(200,241,53,0.06); border: 1.5px solid rgba(200,241,53,0.4); color: var(--lime); box-shadow: 0 0 0 4px rgba(200,241,53,0.06); }
+.prqDotPending         { background: var(--s2); border: 1.5px solid var(--b2); color: var(--muted, #444); }
+.prqStepText           { text-align: center; font-size: 10.5px; color: var(--muted, #555); line-height: 1.35; max-width: 72px; }
+.prqStepTextDone       { color: #7a9a30; }
+.prqStepTextActive     { color: var(--lime); }
+.prqEftSection         { border: 1px solid var(--b2); border-radius: var(--r-md); overflow: hidden; }
+.prqEftHeader          { background: rgba(200,241,53,0.04); border-bottom: 1px solid var(--b2); padding: 14px 18px; display: flex; align-items: center; gap: 10px; }
+.prqEftBadge           { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--lime); background: rgba(200,241,53,0.1); border: 1px solid rgba(200,241,53,0.2); border-radius: 4px; padding: 2px 7px; }
+.prqEftBadgeDone       { color: var(--lime); background: rgba(200,241,53,0.15); border-color: rgba(200,241,53,0.3); }
+.prqEftTitle           { font-size: 13px; font-weight: 600; color: var(--text, #d4d4d4); }
+.prqEftBody            { padding: 18px; }
+.prqEftInfo            { font-size: 12.5px; color: var(--muted, #666); line-height: 1.55; margin-bottom: 16px; }
+.prqBankGrid           { background: var(--s2); border: 1px solid var(--b2); border-radius: var(--r-sm); padding: 14px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.prqBankLabel          { font-size: 10px; color: var(--muted, #555); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 2px; }
+.prqBankVal            { font-size: 13px; font-weight: 600; color: var(--text, #ccc); font-family: var(--font-mono, monospace); }
+.prqUploadZone         { border: 1.5px dashed var(--b2); border-radius: var(--r-sm); padding: 28px 20px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: border-color 0.2s; }
+.prqUploadZone:hover   { border-color: rgba(200,241,53,0.3); background: rgba(200,241,53,0.02); }
+.prqUploadZoneActive   { border-color: rgba(200,241,53,0.4); background: rgba(200,241,53,0.03); }
+.prqUploadIcon         { width: 36px; height: 36px; border-radius: 8px; background: var(--s2); border: 1px solid var(--b2); display: flex; align-items: center; justify-content: center; color: var(--muted, #555); margin-bottom: 4px; }
+.prqUploadBtn          { margin-top: 16px; width: 100%; padding: 12px; background: var(--lime); color: #0c0c0f; border: none; border-radius: var(--r-sm); font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.prqUploadBtnLoading   { opacity: 0.6; cursor: not-allowed; }
+.prqSkipLink           { display: block; text-align: center; margin-top: 10px; font-size: 12px; color: var(--muted, #444); cursor: pointer; }
+.prqFileCard           { border: 1.5px solid rgba(200,241,53,0.2); border-radius: var(--r-sm); background: rgba(200,241,53,0.03); padding: 16px; display: flex; align-items: center; gap: 12px; }
+.prqFileIcon           { width: 40px; height: 40px; background: rgba(200,241,53,0.08); border: 1px solid rgba(200,241,53,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--lime); flex-shrink: 0; }
+.prqFileName           { font-size: 13px; font-weight: 600; color: var(--text, #d4d4d4); }
+.prqFileSize           { font-size: 11.5px; color: var(--muted, #555); margin-top: 2px; }
+.prqNextCard           { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-lg); padding: 24px; }
+.prqNextTitle          { font-size: 12px; color: var(--muted, #555); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+.prqNextList           { display: flex; flex-direction: column; gap: 12px; }
+.prqNextItem           { display: flex; align-items: flex-start; gap: 12px; }
+.prqNextNum            { width: 22px; height: 22px; border-radius: 50%; background: var(--s2); border: 1px solid var(--b2); font-size: 10.5px; font-weight: 700; color: var(--muted, #555); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.prqNextText           { font-size: 13px; color: var(--muted, #777); line-height: 1.5; }
+@media (max-width: 480px) {
+  .prqSummaryRow { grid-template-columns: 1fr 1fr; }
+  .prqBankGrid   { grid-template-columns: 1fr; }
+  .prqTimeline   { gap: 0; }
+}

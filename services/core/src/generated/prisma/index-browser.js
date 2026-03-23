@@ -189,7 +189,8 @@ exports.Prisma.ProjectScalarFieldEnum = {
   progressPercent: 'progressPercent',
   slaDueAt: 'slaDueAt',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  referenceCode: 'referenceCode'
 };
 
 exports.Prisma.ProjectMilestoneScalarFieldEnum = {
@@ -1393,6 +1394,22 @@ exports.Prisma.WebhookEndpointScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.EftVerificationScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  clientId: 'clientId',
+  proofFileId: 'proofFileId',
+  proofFileName: 'proofFileName',
+  status: 'status',
+  verifiedBy: 'verifiedBy',
+  verifiedAt: 'verifiedAt',
+  rejectedAt: 'rejectedAt',
+  rejectionReason: 'rejectionReason',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1422,7 +1439,11 @@ exports.Prisma.JsonNullValueFilter = {
   JsonNull: Prisma.JsonNull,
   AnyNull: Prisma.AnyNull
 };
-
+exports.EftVerificationStatus = exports.$Enums.EftVerificationStatus = {
+  PENDING: 'PENDING',
+  VERIFIED: 'VERIFIED',
+  REJECTED: 'REJECTED'
+};
 
 exports.Prisma.ModelName = {
   Client: 'Client',
@@ -1516,7 +1537,8 @@ exports.Prisma.ModelName = {
   FeatureVote: 'FeatureVote',
   AdminProposedAction: 'AdminProposedAction',
   AvailabilitySlot: 'AvailabilitySlot',
-  WebhookEndpoint: 'WebhookEndpoint'
+  WebhookEndpoint: 'WebhookEndpoint',
+  EftVerification: 'EftVerification'
 };
 
 /**

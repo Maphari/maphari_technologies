@@ -82,6 +82,7 @@ export interface PortalProject {
   budgetCents: number;
   progressPercent: number;
   slaDueAt: string | null;
+  referenceCode?: string | null;
   createdAt: string;
   updatedAt: string;
 }

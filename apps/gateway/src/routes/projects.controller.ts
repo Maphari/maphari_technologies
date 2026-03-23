@@ -1343,4 +1343,78 @@ export class ProjectsController {
       "x-trace-id": traceId ?? requestId ?? ""
     });
   }
+
+  @Roles("CLIENT")
+  @Patch("projects/:id/eft-proof")
+  async submitEftProof(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/projects/${id}/eft-proof`, "PATCH", body, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("CLIENT", "STAFF", "ADMIN")
+  @Get("clients/:clientId/projects/:id/eft-status")
+  async getEftStatus(
+    @Param("clientId") clientId: string,
+    @Param("id") id: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") xClientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/clients/${clientId}/projects/${id}/eft-status`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": xClientId ?? "", "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("STAFF", "ADMIN")
+  @Get("admin/eft-pending")
+  async getEftPending(
+    @Query() query: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    const q = query as Record<string, string>;
+    if (q?.status) params.set("status", q.status);
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/admin/eft-pending${params.size ? `?${params}` : ""}`, "GET", undefined, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "STAFF",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN")
+  @Post("admin/eft-pending/:id/verify")
+  async verifyEftDeposit(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/admin/eft-pending/${id}/verify`, "POST", body, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "ADMIN",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "", "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
 }
