@@ -358,10 +358,10 @@ function scoreProspect(prospect: Omit<ProspectResult, "pitch">): number {
 // ── Claude pitch generation ───────────────────────────────────────────────────
 
 const PITCH_SYSTEM: Record<OpportunityFilter, string> = {
-  no_website: `You are a professional business development consultant. Write a short, warm outreach email to a local business owner who has no website. The goal is to introduce your web design agency and offer to build them a professional website. Keep it under 120 words, conversational, not pushy.`,
-  needs_redesign: `You are a professional business development consultant. Write a short, warm outreach email to a local business owner whose website could benefit from a modern redesign. Mention that modern, mobile-friendly websites convert better and build trust. Keep it under 120 words, conversational, not pushy.`,
-  needs_automation: `You are a professional business development consultant. Write a short, warm outreach email to a local business owner who could save time and grow revenue with automation (e.g. online booking, automated follow-ups, CRM). Keep it under 120 words, conversational, not pushy.`,
-  needs_seo: `You are a professional business development consultant. Write a short, warm outreach email to a local business owner whose website has limited search visibility. Explain how better SEO means more local customers finding them online. Keep it under 120 words, conversational, not pushy.`
+  no_website: `You are a professional business development consultant. Write a short, warm outreach email to a local business owner who has no website. The goal is to introduce your web design agency and offer to build them a professional website. Keep it under 130 words, conversational, not pushy.`,
+  needs_redesign: `You are a professional business development consultant. Write a short, warm outreach email to a local business owner whose website could benefit from a modern redesign. Mention that modern, mobile-friendly websites convert better and build trust. Keep it under 130 words, conversational, not pushy.`,
+  needs_automation: `You are a professional business development consultant. Write a short, warm outreach email to a local business owner who could save time and grow revenue with automation (e.g. online booking, automated follow-ups, CRM). Keep it under 130 words, conversational, not pushy.`,
+  needs_seo: `You are a professional business development consultant. Write a short, warm outreach email to a local business owner whose website has limited search visibility. Explain how better SEO means more local customers finding them online. Keep it under 130 words, conversational, not pushy.`
 };
 
 async function generateOnePitch(
@@ -431,13 +431,13 @@ export async function searchProspects(
   const serpKey = process.env.SERPAPI_KEY;
   if (!serpKey) {
     console.warn("[prospecting] SERPAPI_KEY not set — returning mock prospects");
-    base = buildMockProspects(filters).slice(0, count).map(({ pitch: _pitch, ...rest }) => rest);
+    base = buildMockProspects(filters).slice(0, count).map(({ pitch: _pitch, ...rest }) => ({ ...rest, industry }));
   } else {
     const raw = await fetchSerpApiResults(industry, location);
     base =
       raw.length > 0
         ? classifyResults(raw, filters, count, industry)
-        : buildMockProspects(filters).slice(0, count).map(({ pitch: _pitch, ...rest }) => rest);
+        : buildMockProspects(filters).slice(0, count).map(({ pitch: _pitch, ...rest }) => ({ ...rest, industry }));
   }
 
   // 2. Enrich all prospects in parallel (health check + contact enrichment + scoring)
