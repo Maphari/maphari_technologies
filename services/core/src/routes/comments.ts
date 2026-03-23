@@ -73,6 +73,7 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
           entityId:   body.entityId,
           authorName: body.authorName ?? scope.userId ?? null,
           excerpt:    body.message.slice(0, 100),
+          clientId:   scope.clientId ?? null,
         });
       }
 

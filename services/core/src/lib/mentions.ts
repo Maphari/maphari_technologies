@@ -27,18 +27,22 @@ export async function resolveMentions(text: string): Promise<Array<{ staffId: st
  *  In Wave 3: replace clientActivity.create with notification queue emit. */
 export function notifyMentions(
   mentions: Array<{ staffId: string; userId: string | null; name: string }>,
-  context: { commentId: string; entityType: string; entityId: string; authorName: string | null; excerpt: string }
+  context: { commentId: string; entityType: string; entityId: string; authorName: string | null; excerpt: string; clientId: string | null }
 ): void {
   for (const m of mentions) {
-    prisma.clientActivity.create({
-      data: {
-        clientId: context.entityId,
-        type:     "MENTION",
-        message:  `${context.authorName ?? "Someone"} mentioned @${m.name} in a comment`,
-        actorId:  m.userId ?? undefined,
-        metadata: JSON.stringify({ commentId: context.commentId, entityType: context.entityType }),
-      },
-    }).catch(() => {});
+    if (context.clientId) {
+      prisma.clientActivity.create({
+        data: {
+          clientId: context.clientId,
+          type:     "MENTION",
+          message:  `${context.authorName ?? "Someone"} mentioned @${m.name} in a comment`,
+          actorId:  m.userId ?? undefined,
+          metadata: JSON.stringify({ commentId: context.commentId, entityType: context.entityType }),
+        },
+      }).catch(() => {});
+    } else {
+      console.log(`[mentions] skipping clientActivity — no clientId for ${context.entityType}:${context.entityId}`);
+    }
     console.log(`[mentions] @${m.name} mentioned in ${context.entityType}:${context.entityId}`);
   }
 }
