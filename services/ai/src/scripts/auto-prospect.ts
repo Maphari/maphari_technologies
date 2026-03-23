@@ -223,18 +223,18 @@ async function run(): Promise<void> {
       saved++;
       existing.add(key); // prevent double-save within the same run
       console.log(`[auto-prospect] ✓ Saved: ${prospect.company}`);
+
+      // Send pitch email only if lead was persisted (for traceability)
+      if (prospect.contactEmail && prospect.pitch) {
+        const subject = `Quick question for ${prospect.company}`;
+        const success = await sendPitch(aiBaseUrl, prospect.contactEmail, subject, prospect.pitch);
+        if (success) {
+          sent++;
+          console.log(`[auto-prospect] ✉ Pitched: ${prospect.company} <${prospect.contactEmail}>`);
+        }
+      }
     } else {
       console.warn(`[auto-prospect] ✗ DB save failed: ${prospect.company}`);
-    }
-
-    // Send pitch email if contact email is available
-    if (prospect.contactEmail && prospect.pitch) {
-      const subject = `Quick question for ${prospect.company}`;
-      const success = await sendPitch(aiBaseUrl, prospect.contactEmail, subject, prospect.pitch);
-      if (success) {
-        sent++;
-        console.log(`[auto-prospect] ✉ Pitched: ${prospect.company} <${prospect.contactEmail}>`);
-      }
     }
   }
 
