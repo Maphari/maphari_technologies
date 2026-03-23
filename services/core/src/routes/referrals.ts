@@ -25,41 +25,41 @@ export async function registerReferralRoutes(app: FastifyInstance): Promise<void
     }
 
     // Referral has no clientId FK — match by email via primary ClientContact
-    const primaryContact = scope.clientId
-      ? await prisma.clientContact.findFirst({
-          where: { clientId: scope.clientId, isPrimary: true },
-          select: { email: true },
-        })
-      : null;
-    // Fall back to any contact if no primary is set
-    const fallbackContact = (!primaryContact && scope.clientId)
-      ? await prisma.clientContact.findFirst({
-          where: { clientId: scope.clientId },
-          select: { email: true },
-          orderBy: { createdAt: "asc" },
-        })
-      : null;
-    const clientEmail = (primaryContact ?? fallbackContact)?.email ?? null;
+    // Single query: order by isPrimary desc so the primary contact comes first,
+    // then createdAt asc as tiebreaker — eliminates the two-step lookup.
+    const cacheKey = `referral-summary:${scope.clientId ?? "anon"}`;
+    const summaryData = await withCache(cacheKey, 120, async () => {
+      const contact = await prisma.clientContact.findFirst({
+        where: { clientId: scope.clientId },
+        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+        select: { email: true },
+      });
+      const clientEmail = contact?.email ?? null;
 
-    const referrals = clientEmail
-      ? await prisma.referral.findMany({
-          where: { referredByEmail: clientEmail },
-          select: { id: true, referredByName: true, status: true, rewardAmountCents: true, creditApplied: true, createdAt: true },
-          orderBy: { createdAt: "desc" },
-        })
-      : [];
+      const referrals = clientEmail
+        ? await prisma.referral.findMany({
+            where: { referredByEmail: clientEmail },
+            select: { id: true, referredByName: true, status: true, rewardAmountCents: true, creditApplied: true, createdAt: true },
+            orderBy: { createdAt: "desc" },
+          })
+        : [];
 
-    const totalRewardCents = referrals.reduce((sum, r) => sum + (r.rewardAmountCents ?? 0), 0);
-    const availableCents   = referrals
-      .filter((r) => r.rewardAmountCents && !r.creditApplied)
-      .reduce((sum, r) => sum + (r.rewardAmountCents ?? 0), 0);
+      const totalRewardCents = referrals.reduce((sum, r) => sum + (r.rewardAmountCents ?? 0), 0);
+      const availableCents   = referrals
+        .filter((r) => r.rewardAmountCents != null && !r.creditApplied)
+        .reduce((sum, r) => sum + (r.rewardAmountCents ?? 0), 0);
+
+      return { totalRewardCents, availableCents, referrals };
+    });
+
+    const { totalRewardCents, availableCents, referrals } = summaryData;
 
     return {
       success: true,
       data: {
-        totalRewardRand:  totalRewardCents / 100,
-        availableRand:    availableCents / 100,
-        referralCount:    referrals.length,
+        totalRewardRand: totalRewardCents / 100,
+        availableRand:   availableCents / 100,
+        referralCount:   referrals.length,
         referrals,
       },
       meta: { requestId: scope.requestId },
@@ -117,6 +117,7 @@ export async function registerReferralRoutes(app: FastifyInstance): Promise<void
       rewardAmountCents?: number;
       rewardedAt?: string;
       notes?: string;
+      creditApplied?: boolean;
     };
 
     const existing = await prisma.referral.findUnique({ where: { id } });
@@ -130,7 +131,8 @@ export async function registerReferralRoutes(app: FastifyInstance): Promise<void
         status: body.status ?? existing.status,
         rewardAmountCents: body.rewardAmountCents !== undefined ? body.rewardAmountCents : existing.rewardAmountCents,
         rewardedAt: body.rewardedAt ? new Date(body.rewardedAt) : existing.rewardedAt,
-        notes: body.notes !== undefined ? body.notes : existing.notes
+        notes: body.notes !== undefined ? body.notes : existing.notes,
+        ...(body.creditApplied !== undefined ? { creditApplied: body.creditApplied } : {}),
       }
     });
 

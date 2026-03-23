@@ -104,10 +104,11 @@ export function ReferralProgramPage() {
     ]).finally(() => setDataLoading(false));
   }, [session, fetchSummary]);
 
-  const displayReferrals = apiReferrals.map(mapReferral);
-  const convertedCount   = apiReferrals.filter(r => r.status === "CONVERTED").length;
-  const pendingCount     = apiReferrals.filter(r => r.status !== "CONVERTED").length;
-  const creditsEarnedCents = apiReferrals.reduce((sum, r) => sum + (r.rewardAmountCents ?? 0), 0);
+  const historyReferrals   = summary?.referrals ?? apiReferrals;
+  const displayReferrals = historyReferrals.map(mapReferral);
+  const convertedCount   = historyReferrals.filter(r => r.status === "CONVERTED").length;
+  const pendingCount     = historyReferrals.filter(r => r.status !== "CONVERTED").length;
+  const creditsEarnedCents = historyReferrals.reduce((sum, r) => sum + (r.rewardAmountCents ?? 0), 0);
   const creditsStr       = creditsEarnedCents > 0
     ? `R ${(creditsEarnedCents / 100).toLocaleString("en-ZA")}`
     : "—";
@@ -132,6 +133,7 @@ export function ReferralProgramPage() {
         setSubmitEmail("");
         setSubmitDone(true);
         setTimeout(() => setSubmitDone(false), 3000);
+        void fetchSummary(session);
       }
     } finally {
       setSubmitting(false);
@@ -151,7 +153,7 @@ export function ReferralProgramPage() {
       {/* ── Stat cards ─────────────────────────────────────────────────────── */}
       <div className={cx("topCardsStack", "mb20")}>
         {[
-          { label: "Referrals Sent",     value: String(apiReferrals.length), color: "statCardAccent" },
+          { label: "Referrals Sent",     value: String(historyReferrals.length), color: "statCardAccent" },
           { label: "Converted",          value: String(convertedCount),       color: "statCardGreen"  },
           { label: "Pending",            value: String(pendingCount),          color: "statCardAmber"  },
           { label: "Credits Earned",     value: creditsStr,                    color: "statCardBlue"   },
@@ -245,7 +247,7 @@ export function ReferralProgramPage() {
           <div className={cx("cardHd")}><span className={cx("cardHdTitle")}>Your Earnings</span></div>
           <div className={cx("cardBodyPad")}>
             {[
-              { label: "Total Referrals",    value: String(apiReferrals.length) },
+              { label: "Total Referrals",    value: String(historyReferrals.length) },
               { label: "Converted",          value: String(convertedCount)       },
               { label: "Earned Credits",     value: creditsStr                   },
               { label: "Available Credits",  value: availableStr                 },
