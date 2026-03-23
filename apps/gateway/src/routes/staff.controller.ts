@@ -601,6 +601,26 @@ export class StaffController {
     );
   }
 
+  // ── POST /handovers/:id/summarise ────────────────────────────────────────
+  @Roles("ADMIN", "STAFF")
+  @Post("handovers/:id/summarise")
+  async summariseHandover(
+    @Param("id")              id: string,
+    @Body()                   body: unknown,
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string,
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/handovers/${id}/summarise`,
+      "POST",
+      body,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
   // ── GET /meetings ─────────────────────────────────────────────────────────
   @Roles("ADMIN", "STAFF")
   @Get("meetings")

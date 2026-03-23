@@ -449,6 +449,26 @@ export class AdminController {
     );
   }
 
+  // ── POST /admin/handovers/:id/summarise ──────────────────────────────────
+  @Roles("ADMIN", "STAFF")
+  @Post("admin/handovers/:id/summarise")
+  async summariseAdminHandover(
+    @Param("id")              id: string,
+    @Body()                   body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string,
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/handovers/${id}/summarise`,
+      "POST",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
   // ══════════════════════════════════════════════════════════════════════════
   // DECISION RECORDS
   // ══════════════════════════════════════════════════════════════════════════

@@ -171,15 +171,16 @@ export async function registerHandoverRoutes(app: FastifyInstance): Promise<void
         `${process.env.AI_SERVICE_URL ?? "http://localhost:4007"}/ai/handover-summary`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json", "x-user-role": "ADMIN" },
+          headers: { "Content-Type": "application/json", "x-user-role": scope.role ?? "ADMIN" },
           body: JSON.stringify({ content: record.notes.slice(0, 4000) }),
           signal: AbortSignal.timeout(20_000),
         }
       );
-      if (aiRes.ok) {
-        const d = (await aiRes.json()) as { success?: boolean; data?: { text?: string } };
-        aiSummary = d?.data?.text ?? null;
+      if (!aiRes.ok) {
+        return reply.code(503).send({ success: false, error: { code: "AI_UNAVAILABLE", message: "AI service returned an error." } } as ApiResponse);
       }
+      const d = (await aiRes.json()) as { success?: boolean; data?: { text?: string } };
+      aiSummary = d?.data?.text ?? null;
     } catch {
       return reply.code(503).send({ success: false, error: { code: "AI_UNAVAILABLE", message: "AI service unavailable." } } as ApiResponse);
     }
