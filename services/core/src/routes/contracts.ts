@@ -326,6 +326,14 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
       await cache.delete(CacheKeys.contracts(body.clientId));
       await cache.delete(CacheKeys.contracts("all"));
 
+      writeAuditEvent({
+        actorId:      scope.userId,
+        actorRole:    scope.role,
+        action:       "CONTRACT_CREATED",
+        resourceType: "Contract",
+        resourceId:   contract.id,
+      });
+
       reply.status(201);
       return { success: true, data: contract, meta: { requestId: scope.requestId } } as ApiResponse<typeof contract>;
     } catch (error) {
@@ -376,6 +384,13 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
         },
       });
       await cache.delete(CacheKeys.contracts(clientId));
+      writeAuditEvent({
+        actorId:      scope.userId,
+        actorRole:    scope.role,
+        action:       "CONTRACT_CREATED",
+        resourceType: "Contract",
+        resourceId:   contract.id,
+      });
       return {
         success: true,
         data: contract,

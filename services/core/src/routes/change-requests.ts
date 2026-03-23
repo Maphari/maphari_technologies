@@ -309,6 +309,15 @@ export async function registerChangeRequestRoutes(app: FastifyInstance): Promise
       }
     });
 
+    writeAuditEvent({
+      actorId:      scope.userId,
+      actorRole:    scope.role,
+      action:       "CHANGE_REQUEST_CREATED",
+      resourceType: "ChangeRequest",
+      resourceId:   created.id,
+      details:      created.title ?? null,
+    });
+
     return {
       success: true,
       data: created,

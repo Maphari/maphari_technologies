@@ -74,6 +74,14 @@ export async function registerDeliverableRoutes(app: FastifyInstance): Promise<v
         }
       });
       await cache.delete(CacheKeys.deliverables(projectId));
+      writeAuditEvent({
+        actorId:      scope.userId,
+        actorRole:    scope.role,
+        action:       "DELIVERABLE_CREATED",
+        resourceType: "Deliverable",
+        resourceId:   deliverable.id,
+        details:      deliverable.name ?? null,
+      });
       reply.status(201);
       return { success: true, data: deliverable } as ApiResponse<typeof deliverable>;
     } catch (error) {
@@ -129,6 +137,13 @@ export async function registerDeliverableRoutes(app: FastifyInstance): Promise<v
     try {
       await prisma.projectDeliverable.delete({ where: { id, projectId } });
       await cache.delete(CacheKeys.deliverables(projectId));
+      writeAuditEvent({
+        actorId:      scope.userId,
+        actorRole:    scope.role,
+        action:       "DELIVERABLE_DELETED",
+        resourceType: "Deliverable",
+        resourceId:   id,
+      });
       return { success: true, data: { deleted: true } } as ApiResponse<{ deleted: boolean }>;
     } catch (error) {
       request.log.error(error);
@@ -217,6 +232,13 @@ export async function registerDeliverableRoutes(app: FastifyInstance): Promise<v
         data: { status: "CHANGES_REQUESTED" }
       });
       await cache.delete(CacheKeys.deliverables(projectId));
+      writeAuditEvent({
+        actorId:      scope.userId,
+        actorRole:    scope.role,
+        action:       "DELIVERABLE_CHANGES_REQUESTED",
+        resourceType: "Deliverable",
+        resourceId:   id,
+      });
       return { success: true, data: deliverable } as ApiResponse<typeof deliverable>;
     } catch (error) {
       request.log.error(error);

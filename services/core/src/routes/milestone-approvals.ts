@@ -102,7 +102,6 @@ export async function registerMilestoneApprovalRoutes(app: FastifyInstance): Pro
           action:       "MILESTONE_APPROVED",
           resourceType: "Milestone",
           resourceId:   request.params.milestoneId,
-          details:      `Approved by ${scope.userId}`,
         });
       } else if (parsed.data.status === "REJECTED") {
         writeAuditEvent({

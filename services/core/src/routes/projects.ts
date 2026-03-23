@@ -1141,7 +1141,7 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
         action:       "PROJECT_UPDATED",
         resourceType: "Project",
         resourceId:   parsed.data.projectId,
-        details:      JSON.stringify(request.body),
+        details:      `Updated project: ${project.name}`,
       });
 
       // Fire-and-forget health alert check — never blocks the response
