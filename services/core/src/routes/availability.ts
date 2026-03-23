@@ -32,13 +32,16 @@ export async function registerAvailabilityRoutes(app: FastifyInstance): Promise<
     if (scope.role !== "ADMIN") {
       return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Admin only." } } as ApiResponse);
     }
+    if (!scope.userId) {
+      return reply.code(403).send({ success: false, error: { code: "USER_ID_REQUIRED", message: "User ID required." } } as ApiResponse);
+    }
     const body = request.body as { startsAt: string; endsAt: string };
     if (!body.startsAt || !body.endsAt) {
       return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "startsAt and endsAt are required." } } as ApiResponse);
     }
     const slot = await prisma.availabilitySlot.create({
       data: {
-        adminId:  scope.userId ?? "unknown",
+        adminId:  scope.userId,
         startsAt: new Date(body.startsAt),
         endsAt:   new Date(body.endsAt),
       },
@@ -52,6 +55,9 @@ export async function registerAvailabilityRoutes(app: FastifyInstance): Promise<
     if (scope.role !== "CLIENT") {
       return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Client only." } } as ApiResponse);
     }
+    if (!scope.clientId) {
+      return reply.code(403).send({ success: false, error: { code: "CLIENT_ID_REQUIRED", message: "Client ID required to book." } } as ApiResponse);
+    }
     const body = request.body as { slotId: string; topic?: string; projectId?: string };
     if (!body.slotId) {
       return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "slotId is required." } } as ApiResponse);
@@ -64,24 +70,52 @@ export async function registerAvailabilityRoutes(app: FastifyInstance): Promise<
 
     const roomName = `booking-${body.slotId.slice(0, 8)}-${Date.now()}`;
     const durationMins = Math.round((slot.endsAt.getTime() - slot.startsAt.getTime()) / 60_000) || 60;
+
+    // Create Daily.co room BEFORE the transaction (external API call — must not be inside tx)
     const room = await createDailyRoom({ name: roomName, startsAt: slot.startsAt, durationMin: durationMins }).catch(() => null);
+    if (!room) {
+      console.warn("[availability] Daily.co room creation failed for slot", body.slotId, "— appointment will have no video URL");
+    }
 
-    const appointment = await prisma.appointment.create({
-      data: {
-        clientId:     scope.clientId ?? "unknown",
-        scheduledAt:  slot.startsAt,
-        durationMins,
-        type:         "CHECK_IN",
-        notes:        body.topic ?? "Client Meeting",
-        videoRoomUrl: room?.url ?? null,
-        status:       "PENDING",
-      },
-    });
+    let appointment;
+    try {
+      appointment = await prisma.$transaction(async (tx) => {
+        // Atomic check-and-mark: only succeeds if the slot is still unbooked
+        const updated = await tx.availabilitySlot.updateMany({
+          where: { id: body.slotId, booked: false },
+          data: { booked: true },
+        });
+        if (updated.count === 0) {
+          throw new Error("SLOT_UNAVAILABLE");
+        }
 
-    await prisma.availabilitySlot.update({
-      where: { id: slot.id },
-      data: { booked: true, appointmentId: appointment.id },
-    });
+        const appt = await tx.appointment.create({
+          data: {
+            clientId:     scope.clientId,
+            scheduledAt:  slot.startsAt,
+            durationMins: durationMins,
+            type:         "CHECK_IN",
+            notes:        body.topic ?? "Client Meeting",
+            videoRoomUrl: room?.url ?? null,
+            status:       "PENDING",
+          },
+        });
+
+        // Link the slot back to the new appointment
+        await tx.availabilitySlot.update({
+          where: { id: body.slotId },
+          data: { appointmentId: appt.id },
+        });
+
+        return appt;
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      if (message === "SLOT_UNAVAILABLE") {
+        return reply.code(409).send({ success: false, error: { code: "SLOT_UNAVAILABLE", message: "Slot is no longer available." } } as ApiResponse);
+      }
+      throw err;
+    }
 
     return reply.code(201).send({
       success: true,
@@ -96,7 +130,11 @@ export async function registerAvailabilityRoutes(app: FastifyInstance): Promise<
       return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Admin only." } } as ApiResponse);
     }
     const { id } = request.params as { id: string };
-    await prisma.availabilitySlot.delete({ where: { id } }).catch(() => {});
-    return { success: true, data: null } as ApiResponse;
+    try {
+      await prisma.availabilitySlot.delete({ where: { id } });
+      return { success: true, data: null } as ApiResponse;
+    } catch {
+      return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Slot not found." } } as ApiResponse);
+    }
   });
 }
