@@ -18,6 +18,7 @@ import type { ApiResponse } from "@maphari/contracts";
 import { prisma } from "../lib/prisma.js";
 import { cache, CacheKeys, withCache } from "../lib/infrastructure.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
+import { writeAuditEvent } from "../lib/audit.js";
 
 // ── Legal document templates (South African law) ──────────────────────────────
 
@@ -431,6 +432,16 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
         }
         const updated = await prisma.clientContract.update({ where: { id }, data: clientUpdate });
         await cache.delete(CacheKeys.contracts(existing.clientId));
+        if (body.signed) {
+          writeAuditEvent({
+            actorId:      scope.userId,
+            actorRole:    scope.role,
+            action:       "CONTRACT_SIGNED",
+            resourceType: "Contract",
+            resourceId:   id,
+            details:      `Signed by ${body.signedByName ?? scope.userId}`,
+          });
+        }
         return { success: true, data: updated, meta: { requestId: scope.requestId } } as ApiResponse<typeof updated>;
       }
 
@@ -455,6 +466,17 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
       const updated = await prisma.clientContract.update({ where: { id }, data: updateData });
       await cache.delete(CacheKeys.contracts(existing.clientId));
       await cache.delete(CacheKeys.contracts("all"));
+
+      if (body.signedAt || body.signedByName) {
+        writeAuditEvent({
+          actorId:      scope.userId,
+          actorRole:    scope.role,
+          action:       "CONTRACT_SIGNED",
+          resourceType: "Contract",
+          resourceId:   id,
+          details:      `Signed by ${body.signedByName ?? scope.userId}`,
+        });
+      }
 
       return { success: true, data: updated, meta: { requestId: scope.requestId } } as ApiResponse<typeof updated>;
     } catch (error) {
@@ -513,6 +535,15 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
 
       await cache.delete(CacheKeys.contracts(existing.clientId));
       await cache.delete(CacheKeys.contracts("all"));
+
+      writeAuditEvent({
+        actorId:      scope.userId,
+        actorRole:    scope.role,
+        action:       "CONTRACT_SIGNED",
+        resourceType: "Contract",
+        resourceId:   id,
+        details:      `Signed by ${signerName}`,
+      });
 
       return { success: true, data: updated, meta: { requestId: scope.requestId } } as ApiResponse<typeof updated>;
     } catch (error) {

@@ -6,6 +6,7 @@ import {
 } from "@maphari/contracts";
 import { prisma } from "../lib/prisma.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
+import { writeAuditEvent } from "../lib/audit.js";
 
 export async function registerMilestoneApprovalRoutes(app: FastifyInstance): Promise<void> {
   app.get("/milestone-approvals", async (request, reply) => {
@@ -94,6 +95,26 @@ export async function registerMilestoneApprovalRoutes(app: FastifyInstance): Pro
           decidedAt: parsed.data.status === "PENDING" ? null : new Date()
         }
       });
+      if (parsed.data.status === "APPROVED") {
+        writeAuditEvent({
+          actorId:      scope.userId,
+          actorRole:    scope.role,
+          action:       "MILESTONE_APPROVED",
+          resourceType: "Milestone",
+          resourceId:   request.params.milestoneId,
+          details:      `Approved by ${scope.userId}`,
+        });
+      } else if (parsed.data.status === "REJECTED") {
+        writeAuditEvent({
+          actorId:      scope.userId,
+          actorRole:    scope.role,
+          action:       "MILESTONE_REJECTED",
+          resourceType: "Milestone",
+          resourceId:   request.params.milestoneId,
+          details:      parsed.data.comment ?? null,
+        });
+      }
+
       return { success: true, data: updated, meta: { requestId: scope.requestId } } as ApiResponse<typeof updated>;
     } catch (error) {
       request.log.error(error);

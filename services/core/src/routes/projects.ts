@@ -27,6 +27,7 @@ import { prisma } from "../lib/prisma.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
 import { cache, CacheKeys, eventBus } from "../lib/infrastructure.js";
 import { checkAndPublishHealthAlert } from "../jobs/health-alert.job.js";
+import { writeAuditEvent } from "../lib/audit.js";
 
 function canManageInternalCollaboration(role: string): boolean {
   return role === "ADMIN" || role === "STAFF";
@@ -636,6 +637,15 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
         })
       ]);
 
+      writeAuditEvent({
+        actorId:      scope.userId,
+        actorRole:    scope.role,
+        action:       "PROJECT_CREATED",
+        resourceType: "Project",
+        resourceId:   project.id,
+        details:      `Created project: ${project.name}`,
+      });
+
       await eventBus.publish({
         eventId: randomUUID(),
         occurredAt: new Date().toISOString(),
@@ -1124,6 +1134,15 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
           details: "Project profile updated"
         })
       ]);
+
+      writeAuditEvent({
+        actorId:      scope.userId,
+        actorRole:    scope.role,
+        action:       "PROJECT_UPDATED",
+        resourceType: "Project",
+        resourceId:   parsed.data.projectId,
+        details:      JSON.stringify(request.body),
+      });
 
       // Fire-and-forget health alert check — never blocks the response
       const traceId = (request.headers["x-trace-id"] as string | undefined) ?? undefined;

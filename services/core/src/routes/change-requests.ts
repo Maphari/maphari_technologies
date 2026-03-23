@@ -10,6 +10,7 @@ import { randomUUID } from "node:crypto";
 import { eventBus } from "../lib/infrastructure.js";
 import { prisma } from "../lib/prisma.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
+import { writeAuditEvent } from "../lib/audit.js";
 
 const FINAL_STATES = new Set(["ADMIN_REJECTED", "CLIENT_APPROVED", "CLIENT_REJECTED"]);
 
@@ -500,6 +501,27 @@ export async function registerChangeRequestRoutes(app: FastifyInstance): Promise
         details: `${updated.title} · ${updated.status}`
       }
     });
+
+    if (isAdminDecision) {
+      writeAuditEvent({
+        actorId:      scope.userId,
+        actorRole:    scope.role,
+        action:       parsed.data.status === "ADMIN_APPROVED" ? "CHANGE_REQUEST_APPROVED" : "CHANGE_REQUEST_REJECTED",
+        resourceType: "ChangeRequest",
+        resourceId:   existing.id,
+        details:      parsed.data.adminDecisionNote ?? null,
+      });
+    } else if (isClientDecision) {
+      writeAuditEvent({
+        actorId:      scope.userId,
+        actorRole:    scope.role,
+        action:       parsed.data.status === "CLIENT_APPROVED" ? "CHANGE_REQUEST_APPROVED" : "CHANGE_REQUEST_REJECTED",
+        resourceType: "ChangeRequest",
+        resourceId:   existing.id,
+        details:      parsed.data.clientDecisionNote ?? null,
+      });
+    }
+
     if (adminOverride && parsed.data.status && parsed.data.status !== existing.status) {
       await prisma.projectActivity.create({
         data: {

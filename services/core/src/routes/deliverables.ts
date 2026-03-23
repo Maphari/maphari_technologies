@@ -10,6 +10,7 @@ import type { ApiResponse } from "@maphari/contracts";
 import { cache, CacheKeys, withCache } from "../lib/infrastructure.js";
 import { prisma } from "../lib/prisma.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
+import { writeAuditEvent } from "../lib/audit.js";
 
 // ── Route registration ────────────────────────────────────────────────────────
 export async function registerDeliverableRoutes(app: FastifyInstance): Promise<void> {
@@ -168,6 +169,13 @@ export async function registerDeliverableRoutes(app: FastifyInstance): Promise<v
         data: { status: "ACCEPTED" }
       });
       await cache.delete(CacheKeys.deliverables(projectId));
+      writeAuditEvent({
+        actorId:      scope.userId,
+        actorRole:    scope.role,
+        action:       "DELIVERABLE_APPROVED",
+        resourceType: "Deliverable",
+        resourceId:   id,
+      });
       return { success: true, data: deliverable } as ApiResponse<typeof deliverable>;
     } catch (error) {
       request.log.error(error);
