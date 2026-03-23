@@ -9,16 +9,22 @@ import { prisma } from "../lib/prisma.js";
 export function scheduleStandupReminder(): void {
   // 09:00 Mon–Fri: log reminder (future: push to notification queue)
   cron.schedule("0 9 * * 1-5", async () => {
-    const today = new Date().toISOString().split("T")[0]!;
-    const activeStaff = await prisma.staffProfile.findMany({
-      where: { isActive: true },
-      select: { id: true, name: true, userId: true },
-    });
-    console.log(
-      `[standup-cron] 09:00 reminder — ${activeStaff.length} active staff members. ` +
-      `Date: ${today}. Reminder logged (wire to notification queue for push delivery).`
-    );
-    // TODO Wave 3: emit to notification queue per staff member
+    try {
+      // NOTE: Day boundaries are UTC. If the business timezone is non-UTC (e.g. SAST UTC+2),
+      // the window shifts by the offset. Wire a TZ config variable in Wave 3 if needed.
+      const today = new Date().toISOString().split("T")[0]!;
+      const activeStaff = await prisma.staffProfile.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true, userId: true },
+      });
+      console.log(
+        `[standup-cron] 09:00 reminder — ${activeStaff.length} active staff members. ` +
+        `Date: ${today}. Reminder logged (wire to notification queue for push delivery).`
+      );
+      // TODO Wave 3: emit to notification queue per staff member
+    } catch (err) {
+      console.error("[standup-cron] Reminder failed:", err);
+    }
   });
 }
 

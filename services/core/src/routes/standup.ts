@@ -22,11 +22,13 @@ export async function registerStandupRoutes(app: FastifyInstance): Promise<void>
     }
 
     const query = request.query as { date?: string };
-    const date  = query.date ?? new Date().toISOString().split("T")[0]!;
+    const dateStr = query.date ?? new Date().toISOString().split("T")[0]!;
+    const startOfDay = new Date(dateStr + "T00:00:00.000Z");
+    const endOfDay   = new Date(dateStr + "T23:59:59.999Z");
 
-    const data = await withCache(CacheKeys.standup(date), 60, () =>
+    const data = await withCache(CacheKeys.standup(dateStr), 60, () =>
       prisma.standupEntry.findMany({
-        where: { date },
+        where: { date: { gte: startOfDay, lte: endOfDay } },
         orderBy: { createdAt: "asc" },
         include: { staff: { select: { name: true, avatarInitials: true, avatarColor: true, role: true } } }
       })
@@ -35,7 +37,7 @@ export async function registerStandupRoutes(app: FastifyInstance): Promise<void>
     return { success: true, data, meta: { requestId: scope.requestId } } as ApiResponse<typeof data>;
   });
 
-  // ── GET /standup/feed — recent entries across all staff ───────────────────
+  // ── GET /standup/feed — recent entries across all staff ──────────────────
   app.get("/standup/feed", async (request, reply) => {
     const scope = readScopeHeaders(request);
     if (scope.role === "CLIENT") {
@@ -60,31 +62,38 @@ export async function registerStandupRoutes(app: FastifyInstance): Promise<void>
       return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
     }
 
+    // NOTE: Day boundaries are UTC. If the business timezone is non-UTC (e.g. SAST UTC+2),
+    // the window shifts by the offset. Wire a TZ config variable in Wave 3 if needed.
     const today = new Date().toISOString().split("T")[0]!;
     const startOfDay = new Date(today + "T00:00:00.000Z");
     const endOfDay   = new Date(today + "T23:59:59.999Z");
 
-    const [submitted, activeStaff] = await Promise.all([
-      prisma.standupEntry.findMany({
-        where: { date: { gte: startOfDay, lte: endOfDay } },
-        select: { staffId: true },
-      }),
-      prisma.staffProfile.findMany({
-        where: { isActive: true },
-        select: { id: true, name: true, avatarInitials: true, avatarColor: true },
-      }),
-    ]);
+    try {
+      const [submitted, activeStaff] = await Promise.all([
+        prisma.standupEntry.findMany({
+          where: { date: { gte: startOfDay, lte: endOfDay } },
+          select: { staffId: true },
+        }),
+        prisma.staffProfile.findMany({
+          where: { isActive: true },
+          select: { id: true, name: true, avatarInitials: true, avatarColor: true },
+        }),
+      ]);
 
-    const submittedIds = new Set(submitted.map((s) => s.staffId));
-    const missing = activeStaff.filter((s) => !submittedIds.has(s.id));
+      const submittedIds = new Set(submitted.map((s) => s.staffId));
+      const missing = activeStaff.filter((s) => !submittedIds.has(s.id));
 
-    const result = {
-      today,
-      submittedCount: submitted.length,
-      missingCount: missing.length,
-      missing,
-    };
-    return { success: true, data: result, meta: { requestId: scope.requestId } } as ApiResponse<typeof result>;
+      const result = {
+        today,
+        submittedCount: submitted.length,
+        missingCount: missing.length,
+        missing,
+      };
+      return { success: true, data: result, meta: { requestId: scope.requestId } } as ApiResponse<typeof result>;
+    } catch (err) {
+      console.error("[standup] missing-today failed:", err);
+      return reply.code(500).send({ success: false, error: { code: "INTERNAL_ERROR", message: "Failed to fetch standup status." } } as ApiResponse);
+    }
   });
 
   // ── POST /standup ──────────────────────────────────────────────────────────
@@ -117,7 +126,8 @@ export async function registerStandupRoutes(app: FastifyInstance): Promise<void>
       return reply.code(400).send({ success: false, error: { code: "BAD_REQUEST", message: "staffId is required." } } as ApiResponse);
     }
 
-    const date = body.date ?? new Date().toISOString().split("T")[0]!;
+    const dateStr = body.date ?? new Date().toISOString().split("T")[0]!;
+    const date = new Date(dateStr + "T00:00:00.000Z");
 
     const entry = await prisma.standupEntry.create({
       data: {
@@ -131,7 +141,7 @@ export async function registerStandupRoutes(app: FastifyInstance): Promise<void>
     });
 
     await Promise.all([
-      cache.delete(CacheKeys.standup(date)),
+      cache.delete(CacheKeys.standup(dateStr)),
       cache.delete(CacheKeys.standupFeed()),
     ]);
 
