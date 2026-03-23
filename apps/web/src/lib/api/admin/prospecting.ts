@@ -19,6 +19,7 @@ export interface ProspectResult {
   opportunityReason: string;
   pitch: string;
   source: "serpapi" | "mock";
+  industry?: string;
   // Enriched fields
   healthScore?: number;    // 0–100 PageSpeed mobile performance score
   healthIssues?: string[]; // Key performance issues detected
