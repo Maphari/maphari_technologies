@@ -19,16 +19,18 @@ Two problems to solve together:
 
 ```
 Client Portal (success screen)
-  └── generates referenceCode (PRJ-XXXXXX) before submit
+  └── submits POST /projects/requests
+  └── captures reqRes.data.id (real Project UUID) + reqRes.data.referenceCode into state
+  └── replaces fake PRJ-${Date.now()} with real referenceCode from DB response
   └── shows bank details + PDF upload section (EFT only)
   └── uploads PDF → files service → confirms upload
-  └── calls PATCH /projects/requests/:id/eft-proof
+  └── calls PATCH /projects/:id/eft-proof  (using real project id from state)
 
 Core Service
-  └── ProjectRequest.referenceCode  (new field — @unique, server validates no collision)
-  └── EftVerification model         (new — single source of truth for proof + status)
-  └── PATCH /projects/requests/:id/eft-proof
-  └── GET  /clients/:clientId/project-requests/:id/eft-status  (client-facing)
+  └── Project.referenceCode   (new field — @unique, generated server-side)
+  └── EftVerification model   (new — single source of truth for proof + status)
+  └── PATCH /projects/:id/eft-proof
+  └── GET  /clients/:clientId/projects/:id/eft-status  (client-facing)
   └── GET  /admin/eft-pending
   └── POST /admin/eft-pending/:id/verify
 
@@ -38,7 +40,7 @@ Admin Dashboard
   └── Client notified by email on verify/reject
 
 Client Portal (project page)
-  └── Polls GET /clients/:clientId/project-requests/:id/eft-status
+  └── Fetches GET /clients/:clientId/projects/:id/eft-status on load
   └── Shows: Pending → Verified / Rejected badge
 ```
 
@@ -46,27 +48,35 @@ Client Portal (project page)
 
 ## 3. Data Model Changes
 
-### 3.1 `ProjectRequest` — new field
+> **Important:** There is no separate `ProjectRequest` model. The `POST /projects/requests`
+> handler creates a **`Project`** record directly via `prisma.project.create()` and returns
+> `toProjectDto(project)`. All new fields go on the `Project` model.
+
+### 3.1 `Project` — new field
 
 ```prisma
-model ProjectRequest {
+model Project {
   // ... existing fields ...
   referenceCode   String?  @unique  // PRJ-XXXXXX — unique, generated server-side
   eftVerification EftVerification?
 }
 ```
 
-`referenceCode` is generated **server-side** on `POST /projects/requests`. The client sends its locally-generated code as a hint; the server checks for collision and regenerates if needed. `@unique` is enforced at the DB level.
+`referenceCode` is generated **server-side** inside the `POST /projects/requests` handler.
+The server generates `PRJ-` + 6 random uppercase alphanumeric chars, checks for collision,
+regenerates once if needed, and falls back to a CUID suffix to guarantee uniqueness.
+`@unique` is enforced at the DB level. The field is returned in the response via
+`toProjectDto(project)` and captured in frontend state as `submittedProject.referenceCode`.
 
-`proofFileId` lives **only** on `EftVerification` (not duplicated on `ProjectRequest`).
+`proofFileId` lives **only** on `EftVerification` (not on `Project`).
 
 ### 3.2 New model: `EftVerification`
 
 ```prisma
 model EftVerification {
   id               String                @id @default(cuid())
-  projectRequestId String                @unique
-  clientId         String
+  projectId        String                @unique  // FK to Project.id
+  clientId         String                         // denormalized copy for query scoping
   proofFileId      String                // authoritative file reference
   proofFileName    String                // stored at upload time (no runtime lookup needed)
   status           EftVerificationStatus @default(PENDING)
@@ -78,7 +88,7 @@ model EftVerification {
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
-  projectRequest   ProjectRequest @relation(fields: [projectRequestId], references: [id])
+  project          Project @relation(fields: [projectId], references: [id])
 }
 
 enum EftVerificationStatus {
@@ -93,20 +103,52 @@ enum EftVerificationStatus {
 
 ---
 
-## 4. Reference Code Generation
+## 4. Reference Code Generation & Frontend State
 
-- Generated **server-side** inside `POST /projects/requests` handler: `PRJ-` + 6 random uppercase alphanumeric chars (e.g. `PRJ-K7M2R9`)
-- Collision check: if the generated code already exists, regenerate once; if still collides, use a CUID suffix to guarantee uniqueness
+### Server-side generation
+- Generated inside `POST /projects/requests` handler: `PRJ-` + 6 random uppercase alphanumeric chars (e.g. `PRJ-K7M2R9`)
+- Collision check: if the generated code already exists in DB, regenerate once; if still collides, use a CUID suffix to guarantee uniqueness
 - `@unique` constraint enforced at DB level
-- Returned in the API response and captured in component state on the success screen
-- Displayed on success screen and used as the bank transfer reference
+- Included in the `Project` record and returned via `toProjectDto(project)` in the 201 response
+
+### Frontend state change
+The current `submitted: boolean` state is replaced with a richer object that captures the DB response:
+
+```ts
+// Replace:
+const [submitted, setSubmitted] = useState(false);
+
+// With:
+const [submittedProject, setSubmittedProject] = useState<{
+  id: string;           // real Project UUID — used for PATCH /projects/:id/eft-proof
+  referenceCode: string; // PRJ-XXXXXX — displayed on success screen + bank reference
+} | null>(null);
+
+// At submission success (line ~1221), replace setSubmitted(true) with:
+if (reqRes.data) {
+  setSubmittedProject({ id: reqRes.data.id, referenceCode: reqRes.data.referenceCode });
+}
+
+// Success screen guard:
+if (submittedProject) { ... }
+
+// Reference display (replaces fake PRJ-${Date.now()}):
+const refCode = submittedProject.referenceCode;
+
+// EFT proof upload URL:
+PATCH /projects/${submittedProject.id}/eft-proof
+```
+
+The `depositCents` and `quoteCents` values needed for the success screen summary are already
+available in component state (`depositCents`, `quoteCents`) when the success screen renders —
+no need to store them from the response.
 
 ---
 
 ## 5. New API Routes (Core Service)
 
-### `PATCH /projects/requests/:id/eft-proof`
-- **Auth:** CLIENT (scoped to own request — `projectRequest.clientId` must match `scope.clientId`)
+### `PATCH /projects/:id/eft-proof`
+- **Auth:** CLIENT (scoped to own project — `project.clientId` must match `scope.clientId`)
 - **Body:** `{ proofFileId: string, proofFileName: string }`
 - **File validation:** calls `GET /files/:proofFileId/meta` on the files service; if the file is not found or not owned by the client, returns `400 { code: "INVALID_PROOF_FILE", message: "..." }`. MIME type must be `application/pdf`; size must be ≤ 10 MB — validated via files service metadata. If files service is unreachable, return `502`.
 - Creates `EftVerification` if none exists; updates `proofFileId`, `proofFileName`, resets `status` to `PENDING`, clears `rejectedAt` / `rejectionReason` (supports re-upload after rejection)
@@ -114,7 +156,7 @@ enum EftVerificationStatus {
 - Sends admin notification email (see Section 8)
 - **Response:** `201` on create, `200` on update — `{ success: true, data: { status: "PENDING" } }`
 
-### `GET /clients/:clientId/project-requests/:id/eft-status`
+### `GET /clients/:clientId/projects/:id/eft-status`
 - **Auth:** CLIENT (must match own `clientId`), STAFF, ADMIN
 - Returns current `EftVerification` status for the given project request
 - **Response:**
@@ -139,7 +181,7 @@ enum EftVerificationStatus {
     success: true,
     data: Array<{
       id: string;                  // EftVerification.id
-      projectRequestId: string;
+      projectId: string;
       referenceCode: string | null; // ProjectRequest.referenceCode — null for pre-migration requests (display as "—")
       clientId: string;
       clientName: string;          // joined from Client
@@ -265,7 +307,7 @@ Located as a dedicated section in the admin dashboard.
 
 ## 9. Client Portal — Project Page Status
 
-The project detail page fetches `GET /clients/:clientId/project-requests/:id/eft-status` on load.
+The project detail page fetches `GET /clients/:clientId/projects/:id/eft-status` on load.
 
 Status badge display:
 
@@ -276,7 +318,7 @@ Status badge display:
 | `VERIFIED` | Green — "Deposit: Verified ✓" |
 | `REJECTED` | Red — "Deposit: Proof rejected — please re-upload" + rejection reason shown inline |
 
-Re-upload from the project page is **in scope**: a "Re-upload" button appears on the REJECTED badge, opens a file picker, and calls `PATCH /projects/requests/:id/eft-proof`.
+Re-upload from the project page is **in scope**: a "Re-upload" button appears on the REJECTED badge, opens a file picker, and calls `PATCH /projects/:id/eft-proof`.
 
 ---
 
@@ -284,7 +326,7 @@ Re-upload from the project page is **in scope**: a "Re-upload" button appears on
 
 - Format: PDF only (`application/pdf`) — enforced client-side and re-validated server-side via files service metadata
 - Max size: 10 MB — enforced client-side and re-validated server-side
-- Upload flow: `createPortalUploadUrl` → client uploads directly → `confirmPortalUpload` → `proofFileId` returned → passed to `PATCH /projects/requests/:id/eft-proof`
+- Upload flow: `createPortalUploadUrl` → client uploads directly → `confirmPortalUpload` → `proofFileId` returned → passed to `PATCH /projects/:id/eft-proof`
 - `proofFileName` captured from the local `File` object at upload time and sent alongside `proofFileId`
 
 ---
