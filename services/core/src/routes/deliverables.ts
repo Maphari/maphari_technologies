@@ -151,6 +151,55 @@ export async function registerDeliverableRoutes(app: FastifyInstance): Promise<v
     }
   });
 
+  /** PATCH /portal/deliverables/:id/review — CLIENT approves or requests changes (with feedback) */
+  app.patch("/portal/deliverables/:id/review", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "CLIENT") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Client only." } } as ApiResponse);
+    }
+
+    const { id } = request.params as { id: string };
+    const body = request.body as { decision: "APPROVED" | "CHANGES_REQUESTED"; feedback?: string; reviewedByName?: string };
+
+    if (!["APPROVED", "CHANGES_REQUESTED"].includes(body.decision)) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "decision must be APPROVED or CHANGES_REQUESTED." } } as ApiResponse);
+    }
+
+    // Tenant safety: verify deliverable belongs to client's project
+    const deliverable = await prisma.projectDeliverable.findUnique({
+      where: { id },
+      include: { project: { select: { clientId: true } } },
+    });
+    if (!deliverable) return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Deliverable not found." } } as ApiResponse);
+    if (scope.clientId && deliverable.project?.clientId !== scope.clientId) {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
+    }
+
+    const updated = await prisma.projectDeliverable.update({
+      where: { id },
+      data: {
+        status:         body.decision,
+        clientFeedback: body.feedback ?? null,
+        reviewedAt:     new Date(),
+        reviewedByName: body.reviewedByName ?? null,
+      },
+    });
+
+    // Cache invalidation
+    await cache.delete(CacheKeys.deliverables(deliverable.projectId));
+
+    writeAuditEvent({
+      actorId:      scope.userId,
+      actorRole:    "CLIENT",
+      action:       body.decision === "APPROVED" ? "DELIVERABLE_APPROVED" : "DELIVERABLE_CHANGES_REQUESTED",
+      resourceType: "Deliverable",
+      resourceId:   id,
+      details:      body.feedback ?? null,
+    });
+
+    return { success: true, data: updated, meta: { requestId: scope.requestId } } as ApiResponse<typeof updated>;
+  });
+
   /** POST /projects/:projectId/deliverables/:id/approve — client approves a deliverable */
   app.post("/projects/:projectId/deliverables/:id/approve", async (request, reply) => {
     const scope = readScopeHeaders(request);

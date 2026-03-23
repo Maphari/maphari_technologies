@@ -427,6 +427,9 @@ exports.Prisma.ProjectDeliverableScalarFieldEnum = {
   status: 'status',
   dueAt: 'dueAt',
   deliveredAt: 'deliveredAt',
+  clientFeedback: 'clientFeedback',
+  reviewedAt: 'reviewedAt',
+  reviewedByName: 'reviewedByName',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

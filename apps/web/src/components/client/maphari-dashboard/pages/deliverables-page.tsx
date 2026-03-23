@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { cx } from "../style";
 import { Ic, Av } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
-import { loadPortalDeliverablesWithRefresh, approvePortalDeliverableWithRefresh, requestChangesPortalDeliverableWithRefresh, type PortalDeliverable } from "../../../../lib/api/portal/project-layer";
+import { loadPortalDeliverablesWithRefresh, approvePortalDeliverableWithRefresh, requestChangesPortalDeliverableWithRefresh, reviewPortalDeliverableWithRefresh, type PortalDeliverable } from "../../../../lib/api/portal/project-layer";
 import { saveSession } from "../../../../lib/auth/session";
 import { CommentThread } from "../../../shared/ui/comment-thread";
 import {
@@ -144,6 +144,7 @@ export function DeliverablesPage() {
   const [accepted,      setAccepted]      = useState<Record<string, boolean>>({});
   const [revised,       setRevised]       = useState<Record<string, boolean>>({});
   const [submitting,    setSubmitting]    = useState<Record<string, boolean>>({});
+  const [feedbackText,  setFeedbackText]  = useState<Record<string, string>>({});
 
   // ── Annotations per deliverable ────────────────────────────────────────────
   const [annotations,     setAnnotations]     = useState<Record<string, PortalAnnotation[]>>({});
@@ -157,11 +158,18 @@ export function DeliverablesPage() {
     setSubmitting(p => ({ ...p, [d.id]: true }));
     setAccepted(p => ({ ...p, [d.id]: true })); // optimistic
     try {
-      const result = await approvePortalDeliverableWithRefresh(session, projectId, d.id);
+      const reviewerName = session.user?.email?.split("@")[0];
+      const feedback = feedbackText[d.id]?.trim() || undefined;
+      // Use new review endpoint (stores clientFeedback, reviewedAt, reviewedByName)
+      const result = await reviewPortalDeliverableWithRefresh(session, d.id, "APPROVED", feedback, reviewerName);
       if (result.nextSession) saveSession(result.nextSession);
       if (result.error) {
-        // Roll back optimistic update
-        setAccepted(p => ({ ...p, [d.id]: false }));
+        // Fall back to legacy approve endpoint
+        const fallback = await approvePortalDeliverableWithRefresh(session, projectId, d.id);
+        if (fallback.nextSession) saveSession(fallback.nextSession);
+        if (fallback.error) {
+          setAccepted(p => ({ ...p, [d.id]: false }));
+        }
       }
     } finally {
       setSubmitting(p => ({ ...p, [d.id]: false }));
@@ -173,11 +181,18 @@ export function DeliverablesPage() {
     setSubmitting(p => ({ ...p, [d.id]: true }));
     setRevised(p => ({ ...p, [d.id]: true })); // optimistic
     try {
-      const result = await requestChangesPortalDeliverableWithRefresh(session, projectId, d.id);
+      const reviewerName = session.user?.email?.split("@")[0];
+      const feedback = feedbackText[d.id]?.trim() || undefined;
+      // Use new review endpoint (stores clientFeedback, reviewedAt, reviewedByName)
+      const result = await reviewPortalDeliverableWithRefresh(session, d.id, "CHANGES_REQUESTED", feedback, reviewerName);
       if (result.nextSession) saveSession(result.nextSession);
       if (result.error) {
-        // Roll back optimistic update
-        setRevised(p => ({ ...p, [d.id]: false }));
+        // Fall back to legacy request-changes endpoint
+        const fallback = await requestChangesPortalDeliverableWithRefresh(session, projectId, d.id, feedback);
+        if (fallback.nextSession) saveSession(fallback.nextSession);
+        if (fallback.error) {
+          setRevised(p => ({ ...p, [d.id]: false }));
+        }
       }
     } finally {
       setSubmitting(p => ({ ...p, [d.id]: false }));
@@ -708,22 +723,32 @@ export function DeliverablesPage() {
                         </div>
                       ) : status === "Pending Review" ? (
                         <div className={cx("flexCol", "gap7")}>
-                          <button
-                            type="button"
-                            className={cx("btnSm", "btnAccent", "flexRow", "flexCenter", "justifyCenter", "gap6")}
-                            onClick={() => void handleApprove(d)}
-                            disabled={submitting[d.id]}
-                          >
-                            <Ic n="check" sz={11} c="var(--bg)" /> Accept Deliverable
-                          </button>
-                          <button
-                            type="button"
-                            className={cx("btnSm", "btnGhost", "flexRow", "flexCenter", "justifyCenter", "gap6")}
-                            onClick={() => void handleRequestChanges(d)}
-                            disabled={submitting[d.id]}
-                          >
-                            <Ic n="edit" sz={11} /> Request Changes
-                          </button>
+                          <textarea
+                            className={cx("input")}
+                            placeholder="Optional feedback…"
+                            rows={2}
+                            title="Feedback for this review decision"
+                            value={feedbackText[d.id] ?? ""}
+                            onChange={e => setFeedbackText(p => ({ ...p, [d.id]: e.target.value }))}
+                          />
+                          <div className={cx("flexCol", "gap7")}>
+                            <button
+                              type="button"
+                              className={cx("btnSm", "btnAccent", "flexRow", "flexCenter", "justifyCenter", "gap6")}
+                              onClick={() => { void handleApprove(d); }}
+                              disabled={submitting[d.id]}
+                            >
+                              <Ic n="check" sz={11} c="var(--bg)" /> {submitting[d.id] ? "Saving…" : "Approve"}
+                            </button>
+                            <button
+                              type="button"
+                              className={cx("btnSm", "btnGhost", "flexRow", "flexCenter", "justifyCenter", "gap6")}
+                              onClick={() => { void handleRequestChanges(d); }}
+                              disabled={submitting[d.id]}
+                            >
+                              <Ic n="edit" sz={11} /> {submitting[d.id] ? "Saving…" : "Request Changes"}
+                            </button>
+                          </div>
                         </div>
                       ) : status === "In Progress" ? (
                         <div className={cx("delivInProgressBanner")}>

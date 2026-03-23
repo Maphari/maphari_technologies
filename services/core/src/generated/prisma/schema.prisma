@@ -493,18 +493,21 @@ model UserPreference {
 // ─── Batch A: Project Layer Extensions ───────────────────────────────────────
 
 model ProjectDeliverable {
-  id          String            @id @default(uuid())
-  projectId   String
-  milestoneId String?
-  name        String
-  ownerName   String?
-  status      String            @default("NOT_STARTED")
-  dueAt       DateTime?
-  deliveredAt DateTime?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  milestone   ProjectMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  id             String            @id @default(uuid())
+  projectId      String
+  milestoneId    String?
+  name           String
+  ownerName      String?
+  status         String            @default("NOT_STARTED")
+  dueAt          DateTime?
+  deliveredAt    DateTime?
+  clientFeedback String?
+  reviewedAt     DateTime?
+  reviewedByName String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone      ProjectMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
 
   @@index([projectId, createdAt])
   @@index([status])

@@ -313,6 +313,29 @@ export async function requestChangesPortalDeliverableWithRefresh(
   });
 }
 
+// ── Deliverable Review (PATCH /portal/deliverables/:id/review) ───────────────
+
+export async function reviewPortalDeliverableWithRefresh(
+  session: AuthSession,
+  deliverableId: string,
+  decision: "APPROVED" | "CHANGES_REQUESTED",
+  feedback?: string,
+  reviewedByName?: string,
+): Promise<AuthorizedResult<PortalDeliverable>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalDeliverable>(
+      `/portal/deliverables/${deliverableId}/review`,
+      accessToken,
+      { method: "PATCH", body: { decision, feedback, reviewedByName } }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "REVIEW_FAILED", response.payload.error?.message ?? "Unable to submit review.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
 // ── Brief ─────────────────────────────────────────────────────────────────────
 
 export async function loadPortalBriefWithRefresh(
