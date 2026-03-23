@@ -750,6 +750,33 @@ export async function registerAiRoutes(app: FastifyInstance): Promise<void> {
     } as ApiResponse<{ text: string; jobId: string }>;
   });
 
+  // ── POST /ai/sentiment ─────────────────────────────────────────────────────
+  // Fire-and-forget sentiment analysis for client messages
+  // Returns: { score: number (-1 to 1), label: "POSITIVE" | "NEUTRAL" | "NEGATIVE" }
+
+  app.post("/ai/sentiment", async (request, reply) => {
+    const body = request.body as { content?: string };
+    if (!body?.content) {
+      reply.status(400);
+      return { success: false, error: { code: "VALIDATION_ERROR", message: "content is required" } } as ApiResponse;
+    }
+
+    const prompt = `Rate the sentiment of this client message on a scale from -1.0 (very negative) to 1.0 (very positive). Reply with JSON only, no other text: {"score": 0.5, "label": "POSITIVE"}. Valid labels: POSITIVE (score > 0.2), NEUTRAL (score -0.2 to 0.2), NEGATIVE (score < -0.2).\n\nMessage: ${body.content.slice(0, 500)}`;
+
+    const clientId = "system";
+    const job = await createAiWorkflowJob("sentiment", { clientId, prompt, model: "claude-sonnet-4-6" });
+
+    try {
+      const jsonMatch = job.response.match(/\{[^}]+\}/);
+      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) as { score?: number; label?: string } : {};
+      const score = typeof parsed.score === "number" ? Math.max(-1, Math.min(1, parsed.score)) : 0;
+      const label = ["POSITIVE", "NEUTRAL", "NEGATIVE"].includes(parsed.label ?? "") ? parsed.label! : "NEUTRAL";
+      return { success: true, data: { score, label } } as ApiResponse<{ score: number; label: string }>;
+    } catch {
+      return { success: true, data: { score: 0, label: "NEUTRAL" } } as ApiResponse<{ score: number; label: string }>;
+    }
+  });
+
   // ── POST /ai/prospect/send-pitch ──────────────────────────────────────────
   // Sends a personalised pitch email to a prospect contact via the
   // notifications service (NATS event). ADMIN + STAFF only — enforced at

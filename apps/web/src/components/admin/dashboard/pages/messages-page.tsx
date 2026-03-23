@@ -497,10 +497,16 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
                       const authorRole = (message.authorRole ?? "").toUpperCase();
                       const isOwn = authorRole === "ADMIN" || authorRole === "STAFF";
                       const deliveryLabel = message.deliveryStatus === "READ" ? "Read" : message.deliveryStatus === "DELIVERED" ? "Delivered" : "Sent";
+                      const sentiment = !isOwn ? message.sentimentLabel : null;
                       return (
                         <div key={message.id} className={cx("mb10", styles.msgBubbleRow, isOwn ? styles.msgBubbleRowOwn : styles.msgBubbleRowClient)}>
                           <div className={cx("borderDefault", styles.msgBubble, isOwn && styles.msgBubbleOwn)}>
-                            <div className={cx("text10", "colorMuted", "mb4")}>{isOwn ? "You" : "Client"} &middot; {formatDate(message.createdAt)} &middot; {deliveryLabel}</div>
+                            <div className={cx("text10", "colorMuted", "mb4", "flexRow", "gap6")}>
+                              <span>{isOwn ? "You" : "Client"} &middot; {formatDate(message.createdAt)} &middot; {deliveryLabel}</span>
+                              {sentiment === "POSITIVE" && <span className={cx(styles.sentimentPill, styles.sentimentPositive)}>Positive</span>}
+                              {sentiment === "NEUTRAL"  && <span className={cx(styles.sentimentPill, styles.sentimentNeutral)}>Neutral</span>}
+                              {sentiment === "NEGATIVE" && <span className={cx(styles.sentimentPill, styles.sentimentNegative)}>Negative</span>}
+                            </div>
                             <div className={cx("text12", styles.msgLine15)}>{message.content}</div>
                           </div>
                         </div>

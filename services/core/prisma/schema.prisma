@@ -765,10 +765,13 @@ model CommunicationLog {
   fromName      String?
   direction     String   @default("OUTBOUND")
   relatedFileId String?
-  actionLabel   String?
-  occurredAt    DateTime
-  createdAt     DateTime @default(now())
-  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  actionLabel    String?
+  body           String?   // message body / content
+  sentimentScore Float?    // -1.0 (negative) to 1.0 (positive)
+  sentimentLabel String?   // POSITIVE | NEUTRAL | NEGATIVE
+  occurredAt     DateTime
+  createdAt      DateTime @default(now())
+  client         Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([clientId, occurredAt])
   @@map("communication_logs")

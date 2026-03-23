@@ -19,7 +19,7 @@ import { randomUUID } from "node:crypto";
 export interface AiJobRecord {
   id: string;
   clientId: string;
-  task: "general" | "lead-qualification" | "proposal-draft" | "estimate" | "auto-draft" | "client-update" | "report";
+  task: "general" | "lead-qualification" | "proposal-draft" | "estimate" | "auto-draft" | "client-update" | "report" | "meeting-summary" | "handover-summary" | "sentiment";
   prompt: string;
   model: string;
   response: string;

@@ -1025,6 +1025,27 @@ export class ClientsController {
     });
   }
 
+  // ── Admin: Sentiment Alerts ───────────────────────────────────────────────
+
+  @Roles("ADMIN")
+  @Get("admin/sentiment-alerts")
+  async getSentimentAlerts(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string,
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/admin/sentiment-alerts`, "GET", undefined, {
+      "x-user-id":    userId  ?? "",
+      "x-user-role":  role    ?? "CLIENT",
+      "x-client-id":  clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id":   traceId ?? "",
+    });
+  }
+
   // ── Comments: POST /comments ──────────────────────────────────────────────
 
   @Roles("ADMIN", "STAFF", "CLIENT")

@@ -621,6 +621,9 @@ exports.Prisma.CommunicationLogScalarFieldEnum = {
   direction: 'direction',
   relatedFileId: 'relatedFileId',
   actionLabel: 'actionLabel',
+  body: 'body',
+  sentimentScore: 'sentimentScore',
+  sentimentLabel: 'sentimentLabel',
   occurredAt: 'occurredAt',
   createdAt: 'createdAt'
 };

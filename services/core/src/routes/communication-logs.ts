@@ -204,10 +204,11 @@ export async function registerCommunicationLogRoutes(app: FastifyInstance): Prom
       direction: string;
       relatedFileId?: string;
       actionLabel?: string;
+      body?: string;
       occurredAt: string;
     };
 
-    const log = await prisma.communicationLog.create({
+    const createdLog = await prisma.communicationLog.create({
       data: {
         clientId,
         type: body.type,
@@ -216,13 +217,60 @@ export async function registerCommunicationLogRoutes(app: FastifyInstance): Prom
         direction: body.direction,
         relatedFileId: body.relatedFileId ?? null,
         actionLabel: body.actionLabel ?? null,
+        body: body.body ?? null,
         occurredAt: new Date(body.occurredAt)
       }
     });
 
     await cache.delete(CacheKeys.commLogs(clientId));
 
-    return reply.code(201).send({ success: true, data: log, meta: { requestId: scope.requestId } } as ApiResponse<typeof log>);
+    // Fire-and-forget sentiment for INBOUND client messages
+    if (createdLog.direction === "INBOUND") {
+      const textToAnalyse = createdLog.body ?? createdLog.subject;
+      if (textToAnalyse) {
+        (async () => {
+          try {
+            const aiRes = await fetch(
+              `${process.env.AI_SERVICE_URL ?? "http://localhost:4007"}/ai/sentiment`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content: textToAnalyse.slice(0, 500) }),
+                signal: AbortSignal.timeout(10_000),
+              }
+            );
+            if (aiRes.ok) {
+              const d = await aiRes.json() as { success?: boolean; data?: { score?: number; label?: string } };
+              if (d.success && d.data) {
+                await prisma.communicationLog.update({
+                  where: { id: createdLog.id },
+                  data: { sentimentScore: d.data.score ?? null, sentimentLabel: d.data.label ?? null },
+                });
+              }
+            }
+          } catch { /* non-fatal */ }
+        })();
+      }
+    }
+
+    return reply.code(201).send({ success: true, data: createdLog, meta: { requestId: scope.requestId } } as ApiResponse<typeof createdLog>);
+  });
+
+  // GET /admin/sentiment-alerts — ADMIN: last 50 negative-sentiment inbound messages
+  app.get("/admin/sentiment-alerts", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Admin only" } } as ApiResponse);
+    }
+
+    const alerts = await prisma.communicationLog.findMany({
+      where: { sentimentLabel: "NEGATIVE", direction: "INBOUND" },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: { id: true, clientId: true, subject: true, body: true, sentimentScore: true, createdAt: true },
+    });
+
+    return { success: true, data: alerts, meta: { requestId: scope.requestId } } as ApiResponse<typeof alerts>;
   });
 
   // ── GET /staff/client-notes/:clientId — Private CRM notes for a client ─────

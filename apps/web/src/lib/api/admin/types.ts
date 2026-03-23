@@ -448,6 +448,8 @@ export interface AdminMessage {
   deliveredAt: string | null;
   readAt: string | null;
   content: string;
+  sentimentScore: number | null;
+  sentimentLabel: "POSITIVE" | "NEUTRAL" | "NEGATIVE" | null;
   createdAt: string;
   updatedAt: string;
 }
