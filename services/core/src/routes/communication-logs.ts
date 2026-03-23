@@ -234,7 +234,11 @@ export async function registerCommunicationLogRoutes(app: FastifyInstance): Prom
               `${process.env.AI_SERVICE_URL ?? "http://localhost:4007"}/ai/sentiment`,
               {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-user-role": "ADMIN",
+                  "x-user-id": "system",
+                },
                 body: JSON.stringify({ content: textToAnalyse.slice(0, 500) }),
                 signal: AbortSignal.timeout(10_000),
               }
@@ -248,7 +252,9 @@ export async function registerCommunicationLogRoutes(app: FastifyInstance): Prom
                 });
               }
             }
-          } catch { /* non-fatal */ }
+          } catch (err) {
+            console.warn("[sentiment] Failed to analyse or persist sentiment:", err);
+          }
         })();
       }
     }
@@ -265,9 +271,9 @@ export async function registerCommunicationLogRoutes(app: FastifyInstance): Prom
 
     const alerts = await prisma.communicationLog.findMany({
       where: { sentimentLabel: "NEGATIVE", direction: "INBOUND" },
-      orderBy: { createdAt: "desc" },
+      orderBy: { occurredAt: "desc" },
       take: 50,
-      select: { id: true, clientId: true, subject: true, body: true, sentimentScore: true, createdAt: true },
+      select: { id: true, clientId: true, subject: true, body: true, sentimentScore: true, occurredAt: true, createdAt: true },
     });
 
     return { success: true, data: alerts, meta: { requestId: scope.requestId } } as ApiResponse<typeof alerts>;

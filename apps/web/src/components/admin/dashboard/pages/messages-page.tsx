@@ -504,7 +504,6 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
                             <div className={cx("text10", "colorMuted", "mb4", "flexRow", "gap6")}>
                               <span>{isOwn ? "You" : "Client"} &middot; {formatDate(message.createdAt)} &middot; {deliveryLabel}</span>
                               {sentiment === "POSITIVE" && <span className={cx(styles.sentimentPill, styles.sentimentPositive)}>Positive</span>}
-                              {sentiment === "NEUTRAL"  && <span className={cx(styles.sentimentPill, styles.sentimentNeutral)}>Neutral</span>}
                               {sentiment === "NEGATIVE" && <span className={cx(styles.sentimentPill, styles.sentimentNegative)}>Negative</span>}
                             </div>
                             <div className={cx("text12", styles.msgLine15)}>{message.content}</div>

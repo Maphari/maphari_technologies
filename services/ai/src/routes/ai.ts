@@ -767,7 +767,7 @@ export async function registerAiRoutes(app: FastifyInstance): Promise<void> {
     const job = await createAiWorkflowJob("sentiment", { clientId, prompt, model: "claude-sonnet-4-6" });
 
     try {
-      const jsonMatch = job.response.match(/\{[^}]+\}/);
+      const jsonMatch = job.response.match(/\{[\s\S]*\}/);
       const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) as { score?: number; label?: string } : {};
       const score = typeof parsed.score === "number" ? Math.max(-1, Math.min(1, parsed.score)) : 0;
       const label = ["POSITIVE", "NEUTRAL", "NEGATIVE"].includes(parsed.label ?? "") ? parsed.label! : "NEUTRAL";
