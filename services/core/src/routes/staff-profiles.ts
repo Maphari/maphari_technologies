@@ -14,6 +14,54 @@ import { readScopeHeaders } from "../lib/scope.js";
 // ── Route registration ────────────────────────────────────────────────────────
 export async function registerStaffProfileRoutes(app: FastifyInstance): Promise<void> {
 
+  // ── GET /staff-profiles/skills/matrix ─────────────────────────────────────
+  // NOTE: Registered FIRST — static route must precede /staff-profiles/:id
+  app.get("/staff-profiles/skills/matrix", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
+    }
+
+    const staff = await prisma.staffProfile.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, role: true, skills: true, avatarInitials: true, avatarColor: true },
+    });
+
+    const matrix = staff.map((s) => ({
+      ...s,
+      skills: s.skills ? (JSON.parse(s.skills) as string[]) : [],
+    }));
+
+    return { success: true, data: matrix, meta: { requestId: scope.requestId } } as ApiResponse<typeof matrix>;
+  });
+
+  // ── PATCH /staff-profiles/:id/skills ──────────────────────────────────────
+  app.patch("/staff-profiles/:id/skills", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Admin only." } } as ApiResponse);
+    }
+
+    const { id } = request.params as { id: string };
+    const body = request.body as { skills: string[] };
+
+    if (!Array.isArray(body.skills)) {
+      return reply.code(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "skills must be an array." } } as ApiResponse);
+    }
+
+    const updated = await prisma.staffProfile.update({
+      where: { id },
+      data: { skills: JSON.stringify(body.skills) },
+    });
+
+    await Promise.all([
+      cache.delete(CacheKeys.staffList()),
+      cache.delete(CacheKeys.staffProfile(id)),
+    ]);
+
+    return { success: true, data: updated, meta: { requestId: scope.requestId } } as ApiResponse<typeof updated>;
+  });
+
   // ── GET /staff ─────────────────────────────────────────────────────────────
   app.get("/staff", async (request, reply) => {
     const scope = readScopeHeaders(request);

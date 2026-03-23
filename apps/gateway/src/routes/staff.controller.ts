@@ -1229,4 +1229,42 @@ export class StaffController {
       scopeHeaders(userId, role, clientId, requestId, traceId)
     );
   }
+
+  // ── GET /staff-profiles/skills/matrix — skill matrix for all active staff ──
+  @Roles("ADMIN", "STAFF")
+  @Get("staff-profiles/skills/matrix")
+  async getSkillsMatrix(
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/staff-profiles/skills/matrix`,
+      "GET",
+      undefined,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PATCH /staff-profiles/:id/skills — update skill tags (admin only) ──────
+  @Roles("ADMIN")
+  @Patch("staff-profiles/:id/skills")
+  async updateSkills(
+    @Param("id")              id: string,
+    @Body()                   body: { skills: string[] },
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/staff-profiles/${id}/skills`,
+      "PATCH",
+      body,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
 }

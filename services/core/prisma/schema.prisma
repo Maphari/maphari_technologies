@@ -863,6 +863,7 @@ model StaffProfile {
   uifRatePct      Float          @default(0)
   bankLast4       String?
   isActive        Boolean        @default(true)
+  skills          String?        // JSON array of skill tags e.g. ["React","TypeScript","SEO"]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   payslips        StaffPayslip[]

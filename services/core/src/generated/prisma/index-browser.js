@@ -696,6 +696,7 @@ exports.Prisma.StaffProfileScalarFieldEnum = {
   uifRatePct: 'uifRatePct',
   bankLast4: 'bankLast4',
   isActive: 'isActive',
+  skills: 'skills',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
