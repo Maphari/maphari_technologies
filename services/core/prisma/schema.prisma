@@ -1815,7 +1815,7 @@ enum EftVerificationStatus {
 model EftVerification {
   id              String                @id @default(cuid())
   projectId       String                @unique
-  clientId        String
+  clientId        String                // denormalized from project.clientId — no FK, used for query scoping
   proofFileId     String
   proofFileName   String
   status          EftVerificationStatus @default(PENDING)
