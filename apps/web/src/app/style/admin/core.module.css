@@ -2954,3 +2954,104 @@
   font-size: 12px;
   color: var(--muted);
 }
+
+/* ── 20. Welcome Modal FTUE ────────────────────────────────────────────── */
+
+.welcomeModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.welcomeModal {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-lg);
+  padding: 32px;
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: var(--shadow-modal);
+}
+
+.welcomeModalHeader {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.welcomeModalLogo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--accent) 12%, var(--s2));
+  border: 1px solid color-mix(in oklab, var(--accent) 25%, var(--b2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcomeModalTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.welcomeModalSub {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.welcomeModalGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.welcomeModalTile {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.welcomeModalTileIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--accent) 12%, var(--s2));
+  border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--b2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.welcomeModalCta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--r-md);
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: var(--accent);
+  color: #08090d;
+}
