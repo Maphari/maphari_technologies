@@ -44,6 +44,8 @@ export async function createDailyRoom(options: {
         enable_screenshare: true,
         start_video_off:    false,
         start_audio_off:    false,
+        enable_recording:   "cloud",
+        enable_transcription: true,
       },
     }),
   });
@@ -68,4 +70,60 @@ export async function deleteDailyRoom(roomName: string): Promise<void> {
     method:  "DELETE",
     headers: { "Authorization": `Bearer ${apiKey}` },
   }).catch((err) => console.error("[daily] delete room error:", err));
+}
+
+// ── DailyRecording ─────────────────────────────────────────────────────────
+export interface DailyRecording {
+  id:            string;
+  room_name:     string;
+  status:        "finished" | "in-progress";
+  download_link?: string;
+  duration?:     number;
+  start_ts?:     number;
+}
+
+// ── getRecordingsByRoom ─────────────────────────────────────────────────────
+// Returns all recordings for a given room name.
+// Returns [] when DAILY_API_KEY is not configured or request fails.
+export async function getRecordingsByRoom(roomName: string): Promise<DailyRecording[]> {
+  const apiKey = process.env.DAILY_API_KEY;
+  if (!apiKey) return [];
+  try {
+    const res = await fetch(
+      `${DAILY_API_BASE}/recordings?room_name=${encodeURIComponent(roomName)}`,
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    );
+    if (!res.ok) return [];
+    const data = (await res.json()) as { data?: DailyRecording[] };
+    return data.data ?? [];
+  } catch {
+    return [];
+  }
+}
+
+// ── getTranscriptText ───────────────────────────────────────────────────────
+// Fetches and parses a VTT transcript for a recording into plain text.
+// Returns null when unavailable or on any error.
+export async function getTranscriptText(recordingId: string): Promise<string | null> {
+  const apiKey = process.env.DAILY_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const res = await fetch(`${DAILY_API_BASE}/recordings/${recordingId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { transcript_download_link?: string };
+    if (!data.transcript_download_link) return null;
+    const vtt = await fetch(data.transcript_download_link);
+    if (!vtt.ok) return null;
+    const raw = await vtt.text();
+    return raw
+      .split("\n")
+      .filter(line => line && !line.startsWith("WEBVTT") && !/^\d\d:\d\d/.test(line) && !/-->/.test(line))
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+  } catch {
+    return null;
+  }
 }

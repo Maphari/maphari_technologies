@@ -7,7 +7,7 @@
 import type { FastifyInstance } from "fastify";
 import type { ApiResponse } from "@maphari/contracts";
 import { readScopeHeaders } from "../lib/scope.js";
-import { createDailyRoom } from "../lib/daily.js";
+import { createDailyRoom, getRecordingsByRoom } from "../lib/daily.js";
 
 export async function registerVideoRoomRoutes(app: FastifyInstance): Promise<void> {
 
@@ -86,5 +86,23 @@ export async function registerVideoRoomRoutes(app: FastifyInstance): Promise<voi
         createdAt:  new Date().toISOString(),
       },
     } as ApiResponse<{ joinUrl: string; roomName: string; expiresAt: string; createdAt: string }>;
+  });
+
+  // GET /video-rooms/:roomName/recordings — ADMIN + STAFF only
+  app.get("/video-rooms/:roomName/recordings", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      return reply.code(403).send({
+        success: false,
+        error: { code: "FORBIDDEN", message: "Access denied." }
+      } as ApiResponse);
+    }
+    const { roomName } = request.params as { roomName: string };
+    const recordings = await getRecordingsByRoom(roomName);
+    return reply.code(200).send({
+      success: true,
+      data: recordings,
+      meta: { requestId: scope.requestId, count: recordings.length }
+    } as ApiResponse<typeof recordings>);
   });
 }

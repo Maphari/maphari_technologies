@@ -44,6 +44,7 @@ import { StaffScheduleController } from "../routes/staff-schedule.controller.js"
 import { SurveyController } from "../routes/survey.controller.js";
 import { ForumController } from "../routes/forum.controller.js";
 import { FeatureRequestsController } from "../routes/feature-requests.controller.js";
+import { VideoRoomsController } from "../routes/video-rooms.controller.js";
 import { RbacGuard } from "../auth/rbac.guard.js";
 import { RequestIdInterceptor } from "../common/request-id.interceptor.js";
 import { MetricsController } from "../observability/metrics.controller.js";
@@ -96,6 +97,7 @@ import { RateLimitGuard } from "../security/rate-limit.guard.js";
     MetricsController,
     ForumController,
     FeatureRequestsController,
+    VideoRoomsController,
   ],
   providers: [
     RealtimeEventsService,
