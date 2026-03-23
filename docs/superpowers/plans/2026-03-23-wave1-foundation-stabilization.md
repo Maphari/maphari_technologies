@@ -183,36 +183,36 @@ git commit -m "feat(db): add Crisis, ComplianceRecord, DataRetentionPolicy, FyCh
 
 - [ ] **Step 1: Read existing route pattern**
 
-Read `services/core/src/routes/projects.ts` lines 1–50 to understand the Fastify route shape, auth guard pattern, and how `prisma` is accessed via `fastify.prisma`.
+Read `services/core/src/routes/projects.ts` lines 1–50 to understand the Fastify route shape. Key patterns:
+- `import { prisma } from "../lib/prisma.js"` — prisma is a standalone singleton, NOT `fastify.prisma`
+- `export async function registerProjectRoutes(app: FastifyInstance): Promise<void>` — full paths like `app.get("/projects", ...)`
+- Registered in app.ts as: `await registerProjectRoutes(app)` (no `app.register` with prefix)
 
 - [ ] **Step 2: Create crises route**
 
 Create `services/core/src/routes/crises.ts`:
 
 ```typescript
-import { FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
+import { prisma } from '../lib/prisma.js';
 
-export async function crisesRoutes(fastify: FastifyInstance) {
+export async function registerCrisesRoutes(app: FastifyInstance): Promise<void> {
   // GET /crises — list all (admin only)
-  fastify.get('/', async (request, reply) => {
+  app.get('/crises', async (request, reply) => {
     const role = request.headers['x-user-role'];
     if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
-
-    const crises = await fastify.prisma.crisis.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    const crises = await prisma.crisis.findMany({ orderBy: { createdAt: 'desc' } });
     return crises;
   });
 
   // POST /crises — create
-  fastify.post<{ Body: { title: string; severity: string; description?: string; clientId?: string } }>(
-    '/',
+  app.post<{ Body: { title: string; severity: string; description?: string; clientId?: string } }>(
+    '/crises',
     async (request, reply) => {
       const role = request.headers['x-user-role'];
       if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
-
       const { title, severity, description, clientId } = request.body;
-      const crisis = await fastify.prisma.crisis.create({
+      const crisis = await prisma.crisis.create({
         data: { title, severity, description, clientId, status: 'ACTIVE' },
       });
       return reply.status(201).send(crisis);
@@ -220,15 +220,14 @@ export async function crisesRoutes(fastify: FastifyInstance) {
   );
 
   // PATCH /crises/:id — update status/severity
-  fastify.patch<{ Params: { id: string }; Body: { status?: string; severity?: string; resolvedAt?: string } }>(
-    '/:id',
+  app.patch<{ Params: { id: string }; Body: { status?: string; severity?: string; resolvedAt?: string } }>(
+    '/crises/:id',
     async (request, reply) => {
       const role = request.headers['x-user-role'];
       if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
-
       const { id } = request.params;
       const { status, severity, resolvedAt } = request.body;
-      const crisis = await fastify.prisma.crisis.update({
+      const crisis = await prisma.crisis.update({
         where: { id },
         data: {
           ...(status && { status }),
@@ -244,12 +243,12 @@ export async function crisesRoutes(fastify: FastifyInstance) {
 
 - [ ] **Step 3: Register route in app.ts**
 
-In `services/core/src/app.ts`, find where other routes are registered (e.g. `app.register(projectsRoutes, { prefix: '/projects' })`) and add:
+In `services/core/src/app.ts`, find where other routes are registered (e.g. `await registerProjectRoutes(app)`) and add:
 
 ```typescript
-import { crisesRoutes } from './routes/crises';
+import { registerCrisesRoutes } from './routes/crises.js';
 // ...
-app.register(crisesRoutes, { prefix: '/crises' });
+await registerCrisesRoutes(app);
 ```
 
 - [ ] **Step 4: TypeScript check**
@@ -281,26 +280,26 @@ git commit -m "feat(core): add crises CRUD routes"
 Create `services/core/src/routes/compliance.ts`:
 
 ```typescript
-import { FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
+import { prisma } from '../lib/prisma.js';
 
-export async function complianceRoutes(fastify: FastifyInstance) {
+export async function registerComplianceRoutes(app: FastifyInstance): Promise<void> {
   // GET /compliance — list all compliance records
-  fastify.get('/', async (request, reply) => {
+  app.get('/compliance', async (request, reply) => {
     const role = request.headers['x-user-role'];
     if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
-    return fastify.prisma.complianceRecord.findMany({ orderBy: { area: 'asc' } });
+    return prisma.complianceRecord.findMany({ orderBy: { area: 'asc' } });
   });
 
   // PATCH /compliance/:id — update status/notes
-  fastify.patch<{ Params: { id: string }; Body: { status?: string; riskLevel?: string; notes?: string; nextAudit?: string } }>(
-    '/:id',
+  app.patch<{ Params: { id: string }; Body: { status?: string; riskLevel?: string; notes?: string; nextAudit?: string } }>(
+    '/compliance/:id',
     async (request, reply) => {
       const role = request.headers['x-user-role'];
       if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
-
       const { id } = request.params;
       const { status, riskLevel, notes, nextAudit } = request.body;
-      return fastify.prisma.complianceRecord.update({
+      return prisma.complianceRecord.update({
         where: { id },
         data: {
           ...(status && { status }),
@@ -323,31 +322,38 @@ export async function complianceRoutes(fastify: FastifyInstance) {
 Create `services/core/src/routes/fy-checklist.ts`:
 
 ```typescript
-import { FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
+import { prisma } from '../lib/prisma.js';
 
-export async function fyChecklistRoutes(fastify: FastifyInstance) {
+function getCurrentFiscalYear(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1; // 1-indexed
+  // Fiscal year starts March (adjust if different)
+  return month >= 3 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+}
+
+export async function registerFyChecklistRoutes(app: FastifyInstance): Promise<void> {
   // GET /fy-checklist?year=2025-2026
-  fastify.get<{ Querystring: { year?: string } }>('/', async (request, reply) => {
+  app.get<{ Querystring: { year?: string } }>('/fy-checklist', async (request, reply) => {
     const role = request.headers['x-user-role'];
     if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
-
     const year = request.query.year ?? getCurrentFiscalYear();
-    return fastify.prisma.fyChecklistItem.findMany({
+    return prisma.fyChecklistItem.findMany({
       where: { fiscalYear: year },
       orderBy: { category: 'asc' },
     });
   });
 
   // PATCH /fy-checklist/:id — toggle done
-  fastify.patch<{ Params: { id: string }; Body: { done: boolean; doneBy?: string } }>(
-    '/:id',
+  app.patch<{ Params: { id: string }; Body: { done: boolean; doneBy?: string } }>(
+    '/fy-checklist/:id',
     async (request, reply) => {
       const role = request.headers['x-user-role'];
       if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
-
       const { id } = request.params;
       const { done, doneBy } = request.body;
-      return fastify.prisma.fyChecklistItem.update({
+      return prisma.fyChecklistItem.update({
         where: { id },
         data: {
           done,
@@ -358,24 +364,16 @@ export async function fyChecklistRoutes(fastify: FastifyInstance) {
     }
   );
 }
-
-function getCurrentFiscalYear(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1; // 1-indexed
-  // Fiscal year starts March (adjust if different)
-  return month >= 3 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
-}
 ```
 
 - [ ] **Step 3: Register both routes in app.ts**
 
 ```typescript
-import { complianceRoutes } from './routes/compliance';
-import { fyChecklistRoutes } from './routes/fy-checklist';
+import { registerComplianceRoutes } from './routes/compliance.js';
+import { registerFyChecklistRoutes } from './routes/fy-checklist.js';
 // ...
-app.register(complianceRoutes, { prefix: '/compliance' });
-app.register(fyChecklistRoutes, { prefix: '/fy-checklist' });
+await registerComplianceRoutes(app);
+await registerFyChecklistRoutes(app);
 ```
 
 - [ ] **Step 4: TypeScript check**
@@ -1500,43 +1498,43 @@ git commit -m "feat(db): add CalendarEvent model"
 Create `services/core/src/routes/calendar.ts`:
 
 ```typescript
-import { FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
+import { prisma } from '../lib/prisma.js';
 
-export async function calendarRoutes(fastify: FastifyInstance) {
-  // GET /calendar/events?from=&to=&role=
-  fastify.get<{ Querystring: { from: string; to: string; role?: string } }>(
-    '/events',
+function formatIcalDate(date: Date): string {
+  return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+}
+
+export async function registerCalendarRoutes(app: FastifyInstance): Promise<void> {
+  // GET /calendar/events?from=&to=
+  app.get<{ Querystring: { from: string; to: string } }>(
+    '/calendar/events',
     async (request, reply) => {
-      const { from, to, role } = request.query;
+      const { from, to } = request.query;
       const userRole = request.headers['x-user-role'] as string;
       const clientId = request.headers['x-client-id'] as string | undefined;
-      const staffId = request.headers['x-user-id'] as string | undefined;
 
       const fromDate = new Date(from);
       const toDate = new Date(to);
-
-      // Aggregate from multiple sources based on role
       const events: any[] = [];
 
-      // Appointments — uses `scheduledAt` (not `startAt`); duration stored as `durationMins`
-      // `Appointment` has no `staffId` field; scoped to `clientId` only for CLIENT role
-      const appointments = await fastify.prisma.appointment.findMany({
+      // Appointments — uses `scheduledAt` (not `startAt`); `Appointment` has no `staffId` field
+      const appointments = await prisma.appointment.findMany({
         where: {
           scheduledAt: { gte: fromDate, lte: toDate },
           ...(userRole === 'CLIENT' && clientId ? { clientId } : {}),
         },
       });
       // CalendarEvent shape must use `date: string` to match existing web API clients
-      // (staff/calendar.ts, admin/calendar.ts, portal/meetings.ts all use `date` not `startAt`)
       events.push(...appointments.map(a => ({
         id: a.id, title: a.type ?? 'Appointment',
-        date: a.scheduledAt.toISOString(), // single date field, not startAt/endAt
+        date: a.scheduledAt.toISOString(),
         type: 'appointment' as const, sourceId: a.id,
         status: a.status ?? undefined,
       })));
 
       // Project milestones — uses `dueAt` (not `dueDate`)
-      const milestones = await fastify.prisma.projectMilestone.findMany({
+      const milestones = await prisma.projectMilestone.findMany({
         where: {
           dueAt: { gte: fromDate, lte: toDate },
           ...(userRole === 'CLIENT' && clientId ? { project: { clientId } } : {}),
@@ -1545,7 +1543,7 @@ export async function calendarRoutes(fastify: FastifyInstance) {
       });
       events.push(...milestones.filter(m => m.dueAt).map(m => ({
         id: m.id, title: m.title,
-        date: m.dueAt!.toISOString(), // single date field
+        date: m.dueAt!.toISOString(),
         type: 'milestone' as const, sourceId: m.id,
         projectName: m.project?.name ?? undefined,
         clientId: m.project?.clientId ?? undefined,
@@ -1556,11 +1554,10 @@ export async function calendarRoutes(fastify: FastifyInstance) {
   );
 
   // GET /calendar/export.ics
-  fastify.get('/export.ics', async (request, reply) => {
-    // Return a basic iCal file with events for the next 90 days
+  app.get('/calendar/export.ics', async (request, reply) => {
     const now = new Date();
     const future = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
-    const milestones = await fastify.prisma.projectMilestone.findMany({
+    const milestones = await prisma.projectMilestone.findMany({
       where: { dueAt: { gte: now, lte: future } },
     });
 
@@ -1584,17 +1581,13 @@ export async function calendarRoutes(fastify: FastifyInstance) {
     return ical;
   });
 }
-
-function formatIcalDate(date: Date): string {
-  return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-}
 ```
 
 - [ ] **Step 2: Register in app.ts**
 
 ```typescript
-import { calendarRoutes } from './routes/calendar';
-app.register(calendarRoutes, { prefix: '/calendar' });
+import { registerCalendarRoutes } from './routes/calendar.js';
+await registerCalendarRoutes(app);
 ```
 
 - [ ] **Step 3: TypeScript check + commit**
@@ -2153,18 +2146,21 @@ Verify it exposes at minimum:
 If `PATCH /:id/submit` is missing, add it to the existing file:
 
 ```typescript
-fastify.patch<{ Params: { id: string }; Body: { score: number; feedback?: string } }>(
-  '/:id/submit',
+// Add this inside the existing registerPeerReviewRoutes function body, using full path:
+app.patch<{ Params: { id: string }; Body: { score: number; feedback?: string } }>(
+  '/peer-reviews/:id/submit',
   async (request) => {
     const { id } = request.params;
     const { score, feedback } = request.body;
-    return fastify.prisma.peerReview.update({
+    return prisma.peerReview.update({
       where: { id },
       data: { score, feedback: feedback ?? null, status: 'SUBMITTED', submittedAt: new Date() },
     });
   }
 );
 ```
+
+> **Note:** `prisma` is the standalone singleton imported at the top of the file via `import { prisma } from "../lib/prisma.js"`. Do NOT use `fastify.prisma` — that decorator does not exist.
 
 - [ ] **Step 3: TypeScript check + commit**
 
@@ -2188,37 +2184,37 @@ Read `services/core/src/routes/time-entries.ts` in full. Check if `/:id/submit`,
 - [ ] **Step 2: Add submit, approve, reject endpoints (only if missing)**
 
 ```typescript
-// PATCH /time-entries/:id/submit — staff submits
-fastify.patch<{ Params: { id: string } }>('/:id/submit', async (request, reply) => {
-  const role = request.headers['x-user-role'];
-  if (!['STAFF'].includes(role as string)) return reply.status(403).send({ error: 'Forbidden' });
+// Add these inside the existing registerTimeEntriesRoutes function using full paths.
+// `prisma` is already imported at the top of the file — do NOT use `fastify.prisma`.
 
+// PATCH /time-entries/:id/submit — staff submits
+app.patch<{ Params: { id: string } }>('/time-entries/:id/submit', async (request, reply) => {
+  const role = request.headers['x-user-role'];
+  if (role !== 'STAFF') return reply.status(403).send({ error: 'Forbidden' });
   const { id } = request.params;
-  return fastify.prisma.projectTimeEntry.update({
+  return prisma.projectTimeEntry.update({
     where: { id },
     data: { status: 'SUBMITTED', submittedAt: new Date() },
   });
 });
 
 // PATCH /time-entries/:id/approve — admin approves
-fastify.patch<{ Params: { id: string }; Body: { approvedBy: string } }>('/:id/approve', async (request, reply) => {
+app.patch<{ Params: { id: string }; Body: { approvedBy: string } }>('/time-entries/:id/approve', async (request, reply) => {
   const role = request.headers['x-user-role'];
   if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
-
   const { id } = request.params;
-  return fastify.prisma.projectTimeEntry.update({
+  return prisma.projectTimeEntry.update({
     where: { id },
     data: { status: 'APPROVED', approvedAt: new Date(), approvedBy: request.body.approvedBy },
   });
 });
 
 // PATCH /time-entries/:id/reject — admin rejects
-fastify.patch<{ Params: { id: string }; Body: { reason: string } }>('/:id/reject', async (request, reply) => {
+app.patch<{ Params: { id: string }; Body: { reason: string } }>('/time-entries/:id/reject', async (request, reply) => {
   const role = request.headers['x-user-role'];
   if (role !== 'ADMIN') return reply.status(403).send({ error: 'Forbidden' });
-
   const { id } = request.params;
-  return fastify.prisma.projectTimeEntry.update({
+  return prisma.projectTimeEntry.update({
     where: { id },
     data: { status: 'REJECTED', rejectedAt: new Date(), rejectionReason: request.body.reason },
   });
@@ -3098,20 +3094,19 @@ function getCurrentQuarter(): string {
 
 - [ ] **Step 4: Register cron jobs in app.ts**
 
-In `services/core/src/app.ts`, after the Prisma plugin is registered (so `fastify.prisma` is available), add:
+In `services/core/src/app.ts`, add at the top-level (after existing imports). `prisma` is the standalone singleton — NOT `fastify.prisma`:
 
 ```typescript
-import { scheduleQuarterOpen, scheduleQuarterClose } from './cron/peer-review-cycle';
+import { scheduleQuarterOpen, scheduleQuarterClose } from './cron/peer-review-cycle.js';
+import { prisma } from './lib/prisma.js';
 // ...
-// After fastify.ready() or in an onReady hook:
-fastify.addHook('onReady', async () => {
-  scheduleQuarterOpen(fastify.prisma);
-  scheduleQuarterClose(fastify.prisma);
-  console.log('[cron] Peer review cycle jobs registered');
-});
+// After app is built (or in a top-level call after app.listen):
+scheduleQuarterOpen(prisma);
+scheduleQuarterClose(prisma);
+console.log('[cron] Peer review cycle jobs registered');
 ```
 
-> **Note:** If `services/core` uses a different startup hook (e.g. `app.listen` callback), call these functions after `prisma` is confirmed available — not at module load time.
+> **Note:** Do NOT use `fastify.prisma` — that decorator does not exist. `prisma` is imported directly as a module-level singleton. Call `scheduleQuarterOpen(prisma)` after imports, not inside a hook.
 
 - [ ] **Step 5: TypeScript check**
 
