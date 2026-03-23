@@ -7,6 +7,7 @@ import { pageTitles, type PageId } from "./dashboard/config";
 import { AdminSidebar, AdminTopbar } from "./dashboard/chrome";
 import { DashboardTour } from "../shared/dashboard-tour";
 import { ADMIN_TOUR_STEPS } from "./dashboard/hooks/use-admin-tour";
+import { FtueWelcomeModal } from "./dashboard/components/ftue-welcome-modal";
 import { DashboardErrorBoundary } from "./dashboard/error-boundary";
 import { ClientsAndProjectsPage } from "./dashboard/pages/clients-projects-page";
 import { InvoicesPage } from "./dashboard/pages/invoices-page";
@@ -202,6 +203,7 @@ export function MaphariDashboard() {
   const { toasts, pushToast } = useDashboardToasts({ dismissMs: 3200 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [flyoutIsOpen, setFlyoutIsOpen] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   // ── 1. Navigation ──────────────────────────────────────────────────────────
   const {
@@ -279,6 +281,13 @@ export function MaphariDashboard() {
     onTimeout: () => void signOut(),
     idleDurationMs: 20 * 60 * 1000, // 20 minutes for admin
   });
+
+  // ── FTUE Welcome Modal (check on mount only) ──────────────────────────────
+  useEffect(() => {
+    if (!localStorage.getItem("admin_ftue_v1_seen")) {
+      setShowWelcomeModal(true);
+    }
+  }, []);
 
   // ── UX hooks: Command Search ───────────────────────────────────────────────
   const commandSearchSources = useMemo(() => {
@@ -420,6 +429,12 @@ export function MaphariDashboard() {
     } catch {
       setNotificationJobs(previousJobs);
     }
+  }
+
+  // ── FTUE Welcome Modal dismiss handler ──────────────────────────────────────
+  function handleWelcomeModalDismiss() {
+    setShowWelcomeModal(false);
+    localStorage.setItem("admin_ftue_v1_seen", "true");
   }
 
   // ── Loading gate ───────────────────────────────────────────────────────────
@@ -865,6 +880,11 @@ export function MaphariDashboard() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* ── FTUE Welcome Modal ──────────────────────────────────────────────────── */}
+      {showWelcomeModal && (
+        <FtueWelcomeModal onDismiss={handleWelcomeModalDismiss} />
       )}
     </div>
   );
