@@ -901,6 +901,7 @@ export async function loadPortalInvoicesWithRefresh(
 
 // ── Budget Burn Tracker ────────────────────────────────────────────────────────
 
+
 export interface PortalBudgetBurn {
   projectId: string;
   projectName: string;
@@ -935,5 +936,63 @@ export async function loadBudgetBurnWithRefresh(
       };
     }
     return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+// ── EFT Verification ──────────────────────────────────────────────────────────
+
+export interface PortalEftStatus {
+  status: "PENDING" | "VERIFIED" | "REJECTED" | null;
+  rejectionReason: string | null;
+  verifiedAt: string | null;
+  rejectedAt: string | null;
+}
+
+export async function submitPortalEftProofWithRefresh(
+  session: AuthSession,
+  projectId: string,
+  input: { proofFileId: string; proofFileName: string }
+): Promise<AuthorizedResult<{ status: string }>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ status: string }>(
+      `/projects/${projectId}/eft-proof`,
+      accessToken,
+      { method: "PATCH", body: input }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false, data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "EFT_PROOF_SUBMIT_FAILED",
+          response.payload.error?.message ?? "Unable to submit proof of payment."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function loadPortalEftStatusWithRefresh(
+  session: AuthSession,
+  clientId: string,
+  projectId: string
+): Promise<AuthorizedResult<PortalEftStatus>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalEftStatus>(
+      `/clients/${clientId}/projects/${projectId}/eft-status`,
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false, data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "EFT_STATUS_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load EFT status."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? null, error: null };
   });
 }
