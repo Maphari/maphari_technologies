@@ -39,20 +39,17 @@
 
 | Action | File |
 |--------|------|
-| Modify | `apps/gateway/src/routes/realtime.controller.ts` |
+| Modify | `packages/platform/src/events/topics.ts` |
 | Modify | `services/core/src/routes/projects.ts` |
 | Modify | `services/core/src/routes/invoices.ts` |
 | Modify | `services/core/src/routes/leads.ts` |
 | Modify | `services/core/src/routes/milestones.ts` |
-| Create | `apps/web/src/lib/api/admin/realtime.ts` |
-| Create | `apps/web/src/lib/hooks/use-ably-channel.ts` |
+| Verify | `apps/gateway/src/routes/realtime-events.service.ts` (auto-subscribes — no changes expected) |
 | Modify | `apps/web/src/components/admin/dashboard/chrome.tsx` |
 | Modify | `apps/web/src/components/admin/dashboard/pages/owners-workspace-page.tsx` |
 | Modify | `apps/web/src/components/admin/dashboard/pages/admin-leads-page-client.tsx` |
-| Modify | `apps/web/src/components/admin/dashboard/pages/` (revenue/finance page — identify in Task 8) |
+| Modify | `apps/web/src/components/admin/dashboard/pages/` (revenue/finance page — identify in Task 11) |
 | Modify | `apps/web/src/components/client/maphari-client-dashboard.tsx` |
-| Modify | `apps/web/src/components/client/maphari-dashboard/pages/dashboard-page.tsx` |
-| Modify | `apps/web/src/components/staff/staff-dashboard/pages/` (team structure page — identify in Task 11) |
 
 ### v1.3 — Communication Foundations
 
@@ -1140,72 +1137,99 @@ git commit -m "fix(admin): wire financial-year-closeout-page to FY checklist API
 
 ---
 
-### Task 8: Understand and Wire EventBus→Ably Bridge
+### Task 8: Wire EventBus Publish Calls in Core Routes
 
 **Files:**
 - Modify: `services/core/src/routes/projects.ts`
 - Modify: `services/core/src/routes/invoices.ts`
 - Modify: `services/core/src/routes/leads.ts`
 - Modify: `services/core/src/routes/milestones.ts`
+- Modify: `packages/platform/src/events/topics.ts`
 
-> **Architecture note:** Core publishes to EventBus → Gateway subscribes to EventBus → Gateway broadcasts to Ably. Ably is NOT in core — it lives in the gateway only. Core only publishes lightweight EventBus events; the gateway translates them into Ably channel messages.
+> **Architecture:** Core publishes `DomainEvent` objects to `NatsEventBus` (singleton imported from `../lib/infrastructure.js`). The gateway's `RealtimeEventsService.onModuleInit` subscribes to ALL `EventTopics` values automatically and streams them via SSE to connected browsers. No Ably, no gateway changes needed — publishing from core is enough.
 
-- [ ] **Step 1: Understand the EventBus implementation**
+> **EventBus pattern (from existing routes like `clients.ts` and `projects.ts`):**
+> ```typescript
+> import { eventBus } from '../lib/infrastructure.js';
+> import { EventTopics } from '@maphari/platform';
+> import { randomUUID } from 'node:crypto';
+> // ...
+> await eventBus.publish({
+>   eventId: randomUUID(),
+>   occurredAt: new Date().toISOString(),
+>   topic: EventTopics.projectStatusUpdated,
+>   payload: { projectId: project.id, status: project.status },
+> });
+> ```
 
-Run this grep to find the EventBus implementation:
-```bash
-grep -r "eventBus\|EventBus\|event-bus" services/core/src --include="*.ts" -l
+- [ ] **Step 1: Add milestoneUpdated topic to EventTopics**
+
+In `packages/platform/src/events/topics.ts`, add one entry to the `EventTopics` object (milestones have no existing topic):
+
+```typescript
+// Add inside the EventTopics const object:
+milestoneUpdated: "core.milestone.updated",
 ```
-
-Read the found file(s) to understand: how `publish(topic, payload)` works, what the type of `topic` is, and how routes access the bus (via `fastify.eventBus` decorator or imported singleton).
-
-- [ ] **Step 2: Understand how gateway subscribes to EventBus**
 
 Run:
 ```bash
-grep -r "EventBus\|EventPattern\|subscribe" apps/gateway/src --include="*.ts" -l
+cd packages/platform && pnpm exec tsc --noEmit
 ```
 
-Read the found files. The gateway subscribes to EventBus events either via NestJS `@EventPattern` decorators or manual `.subscribe()` calls in `onModuleInit`. Note the exact mechanism — you will use this in Task 9.
+Expected: No errors.
 
-- [ ] **Step 3: Publish events in core after mutations**
+- [ ] **Step 2: Publish events in core routes after mutations**
 
-In `projects.ts`, after a status update PATCH, add:
+In each file, add the import at the top if not already present:
 ```typescript
-await fastify.eventBus.publish('realtime.projectUpdated', {
-  projectId: project.id,
-  status: project.status,
-  clientId: project.clientId ?? undefined,
+import { eventBus } from '../lib/infrastructure.js';
+import { EventTopics } from '@maphari/platform';
+import { randomUUID } from 'node:crypto';
+```
+
+In `projects.ts`, after a status update PATCH succeeds, add:
+```typescript
+await eventBus.publish({
+  eventId: randomUUID(),
+  occurredAt: new Date().toISOString(),
+  topic: EventTopics.projectStatusUpdated,
+  payload: { projectId: project.id, status: project.status, clientId: project.clientId ?? undefined },
 });
 ```
 
-In `invoices.ts`, after invoice created/marked paid:
+In `invoices.ts`, after invoice is marked paid, add:
 ```typescript
-await fastify.eventBus.publish('realtime.invoicePaid', {
-  invoiceId: invoice.id,
-  clientId: invoice.clientId,
-  amountCents: invoice.amountCents,
+await eventBus.publish({
+  eventId: randomUUID(),
+  occurredAt: new Date().toISOString(),
+  topic: EventTopics.invoicePaid,
+  payload: { invoiceId: invoice.id, clientId: invoice.clientId },
 });
 ```
 
-In `leads.ts`, after lead created:
+In `leads.ts`, after lead created, add:
 ```typescript
-await fastify.eventBus.publish('realtime.leadCreated', { leadId: lead.id });
-```
-
-In `milestones.ts`, after milestone marked complete:
-```typescript
-await fastify.eventBus.publish('realtime.milestoneCompleted', {
-  milestoneId: milestone.id,
-  projectId: milestone.projectId,
-  clientId: milestone.project?.clientId ?? undefined,
-  title: milestone.title,
+await eventBus.publish({
+  eventId: randomUUID(),
+  occurredAt: new Date().toISOString(),
+  topic: EventTopics.leadCreated,
+  payload: { leadId: lead.id },
 });
 ```
 
-> If `fastify.eventBus` is not available as a decorator, import the singleton directly — match the exact pattern used elsewhere in the codebase (from Step 1).
+In `milestones.ts`, after milestone marked complete, add:
+```typescript
+await eventBus.publish({
+  eventId: randomUUID(),
+  occurredAt: new Date().toISOString(),
+  topic: EventTopics.milestoneUpdated,
+  payload: { milestoneId: milestone.id, projectId: milestone.projectId, clientId: milestone.project?.clientId ?? undefined },
+});
+```
 
-- [ ] **Step 4: TypeScript check**
+> **Note:** Before adding these, read each route file to find the exact handler where the mutation completes (look for the `reply.send(...)` call). Place the `eventBus.publish` call just before or after `reply.send`. If a route already calls `eventBus.publish`, extend it rather than duplicating.
+
+- [ ] **Step 3: TypeScript check**
 
 ```bash
 cd services/core && pnpm exec tsc --noEmit
@@ -1213,99 +1237,48 @@ cd services/core && pnpm exec tsc --noEmit
 
 Expected: No errors.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add services/core/src/routes/projects.ts services/core/src/routes/invoices.ts services/core/src/routes/leads.ts services/core/src/routes/milestones.ts
+git add packages/platform/src/events/topics.ts services/core/src/routes/projects.ts services/core/src/routes/invoices.ts services/core/src/routes/leads.ts services/core/src/routes/milestones.ts
 git commit -m "feat(core): publish realtime events on project/invoice/lead/milestone mutations"
 ```
 
 ---
 
-### Task 9: Realtime Controller — Broadcast Helpers
+### Task 9: Verify Gateway Auto-Subscribes to New EventTopic
 
 **Files:**
-- Modify: `apps/gateway/src/routes/realtime.controller.ts`
+- No files to modify (verification only)
 
-- [ ] **Step 1: Read existing realtime controller**
+> **Architecture confirmation:** `apps/gateway/src/routes/realtime-events.service.ts` subscribes to EVERY topic in `EventTopics` on startup via:
+> ```typescript
+> const topics = Array.from(new Set(Object.values(EventTopics)));
+> await Promise.all(topics.map(async (topic) => this.eventBus.subscribe(topic, ...)));
+> ```
+> Adding `milestoneUpdated` to `EventTopics` in Task 8 Step 1 is all that is needed — the gateway automatically picks it up on next restart. No code changes to `realtime.controller.ts` or `realtime-events.service.ts` are required.
 
-Read `apps/gateway/src/routes/realtime.controller.ts` in full to understand: how Ably is initialised, whether there's a `publishToChannel` helper, and what the token endpoint looks like.
+- [ ] **Step 1: Confirm auto-subscription pattern**
 
-- [ ] **Step 2: Read the existing realtime controller fully**
+Read `apps/gateway/src/routes/realtime-events.service.ts` and verify `onModuleInit` subscribes via `Object.values(EventTopics)`. Confirm the new `milestoneUpdated` topic will be included automatically.
 
-Read `apps/gateway/src/routes/realtime.controller.ts` in full. Note:
-- What NestJS service/module holds the Ably client (e.g. `this.ablyService`, `this.realtime`)
-- Whether `OnModuleInit` and `onModuleInit()` are already implemented
-- The exact method to get an Ably channel and publish (e.g. `this.ably.channels.get(name).publish(event, data)`)
+Expected: `onModuleInit` iterates all EventTopics values with no per-topic whitelisting.
 
-- [ ] **Step 3: Add broadcast helper methods**
-
-Add these private methods to the controller class. Adjust `this.ably` to match the actual Ably client property name from Step 2:
-
-```typescript
-private async broadcastProjectUpdate(payload: { projectId: string; status: string; clientId?: string }) {
-  await this.ably.channels.get('admin:global').publish('project.updated', payload);
-  if (payload.clientId) {
-    await this.ably.channels.get(`client:${payload.clientId}`).publish('project.updated', payload);
-  }
-}
-
-private async broadcastInvoicePaid(payload: { invoiceId: string; clientId: string }) {
-  await this.ably.channels.get('admin:global').publish('invoice.paid', payload);
-  await this.ably.channels.get(`client:${payload.clientId}`).publish('invoice.created', payload);
-}
-
-private async broadcastLeadCreated(payload: { leadId: string }) {
-  await this.ably.channels.get('admin:global').publish('lead.created', payload);
-}
-
-private async broadcastMilestoneCompleted(payload: { milestoneId: string; projectId: string; clientId?: string; title: string }) {
-  await this.ably.channels.get('admin:global').publish('milestone.completed', payload);
-  if (payload.clientId) {
-    await this.ably.channels.get(`client:${payload.clientId}`).publish('milestone.completed', payload);
-  }
-}
-```
-
-- [ ] **Step 4: Wire EventBus subscriptions in onModuleInit**
-
-Add or extend `onModuleInit()` in the controller. The exact subscription API depends on what you found in Task 8 Step 2. Two common patterns:
-
-**Pattern A — NestJS EventBus (if using `@nestjs/cqrs` or similar):**
-```typescript
-implements OnModuleInit {
-  onModuleInit() {
-    this.eventBus.subscribe('realtime.projectUpdated', (p) => this.broadcastProjectUpdate(p));
-    this.eventBus.subscribe('realtime.invoicePaid', (p) => this.broadcastInvoicePaid(p));
-    this.eventBus.subscribe('realtime.leadCreated', (p) => this.broadcastLeadCreated(p));
-    this.eventBus.subscribe('realtime.milestoneCompleted', (p) => this.broadcastMilestoneCompleted(p));
-  }
-}
-```
-
-**Pattern B — Redis pub/sub or custom event emitter (if that's what the codebase uses):**
-```typescript
-onModuleInit() {
-  this.eventEmitter.on('realtime.projectUpdated', (p) => this.broadcastProjectUpdate(p));
-  this.eventEmitter.on('realtime.invoicePaid', (p) => this.broadcastInvoicePaid(p));
-  this.eventEmitter.on('realtime.leadCreated', (p) => this.broadcastLeadCreated(p));
-  this.eventEmitter.on('realtime.milestoneCompleted', (p) => this.broadcastMilestoneCompleted(p));
-}
-```
-
-Match the pattern to what you found in Step 2. Inject the EventBus/emitter in the constructor if not already present.
-
-- [ ] **Step 5: TypeScript check**
+- [ ] **Step 2: Gateway TypeScript check**
 
 ```bash
 cd apps/gateway && pnpm exec tsc --noEmit
 ```
 
-- [ ] **Step 6: Commit**
+Expected: No errors (the new `milestoneUpdated` key is a valid `EventTopic`).
+
+- [ ] **Step 3: Commit**
 
 ```bash
-git add apps/gateway/src/routes/realtime.controller.ts
-git commit -m "feat(gateway): add Ably broadcast helpers for project/invoice/lead/milestone events"
+git add apps/gateway/src/routes/realtime-events.service.ts
+# Nothing to stage if no changes were needed — use empty commit only if Step 1 required a fix.
+# If no gateway changes: skip this commit and proceed to Task 10.
+git commit -m "chore(gateway): confirm auto-subscription covers milestoneUpdated topic" --allow-empty
 ```
 
 ---
@@ -1313,129 +1286,80 @@ git commit -m "feat(gateway): add Ably broadcast helpers for project/invoice/lea
 ### Task 10: Admin Portal — Live Indicator & Auto-Refresh
 
 **Files:**
-- Create: `apps/web/src/lib/api/admin/realtime.ts`
 - Modify: `apps/web/src/components/admin/dashboard/chrome.tsx`
 - Modify: `apps/web/src/components/admin/dashboard/pages/owners-workspace-page.tsx`
 
-- [ ] **Step 1: Create admin/realtime.ts**
+> **Architecture:** The web app uses `useRealtimeRefresh(session, onRefresh)` from `@/lib/auth/use-realtime-refresh`. This hook opens an SSE stream to `GET /events/stream` (token exchanged at `POST /events/stream-token`) and calls `onRefresh()` on any `refresh` event. It returns `{ isConnected: boolean }`. No Ably, no custom token API needed. The admin topbar already has an `isLive` prop and renders a `topbarLiveBadge` + `topbarLiveDot` when `isLive` is `true` — do NOT add new CSS classes.
 
-Create `apps/web/src/lib/api/admin/realtime.ts`:
+- [ ] **Step 1: Read chrome.tsx**
 
+Read `apps/web/src/components/admin/dashboard/chrome.tsx` in full to understand:
+- Whether `useRealtimeRefresh` is already imported and called
+- How the topbar is rendered and which props it receives
+- Where `session` is available
+
+- [ ] **Step 2: Wire useRealtimeRefresh in chrome.tsx**
+
+If `useRealtimeRefresh` is not yet called in `chrome.tsx`:
+
+Add the import:
 ```typescript
-import type { AuthSession } from "../../auth/session";
-import { callGateway, isUnauthorized, toGatewayError, withAuthorizedSession, type AuthorizedResult } from "./_shared";
-
-export interface RealtimeToken {
-  token: string;
-}
-
-export async function loadRealtimeTokenWithRefresh(
-  session: AuthSession
-): Promise<AuthorizedResult<RealtimeToken>> {
-  return withAuthorizedSession(session, async (accessToken) => {
-    const res = await callGateway<RealtimeToken>("/admin/realtime/token", accessToken);
-    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
-    if (!res.payload.success) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ERR", res.payload.error?.message ?? "Failed") };
-    return { unauthorized: false, data: res.payload.data ?? null, error: null };
-  });
-}
+import { useRealtimeRefresh } from "@/lib/auth/use-realtime-refresh";
 ```
 
-> **Note:** The Ably token endpoint (`GET /admin/realtime/token`) must exist in `realtime.controller.ts`. Read that controller to confirm the route. If the endpoint is at a different path, adjust the path above.
-
-- [ ] **Step 2: Read chrome.tsx**
-
-Read `apps/web/src/components/admin/dashboard/chrome.tsx` to find the topbar area where the "Live" indicator will live.
-
-- [ ] **Step 3: Add Ably connection hook**
-
-Create a minimal hook inline or in a new file `apps/web/src/lib/hooks/use-ably-channel.ts`:
-
+Add the hook call inside the component (pass a no-op or an existing data-refresh callback):
 ```typescript
-import { useEffect, useRef } from 'react';
-import Ably from 'ably';
-
-export function useAblyChannel(
-  token: string | null,
-  channelName: string,
-  eventName: string,
-  onMessage: (data: any) => void
-) {
-  const clientRef = useRef<Ably.Realtime | null>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    const client = new Ably.Realtime({ token });
-    clientRef.current = client;
-    const channel = client.channels.get(channelName);
-    channel.subscribe(eventName, (msg) => onMessage(msg.data));
-    return () => { client.close(); };
-  }, [token, channelName, eventName]);
-}
+const { isConnected } = useRealtimeRefresh(session ?? null, () => {
+  // Trigger a soft refresh of the page data when any realtime event arrives.
+  // If chrome.tsx already has a refetch/reload callback, call it here.
+});
 ```
 
-- [ ] **Step 3: Wire Live indicator in chrome.tsx**
+Pass `isLive={isConnected}` to the topbar component.
 
-In the admin topbar, fetch a realtime token and show a pulsing dot when connected. Use a ref to hold the client so the cleanup function can close it synchronously:
+> If `useRealtimeRefresh` is already wired and `isConnected` is already passed to the topbar, skip this step and note it in the commit message.
 
+- [ ] **Step 3: Auto-refresh owners workspace on realtime event**
+
+Read `apps/web/src/components/admin/dashboard/pages/owners-workspace-page.tsx` to find the existing data-loading function (look for a `useEffect` that fetches project/revenue data, or a `load`/`refresh` function).
+
+In that page, add:
 ```typescript
-const [live, setLive] = useState(false);
-const ablyRef = useRef<Ably.Realtime | null>(null);
-
-useEffect(() => {
-  if (!session) return;
-  let cancelled = false;
-
-  loadRealtimeTokenWithRefresh(session).then((r) => {
-    const token = r.data?.token;
-    if (!token) return;
-    if (cancelled) return; // component unmounted before promise resolved
-    const client = new Ably.Realtime({ token });
-    ablyRef.current = client;
-    client.connection.on('connected', () => setLive(true));
-    client.connection.on('disconnected', () => setLive(false));
-    client.connection.on('failed', () => setLive(false));
-  });
-
-  return () => {
-    cancelled = true;        // prevent setState after unmount
-    ablyRef.current?.close(); // close synchronously if already created
-    ablyRef.current = null;
-  };
-}, [session]);
-
-// In JSX topbar:
-{live && <span className={cx(s.liveIndicator)}>● Live</span>}
+import { useRealtimeRefresh } from "@/lib/auth/use-realtime-refresh";
+// ...
+useRealtimeRefresh(session, () => {
+  // Call the existing data-refresh function discovered above, e.g.:
+  // void loadDashboardData();
+});
 ```
 
-Add `.liveIndicator` CSS class (pulsing green dot, `font-size: 11px`, `color: var(--lime)`, `animation: pulse 2s infinite`).
+> `useRealtimeRefresh` fires `onRefresh` on any SSE event (any domain event type). It is topic-blind by design — the page does a full data reload on any event. This is correct for Wave 1.
 
-- [ ] **Step 4: Auto-refresh executive dashboard on project.updated**
-
-In `owners-workspace-page.tsx`, subscribe to `admin:global` → `project.updated` and call the existing refresh function when received.
-
-- [ ] **Step 5: TypeScript check**
+- [ ] **Step 4: TypeScript check**
 
 ```bash
 pnpm --filter @maphari/web exec tsc --noEmit
 ```
 
-- [ ] **Step 6: Commit**
+Expected: No errors.
+
+- [ ] **Step 5: Commit**
 
 ```bash
-git add apps/web/src/lib/api/admin/realtime.ts apps/web/src/components/admin/dashboard/chrome.tsx apps/web/src/components/admin/dashboard/pages/owners-workspace-page.tsx apps/web/src/lib/hooks/use-ably-channel.ts
-git commit -m "feat(admin): add Live indicator and auto-refresh on realtime events"
+git add apps/web/src/components/admin/dashboard/chrome.tsx apps/web/src/components/admin/dashboard/pages/owners-workspace-page.tsx
+git commit -m "feat(admin): wire useRealtimeRefresh for Live indicator and owners workspace auto-refresh"
 ```
 
 ---
 
-### Task 11: Realtime Subscriptions — Client Portal, Admin Leads, Admin Revenue, Staff Presence
+### Task 11: Realtime Subscriptions — Client Portal, Admin Leads, Admin Revenue
 
 **Files:**
 - Modify: `apps/web/src/components/client/maphari-client-dashboard.tsx`
 - Modify: `apps/web/src/components/admin/dashboard/pages/admin-leads-page-client.tsx`
 - Modify: `apps/web/src/components/admin/dashboard/pages/` (revenue page — see Step 1)
-- Modify: `apps/web/src/components/staff/staff-dashboard/pages/` (team structure page — see Step 3)
+
+> **Architecture:** All three portals use `useRealtimeRefresh(session, onRefresh)` from `@/lib/auth/use-realtime-refresh`. This hook calls `onRefresh()` on any SSE `refresh` event. SSE events are topic-blind at the hook level — on any domain event, `onRefresh` is called and the component does a full data reload. This is the correct Wave 1 pattern. Staff presence dots (Ably-specific feature) are deferred to a later wave when a WebSocket or presence layer is introduced.
 
 - [ ] **Step 1: Identify admin revenue page**
 
@@ -1444,105 +1368,63 @@ Run:
 grep -r "revenue\|MRR\|finance\|billing" apps/web/src/components/admin/dashboard/pages --include="*.tsx" -l
 ```
 
-Read the top result to confirm it renders a revenue chart. Note the file path — this is what you'll modify for the `invoice.paid` subscription.
+Read the top result to confirm it renders a revenue chart or billing summary. Note the file path.
 
-- [ ] **Step 2: Subscribe to client channel on mount**
+- [ ] **Step 2: Add useRealtimeRefresh to client dashboard**
 
-In `maphari-client-dashboard.tsx`, use the same ref-based cleanup pattern from Task 10 Step 3:
+Read `apps/web/src/components/client/maphari-client-dashboard.tsx` to find the existing notification/data refresh function.
 
+Add the hook:
 ```typescript
-const ablyRef = useRef<Ably.Realtime | null>(null);
-
-useEffect(() => {
-  const clientId = session?.user?.clientId;
-  if (!clientId) return;
-  let cancelled = false;
-
-  loadRealtimeTokenWithRefresh(session).then((r) => {
-    const token = r.data?.token;
-    if (!token) return;
-    if (cancelled) return;
-    const client = new Ably.Realtime({ token });
-    ablyRef.current = client;
-    const channel = client.channels.get(`client:${clientId}`);
-
-    channel.subscribe('milestone.completed', (msg) => {
-      showToast(`Milestone reached: ${msg.data.title}`);
-    });
-
-    channel.subscribe('invoice.created', () => {
-      refreshNotifications(); // call existing notification refresh function
-    });
-  });
-
-  return () => {
-    cancelled = true;
-    ablyRef.current?.close();
-    ablyRef.current = null;
-  };
-}, [session?.user?.clientId]);
-```
-
-- [ ] **Step 3: Identify staff team structure page**
-
-Run:
-```bash
-grep -r "team\|presence\|online" apps/web/src/components/staff/staff-dashboard/pages --include="*.tsx" -l
-```
-
-Read the top result. If a team structure page exists, add a presence dot per staff member using Ably presence. If none exists, add the presence dot to the `owners-workspace-page.tsx` team section instead.
-
-**Presence implementation:**
-```typescript
-// In the team structure component, after Ably token fetch:
-const presenceChannel = client.channels.get('admin:global');
-presenceChannel.presence.enter({ staffId: session.user.id });
-presenceChannel.presence.subscribe((member) => {
-  setOnlineStaff(prev => ({ ...prev, [member.data.staffId]: member.action !== 'leave' }));
-});
-// Render: {onlineStaff[staff.id] && <span className={cx(s.presenceDot)} />}
-```
-
-- [ ] **Step 4: Admin leads page — badge increment on lead.created**
-
-In `admin-leads-page-client.tsx`, add subscription to `admin:global` → `lead.created`:
-
-```typescript
-// After Ably token fetch (use same ref pattern):
-channel.subscribe('lead.created', () => {
-  // Option A — if the page has a local leads count, increment it:
-  setNewLeadCount(prev => prev + 1);
-  // Option B — call the existing refresh function if available:
-  // refreshLeads();
-});
-// Render a "New" badge near the leads count if newLeadCount > 0
-```
-
-- [ ] **Step 5: Admin revenue page — auto-update on invoice.paid**
-
-In the revenue page identified in Step 1, add subscription to `admin:global` → `invoice.paid`:
-
-```typescript
-channel.subscribe('invoice.paid', () => {
-  // Call the existing revenue/stats refresh function
-  refreshRevenue();
+import { useRealtimeRefresh } from "@/lib/auth/use-realtime-refresh";
+// ...
+useRealtimeRefresh(session, () => {
+  // Call the existing notification/project refresh function — look for loadNotifications(), refreshData(), etc.
+  // e.g.: void loadNotifications();
 });
 ```
 
-- [ ] **Step 6: TypeScript check**
+> If `useRealtimeRefresh` is already present in this file, skip this step.
+
+- [ ] **Step 3: Add useRealtimeRefresh to admin leads page**
+
+Read `apps/web/src/components/admin/dashboard/pages/admin-leads-page-client.tsx` to find the existing data-loading function.
+
+Add the hook:
+```typescript
+import { useRealtimeRefresh } from "@/lib/auth/use-realtime-refresh";
+// ...
+useRealtimeRefresh(session, () => {
+  // Call the existing leads refresh function — e.g.: void loadLeads();
+});
+```
+
+- [ ] **Step 4: Add useRealtimeRefresh to revenue page**
+
+Read the revenue page identified in Step 1 to find the existing data-loading function.
+
+Add the hook using the same pattern as Steps 2 and 3:
+```typescript
+useRealtimeRefresh(session, () => {
+  // Call the existing revenue data refresh function.
+});
+```
+
+- [ ] **Step 5: TypeScript check**
 
 ```bash
 pnpm --filter @maphari/web exec tsc --noEmit
 ```
 
-- [ ] **Step 7: Commit**
+Expected: No errors.
+
+- [ ] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/components/client/maphari-client-dashboard.tsx apps/web/src/components/admin/dashboard/pages/admin-leads-page-client.tsx
-# Also stage the revenue page and staff presence page you identified and modified in Steps 1 and 3:
+# Also stage the revenue page identified in Step 1:
 # git add apps/web/src/components/admin/dashboard/pages/<revenue-page>.tsx
-# git add apps/web/src/components/staff/staff-dashboard/pages/<team-page>.tsx
-git commit -m "feat(v1.2): realtime subscriptions — client milestone toast, invoice badge, admin leads badge, revenue refresh, staff presence"
+git commit -m "feat(v1.2): wire useRealtimeRefresh in client portal, admin leads, admin revenue"
 ```
 
 ---
@@ -1631,7 +1513,7 @@ export async function calendarRoutes(fastify: FastifyInstance) {
       events.push(...appointments.map(a => {
         const endAt = new Date(a.scheduledAt.getTime() + (a.durationMins ?? 60) * 60_000);
         return {
-          id: a.id, title: a.title ?? 'Appointment', startAt: a.scheduledAt, endAt,
+          id: a.id, title: a.type ?? 'Appointment', startAt: a.scheduledAt, endAt,
           type: 'APPOINTMENT', sourceId: a.id, sourceType: 'Appointment', roles: ['ADMIN', 'STAFF', 'CLIENT'],
         };
       }));
@@ -3086,7 +2968,7 @@ async function handleReject() {
 // )}
 ```
 
-> **Note:** `loadAdminTimesheetsPendingWithRefresh` needs to be added to `apps/web/src/lib/api/admin/hr.ts` if not present. The function calls `GET /admin/time-entries?status=SUBMITTED` on the gateway.
+> **Note:** `loadPendingTimesheetsWithRefresh` needs to be added to `apps/web/src/lib/api/admin/hr.ts` if not present. The gateway `TimeEntriesController` is decorated `@Controller()` with no path prefix, so the route is `GET /time-entries?status=SUBMITTED` (NOT `/admin/time-entries`). Confirm by reading `apps/gateway/src/routes/time-entries.controller.ts` before writing any path.
 
 - [ ] **Step 7: Add nav entries in staff ui.tsx**
 
