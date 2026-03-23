@@ -1389,7 +1389,8 @@ exports.Prisma.WebhookEndpointScalarFieldEnum = {
   events: 'events',
   secret: 'secret',
   active: 'active',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SortOrder = {

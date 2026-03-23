@@ -22,9 +22,10 @@ export function writeAuditEvent(payload: AuditPayload): void {
   });
 }
 
-const WEBHOOK_EVENT_MAP: Record<string, string> = {
+// NOTE: To add new events, wire the route to call writeAuditEventAndDispatch
+// and add the action → event mapping here.
+export const WEBHOOK_EVENT_MAP: Record<string, string> = {
   PROJECT_CREATED:      "project.created",
-  INVOICE_PAID:         "invoice.paid",
   MILESTONE_APPROVED:   "milestone.approved",
   CONTRACT_SIGNED:      "contract.signed",
   DELIVERABLE_APPROVED: "deliverable.approved",
