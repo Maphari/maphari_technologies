@@ -44,7 +44,6 @@ async function generateReferenceCode(): Promise<string> {
     const existing2 = await prisma.project.findUnique({ where: { referenceCode: code }, select: { id: true } });
     if (existing2) {
       // Guaranteed unique fallback using Node crypto — no extra deps
-      const { randomUUID } = await import("crypto");
       code = `PRJ-${randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase()}`;
     }
   }
