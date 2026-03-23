@@ -101,10 +101,10 @@ export async function registerEftVerificationRoutes(app: FastifyInstance): Promi
         return reply.code(400).send({ success: false, error: { code: "INVALID_PROOF_FILE", message: "Proof file not found or not accessible." } } as ApiResponse);
       }
       const meta = await fileMeta.json() as { mimeType?: string; sizeBytes?: number };
-      if (meta.mimeType && meta.mimeType !== "application/pdf") {
+      if (!meta.mimeType || meta.mimeType !== "application/pdf") {
         return reply.code(400).send({ success: false, error: { code: "INVALID_PROOF_FILE", message: "Only PDF files are accepted." } } as ApiResponse);
       }
-      if (meta.sizeBytes && meta.sizeBytes > 10 * 1024 * 1024) {
+      if (!meta.sizeBytes || meta.sizeBytes > 10 * 1024 * 1024) {
         return reply.code(400).send({ success: false, error: { code: "INVALID_PROOF_FILE", message: "File must be 10 MB or smaller." } } as ApiResponse);
       }
     } catch {
