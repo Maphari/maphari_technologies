@@ -122,6 +122,9 @@ import { registerFeatureRequestRoutes } from "./routes/feature-requests.js";
 // ── Admin Proposed-Action Approval Workflow ────────────────────────────────
 import { registerAdminProposedActionRoutes } from "./routes/admin-proposed-actions.js";
 
+// ── Standup Crons ──────────────────────────────────────────────────────────
+import { scheduleStandupReminder, scheduleStandupDigest } from "./cron/standup-reminder.js";
+
 export async function createCoreApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
   const metrics = new ServiceMetrics();
@@ -290,6 +293,11 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Admin Proposed-Action Approval Workflow ────────────────────────────────
   await registerAdminProposedActionRoutes(app);
+
+  // ── Standup Crons ──────────────────────────────────────────────────────────
+  scheduleStandupReminder();
+  scheduleStandupDigest();
+  console.log("[core] Standup crons registered");
 
   return app;
 }

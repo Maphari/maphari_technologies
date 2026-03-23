@@ -53,6 +53,40 @@ export async function registerStandupRoutes(app: FastifyInstance): Promise<void>
     return { success: true, data, meta: { requestId: scope.requestId } } as ApiResponse<typeof data>;
   });
 
+  // ── GET /standup/missing-today — who hasn't submitted today ───────────────
+  app.get("/standup/missing-today", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
+    }
+
+    const today = new Date().toISOString().split("T")[0]!;
+    const startOfDay = new Date(today + "T00:00:00.000Z");
+    const endOfDay   = new Date(today + "T23:59:59.999Z");
+
+    const [submitted, activeStaff] = await Promise.all([
+      prisma.standupEntry.findMany({
+        where: { date: { gte: startOfDay, lte: endOfDay } },
+        select: { staffId: true },
+      }),
+      prisma.staffProfile.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true, avatarInitials: true, avatarColor: true },
+      }),
+    ]);
+
+    const submittedIds = new Set(submitted.map((s) => s.staffId));
+    const missing = activeStaff.filter((s) => !submittedIds.has(s.id));
+
+    const result = {
+      today,
+      submittedCount: submitted.length,
+      missingCount: missing.length,
+      missing,
+    };
+    return { success: true, data: result, meta: { requestId: scope.requestId } } as ApiResponse<typeof result>;
+  });
+
   // ── POST /standup ──────────────────────────────────────────────────────────
   app.post("/standup", async (request, reply) => {
     const scope = readScopeHeaders(request);
