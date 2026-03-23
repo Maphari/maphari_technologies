@@ -438,7 +438,7 @@ model ProjectChangeRequest {
 
 model Lead {
   id          String   @id @default(uuid())
-  clientId    String
+  clientId    String?
   title       String
   source      String?
   status      String   @default("NEW")
@@ -452,7 +452,7 @@ model Lead {
   lostReason  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client      Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
   activities  LeadActivity[]
 
   @@index([clientId, createdAt])

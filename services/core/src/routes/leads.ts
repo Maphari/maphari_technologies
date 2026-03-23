@@ -16,11 +16,12 @@ import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
 import { cache, CacheKeys, eventBus } from "../lib/infrastructure.js";
 
 export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
-  async function logLeadActivity(input: { leadId: string; clientId: string; type: string; details?: string | null }): Promise<void> {
+  async function logLeadActivity(input: { leadId: string; clientId: string | null; type: string; details?: string | null }): Promise<void> {
+    if (!input.clientId) return; // Auto-prospect leads have no clientId — skip activity log
     await prisma.leadActivity.create({
       data: {
         leadId: input.leadId,
-        clientId: input.clientId,
+        clientId: input.clientId,  // TypeScript now knows this is string (non-null, guarded above)
         type: input.type,
         details: input.details ?? null
       }
@@ -82,9 +83,12 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
       } as ApiResponse;
     }
 
-    const clientId = resolveClientFilter(scope.role, scope.clientId, parsedBody.data.clientId);
+    const resolvedClientId = resolveClientFilter(scope.role, scope.clientId, parsedBody.data.clientId);
 
-    if (!clientId) {
+    // Auto-prospect leads (source: "auto-prospect") may have no associated client yet.
+    const isAutoProspect = parsedBody.data.source === "auto-prospect" && scope.role === "ADMIN";
+
+    if (!resolvedClientId && !isAutoProspect) {
       reply.status(400);
       return {
         success: false,
@@ -94,6 +98,8 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
         }
       } as ApiResponse;
     }
+
+    const clientId: string | null = resolvedClientId ?? null;
 
     try {
       const lead = await prisma.lead.create({
@@ -121,7 +127,7 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
       });
 
       await Promise.all([
-        cache.delete(CacheKeys.leads(clientId)),
+        cache.delete(CacheKeys.leads(clientId ?? undefined)),
         cache.delete(CacheKeys.leads())
       ]);
 
@@ -133,7 +139,7 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
         topic: EventTopics.leadCreated,
         payload: {
           leadId: lead.id,
-          clientId: lead.clientId,
+          clientId: lead.clientId ?? undefined,
           status: lead.status,
           contactName: lead.contactName ?? undefined,
           contactEmail: lead.contactEmail ?? undefined
@@ -217,7 +223,7 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
       });
 
       await Promise.all([
-        cache.delete(CacheKeys.leads(lead.clientId)),
+        cache.delete(CacheKeys.leads(lead.clientId ?? undefined)),
         cache.delete(CacheKeys.leads())
       ]);
 
@@ -335,7 +341,7 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
           topic: EventTopics.leadFollowUpDue,
           payload: {
             leadId: lead.id,
-            clientId: lead.clientId,
+            clientId: lead.clientId ?? undefined,
             nextFollowUpAt: lead.nextFollowUpAt.toISOString(),
             ownerName: lead.ownerName ?? null
           }
@@ -343,7 +349,7 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
       }
 
       await Promise.all([
-        cache.delete(CacheKeys.leads(lead.clientId)),
+        cache.delete(CacheKeys.leads(lead.clientId ?? undefined)),
         cache.delete(CacheKeys.leads())
       ]);
 
@@ -415,7 +421,7 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const touchedClientIds = Array.from(new Set(updated.map((lead) => lead.clientId)));
+      const touchedClientIds = Array.from(new Set(updated.map((lead) => lead.clientId ?? undefined)));
       await Promise.all([
         cache.delete(CacheKeys.leads()),
         ...touchedClientIds.map((clientId) => cache.delete(CacheKeys.leads(clientId)))
@@ -527,8 +533,8 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
       });
 
       await Promise.all([
-        cache.delete(CacheKeys.leads(primary.clientId)),
-        cache.delete(CacheKeys.leads(duplicate.clientId)),
+        cache.delete(CacheKeys.leads(primary.clientId ?? undefined)),
+        cache.delete(CacheKeys.leads(duplicate.clientId ?? undefined)),
         cache.delete(CacheKeys.leads())
       ]);
 
