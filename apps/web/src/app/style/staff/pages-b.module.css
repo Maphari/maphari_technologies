@@ -4029,7 +4029,6 @@
   .apptKpiGrid { grid-template-columns: 1fr 1fr; }
 /* ── New ch* classes (refactored, CSS was missing) ── */
 .chHeaderTitle { display: flex; flex-direction: column; gap: 0; }
-.chKpiStrip { flex-wrap: wrap; margin-top: 16px; }
 
 /* hoClientMeterWrap / hoSectionMeterWrap (client-onboarding) */
 .hoClientMeterWrap { display: flex; flex-direction: column; gap: 6px; }
@@ -4050,7 +4049,7 @@
 
 .chKpiCard {
   background: var(--s1);
-  border: 1px solid var(--b1);
+  border: 1px solid var(--b2);
   border-radius: var(--r-xs);
   padding: 10px 14px;
 }
@@ -4061,17 +4060,17 @@
 }
 
 .chKpiCardRed {
-  background: rgba(239, 68, 68, 0.10);
+  background: var(--red-d);
   border-color: rgba(239, 68, 68, 0.22);
 }
 
 .chKpiCardGreen {
-  background: rgba(34, 197, 94, 0.10);
+  background: var(--green-d);
   border-color: rgba(34, 197, 94, 0.22);
 }
 
 .chKpiCardPurple {
-  background: rgba(168, 85, 247, 0.10);
+  background: var(--purple-d);
   border-color: rgba(168, 85, 247, 0.22);
 }
 
@@ -4110,6 +4109,7 @@
   height: 36px;
   padding: 0 14px;
   font-size: 12px;
+  font-weight: 500;
   color: var(--muted2);
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
@@ -4139,8 +4139,8 @@
   font-size: 9px;
   font-weight: 600;
   padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(239, 68, 68, 0.12);
+  border-radius: var(--r-xs);
+  background: var(--red-d);
   color: var(--red);
 }
 
@@ -4148,8 +4148,8 @@
   font-size: 9px;
   font-weight: 600;
   padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(34, 197, 94, 0.12);
+  border-radius: var(--r-xs);
+  background: var(--green-d);
   color: var(--green);
 }
 
@@ -4157,7 +4157,7 @@
   font-size: 9px;
   font-weight: 600;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   background: var(--s2);
   color: var(--muted);
 }
@@ -4166,7 +4166,7 @@
   margin-left: auto;
   height: 26px;
   padding: 0 10px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
   background: var(--s2);
   border: 1px solid var(--b2);
   font-size: 10px;
