@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════════════════════
 // daily-standup-page.tsx — Staff Daily Standup
-// Data     : loadMyStandupsWithRefresh → GET /standup
+// Data     : loadMyStandupsWithRefresh → GET /standup/me
 //            postStandupWithRefresh    → POST /standup
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
@@ -176,7 +176,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
     const weekHours = standups
       .filter((s) => weekSet.has(s.date.slice(0, 10)) && s.hours != null)
       .reduce((sum, s) => sum + (s.hours ?? 0), 0);
-    return { days: standups.length, hours: weekHours };
+    return { days: standups.length, hours: Math.round(weekHours * 10) / 10 };
   }, [standups, weekDays]);
 
   const handleSubmit = useCallback(async () => {
@@ -279,9 +279,6 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
                 <div className={cx("dsSubmittedIcon")}><IcoCheck /></div>
                 <div className={cx("fontDisplay", "fw800", "colorAccent", "dsSubmittedTitle")}>Standup submitted</div>
                 <div className={cx("text12", "colorMuted2", "mb32")}>Your team can see today&apos;s update. Admin notified.</div>
-                <button type="button" className={cx("dsEditBtn")} onClick={() => setSubmitted(false)}>
-                  Edit submission
-                </button>
               </div>
             ) : (
               <div className={cx("flexCol", "gap22", "dsFormWrap")}>
