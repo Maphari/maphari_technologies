@@ -1477,6 +1477,9 @@ export function MaphariStaffDashboard() {
                 setFilterProjectId(projectId);
                 setActivePage("tasks");
               }}
+              onGoDeliverables={() => {
+                setActivePage("deliverables");
+              }}
             />
 
             <MyTeamPage isActive={activePage === "myteam"} session={session ?? null} />
