@@ -977,11 +977,12 @@
 .dsvAccentRed   { border-left-color: var(--red);   }
 .dsvAccentAmber { border-left-color: var(--amber);  }
 .dsvAccentGreen { border-left-color: var(--green);  }
+.dsvExpandRowOpen { /* open state — colour modifiers below */ }
 
 /* When open: top/right/bottom become translucent; left stays solid */
 .dsvExpandRowOpen.dsvAccentRed   { border-top-color: rgba(239,68,68,.2); border-right-color: rgba(239,68,68,.2); border-bottom-color: rgba(239,68,68,.2); }
-.dsvExpandRowOpen.dsvAccentAmber { border-top-color: rgba(245,166,35,.2); border-right-color: rgba(245,166,35,.2); border-bottom-color: rgba(245,166,35,.2); }
-.dsvExpandRowOpen.dsvAccentGreen { border-top-color: rgba(52,217,139,.2); border-right-color: rgba(52,217,139,.2); border-bottom-color: rgba(52,217,139,.2); }
+.dsvExpandRowOpen.dsvAccentAmber { border-top-color: rgba(234,179,8,.2); border-right-color: rgba(234,179,8,.2); border-bottom-color: rgba(234,179,8,.2); }
+.dsvExpandRowOpen.dsvAccentGreen { border-top-color: rgba(34,197,94,.2); border-right-color: rgba(34,197,94,.2); border-bottom-color: rgba(34,197,94,.2); }
 
 /* Collapsed header */
 .dsvExpandHeader {
