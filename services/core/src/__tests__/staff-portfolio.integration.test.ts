@@ -23,6 +23,7 @@ describe("GET /staff/me/portfolio", () => {
       headers: { "x-user-role": "STAFF" },
     });
     expect(response.statusCode).toBe(401);
+    await app.close();
   });
 
   it("returns portfolio with salary-derived spend and correct health", async () => {
@@ -92,6 +93,7 @@ describe("GET /staff/me/portfolio", () => {
     expect(beta.health).toBe("critical");       // AT_RISK status
     expect(beta.spentCents).toBe(2000);
     expect(beta.dueAt).toBeNull();
+    await app.close();
   });
 
   it("returns empty array when user has no time entries", async () => {
@@ -112,5 +114,6 @@ describe("GET /staff/me/portfolio", () => {
     const body = response.json();
     expect(body.success).toBe(true);
     expect(body.data).toEqual([]);
+    await app.close();
   });
 });

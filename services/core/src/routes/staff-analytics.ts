@@ -825,7 +825,7 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
           const spentCents   = internalHourlyRateCents > 0
             ? Math.round((totalMinutes / 60) * internalHourlyRateCents)
             : 0;
-          const budgetCents  = p.budgetCents ?? 0;
+          const budgetCents  = Number(p.budgetCents ?? 0);
 
           let health: "healthy" | "moderate" | "critical" | "exceeded";
           if (budgetCents > 0 && spentCents > budgetCents)             health = "exceeded";
@@ -836,8 +836,8 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
           return {
             id:              p.id,
             name:            p.name,
-            clientId:        p.client.id,
-            clientName:      p.client.name,
+            clientId:        p.client?.id ?? null,
+            clientName:      p.client?.name ?? "Unknown",
             status:          p.status,
             priority:        p.priority,
             progressPercent: p.progressPercent,
@@ -853,7 +853,7 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
           };
         });
       });
-      return { success: true, data } as ApiResponse<typeof data>;
+      return { success: true, data, meta: { requestId: scope.requestId } } as ApiResponse<typeof data>;
     } catch (error) {
       request.log.error(error);
       return { success: false, error: { code: "PORTFOLIO_FETCH_FAILED", message: "Unable to load portfolio." } } as ApiResponse;
