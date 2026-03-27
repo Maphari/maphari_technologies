@@ -66,23 +66,22 @@ export interface StaffTeamMember {
   peerRating:     number | null;
 }
 
-export interface StaffResponseTimeRecord {
-  id:          string;
-  clientName:  string;
-  metric:      string;
-  targetHours: number;
-  actualHours: number | null;
-  status:      string;
-  periodStart: string;
-  periodEnd:   string;
+export interface StaffResponseTimeWeek {
+  week: string;
+  avg:  number;
+}
+
+export interface StaffResponseTimeClient {
+  clientId: string;
+  name:     string;
+  avg:      number;
 }
 
 export interface StaffResponseTimes {
-  records:    StaffResponseTimeRecord[];
-  avgActual:  number;
-  avgTarget:  number;
-  metCount:   number;
-  totalCount: number;
+  target:      number;
+  overallAvg:  number;
+  weeklyTrend: StaffResponseTimeWeek[];
+  byClient:    StaffResponseTimeClient[];
 }
 
 export interface StaffMilestoneDeliverable {
@@ -91,6 +90,8 @@ export interface StaffMilestoneDeliverable {
   status: string;
 }
 
+export type MilestoneSignoffStatus = "PENDING" | "APPROVED" | "REJECTED";
+
 export interface StaffMilestoneSignoff {
   id:             string;
   milestoneId:    string;
@@ -98,9 +99,11 @@ export interface StaffMilestoneSignoff {
   projectName:    string;
   clientName:     string;
   deliverables:   StaffMilestoneDeliverable[];
-  status:         string;
+  status:         MilestoneSignoffStatus;
   requestedAt:    string;
   approvedAt:     string | null;
+  dueDate:        string | null;
+  comment:        string | null;
 }
 
 // ── API functions ─────────────────────────────────────────────────────────────
