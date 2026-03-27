@@ -52,16 +52,17 @@ type EventType = "message" | "milestone" | "invoice" | "call" | "file";
 type SortBy    = "recent" | "oldest" | "client";
 
 type TimelineEvent = {
-  id:         string;
-  clientId:   string;
-  clientName: string;
-  type:       EventType;
-  direction:  string; // kept as raw string — only used for direction chip logic
-  title:      string;
-  excerpt:    string;
-  occurredAt: string;
-  dateLabel:  string;
-  timeLabel:  string;
+  id:           string;
+  clientId:     string;
+  clientName:   string;
+  type:         EventType;
+  direction:    string; // kept as raw string — only used for direction chip logic
+  title:        string;
+  excerpt:      string;
+  occurredAt:   string;
+  occurredAtMs: number;   // pre-parsed timestamp for sorting/grouping
+  dateLabel:    string;
+  timeLabel:    string;
 };
 
 // ── Config ─────────────────────────────────────────────────────────
@@ -132,10 +133,10 @@ function clientInitials(name: string): string {
     .toUpperCase();
 }
 
-function directionChipClass(direction: string): string | null {
+function directionChipClass(direction: string): string {
   if (direction === "inbound") return "staffChipGreen";
   if (direction === "both")    return "staffChipPurple";
-  return null; // outbound: no chip
+  return ""; // outbound: no chip — cx("") is a safe no-op
 }
 
 // ── Component ──────────────────────────────────────────────────────
@@ -175,16 +176,17 @@ export function CommunicationHistoryPage({
         const dt        = new Date(log.occurredAt);
         const fallbackExcerpt = `${direction === "inbound" ? "Received" : direction === "both" ? "Joint" : "Sent"} ${typeConfig[type].label.toLowerCase()}${log.fromName ? ` from ${log.fromName}` : ""}`;
         return {
-          id:         log.id,
-          clientId:   log.clientId,
-          clientName: log.clientName,
+          id:           log.id,
+          clientId:     log.clientId,
+          clientName:   log.clientName,
           type,
           direction,
-          title:      (log.subject ?? "").trim()      || `${typeConfig[type].label} event`,
-          excerpt:    (log.actionLabel ?? "").trim()   || fallbackExcerpt,
-          occurredAt: dt.toISOString(),
-          dateLabel:  dt.toLocaleDateString(undefined, { year: "numeric", day: "numeric", month: "short" }),
-          timeLabel:  dt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+          title:        (log.subject ?? "").trim()    || `${typeConfig[type].label} event`,
+          excerpt:      (log.actionLabel ?? "").trim() || fallbackExcerpt,
+          occurredAt:   dt.toISOString(),
+          occurredAtMs: dt.getTime(),                 // pre-parsed timestamp for sorting/grouping
+          dateLabel:    dt.toLocaleDateString(undefined, { year: "numeric", day: "numeric", month: "short" }),
+          timeLabel:    dt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
         };
       });
       setAllEvents(mapped);
@@ -204,11 +206,11 @@ export function CommunicationHistoryPage({
 
   // ── Derived data ──────────────────────────────────────────────────
   const filteredEvents = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return allEvents
       .filter((e) => activeType === "all" || e.type === activeType)
       .filter((e) => {
-        if (!search.trim()) return true;
-        const q = search.toLowerCase();
+        if (!q) return true;
         return (
           e.title.toLowerCase().includes(q) ||
           e.excerpt.toLowerCase().includes(q) ||
@@ -217,7 +219,7 @@ export function CommunicationHistoryPage({
       })
       .sort((a, b) => {
         if (sortBy === "client") return a.clientName.localeCompare(b.clientName);
-        const delta = new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime();
+        const delta = a.occurredAtMs - b.occurredAtMs;
         return sortBy === "recent" ? -delta : delta;
       });
   }, [allEvents, activeType, search, sortBy]);
@@ -226,7 +228,7 @@ export function CommunicationHistoryPage({
     const groups = new Map<string, { clientName: string; maxOccurredAt: number; events: TimelineEvent[] }>();
     filteredEvents.forEach((e) => {
       const existing = groups.get(e.clientId);
-      const ts = new Date(e.occurredAt).getTime();
+      const ts = e.occurredAtMs;
       if (existing) {
         existing.events.push(e);
         if (ts > existing.maxOccurredAt) existing.maxOccurredAt = ts;
@@ -242,7 +244,7 @@ export function CommunicationHistoryPage({
   const dateGroups = useMemo(() => {
     const groups = new Map<string, { maxOccurredAt: number; events: TimelineEvent[] }>();
     filteredEvents.forEach((e) => {
-      const ts = new Date(e.occurredAt).getTime();
+      const ts = e.occurredAtMs;
       const existing = groups.get(e.dateLabel);
       if (existing) {
         existing.events.push(e);
