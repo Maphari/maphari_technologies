@@ -248,6 +248,7 @@ model ProjectTask {
   progressPercent Int                       @default(0)
   sprintId        String?
   storyPoints     Int?
+  completedAt     DateTime?
   collaborators   ProjectTaskCollaborator[]
   project         Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   sprint          ProjectSprint?            @relation(fields: [sprintId], references: [id])
@@ -256,6 +257,7 @@ model ProjectTask {
   @@index([projectId, createdAt])
   @@index([status])
   @@index([sprintId])
+  @@index([completedAt])
   @@map("project_tasks")
 }
 

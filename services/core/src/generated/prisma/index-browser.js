@@ -257,7 +257,8 @@ exports.Prisma.ProjectTaskScalarFieldEnum = {
   priority: 'priority',
   progressPercent: 'progressPercent',
   sprintId: 'sprintId',
-  storyPoints: 'storyPoints'
+  storyPoints: 'storyPoints',
+  completedAt: 'completedAt'
 };
 
 exports.Prisma.ProjectTaskCollaboratorScalarFieldEnum = {
