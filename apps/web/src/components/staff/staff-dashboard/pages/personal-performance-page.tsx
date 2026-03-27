@@ -406,6 +406,12 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
             </div>
           ) : (
             <div className={cx("ppClientList")}>
+              <div className={cx("ppClientHdr")}>
+                <div className={cx("ppClientHdrLabel")} style={{ width: "120px" }} />
+                <div className={cx("ppClientHdrSpacer")} />
+                <div className={cx("ppClientHdrLabel")} style={{ width: "40px", textAlign: "right" }}>Hours</div>
+                <div className={cx("ppClientHdrLabel")} style={{ width: "48px", textAlign: "right" }}>Avg Response</div>
+              </div>
               {clients.map((c, idx) => {
                 const tone    = CLIENT_TONES[idx % CLIENT_TONES.length];
                 const maxH    = Math.max(...clients.map((cl) => cl.hoursLogged), 1);

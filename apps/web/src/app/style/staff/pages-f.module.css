@@ -1565,6 +1565,30 @@
 /* Client list */
 .ppClientList { display: flex; flex-direction: column; gap: 6px; }
 
+.ppClientHdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 0 6px 0;
+  border-bottom: 1px solid var(--b1);
+  margin-bottom: 4px;
+  font-size: 10px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ppClientHdrLabel {
+  font-size: 10px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ppClientHdrSpacer {
+  flex: 1;
+}
+
 .ppClientRow {
   display: flex;
   align-items: center;
