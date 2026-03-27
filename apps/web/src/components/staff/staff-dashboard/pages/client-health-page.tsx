@@ -177,6 +177,140 @@ function ScoreRing({ score, size = 60 }: { score: number; size?: number }) {
   );
 }
 
+// ── FilterBar sub-component ────────────────────────────────────────────────
+
+function FilterBar({
+  tf,
+  onChange,
+  showSentimentPills,
+  sentimentCounts,
+}: {
+  tf: TabFilter;
+  onChange: (patch: Partial<TabFilter>) => void;
+  showSentimentPills: boolean;
+  sentimentCounts: Record<"all" | SentimentType, number>;
+}) {
+  return (
+    <div className={cx("chFilterBar")}>
+      <input
+        className={cx("staffFilterInput")}
+        placeholder="Search client, project, or signal…"
+        value={tf.search}
+        onChange={(e) => onChange({ search: e.target.value })}
+      />
+      {showSentimentPills && SENTIMENT_PILLS.map((pill) => (
+        <div
+          key={pill.value}
+          role="radio"
+          aria-checked={tf.filter === pill.value}
+          className={cx(tf.filter === pill.value ? "chFilterPillActive" : "chFilterPillIdle")}
+          onClick={() => onChange({ filter: pill.value })}
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onChange({ filter: pill.value }); }}
+        >
+          {pill.label}
+          <span className={cx("chFilterPillCount")} aria-hidden="true">{sentimentCounts[pill.value]}</span>
+        </div>
+      ))}
+      <div className={cx("chSortGroup")} style={{ marginLeft: "auto" }}>
+        <span className={cx("chSortLabel")}>Sort</span>
+        {SORT_OPTS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            className={cx(tf.sortBy === opt.value ? "chSortPillActive" : "chSortPillIdle")}
+            onClick={() => onChange({ sortBy: opt.value })}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── ClientTable sub-component ──────────────────────────────────────────────
+
+function ClientTable({
+  clients,
+  selected,
+  onSelect,
+}: {
+  clients: HealthClient[];
+  selected: string | null;
+  onSelect: (id: string) => void;
+}) {
+  if (clients.length === 0) {
+    return (
+      <div className={cx("emptyState")}>
+        <div className={cx("emptyStateTitle")}>No clients match filters</div>
+        <div className={cx("emptyStateSub")}>Try clearing search or filters.</div>
+      </div>
+    );
+  }
+  return (
+    <table className={cx("chTable")}>
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Score</th>
+          <th>Trend</th>
+          <th>Sentiment</th>
+          <th>Invoice</th>
+          <th>Tasks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {clients.map((c) => (
+          <tr
+            key={c.id}
+            className={cx(selected === c.id && "chTableRowSelected")}
+            onClick={() => onSelect(c.id)}
+          >
+            <td>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div className={cx("staffClientAvatar")}>{c.avatar}</div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text)" }}>{c.name}</div>
+                  <div style={{ fontSize: 9, color: "var(--muted2)" }}>{c.project}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div className={cx("chScoreBarCell")}>
+                <div className={cx("chScoreBarWrap")}>
+                  <div className={cx("chScoreBarTrack")}>
+                    <div className={cx(scoreBarClass(c.score))} style={{ width: `${c.score}%` }} />
+                  </div>
+                </div>
+                <div className={cx("chScoreText")} style={{ color: scoreColor(c.score) }}>{c.score}</div>
+              </div>
+            </td>
+            <td>
+              <span className={cx(trendChipClass(c.trend))}>
+                {trendIcon(c.trend)} {c.trendVal}
+              </span>
+            </td>
+            <td>
+              <span className={cx("badgeSm", sentimentClass(c.sentiment))}>
+                {sentimentLabel(c.sentiment)}
+              </span>
+            </td>
+            <td>
+              <span className={cx("badgeSm", invoiceBadgeClass(c.invoiceStatus))}>
+                {c.invoiceStatus.charAt(0).toUpperCase() + c.invoiceStatus.slice(1)}
+              </span>
+            </td>
+            <td style={{ fontSize: 10, color: c.overdueTasks > 0 ? "var(--red)" : "var(--green)" }}>
+              {c.overdueTasks > 0 ? `${c.overdueTasks} overdue` : "On track"}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 // ── Component placeholder (JSX added in next task) ─────────────────────────
 
 export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
@@ -441,8 +575,179 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
       {/* ── Tab body (content + detail panel) ─────────────────────────── */}
       <div className={cx("chTabBody")}>
         <div className={cx("chTabContent")}>
-          {/* Tab content rendered in Task 6 */}
-          <div className={cx("emptyStateSub")}>Tab: {activeTab}</div>
+
+          {/* ── OVERVIEW TAB ─────────────────────────────────────────── */}
+          {activeTab === "overview" && (
+            <div className={cx("chOverviewGrid")}>
+
+              {/* Left: score distribution + sparkline */}
+              <div className={cx("chOvPanel")}>
+                <div className={cx("chOvPanelLabel")}>Score Distribution</div>
+                <div className={cx("chTierRow")}>
+                  <div className={cx("chTierBox", "chTierBoxGreen")}>
+                    <div className={cx("chTierNum", "chTierNumGreen")}>{tierCounts.good}</div>
+                    <div className={cx("chTierLbl")}>Good · 75–100</div>
+                  </div>
+                  <div className={cx("chTierBox", "chTierBoxAmber")}>
+                    <div className={cx("chTierNum", "chTierNumAmber")}>{tierCounts.fair}</div>
+                    <div className={cx("chTierLbl")}>Fair · 50–74</div>
+                  </div>
+                  <div className={cx("chTierBox", "chTierBoxRed")}>
+                    <div className={cx("chTierNum", "chTierNumRed")}>{tierCounts.risk}</div>
+                    <div className={cx("chTierLbl")}>Risk · below 50</div>
+                  </div>
+                </div>
+                <div className={cx("chOvPanelLabel")} style={{ marginTop: 12, marginBottom: 2 }}>
+                  Trend Momentum
+                </div>
+                {/* Decorative sparkline: bar heights proportional to trendCounts.up / total */}
+                {(() => {
+                  const total = Math.max(1, trendCounts.up + trendCounts.stable + trendCounts.down);
+                  const upRatio = trendCounts.up / total;
+                  const heights = [0.3, 0.4, 0.35, 0.5 + upRatio * 0.3, 0.45 + upRatio * 0.3, 0.5 + upRatio * 0.5];
+                  return (
+                    <div className={cx("chSparkline")}>
+                      {heights.map((h, i) => (
+                        <div
+                          key={i}
+                          className={cx("chSpBar", i === heights.length - 1 && "chSpBarLast")}
+                          style={{ height: `${h * 100}%` }}
+                        />
+                      ))}
+                    </div>
+                  );
+                })()}
+                <div style={{ fontSize: 9, color: "var(--muted2)", marginTop: 5 }}>
+                  {trendCounts.up} of {healthData.length} clients trending upward
+                </div>
+              </div>
+
+              {/* Right: needs-attention */}
+              <div className={cx("chOvPanel")}>
+                <div className={cx("chOvPanelLabel", "chOvPanelLabelRed")}>
+                  Needs Attention — click to view
+                </div>
+                {atRiskList.length === 0 ? (
+                  <div style={{ fontSize: 11, color: "var(--green)", padding: "8px 0" }}>
+                    ✓ All clients are in healthy range
+                  </div>
+                ) : (
+                  <div className={cx("chAttentionList")}>
+                    {atRiskList.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={cx("chAttentionItem", selected === c.id && "chAttentionItemSelected")}
+                        onClick={() => setSelected(selected === c.id ? null : c.id)}
+                      >
+                        <div className={cx("staffClientAvatar")}>{c.avatar}</div>
+                        <div className={cx("chAttentionInfo")}>
+                          <div className={cx("chAttentionName")}>{c.name}</div>
+                          <div className={cx("chAttentionProj")}>{c.project}</div>
+                          <div className={cx("chMiniTrack")}>
+                            <div className={cx(miniFillClass(c.score))} style={{ width: `${c.score}%` }} />
+                          </div>
+                        </div>
+                        <div className={cx("chAttentionScore")} style={{ color: scoreColor(c.score) }}>
+                          {c.score}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* All clients quick-view */}
+              <div className={cx("chOvAllClientsWrap")}>
+                <div className={cx("chOvPanelLabel")}>All Clients</div>
+                <div className={cx("chOvClientList")}>
+                  {healthData.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className={cx("chAttentionItem", selected === c.id && "chAttentionItemSelected")}
+                      onClick={() => setSelected(selected === c.id ? null : c.id)}
+                    >
+                      <div className={cx("staffClientAvatar")}>{c.avatar}</div>
+                      <div className={cx("chAttentionInfo")}>
+                        <div className={cx("chAttentionName")}>{c.name}</div>
+                        <div className={cx("chAttentionProj")}>{c.project}</div>
+                        <div className={cx("chMiniTrack")}>
+                          <div className={cx(miniFillClass(c.score))} style={{ width: `${c.score}%` }} />
+                        </div>
+                      </div>
+                      <div className={cx("chAttentionScore")} style={{ color: scoreColor(c.score) }} aria-label={`score ${c.score}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* ── AT RISK TAB ──────────────────────────────────────────── */}
+          {activeTab === "atRisk" && (
+            <>
+              <FilterBar
+                tf={tabFilters.atRisk}
+                onChange={(p) => setTabFilter("atRisk", p)}
+                showSentimentPills={false}
+                sentimentCounts={{ all: atRiskList.length, positive: 0, neutral: 0, at_risk: atRiskList.length }}
+              />
+              {filteredAtRisk.length === 0 && atRiskList.length === 0 ? (
+                <div className={cx("emptyState")}>
+                  <div className={cx("emptyStateTitle")}>No at-risk clients right now</div>
+                  <div className={cx("emptyStateSub")}>All clients are above the risk threshold.</div>
+                </div>
+              ) : (
+                <ClientTable
+                  clients={filteredAtRisk}
+                  selected={selected}
+                  onSelect={(id) => setSelected(selected === id ? null : id)}
+                />
+              )}
+            </>
+          )}
+
+          {/* ── POSITIVE TAB ─────────────────────────────────────────── */}
+          {activeTab === "positive" && (
+            <>
+              <FilterBar
+                tf={tabFilters.positive}
+                onChange={(p) => setTabFilter("positive", p)}
+                showSentimentPills={false}
+                sentimentCounts={{ all: healthData.filter((c) => c.sentiment === "positive").length, positive: 0, neutral: 0, at_risk: 0 }}
+              />
+              <ClientTable
+                clients={filteredPositive}
+                selected={selected}
+                onSelect={(id) => setSelected(selected === id ? null : id)}
+              />
+            </>
+          )}
+
+          {/* ── ALL CLIENTS TAB ──────────────────────────────────────── */}
+          {activeTab === "all" && (
+            <>
+              <FilterBar
+                tf={tabFilters.all}
+                onChange={(p) => setTabFilter("all", p)}
+                showSentimentPills={true}
+                sentimentCounts={{
+                  all:      healthData.length,
+                  positive: healthData.filter((c) => c.sentiment === "positive").length,
+                  neutral:  healthData.filter((c) => c.sentiment === "neutral").length,
+                  at_risk:  atRiskCount,
+                }}
+              />
+              <ClientTable
+                clients={filteredAll}
+                selected={selected}
+                onSelect={(id) => setSelected(selected === id ? null : id)}
+              />
+            </>
+          )}
+
         </div>
         <div className={cx("chTabDetail")}>
           {/* Detail panel rendered in Task 7 */}
