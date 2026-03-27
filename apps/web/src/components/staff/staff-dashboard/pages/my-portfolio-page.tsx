@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import { cx } from "../style";
 import { StaffEmptyState, EmptyIcons } from "../empty-state";
-import { getStaffProjects, type StaffProject } from "@/lib/api/staff/projects";
-import { getMyTasks, type StaffTask } from "@/lib/api/staff/tasks";
-import { getStaffClients, type StaffClient } from "@/lib/api/staff/clients";
+import { getMyPortfolio, type StaffPortfolioProject } from "@/lib/api/staff/portfolio";
 import { saveSession, type AuthSession } from "@/lib/auth/session";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -44,30 +42,11 @@ const FILTER_OPTS = [
 
 type FilterValue = typeof FILTER_OPTS[number]["value"];
 
-// ── Derived project type (enriched with task counts) ──────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-type PortfolioProject = {
-  id: string;
-  name: string;
-  client: string;
-  progress: number;
-  health: "healthy" | "moderate" | "critical" | "exceeded";
-  tasks: { total: number; done: number; inProgress: number };
-  budget: { total: number; spent: number };
-  dueAt: string;
-  priority: "HIGH" | "MEDIUM" | "LOW";
-};
-
-type Health = PortfolioProject["health"];
+type Health = StaffPortfolioProject["health"];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function deriveHealth(project: StaffProject): Health {
-  if (project.progressPercent >= 100) return "healthy";
-  if (project.status === "AT_RISK" || project.status === "BLOCKED") return "critical";
-  if (project.status === "ON_HOLD") return "moderate";
-  return "healthy";
-}
 
 function normalizePriority(p: string): "HIGH" | "MEDIUM" | "LOW" {
   const upper = p.toUpperCase();
@@ -148,7 +127,7 @@ type MyPortfolioPageProps = {
 
 export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
   const [filter, setFilter] = useState<FilterValue>("all");
-  const [projects, setProjects] = useState<PortfolioProject[]>([]);
+  const [projects, setProjects] = useState<StaffPortfolioProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
 
@@ -160,59 +139,10 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
     setError(null);
     void (async () => {
       try {
-        const [projectsResult, tasksResult, clientsResult] = await Promise.all([
-          getStaffProjects(session),
-          getMyTasks(session),
-          getStaffClients(session),
-        ]);
-
+        const result = await getMyPortfolio(session);
         if (cancelled) return;
-
-        // Persist refreshed sessions
-        if (projectsResult.nextSession) saveSession(projectsResult.nextSession);
-        if (tasksResult.nextSession) saveSession(tasksResult.nextSession);
-        if (clientsResult.nextSession) saveSession(clientsResult.nextSession);
-
-        const rawProjects = projectsResult.data ?? [];
-        const rawTasks = tasksResult.data ?? [];
-        const rawClients = clientsResult.data ?? [];
-
-        // Build client lookup
-        const clientMap = new Map<string, StaffClient>();
-        for (const c of rawClients) clientMap.set(c.id, c);
-
-        // Group tasks by projectId
-        const tasksByProject = new Map<string, StaffTask[]>();
-        for (const t of rawTasks) {
-          const list = tasksByProject.get(t.projectId) ?? [];
-          list.push(t);
-          tasksByProject.set(t.projectId, list);
-        }
-
-        // Build portfolio projects
-        const portfolio: PortfolioProject[] = rawProjects.map((p) => {
-          const projectTasks = tasksByProject.get(p.id) ?? [];
-          const doneTasks = projectTasks.filter((t) => t.status === "DONE").length;
-          const inProgressTasks = projectTasks.filter((t) => t.status === "IN_PROGRESS").length;
-          const budgetTotal = (p.budgetCents ?? 0) / 100;
-
-          // Estimate spent as proportional to progress (best effort without dedicated spend endpoint)
-          const budgetSpent = budgetTotal > 0 ? Math.round(budgetTotal * (p.progressPercent / 100)) : 0;
-
-          return {
-            id: p.id,
-            name: p.name,
-            client: clientMap.get(p.clientId)?.name ?? "Unknown Client",
-            progress: p.progressPercent,
-            health: deriveHealth(p),
-            tasks: { total: projectTasks.length, done: doneTasks, inProgress: inProgressTasks },
-            budget: { total: budgetTotal, spent: budgetSpent },
-            dueAt: formatDate(p.dueAt),
-            priority: normalizePriority(p.priority),
-          };
-        });
-
-        setProjects(portfolio);
+        if (result.nextSession) saveSession(result.nextSession);
+        setProjects(result.data ?? []);
       } catch (err: unknown) {
         if (!cancelled) setError((err as Error)?.message ?? "Failed to load data.");
       } finally {
@@ -226,13 +156,13 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
   const filtered = projects.filter((project) => {
     if (filter === "track") return project.health === "healthy";
     if (filter === "risk")  return project.health === "critical" || project.health === "exceeded";
-    if (filter === "done")  return project.progress === 100;
+    if (filter === "done")  return project.progressPercent === 100;
     return true;
   });
 
   const totalTasks  = projects.reduce((s, p) => s + p.tasks.total, 0);
   const doneTasks   = projects.reduce((s, p) => s + p.tasks.done,  0);
-  const avgProgress = projects.length > 0 ? Math.round(projects.reduce((s, p) => s + p.progress, 0) / projects.length) : 0;
+  const avgProgress = projects.length > 0 ? Math.round(projects.reduce((s, p) => s + p.progressPercent, 0) / projects.length) : 0;
   const atRisk      = projects.filter((p) => p.health === "critical" || p.health === "exceeded").length;
 
   if (loading) {
@@ -323,8 +253,10 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
             filtered.map((project) => {
               const health = healthCfg(project.health);
               const priority = priorityCfg(project.priority);
-              const budgetPct = project.budget.total > 0 ? Math.round((project.budget.spent / project.budget.total) * 100) : 0;
-              const budgetRemaining = project.budget.total - project.budget.spent;
+              const budgetTotal     = project.budgetCents / 100;
+              const budgetSpent     = project.spentCents / 100;
+              const budgetPct       = project.budgetCents > 0 ? Math.round((project.spentCents / project.budgetCents) * 100) : 0;
+              const budgetRemaining = budgetTotal - budgetSpent;
 
               return (
                 <div key={project.id} className={cx("pfProjectCard")}>
@@ -335,7 +267,7 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
                       <span className={cx("pfHealthDot", health.dotCls)} />
                       <div>
                         <div className={cx("pfProjectName")}>{project.name}</div>
-                        <div className={cx("pfProjectMeta")}>{project.client} · Due {project.dueAt}</div>
+                        <div className={cx("pfProjectMeta")}>{project.clientName} · Due {formatDate(project.dueAt)}</div>
                       </div>
                     </div>
                     <div className={cx("pfProjectBadges")}>
@@ -348,12 +280,12 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
                   <div className={cx("pfCardMetrics")}>
                     <div className={cx("pfMetricCell")}>
                       <div className={cx("pfMetricLabel")}>Budget</div>
-                      <div className={cx("pfMetricValue")}>{fmt(project.budget.total)}</div>
+                      <div className={cx("pfMetricValue")}>{fmt(budgetTotal)}</div>
                     </div>
                     <div className={cx("pfMetricCell")}>
                       <div className={cx("pfMetricLabel")}>Spent</div>
                       <div className={cx("pfMetricValue", budgetPct >= 100 ? "colorRed" : budgetPct >= 80 ? "colorAmber" : "colorAccent")}>
-                        {fmt(project.budget.spent)}
+                        {fmt(budgetSpent)}
                       </div>
                     </div>
                     <div className={cx("pfMetricCell")}>
@@ -375,10 +307,10 @@ export function MyPortfolioPage({ isActive, session }: MyPortfolioPageProps) {
                     <div className={cx("pfBarRow")}>
                       <div className={cx("pfBarMeta")}>
                         <span className={cx("pfBarLabel")}>Task Progress</span>
-                        <span className={cx("pfBarPct")}>{project.progress}%</span>
+                        <span className={cx("pfBarPct")}>{project.progressPercent}%</span>
                       </div>
                       <div className={cx("pfProgressTrack")}>
-                        <div className={cx("pfProgressFill", health.fillCls)} style={{ '--pct': `${project.progress}%` } as React.CSSProperties} />
+                        <div className={cx("pfProgressFill", health.fillCls)} style={{ '--pct': `${project.progressPercent}%` } as React.CSSProperties} />
                       </div>
                     </div>
                     <div className={cx("pfBarRow")}>
