@@ -657,11 +657,11 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
                 )}
               </div>
 
-              {/* All clients quick-view */}
+              {/* All clients quick-view — excludes at-risk clients already shown above */}
               <div className={cx("chOvAllClientsWrap")}>
                 <div className={cx("chOvPanelLabel")}>All Clients</div>
                 <div className={cx("chOvClientList")}>
-                  {healthData.map((c) => (
+                  {healthData.filter((c) => c.score >= 50).map((c) => (
                     <button
                       key={c.id}
                       type="button"
@@ -750,10 +750,151 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
 
         </div>
         <div className={cx("chTabDetail")}>
-          {/* Detail panel rendered in Task 7 */}
-          <div className={cx("chDpEmpty")}>
-            <div className={cx("chDpEmptyText")}>Select a client to view details</div>
-          </div>
+          {!selectedClient ? (
+            <div className={cx("chDpEmpty")}>
+              <Ic n="bar-chart-2" sz={22} c="var(--muted2)" />
+              <div className={cx("chDpEmptyText")}>Select a client to view details</div>
+            </div>
+          ) : (
+            <>
+              {/* Header */}
+              <div className={cx("chDpHeader")}>
+                <div className={cx("chDpName")}>{selectedClient.name}</div>
+                <div className={cx("chDpProj")}>{selectedClient.project} · Last touched {selectedClient.lastTouched}</div>
+              </div>
+
+              {/* Score ring + score */}
+              <div className={cx("chDpScoreRow")}>
+                <ScoreRing score={selectedClient.score} size={60} />
+                <div>
+                  <div className={cx("chDpScoreBig")} style={{ color: scoreColor(selectedClient.score) }}>
+                    {selectedClient.score}
+                    <span style={{ fontSize: 12, color: "var(--muted2)", fontWeight: 400 }}>/100</span>
+                  </div>
+                  <div className={cx("chDpScoreMeta")}>
+                    <span className={cx(sentimentClass(selectedClient.sentiment))}>
+                      {sentimentLabel(selectedClient.sentiment)}
+                    </span>
+                    <span>{trendIcon(selectedClient.trend)} {selectedClient.trendVal} this week</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Risk banner */}
+              {selectedClient.score < 50 && (
+                <div className={cx("chDpRiskBanner")}>
+                  <Ic n="alert-circle" sz={14} c="var(--red)" />
+                  <div className={cx("chDpRiskMsg")}>
+                    Below threshold. Schedule a check-in or escalate to account manager.
+                  </div>
+                </div>
+              )}
+
+              {/* 2x2 metrics */}
+              <div className={cx("chDpMetrics")}>
+                <div className={cx("chDpMetric")}>
+                  <div className={cx("chDpMetricLabel")}>Overdue Tasks</div>
+                  <div className={cx(selectedClient.overdueTasks > 0 ? "chDpMetricValBad" : "chDpMetricValOk")}>
+                    {selectedClient.overdueTasks > 0 ? `${selectedClient.overdueTasks} overdue` : "On track"}
+                  </div>
+                </div>
+                <div className={cx("chDpMetric")}>
+                  <div className={cx("chDpMetricLabel")}>Unread Msgs</div>
+                  <div className={cx(selectedClient.unreadMessages > 0 ? "chDpMetricValWarn" : "chDpMetricValOk")}>
+                    {selectedClient.unreadMessages > 0 ? `${selectedClient.unreadMessages} unread` : "Clear"}
+                  </div>
+                </div>
+                <div className={cx("chDpMetric")}>
+                  <div className={cx("chDpMetricLabel")}>Invoice</div>
+                  <div className={cx(
+                    selectedClient.invoiceStatus === "paid"    ? "chDpMetricValOk"  :
+                    selectedClient.invoiceStatus === "pending" ? "chDpMetricValWarn" : "chDpMetricValBad"
+                  )}>
+                    {selectedClient.invoiceStatus.charAt(0).toUpperCase() + selectedClient.invoiceStatus.slice(1)}
+                  </div>
+                </div>
+                <div className={cx("chDpMetric")}>
+                  <div className={cx("chDpMetricLabel")}>Retainer</div>
+                  <div className={cx(retainerValClass(selectedClient.retainerBurn))}>
+                    {selectedClient.retainerBurn}% used
+                  </div>
+                </div>
+              </div>
+
+              {/* Signals */}
+              <div>
+                <div className={cx("chDpSecLabel")}>Health Signals</div>
+                {selectedClient.signals.length === 0 ? (
+                  <div style={{ fontSize: 10, color: "var(--muted2)" }}>No signals recorded yet.</div>
+                ) : (
+                  <div className={cx("chDpSignalList")}>
+                    {selectedClient.signals.map((signal, i) => (
+                      <div key={i} className={cx("chDpSignalRow")}>
+                        <div className={cx("chDpSignalDot", signalDotClass(signal.type))} />
+                        <div>
+                          <div className={cx("chDpSignalText")}>{signal.text}</div>
+                          <div className={cx("chDpSignalType")}>{signal.type.toUpperCase()}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Quick actions */}
+              <div>
+                <div className={cx("chDpSecLabel")}>Quick Actions</div>
+                {actionError && (
+                  <div style={{ fontSize: 10, color: "var(--red)", marginBottom: 6 }}>{actionError}</div>
+                )}
+                <div className={cx("chDpActionList")}>
+                  {[
+                    { label: "Send client update",     type: "CLIENT_UPDATE",  priority: "MEDIUM", desc: "Auto-draft client update from recent activity", cls: "chDpActionBtnPrimary", ico: "✉" },
+                    { label: "Schedule check-in call", type: "SCHEDULE_CALL",  priority: "MEDIUM", desc: "Schedule a check-in call with client",           cls: "",                    ico: "📅" },
+                    { label: "Flag for admin review",  type: "ADMIN_FLAG",     priority: "HIGH",   desc: "Flagged for admin review by staff member",       cls: "chDpActionBtnDanger", ico: "⚑" },
+                  ].map(({ label, type, priority, desc, cls, ico }) => (
+                    <button
+                      key={label}
+                      type="button"
+                      className={cx("chDpActionBtn", cls)}
+                      disabled={actionLoading !== null}
+                      onClick={() => void handleQuickAction(label, type, desc, priority)}
+                    >
+                      <span className={cx("chDpActionIco")}>{ico}</span>
+                      {actionLoading === label ? "Processing…" : actionDone === label ? "Done ✓" : label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={cx("chDpActionBtn")}
+                    onClick={() => { setMsgSubject(""); setMsgBody(""); setShowMsgModal(true); }}
+                  >
+                    <span className={cx("chDpActionIco")}>💬</span>
+                    Message client
+                  </button>
+                </div>
+              </div>
+
+              {/* Retainer burn */}
+              <div className={cx("chDpRetainerBar")}>
+                <div className={cx("chDpRetainerHead")}>
+                  <div className={cx("chDpRetainerLabel")}>Retainer Burn</div>
+                  <div className={cx("chDpRetainerPct")} style={{ color: scoreColor(100 - selectedClient.retainerBurn) }}>
+                    {selectedClient.retainerBurn}%
+                  </div>
+                </div>
+                <div className={cx("chDpRetainerTrack")}>
+                  <div
+                    className={cx(selectedClient.retainerBurn > 90 ? "chMiniFillRed" : selectedClient.retainerBurn > 70 ? "chMiniFillAmber" : "chMiniFillGreen")}
+                    style={{ width: `${Math.min(selectedClient.retainerBurn, 100)}%`, height: "100%", borderRadius: "99px" }}
+                  />
+                </div>
+                {retainerMeta(selectedClient.retainerBurn) && (
+                  <div className={cx("chDpRetainerMeta")}>{retainerMeta(selectedClient.retainerBurn)}</div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
