@@ -12,7 +12,6 @@ import {
   getStaffMyPerformance,
   getStaffResponseTimes,
   type StaffPerformance,
-  type StaffPerformanceWeek,
   type StaffResponseTimes,
 } from "../../../../lib/api/staff/performance";
 import type { AuthSession } from "../../../../lib/auth/session";
@@ -69,9 +68,9 @@ function pctCls(pct: number): string {
 
 // ── SVG: Mini line chart ──────────────────────────────────────────────────────
 
-function MiniLineChart({ data, field }: { data: StaffPerformanceWeek[]; field: "hoursLogged" | "tasksCompleted" }) {
+function MiniLineChart({ data, field }: { data: Record<string, unknown>[]; field: string }) {
   if (data.length < 2) return <svg width="100%" height="32" />;
-  const vals  = data.map((d) => d[field]);
+  const vals  = data.map((d) => (d[field] as number) ?? 0);
   const max   = Math.max(...vals, 1);
   const W = 200, H = 32, pad = 2;
   const pts = vals.map((v, i) => {
@@ -218,9 +217,14 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
   const tasksTrend: "up" | "down" | "flat" = tasksDelta > 0 ? "up" : tasksDelta < 0 ? "down" : "flat";
 
   // Response rate
-  const responsePct = responseTimes
-    ? Math.round((responseTimes.metCount / Math.max(responseTimes.totalCount, 1)) * 100)
-    : undefined;
+  const responseAvg      = responseTimes?.overallAvg ?? null;
+  const responseTarget   = responseTimes?.target ?? 2.0;
+  const responseOnTarget = responseAvg !== null && responseAvg <= responseTarget;
+
+  const rtChartData = (responseTimes?.weeklyTrend ?? []).map((w) => ({
+    week: w.week,
+    avg:  w.avg,
+  }));
 
   const TABS: { key: TabKey; label: string }[] = [
     { key: "overview",   label: "Overview"  },
@@ -308,15 +312,12 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
                 />
                 <StatCard
                   label="Response Rate"
-                  value={responseTimes && responseTimes.totalCount != null
-                    ? `${responseTimes.metCount ?? 0}/${responseTimes.totalCount}`
-                    : "—"
+                  value={responseAvg !== null ? `${responseAvg.toFixed(1)}h avg` : "—"}
+                  sub={`target: ${responseTarget}h`}
+                  pct={responseAvg !== null
+                    ? Math.min(100, Math.round((responseTarget / Math.max(0.1, responseAvg)) * 100))
+                    : undefined
                   }
-                  sub={responseTimes && responseTimes.avgActual != null
-                    ? `avg ${responseTimes.avgActual}h · target ${responseTimes.avgTarget ?? "—"}h`
-                    : "no data yet"
-                  }
-                  pct={Number.isFinite(responsePct) ? responsePct : undefined}
                 />
               </>
             )}
@@ -325,7 +326,20 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
           {weeks.length > 1 && (
             <div className={cx("ppChartCard")}>
               <div className={cx("ppChartLabel")}>Weekly Hours Logged</div>
-              <MiniLineChart data={weeks} field="hoursLogged" />
+              <MiniLineChart data={weeks as unknown as Record<string, unknown>[]} field="hoursLogged" />
+            </div>
+          )}
+
+          {rtChartData.length > 1 && (
+            <div className={cx("ppChartCard")}>
+              <div className={cx("ppChartLabel")}>
+                Response Time
+                <span style={{ color: responseOnTarget ? "var(--green)" : "var(--accent)", fontSize: "11px", marginLeft: "8px" }}>
+                  {responseAvg !== null ? `${responseAvg.toFixed(1)}h avg` : "—"}
+                  {" · "}target: {responseTarget}h
+                </span>
+              </div>
+              <MiniLineChart data={rtChartData} field="avg" />
             </div>
           )}
 
@@ -352,7 +366,7 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
             <>
               <div className={cx("ppChartCard", "mb16")}>
                 <div className={cx("ppChartLabel")}>Tasks Completed per Week</div>
-                <MiniLineChart data={weeks} field="tasksCompleted" />
+                <MiniLineChart data={weeks as unknown as Record<string, unknown>[]} field="tasksCompleted" />
               </div>
               <div className={cx("ppWeekList")}>
                 {[...weeks].reverse().map((w, idx) => {
@@ -396,6 +410,7 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
                 const tone    = CLIENT_TONES[idx % CLIENT_TONES.length];
                 const maxH    = Math.max(...clients.map((cl) => cl.hoursLogged), 1);
                 const fillPct = Math.round((c.hoursLogged / maxH) * 100);
+                const rt = responseTimes?.byClient.find((r) => r.name === c.clientName) ?? null;
                 return (
                   <div key={c.clientId} className={cx("ppClientRow")}>
                     <div className={cx("ppClientName")}>{c.clientName}</div>
@@ -406,6 +421,9 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
                       />
                     </div>
                     <div className={cx("ppClientHours", tone)}>{c.hoursLogged}h</div>
+                    <div className={cx("ppClientHours", "colorMuted2")} style={{ width: "48px" }}>
+                      {rt ? `${rt.avg.toFixed(1)}h` : "—"}
+                    </div>
                   </div>
                 );
               })}

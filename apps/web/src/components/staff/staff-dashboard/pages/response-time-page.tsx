@@ -4,12 +4,11 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import {
   getStaffResponseTimes,
-  type StaffResponseTimeRecord,
   type StaffResponseTimes,
 } from "../../../../lib/api/staff/performance";
 import type { AuthSession } from "../../../../lib/auth/session";
@@ -22,7 +21,7 @@ type ResponseTimePageProps = {
   session:  AuthSession | null;
 };
 
-type TabKey = "overview" | "by_client" | "log";
+type TabKey = "overview" | "by_client" | "trend";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -33,24 +32,16 @@ function formatHours(h: number | null): string {
   return `${h.toFixed(1)}h`;
 }
 
-function fmtDate(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat("en-ZA", {
-      day: "numeric", month: "short", year: "numeric",
-    }).format(new Date(iso));
-  } catch { return iso; }
+function onTargetCls(avg: number, target: number): string {
+  if (avg <= target)          return "colorGreen";
+  if (avg <= target * 1.5)    return "colorAmber";
+  return "colorRed";
 }
 
-function statusCls(s: string): string {
-  if (s === "MET")    return "rtStatusMet";
-  if (s === "MISSED") return "rtStatusMissed";
-  return "rtStatusPending";
-}
-
-function statusLabel(s: string): string {
-  if (s === "MET")    return "Met";
-  if (s === "MISSED") return "Missed";
-  return "Pending";
+function onTargetFillCls(avg: number, target: number): string {
+  if (avg <= target)          return "progressFillGreen";
+  if (avg <= target * 1.5)    return "progressFillAmber";
+  return "progressFillRed";
 }
 
 function slaRateCls(rate: number): string {
@@ -88,27 +79,24 @@ export function ResponseTimePage({ isActive, session }: ResponseTimePageProps) {
     });
 
     return () => { cancelled = true; };
-  }, [session?.accessToken]);
+  }, [session?.accessToken, isActive]);
 
   // ── Derived ──────────────────────────────────────────────────────────────
-  const slaRate = (data && data.totalCount > 0)
-    ? Math.round((data.metCount / data.totalCount) * 100)
-    : 0;
+  const overallAvg   = data?.overallAvg ?? null;
+  const target       = data?.target ?? 2.0;
+  const weeklyTrend  = data?.weeklyTrend ?? [];
+  const byClient     = data?.byClient ?? [];
 
-  const byClient = useMemo(() => {
-    if (!data) return [];
-    const map = new Map<string, StaffResponseTimeRecord[]>();
-    for (const r of data.records) {
-      if (!map.has(r.clientName)) map.set(r.clientName, []);
-      map.get(r.clientName)!.push(r);
-    }
-    return Array.from(map.entries()).map(([name, records]) => ({ name, records }));
-  }, [data]);
+  // Compute a "compliance rate" from byClient: % of clients on target
+  const onTargetCount  = byClient.filter((c) => c.avg <= target).length;
+  const complianceRate = byClient.length > 0
+    ? Math.round((onTargetCount / byClient.length) * 100)
+    : 0;
 
   const TABS: { key: TabKey; label: string }[] = [
     { key: "overview",  label: "Overview"  },
     { key: "by_client", label: "By Client" },
-    { key: "log",       label: "SLA Log"   },
+    { key: "trend",     label: "Weekly Trend" },
   ];
 
   if (loading) {
@@ -150,36 +138,40 @@ export function ResponseTimePage({ isActive, session }: ResponseTimePageProps) {
           <div className={cx("staffKpiStrip")}>
             <div className={cx("staffKpiCell")}>
               <div className={cx("staffKpiLabel")}>Avg Response</div>
-              <div className={cx("staffKpiValue", "colorAccent")}>{formatHours(data?.avgActual ?? null)}</div>
-              <div className={cx("staffKpiSub")}>actual average</div>
+              <div className={cx("staffKpiValue", overallAvg !== null ? onTargetCls(overallAvg, target) : "")}>
+                {formatHours(overallAvg)}
+              </div>
+              <div className={cx("staffKpiSub")}>overall average</div>
             </div>
             <div className={cx("staffKpiCell")}>
               <div className={cx("staffKpiLabel")}>SLA Target</div>
-              <div className={cx("staffKpiValue")}>{formatHours(data?.avgTarget ?? null)}</div>
-              <div className={cx("staffKpiSub")}>target average</div>
+              <div className={cx("staffKpiValue")}>{formatHours(target)}</div>
+              <div className={cx("staffKpiSub")}>target hours</div>
             </div>
             <div className={cx("staffKpiCell")}>
-              <div className={cx("staffKpiLabel")}>SLA Met</div>
-              <div className={cx("staffKpiValue", slaRateCls(slaRate))}>{slaRate}%</div>
-              <div className={cx("staffKpiSub")}>{data?.metCount ?? 0} of {data?.totalCount ?? 0} records</div>
+              <div className={cx("staffKpiLabel")}>On Target</div>
+              <div className={cx("staffKpiValue", slaRateCls(complianceRate))}>{complianceRate}%</div>
+              <div className={cx("staffKpiSub")}>{onTargetCount} of {byClient.length} clients</div>
             </div>
             <div className={cx("staffKpiCell")}>
-              <div className={cx("staffKpiLabel")}>Records</div>
-              <div className={cx("staffKpiValue")}>{data?.totalCount ?? 0}</div>
-              <div className={cx("staffKpiSub")}>this period</div>
+              <div className={cx("staffKpiLabel")}>Clients</div>
+              <div className={cx("staffKpiValue")}>{byClient.length}</div>
+              <div className={cx("staffKpiSub")}>with data</div>
             </div>
           </div>
 
-          {!loading && data && (
+          {!loading && data && overallAvg !== null && (
             <div className={cx("rtProgressSection")}>
               <div className={cx("rtProgressHeader")}>
-                <span className={cx("rtProgressLabel")}>SLA Compliance Rate</span>
-                <span className={cx("rtProgressPct", slaRateCls(slaRate))}>{slaRate}%</span>
+                <span className={cx("rtProgressLabel")}>Response vs Target</span>
+                <span className={cx("rtProgressPct", onTargetCls(overallAvg, target))}>
+                  {overallAvg.toFixed(1)}h / {target}h target
+                </span>
               </div>
               <div className={cx("progressTrack")}>
                 <div
-                  className={cx("progressFill", slaFillCls(slaRate))}
-                  style={{ '--pct': `${slaRate}%` } as React.CSSProperties}
+                  className={cx("progressFill", onTargetFillCls(overallAvg, target))}
+                  style={{ '--pct': `${Math.min(100, Math.round((target / Math.max(0.1, overallAvg)) * 100))}%` } as React.CSSProperties}
                 />
               </div>
             </div>
@@ -204,26 +196,23 @@ export function ResponseTimePage({ isActive, session }: ResponseTimePageProps) {
             <div className={cx("emptyState")}>
               <div className={cx("emptyStateIcon")}><Ic n="bar-chart-2" sz={22} c="var(--muted2)" /></div>
               <div className={cx("emptyStateTitle")}>No client data</div>
-              <div className={cx("emptyStateSub")}>SLA records per client will appear here.</div>
+              <div className={cx("emptyStateSub")}>Response time data per client will appear here.</div>
             </div>
           ) : (
-            byClient.map(({ name, records }) => {
-              const met    = records.filter((r) => r.status === "MET").length;
-              const rate   = records.length > 0 ? Math.round((met / records.length) * 100) : 0;
-              const sumAct = records.reduce((s, r) => s + (r.actualHours ?? 0), 0);
-              const avgAct = records.length > 0 ? sumAct / records.length : 0;
+            byClient.map((c) => {
+              const rate = Math.min(100, Math.round((target / Math.max(0.1, c.avg)) * 100));
               return (
-                <div key={name} className={cx("rtClientCard")}>
+                <div key={c.clientId} className={cx("rtClientCard")}>
                   <div className={cx("rtClientCardHead")}>
-                    <span className={cx("rtClientName")}>{name}</span>
-                    <span className={cx("rtSlaRate", slaRateCls(rate))}>{rate}% SLA</span>
+                    <span className={cx("rtClientName")}>{c.name}</span>
+                    <span className={cx("rtSlaRate", onTargetCls(c.avg, target))}>
+                      {c.avg.toFixed(1)}h avg
+                    </span>
                   </div>
                   <div className={cx("rtClientMeta")}>
-                    <span>{records.length} record{records.length !== 1 ? "s" : ""}</span>
+                    <span>avg {formatHours(c.avg)}</span>
                     <span className={cx("rtMetSep")}>·</span>
-                    <span>avg {formatHours(avgAct)}</span>
-                    <span className={cx("rtMetSep")}>·</span>
-                    <span>{met} met</span>
+                    <span>target: {formatHours(target)}</span>
                   </div>
                   <div className={cx("progressTrack", "mt8")}>
                     <div className={cx("progressFill", slaFillCls(rate))} style={{ '--pct': `${rate}%` } as React.CSSProperties} />
@@ -235,42 +224,44 @@ export function ResponseTimePage({ isActive, session }: ResponseTimePageProps) {
         </div>
       )}
 
-      {/* ── SLA Log tab ──────────────────────────────────────────────────── */}
-      {tab === "log" && (
+      {/* ── Weekly Trend tab ─────────────────────────────────────────────── */}
+      {tab === "trend" && (
         <div className={cx("rtSection")}>
           {loading ? (
             <div className={cx("colorMuted2", "text12", "mt16")}>Loading…</div>
-          ) : !data || data.records.length === 0 ? (
+          ) : weeklyTrend.length === 0 ? (
             <div className={cx("emptyState")}>
-              <div className={cx("emptyStateIcon")}><Ic n="file-text" sz={22} c="var(--muted2)" /></div>
-              <div className={cx("emptyStateTitle")}>No SLA records</div>
-              <div className={cx("emptyStateSub")}>Records appear once response times are logged.</div>
+              <div className={cx("emptyStateIcon")}><Ic n="trending-up" sz={22} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateTitle")}>No trend data</div>
+              <div className={cx("emptyStateSub")}>Weekly response time trend will appear here.</div>
             </div>
           ) : (
             <div className={cx("rtLogList")}>
-              {data.records.map((r, idx) => (
-                <div
-                  key={r.id}
-                  className={cx("rtLogRow", idx === data.records.length - 1 && "rtLogRowLast")}
-                >
-                  <div className={cx("rtLogLeft")}>
-                    <span className={cx("rtStatusBadge", statusCls(r.status))}>{statusLabel(r.status)}</span>
-                    <div>
-                      <div className={cx("rtLogClient")}>{r.clientName}</div>
-                      <div className={cx("rtLogMetric")}>{r.metric}</div>
+              {[...weeklyTrend].reverse().map((w, idx) => {
+                const rate = Math.min(100, Math.round((target / Math.max(0.1, w.avg)) * 100));
+                return (
+                  <div
+                    key={w.week}
+                    className={cx("rtLogRow", idx === weeklyTrend.length - 1 && "rtLogRowLast")}
+                  >
+                    <div className={cx("rtLogLeft")}>
+                      <span className={cx("rtStatusBadge", w.avg <= target ? "rtStatusMet" : "rtStatusMissed")}>
+                        {w.avg <= target ? "On target" : "Over"}
+                      </span>
+                      <div>
+                        <div className={cx("rtLogClient")}>{w.week}</div>
+                      </div>
+                    </div>
+                    <div className={cx("rtLogRight")}>
+                      <div className={cx("rtLogTimes")}>
+                        <span className={cx("rtLogActual", onTargetCls(w.avg, target))}>{formatHours(w.avg)}</span>
+                        <span className={cx("rtLogOf")}>/ {formatHours(target)}</span>
+                      </div>
+                      <div className={cx("rtLogPeriod")}>{rate}% on target</div>
                     </div>
                   </div>
-                  <div className={cx("rtLogRight")}>
-                    <div className={cx("rtLogTimes")}>
-                      <span className={cx("rtLogActual")}>{formatHours(r.actualHours)}</span>
-                      <span className={cx("rtLogOf")}>/ {formatHours(r.targetHours)}</span>
-                    </div>
-                    <div className={cx("rtLogPeriod")}>
-                      {fmtDate(r.periodStart)} – {fmtDate(r.periodEnd)}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
