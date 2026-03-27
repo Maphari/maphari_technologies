@@ -188,7 +188,12 @@
 
 .anlBarTrack { flex: 1; height: 5px; background: var(--s3); border-radius: 999px; overflow: hidden; }
 
-.anlBarFill { height: 100%; background: var(--accent); border-radius: 999px; }
+.anlBarFill          { height: 100%; width: var(--pct, 0%); background: var(--accent); border-radius: 999px; }
+.anlBarFillGreen     { background: var(--green); }
+.anlBarFillAmber     { background: var(--amber); }
+
+.anlChangeUp   { color: var(--green); }
+.anlChangeDown { color: var(--red); }
 
 .anlBarValue { font-size: 11px; font-weight: 700; font-family: var(--font-syne); color: var(--text); min-width: 32px; text-align: right; }
 
