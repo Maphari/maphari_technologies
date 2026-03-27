@@ -286,19 +286,21 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks, onG
               <div className={cx("staffEmptyNote")}>Completed or archived projects are not shown here.</div>
             </div>
           ) : (
-            sorted.map((d) => {
-              const isOpen = expandedId === d.projectId;
-              return (
-                <div
-                  key={d.projectId}
-                  className={cx("dsvExpandRow", accentCls(d.status), isOpen && "dsvExpandRowOpen")}
-                >
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              {sorted.map((d) => {
+                const isOpen = expandedId === d.projectId;
+                return (
+                  <div
+                    key={d.projectId}
+                    className={cx("dsvExpandRow", accentCls(d.status), isOpen && "dsvExpandRowOpen")}
+                  >
                   {/* ── Collapsed header ── */}
                   <div
                     className={cx("dsvExpandHeader")}
                     role="button"
                     tabIndex={0}
                     aria-expanded={isOpen}
+                    aria-label={`Toggle ${d.project} details`}
                     onClick={() => toggleExpand(d.projectId)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpand(d.projectId); }
@@ -312,7 +314,7 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks, onG
                     <div className={cx("dsvExpandMeta")}>
                       <span className={cx("staffChip", statusChipCls(d.status))}>{d.status}</span>
                       <span className={cx("dsvReadinessPct", readinessPctCls(d.readiness))}>{d.readiness}%</span>
-                      <svg className={cx("dsvChevron", isOpen && "dsvChevronOpen")} width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
+                      <svg className={cx("dsvChevron", isOpen && "dsvChevronOpen")} width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                         <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </div>
@@ -345,7 +347,7 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks, onG
                           </div>
                           <div className={cx("dsvExpandStat")}>
                             <div className={cx("dsvExpandStatLabel")}>In Review</div>
-                            <div className={cx("dsvExpandStatValue", d.blockers > 0 ? "colorAmber" : "")}>{d.blockers}</div>
+                            <div className={cx("dsvExpandStatValue", d.blockers > 0 && "colorAmber")}>{d.blockers}</div>
                           </div>
                         </div>
                       </div>
@@ -363,9 +365,10 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks, onG
                       </div>
                     </div>
                   )}
-                </div>
-              );
-            })
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
