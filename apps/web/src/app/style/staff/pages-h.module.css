@@ -2522,7 +2522,7 @@
   font-family: var(--font-dm-mono), monospace;
 }
 
-.dlFilterPills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.dlFilterPills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .dlFilterPill {
   padding: 4px 10px;
   border-radius: 99px;
@@ -2587,7 +2587,7 @@
 
 .dlEstimateGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-.dlControlRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.dlControlRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; margin-bottom: 12px; }
 
 .dlTextarea {
   width: 100%;
