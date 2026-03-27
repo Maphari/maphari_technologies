@@ -1542,12 +1542,12 @@ export function MaphariStaffDashboard() {
               files={files}
               onMilestoneAttachment={handleMilestoneAttachment}
               onMilestoneStatusUpdate={(projectId, milestoneId, status) =>
-                void handleMilestoneStatusUpdate(projectId, milestoneId, status)
+                handleMilestoneStatusUpdate(projectId, milestoneId, status)
               }
               changeRequests={changeRequests}
               estimateDrafts={estimateDrafts}
               onEstimateDraftChange={handleEstimateDraftChange}
-              onEstimateChangeRequest={(changeRequestId) => void handleEstimateChangeRequest(changeRequestId)}
+              onEstimateChangeRequest={(changeRequestId) => handleEstimateChangeRequest(changeRequestId)}
               handoffExports={handoffExports}
               generatingHandoffExport={generatingHandoffExport}
               onGenerateHandoffExport={(format) => void handleGenerateHandoffExport(format)}
