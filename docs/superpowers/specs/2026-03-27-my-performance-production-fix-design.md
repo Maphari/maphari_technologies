@@ -79,7 +79,7 @@ const completedTasks = await prisma.projectTask.findMany({
 });
 ```
 
-Group by ISO week string (same `toISOWeek()` helper already used in the route) to produce `weekTaskCounts: Map<string, number>`.
+Group by week label using the existing `weekLabel(d: Date): string` helper already defined in the route (returns `W{weekNum}` format, e.g. `"W13"`). This produces `weekTaskCounts: Map<string, number>`.
 
 **3b. Fix client breakdown field names**
 
@@ -105,16 +105,18 @@ Remove `targets` and `tasksByType` from the return object — not used by the fr
 
 **File:** `services/core/src/routes/staff-analytics.ts`
 
-Change:
+The handler does not currently extract `userId`. Add before the `cacheKey` line:
 ```typescript
-const cacheKey = `staff:response-times:all`;
+const scope  = readScopeHeaders(request);
+const userId = scope.userId;
 ```
-To:
+
+Then change the cache key:
 ```typescript
 const cacheKey = `staff:response-times:${userId}`;
 ```
 
-No other changes to this route.
+No other changes to this route. (Note: the underlying SLA query is not per-user filtered — this fix prevents cross-user cache pollution but does not scope the data itself. That is a separate concern out of scope for this spec.)
 
 ---
 
@@ -126,14 +128,14 @@ Replace the broken `StaffResponseTimes` interface:
 
 ```typescript
 export interface StaffResponseTimeWeek {
-  week:   string;
-  avgHrs: number;
+  week: string;
+  avg:  number;   // matches backend field name
 }
 
 export interface StaffResponseTimeClient {
   clientId: string;
   name:     string;
-  avgHrs:   number;
+  avg:      number;  // matches backend field name
 }
 
 export interface StaffResponseTimes {
@@ -173,29 +175,48 @@ The Response Rate KPI card renders:
 - Progress bar fill: `Math.min(100, Math.round((responseTarget / Math.max(0.1, responseAvg ?? responseTarget)) * 100))`  (100% = on target, lower = over target)
 - Color: `responseOnTarget ? --green : --red`
 
+Also remove the existing sub-label that reads `responseTimes.avgActual` / `responseTimes.avgTarget` (component line ~316) — replace it entirely with the new `target: ${responseTarget}h` sub-label above. After removing `avgActual`, `avgTarget`, `metCount`, `totalCount`, and `records` from `StaffResponseTimes`, any remaining references to those fields in the component must be deleted to keep TypeScript passing.
+
 **6b. Add response time sparkline to Overview tab**
 
-Reuse the existing `MiniLineChart` component. Map `weeklyTrend` data:
+The existing `MiniLineChart` is typed to `data: StaffPerformanceWeek[]` and `field: "hoursLogged" | "tasksCompleted"`. Widen its signature to accept generic numeric data:
+
+```typescript
+// Before
+function MiniLineChart({ data, field }: {
+  data: StaffPerformanceWeek[];
+  field: "hoursLogged" | "tasksCompleted";
+})
+
+// After — generalize field to any string key
+function MiniLineChart({ data, field }: {
+  data: Record<string, unknown>[];
+  field: string;
+})
+```
+
+This is a backward-compatible change — existing callers with `"hoursLogged"` and `"tasksCompleted"` continue to work.
+
+Map `weeklyTrend` data and render a third chart card:
 ```typescript
 const rtChartData = (responseTimes?.weeklyTrend ?? []).map((w) => ({
   week: w.week,
-  value: w.avgHrs,
+  avg:  w.avg,
 }));
 ```
 
-Render a third mini chart card in the Overview alongside the hours and tasks charts:
 - Label: "Response Time"
 - Value: `responseAvg !== null ? `${responseAvg.toFixed(1)}h` : "—"`
 - Sub-label: `target: ${responseTarget}h`
 - Color: `responseOnTarget ? --green : --accent`
-- `MiniLineChart` receives `data={rtChartData}` with `field="value"`
+- `MiniLineChart` receives `data={rtChartData}` with `field="avg"`
 
 **6c. Wire `byClient` into Clients tab**
 
 The Clients tab already maps over `perf.clientBreakdown`. For each client row, look up the matching entry from `responseTimes?.byClient` by `clientName === rt.name`:
 
 Add a second column to each client row showing:
-- `rt?.avgHrs.toFixed(1)h` in `--muted` if found
+- `rt?.avg.toFixed(1)h` in `--muted` if found
 - `"—"` if no match
 - Column header: "Avg Response"
 
@@ -220,5 +241,5 @@ No new files. No API endpoint additions. No prop changes on the component.
 - No changes to `StaffPerformance`, `StaffPerformanceWeek`, `StaffPerformanceClient`, or `StaffPerformanceMilestone` types — field names are fixed in the backend to match the existing frontend types
 - `completedAt` is optional — existing tasks without it are treated as not completed
 - Task counts are scoped to projects the staff user has logged time on (proxy for "assigned to"), not by `assigneeName` string matching
-- No new UI components — reuse `MiniLineChart` for the response time sparkline
+- No new UI components — reuse `MiniLineChart` for the response time sparkline; widening its `data`/`field` type signature is permitted and required
 - TypeScript must pass after all changes: `pnpm --filter @maphari/web exec tsc --noEmit`
