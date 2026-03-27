@@ -1,18 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
 import { StaffEmptyState, EmptyIcons } from "../empty-state";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { getStaffAllComms } from "../../../../lib/api/staff/clients";
 
-// ─── Type icons (SVG) ────────────────────────────────────────────────────────
-
+// ── SVG icons ─────────────────────────────────────────────────────
 function IcoMessage() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M14 2H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3l3 3 3-3h3a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"
-        stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+      <path d="M14 2H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3l3 3 3-3h3a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -35,22 +33,39 @@ function IcoInvoice() {
 function IcoCall() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M5.5 2H3.5A1 1 0 0 0 2.5 3c0 6.075 4.925 11 11 11a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1l-2.5-.5a1 1 0 0 0-1 .4l-.8 1C7.9 9.6 6.4 8.1 5.6 6.8l1-.8a1 1 0 0 0 .4-1L6.5 3a1 1 0 0 0-1-1Z"
-        stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+      <path d="M5.5 2H3.5A1 1 0 0 0 2.5 3c0 6.075 4.925 11 11 11a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1l-2.5-.5a1 1 0 0 0-1 .4l-.8 1C7.9 9.6 6.4 8.1 5.6 6.8l1-.8a1 1 0 0 0 .4-1L6.5 3a1 1 0 0 0-1-1Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
     </svg>
   );
 }
 function IcoFile() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M9 1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6L9 1Z"
-        stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+      <path d="M9 1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6L9 1Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
       <path d="M9 1v5h5" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
     </svg>
   );
 }
 
-const TYPE_ICONS: Record<string, React.ReactNode> = {
+// ── Types ──────────────────────────────────────────────────────────
+type ViewMode  = "client" | "date";
+type EventType = "message" | "milestone" | "invoice" | "call" | "file";
+type SortBy    = "recent" | "oldest" | "client";
+
+type TimelineEvent = {
+  id:         string;
+  clientId:   string;
+  clientName: string;
+  type:       EventType;
+  direction:  string; // kept as raw string — only used for direction chip logic
+  title:      string;
+  excerpt:    string;
+  occurredAt: string;
+  dateLabel:  string;
+  timeLabel:  string;
+};
+
+// ── Config ─────────────────────────────────────────────────────────
+const TYPE_ICONS: Record<EventType, React.ReactNode> = {
   message:   <IcoMessage />,
   milestone: <IcoMilestone />,
   invoice:   <IcoInvoice />,
@@ -58,290 +73,214 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
   file:      <IcoFile />,
 };
 
-type EventType = "message" | "milestone" | "invoice" | "call" | "file";
-type Direction = "outbound" | "inbound" | "both";
-
-type ClientRow = {
-  id: string;
-  name: string;
-  avatar: string;
+const typeConfig: Record<EventType, { label: string; iconClass: string; chipClass: string }> = {
+  message:   { label: "Message",   iconClass: "commsTypeMessage",   chipClass: "staffChipAccent" },
+  milestone: { label: "Milestone", iconClass: "commsTypeMilestone", chipClass: "staffChipGreen" },
+  invoice:   { label: "Invoice",   iconClass: "commsTypeInvoice",   chipClass: "staffChipAmber" },
+  call:      { label: "Call",      iconClass: "commsTypeCall",      chipClass: "staffChipPurple" },
+  file:      { label: "File",      iconClass: "commsTypeFile",      chipClass: "staffChip" },
 };
 
-type TimelineEvent = {
-  id: string;
-  clientId: string;
-  clientName: string;
-  type: EventType;
-  direction: Direction;
-  title: string;
-  excerpt: string;
-  date: string;
-  time: string;
+const TYPE_PILLS: { key: EventType | "all"; label: string }[] = [
+  { key: "all",       label: "All" },
+  { key: "message",   label: "Messages" },
+  { key: "call",      label: "Calls" },
+  { key: "milestone", label: "Milestones" },
+  { key: "invoice",   label: "Invoices" },
+  { key: "file",      label: "Files" },
+];
+
+const SORT_LABELS: Record<SortBy, string> = {
+  recent: "Recent ↓",
+  oldest: "Oldest ↑",
+  client: "Client A–Z",
 };
 
-const typeConfig: Record<EventType, { icon: string; label: string; iconClass: string; badgeClass: string }> = {
-  message: { icon: "✉", label: "Message", iconClass: "commsTypeMessage", badgeClass: "commsTypeBadgeMessage" },
-  milestone: { icon: "◎", label: "Milestone", iconClass: "commsTypeMilestone", badgeClass: "commsTypeBadgeMilestone" },
-  invoice: { icon: "₹", label: "Invoice", iconClass: "commsTypeInvoice", badgeClass: "commsTypeBadgeInvoice" },
-  call: { icon: "◌", label: "Call", iconClass: "commsTypeCall", badgeClass: "commsTypeBadgeCall" },
-  file: { icon: "⊡", label: "File", iconClass: "commsTypeFile", badgeClass: "commsTypeBadgeFile" }
-};
+const AVATAR_TONES = [
+  "clientAvatarToneAccent",
+  "clientAvatarToneAmber",
+  "clientAvatarTonePurple",
+  "clientAvatarToneGreen",
+] as const;
 
-const directionConfig: Record<Direction, { label: string; toneClass: string }> = {
-  outbound: { label: "Sent", toneClass: "commsDirectionOutbound" },
-  inbound: { label: "Received", toneClass: "commsDirectionInbound" },
-  both: { label: "Joint", toneClass: "commsDirectionBoth" }
-};
+// ── Helpers ────────────────────────────────────────────────────────
+function normalizeType(value: string): EventType {
+  if (
+    value === "message" || value === "milestone" || value === "invoice" ||
+    value === "call"    || value === "file"
+  ) return value;
+  return "message";
+}
 
-export function CommunicationHistoryPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
-  const [allEvents, setAllEvents] = useState<TimelineEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function normalizeDirection(value: string): string {
+  if (value === "inbound" || value === "outbound" || value === "both") return value;
+  return "outbound";
+}
 
-  const [selectedClient, setSelectedClient] = useState<"all" | string>("all");
-  const [filterType, setFilterType] = useState<"all" | EventType>("all");
-  const [filterDir, setFilterDir] = useState<"all" | "inbound" | "outbound">("all");
-  const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
+function laneAvatarTone(clientId: string): string {
+  let h = 0;
+  for (let i = 0; i < clientId.length; i++) h = (h * 31 + clientId.charCodeAt(i)) >>> 0;
+  return AVATAR_TONES[h % AVATAR_TONES.length];
+}
 
-  useEffect(() => {
+function clientInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function directionChipClass(direction: string): string | null {
+  if (direction === "inbound") return "staffChipGreen";
+  if (direction === "both")    return "staffChipPurple";
+  return null; // outbound: no chip
+}
+
+// ── Component ──────────────────────────────────────────────────────
+export function CommunicationHistoryPage({
+  isActive,
+  session,
+}: {
+  isActive: boolean;
+  session: AuthSession | null;
+}) {
+  const [allEvents, setAllEvents]           = useState<TimelineEvent[]>([]);
+  const [loading, setLoading]               = useState(true);
+  const [refreshing, setRefreshing]         = useState(false);
+  const [error, setError]                   = useState<string | null>(null);
+  const [viewMode, setViewMode]             = useState<ViewMode>("client");
+  const [activeType, setActiveType]         = useState<EventType | "all">("all");
+  const [search, setSearch]                 = useState("");
+  const [sortBy, setSortBy]                 = useState<SortBy>("recent");
+  const [collapsedClients, setCollapsedClients] = useState<Set<string>>(new Set());
+  const [expandedId, setExpandedId]         = useState<string | null>(null);
+
+  const loadComms = useCallback(async (background: boolean) => {
     if (!session) { setLoading(false); return; }
-    setLoading(true);
-    void getStaffAllComms(session).then((r) => {
-      if (r.data) {
-        setAllEvents(r.data.map((log): TimelineEvent => {
-          const d = new Date(log.occurredAt);
-          return {
-            id: log.id,
-            clientId: log.clientId,
-            clientName: log.clientName,
-            type: (["message", "milestone", "invoice", "call", "file"].includes(log.type) ? log.type : "message") as EventType,
-            direction: (log.direction === "inbound" || log.direction === "outbound" ? log.direction : "outbound") as Direction,
-            title: log.subject,
-            excerpt: log.actionLabel ?? "",
-            date: d.toLocaleDateString("en-ZA", { day: "numeric", month: "short" }),
-            time: d.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" }),
-          };
-        }));
+    if (background) setRefreshing(true);
+    else setLoading(true);
+    setError(null);
+    try {
+      const r = await getStaffAllComms(session);
+      if (r.error) {
+        setError(r.error.message ?? "Failed to load communication history.");
+        setAllEvents([]);
+        return;
       }
-    }).catch((err: unknown) => {
-      setError((err as Error)?.message ?? "Failed to load");
-    }).finally(() => setLoading(false));
+      const mapped = (r.data ?? []).map((log): TimelineEvent => {
+        const type      = normalizeType(log.type);
+        const direction = normalizeDirection(log.direction);
+        const dt        = new Date(log.occurredAt);
+        const fallbackExcerpt = `${direction === "inbound" ? "Received" : direction === "both" ? "Joint" : "Sent"} ${typeConfig[type].label.toLowerCase()}${log.fromName ? ` from ${log.fromName}` : ""}`;
+        return {
+          id:         log.id,
+          clientId:   log.clientId,
+          clientName: log.clientName,
+          type,
+          direction,
+          title:      (log.subject ?? "").trim()      || `${typeConfig[type].label} event`,
+          excerpt:    (log.actionLabel ?? "").trim()   || fallbackExcerpt,
+          occurredAt: dt.toISOString(),
+          dateLabel:  dt.toLocaleDateString(undefined, { year: "numeric", day: "numeric", month: "short" }),
+          timeLabel:  dt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+        };
+      });
+      setAllEvents(mapped);
+    } catch (err: unknown) {
+      setError((err as Error)?.message ?? "Failed to load communication history.");
+      setAllEvents([]);
+    } finally {
+      if (background) setRefreshing(false);
+      else setLoading(false);
+    }
   }, [session]);
 
-  const clients = useMemo((): ClientRow[] => {
-    const seen = new Map<string, ClientRow>();
-    for (const ev of allEvents) {
-      if (!seen.has(ev.clientId)) {
-        const initials = ev.clientName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-        seen.set(ev.clientId, { id: ev.clientId, name: ev.clientName, avatar: initials });
+  useEffect(() => {
+    if (!isActive) return;
+    void loadComms(false);
+  }, [isActive, loadComms]);
+
+  // ── Derived data ──────────────────────────────────────────────────
+  const filteredEvents = useMemo(() => {
+    return allEvents
+      .filter((e) => activeType === "all" || e.type === activeType)
+      .filter((e) => {
+        if (!search.trim()) return true;
+        const q = search.toLowerCase();
+        return (
+          e.title.toLowerCase().includes(q) ||
+          e.excerpt.toLowerCase().includes(q) ||
+          e.clientName.toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => {
+        if (sortBy === "client") return a.clientName.localeCompare(b.clientName);
+        const delta = new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime();
+        return sortBy === "recent" ? -delta : delta;
+      });
+  }, [allEvents, activeType, search, sortBy]);
+
+  const clientGroups = useMemo(() => {
+    const groups = new Map<string, { clientName: string; maxOccurredAt: number; events: TimelineEvent[] }>();
+    filteredEvents.forEach((e) => {
+      const existing = groups.get(e.clientId);
+      const ts = new Date(e.occurredAt).getTime();
+      if (existing) {
+        existing.events.push(e);
+        if (ts > existing.maxOccurredAt) existing.maxOccurredAt = ts;
+      } else {
+        groups.set(e.clientId, { clientName: e.clientName, maxOccurredAt: ts, events: [e] });
       }
-    }
-    return Array.from(seen.values());
-  }, [allEvents]);
+    });
+    return Array.from(groups.entries())
+      .sort(([, a], [, b]) => b.maxOccurredAt - a.maxOccurredAt)
+      .map(([clientId, { clientName, events }]) => ({ clientId, clientName, events }));
+  }, [filteredEvents]);
 
-  const events = useMemo(
-    () =>
-      allEvents
-        .filter((event) => (selectedClient === "all" ? true : event.clientId === selectedClient))
-        .filter((event) => (filterType === "all" ? true : event.type === filterType))
-        .filter((event) => (filterDir === "all" ? true : event.direction === filterDir))
-        .filter(
-          (event) =>
-            !search
-            || event.title.toLowerCase().includes(search.toLowerCase())
-            || event.excerpt.toLowerCase().includes(search.toLowerCase())
-        )
-        .sort((a, b) => b.id.localeCompare(a.id)),
-    [allEvents, filterDir, filterType, search, selectedClient]
-  );
+  const dateGroups = useMemo(() => {
+    const groups = new Map<string, { maxOccurredAt: number; events: TimelineEvent[] }>();
+    filteredEvents.forEach((e) => {
+      const ts = new Date(e.occurredAt).getTime();
+      const existing = groups.get(e.dateLabel);
+      if (existing) {
+        existing.events.push(e);
+        if (ts > existing.maxOccurredAt) existing.maxOccurredAt = ts;
+      } else {
+        groups.set(e.dateLabel, { maxOccurredAt: ts, events: [e] });
+      }
+    });
+    // Always newest date group first, regardless of sortBy
+    return Array.from(groups.entries())
+      .sort(([, a], [, b]) => b.maxOccurredAt - a.maxOccurredAt)
+      .map(([dateLabel, { events }]) => ({ dateLabel, events }));
+  }, [filteredEvents]);
 
-  const groupedByDate = useMemo(() => {
-    return events.reduce<Record<string, TimelineEvent[]>>((accumulator, event) => {
-      if (!accumulator[event.date]) accumulator[event.date] = [];
-      accumulator[event.date].push(event);
-      return accumulator;
-    }, {});
-  }, [events]);
+  // Handlers
+  function toggleCollapse(clientId: string) {
+    setCollapsedClients((prev) => {
+      const next = new Set(prev);
+      if (next.has(clientId)) next.delete(clientId);
+      else next.add(clientId);
+      return next;
+    });
+  }
 
-  if (loading) {
-    return (
-      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
-        <div className={cx("pageHeaderBar", "borderB", "commsHeaderBar")}>
-          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
-          <h1 className={cx("pageTitleText")}>Communication History</h1>
-        </div>
-        <div className={cx("commsContent")}>
-          <StaffEmptyState icon={EmptyIcons.notes} title="Loading..." sub="Fetching communication history." />
-        </div>
-      </section>
+  function toggleExpanded(id: string) {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }
+
+  function handleTypeClick(key: EventType | "all") {
+    setActiveType((prev) => (prev === key && key !== "all" ? "all" : key));
+  }
+
+  function cycleSortBy() {
+    setSortBy((prev) =>
+      prev === "recent" ? "oldest" : prev === "oldest" ? "client" : "recent"
     );
   }
 
-  if (error) {
-    return (
-      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
-        <div className={cx("pageHeaderBar", "borderB", "commsHeaderBar")}>
-          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
-          <h1 className={cx("pageTitleText")}>Communication History</h1>
-        </div>
-        <div className={cx("commsContent")}>
-          <StaffEmptyState icon={EmptyIcons.notes} title="Failed to load" sub={error} />
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
-      <div className={cx("pageHeaderBar", "borderB", "commsHeaderBar")}>
-        <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
-        <h1 className={cx("pageTitleText")}>Communication History</h1>
-        <p className={cx("pageSubtitleText", "mb16")}>Full interaction timeline across all clients</p>
-
-        {/* Stats strip */}
-        <div className={cx("staffKpiStrip", "mb16")}>
-          {[
-            { label: "Total events", value: allEvents.length, cls: "" },
-            { label: "Clients",      value: clients.length,   cls: "" },
-            { label: "Types",        value: new Set(allEvents.map(e => e.type)).size, cls: "" },
-          ].map((stat) => (
-            <div key={stat.label} className={cx("staffKpiCell")}>
-              <div className={cx("staffKpiLabel")}>{stat.label}</div>
-              <div className={cx("staffKpiValue", stat.cls)}>{stat.value}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Filter row */}
-        <div className={cx("staffSectionHdFilter")}>
-          <select
-            className={cx("staffFilterInput")}
-            aria-label="Filter by client"
-            value={selectedClient === "all" ? "all" : selectedClient}
-            onChange={(e) => setSelectedClient(e.target.value === "all" ? "all" : e.target.value)}
-          >
-            <option value="all">All clients</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.name}
-              </option>
-            ))}
-          </select>
-
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search events…"
-            className={cx("staffFilterInput")}
-          />
-
-          <select
-            className={cx("staffFilterInput")}
-            aria-label="Filter by event type"
-            value={filterType}
-            onChange={(event) => setFilterType(event.target.value as "all" | EventType)}
-          >
-            <option value="all">All types</option>
-            <option value="message">Message</option>
-            <option value="milestone">Milestone</option>
-            <option value="invoice">Invoice</option>
-            <option value="call">Call</option>
-            <option value="file">File</option>
-          </select>
-
-          <select
-            className={cx("staffFilterInput")}
-            aria-label="Filter by direction"
-            value={filterDir}
-            onChange={(event) => setFilterDir(event.target.value as "all" | "inbound" | "outbound")}
-          >
-            <option value="all">Both directions</option>
-            <option value="inbound">Inbound</option>
-            <option value="outbound">Outbound</option>
-          </select>
-
-          <span className={cx("staffRoleLabel")}>{events.length} events</span>
-        </div>
-      </div>
-
-      <div className={cx("commsContent")}>
-        {Object.entries(groupedByDate).length === 0 ? (
-          <StaffEmptyState icon={EmptyIcons.notes} title="No events found" sub="No communication events match your filters." />
-        ) : null}
-
-        {Object.entries(groupedByDate).map(([date, dateEvents]) => (
-          <div key={date} className={cx("mb20")}>
-            {/* Date header */}
-            <div className={cx("staffCommsDateHd")}>
-              <span className={cx("staffCommsDateLabel")}>{date}</span>
-              <div className={cx("staffCommsDateLine")} />
-            </div>
-
-            {/* Event rows */}
-            <div className={cx("staffCard")}>
-              {dateEvents.map((event, index) => {
-                const tCfg = typeConfig[event.type];
-                const dCfg = directionConfig[event.direction];
-                const isExpanded = expanded === event.id;
-                const isLast = index === dateEvents.length - 1;
-
-                // map type to staffChip variant
-                const chipCls =
-                  event.type === "message" ? "staffChipAccent"
-                  : event.type === "milestone" ? "staffChipGreen"
-                  : event.type === "invoice" ? "staffChipAmber"
-                  : event.type === "call" ? "staffChipPurple"
-                  : "staffChip";
-
-                return (
-                  <div
-                    key={event.id}
-                    className={cx(
-                      "staffListRow",
-                      isLast && "staffCommsRowLast"
-                    )}
-                    style={{ cursor: "pointer", borderBottom: isLast ? "none" : "1px solid var(--border)", flexDirection: "column", alignItems: "stretch", gap: 0 }}
-                    onClick={() => setExpanded(isExpanded ? null : event.id)}
-                  >
-                    {/* Head */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px" }}>
-                      <div
-                        className={cx(
-                          "commsTimelineIcon",
-                          tCfg.iconClass
-                        )}
-                      >
-                        {TYPE_ICONS[event.type]}
-                      </div>
-                      <span className={cx("staffCommsTitle", "flex1")}>{event.title}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                        {selectedClient === "all" && (
-                          <span className={cx("staffRoleLabel")}>{event.clientName}</span>
-                        )}
-                        <span className={cx("staffChip", chipCls)}>{tCfg.label}</span>
-                        <span className={cx("staffChip", dCfg.toneClass === "commsDirectionOutbound" ? "" : dCfg.toneClass === "commsDirectionInbound" ? "staffChipGreen" : "staffChipPurple")}>{dCfg.label}</span>
-                        <span className={cx("staffCommsTimeCol")}>{event.time}</span>
-                      </div>
-                    </div>
-
-                    {/* Expanded */}
-                    {isExpanded && (
-                      <div style={{ padding: "0 14px 10px 14px" }}>
-                        <div className={cx("staffCommsExcerpt")}>{event.excerpt}</div>
-                        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                          <span className={cx("staffChip", chipCls)}>{tCfg.label}</span>
-                          <span className={cx("staffRoleLabel")}>{date} · {event.time}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+  // ── Render will be added in Task 5 ────────────────────────────────
+  return null as unknown as React.ReactElement;
 }
