@@ -381,8 +381,15 @@ export function MyReportsPage({
         </div>
 
         {scheduled.length === 0 ? (
-          <div className={cx("rptScheduledEmpty")}>
-            No recurring reports configured. Click &ldquo;+ Schedule Report&rdquo; to set one up.
+          <div className={cx("emptyState")}>
+            <div className={cx("emptyStateIcon")}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <rect x="2" y="4" width="16" height="14" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M6 2v4M14 2v4M2 9h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div className={cx("emptyStateTitle")}>No scheduled reports</div>
+            <div className={cx("emptyStateSub")}>Click &ldquo;+ Schedule Report&rdquo; to set one up.</div>
           </div>
         ) : (
           <div className={cx("rptScheduledList")}>
@@ -438,8 +445,15 @@ export function MyReportsPage({
 
         <div className={cx("rptList")}>
           {sorted.length === 0 ? (
-            <div className={cx("rptRow", "rptRowLast", "justifyCenter")} >
-              No reports available yet. Log time and complete tasks to generate reports.
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M4 4a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+                  <path d="M13 2v5h5M7 11h6M7 14h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <div className={cx("emptyStateTitle")}>No reports yet</div>
+              <div className={cx("emptyStateSub")}>Log time and complete tasks to generate reports.</div>
             </div>
           ) : sorted.map((r, idx) => (
             <div
