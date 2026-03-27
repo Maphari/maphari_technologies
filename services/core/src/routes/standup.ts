@@ -14,6 +14,29 @@ import { readScopeHeaders } from "../lib/scope.js";
 // ── Route registration ────────────────────────────────────────────────────────
 export async function registerStandupRoutes(app: FastifyInstance): Promise<void> {
 
+  // ── GET /standup/me — current user's own standup history ──────────────────
+  app.get("/standup/me", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
+    }
+
+    const ownProfile = await prisma.staffProfile.findFirst({ where: { userId: scope.userId } });
+    if (!ownProfile) {
+      return reply.code(404).send({ success: false, error: { code: "NOT_FOUND", message: "Staff profile not found." } } as ApiResponse);
+    }
+
+    const data = await withCache(CacheKeys.standupMe(ownProfile.id), 60, () =>
+      prisma.standupEntry.findMany({
+        where:   { staffId: ownProfile.id },
+        orderBy: { date: "desc" },
+        take:    90,
+      })
+    );
+
+    return { success: true, data, meta: { requestId: scope.requestId } } as ApiResponse<typeof data>;
+  });
+
   // ── GET /standup — list by date ────────────────────────────────────────────
   app.get("/standup", async (request, reply) => {
     const scope = readScopeHeaders(request);
@@ -104,12 +127,15 @@ export async function registerStandupRoutes(app: FastifyInstance): Promise<void>
     }
 
     const body = request.body as {
-      staffId?: string;
-      date?: string;
-      yesterday: string;
-      today: string;
-      blockers?: string;
+      staffId?:   string;
+      date?:      string;
+      yesterday:  string;
+      today:      string;
+      blockers?:  string;
       projectId?: string;
+      mood?:      number;
+      hours?:     number;
+      flagAdmin?: boolean;
     };
 
     // Resolve staffId
@@ -129,6 +155,18 @@ export async function registerStandupRoutes(app: FastifyInstance): Promise<void>
     const dateStr = body.date ?? new Date().toISOString().split("T")[0]!;
     const date = new Date(dateStr + "T00:00:00.000Z");
 
+    // Reject if a standup for this staffId + date already exists
+    const endOfDay = new Date(dateStr + "T23:59:59.999Z");
+    const existing = await prisma.standupEntry.findFirst({
+      where: { staffId, date: { gte: date, lte: endOfDay } },
+    });
+    if (existing) {
+      return reply.code(409).send({
+        success: false,
+        error: { code: "ALREADY_SUBMITTED", message: "A standup for today has already been submitted." },
+      } as ApiResponse);
+    }
+
     const entry = await prisma.standupEntry.create({
       data: {
         staffId,
@@ -137,12 +175,16 @@ export async function registerStandupRoutes(app: FastifyInstance): Promise<void>
         today:     body.today,
         blockers:  body.blockers  ?? null,
         projectId: body.projectId ?? null,
-      }
+        mood:      body.mood      ?? null,
+        hours:     body.hours     ?? null,
+        flagAdmin: body.flagAdmin ?? false,
+      },
     });
 
     await Promise.all([
       cache.delete(CacheKeys.standup(dateStr)),
       cache.delete(CacheKeys.standupFeed()),
+      cache.delete(CacheKeys.standupMe(staffId)),
     ]);
 
     return reply.code(201).send({ success: true, data: entry, meta: { requestId: scope.requestId } } as ApiResponse<typeof entry>);

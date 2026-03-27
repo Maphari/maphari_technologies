@@ -60,6 +60,7 @@ export const CacheKeys = {
   training:         (scope: string)           => `core:training:${scope}`,
   standup:          (date: string)            => `core:standup:${date}`,
   standupFeed:      ()                        => `core:standup:feed`,
+  standupMe:        (staffId: string)         => `core:standup:me:${staffId}`,
   peerReviews:      (scope: string)           => `core:peer-reviews:${scope}`,
 
   // ── Recurring Tasks ───────────────────────────────────────────────────────
