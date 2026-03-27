@@ -1135,6 +1135,9 @@ model StandupEntry {
   today     String?
   blockers  String?
   projectId String?
+  mood      Int?         // 1-5 mood scale; null = not provided
+  hours     Float?       // hours logged yesterday; null = not provided
+  flagAdmin Boolean      @default(false)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   staff     StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)

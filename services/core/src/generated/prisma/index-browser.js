@@ -898,6 +898,9 @@ exports.Prisma.StandupEntryScalarFieldEnum = {
   today: 'today',
   blockers: 'blockers',
   projectId: 'projectId',
+  mood: 'mood',
+  hours: 'hours',
+  flagAdmin: 'flagAdmin',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
