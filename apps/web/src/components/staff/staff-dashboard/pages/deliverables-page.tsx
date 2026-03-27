@@ -33,12 +33,12 @@ type DeliverablesPageProps = {
   onCreateDeliverable: () => void;
   deliverableGroups: DeliverableGroup[];
   files: FileRecord[];
-  onMilestoneAttachment: (projectId: string, milestoneId: string, fileId: string | null) => void;
+  onMilestoneAttachment: (projectId: string, milestoneId: string, fileId: string | null) => Promise<void>;
   onMilestoneStatusUpdate: (
     projectId: string,
     milestoneId: string,
     status: "PENDING" | "IN_PROGRESS" | "COMPLETED"
-  ) => void;
+  ) => Promise<void>;
   changeRequests: ProjectChangeRequest[];
   estimateDrafts: Record<string, { hours: string; costCents: string; assessment: string }>;
   onEstimateDraftChange: (
@@ -46,7 +46,7 @@ type DeliverablesPageProps = {
     field: "hours" | "costCents" | "assessment",
     value: string
   ) => void;
-  onEstimateChangeRequest: (changeRequestId: string) => void;
+  onEstimateChangeRequest: (changeRequestId: string) => Promise<void>;
   handoffExports: Array<{
     id: string;
     format: "json" | "markdown";
