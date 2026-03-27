@@ -976,7 +976,7 @@
 .tpmStatMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 
 .tpmSection { display: flex; flex-direction: column; gap: 16px; }
-.tpmSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.tpmSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .tpmSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .tpmSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 

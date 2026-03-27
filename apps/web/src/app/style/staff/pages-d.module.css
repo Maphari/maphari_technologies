@@ -254,7 +254,7 @@
 .exStatMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 
 .exSection { display: flex; flex-direction: column; gap: 16px; }
-.exSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.exSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .exSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .exSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -775,7 +775,7 @@
 .obtStatMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 
 .obtSection { display: flex; flex-direction: column; gap: 16px; }
-.obtSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.obtSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .obtSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .obtSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -1137,9 +1137,9 @@
 .ctmStatMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 
 .ctmSection { display: flex; flex-direction: column; gap: 16px; }
-.ctmSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.ctmSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
-.ctmSectionLeft { display: flex; flex-direction: column; gap: 2px; }
+.ctmSectionLeft { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 .ctmSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -1277,7 +1277,7 @@
 
 .empDetailStrip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 
-.empDetailCell { display: flex; flex-direction: column; gap: 2px; }
+.empDetailCell { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 .empDetailLabel { font-size: 9px; font-family: var(--font-dm-mono); color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -1365,7 +1365,7 @@
 .empScoreBarMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 
 .empSection { display: flex; flex-direction: column; gap: 16px; }
-.empSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.empSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .empSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .empSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 

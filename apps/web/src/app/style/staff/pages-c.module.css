@@ -397,7 +397,7 @@
   gap: 12px;
 }
 
-.pdocSectionLeft { display: flex; flex-direction: column; gap: 2px; }
+.pdocSectionLeft { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 .pdocSectionMeta {
   font-size: 10px;
@@ -829,7 +829,7 @@
 .dsvStatMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 
 .dsvSection { display: flex; flex-direction: column; gap: 16px; }
-.dsvSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.dsvSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .dsvSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .dsvSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -1038,7 +1038,7 @@
 .dsvExpandProgress .staffBar { height: 4px; }
 
 .dsvExpandStats { display: flex; gap: 20px; }
-.dsvExpandStat  { display: flex; flex-direction: column; gap: 2px; }
+.dsvExpandStat  { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .dsvExpandStatLabel {
   font-size: 8px;
   font-family: var(--font-dm-mono);
@@ -1214,7 +1214,7 @@
 .rskStatMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 
 .rskSection { display: flex; flex-direction: column; gap: 16px; }
-.rskSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.rskSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .rskSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .rskSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 

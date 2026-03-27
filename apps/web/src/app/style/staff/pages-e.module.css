@@ -176,7 +176,7 @@
 .anlChangeSuffix { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 
 .anlSection { display: flex; flex-direction: column; gap: 16px; }
-.anlSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.anlSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .anlSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .anlSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -468,7 +468,7 @@
 .pfStatSuffix { font-size: 11px; font-family: var(--font-dm-mono); color: var(--muted); }
 
 .pfSection { display: flex; flex-direction: column; gap: 16px; }
-.pfSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.pfSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 .pfFilterRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
@@ -645,7 +645,7 @@
 .mcStatMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 
 .mcSection { display: flex; flex-direction: column; gap: 16px; }
-.mcSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.mcSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .mcSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .mcSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -663,7 +663,7 @@
 
 .mcProjectHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 
-.mcProjectLeft { display: flex; flex-direction: column; gap: 2px; }
+.mcProjectLeft { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 .mcProjectName { font-size: 13px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 
@@ -903,7 +903,7 @@
 .mllStatMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 
 .mllSection { display: flex; flex-direction: column; gap: 16px; }
-.mllSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.mllSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .mllSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .mllSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -1008,7 +1008,7 @@
 .mlvStatMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 
 .mlvSection { display: flex; flex-direction: column; gap: 16px; }
-.mlvSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.mlvSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .mlvSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .mlvSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -1134,7 +1134,7 @@
 .mobStatSuffix { font-size: 11px; font-family: var(--font-dm-mono); color: var(--muted); }
 
 .mobSection { display: flex; flex-direction: column; gap: 16px; }
-.mobSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.mobSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .mobSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .mobSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -1245,7 +1245,7 @@
 .enpStatSuffix { font-size: 11px; font-family: var(--font-dm-mono); color: var(--muted); }
 
 .enpSection { display: flex; flex-direction: column; gap: 16px; }
-.enpSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.enpSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .enpSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .enpSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 .enpSectionPeriod { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
@@ -1490,7 +1490,7 @@
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.rptGeneratedCell { display: flex; flex-direction: column; gap: 2px; }
+.rptGeneratedCell { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 .rptGeneratedLabel { font-size: 9px; font-family: var(--font-dm-mono); color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -1705,9 +1705,9 @@
 .tlStatMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 
 .tlSection { display: flex; flex-direction: column; gap: 16px; }
-.tlSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.tlSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
-.tlSectionLeft { display: flex; flex-direction: column; gap: 2px; }
+.tlSectionLeft { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 .tlSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .tlSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
@@ -1988,7 +1988,7 @@
 .empStatSuffix { font-size: 11px; font-family: var(--font-dm-mono); color: var(--muted); }
 
 .empSection { display: flex; flex-direction: column; gap: 16px; }
-.empSectionHeader { display: flex; flex-direction: column; gap: 2px; }
+.empSectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .empSectionTitle { font-size: 14px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 .empSectionMeta { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -2009,7 +2009,7 @@
 }
 
 .empDetailStrip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.empDetailCell { display: flex; flex-direction: column; gap: 2px; }
+.empDetailCell { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .empDetailLabel { font-size: 9px; font-family: var(--font-dm-mono); color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; }
 .empDetailValue { font-size: 13px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
 
