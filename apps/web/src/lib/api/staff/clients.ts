@@ -212,6 +212,12 @@ export interface StaffRetainerBurnEntry {
   clientName:      string;
   hoursUsed:       number;
   retainerBurnPct: number;
+  retainerHours:   number;
+  cycleStart:      string;        // ISO
+  cycleEnd:        string;         // ISO
+  daysLeft:        number;
+  overage:         number;        // hours over retainer (0 if not exceeded)
+  alert:           string | null; // backend-generated alert message for exceeded clients
   burnHistory:     StaffRetainerBurnMonth[];
 }
 
