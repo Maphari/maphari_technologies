@@ -155,6 +155,7 @@ function SidebarInner({
             p => (notificationCounts[p.id] ?? 0) > 0
           );
           const isSectionActive = activeSectionId === sectionId;
+          const hasCurrent = pages.some(p => p.id === activePage);
           return (
             <NavIcon
               key={sectionId}
@@ -162,6 +163,7 @@ function SidebarInner({
               icon={SECTION_ICON_MAP[sectionId] ?? FALLBACK_ICON}
               label={sectionId}
               isActive={isSectionActive}
+              hasCurrent={hasCurrent}
               hasNotification={hasNotif}
               onClick={() => toggleSection(sectionId)}
             />

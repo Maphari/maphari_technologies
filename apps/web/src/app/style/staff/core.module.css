@@ -445,6 +445,18 @@
 
 .railIconBtn:hover { background: rgba(255,255,255,0.04); color: var(--text); }
 .railIconBtnActive { background: var(--accent-d) !important; color: var(--accent) !important; }
+.railIconBtnCurrent { color: var(--accent); }
+.railIconBtnCurrent::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+}
 
 .railNotifDot {
   position: absolute;
