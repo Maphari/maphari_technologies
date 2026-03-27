@@ -293,7 +293,15 @@ export function CommunicationHistoryPage({
       <div
         key={event.id}
         className={cx("staffListRow", "commsEventRow", isLast && "commsRowLast")}
+        role="button"
+        tabIndex={0}
         onClick={() => toggleExpanded(event.id)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggleExpanded(event.id);
+          }
+        }}
       >
         <div className={cx("commsEventHeadRow")}>
           <div className={cx("commsTimelineIcon", cfg.iconClass)}>
@@ -385,6 +393,7 @@ export function CommunicationHistoryPage({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search events, clients…"
+            aria-label="Search events and clients"
             className={cx("staffFilterInput")}
           />
           {TYPE_PILLS.map(({ key, label }) => (
@@ -470,7 +479,15 @@ export function CommunicationHistoryPage({
                 <div key={clientId} className={cx("commsClientLane")}>
                   <div
                     className={cx("commsLaneHeader")}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => toggleCollapse(clientId)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleCollapse(clientId);
+                      }
+                    }}
                   >
                     <div className={cx("commsLaneAvatar", laneAvatarTone(clientId))}>
                       {clientInitials(clientName)}
