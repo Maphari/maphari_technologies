@@ -70,7 +70,7 @@ No backend changes. No schema changes. No new API calls.
 
 **Props — add:**
 ```typescript
-onGoDeliverables?: (projectId: string) => void;
+onGoDeliverables?: () => void;
 ```
 
 **State — add:**
@@ -158,7 +158,7 @@ function toggleExpand(id: string) {
               </button>
             )}
             {onGoDeliverables && (
-              <button type="button" className={cx("dsvExpandActionBtn")} onClick={() => onGoDeliverables(d.projectId)}>
+              <button type="button" className={cx("dsvExpandActionBtn")} onClick={() => onGoDeliverables()}>
                 Deliverables →
               </button>
             )}
@@ -179,10 +179,24 @@ type DeliveryItem = {
 };
 ```
 
-**Update `built` map to populate them:**
+**Update `built` map — full return object:**
 ```typescript
-deliverablesDone:  deliverables.filter((d) => DONE_STATUSES.has(d.status.toUpperCase())).length,
-deliverablesTotal: deliverables.length,
+return {
+  projectId:        p.id,
+  project:          p.name,
+  client:           clientMap.get(p.clientId)?.name ?? p.clientId,
+  phase,
+  readiness,
+  blockers:         inReview,
+  launchDate:       p.dueAt
+    ? new Date(p.dueAt).toLocaleDateString("en-GB", {
+        day: "numeric", month: "short", year: "numeric",
+      })
+    : "TBD",
+  status,
+  deliverablesDone:  deliverables.filter((d) => DONE_STATUSES.has(d.status.toUpperCase())).length,
+  deliverablesTotal: deliverables.length,
+};
 ```
 
 **Add `accentCls` helper:**
@@ -210,15 +224,15 @@ Append after the existing `.dsv*` block:
   border-left: 3px solid var(--b2);
   transition: border-color 0.15s;
 }
-.dsvExpandRowOpen { border-color: var(--b2); }
-
-/* Status accent left borders */
+/* Status accent left borders — always solid */
 .dsvAccentRed   { border-left-color: var(--red);   }
 .dsvAccentAmber { border-left-color: var(--amber);  }
 .dsvAccentGreen { border-left-color: var(--green);  }
-.dsvExpandRowOpen.dsvAccentRed   { border-color: rgba(239,68,68,.2);   }
-.dsvExpandRowOpen.dsvAccentAmber { border-color: rgba(245,166,35,.2);  }
-.dsvExpandRowOpen.dsvAccentGreen { border-color: rgba(52,217,139,.2);  }
+
+/* When open: top/right/bottom become translucent; left stays solid via border-left-color above */
+.dsvExpandRowOpen.dsvAccentRed   { border-top-color: rgba(239,68,68,.2); border-right-color: rgba(239,68,68,.2); border-bottom-color: rgba(239,68,68,.2); }
+.dsvExpandRowOpen.dsvAccentAmber { border-top-color: rgba(245,166,35,.2); border-right-color: rgba(245,166,35,.2); border-bottom-color: rgba(245,166,35,.2); }
+.dsvExpandRowOpen.dsvAccentGreen { border-top-color: rgba(52,217,139,.2); border-right-color: rgba(52,217,139,.2); border-bottom-color: rgba(52,217,139,.2); }
 
 /* Collapsed header */
 .dsvExpandHeader {
@@ -250,7 +264,7 @@ Append after the existing `.dsv*` block:
   grid-template-columns: 1fr auto;
   gap: 12px;
   align-items: start;
-  background: var(--s0, #0d1017);
+  background: var(--s2);
   border-top: 1px solid var(--b1);
   padding: 12px 14px;
 }
@@ -278,12 +292,12 @@ Append after the existing `.dsv*` block:
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
-.dsvExpandStatValue { font-size: 11px; font-weight: 600; color: var(--text2); }
+.dsvExpandStatValue { font-size: 11px; font-weight: 600; color: var(--text); }
 
 /* Right: action buttons */
 .dsvExpandRight { display: flex; flex-direction: column; gap: 6px; min-width: 130px; }
 .dsvExpandActionBtn {
-  background: var(--s2);
+  background: var(--s1);
   border: 1px solid var(--b2);
   color: var(--muted);
   font-size: 10px;
