@@ -567,10 +567,18 @@ export function DeliverablesPage({
                         <button
                           type="button"
                           className={cx("button", "buttonBlue", "dlSubmitBtn")}
-                          onClick={() => onEstimateChangeRequest(request.id)}
+                          disabled={loadingOp === `estimate-${request.id}`}
+                          onClick={async () => {
+                            setLoadingOp(`estimate-${request.id}`);
+                            try {
+                              await onEstimateChangeRequest(request.id);
+                            } finally {
+                              setLoadingOp(null);
+                            }
+                          }}
                         >
                           <span className={cx("dlBtnIco")}><IcoSend /></span>
-                          Submit Estimate
+                          {loadingOp === `estimate-${request.id}` ? "Submitting…" : "Submit Estimate"}
                         </button>
                       </div>
                     </div>
