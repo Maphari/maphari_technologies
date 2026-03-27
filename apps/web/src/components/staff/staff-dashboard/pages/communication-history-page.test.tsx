@@ -70,6 +70,9 @@ describe("CommunicationHistoryPage — page shell", () => {
     );
   });
 
+  // NOTE: The component must read r.error and set error state from r.error.message
+  // (not only from the .catch() path). This test verifies that in-band API errors
+  // are displayed to the user.
   it("shows error state when API fails", async () => {
     vi.mocked(getStaffAllComms).mockResolvedValue({
       data: null,
@@ -122,6 +125,7 @@ describe("CommunicationHistoryPage — By Client view (default)", () => {
     );
     const headers = screen.getAllByText(/Acme Ltd|Beta Corp/);
     expect(headers[0].textContent).toContain("Acme Ltd");
+    expect(headers[1].textContent).toContain("Beta Corp");
   });
 
   it("collapses a lane when its header is clicked", async () => {
@@ -240,6 +244,9 @@ describe("CommunicationHistoryPage — view toggle", () => {
     expect(screen.getByText("Sprint 3 done")).toBeInTheDocument();
     expect(screen.getByText("Weekly check-in")).toBeInTheDocument();
     // Client swimlane headers should be gone
+    // "Acme Ltd" only appears as a swimlane lane header in the By Client view.
+    // In the By Date view, events are listed without client name headers.
+    // (If the By Date event row ever shows clientName, update this assertion.)
     expect(screen.queryByText("Acme Ltd")).not.toBeInTheDocument();
   });
 
@@ -261,7 +268,7 @@ describe("CommunicationHistoryPage — event expand", () => {
       expect(screen.getByText("Follow-up proposal")).toBeInTheDocument()
     );
     fireEvent.click(screen.getByText("Follow-up proposal"));
-    expect(screen.getByText("Sent follow-up")).toBeInTheDocument();
+    expect(screen.getByText(/sent follow-up/i)).toBeInTheDocument();
   });
 
   it("collapses an expanded row when clicked again", async () => {
@@ -271,6 +278,6 @@ describe("CommunicationHistoryPage — event expand", () => {
     );
     fireEvent.click(screen.getByText("Follow-up proposal"));
     fireEvent.click(screen.getByText("Follow-up proposal"));
-    expect(screen.queryByText("Sent follow-up")).not.toBeInTheDocument();
+    expect(screen.queryByText(/sent follow-up/i)).not.toBeInTheDocument();
   });
 });
