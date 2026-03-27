@@ -1606,6 +1606,15 @@
   text-align: right;
 }
 
+.ppClientHoursWide {
+  width: 48px;
+}
+
+.ppChartLabelMeta {
+  font-size: 11px;
+  margin-left: 8px;
+}
+
 /* Milestone list */
 .ppMilestoneList { display: flex; flex-direction: column; gap: 0; }
 
@@ -2177,7 +2186,18 @@
 .rbFillAmber { background: var(--amber); }
 .rbFillRed   { background: var(--red); }
 
-.rbClientPanel .staffListRow { cursor: pointer; }
+.rbClientPanel .staffListRow {
+  cursor: pointer;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--b1);
+  border-radius: 0;
+  transition: background 0.12s;
+}
+.rbClientPanel .staffListRow:hover { background: var(--s2); }
+.rbClientPanel .staffClientToneAccent {
+  background: var(--s3);
+  color: var(--accent);
+}
 
 /* ══════════════════════════════════════════════════════════════════════════════
    SETTINGS — Security / 2FA

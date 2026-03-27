@@ -334,7 +334,7 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
             <div className={cx("ppChartCard")}>
               <div className={cx("ppChartLabel")}>
                 Response Time
-                <span style={{ color: responseOnTarget ? "var(--green)" : "var(--accent)", fontSize: "11px", marginLeft: "8px" }}>
+                <span className={cx("ppChartLabelMeta", responseOnTarget ? "colorGreen" : "colorAccent")}>
                   {responseAvg !== null ? `${responseAvg.toFixed(1)}h avg` : "—"}
                   {" · "}target: {responseTarget}h
                 </span>
@@ -421,7 +421,7 @@ export function PersonalPerformancePage({ isActive, session }: PersonalPerforman
                       />
                     </div>
                     <div className={cx("ppClientHours", tone)}>{c.hoursLogged}h</div>
-                    <div className={cx("ppClientHours", "colorMuted2")} style={{ width: "48px" }}>
+                    <div className={cx("ppClientHours", "ppClientHoursWide", "colorMuted2")}>
                       {rt ? `${rt.avg.toFixed(1)}h` : "—"}
                     </div>
                   </div>
