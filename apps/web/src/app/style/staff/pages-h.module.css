@@ -2536,7 +2536,7 @@
 .dlFilterPillActive { border-color: var(--accent); background: var(--accent-d); color: var(--accent); }
 .dlFilterPillIdle:hover { border-color: var(--b3); color: var(--text); }
 
-.dlSortPills { display: flex; align-items: center; gap: 6px; }
+.dlSortPills { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .dlSortPill {
   padding: 3px 9px;
   border-radius: 99px;
