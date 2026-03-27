@@ -223,7 +223,7 @@ export function MyAnalyticsPage({ isActive, session }: MyAnalyticsPageProps) {
       {/* ── Empty state — no time entries yet ──────────────────────────────── */}
       {weeklyBreakdown.length === 0 && (
         <div className={cx("emptyState")}>
-          <div className={cx("emptyStateIcon")}><Ic n="trending-up" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateIcon")}><Ic n="trending" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No activity this period</div>
           <div className={cx("emptyStateSub")}>Log time entries to see your weekly breakdown here.</div>
         </div>
