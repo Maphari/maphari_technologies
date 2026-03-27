@@ -70,11 +70,21 @@ beforeEach(() => {
   vi.mocked(getStaffAllHealthScores).mockResolvedValue({
     data: mockData,
     error: null,
-    unauthorized: false,
     nextSession: null,
   });
   vi.mocked(createStaffInterventionWithRefresh).mockResolvedValue({
-    data: { id: "int-1" },
+    data: {
+      id: "int-1",
+      clientId: "c-1",
+      clientName: "Acme Ltd",
+      type: "CLIENT_UPDATE",
+      description: "",
+      priority: "MEDIUM",
+      status: "OPEN",
+      dueDate: null,
+      createdAt: "2026-01-01T00:00:00Z",
+      isOverdue: false,
+    },
     error: null,
     nextSession: null,
   });
@@ -89,9 +99,9 @@ describe("ClientHealthPage — KPI strip", () => {
 
     // Portfolio avg: (82 + 44 + 63) / 3 = 63
     expect(screen.getByText("63")).toBeInTheDocument();
-    // At risk: 1 (Beta Co score 44 < 50)
-    expect(screen.getByText("1")).toBeInTheDocument();
-    // Improving: 1 (Acme trend up)
+    // At risk: 1 (Beta Co score 44 < 50) and Improving: 1 (Acme trend up) both render "1"
+    // Use getAllByText since both KPI values are "1"
+    expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(2);
     // Total signals: 1 + 1 + 0 = 2
     expect(screen.getByText("2")).toBeInTheDocument();
   });
@@ -223,7 +233,7 @@ describe("ClientHealthPage — loading and error states", () => {
     vi.mocked(getStaffAllHealthScores).mockResolvedValue({
       data: null,
       error: { message: "Server error", code: "ERR" },
-      unauthorized: false,
+      nextSession: null,
     });
     render(<ClientHealthPage isActive session={mockSession} />);
     await waitFor(() => expect(screen.getByText("Server error")).toBeInTheDocument());
@@ -233,7 +243,7 @@ describe("ClientHealthPage — loading and error states", () => {
     vi.mocked(getStaffAllHealthScores).mockResolvedValue({
       data: [],
       error: null,
-      unauthorized: false,
+      nextSession: null,
     });
     render(<ClientHealthPage isActive session={mockSession} />);
     await waitFor(() => expect(screen.getByText(/no health data/i)).toBeInTheDocument());
