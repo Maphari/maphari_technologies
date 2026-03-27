@@ -65,11 +65,11 @@ const internalHourlyRateCents = grossSalaryCents > 0
   : 0;
 ```
 
-2. Get all `TimeEntry` records for this user to find their project IDs:
+2. Get all `ProjectTimeEntry` records for this user to find their project IDs (uses `staffUserId`, same as the `/staff/me/performance` handler):
 ```typescript
-const timeEntries = await prisma.timeEntry.findMany({
-  where:  { staffId: userId },
-  select: { projectId: true, durationMinutes: true },
+const timeEntries = await prisma.projectTimeEntry.findMany({
+  where:  { staffUserId: userId },
+  select: { projectId: true, minutes: true },
 });
 ```
 
@@ -77,8 +77,7 @@ const timeEntries = await prisma.timeEntry.findMany({
 ```typescript
 const minutesByProject = new Map<string, number>();
 for (const te of timeEntries) {
-  if (!te.projectId) continue;
-  minutesByProject.set(te.projectId, (minutesByProject.get(te.projectId) ?? 0) + te.durationMinutes);
+  minutesByProject.set(te.projectId, (minutesByProject.get(te.projectId) ?? 0) + te.minutes);
 }
 const projectIds = [...minutesByProject.keys()];
 ```
