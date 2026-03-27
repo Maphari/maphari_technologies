@@ -658,6 +658,24 @@ export class StaffController {
     );
   }
 
+  // ── GET /standup/me — current user's standup history ─────────────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("standup/me")
+  async listMyStandups(
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/standup/me`,
+      "GET",
+      undefined,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
   // ── GET /standup ──────────────────────────────────────────────────────────
   @Roles("ADMIN", "STAFF")
   @Get("standup")
