@@ -291,6 +291,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
                   </div>
                   <label className={cx("dsFormLabel", "rdStudioLabel")}>What did you complete yesterday?</label>
                   <textarea
+                    maxLength={500}
                     value={fields.yesterday}
                     onChange={(event) => setFields((prev) => ({ ...prev, yesterday: event.target.value }))}
                     placeholder="e.g. Finished logo revisions, drafted campaign intro for client review..."
@@ -305,6 +306,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
                   </div>
                   <label className={cx("dsFormLabel", "rdStudioLabel")}>What&apos;s your focus today?</label>
                   <textarea
+                    maxLength={500}
                     value={fields.today_plan}
                     onChange={(event) => setFields((prev) => ({ ...prev, today_plan: event.target.value }))}
                     placeholder="e.g. Finalise KPI framework, begin wireframe revisions for the team..."
@@ -319,6 +321,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
                     <span className={cx("dsFormLabelOptional")}>Optional</span>
                   </div>
                   <textarea
+                    maxLength={300}
                     value={fields.blockers}
                     onChange={(event) => setFields((prev) => ({ ...prev, blockers: event.target.value }))}
                     placeholder="Waiting on client feedback, need design resource, unclear brief..."
@@ -365,12 +368,15 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
                   </div>
 
                   <div className={cx("flexRow", "gap12")}>
-                    <div
+                    <button
+                      type="button"
                       onClick={() => setFlagAdmin((prev) => !prev)}
                       className={cx("dsFlagCheck", flagAdmin ? "dsFlagCheckActive" : "dsFlagCheckIdle")}
+                      aria-label="Flag for admin attention"
+                      aria-pressed={flagAdmin}
                     >
                       {flagAdmin ? <IcoCheck /> : null}
-                    </div>
+                    </button>
                     <div>
                       <div className={cx("text12", flagAdmin ? "dsToneRed" : "colorMuted")}>Flag for admin attention</div>
                       <div className={cx("text10", "colorMuted2")}>Admin will see this standup highlighted</div>
@@ -404,16 +410,19 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
               ) : (
                 tasks.map((task, index) => (
                   <div key={task.id} className={cx("dsTaskCard", task.done && "dsTaskCardDone")}>
-                    <div
+                    <button
+                      type="button"
                       className={cx("dsTaskCheck", task.done ? "dsTaskCheckDone" : "dsTaskCheckIdle")}
                       onClick={() =>
                         setTasks((prev) =>
                           prev.map((item) => (item.id === task.id ? { ...item, done: !item.done } : item))
                         )
                       }
+                      aria-label={task.done ? `Mark "${task.text}" incomplete` : `Mark "${task.text}" complete`}
+                      aria-pressed={task.done}
                     >
                       {task.done ? <IcoCheck /> : null}
-                    </div>
+                    </button>
                     <div className={cx("flex1", "minW0")}>
                       <div className={cx("text12", "dsTaskText", task.done && "dsTaskTextDone")}>{task.text}</div>
                       <div className={cx("text10", "colorMuted2", "mt4")}>{task.client}</div>
@@ -453,9 +462,9 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
             <div>
               <div className={cx("dsSectionLabel", "mb12", "rdStudioSection")}>Recent Mood</div>
               <div className={cx("dsMoodChart")}>
-                {standups.map((entry, index) => (
+                {standups.slice(0, 10).map((entry, index) => (
                   <div key={index} className={cx("dsMoodChartCol")}>
-                    <div className={cx("dsMoodChartBar", "dsMoodBar0")} />
+                    <div className={cx("dsMoodChartBar", moodBarClasses[entry.mood ?? 0] ?? "dsMoodBar0")} />
                     <span className={cx("dsMoodChartLabel")}>
                       {formatStandupDate(entry.date).split(",")[0]}
                     </span>
