@@ -1167,3 +1167,52 @@
   color: var(--muted);
   letter-spacing: 0.04em;
 }
+
+.wlhToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.wlhSegBar {
+  display: flex;
+  gap: 4px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  padding: 3px;
+}
+
+.wlhSegBtn {
+  padding: 5px 12px;
+  font-size: 11px;
+  font-family: var(--font-dm-mono);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--r-sm) - 2px);
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+}
+
+.wlhSegBtn:hover:not(:disabled) { color: var(--text); background: var(--s3); }
+.wlhSegBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* NOTE: wlhSegBtnActive MUST appear after wlhSegBtn:hover in source order.
+   CSS Modules uses source order for cascade — this ensures the accent fill
+   is never overridden by the hover rule above. */
+.wlhSegBtnActive {
+  color: var(--bg);
+  background: var(--accent);
+}
+.wlhSegBtnActive:hover:not(:disabled) { background: var(--accent); color: var(--bg); }
+
+.wlhTimestamp {
+  font-size: 10px;
+  font-family: var(--font-dm-mono);
+  color: var(--muted2);
+  letter-spacing: 0.04em;
+}
