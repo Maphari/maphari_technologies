@@ -10,7 +10,7 @@ import type { ApiResponse } from "@maphari/contracts";
 import { cache, CacheKeys, withCache } from "../lib/infrastructure.js";
 import { prisma } from "../lib/prisma.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
-import { getTranscriptText } from "../lib/daily.js";
+import { getTranscriptText } from "../lib/livekit.js";
 
 // ── Route registration ────────────────────────────────────────────────────────
 export async function registerMeetingRoutes(app: FastifyInstance): Promise<void> {

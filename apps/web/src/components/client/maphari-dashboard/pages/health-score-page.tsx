@@ -11,8 +11,8 @@ import type { PortalInvoice, PortalProject } from "../../../../lib/api/portal/ty
 
 // ── Local types ────────────────────────────────────────────────────────────────
 interface HealthDimension {
-  name: string; score: number; prevScore: number;
-  trend: string; description: string; tip: string;
+  name: string; score: number;
+  description: string; tip: string;
 }
 
 // circumference for r=70: 2π × 70 ≈ 439.8
@@ -29,6 +29,25 @@ function scoreBg(s: number): string {
 function scoreBorder(s: number): string {
   const base = s > 80 ? "var(--lime)" : s > 60 ? "var(--amber)" : "var(--red)";
   return `color-mix(in oklab, ${base} 18%, transparent)`;
+}
+
+function exportHealthScoreCsv(overall: number, dimensions: HealthDimension[]): void {
+  const header = ["Metric", "Score", "Description"];
+  const rows = [
+    ["Overall Health Score", String(overall), "Combined score across payment, delivery, risk, and portfolio stability signals"],
+    ...dimensions.map((dimension) => [dimension.name, String(dimension.score), dimension.description]),
+  ];
+  const escape = (value: string) => "\"" + value.replace(/"/g, "\"\"") + "\"";
+  const csv = [header, ...rows].map((row) => row.map((cell) => escape(cell)).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "project-health-score.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // ── Health score derivation ────────────────────────────────────────────────────
@@ -85,44 +104,36 @@ function buildHealthData(
   // ── Dimensions ────────────────────────────────────────────────────────────
   const dimensions: HealthDimension[] = [
     {
-      name:        "Payment Health",
+      name:        "Payment Reliability",
       score:       payRate,
-      prevScore:   payRate,
-      trend:       "+0",
       description: "On-time invoice payment rate",
       tip:         payRate < 80
         ? "Consider setting up payment reminders to avoid overdue invoices."
         : "Excellent — consistent payments strengthen your working relationship.",
     },
     {
-      name:        "Project Delivery",
+      name:        "Delivery Stability",
       score:       deliveryRate,
-      prevScore:   deliveryRate,
-      trend:       "+0",
       description: "Active projects delivered without high risk",
       tip:         highRisk > 0
         ? `${highRisk} project(s) flagged as high risk. Review with your project manager.`
         : "All active projects are running smoothly.",
     },
     {
-      name:        "Risk Management",
+      name:        "Risk Control",
       score:       riskScore,
-      prevScore:   riskScore,
-      trend:       "+0",
       description: "Proportion of projects at low risk level",
       tip:         riskScore < 70
         ? "Several projects have elevated risk. Engage your project manager to review mitigation plans."
         : "Risk levels are well controlled across all projects.",
     },
     {
-      name:        "Engagement Index",
+      name:        "Portfolio Stability",
       score:       engagementScore,
-      prevScore:   engagementScore,
-      trend:       "+0",
-      description: "Overall project engagement composite",
+      description: "Composite of payment and delivery indicators",
       tip:         engagementScore < 70
-        ? "Improve response rates on approvals and feedback to boost engagement."
-        : "Your engagement with Maphari is excellent.",
+        ? "One or more core delivery signals are slipping. Review payment cadence and project risk together."
+        : "Payment and delivery signals are aligned well across your active work.",
     },
   ];
 
@@ -139,7 +150,9 @@ export function HealthScorePage({
 }) {
   const [mounted, setMounted] = useState(false);
   const [hoveredDim, setHoveredDim] = useState<string | null>(null);
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(
+    typeof window !== "undefined" ? window.matchMedia("(prefers-reduced-motion: reduce)").matches : false
+  );
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
@@ -148,7 +161,6 @@ export function HealthScorePage({
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReducedMotion(mq.matches);
     const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
@@ -171,7 +183,15 @@ export function HealthScorePage({
         <div>
           <div className={cx("pageEyebrow")}>Reporting · Health</div>
           <h1 className={cx("pageTitle")}>Project Health Score</h1>
-          <p className={cx("pageSub")}>A holistic view of your project relationship — communication, payment health, and engagement metrics.</p>
+          <p className={cx("pageSub")}>A view of payment reliability, delivery stability, project risk, and overall portfolio momentum.</p>
+        </div>
+        <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => exportHealthScoreCsv(overall, dimensions)} disabled={overall === 0}>
+            Export CSV
+          </button>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => window.print()}>
+            Download PDF
+          </button>
         </div>
       </div>
 
@@ -179,9 +199,9 @@ export function HealthScorePage({
       <div className={cx("topCardsStack", "mb20")}>
         {[
           { label: "Overall Score",   value: overall > 0 ? `${overall}` : "—", color: overall > 80 ? "statCardGreen" : overall > 60 ? "statCardAmber" : "statCardRed" },
-          { label: "Payment Health",  value: overall > 0 ? `${dimensions[0]?.score ?? 0}%` : "—", color: "statCardBlue" },
-          { label: "Risk Level",      value: overall > 0 ? `${dimensions[2]?.score ?? 0}%` : "—", color: "statCardAccent" },
-          { label: "Engagement",      value: overall > 0 ? `${dimensions[3]?.score ?? 0}%` : "—", color: "statCardAmber" },
+          { label: "Payment Reliability", value: overall > 0 ? `${dimensions[0]?.score ?? 0}%` : "—", color: "statCardBlue" },
+          { label: "Risk Control",        value: overall > 0 ? `${dimensions[2]?.score ?? 0}%` : "—", color: "statCardAccent" },
+          { label: "Portfolio Stability", value: overall > 0 ? `${dimensions[3]?.score ?? 0}%` : "—", color: "statCardAmber" },
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.color)}>
             <div className={cx("statLabel")}>{s.label}</div>
@@ -314,7 +334,7 @@ export function HealthScorePage({
       <div className={cx("card")}>
         <div className={cx("cardHd")}>
           <Ic n="sparkle" sz={14} c="var(--amber)" />
-          <span className={cx("cardHdTitle", "ml6")}>Recommendations</span>
+          <span className={cx("cardHdTitle", "ml6")}>Recommended Focus</span>
         </div>
         <div className={cx("listGroup")}>
           {weakDims.length === 0 ? (

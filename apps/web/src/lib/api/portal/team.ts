@@ -22,6 +22,7 @@ export interface PortalTeamMember {
   name: string;
   email: string;
   role: string;
+  canManageAccess: boolean;
   status: string;
   lastActiveAt: string | null;
   createdAt: string;
@@ -31,6 +32,7 @@ export interface PortalTeamInvite {
   id: string;
   email: string;
   role: string;
+  canManageAccess: boolean;
   status: string;
   createdAt: string;
 }
@@ -64,7 +66,7 @@ export async function loadPortalTeamMembersWithRefresh(
 export async function invitePortalTeamMemberWithRefresh(
   session: AuthSession,
   clientId: string,
-  body: { email: string; role: string }
+  body: { email: string; role: string; name?: string }
 ): Promise<AuthorizedResult<PortalTeamInvite>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const res = await callGateway<PortalTeamInvite>(

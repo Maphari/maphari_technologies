@@ -546,6 +546,80 @@ export class AuthController {
     });
   }
 
+  // ── GET /auth/client/2fa/status ────────────────────────────────────────────
+  @Roles("CLIENT")
+  @Get("client/2fa/status")
+  async getClient2faStatus(
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.AUTH_SERVICE_URL ?? "http://localhost:4001";
+    return proxyRequest(`${baseUrl}/auth/client/2fa/status`, "GET", undefined, {
+      "x-user-role": role ?? "CLIENT",
+      "x-user-id": userId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  // ── POST /auth/client/2fa/setup ────────────────────────────────────────────
+  @Roles("CLIENT")
+  @Post("client/2fa/setup")
+  async setupClient2fa(
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.AUTH_SERVICE_URL ?? "http://localhost:4001";
+    return proxyRequest(`${baseUrl}/auth/client/2fa/setup`, "POST", undefined, {
+      "x-user-role": role ?? "CLIENT",
+      "x-user-id": userId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  // ── POST /auth/client/2fa/verify ───────────────────────────────────────────
+  @Roles("CLIENT")
+  @Post("client/2fa/verify")
+  async verifyClient2fa(
+    @Body() body: unknown,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.AUTH_SERVICE_URL ?? "http://localhost:4001";
+    return proxyRequest(`${baseUrl}/auth/client/2fa/verify`, "POST", body, {
+      "x-user-role": role ?? "CLIENT",
+      "x-user-id": userId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  // ── POST /auth/client/2fa/disable ──────────────────────────────────────────
+  @Roles("CLIENT")
+  @Post("client/2fa/disable")
+  async disableClient2fa(
+    @Body() body: unknown,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.AUTH_SERVICE_URL ?? "http://localhost:4001";
+    return proxyRequest(`${baseUrl}/auth/client/2fa/disable`, "POST", body, {
+      "x-user-role": role ?? "CLIENT",
+      "x-user-id": userId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
   @Roles("ADMIN", "STAFF")
   @Post("client/provision")
   async provisionClientAccess(
@@ -783,7 +857,7 @@ export class AuthController {
   }
 
   // ── GET /auth/me/sessions ──────────────────────────────────────────────────
-  @Roles("ADMIN", "STAFF")
+  @Roles("ADMIN", "STAFF", "CLIENT")
   @Get("me/sessions")
   async getMySessions(
     @Headers("x-user-role") role?: Role,
@@ -821,7 +895,7 @@ export class AuthController {
   }
 
   // ── DELETE /auth/me/sessions ───────────────────────────────────────────────
-  @Roles("ADMIN", "STAFF")
+  @Roles("ADMIN", "STAFF", "CLIENT")
   @Delete("me/sessions")
   async deleteAllSessions(
     @Headers("x-user-role") role?: Role,

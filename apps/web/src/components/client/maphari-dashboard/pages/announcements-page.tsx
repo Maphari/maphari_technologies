@@ -4,7 +4,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { saveSession } from "../../../../lib/auth/session";
@@ -15,10 +15,6 @@ import {
   setPortalPreferenceWithRefresh,
   type PortalAnnouncement,
 } from "../../../../lib/api/portal";
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-const EMOJIS = ["👍", "🎉", "❤️"] as const;
-type EmojiKey = typeof EMOJIS[number];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function typeToColor(type: string) {
@@ -43,6 +39,30 @@ function formatDate(iso: string | null) {
   return new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function exportAnnouncementsCsv(rows: PortalAnnouncement[]) {
+  const header = ["Title", "Type", "Target", "Status", "Published", "Scheduled", "Created"];
+  const lines = rows.map((row) => [
+    row.title,
+    row.type,
+    row.target,
+    row.status,
+    row.publishedAt ?? "",
+    row.scheduledAt ?? "",
+    row.createdAt,
+  ]);
+  const escape = (value: string) => `"${value.replace(/"/g, "\"\"")}"`;
+  const csv = [header, ...lines].map((line) => line.map((cell) => escape(String(cell))).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "announcements.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export function AnnouncementsPage() {
   const { session } = useProjectLayer();
@@ -50,10 +70,8 @@ export function AnnouncementsPage() {
   const [error,         setError]         = useState<string | null>(null);
   const [announcements, setAnnouncements] = useState<PortalAnnouncement[]>([]);
   const [read,          setRead]          = useState<Record<string, boolean>>({});
-  const [reactions,     setReactions]     = useState<Record<string, Record<EmojiKey, number>>>({});
-  const [myReactions,   setMyReactions]   = useState<Record<string, Set<EmojiKey>>>({});
 
-  useEffect(() => {
+  function loadAnnouncements() {
     if (!session) { setLoading(false); return; }
     setLoading(true);
     setError(null);
@@ -74,6 +92,14 @@ export function AnnouncementsPage() {
     })
     .catch((err) => setError(err?.message ?? "Failed to load"))
     .finally(() => setLoading(false));
+  }
+
+  const loadAnnouncementsEffect = useEffectEvent(() => {
+    loadAnnouncements();
+  });
+
+  useEffect(() => {
+    loadAnnouncementsEffect();
   }, [session]);
 
   function persistRead(ids: string[]) {
@@ -87,26 +113,12 @@ export function AnnouncementsPage() {
       const next = { ...p, [id]: true };
       persistRead(Object.keys(next).filter((k) => next[k]));
       return next;
-    });
+      });
   };
 
-  const toggleReaction = (id: string, emoji: EmojiKey) => {
-    setReactions((prev) => {
-      const curr = prev[id] ?? { "👍": 0, "🎉": 0, "❤️": 0 };
-      const mine = myReactions[id] ?? new Set<EmojiKey>();
-      const hasIt = mine.has(emoji);
-      return {
-        ...prev,
-        [id]: { ...curr, [emoji]: hasIt ? Math.max(0, curr[emoji] - 1) : curr[emoji] + 1 },
-      };
-    });
-    setMyReactions((prev) => {
-      const mine = new Set<EmojiKey>(prev[id] ?? []);
-      if (mine.has(emoji)) mine.delete(emoji);
-      else mine.add(emoji);
-      return { ...prev, [id]: mine };
-    });
-  };
+  const unreadCount = announcements.filter((item) => !read[item.id]).length;
+  const alertCount = announcements.filter((item) => item.type.toUpperCase() === "ALERT").length;
+  const latestPublished = announcements.find((item) => item.publishedAt)?.publishedAt ?? announcements[0]?.createdAt ?? null;
 
   if (loading) {
     return (
@@ -126,6 +138,9 @@ export function AnnouncementsPage() {
           <div className={cx("errorStateIcon")}>✕</div>
           <div className={cx("errorStateTitle")}>Failed to load</div>
           <div className={cx("errorStateSub")}>{error}</div>
+          <button type="button" className={cx("btn", "btnPrimary", "mt12")} onClick={loadAnnouncements}>
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -143,6 +158,20 @@ export function AnnouncementsPage() {
           <button
             type="button"
             className={cx("btnSm", "btnGhost")}
+            onClick={loadAnnouncements}
+          >
+            Refresh
+          </button>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost")}
+            onClick={() => exportAnnouncementsCsv(announcements)}
+          >
+            Export CSV
+          </button>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost")}
             onClick={() => {
               const ids = announcements.map((a) => a.id);
               setRead(Object.fromEntries(ids.map((id) => [id, true])));
@@ -154,6 +183,29 @@ export function AnnouncementsPage() {
         </div>
       </div>
 
+      <div className={cx("grid4", "gap12", "mb20")}>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Announcements</div>
+          <div className={cx("text22", "fw800", "colorBlue")}>{announcements.length}</div>
+          <div className={cx("text12", "colorMuted")}>Published to your portal feed</div>
+        </div>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Unread</div>
+          <div className={cx("text22", "fw800", "colorAmber")}>{unreadCount}</div>
+          <div className={cx("text12", "colorMuted")}>Updates you have not marked as read</div>
+        </div>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Alerts</div>
+          <div className={cx("text22", "fw800", "colorDanger")}>{alertCount}</div>
+          <div className={cx("text12", "colorMuted")}>Urgent notices in the current feed</div>
+        </div>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Latest publish</div>
+          <div className={cx("text22", "fw800", "colorSuccess")}>{formatDate(latestPublished)}</div>
+          <div className={cx("text12", "colorMuted")}>Most recent update delivered to you</div>
+        </div>
+      </div>
+
       {announcements.length === 0 ? (
         <div className={cx("emptyState", "mt32")}>
           <div className={cx("emptyStateIcon")}><Ic n="bell" sz={22} c="var(--muted2)" /></div>
@@ -161,20 +213,15 @@ export function AnnouncementsPage() {
           <div className={cx("emptyStateSub")}>Official updates, milestone news and system notices from your project team will appear here.</div>
         </div>
       ) : (
-        /* ── Vertical timeline feed ── */
         <div className={cx("relative", "pl36")}>
-          {/* Connector line */}
           <div className={cx("anConnectorLine")} />
 
           {announcements.map((a, idx) => {
             const isRead   = !!read[a.id];
-            const rxns     = reactions[a.id] ?? { "👍": 0, "🎉": 0, "❤️": 0 };
-            const mine     = myReactions[a.id] ?? new Set<EmojiKey>();
             const dotColor = typeToColor(a.type);
 
             return (
               <div key={a.id} className={cx("relative", idx < announcements.length - 1 && "mb20")}>
-                {/* Timeline dot */}
                 <div
                   className={cx("anTimelineDot", "dynBgColor", "dynBorderColor")}
                   style={{
@@ -190,6 +237,7 @@ export function AnnouncementsPage() {
                     <div className={cx("flexCol", "anCardHdInner")}>
                       <div className={cx("flexRow", "gap8", "alignCenter", "flexWrap")}>
                         <span className={cx("badge", typeToBadge(a.type))}>{a.type}</span>
+                        <span className={cx("badge", "badgeMuted")}>{a.target}</span>
                         <span className={cx("text10", "colorMuted")}>{formatDate(a.publishedAt ?? a.createdAt)}</span>
                         {!isRead && (
                           <span className={cx("wh7", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": dotColor } as React.CSSProperties} />
@@ -200,37 +248,17 @@ export function AnnouncementsPage() {
                   </div>
 
                   <div className={cx("cardBodyPad")}>
-                    {/* Emoji reactions row */}
-                    <div className={cx("flexRow", "gap6", "alignCenter", "flexWrap")}>
-                      {EMOJIS.map((emoji) => {
-                        const count  = rxns[emoji];
-                        const active = mine.has(emoji);
-                        return (
-                          <button
-                            key={emoji}
-                            type="button"
-                            onClick={() => toggleReaction(a.id, emoji)}
-                            className={cx("anReactionBtn", "dynBgColor", "dynBorderColor")}
-                            style={{
-                              "--bg-color": active ? `color-mix(in oklab, ${dotColor} 10%, transparent)` : "var(--s2)",
-                              "--border-color": active ? dotColor : "var(--b2)",
-                            } as React.CSSProperties}
-                          >
-                            {emoji}
-                            {count > 0 && (
-                              <span className={cx("anReactionCount", "dynColor")} style={{ "--color": active ? dotColor : "var(--muted2)" } as React.CSSProperties}>{count}</span>
-                            )}
-                          </button>
-                        );
-                      })}
-
-                      <div className={cx("mlAuto")}>
-                        {!isRead && (
+                    <div className={cx("flexRow", "gap8", "alignCenter", "flexWrap")}>
+                      <span className={cx("text10", "colorMuted")}>Status: {a.status}</span>
+                      <span className={cx("text10", "colorMuted")}>Scheduled: {formatDate(a.scheduledAt)}</span>
+                      <span className={cx("text10", "colorMuted")}>Created: {formatDate(a.createdAt)}</span>
+                      {!isRead && (
+                        <div className={cx("mlAuto")}>
                           <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => markRead(a.id)}>
                             Mark as Read
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

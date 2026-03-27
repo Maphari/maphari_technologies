@@ -4,7 +4,7 @@
 // dashboard-page.tsx — Mission Control: fully wired to real API data
 // Real data : phases · milestones · deliverables · risks · sprints · approvals
 //             appointments · project card · budget health · outstanding invoices
-// Static    : DNA "Communication" + "Engagement" axes (no server metric yet)
+// Static    : none
 // ════════════════════════════════════════════════════════════════════════════
 
 // ── Imports ───────────────────────────────────────────────────────────────────
@@ -66,6 +66,43 @@ function fmtInvCents(cents: number): string {
 function fmtDateShort(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-ZA", { day: "numeric", month: "short" });
+}
+
+function downloadMissionSummaryCsv(
+  project: ProjectCard | undefined,
+  budget: BudgetHealth | undefined,
+  approvals: PortalMilestoneApproval[],
+  milestones: PortalProjectMilestone[],
+  risks: PortalRisk[],
+  deliverables: PortalDeliverable[],
+  appointments: PortalAppointment[],
+): void {
+  const rows = [
+    ["Metric", "Value"],
+    ["Project", project?.name ?? "No active project"],
+    ["Status", project?.status ?? "Not assigned"],
+    ["Progress", project ? String(project.progressPercent) + "%" : "—"],
+    ["Risk level", project?.riskLevel ?? "LOW"],
+    ["Due date", project?.dueAt ? fmtDateShort(project.dueAt) : "—"],
+    ["Budget total", budget ? fmtInvCents(budget.totalBudgetCents) : "—"],
+    ["Budget spent", budget ? fmtInvCents(budget.spentCents) : "—"],
+    ["Budget remaining", budget ? fmtInvCents(budget.totalBudgetCents - budget.spentCents) : "—"],
+    ["Budget burn", budget ? String(budget.burnRate) + "%" : "—"],
+    ["Milestones approved", String(milestones.filter((m) => m.status === "APPROVED" || m.status === "COMPLETED").length)],
+    ["Milestones total", String(milestones.length)],
+    ["Pending approvals", String(approvals.filter((a) => a.status === "PENDING").length)],
+    ["Active risks", String(risks.filter((r) => r.status !== "RESOLVED" && r.status !== "CLOSED").length)],
+    ["Deliverables in review", String(deliverables.filter((d) => d.status === "IN_REVIEW").length)],
+    ["Upcoming appointments", String(appointments.filter((a) => a.status !== "CANCELLED" && new Date(a.scheduledAt) > new Date()).length)],
+  ];
+  const csv = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, "\"\"")}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "mission-control-summary.csv";
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 // Build "What Needs You" action cards from real data sources
@@ -159,32 +196,49 @@ function buildDnaAxes(
   project:    ProjectCard | undefined,
   milestones: PortalProjectMilestone[],
   budget:     BudgetHealth | undefined,
+  risks:      PortalRisk[],
+  deliverables: PortalDeliverable[],
+  approvals:  PortalMilestoneApproval[],
+  appointments: PortalAppointment[],
 ): Array<{ label: string; value: number }> {
   if (!project) {
-    // No project: flat-zero radar — honest empty state
     return [
       { label: "Delivery",      value: 0 },
-      { label: "Communication", value: 0 },
       { label: "Budget",        value: 0 },
       { label: "Velocity",      value: 0 },
       { label: "Quality",       value: 0 },
-      { label: "Engagement",    value: 0 },
+      { label: "Approvals",     value: 0 },
+      { label: "Collab",        value: 0 },
     ];
   }
   const approved  = milestones.filter(m => m.status === "APPROVED" || m.status === "COMPLETED").length;
-  const velocity  = milestones.length > 0 ? Math.round((approved / milestones.length) * 100) : 75;
-  const quality   = project.riskLevel === "CRITICAL" ? 30
-    : project.riskLevel === "HIGH"   ? 50
-    : project.riskLevel === "MEDIUM" ? 70 : 88;
-  const budgetVal = budget ? Math.max(0, 100 - budget.burnRate) : 75;
+  const velocity  = milestones.length > 0 ? Math.round((approved / milestones.length) * 100) : project.progressPercent;
+  const approvedDeliverables = deliverables.filter((d) => d.status === "APPROVED").length;
+  const reviewDeliverables = deliverables.filter((d) => d.status === "IN_REVIEW").length;
+  const qualityBase = deliverables.length > 0
+    ? Math.round(((approvedDeliverables + reviewDeliverables * 0.5) / deliverables.length) * 100)
+    : project.progressPercent;
+  const qualityPenalty =
+    project.riskLevel === "CRITICAL" ? 35 :
+    project.riskLevel === "HIGH" ? 20 :
+    project.riskLevel === "MEDIUM" ? 8 : 0;
+  const quality = Math.max(0, Math.min(100, qualityBase - qualityPenalty));
+  const pendingApprovals = approvals.filter((a) => a.status === "PENDING").length;
+  const approvalScore = milestones.length > 0
+    ? Math.max(0, 100 - Math.round((pendingApprovals / Math.max(milestones.length, 1)) * 100))
+    : 100;
+  const activeRisks = risks.filter((r) => r.status !== "RESOLVED" && r.status !== "CLOSED").length;
+  const collaborationSignals = appointments.filter((a) => a.status !== "CANCELLED").length + Math.min(deliverables.length, 4);
+  const collaboration = Math.max(20, Math.min(100, collaborationSignals * 12 - activeRisks * 8));
+  const budgetVal = budget ? Math.max(0, 100 - budget.burnRate) : project.progressPercent;
 
   return [
     { label: "Delivery",      value: project.progressPercent },
-    { label: "Communication", value: 82 }, // no server metric yet
     { label: "Budget",        value: budgetVal },
     { label: "Velocity",      value: velocity },
     { label: "Quality",       value: quality },
-    { label: "Engagement",    value: 80 }, // no server metric yet
+    { label: "Approvals",     value: approvalScore },
+    { label: "Collab",        value: collaboration },
   ];
 }
 
@@ -292,18 +346,6 @@ const PHASE_COLORS = [
   "var(--cyan)", "var(--red)", "var(--accent)",
 ];
 
-// ── Fallback milestone track (shown while milestones load, if project exists) ──
-
-const FALLBACK_MILESTONES = [
-  { label: "Kickoff",  pct: 0,   done: true,  now: false },
-  { label: "Design",   pct: 22,  done: true,  now: false },
-  { label: "Sprint 3", pct: 44,  done: true,  now: false },
-  { label: "NOW",      pct: 63,  done: true,  now: true  },
-  { label: "Sprint 7", pct: 78,  done: false, now: false },
-  { label: "UAT",      pct: 88,  done: false, now: false },
-  { label: "Launch",   pct: 100, done: false, now: false },
-];
-
 // ── API → display mappers ──────────────────────────────────────────────────────
 
 function mapApiPhasesToDisplay(
@@ -409,6 +451,8 @@ export function DashboardPage({
   const [aiAnswer,    setAiAnswer]    = useState<string | null>(null);
   const [aiLoading,   setAiLoading]   = useState(false);
   const [expandedIns, setExpandedIns] = useState<number | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [todayMs]     = useState(() => Date.now());
 
   // ── API data state ────────────────────────────────────────────────────────
   const [apiPhases,             setApiPhases]             = useState<PortalPhase[]>([]);
@@ -428,7 +472,10 @@ export function DashboardPage({
   // Fetch all project-layer data in parallel
   useEffect(() => {
     if (!session || !projectId) return;
-    setDataLoading(true);
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (!cancelled) setDataLoading(true);
+    });
     Promise.all([
       loadPortalPhasesWithRefresh(session, projectId),
       loadPortalProjectDetailWithRefresh(session, projectId),
@@ -453,7 +500,10 @@ export function DashboardPage({
       if (approvals.data)                    setApiMilestoneApprovals(approvals.data);
       if (appts.data)                        setApiAppointments(appts.data);
     }).finally(() => setDataLoading(false));
-  }, [session, projectId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [session, projectId, refreshTick]);
 
   // ── Derived project values ─────────────────────────────────────────────────
   const firstProject = apiProjects.find(
@@ -463,10 +513,14 @@ export function DashboardPage({
   const hasProject    = !!firstProject;
   const progressPct   = firstProject?.progressPercent ?? 0;
   const healthScore   = firstProject
-    ? Math.min(100, Math.round(firstProject.progressPercent * 0.5 + 50))
+    ? Math.max(0, Math.min(100, 100
+        - (firstProject.riskLevel === "CRITICAL" ? 40
+          : firstProject.riskLevel === "HIGH"     ? 25
+          : firstProject.riskLevel === "MEDIUM"   ? 10 : 0)
+        + Math.round(firstProject.progressPercent * 0.15)))
     : 0;
   const daysRemaining = firstProject?.dueAt
-    ? Math.max(0, Math.ceil((new Date(firstProject.dueAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(0, Math.ceil((new Date(firstProject.dueAt).getTime() - todayMs) / (1000 * 60 * 60 * 24)))
     : null;
   const riskLevel     = firstProject?.riskLevel ?? "LOW";
 
@@ -505,14 +559,22 @@ export function DashboardPage({
 
   // ── Real-data computed values ──────────────────────────────────────────────
   const displayTeam    = buildTeamFromCollaborators(firstProject?.collaborators ?? []);
-  const liveCount      = displayTeam.filter(m => m.active).length;
+  const assignedCount  = displayTeam.length;
   const displayFeed    = buildRealFeed(apiDeliverables, apiRisks, apiAppointments, []);
   const displayActions = buildDashboardActions(
     apiOutstanding, apiMilestoneApprovals, apiDeliverables, apiAppointments,
   );
   const activeActions    = displayActions.filter(a => !dismissed.has(a.id));
   const displayVelocity  = buildVelocityFromSprints(apiSprints);
-  const displayDna       = buildDnaAxes(firstProject, apiMilestones, apiBudgetHealth);
+  const displayDna       = buildDnaAxes(
+    firstProject,
+    apiMilestones,
+    apiBudgetHealth,
+    apiRisks,
+    apiDeliverables,
+    apiMilestoneApprovals,
+    apiAppointments,
+  );
   const dnaDataPoints    = displayDna.map((ax, i) => polar(i, ax.value));
   const dnaPolygonStr    = dnaDataPoints.map(([x, y]) => `${x},${y}`).join(" ");
   const avgDna           = displayDna.length > 0
@@ -549,8 +611,13 @@ export function DashboardPage({
           </p>
         </div>
         <div className={cx("pageActions")}>
+          <button className={cx("btnSm", "btnGhost")} type="button"
+            onClick={() => setRefreshTick((value) => value + 1)}>
+            <Ic n="refresh" sz={12} c="var(--muted2)" /> {dataLoading ? "Refreshing…" : "Refresh"}
+          </button>
           <button className={cx("btnSm", "btnGhost", "dynColor")} type="button"
-            title="Export not yet available" style={{ "--color": "inherit" } as React.CSSProperties}>
+            onClick={() => downloadMissionSummaryCsv(firstProject, apiBudgetHealth, apiMilestoneApprovals, apiMilestones, apiRisks, apiDeliverables, apiAppointments)}
+            style={{ "--color": "inherit" } as React.CSSProperties}>
             <Ic n="download" sz={12} c="var(--muted2)" /> Export Summary
           </button>
           <button className={cx("btnSm", "btnAccent")} type="button"
@@ -593,7 +660,7 @@ export function DashboardPage({
               {hasProject
                 ? [
                     apiPhases.length > 0 ? apiPhases[0].name : (firstProject?.status ?? "In Progress"),
-                    `Team of ${displayTeam.length}`,
+                    assignedCount > 0 ? `${assignedCount} assigned` : "Team assignment pending",
                   ].join(" · ")
                 : "No active project assigned to your account"}
               {dataLoading && <span className={cx("ml8", "opacity50", "fs06")}>Loading…</span>}
@@ -685,54 +752,66 @@ export function DashboardPage({
             <span className={cx("cardHdTitle")}>Project DNA</span>
             <span className={cx("badge", "badgeAccent")}>{avgDna} avg</span>
           </div>
-          <div className={cx("dnaVertWrap")}>
-            <svg className={cx("dnaRadarSvg")} viewBox="0 0 200 200">
-              {[25, 50, 75, 100].map(pct => (
-                <polygon key={pct} points={ringPts(pct)} fill="none" stroke="var(--b2)" strokeWidth={0.8} opacity={0.6} />
-              ))}
-              {displayDna.map((_, i) => {
-                const [x, y] = axisEnd(i);
-                return <line key={i} x1={CX_R} y1={CY_R} x2={x} y2={y} stroke="var(--b2)" strokeWidth={0.8} opacity={0.5} />;
-              })}
-              <polygon points={dnaPolygonStr}
-                fill="color-mix(in oklab, var(--lime) 12%, transparent)"
-                stroke="var(--lime)" strokeWidth={1.5} strokeLinejoin="round"
-              />
-              {dnaDataPoints.map(([x, y], i) => (
-                <circle key={i} cx={x} cy={y} r={3} fill="var(--lime)" stroke="var(--s1)" strokeWidth={1.5} />
-              ))}
-              {displayDna.map((ax, i) => {
-                const [lx, ly] = labelPos(i);
-                return (
-                  <text key={i} x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
-                    fontSize={7} fontWeight={600} fill="var(--muted2)">
-                    {ax.label}
-                  </text>
-                );
-              })}
-              <text x={CX_R} y={CY_R - 6} textAnchor="middle" fontSize={22} fontWeight={800} fill="var(--lime)">{avgDna}</text>
-              <text x={CX_R} y={CY_R + 10} textAnchor="middle" fontSize={7} fill="var(--muted2)">/ 100</text>
-            </svg>
-            <div className={cx("dnaDimGrid")}>
-              {displayDna.map(ax => {
-                const dimClass  = ax.value > 85 ? "dnaDimLime"  : ax.value > 70 ? "dnaDimAmber"  : "dnaDimRed";
-                const textClass = ax.value > 85 ? "colorAccent" : ax.value > 70 ? "colorAmber"   : "colorRed";
-                return (
-                  <div key={ax.label} className={cx("dnaDimRow")}>
-                    <div className={cx("flexBetween", "mb4")}>
-                      <span className={cx("text11")}>{ax.label}</span>
-                      <span className={cx("fw700", "text11", textClass)}>{ax.value}</span>
-                    </div>
-                    <div className={cx("dnaDimTrack")}>
-                      <div className={cx("dnaDimFill", dimClass, mounted ? "dnaDimFillMounted" : "")}
-                        style={{ "--dim-scale": String(ax.value / 100) } as React.CSSProperties}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+          {!hasProject ? (
+            <div className={cx("missionEmptyState")}>
+              <div className={cx("iconCircle48")}>
+                <Ic n="activity" sz={18} c="var(--lime)" />
+              </div>
+              <div className={cx("missionEmptyTitle")}>Project intelligence will appear here</div>
+              <div className={cx("missionEmptySub")}>
+                Once a project is active, Mission Control will chart delivery, budget, approvals, quality, and collaboration in one view.
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className={cx("dnaVertWrap")}>
+              <svg className={cx("dnaRadarSvg")} viewBox="0 0 200 200">
+                {[25, 50, 75, 100].map(pct => (
+                  <polygon key={pct} points={ringPts(pct)} fill="none" stroke="var(--b2)" strokeWidth={0.8} opacity={0.6} />
+                ))}
+                {displayDna.map((_, i) => {
+                  const [x, y] = axisEnd(i);
+                  return <line key={i} x1={CX_R} y1={CY_R} x2={x} y2={y} stroke="var(--b2)" strokeWidth={0.8} opacity={0.5} />;
+                })}
+                <polygon points={dnaPolygonStr}
+                  fill="color-mix(in oklab, var(--lime) 12%, transparent)"
+                  stroke="var(--lime)" strokeWidth={1.5} strokeLinejoin="round"
+                />
+                {dnaDataPoints.map(([x, y], i) => (
+                  <circle key={i} cx={x} cy={y} r={3} fill="var(--lime)" stroke="var(--s1)" strokeWidth={1.5} />
+                ))}
+                {displayDna.map((ax, i) => {
+                  const [lx, ly] = labelPos(i);
+                  return (
+                    <text key={i} x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={7} fontWeight={600} fill="var(--muted2)">
+                      {ax.label}
+                    </text>
+                  );
+                })}
+                <text x={CX_R} y={CY_R - 6} textAnchor="middle" fontSize={22} fontWeight={800} fill="var(--lime)">{avgDna}</text>
+                <text x={CX_R} y={CY_R + 10} textAnchor="middle" fontSize={7} fill="var(--muted2)">/ 100</text>
+              </svg>
+              <div className={cx("dnaDimGrid")}>
+                {displayDna.map(ax => {
+                  const dimClass  = ax.value > 85 ? "dnaDimLime"  : ax.value > 70 ? "dnaDimAmber"  : "dnaDimRed";
+                  const textClass = ax.value > 85 ? "colorAccent" : ax.value > 70 ? "colorAmber"   : "colorRed";
+                  return (
+                    <div key={ax.label} className={cx("dnaDimRow")}>
+                      <div className={cx("flexBetween", "mb4")}>
+                        <span className={cx("text11")}>{ax.label}</span>
+                        <span className={cx("fw700", "text11", textClass)}>{ax.value}</span>
+                      </div>
+                      <div className={cx("dnaDimTrack")}>
+                        <div className={cx("dnaDimFill", dimClass, mounted ? "dnaDimFillMounted" : "")}
+                          style={{ "--dim-scale": String(ax.value / 100) } as React.CSSProperties}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -752,6 +831,18 @@ export function DashboardPage({
               : "TBD"}
           </span>
         </div>
+        {!hasProject ? (
+          <div className={cx("missionEmptyState")}>
+            <div className={cx("iconCircle48")}>
+              <Ic n="calendar" sz={18} c="var(--lime)" />
+            </div>
+            <div className={cx("missionEmptyTitle")}>Timeline unavailable until kickoff</div>
+            <div className={cx("missionEmptySub")}>
+              Milestones, phases, and launch checkpoints will show up here once a project is approved and scoped.
+            </div>
+          </div>
+        ) : (
+          <>
         {/* Phase legend */}
         {displayPhases.length > 0 && (
           <div className={cx("flexRow", "gap16", "flexWrap", "p4x18x0")}>
@@ -806,30 +897,38 @@ export function DashboardPage({
             })}
           </svg>
         </div>
+          </>
+        )}
       </div>
 
       {/* ── Live Now: Team + Activity Feed ──────────────────────────────── */}
-      <div className={cx("card", "p0", "overflowHidden")}>
-        <div className={cx("cardHd")}>
-          <div className={cx("flexRow", "flexCenter", "gap7")}>
-            <span className={cx("livePulse")} />
-            <span className={cx("cardHdTitle")}>Live Now</span>
+        <div className={cx("card", "p0", "overflowHidden")}>
+          <div className={cx("cardHd")}>
+            <div className={cx("flexRow", "flexCenter", "gap7")}>
+              <span className={cx("livePulse")} />
+              <span className={cx("cardHdTitle")}>Project Signals</span>
+            </div>
+            <span className={cx("badge", assignedCount > 0 ? "badgeAccent" : "badgeMuted")}>
+              {assignedCount > 0 ? `${assignedCount} assigned` : "Pending team"}
+            </span>
+            {dataLoading && <span className={cx("text11", "colorMuted", "ml8")}>Loading…</span>}
           </div>
-          <span className={cx("badge", "badgeGreen")}>{liveCount} active</span>
-          {dataLoading && <span className={cx("text11", "colorMuted", "ml8")}>Loading…</span>}
-        </div>
 
-        <div className={cx("grid2Cols", "borderT")}>
+        <div className={cx("grid2Cols", "borderT", "projectSignalsGrid")}>
           {/* Team status */}
-          <div className={cx("p0x18x14", "borderR")}>
+          <div className={cx("p0x18x14", "borderR", "projectSignalsCol")}>
             <div className={cx("text10", "colorMuted", "fw700", "ls006", "sectionHeadPad")}>
               TEAM STATUS
             </div>
-            {displayTeam.map(m => (
+            {displayTeam.length === 0 ? (
+              <div className={cx("projectSignalsEmpty")}>
+                {dataLoading ? "Loading team…" : "Team allocation is still being confirmed for this project."}
+              </div>
+            ) : displayTeam.map(m => (
               <div key={m.name} className={cx("flexRow", "flexCenter", "gap10", "p7x0", "borderTop")}>
                 <div className={cx("relative", "noShrink")}>
                   <Av initials={m.av} size={30} />
-                  <div className={cx("statusIndicatorDot", "dynBgColor")} style={{ "--bg-color": m.active ? "var(--lime)" : "var(--muted2)" } as React.CSSProperties} />
+                  <div className={cx("statusIndicatorDot", "dynBgColor")} style={{ "--bg-color": "var(--accent)" } as React.CSSProperties} />
                 </div>
                 <div className={cx("flex1", "minW0")}>
                   <div className={cx("text12", "fw600")}>{m.name}</div>
@@ -837,21 +936,18 @@ export function DashboardPage({
                     {m.task}
                   </div>
                 </div>
-                {m.active
-                  ? <span className={cx("hxLive")}>● LIVE</span>
-                  : <span className={cx("text10", "colorMuted")}>Away</span>
-                }
+                <span className={cx("text10", "colorMuted")}>Assigned</span>
               </div>
             ))}
           </div>
 
           {/* Activity feed */}
-          <div className={cx("p0x18x14")}>
+          <div className={cx("p0x18x14", "projectSignalsCol")}>
             <div className={cx("text10", "colorMuted", "fw700", "ls006", "sectionHeadPad")}>
               RECENT ACTIVITY
             </div>
             {displayFeed.length === 0 ? (
-              <div className={cx("text11", "colorMuted", "py16_0")}>
+              <div className={cx("projectSignalsEmpty")}>
                 {dataLoading ? "Loading activity…" : "No recent activity yet"}
               </div>
             ) : (
@@ -986,7 +1082,7 @@ export function DashboardPage({
                             <span key={j} className={cx("aiPip", j < Math.round(ins.confidence / 10) ? "aiPipFull" : "")} />
                           ))}
                           <span className={cx("text10", "colorMuted", "aiConfLabel")}>{ins.confidence}%</span>
-                          <span className={cx("badge", TONE_BADGE[ins.tone] ?? "badgeMuted", "ml4")}>{ins.tone}</span>
+                          <span className={cx("badge", TONE_BADGE[ins.tone] ?? "badgeMuted", "mlAuto")}>{ins.tone}</span>
                         </div>
                       </div>
                       <Ic n={isExpanded ? "chevronDown" : "chevronRight"} sz={11} c="var(--muted2)" />

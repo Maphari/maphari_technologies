@@ -80,6 +80,7 @@ describe("change request workflow integration", () => {
       projectId,
       title: "[CR:550e8400] Add reporting dashboard",
       assigneeName: "Assigned by workflow",
+      externalLinks: null,
       status: "TODO",
       priority: "MEDIUM",
       progressPercent: 0,

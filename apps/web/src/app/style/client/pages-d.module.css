@@ -2096,46 +2096,104 @@
 
 .onboardFlowMain {
   min-width: 0;
-  background: var(--bg);
+  background: transparent;
+}
+
+.onboardFlowTopShell {
+  position: relative;
+  margin-bottom: 10px;
+  padding: 26px 22px 16px;
+  border: 1px solid color-mix(in oklab, var(--accent) 18%, var(--border));
+  border-radius: calc(var(--r-md) + 8px);
+  background:
+    radial-gradient(circle at top right, color-mix(in oklab, var(--accent) 14%, transparent), transparent 34%),
+    linear-gradient(160deg, color-mix(in oklab, var(--surface) 82%, transparent), color-mix(in oklab, var(--surface2) 92%, black));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.24);
+  overflow: hidden;
+}
+
+.onboardFlowTopShell::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, white 36%, transparent), transparent);
+  opacity: 0.8;
+}
+
+.onboardFlowTopHeader {
+  margin-bottom: 18px;
+}
+
+.onboardFlowTopIntro {
+  max-width: 76ch;
+}
+
+.onboardFlowTopSub {
+  max-width: 62ch;
+  margin-bottom: 0;
+}
+
+.onboardFlowTopKpis {
+  margin-bottom: 18px;
+}
+
+.onboardFlowTopStepper {
+  margin-bottom: 18px;
+  border: 1px solid color-mix(in oklab, white 8%, transparent);
+  background: color-mix(in oklab, var(--surface) 58%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .onboardFlowTabs {
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  padding: 0 20px;
+  border: 1px solid color-mix(in oklab, var(--accent) 18%, var(--border));
+  background: color-mix(in oklab, var(--surface) 60%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  padding: 8px;
   display: flex;
+  gap: 8px;
   overflow-x: auto;
+  border-radius: calc(var(--r-md) + 2px);
 }
 
 .onboardFlowTab {
-  border: 0;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  border: 1px solid transparent;
   white-space: nowrap;
   background: transparent;
   color: var(--muted);
-  padding: 12px 10px;
+  padding: 11px 15px;
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-weight: 700;
+  border-radius: 999px;
+  transition: 180ms ease;
 }
 
 .onboardFlowTab:hover {
   color: var(--text);
+  background: color-mix(in oklab, var(--text) 4%, transparent);
 }
 
 .onboardFlowTabActive {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: color-mix(in oklab, white 88%, var(--accent));
+  border-color: color-mix(in oklab, var(--accent) 42%, transparent);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--accent) 18%, transparent), color-mix(in oklab, var(--blue) 8%, transparent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 22px color-mix(in oklab, var(--accent) 16%, transparent);
 }
 
 .onboardFlowContent {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  padding: 22px 4px 8px;
 }
 
 .onboardFlowProgressBar {
@@ -2149,11 +2207,24 @@
 .onboardFlowGrid2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  gap: 22px;
+}
+
+.onboardFlowPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in oklab, white 8%, transparent);
+  border-radius: calc(var(--r-md) + 2px);
+  background: color-mix(in oklab, var(--surface) 70%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .onboardFlowSectionTitle {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2179,10 +2250,15 @@
 
 .onboardFlowWelcomeCard {
   border: 1px solid color-mix(in oklab, var(--accent) 45%, var(--border));
-  background: linear-gradient(135deg, color-mix(in oklab, var(--accent) 8%, transparent), color-mix(in oklab, var(--blue) 5%, transparent));
-  padding: 24px;
+  background:
+    radial-gradient(circle at top right, color-mix(in oklab, var(--accent) 18%, transparent), transparent 42%),
+    linear-gradient(145deg, color-mix(in oklab, var(--surface) 82%, transparent), color-mix(in oklab, var(--surface2) 92%, black));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  padding: 28px;
   position: relative;
-  border-radius: var(--r-md);
+  border-radius: calc(var(--r-md) + 4px);
   overflow: hidden;
 }
 
@@ -2199,7 +2275,7 @@
 }
 
 .onboardFlowWelcomeEyebrow {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   color: var(--accent);
   font-family: var(--font-mono);
   font-size: 11px;
@@ -2208,35 +2284,38 @@
 }
 
 .onboardFlowWelcomeTitle {
-  margin-bottom: 8px;
-  font-size: 28px;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+  font-size: clamp(28px, 4vw, 36px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
   font-weight: 800;
 }
 
 .onboardFlowWelcomeBody {
-  margin-bottom: 16px;
+  max-width: 72ch;
+  margin-bottom: 20px;
   color: var(--muted);
   font-family: var(--font-mono);
   font-size: 12px;
-  line-height: 1.78;
+  line-height: 1.82;
 }
 
 .onboardFlowTeamRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
 }
 
 .onboardFlowTeamCard {
-  border: 1px solid var(--border);
-  background: rgba(5, 5, 8, 0.46);
-  padding: 8px 10px;
+  border: 1px solid color-mix(in oklab, white 8%, transparent);
+  background: color-mix(in oklab, var(--surface) 68%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 10px 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  border-radius: var(--r-sm);
+  gap: 10px;
+  border-radius: var(--r-md);
 }
 
 .onboardFlowAvatar {
@@ -2245,6 +2324,8 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
+  background: color-mix(in oklab, var(--accent) 18%, transparent);
+  border: 1px solid color-mix(in oklab, var(--accent) 28%, transparent);
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 800;
@@ -2272,18 +2353,24 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  border: 1px solid color-mix(in oklab, white 6%, transparent);
+  background: color-mix(in oklab, var(--surface2) 58%, transparent);
+  border-radius: var(--r-md);
 }
 
 .onboardFlowQuickRow:last-child {
-  border-bottom: 0;
+  border-bottom: 1px solid color-mix(in oklab, white 6%, transparent);
 }
 
 .onboardFlowQuickIcon {
-  width: 28px;
-  text-align: center;
-  font-size: 16px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--accent) 24%, transparent);
   flex-shrink: 0;
 }
 
@@ -2309,14 +2396,16 @@
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  border-bottom: 1px solid var(--border);
-  padding: 9px 16px;
+  border: 1px solid color-mix(in oklab, white 6%, transparent);
+  background: color-mix(in oklab, var(--surface2) 54%, transparent);
+  border-radius: 14px;
+  padding: 12px 14px;
   font-family: var(--font-mono);
   font-size: 11px;
 }
 
 .onboardFlowMetaRow:last-child {
-  border-bottom: 0;
+  border-bottom: 1px solid color-mix(in oklab, white 7%, transparent);
 }
 
 .onboardFlowMetaRow span {
@@ -2329,7 +2418,7 @@
 }
 
 .onboardFlowHeadInline {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2350,27 +2439,36 @@
 }
 
 .onboardFlowCheckCard {
-  padding: 4px 18px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: color-mix(in oklab, var(--surface) 70%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: calc(var(--r-md) + 2px);
+  border: 1px solid color-mix(in oklab, white 8%, transparent);
 }
 
 .onboardFlowCheckRow {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  border: 1px solid color-mix(in oklab, white 6%, transparent);
+  border-radius: var(--r-md);
+  background: color-mix(in oklab, var(--surface2) 56%, transparent);
 }
 
 .onboardFlowCheckRow:last-child {
-  border-bottom: 0;
+  border-bottom: 1px solid color-mix(in oklab, white 6%, transparent);
 }
 
 .onboardFlowCheckBox {
   width: 20px;
   height: 20px;
-  margin-top: 2px;
-  border: 1px solid var(--border);
-  background: transparent;
+  border: 1px solid color-mix(in oklab, white 10%, transparent);
+  background: color-mix(in oklab, var(--surface) 90%, transparent);
   color: #050508;
   display: grid;
   place-items: center;
@@ -2399,7 +2497,7 @@
   color: var(--muted);
   font-family: var(--font-mono);
   font-size: 11px;
-  line-height: 1.65;
+  line-height: 1.72;
 }
 
 .onboardFlowCheckMeta {
@@ -2409,19 +2507,51 @@
   font-size: 10px;
 }
 
+.onboardFlowEmptyState {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed color-mix(in oklab, var(--accent) 22%, transparent);
+  border-radius: calc(var(--r-md) + 2px);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 6%, transparent), transparent);
+}
+
+.onboardFlowEmptyStateIcon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--accent) 24%, transparent);
+}
+
 .onboardFlowStepCard {
-  padding: 4px 18px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: color-mix(in oklab, var(--surface) 70%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: calc(var(--r-md) + 2px);
+  border: 1px solid color-mix(in oklab, white 8%, transparent);
 }
 
 .onboardFlowStepRow {
   display: flex;
   gap: 12px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 16px;
+  border: 1px solid color-mix(in oklab, white 6%, transparent);
+  border-radius: var(--r-md);
+  background: color-mix(in oklab, var(--surface2) 56%, transparent);
 }
 
 .onboardFlowStepRow:last-child {
-  border-bottom: 0;
+  border-bottom: 1px solid color-mix(in oklab, white 6%, transparent);
 }
 
 .onboardFlowStepNum {
@@ -2473,12 +2603,23 @@
 
 .onboardFlowCommsCard {
   min-height: 100%;
-  padding: 18px 20px;
+  padding: 20px 20px 18px;
+  border: 1px solid color-mix(in oklab, white 7%, transparent);
+  background: color-mix(in oklab, var(--surface) 76%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .onboardFlowCommsIcon {
-  margin-bottom: 8px;
-  font-size: 18px;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--accent) 24%, transparent);
 }
 
 .onboardFlowCommsTitle {
@@ -2543,19 +2684,29 @@
 }
 
 .onboardFlowWrapCard {
-  padding: 4px 18px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: color-mix(in oklab, var(--surface) 70%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: calc(var(--r-md) + 2px);
+  border: 1px solid color-mix(in oklab, white 8%, transparent);
 }
 
 .onboardFlowWrapRow {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  border: 1px solid color-mix(in oklab, white 6%, transparent);
+  border-radius: var(--r-md);
+  background: color-mix(in oklab, var(--surface2) 56%, transparent);
 }
 
 .onboardFlowWrapRow:last-child {
-  border-bottom: 0;
+  border-bottom: 1px solid color-mix(in oklab, white 6%, transparent);
 }
 
 .onboardFlowWrapIcon {
@@ -2772,8 +2923,12 @@
 }
 
 @media (max-width: 760px) {
+  .onboardFlowTopShell {
+    padding: 20px 16px 14px;
+  }
+
   .onboardFlowContent {
-    padding: 16px;
+    padding: 18px 0 4px;
   }
 
   .onboardFlowWelcomeTitle {
@@ -2781,7 +2936,7 @@
   }
 
   .onboardFlowTabs {
-    padding: 0 10px;
+    padding: 8px;
   }
 
   .onboardFlowMetaRow {
@@ -7506,6 +7661,7 @@
 
 .progressFill {
   height: 100%;
+  width: var(--pct, 0%);
   background: var(--lime);
   border-radius: 3px;
   transition: width 0.35s ease;
@@ -7513,6 +7669,7 @@
 
 .progressFillAmberTone {
   height: 100%;
+  width: var(--pct, 0%);
   background: var(--amber);
   border-radius: 3px;
   transition: width 0.35s ease;
@@ -7520,6 +7677,7 @@
 
 .progressFillRedTone {
   height: 100%;
+  width: var(--pct, 0%);
   background: var(--red);
   border-radius: 3px;
   transition: width 0.35s ease;
@@ -7560,6 +7718,425 @@
   background: var(--lime-d);
   border-color: var(--lime);
   color: var(--lime);
+}
+
+/* ─── Team Access ───────────────────────────────────────────────── */
+.teamAccessShell {
+  position: relative;
+  border: 1px solid color-mix(in oklab, var(--b2) 88%, white 4%);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top left, color-mix(in oklab, var(--blue) 18%, transparent) 0, transparent 42%),
+    radial-gradient(circle at top right, color-mix(in oklab, var(--lime) 14%, transparent) 0, transparent 38%),
+    color-mix(in oklab, var(--s1) 90%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 20px 44px rgba(0, 0, 0, 0.18);
+  padding: 24px;
+}
+
+.teamAccessHeroRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.teamAccessStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.teamAccessStatCard {
+  min-height: 108px;
+  background: color-mix(in oklab, var(--s2) 88%, transparent);
+  border: 1px solid color-mix(in oklab, var(--b2) 86%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.teamAccessTabRail {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in oklab, var(--b2) 82%, transparent);
+}
+
+.teamAccessReadOnlyBanner {
+  padding: 16px 18px;
+  border: 1px solid color-mix(in oklab, var(--amber) 20%, var(--b2));
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top left, color-mix(in oklab, var(--amber) 10%, transparent), transparent 52%),
+    color-mix(in oklab, var(--s1) 88%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.teamAccessReadOnlyTitle {
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.teamAccessReadOnlyCopy {
+  font-size: 0.74rem;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.teamAccessMembersLayout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.teamAccessSideCol,
+.teamAccessMainCol {
+  min-width: 0;
+}
+
+.teamAccessSideCol {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.teamAccessPanel,
+.teamAccessListShell,
+.teamAccessPermCard,
+.teamAccessModal {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--b2) 88%, white 4%);
+  border-radius: 24px;
+  background: color-mix(in oklab, var(--s1) 88%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 38px rgba(0, 0, 0, 0.14);
+}
+
+.teamAccessPanel {
+  padding: 18px;
+}
+
+.teamAccessPanelEyebrow,
+.teamAccessSectionEyebrow {
+  margin-bottom: 8px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+
+.teamAccessSnapshotValue {
+  font-family: var(--font-syne), sans-serif;
+  font-size: clamp(2rem, 3.1vw, 2.5rem);
+  line-height: 0.95;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  margin-bottom: 10px;
+}
+
+.teamAccessPanelTitle {
+  font-size: 0.92rem;
+  line-height: 1.35;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.teamAccessPanelCopy,
+.teamAccessPermDesc {
+  font-size: 0.76rem;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.teamAccessMiniStatList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0 14px;
+}
+
+.teamAccessMiniStat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--s2) 82%, transparent);
+  border: 1px solid color-mix(in oklab, var(--b2) 80%, transparent);
+}
+
+.teamAccessMiniLabel,
+.teamAccessAssigned,
+.teamAccessProgressMeta,
+.teamAccessSectionMeta,
+.teamAccessMemberEmail,
+.teamAccessMemberMetaRow {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.03em;
+}
+
+.teamAccessMiniLabel,
+.teamAccessAssigned,
+.teamAccessSectionMeta,
+.teamAccessMemberEmail,
+.teamAccessMemberMetaRow {
+  color: var(--muted);
+}
+
+.teamAccessMiniValue {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.teamAccessProgressMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: var(--muted2);
+}
+
+.teamAccessProgressTrack {
+  background: color-mix(in oklab, var(--b2) 86%, transparent);
+}
+
+.teamAccessRoleList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.teamAccessRoleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in oklab, var(--b2) 80%, transparent);
+}
+
+.teamAccessRoleRow:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.teamAccessRoleDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--bg-color);
+  box-shadow: 0 0 18px color-mix(in oklab, var(--bg-color) 42%, transparent);
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.teamAccessListShell {
+  padding: 18px;
+}
+
+.teamAccessSectionHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.teamAccessSectionTitle {
+  font-size: 1.18rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.teamAccessSkeleton {
+  height: 96px;
+  border-radius: 22px;
+  background:
+    linear-gradient(90deg, color-mix(in oklab, var(--s2) 92%, transparent), color-mix(in oklab, white 3%, var(--s2)), color-mix(in oklab, var(--s2) 92%, transparent));
+  background-size: 200% 100%;
+  animation: sh 1.4s linear infinite;
+  margin-top: 10px;
+}
+
+.teamAccessEmptyState {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 20px;
+  text-align: center;
+  border: 1px dashed color-mix(in oklab, var(--b3) 78%, transparent);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top, color-mix(in oklab, var(--blue) 10%, transparent), transparent 58%),
+    color-mix(in oklab, var(--s2) 82%, transparent);
+}
+
+.teamAccessEmptyIcon {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in oklab, var(--s3) 80%, transparent);
+  border: 1px solid color-mix(in oklab, var(--b2) 82%, transparent);
+}
+
+.teamAccessEmptyTitle {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.teamAccessEmptyCopy {
+  max-width: 440px;
+  font-size: 0.8rem;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.teamAccessMemberCard {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  margin-top: 10px;
+  border: 1px solid color-mix(in oklab, var(--team-tone) 18%, var(--b2));
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, color-mix(in oklab, var(--team-tone) 6%, transparent), transparent 36%),
+    color-mix(in oklab, var(--s2) 84%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.teamAccessMemberCard::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 0;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--team-tone);
+  box-shadow: 0 0 24px color-mix(in oklab, var(--team-tone) 28%, transparent);
+}
+
+.teamAccessAvatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: var(--bg-color);
+  color: var(--color);
+  font-size: 0.9rem;
+  font-weight: 800;
+  border: 1px solid color-mix(in oklab, var(--team-tone) 24%, var(--b2));
+  flex-shrink: 0;
+}
+
+.teamAccessMemberTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.teamAccessMemberName {
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.teamAccessMemberEmail {
+  margin-bottom: 6px;
+}
+
+.teamAccessMemberMetaRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted2);
+}
+
+.teamAccessPermGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.teamAccessPermCard {
+  padding: 0;
+}
+
+.teamAccessPermGlow {
+  height: 4px;
+  background: var(--bg-color);
+  box-shadow: 0 0 26px color-mix(in oklab, var(--bg-color) 28%, transparent);
+}
+
+.teamAccessCapPill {
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--color) 16%, var(--b2));
+}
+
+.teamAccessInviteOption {
+  border-radius: 18px;
+}
+
+@media (max-width: 980px) {
+  .teamAccessStatsGrid,
+  .teamAccessPermGrid,
+  .teamAccessMembersLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .teamAccessHeroRow,
+  .teamAccessSectionHead {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .teamAccessShell,
+  .teamAccessListShell,
+  .teamAccessPanel {
+    border-radius: 22px;
+  }
+
+  .teamAccessShell {
+    padding: 18px;
+  }
+
+  .teamAccessStatsGrid {
+    gap: 10px;
+  }
+
+  .teamAccessMemberCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .teamAccessMemberMetaRow {
+    flex-direction: column;
+    gap: 4px;
+  }
 }
 
 /* ─── Icon Box (square icon container) ───────────────────────────── */

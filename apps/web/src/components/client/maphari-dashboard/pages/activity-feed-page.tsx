@@ -82,18 +82,25 @@ const TABS: { id: FilterTab; label: string; icon: string }[] = [
   { id: "messages",   label: "Messages",   icon: "message" },
 ];
 
-// ── Skeleton row ──────────────────────────────────────────────────────────────
-
-function SkeletonRow() {
-  return (
-    <div className={cx("afItem")}>
-      <div className={cx("afDot")} style={{ background: "var(--b2)" }} />
-      <div className={cx("afContent")}>
-        <div className={cx("skeletonLine")} style={{ width: "60%", height: 12, marginBottom: 6 }} />
-        <div className={cx("skeletonLine")} style={{ width: "35%", height: 10 }} />
-      </div>
-    </div>
-  );
+function exportActivityCsv(rows: ActivityItem[]): void {
+  const header = ["Date", "Relative", "Entity", "Action", "Actor"];
+  const lines = rows.map((item) => [
+    new Date(item.createdAt).toLocaleString("en-ZA"),
+    item.createdAt,
+    item.entityType,
+    item.action,
+    item.actorName ?? "System",
+  ]);
+  const csv = [header, ...lines]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, "\"\"")}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "activity-feed.csv";
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -193,6 +200,16 @@ export function ActivityFeedPage() {
           </p>
         </div>
         <div className={cx("pageActions")}>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost", "dynColor", "flexRow", "gap5")}
+            onClick={() => exportActivityCsv(filtered)}
+            style={{ "--color": "inherit" } as React.CSSProperties}
+            disabled={filtered.length === 0}
+          >
+            <Ic n="download" sz={12} c="var(--muted2)" />
+            Export CSV
+          </button>
           <button
             type="button"
             className={cx("btnSm", "btnGhost", "dynColor", "flexRow", "gap5")}

@@ -4,6 +4,7 @@ export type { PageId, NavItem } from "./config";
 export type TaskContext = {
   id: string;
   projectId: string;
+  clientId: string;
   title: string;
   subtitle: string;
   projectName: string;
@@ -21,6 +22,15 @@ export type TaskContext = {
   createdAt: string;
   progress: number | null;
   assigneeInitials: string;
+  externalLinks: Array<{
+    id: string;
+    providerKey: string;
+    externalId: string;
+    externalUrl: string;
+    title?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  }>;
 };
 
 export type KanbanColumn = {
@@ -38,6 +48,7 @@ export type KanbanColumn = {
   tasks: Array<{
     id: string;
     projectId: string;
+    clientId?: string;
     clientName?: string;
     status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
     tag: string;
@@ -56,6 +67,7 @@ export type KanbanColumn = {
     serviceClass?: "expedite" | "standard";
     needsPrep?: boolean;
     needsPrepReason?: string;
+    externalLinks?: TaskContext["externalLinks"];
   }>;
 };
 
@@ -65,6 +77,8 @@ export type ClientThread = {
   time: string;
   project: string;
   preview: string;
+  activityType?: "message" | "call" | "note" | "escalation";
+  activityStatus?: "MISSED" | "COMPLETED" | "CALLBACK_NEEDED" | "ESCALATED" | null;
   avatar: { label: string; bg: string; color: string };
   unread?: boolean;
 };

@@ -10,10 +10,10 @@ const securityHeaders = [
   { key: "X-Content-Type-Options",   value: "nosniff" },
   // Don't send Referer to cross-origin destinations
   { key: "Referrer-Policy",          value: "strict-origin-when-cross-origin" },
-  // Disable unnecessary browser features
+  // Disable unnecessary browser features (camera/mic allowed for video call pages)
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=()"
+    value: "camera=(self), microphone=(self), geolocation=(), payment=()"
   },
   // Force HTTPS for 1 year (preload-ready). Remove if not on HTTPS yet.
   {
@@ -30,16 +30,17 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
-      "connect-src 'self' http://localhost:* https://localhost:* ws://localhost:* wss://localhost:*",
+      "connect-src 'self' http://localhost:* https://localhost:* ws://localhost:* wss://localhost:* https://*.livekit.cloud wss://*.livekit.cloud https://cloud.livekit.io",
       "frame-src 'none'",
       "object-src 'none'",
       "base-uri 'self'",
-      "form-action 'self'"
+      "form-action 'self' https://sandbox.payfast.co.za https://www.payfast.co.za"
     ].join("; ")
   }
 ];
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   async headers() {
     return [
       {

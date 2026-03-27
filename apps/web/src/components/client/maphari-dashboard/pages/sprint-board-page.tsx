@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
 import { Ic, Av } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
@@ -10,30 +10,20 @@ import { saveSession } from "../../../../lib/auth/session";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-type STaskType   = "Feature" | "Bug" | "Chore" | "Review";
 type SPriority   = "P1" | "P2" | "P3";
 type STaskStatus = "todo" | "inprogress" | "review" | "done";
 type ViewMode    = "summary" | "board" | "velocity";
 
 type STask = {
-  id:       string;
-  title:    string;
-  type:     STaskType;
+  id: string;
+  title: string;
   priority: SPriority;
   initials: string;
-  pts:      number;
-  status:   STaskStatus;
-  blocked:  boolean;
-  tags:     string[];
-};
-
-// ── Config ─────────────────────────────────────────────────────────────────────
-
-const TYPE_CFG: Record<STaskType, { icon: string; color: string; badge: string }> = {
-  Feature: { icon: "zap",      color: "var(--lime)",   badge: "badgeAccent" },
-  Bug:     { icon: "alert",    color: "var(--red)",    badge: "badgeRed"    },
-  Chore:   { icon: "settings", color: "var(--muted2)", badge: "badgeMuted"  },
-  Review:  { icon: "eye",      color: "var(--cyan)",   badge: "badgeCyan"   },
+  assigneeName: string | null;
+  pts: number;
+  status: STaskStatus;
+  blocked: boolean;
+  dueLabel: string;
 };
 
 const PRIORITY_COLOR: Record<SPriority, string> = {
@@ -42,14 +32,6 @@ const PRIORITY_COLOR: Record<SPriority, string> = {
   P3: "var(--muted2)",
 };
 
-const ASSIGNEES: Record<string, { name: string; role: string }> = {
-  TK: { name: "Thabo Khumalo",   role: "Tech Lead"       },
-  JM: { name: "James Mokoena",   role: "Backend Dev"     },
-  LM: { name: "Lerato Meyer",    role: "Design Lead"     },
-  SN: { name: "Sipho Ndlovu",    role: "Frontend Dev"    },
-  ND: { name: "Nomvula Dlamini", role: "Project Manager" },
-  SM: { name: "Sindi Mokoena",   role: "Security Dev"    },
-};
 
 // ── API mapping ────────────────────────────────────────────────────────────────
 
@@ -66,44 +48,30 @@ function taskApiPriorityToUi(priority: string): SPriority {
   if (priority === "MEDIUM") return "P2";
   return "P3";
 }
+
+function formatShortDate(value: string | null): string {
+  if (!value) return "No due date";
+  return new Date(value).toLocaleDateString("en-ZA", { day: "numeric", month: "short" });
+}
+
 function mapApiTask(t: PortalSprintTask): STask {
   const initials = (t.assigneeName ?? "—")
     .split(" ").map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase() || "—";
-  // Derive task type from name heuristics (no explicit type field in DB)
-  const _n = t.name.toLowerCase();
-  const type: STaskType =
-    _n.includes("bug") || _n.includes("fix") || _n.includes("error")        ? "Bug" :
-    _n.includes("review") || _n.includes("qa") || _n.includes("test")        ? "Review" :
-    _n.includes("chore") || _n.includes("setup") || _n.includes("cleanup")   ? "Chore" :
-    "Feature";
   return {
-    id:       t.id,
-    title:    t.name,
-    type,
+    id: t.id,
+    title: t.name,
     priority: taskApiPriorityToUi(t.priority),
     initials,
-    pts:      t.storyPoints ?? 1,
-    status:   taskApiStatusToUi(t.status),
-    blocked:  t.blockedAt !== null,
-    tags:     [],
+    assigneeName: t.assigneeName,
+    pts: t.storyPoints ?? 1,
+    status: taskApiStatusToUi(t.status),
+    blocked: t.blockedAt !== null,
+    dueLabel: formatShortDate(t.dueAt),
   };
 }
 
 
 
-// 8-week commit heatmap (0–5 scale)
-const HEATMAP: number[][] = [
-  [2, 3, 1, 4, 2],
-  [3, 5, 4, 3, 2],
-  [1, 2, 3, 4, 5],
-  [4, 5, 3, 2, 3],
-  [2, 3, 5, 4, 1],
-  [5, 4, 3, 5, 4],
-  [3, 4, 2, 3, 4],
-  [4, 5, 3, 0, 0], // W8 current — Thu/Fri not yet logged
-];
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-const TODAY_WEEK = 7;
 
 
 type ColDef = { id: STaskStatus; title: string; barColor: string; badge: string };
@@ -116,14 +84,6 @@ const COLUMNS: ColDef[] = [
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function heatColor(n: number): string {
-  if (n === 0) return "var(--s3)";
-  if (n <= 1)  return "color-mix(in oklab, var(--lime) 18%, transparent)";
-  if (n <= 2)  return "color-mix(in oklab, var(--lime) 35%, transparent)";
-  if (n <= 3)  return "color-mix(in oklab, var(--lime) 55%, transparent)";
-  if (n <= 4)  return "color-mix(in oklab, var(--lime) 75%, transparent)";
-  return "var(--lime)";
-}
 
 function velocityColor(delivered: number, planned: number): string {
   const ratio = delivered / planned;
@@ -136,16 +96,12 @@ function velocityColor(delivered: number, planned: number): string {
 
 function TaskCard({ task }: { task: STask }) {
   const pColor = PRIORITY_COLOR[task.priority];
-  const tCfg   = TYPE_CFG[task.type];
-  const aInfo  = ASSIGNEES[task.initials];
   return (
     <div className={cx("taskCardWrap", "dynBorderLeft3")} style={{ "--color": pColor } as React.CSSProperties}>
       <div className={cx("py10_px", "px12_px")}>
-        {/* Type + priority + blocked */}
+        {/* Priority + blocked */}
         <div className={cx("flexRow", "flexCenter", "gap5", "mb7")}>
-          <span className={cx("badge", tCfg.badge, "inlineFlex", "flexCenter", "gap3", "fs06")}>
-            <Ic n={tCfg.icon} sz={8} c="currentColor" />{task.type}
-          </span>
+          <span className={cx("badge", "badgeMuted", "fs06")}>Task</span>
           {task.blocked && (
             <span className={cx("badge", "badgeRed", "fs06")}>Blocked</span>
           )}
@@ -161,12 +117,10 @@ function TaskCard({ task }: { task: STask }) {
         <div className={cx("flexBetween")}>
           <div className={cx("flexRow", "gap6")}>
             <Av initials={task.initials} size={22} />
-            <span className={cx("text10", "colorMuted2")}>{aInfo?.name.split(" ")[0] ?? task.initials}</span>
+            <span className={cx("text10", "colorMuted2")}>{task.assigneeName ?? task.initials}</span>
           </div>
           <div className={cx("flexRow", "gap5")}>
-            {task.tags.slice(0, 1).map(t => (
-              <span key={t} className={cx("tagPillSm", "fontMono", "text10", "colorMuted2")}>#{t}</span>
-            ))}
+            <span className={cx("tagPillSm", "fontMono", "text10", "colorMuted2")}>{task.dueLabel}</span>
             <span className={cx("tagPillS3", "fontMono", "fw700", "text10", "colorMuted2")}>{task.pts}pt</span>
           </div>
         </div>
@@ -185,51 +139,89 @@ export function SprintBoardPage() {
   const [apiAllSprints,   setApiAllSprints]   = useState<PortalSprint[]>([]);
   const [apiDeliverables, setApiDeliverables] = useState<PortalDeliverable[]>([]);
   const [loading,         setLoading]         = useState(true);
+  const [refreshing,      setRefreshing]      = useState(false);
   const [error,           setError]           = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!session || !projectId) { setLoading(false); return; }
-    setLoading(true);
+  const loadSprintBoard = useCallback(async (mode: "initial" | "refresh" = "initial"): Promise<boolean> => {
+    if (!session || !projectId) {
+      setLoading(false);
+      setRefreshing(false);
+      setError(null);
+      setActiveSprint(null);
+      setTasks([]);
+      setApiAllSprints([]);
+      setApiDeliverables([]);
+      return false;
+    }
+
+    if (mode === "initial") setLoading(true);
+    if (mode === "refresh") setRefreshing(true);
     setError(null);
-    void Promise.all([
-      loadPortalSprintsWithRefresh(session, projectId),
-      loadPortalDeliverablesWithRefresh(session, projectId),
-    ]).then(async ([sprintResult, delResult]) => {
+    try {
+      const [sprintResult, delResult] = await Promise.all([
+        loadPortalSprintsWithRefresh(session, projectId),
+        loadPortalDeliverablesWithRefresh(session, projectId),
+      ]);
       if (sprintResult.nextSession) saveSession(sprintResult.nextSession);
       if (delResult.nextSession) saveSession(delResult.nextSession);
-      if (sprintResult.error) { setError(sprintResult.error.message ?? "Failed to load."); return; }
+      if (sprintResult.error) {
+        setError(sprintResult.error.message ?? "Failed to load sprint board.");
+        setActiveSprint(null);
+        setTasks([]);
+        setApiAllSprints([]);
+        setApiDeliverables([]);
+        return false;
+      }
       const sprints = sprintResult.data ?? [];
       setApiAllSprints(sprints);
       const active = sprints.find((s) => s.status === "ACTIVE") ?? sprints[0] ?? null;
       setActiveSprint(active);
       if (delResult.data) setApiDeliverables(delResult.data);
-      if (!active) { return; }
+      if (!active) {
+        setTasks([]);
+        return true;
+      }
 
       const taskResult = await loadPortalSprintTasksWithRefresh(session, projectId, active.id);
       if (taskResult.nextSession) saveSession(taskResult.nextSession);
+      if (taskResult.error) {
+        setError(taskResult.error.message ?? "Unable to load sprint tasks.");
+        setTasks([]);
+        return false;
+      }
       if (taskResult.data && taskResult.data.length > 0) {
         setTasks(taskResult.data.map(mapApiTask));
+      } else {
+        setTasks([]);
       }
-    }).catch((err: unknown) => {
+      return true;
+    } catch (err: unknown) {
       const msg = (err as Error)?.message ?? "Failed to load sprint";
       setError(msg);
-      notify("error", msg);
-    }).finally(() => setLoading(false));
-  }, [session, projectId, notify]);
+      return false;
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [projectId, session]);
+
+  useEffect(() => {
+    void loadSprintBoard("initial");
+  }, [loadSprintBoard]);
 
   const SPRINT = activeSprint
     ? {
         name:          activeSprint.name,
         dates:         [activeSprint.startAt, activeSprint.endAt].filter(Boolean).map((d) => new Date(d!).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })).join(" – ") || "—",
-        goal:          "",
+        goal:          activeSprint.ownerName ? "Sprint owner: " + activeSprint.ownerName : "Live sprint progress for this project.",
         daysTotal:     activeSprint.startAt && activeSprint.endAt ? Math.max(1, Math.ceil((new Date(activeSprint.endAt).getTime() - new Date(activeSprint.startAt).getTime()) / 86400000)) : 14,
         daysRemaining: activeSprint.endAt ? Math.max(0, Math.ceil((new Date(activeSprint.endAt).getTime() - Date.now()) / 86400000)) : 0,
+        status:        activeSprint.status,
       }
-    : { name: "—", dates: "—", goal: "", daysTotal: 14, daysRemaining: 0 };
+    : { name: "—", dates: "—", goal: "No sprint is currently attached to this project.", daysTotal: 14, daysRemaining: 0, status: "INACTIVE" };
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [view,        setView]        = useState<ViewMode>("summary");
-  const [hoveredCell, setHoveredCell] = useState<{ w: number; d: number } | null>(null);
 
   // Derived from tasks
   const todoTasks       = TASKS.filter(t => t.status === "todo");
@@ -256,6 +248,10 @@ export function SprintBoardPage() {
     ? Math.round(displaySprints.reduce((a, s) => a + s.delivered, 0) / displaySprints.length)
     : 0;
 
+  const uniqueAssignees = useMemo(() => {
+    return [...new Set(TASKS.map((task) => task.assigneeName).filter((name): name is string => Boolean(name)))];
+  }, [TASKS]);
+
   const DELIVERABLE_STATUS_MAP: Record<string, { status: string; pct: number; color: string; badge: string }> = {
     DONE:        { status: "Done",        pct: 100, color: "var(--lime)",   badge: "badgeAccent" },
     IN_REVIEW:   { status: "In Review",   pct: 90,  color: "var(--amber)",  badge: "badgeAmber"  },
@@ -266,8 +262,6 @@ export function SprintBoardPage() {
     const m = DELIVERABLE_STATUS_MAP[d.status] ?? { status: d.status, pct: 0, color: "var(--muted2)", badge: "badgeMuted" };
     return { id: d.id.slice(-6).toUpperCase(), title: d.name, ...m };
   });
-
-  const totalHeat   = HEATMAP.flat().reduce((a, n) => a + n, 0);
 
   const tasksByCol: Record<STaskStatus, STask[]> = {
     todo:       todoTasks,
@@ -284,8 +278,60 @@ export function SprintBoardPage() {
     ["Done",        doneTasks.length,       doneTasks.reduce((a, t)       => a + t.pts, 0), "var(--lime)"   ],
   ];
 
-  const healthStatus = pctComplete >= 70 ? "On Track" : pctComplete >= 40 ? "At Risk" : "Behind";
-  const healthBadge  = pctComplete >= 70 ? "badgeAccent" : pctComplete >= 40 ? "badgeAmber" : "badgeRed";
+  const totalTasks   = TASKS.length;
+  const healthStatus = totalTasks === 0 ? "—" : pctComplete >= 70 ? "On Track" : pctComplete >= 40 ? "At Risk" : "Behind";
+  const healthBadge  = totalTasks === 0 ? "badgeMuted" : pctComplete >= 70 ? "badgeAccent" : pctComplete >= 40 ? "badgeAmber" : "badgeRed";
+  const velocityTrend = displaySprints.length >= 2
+    ? displaySprints[displaySprints.length - 1].delivered >= displaySprints[displaySprints.length - 2].delivered
+      ? `↑ Improving (${displaySprints[displaySprints.length - 2].sprint} → ${displaySprints[displaySprints.length - 1].sprint})`
+      : `↓ Declining (${displaySprints[displaySprints.length - 2].sprint} → ${displaySprints[displaySprints.length - 1].sprint})`
+    : "—";
+
+  async function handleRefresh(): Promise<void> {
+    const ok = await loadSprintBoard("refresh");
+    if (ok) {
+      notify("success", "Sprint board refreshed", "Latest sprint, task, and deliverable data has been loaded.");
+    } else if (error) {
+      notify("error", "Refresh failed", error);
+    }
+  }
+
+  function handleExport(): void {
+    if (!activeSprint) {
+      notify("info", "Nothing to export", "There is no active sprint on this project yet.");
+      return;
+    }
+
+    const rows = [
+      ["Sprint", activeSprint.name],
+      ["Sprint Status", activeSprint.status],
+      ["Sprint Progress", String(activeSprint.progressPercent) + "%"],
+      [""],
+      ["Task", "Status", "Priority", "Story Points", "Assignee", "Due Date", "Blocked"],
+      ...TASKS.map((task) => [
+        task.title,
+        task.status,
+        task.priority,
+        String(task.pts),
+        task.assigneeName ?? "—",
+        task.dueLabel,
+        task.blocked ? "Yes" : "No",
+      ]),
+    ];
+
+    const csv = rows
+      .map((row) => row.map((value) => `"${String(value).replace(/"/g, "\"\"")}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "sprint-board.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+    notify("success", "Downloading", "Sprint board CSV is downloading.");
+  }
 
   if (loading) {
     return (
@@ -305,6 +351,9 @@ export function SprintBoardPage() {
           <div className={cx("errorStateIcon")}>✕</div>
           <div className={cx("errorStateTitle")}>Failed to load</div>
           <div className={cx("errorStateSub")}>{error}</div>
+          <button type="button" className={cx("btnSm", "btnGhost", "mt12")} onClick={() => void loadSprintBoard("refresh")}>
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -318,11 +367,19 @@ export function SprintBoardPage() {
         <div>
           <div className={cx("pageEyebrow")}>Projects · Sprint</div>
           <h1 className={cx("pageTitle")}>Sprint Board</h1>
-          <p className={cx("pageSub")}>Live sprint status, task board, commit activity, and velocity history.</p>
+          <p className={cx("pageSub")}>Live sprint status, task board, delivery pace, and velocity history.</p>
         </div>
-        <div className={cx("pageActions")}>
-          <div className={cx("flexRow", "h36")}>
-            <div className={cx("pillTabs")}>
+        <div className={cx("pageActions", "flexRow", "flexAlignStart", "gap8")}>
+          <div className={cx("flexRow", "flexCenter", "gap8", "noShrink")}>
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void handleRefresh()}>
+              <Ic n="refresh" sz={13} /> {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={handleExport}>
+              <Ic n="download" sz={13} /> Export CSV
+            </button>
+          </div>
+          <div className={cx("flexRow", "noShrink")}>
+            <div className={cx("pillTabs", "mb0")}>
               {(["summary", "board", "velocity"] as ViewMode[]).map(v => (
                 <button key={v} type="button" className={cx("pillTab", view === v ? "pillTabActive" : "")} onClick={() => setView(v)}>
                   <span className={cx("flexRow", "gap5")}>
@@ -343,8 +400,8 @@ export function SprintBoardPage() {
             <div className={cx("flexRow", "flexCenter", "gap8", "mb4")}>
               <span className={cx("fw700", "text13")}>{SPRINT.name}</span>
               <span className={cx("fontMono", "text10", "colorMuted2")}>{SPRINT.dates}</span>
-              <span className={cx("badge", "badgeAccent", "flexRow", "flexCenter", "gap3")}>
-                <Ic n="activity" sz={8} c="currentColor" /> Active
+              <span className={cx("badge", SPRINT.status === "ACTIVE" ? "badgeAccent" : "badgeMuted", "flexRow", "flexCenter", "gap3")}>
+                <Ic n="activity" sz={8} c="currentColor" /> {SPRINT.status === "ACTIVE" ? "Active" : SPRINT.status}
               </span>
             </div>
             <div className={cx("text11", "colorMuted", "lineH15")}>{SPRINT.goal}</div>
@@ -404,15 +461,15 @@ export function SprintBoardPage() {
               </div>
               <div className={cx("flexCol", "gap10", "mb14")}>
                 {statusBreakdown.map(([label, count, pts, color]) => {
-                  const pct = Math.round((count / TASKS.length) * 100);
+                  const pct = TASKS.length > 0 ? Math.round((count / TASKS.length) * 100) : 0;
                   return (
                     <div key={label} className={cx("flexRow", "gap10")}>
                       <div className={cx("wh10", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": color } as React.CSSProperties} />
                       <span className={cx("text11", "w88")}>{label}</span>
-                      <div className={cx("progressTrack")}>
+                      <div className={cx("progressTrack", "flex1")}>
                         <div className={cx("pctFillR99", "dynBgColor")} style={{ '--pct': pct, "--bg-color": color } as React.CSSProperties} />
                       </div>
-                      <span className={cx("fontMono", "text10", "colorMuted2", "w58", "textRight")}>
+                      <span className={cx("fontMono", "text10", "colorMuted2", "w58", "textRight", "noShrink")}>
                         {count} <span className={cx("fs058")}>({pts}pt)</span>
                       </span>
                     </div>
@@ -434,13 +491,13 @@ export function SprintBoardPage() {
                 <span className={cx("badge", healthBadge)}>{healthStatus}</span>
               </div>
               <div className={cx("flexCol", "gap0")}>
-                {[
-                  { label: "Points completed", value: `${completedPts} / ${totalPts} pts`, color: "var(--lime)"   },
-                  { label: "Days remaining",    value: `${SPRINT.daysRemaining} of ${SPRINT.daysTotal}`, color: "var(--cyan)" },
-                  { label: "Blocked tasks",     value: `${blockedCount} task${blockedCount !== 1 ? "s" : ""}`, color: blockedCount > 0 ? "var(--red)" : "var(--lime)" },
-                  { label: "Team members",      value: "—",  color: "var(--muted2)" },
+                  {[
+                    { label: "Points completed", value: `${completedPts} / ${totalPts} pts`, color: "var(--lime)"   },
+                    { label: "Days remaining",    value: `${SPRINT.daysRemaining} of ${SPRINT.daysTotal}`, color: "var(--cyan)" },
+                    { label: "Blocked tasks",     value: `${blockedCount} task${blockedCount !== 1 ? "s" : ""}`, color: blockedCount > 0 ? "var(--red)" : "var(--lime)" },
+                  { label: "Assigned team",      value: uniqueAssignees.length > 0 ? `${uniqueAssignees.length} member${uniqueAssignees.length === 1 ? "" : "s"}` : "Unassigned",  color: uniqueAssignees.length > 0 ? "var(--muted2)" : "var(--amber)" },
                   { label: "Completion rate",   value: `${pctComplete}%`,                  color: pctComplete >= 70 ? "var(--lime)" : "var(--amber)" },
-                  { label: "Velocity trend",    value: "↑ Improving (S3 → S5)",            color: "var(--lime)"   },
+                  { label: "Velocity trend",    value: velocityTrend,                       color: velocityTrend.startsWith("↑") ? "var(--lime)" : velocityTrend === "—" ? "var(--muted2)" : "var(--red)" },
                 ].map(m => (
                   <div key={m.label} className={cx("flexBetween", "py7_0", "borderB")}>
                     <span className={cx("text11", "colorMuted")}>{m.label}</span>
@@ -454,7 +511,7 @@ export function SprintBoardPage() {
           {/* Sprint Deliverables */}
           <div className={cx("card", "overflowHidden", "mb16")}>
             <div className={cx("cardHd", "borderB")}>
-              <span className={cx("cardHdTitle")}>Sprint Deliverables</span>
+              <span className={cx("cardHdTitle")}>Project Deliverables In Flight</span>
               <span className={cx("fontMono", "text10", "colorMuted2")}>
                 {displayDeliverables.filter(d => d.pct === 100).length} of {displayDeliverables.length} complete
               </span>
@@ -463,7 +520,7 @@ export function SprintBoardPage() {
               <div className={cx("emptyState")}>
                 <div className={cx("emptyStateIcon")}><Ic n="package" sz={22} c="var(--muted2)" /></div>
                 <div className={cx("emptyStateTitle")}>No deliverables yet</div>
-                <div className={cx("emptyStateSub")}>Deliverables will appear here once the team links them to this sprint.</div>
+                <div className={cx("emptyStateSub")}>Deliverables will appear here once the team starts publishing delivery items on this project.</div>
               </div>
             )}
             {displayDeliverables.map((d, idx) => (
@@ -490,7 +547,11 @@ export function SprintBoardPage() {
               <span className={cx("cardHdTitle")}>Team — {SPRINT.name}</span>
             </div>
             <div className={cx("p24x20", "textCenter")}>
-              <span className={cx("text11", "colorMuted")}>Team activity details are visible to project managers. Contact your team lead for updates.</span>
+              <span className={cx("text11", "colorMuted")}>
+                {uniqueAssignees.length > 0
+                  ? "Assigned sprint contributors: " + uniqueAssignees.join(", ")
+                  : "No task assignees are attached to this sprint yet. Your project manager can assign owners as work is planned."}
+              </span>
             </div>
           </div>
         </>
@@ -530,50 +591,31 @@ export function SprintBoardPage() {
       {/* ════════════════════ VELOCITY VIEW ════════════════════ */}
       {view === "velocity" && (
         <>
-          {/* Commit Heatmap */}
+          {/* Task completion breakdown */}
           <div className={cx("card", "mb16", "p16x20")}>
             <div className={cx("cardHd", "mb14")}>
-              <span className={cx("cardHdTitle")}>Team Commit Activity</span>
-              <span className={cx("fontMono", "text10", "colorMuted2")}>{totalHeat} commits · 8 weeks</span>
+              <span className={cx("cardHdTitle")}>Task Completion by Status</span>
+              <span className={cx("fontMono", "text10", "colorMuted2")}>{TASKS.length} tasks total</span>
             </div>
-            <div className={cx("overflowXAuto")}>
-              <div className={cx("minW280")}>
-                {/* Day labels */}
-                <div className={cx("heatmapDayHeader")}>
-                  <div />
-                  {DAYS.map(d => (
-                    <div key={d} className={cx("textCenter", "fontMono", "text10", "colorMuted2")}>{d}</div>
-                  ))}
-                </div>
-                {/* Grid rows */}
-                {HEATMAP.map((row, wi) => (
-                  <div key={wi} className={cx("heatmapRow")}>
-                    <div
-                      className={cx("fontMono", "text10", "flexRow", "flexCenter", "dynColor")} style={{ "--color": wi === TODAY_WEEK ? "var(--lime)" : "var(--muted2)" } as React.CSSProperties}
-                    >
-                      W{wi + 1}
+            {TASKS.length === 0 ? (
+              <div className={cx("emptyState")}>
+                <div className={cx("emptyStateIcon")}><Ic n="activity" sz={22} c="var(--muted2)" /></div>
+                <div className={cx("emptyStateTitle")}>No tasks in sprint</div>
+                <div className={cx("emptyStateSub")}>Task activity will appear here once the sprint is underway.</div>
+              </div>
+            ) : (
+              <div className={cx("flexCol", "gap10")}>
+                {statusBreakdown.map(([label, count, pts, color]) => (
+                  <div key={label} className={cx("flexRow", "flexCenter", "gap12")}>
+                    <div className={cx("text11", "colorMuted")} style={{ minWidth: 80 }}>{label}</div>
+                    <div className={cx("flex1", "progressTrack")}>
+                      <div className={cx("progressFill")} style={{ '--pct': `${totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0}%`, background: color } as React.CSSProperties} />
                     </div>
-                    {row.map((val, di) => (
-                      <div
-                        key={di}
-                        onMouseEnter={() => val > 0 && setHoveredCell({ w: wi, d: di })}
-                        onMouseLeave={() => setHoveredCell(null)}
-                        title={val > 0 ? `W${wi + 1} ${DAYS[di]}: ${val} commit${val !== 1 ? "s" : ""}` : "No commits"}
-                        className={cx("heatmapCell", "dynBgColor")} style={{ "--bg-color": heatColor(val), "--border": wi === TODAY_WEEK ? "1px solid color-mix(in oklab, var(--lime) 40%, transparent)" : "1px solid var(--b1)" } as React.CSSProperties}
-                      />
-                    ))}
+                    <div className={cx("fontMono", "text11", "colorMuted2")} style={{ width: 72, minWidth: 72, flexShrink: 0, textAlign: "right" }}>{count} · {pts}pt</div>
                   </div>
                 ))}
-                {/* Legend */}
-                <div className={cx("flexRow", "flexCenter", "gap6", "mt10")}>
-                  <span className={cx("text10", "colorMuted")}>Less</span>
-                  {[0, 1, 2, 3, 4, 5].map(v => (
-                    <div key={v} className={cx("dot14sq", "dynBgColor")} style={{ "--bg-color": heatColor(v) } as React.CSSProperties} />
-                  ))}
-                  <span className={cx("text10", "colorMuted")}>More</span>
-                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Velocity Chart */}
@@ -633,9 +675,9 @@ export function SprintBoardPage() {
               </div>
               {[
                 { label: "Average velocity", value: `${avgVelocity} pts/sprint`, color: "var(--lime)"   },
-                { label: "Best sprint",       value: "S4 — 44 pts delivered",   color: "var(--lime)"   },
+                { label: "Best sprint",       value: (() => { const best = displaySprints.reduce<typeof displaySprints[0] | null>((b, s) => (!b || s.delivered > b.delivered) ? s : b, null); return best && best.delivered > 0 ? `${best.sprint} — ${best.delivered} pts delivered` : "—"; })(), color: "var(--lime)" },
                 { label: "Current sprint",    value: `${completedPts} / ${totalPts} pts (${pctComplete}%)`, color: pctComplete >= 80 ? "var(--lime)" : "var(--amber)" },
-                { label: "Trend",             value: "↑ Improving over last 3", color: "var(--lime)"   },
+                { label: "Trend",             value: velocityTrend, color: velocityTrend.startsWith("↑") ? "var(--lime)" : velocityTrend === "—" ? "var(--muted2)" : "var(--red)" },
               ].map(m => (
                 <div key={m.label} className={cx("flexBetween", "py7_0", "borderB")}>
                   <span className={cx("text11", "colorMuted")}>{m.label}</span>
@@ -645,13 +687,13 @@ export function SprintBoardPage() {
             </div>
             <div className={cx("card", "p16x20")}>
               <div className={cx("cardHd", "mb12")}>
-                <span className={cx("cardHdTitle")}>This Week</span>
+                <span className={cx("cardHdTitle")}>Sprint Tasks</span>
               </div>
               {[
-                { label: "Commits pushed", value: "12", color: "var(--lime)"  },
-                { label: "PRs merged",     value: "7",  color: "var(--lime)"  },
-                { label: "Code reviews",   value: "9",  color: "var(--amber)" },
-                { label: "Bugs raised",    value: "2",  color: "var(--red)"   },
+                { label: "Total tasks",    value: String(TASKS.length),        color: "var(--lime)"    },
+                { label: "Completed",      value: String(doneTasks.length),    color: "var(--lime)"    },
+                { label: "In review",      value: String(reviewTasks.length),  color: "var(--amber)"   },
+                { label: "Blocked",        value: String(blockedCount),        color: blockedCount > 0 ? "var(--red)" : "var(--muted2)" },
               ].map(m => (
                 <div key={m.label} className={cx("flexBetween", "py7_0", "borderB")}>
                   <span className={cx("text11", "colorMuted")}>{m.label}</span>

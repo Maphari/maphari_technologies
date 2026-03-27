@@ -67,6 +67,22 @@ export interface PortalInvoice {
   payments: PortalPayment[];
 }
 
+export interface PortalInvoiceReminderPreference {
+  id: string;
+  clientId: string;
+  enabled: boolean;
+  intervalDays: number;
+  channels: Array<"email" | "sms" | "portal">;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PortalInvoiceReminderSendResult {
+  notificationsQueued: number;
+  invoicesMatched: number;
+}
+
 export interface PortalProject {
   id: string;
   clientId: string;
@@ -342,6 +358,8 @@ export interface PortalNotificationJob {
   recipient?: string | null;
   failureReason?: string | null;
   metadata?: Record<string, string | number | boolean>;
+  snoozedUntil?: string | null;
+  archivedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

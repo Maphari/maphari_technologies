@@ -5,7 +5,9 @@ import type { AuthSession } from "../../../../lib/auth/session";
 import {
   updateProjectTaskWithRefresh,
   createProjectTaskWithRefresh,
-  type ProjectDetail
+  createAdminExternalTaskLinkWithRefresh,
+  type ProjectDetail,
+  type ProjectTaskExternalLink
 } from "../../../../lib/api/admin";
 import type { TaskContext } from "../types";
 import {
@@ -52,11 +54,22 @@ export type UseStaffTasksReturn = {
   handleTaskAction: (taskId: string, projectId: string, status: TaskContext["status"]) => Promise<void>;
   handleMoveTask: (taskId: string, projectId: string, currentStatus: TaskContext["status"], nextStatus: TaskContext["status"]) => Promise<void>;
   handleCreateTask: (projects: Array<{ id: string; name: string }>) => Promise<void>;
+  handleAddTaskExternalLink: (
+    taskId: string,
+    projectId: string,
+    input: { providerKey: string; externalId: string; externalUrl: string; title?: string }
+  ) => Promise<void>;
+  handleRemoveTaskExternalLink: (taskId: string, projectId: string, linkId: string) => Promise<void>;
+  handleCreateExternalTask: (
+    taskId: string,
+    projectId: string,
+    input: { providerKey: string; title?: string; description?: string }
+  ) => Promise<void>;
+  creatingExternalTaskId: string | null;
 };
 
 type Params = {
   session: AuthSession | null;
-  projectDetails: ProjectDetail[];
   setProjectDetails: React.Dispatch<React.SetStateAction<ProjectDetail[]>>;
   topbarSearch: string;
   clientById: Map<string, AdminClient>;
@@ -71,7 +84,6 @@ type Params = {
 
 export function useStaffTasks({
   session,
-  projectDetails,
   setProjectDetails,
   topbarSearch,
   clientById,
@@ -87,6 +99,7 @@ export function useStaffTasks({
   const [highPriorityOnly, setHighPriorityOnly] = useState(false);
   const [showTaskComposer, setShowTaskComposer] = useState(false);
   const [creatingTask, setCreatingTask] = useState(false);
+  const [creatingExternalTaskId, setCreatingExternalTaskId] = useState<string | null>(null);
   const [newTaskDraft, setNewTaskDraft] = useState({
     projectId: "",
     title: "",
@@ -102,7 +115,7 @@ export function useStaffTasks({
     const mediumThreshold = 1000 * 60 * 60 * 24 * 7;
 
     return effectiveProjectDetails.flatMap((project) => {
-      const clientName = clientById.get(project.clientId)?.name ?? "Client";
+      const clientName = clientById.get(project.clientId)?.name ?? "Unlinked client";
       return project.tasks.map((task) => {
         const dueTs = task.dueAt ? new Date(task.dueAt).getTime() : null;
         const isOverdue = Boolean(dueTs && dueTs < now && task.status !== "DONE");
@@ -122,8 +135,9 @@ export function useStaffTasks({
         return {
           id: task.id,
           projectId: project.id,
+          clientId: project.clientId,
           title: task.title,
-          subtitle: task.assigneeName ? `${project.name} · ${task.assigneeName}` : `${project.name} · Unassigned`,
+          subtitle: task.assigneeName ? `Assigned to ${task.assigneeName}` : "Unassigned",
           projectName: project.name,
           clientName,
           status: task.status,
@@ -131,14 +145,29 @@ export function useStaffTasks({
           statusTone,
           badgeTone,
           dueAt: task.dueAt ?? null,
-          dueLabel: task.dueAt ? formatDateShort(task.dueAt) : "TBD",
+          dueLabel: task.dueAt ? formatDateShort(task.dueAt) : "No due date",
           dueTone: isOverdue ? "var(--red)" : dueSoon ? "var(--amber)" : "var(--muted)",
           priority,
           estimateMinutes: estimateMinutes(task.createdAt, task.updatedAt),
           updatedAt: task.updatedAt,
           createdAt: task.createdAt,
           progress: project.progressPercent,
-          assigneeInitials: getInitials(task.assigneeName ?? "Maphari Staff")
+          assigneeInitials: getInitials(task.assigneeName ?? "Maphari Staff"),
+          externalLinks: Array.isArray(task.externalLinks)
+            ? task.externalLinks
+                .filter((link): link is ProjectTaskExternalLink =>
+                  Boolean(link && typeof link.id === "string" && typeof link.providerKey === "string" && typeof link.externalUrl === "string" && typeof link.externalId === "string")
+                )
+                .map((link) => ({
+                  id: link.id,
+                  providerKey: link.providerKey,
+                  externalId: link.externalId,
+                  externalUrl: link.externalUrl,
+                  title: link.title,
+                  createdAt: link.createdAt,
+                  updatedAt: link.updatedAt
+                }))
+            : []
         };
       });
     });
@@ -270,7 +299,7 @@ export function useStaffTasks({
       );
     }
     await refreshWorkspace(result.nextSession ?? session);
-  }, [inProgressCount, inProgressLimit, refreshWorkspace, session?.accessToken, setFeedback, setProjectDetails]);
+  }, [inProgressCount, inProgressLimit, refreshWorkspace, session, setFeedback, setProjectDetails]);
 
   const handleMoveTask = useCallback(async (
     taskId: string,
@@ -300,7 +329,7 @@ export function useStaffTasks({
       );
     }
     await refreshWorkspace(result.nextSession ?? session);
-  }, [inProgressCount, inProgressLimit, refreshWorkspace, session?.accessToken, setFeedback, setProjectDetails]);
+  }, [inProgressCount, inProgressLimit, refreshWorkspace, session, setFeedback, setProjectDetails]);
 
   const handleCreateTask = useCallback(async (projects: Array<{ id: string; name: string }>) => {
     if (!session) return;
@@ -337,7 +366,134 @@ export function useStaffTasks({
     setShowTaskComposer(false);
     setFeedback({ tone: "success", message: "Task created." });
     await refreshWorkspace(result.nextSession ?? session, { background: true });
-  }, [newTaskDraft, refreshWorkspace, session?.accessToken, setFeedback, setProjectDetails]);
+  }, [newTaskDraft, refreshWorkspace, session, setFeedback, setProjectDetails]);
+
+  const handleAddTaskExternalLink = useCallback(async (
+    taskId: string,
+    projectId: string,
+    input: { providerKey: string; externalId: string; externalUrl: string; title?: string }
+  ) => {
+    if (!session) return;
+    const providerKey = input.providerKey.trim().toLowerCase();
+    const externalId = input.externalId.trim();
+    const externalUrl = input.externalUrl.trim();
+    const title = input.title?.trim();
+    if (!providerKey || !externalId || !externalUrl) {
+      setFeedback({ tone: "error", message: "Provider, external ID, and URL are required." });
+      return;
+    }
+    const project = effectiveProjectDetails.find((entry) => entry.id === projectId);
+    const task = project?.tasks.find((entry) => entry.id === taskId);
+    if (!task) {
+      setFeedback({ tone: "error", message: "Task not found." });
+      return;
+    }
+    const existingLinks = Array.isArray(task.externalLinks) ? task.externalLinks : [];
+    const sameKeyIndex = existingLinks.findIndex((link) => link.providerKey === providerKey && link.externalId === externalId);
+    const nextLink: ProjectTaskExternalLink = {
+      id: sameKeyIndex >= 0
+        ? existingLinks[sameKeyIndex].id
+        : (globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`),
+      providerKey,
+      externalId,
+      externalUrl,
+      ...(title ? { title } : {})
+    };
+    const nextLinks = sameKeyIndex >= 0
+      ? existingLinks.map((link, index) => (index === sameKeyIndex ? { ...link, ...nextLink } : link))
+      : [...existingLinks, nextLink];
+    const result = await updateProjectTaskWithRefresh(session, projectId, taskId, { externalLinks: nextLinks });
+    if (!result.data) {
+      setFeedback({ tone: "error", message: result.error?.message ?? "Unable to update task external links." });
+      return;
+    }
+    setProjectDetails((prev) =>
+      prev.map((entry) =>
+        entry.id !== projectId
+          ? entry
+          : {
+              ...entry,
+              tasks: entry.tasks.map((taskEntry) => (taskEntry.id === taskId ? result.data! : taskEntry))
+            }
+      )
+    );
+    setFeedback({ tone: "success", message: "External link saved." });
+    await refreshWorkspace(result.nextSession ?? session, { background: true });
+  }, [effectiveProjectDetails, refreshWorkspace, session, setFeedback, setProjectDetails]);
+
+  const handleRemoveTaskExternalLink = useCallback(async (taskId: string, projectId: string, linkId: string) => {
+    if (!session) return;
+    const project = effectiveProjectDetails.find((entry) => entry.id === projectId);
+    const task = project?.tasks.find((entry) => entry.id === taskId);
+    if (!task) {
+      setFeedback({ tone: "error", message: "Task not found." });
+      return;
+    }
+    const existingLinks = Array.isArray(task.externalLinks) ? task.externalLinks : [];
+    const nextLinks = existingLinks.filter((link) => link.id !== linkId);
+    const result = await updateProjectTaskWithRefresh(session, projectId, taskId, { externalLinks: nextLinks });
+    if (!result.data) {
+      setFeedback({ tone: "error", message: result.error?.message ?? "Unable to remove external link." });
+      return;
+    }
+    setProjectDetails((prev) =>
+      prev.map((entry) =>
+        entry.id !== projectId
+          ? entry
+          : {
+              ...entry,
+              tasks: entry.tasks.map((taskEntry) => (taskEntry.id === taskId ? result.data! : taskEntry))
+            }
+      )
+    );
+    setFeedback({ tone: "success", message: "External link removed." });
+    await refreshWorkspace(result.nextSession ?? session, { background: true });
+  }, [effectiveProjectDetails, refreshWorkspace, session, setFeedback, setProjectDetails]);
+
+  const handleCreateExternalTask = useCallback(async (
+    taskId: string,
+    projectId: string,
+    input: { providerKey: string; title?: string; description?: string }
+  ) => {
+    if (!session || creatingExternalTaskId) return;
+    const providerKey = input.providerKey.trim().toLowerCase();
+    if (!providerKey) {
+      setFeedback({ tone: "error", message: "Provider is required." });
+      return;
+    }
+    const idempotencyKey = `create-ext:${taskId}:${providerKey}:${(input.title ?? "").trim().toLowerCase().slice(0, 80)}`;
+    setCreatingExternalTaskId(taskId);
+    const result = await createAdminExternalTaskLinkWithRefresh(session, taskId, {
+      providerKey,
+      title: input.title?.trim() || undefined,
+      description: input.description?.trim() || undefined,
+      idempotencyKey,
+    });
+    setCreatingExternalTaskId(null);
+    if (result.unauthorized) {
+      setFeedback({ tone: "error", message: "Session expired. Please sign in again." });
+      return;
+    }
+    if (!result.data?.task) {
+      setFeedback({ tone: "error", message: result.error?.message ?? "Unable to create external task." });
+      return;
+    }
+    setProjectDetails((prev) =>
+      prev.map((entry) =>
+        entry.id !== projectId
+          ? entry
+          : {
+              ...entry,
+              tasks: entry.tasks.map((taskEntry) => (taskEntry.id === taskId ? result.data!.task : taskEntry))
+            }
+      )
+    );
+    setFeedback({
+      tone: "success",
+      message: `${result.data.createdLink.providerKey.toUpperCase()} issue created: ${result.data.createdLink.externalId}`,
+    });
+    await refreshWorkspace(result.nextSession ?? session, { background: true });
+  }, [creatingExternalTaskId, refreshWorkspace, session, setFeedback, setProjectDetails]);
 
   return {
     activeTaskTab,
@@ -361,6 +517,10 @@ export function useStaffTasks({
     highPriorityClients,
     handleTaskAction,
     handleMoveTask,
-    handleCreateTask
+    handleCreateTask,
+    handleAddTaskExternalLink,
+    handleRemoveTaskExternalLink,
+    handleCreateExternalTask,
+    creatingExternalTaskId
   };
 }

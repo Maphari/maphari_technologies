@@ -504,6 +504,7 @@ export async function createClientContactWithRefresh(
     phone?: string;
     role?: string;
     isPrimary?: boolean;
+    canManageAccess?: boolean;
   }
 ): Promise<AuthorizedResult<ClientContact>> {
   return withAuthorizedSession(session, async (accessToken) => {
@@ -536,6 +537,7 @@ export async function updateClientContactWithRefresh(
     phone?: string;
     role?: string;
     isPrimary?: boolean;
+    canManageAccess?: boolean;
   }
 ): Promise<AuthorizedResult<ClientContact>> {
   return withAuthorizedSession(session, async (accessToken) => {

@@ -18,6 +18,7 @@ export interface ScopedRequest {
   userId: string;
   role: Role;
   clientId?: string;
+  email?: string;
 }
 
 export * from "./schemas.js";

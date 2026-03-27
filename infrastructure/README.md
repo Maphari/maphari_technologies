@@ -31,3 +31,4 @@ pnpm infra:down
 
 - Alert rules are under `infrastructure/monitoring/alerts/`:
   - `chat-files.rules.yml` (HTTP error/latency, DB latency, upload backlog, socket-connection health)
+  - `integration-operations.rules.yml` (create-link failure spikes, sync-log endpoint errors)

@@ -13,6 +13,7 @@ import {
   getPortalPreferenceWithRefresh,
   type PortalSupportTicket,
 } from "../../../../lib/api/portal";
+import { requestAccountDeletionWithRefresh, requestDataExportWithRefresh } from "../../../../lib/api/portal/profile";
 
 // ── Types & Data ──────────────────────────────────────────────────────────────
 
@@ -63,6 +64,7 @@ export function DataPrivacyPage() {
   const [popiaRequests,  setPopiaRequests]  = useState<PortalSupportTicket[]>([]);
   const [loading,        setLoading]        = useState(true);
   const [error,          setError]          = useState<string | null>(null);
+  const [requestingKey,  setRequestingKey]  = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
@@ -126,18 +128,56 @@ export function DataPrivacyPage() {
 
   async function handlePOPIARequest(rightLabel: string, category: string): Promise<void> {
     if (!session) { notify("error", "Not signed in", "Please sign in to submit a POPIA request."); return; }
+    if (requestingKey) return;
+    setRequestingKey(category);
     try {
+      if (category === "DATA_EXPORT_REQUEST") {
+        const r = await requestDataExportWithRefresh(session, { reason: `POPIA request: ${rightLabel}` });
+        if (r.nextSession) saveSession(r.nextSession);
+        if (r.error) {
+          notify("error", "Request failed", r.error.message ?? "Could not submit export request.");
+          return;
+        }
+        notify("success", "Export request submitted", r.data?.message ?? "We will prepare your data export.");
+        return;
+      }
+
+      if (category === "DATA_DELETION_REQUEST") {
+        const r = await requestAccountDeletionWithRefresh(session, {
+          confirmation: "DELETE",
+          reason: `POPIA request: ${rightLabel}`,
+        });
+        if (r.nextSession) saveSession(r.nextSession);
+        if (r.error) {
+          notify("error", "Request failed", r.error.message ?? "Could not submit deletion request.");
+          return;
+        }
+        notify("success", "Deletion request submitted", r.data?.message ?? "We will process your deletion request.");
+        return;
+      }
+
       const r = await createPortalSupportTicketWithRefresh(session, {
-        clientId:    session.user.clientId ?? "",
-        title:       `POPIA Request: ${rightLabel}`,
+        clientId: session.user.clientId ?? "",
+        title: `POPIA Request: ${rightLabel}`,
         description: `Client has submitted a formal POPIA right request: "${rightLabel}". Please process within 5 business days as required by the Protection of Personal Information Act.`,
         category,
-        priority:    "HIGH",
+        priority: "HIGH",
       });
       if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) {
+        notify("error", "Request failed", r.error.message ?? "Could not submit your request.");
+        return;
+      }
+      const refreshTickets = await loadPortalSupportTicketsWithRefresh(session);
+      if (refreshTickets.nextSession) saveSession(refreshTickets.nextSession);
+      if (!refreshTickets.error && refreshTickets.data) {
+        setPopiaRequests(refreshTickets.data.filter((t) => t.title?.startsWith("POPIA Request:")));
+      }
       notify("success", "Request submitted", "Your POPIA request has been received. We'll respond within 5 business days.");
     } catch {
       notify("error", "Request failed", "Could not submit your request. Please email privacy@maphari.co.za directly.");
+    } finally {
+      setRequestingKey(null);
     }
   }
 
@@ -230,11 +270,12 @@ export function DataPrivacyPage() {
                   type="button"
                   aria-checked={c.enabled}
                   role="switch"
+                  aria-disabled={c.required}
+                  disabled={c.required}
                   onClick={() => toggle(c.id)}
-                  className={cx("dpToggleBtn", "dynBgColor")}
-                  style={{ "--bg-color": c.enabled ? "var(--lime)" : "var(--b2)", "--cursor": c.required ? "default" : "pointer" } as React.CSSProperties}
+                  className={cx("profMiniToggle", c.enabled && "profMiniToggleOn")}
                 >
-                  <span className={cx("dpToggleKnob")} style={{ "--left": c.enabled ? "23px" : "3px" } as React.CSSProperties} />
+                  <span className={cx("profMiniToggleKnob", c.enabled && "profMiniToggleKnobOn")} />
                 </button>
               </div>
             ))}
@@ -301,9 +342,10 @@ export function DataPrivacyPage() {
               <button
                 type="button"
                 className={cx("btnSm", "btnGhost", "alignSelfStart", "mt4")}
+                disabled={requestingKey === r.category}
                 onClick={() => { void handlePOPIARequest(r.label, r.category); }}
               >
-                {r.cta}
+                {requestingKey === r.category ? "Submitting…" : r.cta}
               </button>
             </div>
           ))}

@@ -22,10 +22,9 @@ export function resolveAuthRedirect(input: ResolveAuthRedirectInput): string | n
 
   // Allow the dedicated login pages even though they live under /admin/ or /staff/
   if (NESTED_LOGIN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
-    if (authenticated) {
-      // Already signed in — redirect to the appropriate home
-      return roleHomePath(role!);
-    }
+    // The role cookie alone is not enough to prove the user still has a valid
+    // in-memory session, so let the dedicated login pages render and perform
+    // the real auth handshake client-side.
     return null;
   }
 

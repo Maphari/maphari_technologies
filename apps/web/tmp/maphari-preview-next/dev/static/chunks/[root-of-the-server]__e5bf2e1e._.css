@@ -1,0 +1,398 @@
+/* [next]/internal/font/google/syne_89eecdd9.module.css [app-client] (css) */
+@font-face {
+  font-family: Syne;
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../media/ab624315db63c58d-s.028be875.woff2") format("woff2");
+  unicode-range: U+370-377, U+37A-37F, U+384-38A, U+38C, U+38E-3A1, U+3A3-3FF;
+}
+
+@font-face {
+  font-family: Syne;
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../media/e94b8ab81811a983-s.399ca42d.woff2") format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: Syne;
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../media/0c795a286deabae8-s.p.b6c48e4e.woff2") format("woff2");
+  unicode-range: U+??, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: Syne Fallback;
+  src: local(Arial);
+  ascent-override: 93.93%;
+  descent-override: 27.93%;
+  line-gap-override: 0.0%;
+  size-adjust: 98.47%;
+}
+
+.syne_89eecdd9-module__ON88Zq__className {
+  font-family: Syne, Syne Fallback;
+  font-style: normal;
+}
+
+.syne_89eecdd9-module__ON88Zq__variable {
+  --font-syne: "Syne", "Syne Fallback";
+}
+
+/* [next]/internal/font/google/dm_sans_efc253b3.module.css [app-client] (css) */
+@font-face {
+  font-family: DM Sans;
+  font-style: normal;
+  font-weight: 100 1000;
+  font-display: swap;
+  src: url("../media/c3cb240f9c892514-s.d8e4bce2.woff2") format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: DM Sans;
+  font-style: normal;
+  font-weight: 100 1000;
+  font-display: swap;
+  src: url("../media/5c285b27cdda1fe8-s.p.a62025f2.woff2") format("woff2");
+  unicode-range: U+??, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: DM Sans Fallback;
+  src: local(Arial);
+  ascent-override: 94.9%;
+  descent-override: 29.66%;
+  line-gap-override: 0.0%;
+  size-adjust: 104.53%;
+}
+
+.dm_sans_efc253b3-module__w1i8Da__className {
+  font-family: DM Sans, DM Sans Fallback;
+  font-style: normal;
+}
+
+.dm_sans_efc253b3-module__w1i8Da__variable {
+  --font-dm-sans: "DM Sans", "DM Sans Fallback";
+}
+
+/* [next]/internal/font/google/dm_mono_8d08802c.module.css [app-client] (css) */
+@font-face {
+  font-family: DM Mono;
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("../media/ba8e772932784a28-s.7bb0ada4.woff2") format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: DM Mono;
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("../media/7546fe8f902b88b8-s.p.5f7c9333.woff2") format("woff2");
+  unicode-range: U+??, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: DM Mono;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../media/b12e986493c137cf-s.4b5f6188.woff2") format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: DM Mono;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../media/36363bfb06833f56-s.p.d8302362.woff2") format("woff2");
+  unicode-range: U+??, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: DM Mono;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../media/b2fa3ef4ca165ab4-s.e316a4a9.woff2") format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: DM Mono;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../media/a73419dd2ba2d841-s.p.f2813c2a.woff2") format("woff2");
+  unicode-range: U+??, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: DM Mono Fallback;
+  src: local(Arial);
+  ascent-override: 73.71%;
+  descent-override: 23.03%;
+  line-gap-override: 0.0%;
+  size-adjust: 134.59%;
+}
+
+.dm_mono_8d08802c-module__JOX8Iq__className {
+  font-family: DM Mono, DM Mono Fallback;
+  font-style: normal;
+}
+
+.dm_mono_8d08802c-module__JOX8Iq__variable {
+  --font-dm-mono: "DM Mono", "DM Mono Fallback";
+}
+
+/* [next]/internal/font/google/instrument_serif_420fc001.module.css [app-client] (css) */
+@font-face {
+  font-family: Instrument Serif;
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../media/fc0a7394b875fa43-s.614a1c00.woff2") format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: Instrument Serif;
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../media/7ebf22b5a21034f8-s.p.d8bad3ab.woff2") format("woff2");
+  unicode-range: U+??, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: Instrument Serif;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../media/ccf27e5a7366fb23-s.262b87c4.woff2") format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: Instrument Serif;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../media/e41d5df559864f9e-s.p.380d09ea.woff2") format("woff2");
+  unicode-range: U+??, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: Instrument Serif Fallback;
+  src: local(Times New Roman);
+  ascent-override: 117.94%;
+  descent-override: 36.93%;
+  line-gap-override: 0.0%;
+  size-adjust: 83.94%;
+}
+
+.instrument_serif_420fc001-module__DbvvRW__className {
+  font-family: Instrument Serif, Instrument Serif Fallback;
+  font-weight: 400;
+}
+
+.instrument_serif_420fc001-module__DbvvRW__variable {
+  --font-instrument-serif: "Instrument Serif", "Instrument Serif Fallback";
+}
+
+/* [project]/apps/web/src/app/style/globals.css [app-client] (css) */
+:root {
+  --navy: #0b1220;
+  --teal: #12d6c5;
+  --gold: #f6c445;
+  --offwhite: #f7f8fa;
+  --charcoal: #1b1f2a;
+  --grey: #e6e8ee;
+  --primary: #12d6c5;
+  --primary-hover: #0fc2b2;
+  --highlight: #f6c445;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+  --mk-bg: #f7f8fa;
+  --mk-surface: #fff;
+  --mk-card: #f1f3f7;
+  --mk-card-strong: #fff;
+  --mk-subtle-accent: #e6fffb;
+  --mk-text: #1b1f2a;
+  --mk-muted: #5c6475;
+  --mk-border: #e6e8ee;
+  --mk-input-border: #d6d9e0;
+  --mk-hover-bg: #e8fffc;
+  --mk-shadow: 0 10px 16px #0b122014;
+  --btn-primary-bg: #12d6c5;
+  --btn-primary-text: #0b1220;
+  --btn-primary-hover: #0fc2b2;
+  --btn-secondary-bg: transparent;
+  --btn-secondary-border: #0b1220;
+  --btn-secondary-text: #0b1220;
+}
+
+html[data-theme="dark"] {
+  --primary: #12d6c5;
+  --primary-hover: #0fc2b2;
+  --highlight: #f6c445;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+  --mk-bg: #0b1220;
+  --mk-surface: #111827;
+  --mk-card: #1b2433;
+  --mk-card-strong: #162032;
+  --mk-subtle-accent: #0f2f33;
+  --mk-text: #f3f4f6;
+  --mk-muted: #9ca3af;
+  --mk-border: #253047;
+  --mk-input-border: #2c3a52;
+  --mk-hover-bg: #0f2f33;
+  --mk-shadow: 0 14px 24px #00000059;
+  --btn-primary-bg: #12d6c5;
+  --btn-primary-text: #0b1220;
+  --btn-primary-hover: #0fc2b2;
+  --btn-secondary-bg: transparent;
+  --btn-secondary-border: #12d6c5;
+  --btn-secondary-text: #12d6c5;
+}
+
+html, body {
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+body {
+  color: var(--charcoal);
+  background: var(--offwhite);
+  font-family: var(--font-dm-sans), "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [role="button"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* [project]/apps/web/src/app/style/print.css [app-client] (css) */
+@media print {
+  [class*="sidebar"], [class*="topbar"], [class*="actionBtn"], [class*="navBtn"], [class*="printHide"], [class*="modalBackdrop"], button {
+    display: none !important;
+  }
+
+  body, [class*="dashRoot"], [class*="mainContent"], [class*="pageRoot"] {
+    color: #000 !important;
+    background: #fff !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  body {
+    padding-top: 28px !important;
+  }
+
+  [class*="card"], [class*="invoiceCard"], [class*="reportSection"], [class*="section"] {
+    page-break-inside: avoid;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    color: #000 !important;
+    background: #fff !important;
+    border: 1px solid #ddd !important;
+    margin-bottom: 16px !important;
+    display: block !important;
+  }
+
+  [class*="pageBreakBefore"] {
+    page-break-before: always;
+  }
+
+  [class*="printHeader"] {
+    color: #000;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    padding: 4px 0;
+    font-size: 14px;
+    font-weight: 700;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: block !important;
+  }
+
+  [class*="printFooter"] {
+    color: #666;
+    border-top: 1px solid #ddd;
+    padding: 4px 0;
+    font-size: 11px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: block !important;
+  }
+
+  body, p, span, div, li, blockquote {
+    font-family: serif !important;
+    font-size: 12pt !important;
+  }
+
+  h1 {
+    font-size: 18pt !important;
+  }
+
+  h2 {
+    font-size: 14pt !important;
+  }
+
+  h3 {
+    font-size: 12pt !important;
+  }
+
+  a[href^="http"]:after, a[href^="https"]:after {
+    content: " (" attr(href) ")";
+    color: #666;
+    font-size: 10pt;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    text-align: left !important;
+    border: 1px solid #ccc !important;
+    padding: 6px 8px !important;
+  }
+}
+
+/*# sourceMappingURL=%5Broot-of-the-server%5D__e5bf2e1e._.css.map*/

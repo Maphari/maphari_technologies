@@ -128,6 +128,22 @@ function pendingSignOffCount(crs: PortalProjectChangeRequest[]): number {
   return crs.filter(c => c.status === "ADMIN_APPROVED").length;
 }
 
+function exportExecutiveSummaryCsv(rows: Array<{ label: string; value: string; detail: string }>): void {
+  const header = ["Metric", "Value", "Detail"];
+  const csvRows = rows.map((row) => [row.label, row.value, row.detail]);
+  const escape = (value: string) => "\"" + value.replace(/"/g, "\"\"") + "\"";
+  const csv = [header, ...csvRows].map((row) => row.map((cell) => escape(cell)).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "executive-view.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 // ── Component ──────────────────────────────────────────────────────────────────
 
 interface ExecutiveSummaryPageProps {
@@ -157,70 +173,72 @@ export function ExecutiveSummaryPage({ onNavigate }: ExecutiveSummaryPageProps) 
   // ── Load data ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!session) return;
-    setLoading(true);
-    setError(null);
+    queueMicrotask(() => {
+      setLoading(true);
+      setError(null);
 
-    const loads: Promise<void>[] = [];
-    let hasError = false;
+      const loads: Promise<void>[] = [];
+      let hasError = false;
 
-    function markError() {
-      hasError = true;
-    }
-
-    // Surveys: requires clientId from session user
-    const clientId = (session.user as { clientId?: string })?.clientId ?? session.user?.id ?? "";
-    if (clientId) {
-      loads.push(
-        loadPortalSurveysWithRefresh(session, clientId).then(result => {
-          if (result.nextSession) saveSession(result.nextSession);
-          if (result.error) { markError(); return; }
-          if (result.data) setSurveys(result.data);
-        })
-      );
-    }
-
-    // Invoices (session-scoped, no clientId param)
-    loads.push(
-      loadPortalInvoicesWithRefresh(session).then(result => {
-        if (result.nextSession) saveSession(result.nextSession);
-        if (result.error) { markError(); return; }
-        if (result.data) setInvoices(result.data);
-      })
-    );
-
-    // Change requests (session-scoped)
-    loads.push(
-      loadPortalChangeRequestsWithRefresh(session, projectId ? { projectId } : {}).then(result => {
-        if (result.nextSession) saveSession(result.nextSession);
-        if (result.error) { markError(); return; }
-        if (result.data) setChangeReqs(result.data);
-      })
-    );
-
-    // Project-layer data: deliverables + risks (only if projectId available)
-    if (projectId) {
-      loads.push(
-        loadPortalDeliverablesWithRefresh(session, projectId).then(result => {
-          if (result.nextSession) saveSession(result.nextSession);
-          if (result.error) { markError(); return; }
-          if (result.data) setDeliverables(result.data);
-        })
-      );
-      loads.push(
-        loadPortalRisksWithRefresh(session, projectId).then(result => {
-          if (result.nextSession) saveSession(result.nextSession);
-          if (result.error) { markError(); return; }
-          if (result.data) setRisks(result.data);
-        })
-      );
-    }
-
-    Promise.all(loads).finally(() => {
-      setLoading(false);
-      setLastUpdated(new Date());
-      if (hasError) {
-        setError("Failed to load executive summary data. Please try again.");
+      function markError() {
+        hasError = true;
       }
+
+      // Surveys: requires clientId from session user
+      const clientId = (session.user as { clientId?: string })?.clientId ?? session.user?.id ?? "";
+      if (clientId) {
+        loads.push(
+          loadPortalSurveysWithRefresh(session, clientId).then(result => {
+            if (result.nextSession) saveSession(result.nextSession);
+            if (result.error) { markError(); return; }
+            if (result.data) setSurveys(result.data);
+          })
+        );
+      }
+
+      // Invoices (session-scoped, no clientId param)
+      loads.push(
+        loadPortalInvoicesWithRefresh(session).then(result => {
+          if (result.nextSession) saveSession(result.nextSession);
+          if (result.error) { markError(); return; }
+          if (result.data) setInvoices(result.data);
+        })
+      );
+
+      // Change requests (session-scoped)
+      loads.push(
+        loadPortalChangeRequestsWithRefresh(session, projectId ? { projectId } : {}).then(result => {
+          if (result.nextSession) saveSession(result.nextSession);
+          if (result.error) { markError(); return; }
+          if (result.data) setChangeReqs(result.data);
+        })
+      );
+
+      // Project-layer data: deliverables + risks (only if projectId available)
+      if (projectId) {
+        loads.push(
+          loadPortalDeliverablesWithRefresh(session, projectId).then(result => {
+            if (result.nextSession) saveSession(result.nextSession);
+            if (result.error) { markError(); return; }
+            if (result.data) setDeliverables(result.data);
+          })
+        );
+        loads.push(
+          loadPortalRisksWithRefresh(session, projectId).then(result => {
+            if (result.nextSession) saveSession(result.nextSession);
+            if (result.error) { markError(); return; }
+            if (result.data) setRisks(result.data);
+          })
+        );
+      }
+
+      Promise.all(loads).finally(() => {
+        setLoading(false);
+        setLastUpdated(new Date());
+        if (hasError) {
+          setError("Failed to load executive summary data. Please try again.");
+        }
+      });
     });
   }, [session, projectId, refreshKey]);
 
@@ -234,6 +252,46 @@ export function ExecutiveSummaryPage({ onNavigate }: ExecutiveSummaryPageProps) 
   const pendingApprovals = useMemo(() => pendingSignOffCount(changeReqs), [changeReqs]);
   const pendingCRs      = useMemo(() => pendingCRCount(changeReqs), [changeReqs]);
   const topSeverity     = useMemo(() => highestSeverityLabel(openRisks), [openRisks]);
+  const exportRows = useMemo(
+    () => [
+      {
+        label: "Project Health",
+        value: healthScore > 0 ? String(healthScore) + "/100" : "—",
+        detail: scoreLabel(healthScore),
+      },
+      {
+        label: "Budget Health",
+        value: invoices.length === 0 ? "—" : String(budgetHealth.pct) + "%",
+        detail: invoices.length === 0 ? "No invoices yet" : fmtCents(budgetHealth.paidCents) + " paid of " + fmtCents(budgetHealth.totalCents),
+      },
+      {
+        label: "Delivery Health",
+        value: deliverables.length === 0 ? "—" : String(deliveryHealth.done) + "/" + String(deliveryHealth.total) + " done",
+        detail: deliverables.length === 0 ? (projectId ? "No deliverables yet" : "Select a project to view") : (deliveryHealth.overdue > 0 ? String(deliveryHealth.overdue) + " overdue" : "On track"),
+      },
+      {
+        label: "Satisfaction (NPS)",
+        value: nps.score !== null ? String(nps.score) : "—",
+        detail: nps.lastDate ? "Last survey " + nps.lastDate : "No surveys completed",
+      },
+      {
+        label: "Pending Approvals",
+        value: String(pendingApprovals),
+        detail: "Sign-offs awaiting review",
+      },
+      {
+        label: "Open Change Requests",
+        value: String(pendingCRs),
+        detail: "Submitted or under estimate",
+      },
+      {
+        label: "Active Risks",
+        value: String(openRisks.length),
+        detail: "Highest severity: " + topSeverity,
+      },
+    ],
+    [healthScore, invoices.length, budgetHealth.pct, budgetHealth.paidCents, budgetHealth.totalCents, deliverables.length, deliveryHealth.done, deliveryHealth.total, deliveryHealth.overdue, projectId, nps.score, nps.lastDate, pendingApprovals, pendingCRs, openRisks.length, topSeverity]
+  );
 
   const today = lastUpdated
     ? lastUpdated.toLocaleString("en-ZA", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
@@ -256,12 +314,25 @@ export function ExecutiveSummaryPage({ onNavigate }: ExecutiveSummaryPageProps) 
         <div className={cx("flex1")}>
           <div className={cx("pageEyebrow")}>Reporting · Overview</div>
           <h1 className={cx("pageTitle")}>Executive View</h1>
-          <p className={cx("pageSub")}>Aggregated health, budget, delivery, and satisfaction snapshot for this engagement.</p>
+          <p className={cx("pageSub")}>Top-level view of delivery health, invoice position, project risk, and client satisfaction for this engagement.</p>
         </div>
-        <div className={cx("flexRow", "gap8", "noShrink")}>
+        <div className={cx("flexRow", "gap8", "flexWrap", "flexAlignCenter", "noShrink")}>
           <span className={cx("text11", "colorMuted")}>
             {loading ? "Refreshing…" : `Updated ${today}`}
           </span>
+          <button
+            className={cx("btnSm", "btnGhost")}
+            onClick={() => exportExecutiveSummaryCsv(exportRows)}
+            disabled={loading}
+          >
+            Export CSV
+          </button>
+          <button
+            className={cx("btnSm", "btnGhost")}
+            onClick={() => window.print()}
+          >
+            Download PDF
+          </button>
           <button
             className={cx("btnSm", "btnGhost")}
             onClick={() => setRefreshKey(k => k + 1)}
@@ -475,7 +546,7 @@ export function ExecutiveSummaryPage({ onNavigate }: ExecutiveSummaryPageProps) 
         <div className={cx("cardHd")}>
           <span className={cx("cardHdTitle")}>Quick Navigation</span>
         </div>
-        <div className={cx("cardBodyPad", "flexRow", "gap12")}>
+        <div className={cx("cardBodyPad", "flexRow", "gap12", "flexWrap")}>
           <button
             className={cx("btnSm", "btnGhost")}
             onClick={() => navTo("budgetTracker")}

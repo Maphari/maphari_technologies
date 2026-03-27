@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 // knowledge-access-page.tsx — Client Portal Knowledge Base access view
 // Data     : loadPortalKnowledgeArticlesWithRefresh → GET /knowledge
-// Static   : AI_FAQS (contextual static — no time-series API)
+// Static   : CLIENT_FAQS (contextual static guidance)
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -18,7 +18,7 @@ import {
 
 // ── Static AI FAQs (contextual — no API) ──────────────────────────────────────
 
-const AI_FAQS = [
+const CLIENT_FAQS = [
   {
     q: "What is the current health of my project?",
     a: "Your project health score is visible on the Home and Health Score pages. Check there for the latest completion percentage, active risks, and milestone status.",
@@ -81,15 +81,22 @@ export function KnowledgeAccessPage() {
   const [search,    setSearch]    = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [openFaq,   setOpenFaq]   = useState<number | null>(null);
+  const [activeArticle, setActiveArticle] = useState<PortalKnowledgeArticle | null>(null);
 
-  useEffect(() => {
+  const loadArticles = useCallback(async () => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
-    void loadPortalKnowledgeArticlesWithRefresh(session).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setArticles(r.data);
-    }).finally(() => setLoading(false));
+    const r = await loadPortalKnowledgeArticlesWithRefresh(session);
+    if (r.nextSession) saveSession(r.nextSession);
+    if (!r.error && r.data) setArticles(r.data);
+    setLoading(false);
   }, [session]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadArticles();
+    });
+  }, [loadArticles]);
 
   const toggleFaq = useCallback((index: number) => {
     setOpenFaq((prev) => (prev === index ? null : index));
@@ -135,31 +142,35 @@ export function KnowledgeAccessPage() {
       <div className={cx("pageHeader", "mb0")}>
         <div>
           <div className={cx("pageEyebrow")}>Account · Knowledge</div>
-          <h1 className={cx("pageTitle")}>Knowledge Base</h1>
-          <p className={cx("pageSub")}>Find answers to common questions about your project and our process.</p>
+          <h1 className={cx("pageTitle")}>Knowledge Access</h1>
+          <p className={cx("pageSub")}>Browse published guidance, process notes, and client help articles from one place.</p>
+        </div>
+        <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadArticles()}>
+            Refresh
+          </button>
         </div>
       </div>
 
       {/* ── Quick stats bar ── */}
       {articles.length > 0 && (
-        <div className={cx("card", "mb16")}>
-          <div className={cx("flexRow", "p12x20")}>
+        <div className={cx("grid3", "mb16")}>
             {[
-              { label: "Total Articles", value: String(articles.length) },
-              { label: "Categories", value: String(categories.length) },
-              { label: "Most Viewed", value: articles.length > 0 ? (articles.reduce((best, a) => a.viewCount > best.viewCount ? a : best, articles[0]).title.slice(0, 22) + "…") : "—" },
-            ].map((s, i) => (
-              <div key={s.label} className={cx(i === 0 ? "kbStatColBR" : i === 1 ? "kbStatColPL" : "kbStatColLast")}>
-                <div className={cx("text10", "colorMuted", "mb2")}>{s.label}</div>
-                <div className={cx("fw700", "text13", "fontMono")}>{s.value}</div>
+              { label: "Published Articles", value: String(articles.length), icon: "file" as const },
+              { label: "Categories", value: String(categories.length), icon: "layers" as const },
+              { label: "Top Article", value: articles.length > 0 ? (articles.reduce((best, a) => a.viewCount > best.viewCount ? a : best, articles[0]).title.slice(0, 24) + "…") : "—", icon: "activity" as const },
+            ].map((s) => (
+              <div key={s.label} className={cx("statCard", "statCardBlue")}>
+                <div className={cx("iconBox36", "mb10")}><Ic n={s.icon} sz={16} c="var(--cyan)" /></div>
+                <div className={cx("statLabel")}>{s.label}</div>
+                <div className={cx("statValue")}>{s.value}</div>
               </div>
             ))}
-          </div>
         </div>
       )}
 
       {/* ── Search ── */}
-      <div className={cx("card", "p16", "mb16")}>
+      <div className={cx("cardS1v2", "p16", "mb16")}>
         <div className={cx("relative")}>
           <span className={cx("searchIconWrap")}>
             <Ic n="search" sz={14} c="var(--muted2)" />
@@ -233,7 +244,7 @@ export function KnowledgeAccessPage() {
             </div>
           )}
           {!loading && filtered.map((a) => (
-            <div key={a.id} className={cx("listRow", "pointer")}>
+            <button key={a.id} type="button" className={cx("listRow", "pointer", "textLeft")} onClick={() => setActiveArticle(a)}>
               <div className={cx("flex1")}>
                 <div className={cx("fw600", "text12", "mb3")}>{a.title}</div>
                 <div className={cx("flexRow", "gap10", "flexWrap", "flexCenter")}>
@@ -245,20 +256,20 @@ export function KnowledgeAccessPage() {
                 </div>
               </div>
               <span className={cx("colorAccent", "text14", "noShrink")}>→</span>
-            </div>
+            </button>
           ))}
         </div>
       </div>
 
-      {/* ── AI-Powered FAQ ── */}
+      {/* ── FAQ ── */}
       <div className={cx("card")}>
         <div className={cx("cardHd")}>
-          <Ic n="zap" sz={14} c="var(--amber)" />
+          <Ic n="message" sz={14} c="var(--amber)" />
           <span className={cx("cardHdTitle", "ml8")}>Frequently Asked Questions</span>
-          <span className={cx("badge", "badgeAmber", "mlAuto")}>AI-powered</span>
+          <span className={cx("badge", "badgeMuted", "mlAuto")}>Client Guide</span>
         </div>
         <div className={cx("px4_0")}>
-          {AI_FAQS.map((faq, index) => (
+          {CLIENT_FAQS.map((faq, index) => (
             <div
               key={faq.q}
               className={cx("faqAccordionItem", openFaq === index && "faqAccordionItemOpen", "m8x12")}
@@ -283,6 +294,32 @@ export function KnowledgeAccessPage() {
           ))}
         </div>
       </div>
+
+      {activeArticle && (
+        <div className={cx("modalOverlay")} onClick={() => setActiveArticle(null)}>
+          <div className={cx("pmModalInner", "maxW640")} onClick={(event) => event.stopPropagation()}>
+            <div className={cx("pmModalHd")}>
+              <div>
+                <div className={cx("pmTitle")}>{activeArticle.title}</div>
+                <div className={cx("text11", "colorMuted", "mt2")}>
+                  {(activeArticle.category ?? "General") + " · " + new Date(activeArticle.updatedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
+                </div>
+              </div>
+              <button type="button" className={cx("iconBtn40x34")} onClick={() => setActiveArticle(null)} aria-label="Close">
+                <Ic n="x" sz={14} c="var(--muted2)" />
+              </button>
+            </div>
+            <div className={cx("p16", "flexCol", "gap12")}>
+              <div className={cx("text11", "colorMuted2")}>
+                {activeArticle.authorName?.trim() ? "Published by " + activeArticle.authorName : "Published in your client knowledge base"}
+              </div>
+              <div className={cx("cardS1v2", "p16", "text12", "lineH165")} style={{ whiteSpace: "pre-wrap" }}>
+                {activeArticle.content}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

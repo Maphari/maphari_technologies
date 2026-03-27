@@ -1,201 +1,270 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
-import { Ic, Av } from "../ui";
+import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
+import { usePageToast } from "../hooks/use-page-toast";
 import { loadPortalRisksWithRefresh, type PortalRisk } from "../../../../lib/api/portal/project-layer";
 import { saveSession } from "../../../../lib/auth/session";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
-type RSeverity    = "High" | "Medium" | "Low";
+type RSeverity = "High" | "Medium" | "Low";
 type RProbability = "High" | "Medium" | "Low";
-type RStatus      = "Open" | "Mitigated" | "Monitoring";
-type RCategory    = "Technical" | "Resource" | "Scope" | "Compliance" | "Client" | "Security" | "Commercial";
-type RView        = "matrix" | "list";
-
-type MStep = { label: string; done: boolean };
+type RStatus = "Open" | "Mitigated" | "Monitoring";
+type RView = "matrix" | "list";
 
 type Risk = {
-  id:            string;
-  title:         string;
-  category:      RCategory;
-  severity:      RSeverity;
-  probability:   RProbability;
-  status:        RStatus;
-  impact:        string;
-  mitigation:    string;
-  ownerName:     string;
-  ownerInitials: string;
-  ownerRole:     string;
-  project:       string;
-  date:          string;
-  lastUpdated:   string;
-  dueDate:       string;
-  tags:          string[];
-  steps:         MStep[];
+  id: string;
+  title: string;
+  severity: RSeverity;
+  probability: RProbability;
+  status: RStatus;
+  detail: string;
+  mitigation: string;
+  createdLabel: string;
+  updatedLabel: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
-// ── Config ─────────────────────────────────────────────────────────────────────
-
-const SCORE_MAP: Record<string, number> = { High: 3, Medium: 2, Low: 1 };
-
-const riskScore = (r: Risk) => SCORE_MAP[r.severity] * SCORE_MAP[r.probability];
-
-const getZone = (score: number) => {
-  if (score >= 7) return { label: "CRITICAL", color: "var(--red)",   bg: "color-mix(in oklab, var(--red) 14%, transparent)",   border: "color-mix(in oklab, var(--red) 35%, transparent)"   };
-  if (score >= 4) return { label: "HIGH",     color: "var(--red)",   bg: "color-mix(in oklab, var(--red) 7%, transparent)",    border: "color-mix(in oklab, var(--red) 20%, transparent)"   };
-  if (score >= 2) return { label: "MEDIUM",   color: "var(--amber)", bg: "color-mix(in oklab, var(--amber) 7%, transparent)",  border: "color-mix(in oklab, var(--amber) 20%, transparent)" };
-  return               { label: "LOW",      color: "var(--muted2)", bg: "var(--s2)",                                           border: "var(--b2)"                                            };
-};
+const SCORE_MAP: Record<RSeverity | RProbability, number> = { High: 3, Medium: 2, Low: 1 };
+const PROB_LABELS: RProbability[] = ["Low", "Medium", "High"];
+const SEV_LABELS: RSeverity[] = ["High", "Medium", "Low"];
 
 const SEV_COLOR: Record<RSeverity, string> = {
-  High: "var(--red)", Medium: "var(--amber)", Low: "var(--muted2)",
+  High: "var(--red)",
+  Medium: "var(--amber)",
+  Low: "var(--muted2)",
 };
+
 const SEV_BADGE: Record<RSeverity, string> = {
-  High: "badgeRed", Medium: "badgeAmber", Low: "badgeMuted",
+  High: "badgeRed",
+  Medium: "badgeAmber",
+  Low: "badgeMuted",
 };
-const STATUS_COLOR: Record<RStatus, string> = {
-  Open: "var(--amber)", Mitigated: "var(--lime)", Monitoring: "var(--purple)",
-};
+
 const STATUS_BADGE: Record<RStatus, string> = {
-  Open: "badgeAmber", Mitigated: "badgeAccent", Monitoring: "badgePurple",
+  Open: "badgeAmber",
+  Mitigated: "badgeAccent",
+  Monitoring: "badgePurple",
 };
+
 const STATUS_ICON: Record<RStatus, string> = {
-  Open: "alert", Mitigated: "check", Monitoring: "eye",
-};
-const CAT_CFG: Record<RCategory, { icon: string; color: string }> = {
-  Technical:  { icon: "code",        color: "var(--lime)"   },
-  Resource:   { icon: "users",       color: "var(--cyan)"   },
-  Scope:      { icon: "target",      color: "var(--amber)"  },
-  Compliance: { icon: "shieldCheck", color: "var(--green)"  },
-  Client:     { icon: "user",        color: "var(--purple)" },
-  Security:   { icon: "lock",        color: "var(--red)"    },
-  Commercial: { icon: "dollar",      color: "var(--blue)"   },
+  Open: "alert",
+  Mitigated: "check",
+  Monitoring: "eye",
 };
 
-const PROB_LABELS: RProbability[] = ["Low", "Medium", "High"];
-const SEV_LABELS:  RSeverity[]    = ["High", "Medium", "Low"];
-const ALL_CATS: RCategory[]       = ["Technical", "Resource", "Scope", "Compliance", "Client", "Security", "Commercial"];
-
-// ── Client-facing explain text ─────────────────────────────────────────────────
-
-function riskExplainText(zone: string): string {
-  if (zone === "CRITICAL") return "This risk directly threatens your delivery date or budget. The team is escalating it and may need your input.";
-  if (zone === "HIGH")     return "This could affect delivery quality or scope. Being actively managed — no action needed from you unless flagged.";
-  if (zone === "MEDIUM")   return "Worth watching. Impact is contained for now and the team has it under control.";
-  return "Minor risk with minimal expected impact on your project.";
+function riskScore(risk: Risk): number {
+  return SCORE_MAP[risk.severity] * SCORE_MAP[risk.probability];
 }
 
-// ── API mapping ────────────────────────────────────────────────────────────────
-
-function toLevel(s: string): "High" | "Medium" | "Low" {
-  if (s === "HIGH")   return "High";
-  if (s === "MEDIUM") return "Medium";
-  return "Low";
-}
-function toRStatus(s: string): RStatus {
-  if (s === "MITIGATED")  return "Mitigated";
-  if (s === "MONITORING") return "Monitoring";
-  return "Open";
-}
-function mapApiRisk(r: PortalRisk, idx: number): Risk {
-  const initials = (r.name ?? "R").slice(0, 2).toUpperCase();
+function getZone(score: number) {
+  if (score >= 7) {
+    return {
+      label: "CRITICAL",
+      color: "var(--red)",
+      bg: "color-mix(in oklab, var(--red) 14%, transparent)",
+      border: "color-mix(in oklab, var(--red) 35%, transparent)",
+    };
+  }
+  if (score >= 4) {
+    return {
+      label: "HIGH",
+      color: "var(--red)",
+      bg: "color-mix(in oklab, var(--red) 7%, transparent)",
+      border: "color-mix(in oklab, var(--red) 20%, transparent)",
+    };
+  }
+  if (score >= 2) {
+    return {
+      label: "MEDIUM",
+      color: "var(--amber)",
+      bg: "color-mix(in oklab, var(--amber) 7%, transparent)",
+      border: "color-mix(in oklab, var(--amber) 20%, transparent)",
+    };
+  }
   return {
-    id:            r.id,
-    title:         r.name,
-    category:      "Technical",
-    severity:      toLevel(r.impact),
-    probability:   toLevel(r.likelihood),
-    status:        toRStatus(r.status),
-    impact:        r.detail ?? r.name,
-    mitigation:    r.mitigation ?? "No mitigation recorded.",
-    ownerName:     "Team",
-    ownerInitials: initials,
-    ownerRole:     "Team Member",
-    project:       "",
-    date:          new Date(r.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }),
-    lastUpdated:   new Date(r.updatedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }),
-    dueDate:       "Ongoing",
-    tags:          [],
-    steps:         [],
+    label: "LOW",
+    color: "var(--muted2)",
+    bg: "var(--s2)",
+    border: "var(--b2)",
   };
 }
 
-// ── Legacy static data ────────────────────────────────────────────────────────
-// _STATIC_RISKS kept as typed empty array — component uses API data via setRisks()
-const _STATIC_RISKS: Risk[] = [
-  /* intentionally empty — data loaded from loadPortalRisksWithRefresh */
-];
+function riskExplainText(zone: string): string {
+  if (zone === "CRITICAL") return "This risk can materially affect delivery timing or budget and is being actively escalated.";
+  if (zone === "HIGH") return "This risk could impact scope, quality, or delivery pace if it worsens.";
+  if (zone === "MEDIUM") return "This risk is being watched and managed before it grows into a delivery issue.";
+  return "This is a low-level risk with limited expected client impact right now.";
+}
 
+function toLevel(level: string): RSeverity | RProbability {
+  if (level === "HIGH") return "High";
+  if (level === "MEDIUM") return "Medium";
+  return "Low";
+}
 
-// ── Component ──────────────────────────────────────────────────────────────────
+function toStatus(status: string): RStatus {
+  if (status === "MITIGATED") return "Mitigated";
+  if (status === "MONITORING") return "Monitoring";
+  return "Open";
+}
+
+function formatDateLabel(value: string): string {
+  return new Date(value).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function mapApiRisk(risk: PortalRisk): Risk {
+  return {
+    id: risk.id,
+    title: risk.name,
+    severity: toLevel(risk.impact),
+    probability: toLevel(risk.likelihood),
+    status: toStatus(risk.status),
+    detail: risk.detail?.trim() || risk.name,
+    mitigation: risk.mitigation?.trim() || "No mitigation has been recorded yet.",
+    createdLabel: formatDateLabel(risk.createdAt),
+    updatedLabel: formatDateLabel(risk.updatedAt),
+    createdAt: risk.createdAt,
+    updatedAt: risk.updatedAt,
+  };
+}
+
+function buildRiskRegisterCsv(risks: Risk[]): string {
+  const rows = [
+    ["Risk ID", "Title", "Severity", "Likelihood", "Status", "Created", "Updated", "Impact", "Mitigation"],
+    ...risks.map((risk) => [
+      risk.id,
+      risk.title,
+      risk.severity,
+      risk.probability,
+      risk.status,
+      risk.createdLabel,
+      risk.updatedLabel,
+      risk.detail,
+      risk.mitigation,
+    ]),
+  ];
+
+  return rows
+    .map((row) =>
+      row
+        .map((cell) => '"' + String(cell ?? "").replace(/"/g, '""') + '"')
+        .join(",")
+    )
+    .join("\n");
+}
 
 export function RiskRegisterPage() {
-  // ── Project layer: real API data ──────────────────────────────────────────
   const { session, projectId } = useProjectLayer();
-  const [RISKS,   setRisks]   = useState<Risk[]>([]);
+  const notify = usePageToast();
+
+  const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<RView>("matrix");
+  const [selectedRisk, setSelectedRisk] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [listTab, setListTab] = useState<"All" | RSeverity>("All");
+
+  async function fetchRisks(showRefreshToast = false) {
+    if (!session || !projectId) {
+      setRisks([]);
+      setError(null);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
+    if (loading) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
+
+    setError(null);
+
+    try {
+      const result = await loadPortalRisksWithRefresh(session, projectId);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        setError(result.error.message ?? "Unable to load risks.");
+        return;
+      }
+      const nextRisks = (result.data ?? []).map(mapApiRisk);
+      setRisks(nextRisks);
+      if (showRefreshToast) {
+        notify("success", "Risk register refreshed", "Latest project risk data loaded.");
+      }
+    } catch (err) {
+      setError((err as Error)?.message ?? "Unable to load risks.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
 
   useEffect(() => {
-    if (!session || !projectId) { setLoading(false); return; }
-    setLoading(true);
-    setError(null);
-    void loadPortalRisksWithRefresh(session, projectId).then((result) => {
-      if (result.nextSession) saveSession(result.nextSession);
-      if (result.error) { setError(result.error.message ?? "Failed to load."); return; }
-      if (result.data && result.data.length > 0) {
-        setRisks(result.data.map((r, i) => mapApiRisk(r, i)));
-      }
-    }).catch((err: unknown) => {
-      setError((err as Error)?.message ?? "Failed to load");
-    }).finally(() => setLoading(false));
+    void fetchRisks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, projectId]);
 
-  // ── UI state ──────────────────────────────────────────────────────────────
-  const [view,         setView]         = useState<RView>("matrix");
-  const [selectedRisk, setSelectedRisk] = useState<string | null>(null);
-  const [expanded,     setExpanded]     = useState<string | null>(null);
-  const [search,       setSearch]       = useState("");
-  const [listTab,      setListTab]      = useState<"All" | RSeverity>("All");
-
   const filtered = useMemo(() => {
-    let list = listTab === "All" ? RISKS : RISKS.filter(r => r.severity === listTab);
+    let list = listTab === "All" ? risks : risks.filter((risk) => risk.severity === listTab);
     if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(r =>
-        r.title.toLowerCase().includes(q)    ||
-        r.id.toLowerCase().includes(q)       ||
-        r.category.toLowerCase().includes(q) ||
-        r.tags.some(t => t.includes(q))
+      const q = search.trim().toLowerCase();
+      list = list.filter((risk) =>
+        risk.title.toLowerCase().includes(q) ||
+        risk.id.toLowerCase().includes(q) ||
+        risk.status.toLowerCase().includes(q) ||
+        risk.mitigation.toLowerCase().includes(q)
       );
     }
     return list;
-  }, [listTab, search, RISKS]);
+  }, [listTab, risks, search]);
 
-  const selectedData = RISKS.find(r => r.id === selectedRisk) ?? null;
+  const selectedData = risks.find((risk) => risk.id === selectedRisk) ?? null;
+  const watchlist = useMemo(
+    () =>
+      [...risks]
+        .sort((left, right) => {
+          const scoreDelta = riskScore(right) - riskScore(left);
+          if (scoreDelta !== 0) return scoreDelta;
+          return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
+        })
+        .slice(0, 5),
+    [risks]
+  );
 
-  const cellRisks = (prob: RProbability, sev: RSeverity) =>
-    RISKS.filter(r => r.probability === prob && r.severity === sev);
+  const totalOpen = risks.filter((risk) => risk.status === "Open").length;
+  const totalMonitor = risks.filter((risk) => risk.status === "Monitoring").length;
+  const totalMitigated = risks.filter((risk) => risk.status === "Mitigated").length;
+  const totalCritical = risks.filter((risk) => riskScore(risk) >= 7).length;
 
-  // Counts
-  const totalOpen      = RISKS.filter(r => r.status === "Open").length;
-  const totalMonitor   = RISKS.filter(r => r.status === "Monitoring").length;
-  const totalMitigated = RISKS.filter(r => r.status === "Mitigated").length;
-  const totalCritical  = RISKS.filter(r => riskScore(r) >= 7).length;
-
-  // Zone distribution
   const zoneCounts: Array<[string, number, string]> = [
-    ["Critical", RISKS.filter(r => riskScore(r) >= 7).length,               "var(--red)"    ],
-    ["High",     RISKS.filter(r => { const s = riskScore(r); return s >= 4 && s < 7; }).length, "var(--red)"    ],
-    ["Medium",   RISKS.filter(r => { const s = riskScore(r); return s >= 2 && s < 4; }).length, "var(--amber)"  ],
-    ["Low",      RISKS.filter(r => riskScore(r) < 2).length,                "var(--muted2)" ],
+    ["Critical", risks.filter((risk) => riskScore(risk) >= 7).length, "var(--red)"],
+    ["High", risks.filter((risk) => { const score = riskScore(risk); return score >= 4 && score < 7; }).length, "var(--red)"],
+    ["Medium", risks.filter((risk) => { const score = riskScore(risk); return score >= 2 && score < 4; }).length, "var(--amber)"],
+    ["Low", risks.filter((risk) => riskScore(risk) < 2).length, "var(--muted2)"],
   ];
 
-  // Category counts
-  const catCounts = ALL_CATS.map(c => ({ cat: c, count: RISKS.filter(r => r.category === c).length })).filter(c => c.count > 0);
+  function handleExportCsv() {
+    const csv = buildRiskRegisterCsv(filtered);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "risk-register.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function cellRisks(probability: RProbability, severity: RSeverity) {
+    return risks.filter((risk) => risk.probability === probability && risk.severity === severity);
+  }
 
   if (loading) {
     return (
@@ -208,13 +277,29 @@ export function RiskRegisterPage() {
       </div>
     );
   }
+
+  if (!session || !projectId) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="alert" sz={18} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>Select a project to review risks</div>
+          <div className={cx("emptyStateText")}>The register appears once a project context is active in the client dashboard.</div>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className={cx("pageBody")}>
         <div className={cx("errorState")}>
           <div className={cx("errorStateIcon")}>✕</div>
-          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateTitle")}>Unable to load risk register</div>
           <div className={cx("errorStateSub")}>{error}</div>
+          <button type="button" className={cx("btnSm", "btnGhost", "mt12")} onClick={() => void fetchRisks()}>
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -222,117 +307,128 @@ export function RiskRegisterPage() {
 
   return (
     <div className={cx("pageBody")}>
-
-      {/* ── Page header ──────────────────────────────────────────────────────── */}
       <div className={cx("pageHeader", "mb0")}>
         <div>
           <div className={cx("pageEyebrow")}>Projects · Risk</div>
           <h1 className={cx("pageTitle")}>Risk Register</h1>
-          <p className={cx("pageSub")}>Visibility into all known project risks, their severity, and how each is being tracked and mitigated.</p>
+          <p className={cx("pageSub")}>Track live project risks, their impact level, and the mitigations already in motion.</p>
         </div>
-        <div className={cx("pageActions")}>
-          <button type="button" className={cx("btnSm", "btnGhost", "flexRow", "gap6")}>
-            <Ic n="download" sz={13} /> Export Register
+        <div className={cx("pageActions", "flexRow", "gap8")}>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost", "flexRow", "gap6")}
+            onClick={() => void fetchRisks(true)}
+            disabled={refreshing}
+          >
+            <Ic n="refresh" sz={13} />
+            {refreshing ? "Refreshing..." : "Refresh"}
           </button>
-          <button type="button" className={cx("btnSm", "btnAccent", "flexRow", "gap6")}>
-            <Ic n="plus" sz={13} c="var(--bg)" /> Add Risk
+          <button type="button" className={cx("btnSm", "btnGhost", "flexRow", "gap6")} onClick={handleExportCsv}>
+            <Ic n="download" sz={13} /> Export CSV
           </button>
         </div>
       </div>
 
-      {/* ── Stat cards ───────────────────────────────────────────────────────── */}
       <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Total Risks",  value: RISKS.length, color: "statCard",      icon: "alert",  ic: "var(--muted2)" },
-          { label: "Critical",     value: totalCritical, color: "statCardRed",  icon: "zap",    ic: "var(--red)"    },
-          { label: "Open",         value: totalOpen,     color: "statCardAmber", icon: "clock",  ic: "var(--amber)"  },
-          { label: "Mitigated",    value: totalMitigated,color: "statCardGreen", icon: "check",  ic: "var(--lime)"   },
-        ].map(s => (
-          <div key={s.label} className={cx("statCard", s.color)}>
+          { label: "Total Risks", value: risks.length, color: "statCard", icon: "alert", ic: "var(--muted2)" },
+          { label: "Critical", value: totalCritical, color: "statCardRed", icon: "zap", ic: "var(--red)" },
+          { label: "Open", value: totalOpen, color: "statCardAmber", icon: "clock", ic: "var(--amber)" },
+          { label: "Mitigated", value: totalMitigated, color: "statCardGreen", icon: "check", ic: "var(--lime)" },
+        ].map((stat) => (
+          <div key={stat.label} className={cx("statCard", stat.color)}>
             <div className={cx("flexBetween", "mb8")}>
-              <div className={cx("statLabel")}>{s.label}</div>
-              <Ic n={s.icon} sz={14} c={s.ic} />
+              <div className={cx("statLabel")}>{stat.label}</div>
+              <Ic n={stat.icon} sz={14} c={stat.ic} />
             </div>
-            <div className={cx("statValue")}>{s.value}</div>
+            <div className={cx("statValue")}>{stat.value}</div>
           </div>
         ))}
       </div>
 
-      {/* ── Overview row ─────────────────────────────────────────────────────── */}
       <div className={cx("grid2", "mb16")}>
-
-        {/* Risk Zone Summary */}
         <div className={cx("card", "p16x20")}>
           <div className={cx("cardHd", "mb14")}>
             <span className={cx("cardHdTitle")}>Risk Zone Summary</span>
-            <span className={cx("fontMono", "text10", "colorMuted2")}>{RISKS.length} total risks</span>
+            <span className={cx("fontMono", "text10", "colorMuted2")}>{risks.length} total risks</span>
           </div>
           <div className={cx("flexCol", "gap10")}>
             {zoneCounts.map(([zone, count, color]) => {
-              const pct = Math.round((count / RISKS.length) * 100);
+              const pct = risks.length > 0 ? Math.round((count / risks.length) * 100) : 0;
               return (
                 <div key={zone} className={cx("flexRow", "gap10")}>
                   <div className={cx("wh10", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": color } as React.CSSProperties} />
                   <span className={cx("text11", "w62")}>{zone}</span>
-                  <div className={cx("progressTrack")}>
-                    <div className={cx("pctFillR99", "dynBgColor")} style={{ '--pct': pct, "--bg-color": color } as React.CSSProperties} />
+                  <div className={cx("progressTrack", "flex1")}>
+                    <div className={cx("pctFillR99", "dynBgColor")} style={{ "--pct": pct, "--bg-color": color } as React.CSSProperties} />
                   </div>
-                  <span className={cx("fontMono", "fw700", "text11", "dynColor", "w24", "textRight")} style={{ "--color": color } as React.CSSProperties}>{count}</span>
+                  <span className={cx("fontMono", "fw700", "text11", "dynColor", "w24", "textRight")} style={{ "--color": color } as React.CSSProperties}>
+                    {count}
+                  </span>
                 </div>
               );
             })}
           </div>
           <div className={cx("borderT", "mt14", "pt12", "flexRow", "gap8", "flexWrap")}>
             {[
-              { label: "Open",       val: totalOpen,      color: "var(--amber)"  },
-              { label: "Monitoring", val: totalMonitor,   color: "var(--purple)" },
-              { label: "Mitigated",  val: totalMitigated, color: "var(--lime)"   },
-            ].map(s => (
-              <span key={s.label} className={cx("flexRow", "gap5")}>
-                <span className={cx("dot7", "inlineBlock")} style={{ "--bg-color": s.color } as React.CSSProperties} />
-                <span className={cx("fontMono", "text10", "colorMuted2")}>{s.val} {s.label}</span>
+              { label: "Open", val: totalOpen, color: "var(--amber)" },
+              { label: "Monitoring", val: totalMonitor, color: "var(--purple)" },
+              { label: "Mitigated", val: totalMitigated, color: "var(--lime)" },
+            ].map((stat) => (
+              <span key={stat.label} className={cx("flexRow", "gap5")}>
+                <span className={cx("dot7", "inlineBlock")} style={{ "--bg-color": stat.color } as React.CSSProperties} />
+                <span className={cx("fontMono", "text10", "colorMuted2")}>{stat.val} {stat.label}</span>
               </span>
             ))}
           </div>
         </div>
 
-        {/* Category Distribution */}
         <div className={cx("card", "p16x20")}>
           <div className={cx("cardHd", "mb14")}>
-            <span className={cx("cardHdTitle")}>Category Distribution</span>
+            <span className={cx("cardHdTitle")}>Current Watchlist</span>
+            <span className={cx("text11", "colorMuted")}>Highest-score risks updated most recently</span>
           </div>
-          <div className={cx("flexCol", "gap8", "mb14")}>
-            {catCounts.map(({ cat, count }) => {
-              const cfg = CAT_CFG[cat];
-              const pct = Math.round((count / RISKS.length) * 100);
-              return (
-                <div key={cat} className={cx("flexRow", "gap10")}>
-                  <div className={cx("rrCatIconBox", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${cfg.color} 12%, var(--s2))`, "--color": `color-mix(in oklab, ${cfg.color} 20%, transparent)` } as React.CSSProperties}>
-                    <Ic n={cfg.icon} sz={11} c={cfg.color} />
-                  </div>
-                  <span className={cx("text11", "flex1")}>{cat}</span>
-                  <div className={cx("microProgressTrack")}>
-                    <div className={cx("pctFillR99", "dynBgColor")} style={{ '--pct': pct, "--bg-color": cfg.color } as React.CSSProperties} />
-                  </div>
-                  <span className={cx("fontMono", "text10", "colorMuted2", "w34", "textRight")}>
-                    {count} <span className={cx("fs06")}>{pct}%</span>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          <div className={cx("progressTrackFlex")}>
-            {catCounts.map(({ cat, count }) => (
-              <div key={cat} className={cx("dynFlex", "dynBgColor")} style={{ "--flex": count, "--bg-color": CAT_CFG[cat].color } as React.CSSProperties} />
-            ))}
-          </div>
+          {watchlist.length === 0 ? (
+            <div className={cx("flexCol", "flexCenter", "gap6", "py16")}>
+              <Ic n="shieldCheck" sz={16} c="var(--muted2)" />
+              <span className={cx("text11", "colorMuted2")}>No project risks logged yet</span>
+            </div>
+          ) : (
+            <div className={cx("flexCol", "gap8")}>
+              {watchlist.map((risk) => {
+                const zone = getZone(riskScore(risk));
+                return (
+                  <button
+                    key={risk.id}
+                    type="button"
+                    className={cx("infoChipSm", "textLeft")}
+                    onClick={() => {
+                      setView("list");
+                      setExpanded(risk.id);
+                    }}
+                  >
+                    <div className={cx("flexBetween", "gap10", "mb4")}>
+                      <div className={cx("fw600", "text11", "minW0", "truncate")}>{risk.title}</div>
+                      <span className={cx("scorePill", "dynBgColor", "dynColor", "noShrink")} style={{ "--bg-color": zone.bg, "--border-color": zone.border, "--color": zone.color } as React.CSSProperties}>
+                        {zone.label} · {riskScore(risk)}
+                      </span>
+                    </div>
+                    <div className={cx("flexRow", "gap6", "flexWrap")}>
+                      <span className={cx("badge", SEV_BADGE[risk.severity])}>{risk.severity}</span>
+                      <span className={cx("badge", STATUS_BADGE[risk.status])}>{risk.status}</span>
+                      <span className={cx("fontMono", "text10", "colorMuted2")}>Updated {risk.updatedLabel}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── View toggle + search ─────────────────────────────────────────────── */}
-      <div className={cx("flexBetween", "mb12")}>
-        <div className={cx("flexRow", "h36")}>
-          <div className={cx("pillTabs")}>
+      <div className={cx("flexBetween", "mb12", "gap12", "flexWrap")}>
+        <div className={cx("flexRow", "h36", "gap8")}>
+          <div className={cx("pillTabs", "mb0")}>
             <button type="button" className={cx("pillTab", view === "matrix" ? "pillTabActive" : "")} onClick={() => { setView("matrix"); setSelectedRisk(null); }}>
               <span className={cx("flexRow", "gap5")}><Ic n="grid" sz={11} /> Matrix</span>
             </button>
@@ -342,75 +438,70 @@ export function RiskRegisterPage() {
           </div>
         </div>
         {view === "list" && (
-          <div className={cx("flexRow", "gap10")}>
-            <input type="text" className={cx("input", "w220", "h36")} placeholder="Search risks…" value={search} onChange={e => setSearch(e.target.value)} />
-            <div className={cx("flexRow", "h36")}>
-              <div className={cx("pillTabs")}>
-                {(["All", "High", "Medium", "Low"] as const).map(t => (
-                  <button key={t} type="button" className={cx("pillTab", listTab === t ? "pillTabActive" : "")} onClick={() => setListTab(t)}>{t}</button>
-                ))}
-              </div>
+          <div className={cx("flexRow", "gap10", "flexWrap")}>
+            <input
+              type="text"
+              className={cx("input", "w220", "h36")}
+              placeholder="Search risk title or status"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <div className={cx("pillTabs", "mb0")}>
+              {(["All", "High", "Medium", "Low"] as const).map((tab) => (
+                <button key={tab} type="button" className={cx("pillTab", listTab === tab ? "pillTabActive" : "")} onClick={() => setListTab(tab)}>
+                  {tab}
+                </button>
+              ))}
             </div>
           </div>
         )}
       </div>
 
-      {/* ════════════════════ MATRIX VIEW ════════════════════ */}
       {view === "matrix" && (
         <div className={cx("card", "overflowHidden")}>
           <div className={cx("cardHd", "borderB")}>
             <span className={cx("cardHdTitle")}>Impact × Probability Matrix</span>
-            <span className={cx("text11", "colorMuted")}>Click a risk to see details</span>
+            <span className={cx("text11", "colorMuted")}>Select a risk to review the live detail</span>
           </div>
-
           <div className={cx("overflowXAuto", "p16x20x12")}>
             <div className={cx("minW500")}>
-
-              {/* Y-axis label */}
-              <div className={cx("gridHeatmap")}>
+              <div className={cx("rrAxisGrid")}>
                 <div />
-                {PROB_LABELS.map(p => (
-                  <div key={p} className={cx("textCenter", "pb8")}>
-                    <span className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01")}>{p}</span>
+                {PROB_LABELS.map((probability) => (
+                  <div key={probability} className={cx("textCenter", "pb8")}>
+                    <span className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01")}>{probability}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Matrix rows */}
-              {SEV_LABELS.map(sev => (
-                <div key={sev} className={cx("gridHeatmap", "mb6")}>
-                  {/* Row label */}
+              {SEV_LABELS.map((severity) => (
+                <div key={severity} className={cx("rrAxisGrid", "mb6")}>
                   <div className={cx("flexRow", "flexCenter", "justifyEnd", "pr12")}>
-                    <span className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01")}>{sev}</span>
+                    <span className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01")}>{severity}</span>
                   </div>
-
-                  {PROB_LABELS.map(prob => {
-                    const risks = cellRisks(prob, sev);
-                    const score = SCORE_MAP[sev] * SCORE_MAP[prob];
-                    const zone  = getZone(score);
+                  {PROB_LABELS.map((probability) => {
+                    const matrixRisks = cellRisks(probability, severity);
+                    const zone = getZone(SCORE_MAP[severity] * SCORE_MAP[probability]);
                     return (
                       <div
-                        key={prob}
+                        key={probability}
                         className={cx("rrMatrixCell", "dynBgColor")}
                         style={{ "--bg-color": zone.bg, "--border-color": zone.border } as React.CSSProperties}
                       >
-                        {/* Zone label */}
                         <span className={cx("fontMono", "absZoneLabel", "dynColor")} style={{ "--color": zone.color } as React.CSSProperties}>
                           {zone.label}
                         </span>
-
-                        {/* Risk circles */}
                         <div className={cx("flexWrap", "gap6", "pt2", "flexRow")}>
-                          {risks.map(r => (
+                          {matrixRisks.map((risk) => (
                             <button
-                              key={r.id}
+                              key={risk.id}
                               type="button"
-                              title={r.title}
-                              onClick={() => setSelectedRisk(selectedRisk === r.id ? null : r.id)}
-                              className={cx("rrRiskCircle", "dynBgColor", selectedRisk === r.id && "rrRiskCircleSelected")}
-                              style={{ "--bg-color": SEV_COLOR[r.severity] } as React.CSSProperties}
+                              title={risk.title}
+                              onClick={() => setSelectedRisk(selectedRisk === risk.id ? null : risk.id)}
+                              className={cx("rrRiskCircle", "dynBgColor", selectedRisk === risk.id && "rrRiskCircleSelected")}
+                              style={{ "--bg-color": SEV_COLOR[risk.severity] } as React.CSSProperties}
                             >
-                              {r.id}
+                              {risk.id.slice(0, 4)}
                             </button>
                           ))}
                         </div>
@@ -420,55 +511,25 @@ export function RiskRegisterPage() {
                 </div>
               ))}
 
-              {/* Axis labels */}
               <div className={cx("rrAxisGrid")}>
                 <div />
-                <div className={cx("textCenter")}>
+                <div className={cx("rrAxisSpan", "textCenter")}>
                   <span className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls012")}>← Probability →</span>
                 </div>
-              </div>
-
-              {/* Legend */}
-              <div className={cx("flexRow", "gap16", "mt14", "flexWrap", "flexCenter", "pt12", "borderT")}>
-                {[
-                  { color: "var(--red)",    label: "High severity"   },
-                  { color: "var(--amber)",  label: "Medium severity" },
-                  { color: "var(--muted2)", label: "Low severity"    },
-                ].map(l => (
-                  <span key={l.label} className={cx("flexRow", "gap6")}>
-                    <div className={cx("dot12")} style={{ "--bg-color": l.color } as React.CSSProperties} />
-                    <span className={cx("text10", "colorMuted")}>{l.label}</span>
-                  </span>
-                ))}
-                {[
-                  { color: "var(--red)",   bg: "color-mix(in oklab, var(--red) 14%, transparent)",   label: "Critical zone" },
-                  { color: "var(--amber)", bg: "color-mix(in oklab, var(--amber) 7%, transparent)",  label: "Medium zone"   },
-                ].map(l => (
-                  <span key={l.label} className={cx("flexRow", "gap6")}>
-                    <div className={cx("dot12sq", "dynBgColor")} style={{ "--bg-color": l.bg, "--border-color": l.color } as React.CSSProperties} />
-                    <span className={cx("text10", "colorMuted")}>{l.label}</span>
-                  </span>
-                ))}
               </div>
             </div>
           </div>
 
-          {/* ── Detail panel ───────────────────────────────────────────────── */}
           {selectedData && (() => {
             const score = riskScore(selectedData);
-            const zone  = getZone(score);
-            const cfg   = CAT_CFG[selectedData.category];
-            const doneCount = selectedData.steps.filter(s => s.done).length;
+            const zone = getZone(score);
             return (
-              <div className={cx("dynBorderLeft3", "dynBgColor", "borderT")} style={{ "--color": SEV_COLOR[selectedData.severity], "--bg-color": `color-mix(in oklab, ${SEV_COLOR[selectedData.severity]} 4%, var(--s2))` } as React.CSSProperties}>
+              <div className={cx("dynBorderLeft3", "dynBgColor", "borderT")} style={{ "--color": SEV_COLOR[selectedData.severity], "--bg-color": "color-mix(in oklab, var(--bg-elevated, var(--s2)) 100%, transparent)" } as React.CSSProperties}>
                 <div className={cx("grid2Cols252")}>
-
-                  {/* Left */}
                   <div className={cx("panelL")}>
-                    {/* Header */}
                     <div className={cx("flexAlignStart", "justifyBetween", "mb10")}>
                       <div>
-                        <div className={cx("flexRow", "flexCenter", "gap8", "mb4")}>
+                        <div className={cx("flexRow", "flexCenter", "gap8", "mb4", "flexWrap")}>
                           <span className={cx("fontMono", "text10", "colorAccent")}>{selectedData.id}</span>
                           <span className={cx("badge", SEV_BADGE[selectedData.severity])}>{selectedData.severity} Severity</span>
                           <span className={cx("badge", STATUS_BADGE[selectedData.status], "flexRow", "flexCenter", "gap3")}>
@@ -485,76 +546,44 @@ export function RiskRegisterPage() {
                       </button>
                     </div>
 
-                    {/* Impact + mitigation */}
-                    <div className={cx("grid2Cols", "gap10", "mb12")}>
-                      {[
-                        { icon: "alert",    color: "var(--red)",   label: "Impact",     body: selectedData.impact     },
-                        { icon: "shieldCheck", color: "var(--lime)", label: "Mitigation", body: selectedData.mitigation },
-                      ].map(sec => (
-                        <div key={sec.label} className={cx("infoChip")}>
-                          <div className={cx("flexRow", "flexCenter", "gap6", "mb6")}>
-                            <Ic n={sec.icon} sz={11} c={sec.color} />
-                            <span className={cx("fontMono", "fw700", "text10", "uppercase", "ls01", "dynColor")} style={{ "--color": sec.color } as React.CSSProperties}>{sec.label}</span>
-                          </div>
-                          <div className={cx("text11", "colorMuted", "lineH16")}>{sec.body}</div>
-                        </div>
-                      ))}
+                    <div className={cx("rrExplainBox", "dynBgColor", "mb12")} style={{ "--bg-color": "color-mix(in oklab, var(--s2) 100%, transparent)", "--border-color": zone.border, "--color": zone.color } as React.CSSProperties}>
+                      <Ic n="user" sz={11} c={zone.color} />
+                      <div>
+                        <span className={cx("fontMono", "text10", "fw700", "uppercase", "dynColor", "blockDisplay", "mb2")} style={{ "--color": zone.color } as React.CSSProperties}>What this means for you</span>
+                        <span className={cx("text11", "colorMuted", "lineH155")}>{riskExplainText(zone.label)}</span>
+                      </div>
                     </div>
 
-                    {/* Mitigation steps */}
-                    <div>
-                      <div className={cx("flexBetween", "mb8")}>
-                        <span className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01")}>Mitigation Steps</span>
-                        <span className={cx("fontMono", "text10", "dynColor")} style={{ "--color": doneCount === selectedData.steps.length ? "var(--lime)" : "var(--amber)" } as React.CSSProperties}>
-                          {doneCount}/{selectedData.steps.length} done
-                        </span>
-                      </div>
-                      <div className={cx("flexCol", "gap6")}>
-                        {selectedData.steps.map((step, i) => (
-                          <div key={i} className={cx("flexRow", "gap8")}>
-                            <div className={cx("rrStepCheck", "dynBgColor")} style={{ "--bg-color": step.done ? "color-mix(in oklab, var(--lime) 15%, var(--s2))" : "var(--s3)", "--border-color": step.done ? "color-mix(in oklab, var(--lime) 30%, transparent)" : "var(--b2)" } as React.CSSProperties}>
-                              {step.done && <Ic n="check" sz={10} c="var(--lime)" />}
-                            </div>
-                            <span className={cx("text11", "dynColor")} style={{ "--color": step.done ? "inherit" : "var(--muted2)" } as React.CSSProperties}>{step.label}</span>
+                    <div className={cx("grid2Cols", "gap10")}>
+                      {[
+                        { icon: "alert", color: "var(--red)", label: "Impact", body: selectedData.detail },
+                        { icon: "shieldCheck", color: "var(--lime)", label: "Mitigation", body: selectedData.mitigation },
+                      ].map((section) => (
+                        <div key={section.label} className={cx("infoChip")}>
+                          <div className={cx("flexRow", "flexCenter", "gap6", "mb6")}>
+                            <Ic n={section.icon} sz={11} c={section.color} />
+                            <span className={cx("fontMono", "fw700", "text10", "uppercase", "ls01", "dynColor")} style={{ "--color": section.color } as React.CSSProperties}>
+                              {section.label}
+                            </span>
                           </div>
-                        ))}
-                      </div>
+                          <div className={cx("text11", "colorMuted", "lineH16")}>{section.body}</div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Right */}
                   <div className={cx("sectionPanelL")}>
-                    {/* Owner */}
-                    <div>
-                      <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01", "mb8")}>Owner</div>
-                      <div className={cx("infoChip")}>
-                        <Av initials={selectedData.ownerInitials} size={32} />
-                        <div>
-                          <div className={cx("fw600", "text12")}>{selectedData.ownerName}</div>
-                          <div className={cx("text10", "colorMuted2")}>{selectedData.ownerRole}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Meta grid */}
                     <div className={cx("grid2Cols", "gap8")}>
                       {[
-                        { label: "Category",  value: selectedData.category   },
-                        { label: "Project",   value: selectedData.project     },
-                        { label: "Logged",    value: selectedData.date        },
-                        { label: "Due Date",  value: selectedData.dueDate     },
-                      ].map(m => (
-                        <div key={m.label} className={cx("infoChipSm")}>
-                          <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls008", "mb2", "fs058")}>{m.label}</div>
-                          <div className={cx("fw600", "text11")}>{m.value}</div>
+                        { label: "Severity", value: selectedData.severity },
+                        { label: "Likelihood", value: selectedData.probability },
+                        { label: "Created", value: selectedData.createdLabel },
+                        { label: "Updated", value: selectedData.updatedLabel },
+                      ].map((item) => (
+                        <div key={item.label} className={cx("infoChipSm")}>
+                          <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls008", "mb2", "fs058")}>{item.label}</div>
+                          <div className={cx("fw600", "text11")}>{item.value}</div>
                         </div>
-                      ))}
-                    </div>
-
-                    {/* Tags */}
-                    <div className={cx("flexRow", "flexWrap", "gap5")}>
-                      {selectedData.tags.map(t => (
-                        <span key={t} className={cx("tagPill", "fontMono", "text10", "colorMuted2")}>#{t}</span>
                       ))}
                     </div>
                   </div>
@@ -565,91 +594,80 @@ export function RiskRegisterPage() {
         </div>
       )}
 
-      {/* ════════════════════ LIST VIEW ════════════════════ */}
       {view === "list" && (
         <div className={cx("card", "overflowHidden")}>
-
-          {/* Column headers */}
           {filtered.length > 0 && (
             <div className={cx("rrListHeader")}>
-              {["", "Risk", "Severity", "Prob.", "Status", ""].map((h, i) => (
-                <span key={i} className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls012")}>{h}</span>
+              {["", "Risk", "Severity", "Prob.", "Status", ""].map((heading, index) => (
+                <span key={index} className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls012")}>{heading}</span>
               ))}
             </div>
           )}
 
-          {/* Empty */}
           {filtered.length === 0 && (
             <div className={cx("emptyPad48x24", "textCenter")}>
               <Ic n="alert" sz={28} c="var(--muted2)" />
               <div className={cx("fw800", "text13", "mt12", "mb4")}>No risks found</div>
-              <div className={cx("text12", "colorMuted")}>{search ? `No results for "${search}"` : "No risks in this category."}</div>
-              {search && <button type="button" className={cx("btnSm", "btnGhost", "mt16")} onClick={() => setSearch("")}>Clear search</button>}
+              <div className={cx("text12", "colorMuted")}>
+                {search ? 'No results for "' + search + '"' : "No risks match this severity filter."}
+              </div>
+              {search && (
+                <button type="button" className={cx("btnSm", "btnGhost", "mt16")} onClick={() => setSearch("")}>
+                  Clear search
+                </button>
+              )}
             </div>
           )}
 
-          {/* Rows */}
-          {filtered.map((r, idx) => {
-            const isOpen = expanded === r.id;
-            const score  = riskScore(r);
-            const zone   = getZone(score);
-            const cfg    = CAT_CFG[r.category];
-            const doneCount = r.steps.filter(s => s.done).length;
+          {filtered.map((risk, index) => {
+            const isOpen = expanded === risk.id;
+            const score = riskScore(risk);
+            const zone = getZone(score);
 
             return (
-              <div key={r.id} className={cx("dynBorderLeft3", idx < filtered.length - 1 && "borderB")} style={{ "--color": SEV_COLOR[r.severity] } as React.CSSProperties}>
-                {/* Row trigger */}
+              <div key={risk.id} className={cx("dynBorderLeft3", index < filtered.length - 1 && "borderB")} style={{ "--color": SEV_COLOR[risk.severity] } as React.CSSProperties}>
                 <button
                   type="button"
                   aria-expanded={isOpen}
                   className={cx("gridRowBtn6colV2")}
-                  onClick={() => setExpanded(isOpen ? null : r.id)}
+                  onClick={() => setExpanded(isOpen ? null : risk.id)}
                 >
-                  {/* Category icon */}
-                  <div className={cx("pmIconBox36", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${cfg.color} 12%, var(--s2))`, "--color": `color-mix(in oklab, ${cfg.color} 25%, transparent)` } as React.CSSProperties}>
-                    <Ic n={cfg.icon} sz={15} c={cfg.color} />
+                  <div className={cx("pmIconBox36", "dynBgColor")} style={{ "--bg-color": zone.bg, "--color": zone.border } as React.CSSProperties}>
+                    <Ic n="alert" sz={15} c={zone.color} />
                   </div>
 
-                  {/* Title */}
                   <div className={cx("minW0")}>
-                    <div className={cx("fw600", "text12", "truncate")}>{r.title}</div>
-                    <div className={cx("flexRow", "flexCenter", "gap6", "mt2")}>
-                      <span className={cx("fontMono", "text10", "colorAccent")}>{r.id}</span>
-                      <span className={cx("badge", "badgeMuted", "fs06")}>{r.category}</span>
-                      <span className={cx("scorePill", "dynBgColor", "dynColor")} style={{ "--bg-color": zone.bg, "--border-color": zone.border, "--color": zone.color } as React.CSSProperties}>{zone.label} · {score}</span>
+                    <div className={cx("fw600", "text12", "truncate")}>{risk.title}</div>
+                    <div className={cx("flexRow", "flexCenter", "gap6", "mt2", "flexWrap")}>
+                      <span className={cx("fontMono", "text10", "colorAccent")}>{risk.id}</span>
+                      <span className={cx("scorePill", "dynBgColor", "dynColor")} style={{ "--bg-color": zone.bg, "--border-color": zone.border, "--color": zone.color } as React.CSSProperties}>
+                        {zone.label} · {score}
+                      </span>
+                      <span className={cx("fontMono", "text10", "colorMuted2")}>Updated {risk.updatedLabel}</span>
                     </div>
                   </div>
 
-                  {/* Severity */}
                   <div className={cx("flexRow", "gap5")}>
-                    <div className={cx("wh7", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": SEV_COLOR[r.severity] } as React.CSSProperties} />
-                    <span className={cx("fontMono", "text10", "dynColor")} style={{ "--color": SEV_COLOR[r.severity] } as React.CSSProperties}>{r.severity}</span>
+                    <div className={cx("wh7", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": SEV_COLOR[risk.severity] } as React.CSSProperties} />
+                    <span className={cx("fontMono", "text10", "dynColor")} style={{ "--color": SEV_COLOR[risk.severity] } as React.CSSProperties}>{risk.severity}</span>
                   </div>
 
-                  {/* Probability */}
-                  <span className={cx("fontMono", "text10", "colorMuted2")}>{r.probability}</span>
+                  <span className={cx("fontMono", "text10", "colorMuted2")}>{risk.probability}</span>
 
-                  {/* Status */}
-                  <span className={cx("badge", STATUS_BADGE[r.status], "flexRow", "gap4")}>
-                    <Ic n={STATUS_ICON[r.status]} sz={9} c="currentColor" />{r.status}
+                  <span className={cx("badge", STATUS_BADGE[risk.status], "flexRow", "gap4")}>
+                    <Ic n={STATUS_ICON[risk.status]} sz={9} c="currentColor" />{risk.status}
                   </span>
 
-                  {/* Chevron */}
                   <span className={cx("chevronIcon", "dynTransform", "flexRow", "justifyCenter")} style={{ "--transform": isOpen ? "rotate(90deg)" : "none" } as React.CSSProperties}>
                     <Ic n="chevronRight" sz={14} c="var(--muted2)" />
                   </span>
                 </button>
 
-                {/* Expanded */}
                 {isOpen && (
-                  <div className={cx("dynBgColor", "borderT")} style={{ "--bg-color": `color-mix(in oklab, ${SEV_COLOR[r.severity]} 4%, var(--s2))` } as React.CSSProperties}>
+                  <div className={cx("dynBgColor", "borderT")} style={{ "--bg-color": "color-mix(in oklab, var(--s2) 100%, transparent)" } as React.CSSProperties}>
                     <div className={cx("grid2Cols252")}>
-
-                      {/* Left */}
                       <div className={cx("panelL")}>
-
-                        {/* What this means for you */}
-                        <div className={cx("rrExplainBox", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${zone.color} 6%, var(--s2))`, "--border-color": `color-mix(in oklab, ${zone.color} 16%, transparent)`, "--color": zone.color } as React.CSSProperties}>
+                        <div className={cx("rrExplainBox", "dynBgColor", "mb12")} style={{ "--bg-color": zone.bg, "--border-color": zone.border, "--color": zone.color } as React.CSSProperties}>
                           <Ic n="user" sz={11} c={zone.color} />
                           <div>
                             <span className={cx("fontMono", "text10", "fw700", "uppercase", "dynColor", "blockDisplay", "mb2")} style={{ "--color": zone.color } as React.CSSProperties}>What this means for you</span>
@@ -657,74 +675,36 @@ export function RiskRegisterPage() {
                           </div>
                         </div>
 
-                        {/* Impact + Mitigation */}
-                        <div className={cx("grid2Cols", "gap10", "mb12")}>
+                        <div className={cx("grid2Cols", "gap10")}>
                           {[
-                            { icon: "alert",       color: "var(--red)",  label: "Impact",     body: r.impact     },
-                            { icon: "shieldCheck", color: "var(--lime)", label: "Mitigation", body: r.mitigation },
-                          ].map(sec => (
-                            <div key={sec.label} className={cx("infoChip")}>
+                            { icon: "alert", color: "var(--red)", label: "Impact", body: risk.detail },
+                            { icon: "shieldCheck", color: "var(--lime)", label: "Mitigation", body: risk.mitigation },
+                          ].map((section) => (
+                            <div key={section.label} className={cx("infoChip")}>
                               <div className={cx("flexRow", "flexCenter", "gap6", "mb6")}>
-                                <Ic n={sec.icon} sz={11} c={sec.color} />
-                                <span className={cx("fontMono", "fw700", "text10", "uppercase", "ls01", "dynColor")} style={{ "--color": sec.color } as React.CSSProperties}>{sec.label}</span>
+                                <Ic n={section.icon} sz={11} c={section.color} />
+                                <span className={cx("fontMono", "fw700", "text10", "uppercase", "ls01", "dynColor")} style={{ "--color": section.color } as React.CSSProperties}>
+                                  {section.label}
+                                </span>
                               </div>
-                              <div className={cx("text11", "colorMuted", "lineH16")}>{sec.body}</div>
+                              <div className={cx("text11", "colorMuted", "lineH16")}>{section.body}</div>
                             </div>
                           ))}
-                        </div>
-
-                        {/* Steps */}
-                        <div>
-                          <div className={cx("flexBetween", "mb8")}>
-                            <span className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01")}>Mitigation Steps</span>
-                            <span className={cx("fontMono", "text10", "dynColor")} style={{ "--color": doneCount === r.steps.length ? "var(--lime)" : "var(--amber)" } as React.CSSProperties}>{doneCount}/{r.steps.length} done</span>
-                          </div>
-                          <div className={cx("flexCol", "gap6")}>
-                            {r.steps.map((step, i) => (
-                              <div key={i} className={cx("flexRow", "gap8")}>
-                                <div className={cx("rrStepCheck", "dynBgColor")} style={{ "--bg-color": step.done ? "color-mix(in oklab, var(--lime) 15%, var(--s2))" : "var(--s3)", "--border-color": step.done ? "color-mix(in oklab, var(--lime) 30%, transparent)" : "var(--b2)" } as React.CSSProperties}>
-                                  {step.done && <Ic n="check" sz={10} c="var(--lime)" />}
-                                </div>
-                                <span className={cx("text11", "dynColor")} style={{ "--color": step.done ? "inherit" : "var(--muted2)" } as React.CSSProperties}>{step.label}</span>
-                              </div>
-                            ))}
-                          </div>
                         </div>
                       </div>
 
-                      {/* Right */}
                       <div className={cx("sectionPanelL")}>
-                        {/* Owner */}
-                        <div>
-                          <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01", "mb8")}>Owner</div>
-                          <div className={cx("infoChip")}>
-                            <Av initials={r.ownerInitials} size={32} />
-                            <div>
-                              <div className={cx("fw600", "text12")}>{r.ownerName}</div>
-                              <div className={cx("text10", "colorMuted2")}>{r.ownerRole}</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Meta */}
                         <div className={cx("grid2Cols", "gap8")}>
                           {[
-                            { label: "Project",  value: r.project     },
-                            { label: "Due Date", value: r.dueDate     },
-                            { label: "Logged",   value: r.date        },
-                            { label: "Updated",  value: r.lastUpdated },
-                          ].map(m => (
-                            <div key={m.label} className={cx("infoChipSm")}>
-                              <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls008", "mb2", "fs058")}>{m.label}</div>
-                              <div className={cx("fw600", "text11")}>{m.value}</div>
+                            { label: "Severity", value: risk.severity },
+                            { label: "Likelihood", value: risk.probability },
+                            { label: "Created", value: risk.createdLabel },
+                            { label: "Updated", value: risk.updatedLabel },
+                          ].map((item) => (
+                            <div key={item.label} className={cx("infoChipSm")}>
+                              <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls008", "mb2", "fs058")}>{item.label}</div>
+                              <div className={cx("fw600", "text11")}>{item.value}</div>
                             </div>
-                          ))}
-                        </div>
-
-                        {/* Tags */}
-                        <div className={cx("flexRow", "flexWrap", "gap5")}>
-                          {r.tags.map(t => (
-                            <span key={t} className={cx("tagPill", "fontMono", "text10", "colorMuted2")}>#{t}</span>
                           ))}
                         </div>
                       </div>
@@ -736,7 +716,6 @@ export function RiskRegisterPage() {
           })}
         </div>
       )}
-
     </div>
   );
 }

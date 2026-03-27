@@ -49,6 +49,8 @@ import { AdminProposedActionsController } from "../routes/admin-proposed-actions
 import { AvailabilityController } from "../routes/availability.controller.js";
 import { BudgetBurnController } from "../routes/budget-burn.controller.js";
 import { ChurnRiskController } from "../routes/churn-risk.controller.js";
+import { RetainerController } from "../routes/retainer.controller.js";
+import { IntegrationProvidersController } from "../routes/integration-providers.controller.js";
 import { RbacGuard } from "../auth/rbac.guard.js";
 import { RequestIdInterceptor } from "../common/request-id.interceptor.js";
 import { MetricsController } from "../observability/metrics.controller.js";
@@ -106,6 +108,8 @@ import { RateLimitGuard } from "../security/rate-limit.guard.js";
     AvailabilityController,
     BudgetBurnController,
     ChurnRiskController,
+    RetainerController,
+    IntegrationProvidersController,
   ],
   providers: [
     RealtimeEventsService,

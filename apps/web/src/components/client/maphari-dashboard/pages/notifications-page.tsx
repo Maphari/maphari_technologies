@@ -5,9 +5,13 @@ import { Ic, Av } from "../ui";
 import { saveSession } from "../../../../lib/auth/session";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import {
+  archiveAllPortalNotificationsWithRefresh,
   loadPortalNotificationsWithRefresh,
   markAllPortalNotificationsReadWithRefresh,
+  restoreSnoozedPortalNotificationsWithRefresh,
+  setPortalNotificationArchiveStateWithRefresh,
   setPortalNotificationReadStateWithRefresh,
+  setPortalNotificationSnoozeStateWithRefresh,
   type PortalNotificationJob,
 } from "../../../../lib/api/portal";
 import {
@@ -40,6 +44,8 @@ interface Notif {
   action:          string | null;
   actionCls:       string;
   secondaryAction?: string;
+  snoozedUntil?:   string | null;
+  archivedAt?:     string | null;
 }
 
 // ── Mapper: PortalNotificationJob → Notif ─────────────────────────────────
@@ -60,13 +66,97 @@ const TAB_CFG: Record<string, { icon: string; color: string; badge: string; badg
   operations: { icon: "layers",  color: "var(--blue)",   badge: "badgeMuted",  badgeLbl: "Update"   },
 };
 
+const EVENT_TITLE: Record<string, string> = {
+  "chat.message.created":       "New Message",
+  "project.created":            "Project Created",
+  "project.updated":            "Project Updated",
+  "project.status.changed":     "Project Status Update",
+  "deliverable.created":        "New Deliverable",
+  "deliverable.approved":       "Deliverable Approved",
+  "deliverable.rejected":       "Deliverable Needs Revision",
+  "invoice.created":            "New Invoice",
+  "invoice.paid":               "Invoice Paid",
+  "milestone.reached":          "Milestone Reached",
+  "approval.requested":         "Action Required",
+  "approval.approved":          "Approval Confirmed",
+  "approval.rejected":          "Approval Declined",
+  "file.uploaded":              "New File Uploaded",
+  "meeting.scheduled":          "Meeting Scheduled",
+};
+
+function humanizeTitle(subject: string | null | undefined): string {
+  if (!subject) return "Notification";
+  // e.g. "Event: chat.message.created" → look up the event key
+  const match = subject.match(/Event:\s*(.+)/i);
+  if (match) {
+    const key = match[1].trim().toLowerCase();
+    return EVENT_TITLE[key] ?? subject;
+  }
+  return subject;
+}
+
+function sanitizeBody(rawTab: string, message: string | null | undefined, title: string): string {
+  if (!message) return "";
+  // Strip admin-facing UUIDs / internal copy from project notifications
+  if (rawTab === "projects" && (/[0-9a-f]{8}-[0-9a-f]{4}/i.test(message) || /review and assign/i.test(message))) {
+    const nameMatch = title.match(/:\s*(.+)$/);
+    const name = nameMatch ? `"${nameMatch[1].trim()}" ` : "";
+    return `Your project request ${name}has been received. Our team will review it and reach out to you shortly.`;
+  }
+  return message;
+}
+
+function inferTabFromSubject(subject: string | null | undefined): string | null {
+  if (!subject) return null;
+  const ev = subject.match(/Event:\s*(.+)/i)?.[1]?.trim().toLowerCase() ?? "";
+  if (ev.startsWith("chat.") || ev.startsWith("message.")) return "messages";
+  if (ev.startsWith("invoice.") || ev.startsWith("payment.")) return "invoices";
+  if (ev.startsWith("approval.")) return "approvals";
+  if (ev.startsWith("project.") || ev.startsWith("deliverable.") || ev.startsWith("milestone.")) return "projects";
+  return null;
+}
+
+function inferPriority(
+  subject: string | null | undefined,
+  metadata: Record<string, string | number | boolean> | undefined,
+): NPriority {
+  const ev = subject?.match(/Event:\s*(.+)/i)?.[1]?.trim().toLowerCase() ?? "";
+  const severity = String(metadata?.severity ?? "").toUpperCase();
+  const alertType = String(metadata?.alertType ?? "").toLowerCase();
+  if (severity === "HIGH" || severity === "CRITICAL") return "high";
+  if (ev.startsWith("approval.requested")) return "high";
+  if (alertType.includes("overdue") || alertType.includes("risk") || alertType.includes("escalated")) return "high";
+  return "normal";
+}
+
+function inferSender(
+  rawTab: string,
+  metadata: Record<string, string | number | boolean> | undefined,
+): { sender: string; senderInitials: string } {
+  const projectName = typeof metadata?.projectName === "string" ? metadata.projectName.trim() : "";
+  if (projectName) return { sender: projectName, senderInitials: "PR" };
+  if (rawTab === "messages") return { sender: "Project Team", senderInitials: "PT" };
+  if (rawTab === "invoices" || rawTab === "finance") return { sender: "Billing", senderInitials: "BL" };
+  if (rawTab === "approvals") return { sender: "Approvals Desk", senderInitials: "AP" };
+  if (rawTab === "projects") return { sender: "Delivery Team", senderInitials: "DT" };
+  return { sender: "System", senderInitials: "SY" };
+}
+
 function mapJobToNotif(job: PortalNotificationJob): Notif {
-  const rawTab = job.tab ?? "operations";
+  // "dashboard" is the backend's generic fallback — treat it as unset and infer from subject
+  const rawTab = (!job.tab || job.tab === "dashboard")
+    ? (inferTabFromSubject(job.subject) ?? "operations")
+    : job.tab;
   const cfg = TAB_CFG[rawTab] ?? { icon: "bell", color: "var(--muted2)", badge: "badgeMuted", badgeLbl: "Update" };
+  const priority = inferPriority(job.subject, job.metadata);
   const ntfTab: NTab =
+    rawTab === "approvals" ? "approvals" :
     rawTab === "invoices" ? "finance" :
     rawTab === "messages" ? "messages" :
-    rawTab === "projects" ? "projects" : "all";
+    rawTab === "projects" ? "projects" :
+    priority === "high" ? "urgent" : "all";
+  const title = humanizeTitle(job.subject);
+  const sender = inferSender(rawTab, job.metadata);
   return {
     id:             job.id,
     group:          getGroup(job.createdAt),
@@ -75,17 +165,19 @@ function mapJobToNotif(job: PortalNotificationJob): Notif {
     color:          cfg.color,
     badge:          cfg.badge,
     badgeLbl:       cfg.badgeLbl,
-    title:          job.subject ?? "Notification",
-    body:           job.message ?? "",
+    title,
+    body:           sanitizeBody(rawTab, job.message, title),
     time:           job.createdAt
       ? new Date(job.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })
       : "",
     unread:         job.readAt === null,
-    priority:       "normal",
-    sender:         "System",
-    senderInitials: "SY",
+    priority,
+    sender:         sender.sender,
+    senderInitials: sender.senderInitials,
     action:         null,
     actionCls:      "",
+    snoozedUntil:   job.snoozedUntil ?? null,
+    archivedAt:     job.archivedAt ?? null,
   };
 }
 
@@ -124,15 +216,18 @@ export function NotificationsPage() {
   const { session } = useProjectLayer();
   const [activeTab, setActiveTab] = useState<NTab>("all");
   const [notifs,    setNotifs]    = useState<Notif[]>([]);
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-  const [snoozed,   setSnoozed]   = useState<Set<string>>(new Set());
   const [expanded,  setExpanded]  = useState<string | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [currentTime] = useState(() => Date.now());
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
-    setLoading(true);
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (!cancelled) setLoading(true);
+    });
     setError(null);
     void Promise.all([
       loadPortalNotificationsWithRefresh(session, {}),
@@ -146,14 +241,22 @@ export function NotificationsPage() {
         try { setMuted(new Set(JSON.parse(prefR.data.value))); } catch { /* ignore */ }
       }
     }).finally(() => setLoading(false));
+    return () => {
+      cancelled = true;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.accessToken]);
+  }, [session?.accessToken, refreshTick]);
   const [showPrefs, setShowPrefs] = useState(false);
   const [muted,     setMuted]     = useState<Set<Exclude<NTab, "all">>>(new Set());
 
   const visible = useMemo(
-    () => notifs.filter(n => !dismissed.has(n.id) && !snoozed.has(n.id) && !muted.has(n.tab as Exclude<NTab, "all">)),
-    [notifs, dismissed, snoozed, muted],
+    () => notifs.filter((n) => {
+      if (muted.has(n.tab as Exclude<NTab, "all">)) return false;
+      if (n.archivedAt) return false;
+      if (n.snoozedUntil && new Date(n.snoozedUntil).getTime() > currentTime) return false;
+      return true;
+    }),
+    [notifs, muted, currentTime],
   );
 
   const filtered = useMemo(
@@ -162,7 +265,7 @@ export function NotificationsPage() {
   );
 
   const unreadCount    = visible.filter(n => n.unread).length;
-  const snoozedCount   = snoozed.size;
+  const snoozedCount   = notifs.filter((n) => Boolean(n.snoozedUntil && new Date(n.snoozedUntil).getTime() > currentTime)).length;
   const actionRequired = visible.filter(n => n.unread && n.priority === "high").length;
   const todayCount     = visible.filter(n => n.group === "Today").length;
 
@@ -185,11 +288,33 @@ export function NotificationsPage() {
       });
     }
   };
-  const dismiss     = (id: string) => { setDismissed(prev => new Set([...prev, id])); setExpanded(p => p === id ? null : p); };
-  const snooze      = (id: string) => { setSnoozed(prev => new Set([...prev, id])); markRead(id); };
+  const dismiss     = (id: string) => {
+    setNotifs((prev) => prev.filter((n) => n.id !== id));
+    setExpanded((p) => p === id ? null : p);
+    if (session) {
+      void setPortalNotificationArchiveStateWithRefresh(session, id, true).then((r) => {
+        if (r.nextSession) saveSession(r.nextSession);
+      });
+    }
+  };
+  const snooze      = (id: string) => {
+    const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, snoozedUntil: until, unread: false } : n));
+    markRead(id);
+    if (session) {
+      void setPortalNotificationSnoozeStateWithRefresh(session, id, until).then((r) => {
+        if (r.nextSession) saveSession(r.nextSession);
+      });
+    }
+  };
   const toggleMute  = (cat: Exclude<NTab, "all">) =>
     setMuted(prev => {
-      const s = new Set(prev); s.has(cat) ? s.delete(cat) : s.add(cat);
+      const s = new Set(prev);
+      if (s.has(cat)) {
+        s.delete(cat);
+      } else {
+        s.add(cat);
+      }
       if (session) {
         void setPortalPreferenceWithRefresh(session, {
           key: "notificationMutes",
@@ -258,6 +383,10 @@ export function NotificationsPage() {
               {unreadCount} unread
             </span>
           )}
+          <button type="button" className={cx("btnSm", "btnGhost", "colorInherit")}
+            onClick={() => setRefreshTick((value) => value + 1)}>
+            Refresh
+          </button>
           <button type="button" className={cx("btnSm", "btnGhost", "colorInherit")} onClick={markAllRead}
             disabled={unreadCount === 0}>
             Mark all read
@@ -348,11 +477,25 @@ export function NotificationsPage() {
                 <Ic n="check" sz={11} c="var(--muted2)" /> Mark all read
               </button>
               <button type="button" className={cx("btnSm", "btnGhost", "colorInherit", "flexRow", "gap5")}
-                onClick={() => setDismissed(new Set(visible.map(n => n.id)))}>
+                onClick={() => {
+                  setNotifs((prev) => prev.filter((n) => muted.has(n.tab as Exclude<NTab, "all">)));
+                  if (session) {
+                    void archiveAllPortalNotificationsWithRefresh(session).then((r) => {
+                      if (r.nextSession) saveSession(r.nextSession);
+                    });
+                  }
+                }}>
                 <Ic n="trash" sz={11} c="var(--muted2)" /> Clear all
               </button>
               {snoozedCount > 0 && (
-                <button type="button" className={cx("btnSm", "btnGhost", "colorInherit", "flexRow", "gap5")} onClick={() => setSnoozed(new Set())}>
+                <button type="button" className={cx("btnSm", "btnGhost", "colorInherit", "flexRow", "gap5")} onClick={() => {
+                  if (session) {
+                    void restoreSnoozedPortalNotificationsWithRefresh(session).then((r) => {
+                      if (r.nextSession) saveSession(r.nextSession);
+                      setRefreshTick((value) => value + 1);
+                    });
+                  }
+                }}>
                   <Ic n="refresh" sz={11} c="var(--muted2)" /> Restore snoozed ({snoozedCount})
                 </button>
               )}
@@ -415,8 +558,9 @@ export function NotificationsPage() {
           return (
             <button key={tab.id} type="button"
               className={cx("ntfTab", activeTab === tab.id ? "ntfTabActive" : "", "dynColor")}
-              onClick={() => setActiveTab(tab.id)} style={{ "--color": "inherit" } as React.CSSProperties}>
-              <Ic n={tab.icon} sz={11} c={activeTab === tab.id ? "var(--bg)" : "var(--muted2)"} />
+              onClick={() => setActiveTab(tab.id)}
+              style={{ "--color": activeTab === tab.id ? "#050508" : "inherit" } as React.CSSProperties}>
+              <Ic n={tab.icon} sz={11} c={activeTab === tab.id ? "#050508" : "var(--muted2)"} />
               {tab.label}
               {count > 0 && <span className={cx("ntfTabBadge")}>{count}</span>}
             </button>
@@ -450,11 +594,11 @@ export function NotificationsPage() {
                     <div key={n.id} className={cx("ntfRow", n.unread ? "ntfRowUnread" : "")}>
 
                       {/* Priority / color accent bar */}
-                      <div className={cx("ntfAccent", "dynBgColor")} style={{ "--bg-color": n.color, "--op": n.priority === "high" ? 1 : 0.35 } as React.CSSProperties} />
+                      <div className={cx("ntfAccent", "dynBgColor")} style={{ "--bg-color": n.color, "--op": n.priority === "high" ? 1 : 0.6 } as React.CSSProperties} />
 
                       {/* Tinted icon box */}
-                      <div className={cx("ntfIconBox", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${n.color} 13%, var(--s2))`, "--color": `color-mix(in oklab, ${n.color} 25%, transparent)` } as React.CSSProperties}>
-                        <Ic n={n.icon} sz={15} c={n.color} />
+                      <div className={cx("ntfIconBox", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${n.color} 20%, var(--s3))`, "--color": `color-mix(in oklab, ${n.color} 40%, transparent)` } as React.CSSProperties}>
+                        <Ic n={n.icon} sz={16} c={n.color} />
                       </div>
 
                       {/* Content */}
@@ -541,7 +685,14 @@ export function NotificationsPage() {
             <span className={cx("text11", "colorMuted")}>
               {snoozedCount} notification{snoozedCount !== 1 ? "s" : ""} snoozed
             </span>
-            <button type="button" className={cx("btnSm", "btnGhost", "mlAuto", "colorInherit")} onClick={() => setSnoozed(new Set())}>
+            <button type="button" className={cx("btnSm", "btnGhost", "mlAuto", "colorInherit")} onClick={() => {
+              if (session) {
+                void restoreSnoozedPortalNotificationsWithRefresh(session).then((r) => {
+                  if (r.nextSession) saveSession(r.nextSession);
+                  setRefreshTick((value) => value + 1);
+                });
+              }
+            }}>
               Restore all
             </button>
           </div>

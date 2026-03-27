@@ -22,6 +22,10 @@ export interface NotificationJob {
   readAt: string | null;
   readByUserId: string | null;
   readByRole: "ADMIN" | "STAFF" | "CLIENT" | null;
+  snoozedUntil: string | null;
+  archivedAt: string | null;
+  archivedByUserId: string | null;
+  archivedByRole: "ADMIN" | "STAFF" | "CLIENT" | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -57,6 +61,10 @@ function mapJob(job: PrismaNotificationJob): NotificationJob {
     readAt: job.readAt ? job.readAt.toISOString() : null,
     readByUserId: job.readByUserId,
     readByRole: (job.readByRole as NotificationJob["readByRole"]) ?? null,
+    snoozedUntil: job.snoozedUntil ? job.snoozedUntil.toISOString() : null,
+    archivedAt: job.archivedAt ? job.archivedAt.toISOString() : null,
+    archivedByUserId: job.archivedByUserId,
+    archivedByRole: (job.archivedByRole as NotificationJob["archivedByRole"]) ?? null,
     createdAt: job.createdAt.toISOString(),
     updatedAt: job.updatedAt.toISOString()
   };
@@ -143,6 +151,10 @@ export async function enqueueJob(
       readAt: null,
       readByUserId: null,
       readByRole: null,
+      snoozedUntil: null,
+      archivedAt: null,
+      archivedByUserId: null,
+      archivedByRole: null,
       nextAttemptAt: now,
       idempotencyKey
     }
@@ -159,7 +171,8 @@ export async function listJobs(
     where: {
       clientId: clientId ?? undefined,
       readAt: options.unreadOnly ? null : undefined,
-      tab: options.tab ?? undefined
+      tab: options.tab ?? undefined,
+      archivedAt: null
     },
     orderBy: { createdAt: "desc" }
   });
@@ -216,7 +229,7 @@ export async function processNextJob(): Promise<NotificationJob | null> {
   }
 
   // ── Dispatch to real provider ──────────────────────────────────────────
-  let deliveryResult: { success: boolean; error?: string };
+  let deliveryResult: { success: boolean; error?: string; skipped?: boolean };
 
   if (updatedBase.channel === "EMAIL") {
     deliveryResult = await sendEmail({
@@ -232,14 +245,19 @@ export async function processNextJob(): Promise<NotificationJob | null> {
       body: updatedBase.message
     });
   } else {
-    // PUSH — FCM via push provider (skips gracefully if FCM_SERVER_KEY not set)
-    const pushTitle = updatedBase.subject ?? "Maphari";
-    const pushData: Record<string, string> = {
-      tab: updatedBase.tab,
-      jobId: updatedBase.id,
-      clientId: updatedBase.clientId,
-    };
-    deliveryResult = await sendPush(updatedBase.recipient, pushTitle, updatedBase.message, pushData);
+    // Portal-only jobs should appear in-app without requiring a device token.
+    if (updatedBase.recipient.startsWith("portal:")) {
+      deliveryResult = { success: true, skipped: true };
+    } else {
+      // PUSH — FCM via push provider (skips gracefully if FCM_SERVER_KEY not set)
+      const pushTitle = updatedBase.subject ?? "Maphari";
+      const pushData: Record<string, string> = {
+        tab: updatedBase.tab,
+        jobId: updatedBase.id,
+        clientId: updatedBase.clientId,
+      };
+      deliveryResult = await sendPush(updatedBase.recipient, pushTitle, updatedBase.message, pushData);
+    }
   }
 
   if (!deliveryResult.success) {
@@ -315,6 +333,8 @@ export async function markAllJobsRead(
     where: {
       clientId: clientId ?? undefined,
       readAt: null,
+      archivedAt: null,
+      OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }]
     },
     data: {
       readAt: now,
@@ -345,10 +365,13 @@ export async function setNotificationReadState(
 }
 
 export async function unreadCounts(clientId?: string): Promise<{ total: number; byTab: Record<NotificationJob["tab"], number> }> {
+  const now = new Date();
   const rows = await prisma.notificationJob.findMany({
     where: {
       clientId: clientId ?? undefined,
-      readAt: null
+      readAt: null,
+      archivedAt: null,
+      OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }]
     },
     select: { tab: true }
   });
@@ -365,6 +388,80 @@ export async function unreadCounts(clientId?: string): Promise<{ total: number; 
     if (tab in byTab) byTab[tab] += 1;
   });
   return { total: rows.length, byTab };
+}
+
+export async function setNotificationArchiveState(
+  id: string,
+  archived: boolean,
+  actor?: QueueActor
+): Promise<NotificationJob | null> {
+  const existing = await prisma.notificationJob.findUnique({ where: { id } });
+  if (!existing) return null;
+  const now = new Date();
+  const updated = await prisma.notificationJob.update({
+    where: { id },
+    data: archived
+      ? {
+          archivedAt: now,
+          archivedByUserId: actor?.userId ?? null,
+          archivedByRole: actor?.role ?? null
+        }
+      : {
+          archivedAt: null,
+          archivedByUserId: null,
+          archivedByRole: null
+        }
+  });
+  return mapJob(updated);
+}
+
+export async function archiveAllJobs(
+  clientId: string | undefined,
+  actor?: QueueActor
+): Promise<{ count: number }> {
+  const now = new Date();
+  const result = await prisma.notificationJob.updateMany({
+    where: {
+      clientId: clientId ?? undefined,
+      archivedAt: null
+    },
+    data: {
+      archivedAt: now,
+      archivedByUserId: actor?.userId ?? null,
+      archivedByRole: actor?.role ?? null
+    }
+  });
+  return { count: result.count };
+}
+
+export async function setNotificationSnoozeState(
+  id: string,
+  snoozedUntil: string | null
+): Promise<NotificationJob | null> {
+  const existing = await prisma.notificationJob.findUnique({ where: { id } });
+  if (!existing) return null;
+  const updated = await prisma.notificationJob.update({
+    where: { id },
+    data: {
+      snoozedUntil: snoozedUntil ? new Date(snoozedUntil) : null
+    }
+  });
+  return mapJob(updated);
+}
+
+export async function restoreSnoozedJobs(clientId?: string): Promise<{ count: number }> {
+  const now = new Date();
+  const result = await prisma.notificationJob.updateMany({
+    where: {
+      clientId: clientId ?? undefined,
+      archivedAt: null,
+      snoozedUntil: { gt: now }
+    },
+    data: {
+      snoozedUntil: null
+    }
+  });
+  return { count: result.count };
 }
 
 export async function clearNotificationQueue(): Promise<void> {

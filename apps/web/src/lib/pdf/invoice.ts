@@ -39,8 +39,8 @@ export interface InvoicePdfData {
   status: string;
   items: InvoiceLineItem[];
   category: string;
-  project: string;
-  contact: string;
+  project?: string;
+  contact?: string;
   notes?: string;
 }
 
@@ -134,9 +134,9 @@ export async function downloadInvoicePdf(inv: InvoicePdfData): Promise<void> {
     ["Reference",   inv.ref],
     ["Issue Date",  inv.date],
     ["Due Date",    inv.due],
-    ["Project",     inv.project],
+    ...(inv.project ? [["Project", inv.project] as [string, string]] : []),
     ["Category",    inv.category],
-    ["Bill To",     inv.contact],
+    ...(inv.contact ? [["Bill To", inv.contact] as [string, string]] : []),
     ...(inv.paidDate ? [["Paid On", inv.paidDate] as [string, string]] : []),
   ];
 

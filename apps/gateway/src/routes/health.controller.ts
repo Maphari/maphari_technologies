@@ -15,10 +15,10 @@ interface StatusPayload {
 }
 
 const SERVICES: Array<{ name: string; url: string }> = [
-  { name: "Core", url: `${process.env.CORE_SERVICE_URL ?? "http://localhost:4001"}/health` },
+  { name: "Core", url: `${process.env.CORE_SERVICE_URL ?? "http://localhost:4002"}/health` },
   { name: "Automation", url: `${process.env.AUTOMATION_SERVICE_URL ?? "http://localhost:4003"}/health` },
-  { name: "AI", url: `${process.env.AI_SERVICE_URL ?? "http://localhost:4011"}/health` },
-  { name: "Billing", url: `${process.env.BILLING_SERVICE_URL ?? "http://localhost:4002"}/health` }
+  { name: "AI", url: `${process.env.AI_SERVICE_URL ?? "http://localhost:4007"}/health` },
+  { name: "Billing", url: `${process.env.BILLING_SERVICE_URL ?? "http://localhost:4006"}/health` }
 ];
 
 async function pingService(name: string, url: string): Promise<ServiceHealth> {

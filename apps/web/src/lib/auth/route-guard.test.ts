@@ -42,6 +42,16 @@ describe("resolveAuthRedirect", () => {
     expect(redirect).toBeNull();
   });
 
+  it("keeps authenticated user on nested client login so the real login handshake can run", () => {
+    const redirect = resolveAuthRedirect({
+      pathname: "/client/login",
+      search: "",
+      role: "CLIENT",
+    });
+
+    expect(redirect).toBeNull();
+  });
+
   it("keeps authenticated user on login even with legacy force query", () => {
     const redirect = resolveAuthRedirect({
       pathname: "/login",

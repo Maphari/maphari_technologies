@@ -5,7 +5,7 @@
 // Scope   : CLIENT read/write own; STAFF/ADMIN full access
 // ════════════════════════════════════════════════════════════════════════════
 
-import { Body, Controller, Get, Headers, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, Patch, Post } from "@nestjs/common";
 import { type ApiResponse, type Role } from "@maphari/contracts";
 import { Roles } from "../auth/roles.decorator.js";
 import { proxyRequest } from "../utils/proxy-request.js";
@@ -118,6 +118,43 @@ export class ProfileController {
       "GET",
       undefined,
       scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Post("portal/settings/integrations/requests")
+  async requestIntegration(
+    @Body()                   body: unknown,
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/portal/settings/integrations/requests`,
+      "POST",
+      body,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  @Roles("ADMIN", "STAFF")
+  @Patch("portal/settings/integrations/requests/:requestId")
+  async updateIntegrationRequest(
+    @Param("requestId")       requestId: string,
+    @Body()                   body: unknown,
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestIdHeader?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/portal/settings/integrations/requests/${requestId}`,
+      "PATCH",
+      body,
+      scopeHeaders(userId, role, clientId, requestIdHeader, traceId)
     );
   }
 

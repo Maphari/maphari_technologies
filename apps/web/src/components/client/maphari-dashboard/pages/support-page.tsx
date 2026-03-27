@@ -28,7 +28,6 @@ import { saveSession } from "../../../../lib/auth/session";
 
 type ProgressKnowledgeTab = "Progress Feed" | "Knowledge Base" | "Support Tickets";
 type FeedFilter = "All" | "UPDATE" | "RELEASE" | "MILESTONE" | "ALERT" | "MAINTENANCE";
-type ReactionType = "love" | "fire" | "eyes";
 
 type FeedPost = {
   id:        string;
@@ -38,10 +37,9 @@ type FeedPost = {
   time:      string;
   isNew:     boolean;
   bg:        string;
-  emoji:     string;
+  icon:      string;
   caption:   string;
   type:      string;
-  reactions: Record<ReactionType, number>;
 };
 
 const TABS: ProgressKnowledgeTab[] = ["Progress Feed", "Knowledge Base", "Support Tickets"];
@@ -65,8 +63,12 @@ const ANN_GRADIENTS: Record<string, string> = {
   MAINTENANCE: "linear-gradient(135deg,var(--cyan-d),var(--lime-d))",
 };
 
-const ANN_EMOJIS: Record<string, string> = {
-  UPDATE: "🚀", RELEASE: "🎉", MILESTONE: "🏆", ALERT: "⚠️", MAINTENANCE: "🛠️",
+const ANN_ICONS: Record<string, string> = {
+  UPDATE: "activity",
+  RELEASE: "spark",
+  MILESTONE: "flag",
+  ALERT: "alert",
+  MAINTENANCE: "settings",
 };
 
 const ANN_COLORS = ["var(--accent)", "var(--purple)", "var(--amber)", "var(--green)"];
@@ -95,10 +97,9 @@ function mapAnnouncementToFeedPost(a: PortalAnnouncement, idx: number): FeedPost
     time:     timeStr,
     isNew,
     bg:       ANN_GRADIENTS[a.type ?? "UPDATE"] ?? ANN_GRADIENTS.UPDATE,
-    emoji:    ANN_EMOJIS[a.type ?? "UPDATE"] ?? "📢",
+    icon:     ANN_ICONS[a.type ?? "UPDATE"] ?? "message",
     caption:  a.title,
     type:     a.type ?? "UPDATE",
-    reactions: { love: 0, fire: 0, eyes: 0 },
   };
 }
 
@@ -140,14 +141,12 @@ export function SupportPage() {
   // ── Feed state (announcements only — no hardcoded fallback) ──────────────
   const [feedPosts,   setFeedPosts]   = useState<FeedPost[]>([]);
   const [loadingFeed, setLoadingFeed] = useState(false);
-  const [reactions,   setReactions]   = useState<Array<Record<ReactionType, number>>>([]);
-  const [reacted,     setReacted]     = useState<Record<string, boolean>>({});
-
   // ── Knowledge Base state ─────────────────────────────────────────────────
   const [articles,    setArticles]    = useState<PortalKnowledgeArticle[]>([]);
   const [loadingKB,   setLoadingKB]   = useState(false);
   const [kbSearch,    setKbSearch]    = useState("");
   const [kbCategory,  setKbCategory]  = useState<string | null>(null);
+  const [activeArticle, setActiveArticle] = useState<PortalKnowledgeArticle | null>(null);
 
   // ── Support Tickets state ────────────────────────────────────────────────
   const [tickets,        setTickets]        = useState<PortalSupportTicket[]>([]);
@@ -162,43 +161,62 @@ export function SupportPage() {
   const [commentText,   setCommentText]   = useState("");
   const [commentBusy,   setCommentBusy]   = useState(false);
 
+  const loadFeed = useCallback(async () => {
+    if (!session) return;
+    setLoadingFeed(true);
+    const result = await loadPortalAnnouncementsWithRefresh(session);
+    if (result.nextSession) saveSession(result.nextSession);
+    const published = (result.data ?? []).filter((a) => a.status === "PUBLISHED");
+    const mapped = published.map(mapAnnouncementToFeedPost);
+    setFeedPosts(mapped);
+    setLoadingFeed(false);
+  }, [session]);
+
+  const loadKnowledge = useCallback(async () => {
+    if (!session) return;
+    setLoadingKB(true);
+    const r = await loadPortalKnowledgeArticlesWithRefresh(session);
+    if (r.nextSession) saveSession(r.nextSession);
+    if (!r.error && r.data) setArticles(r.data);
+    setLoadingKB(false);
+  }, [session]);
+
+  const loadTickets = useCallback(async () => {
+    if (!session) return;
+    setLoadingTickets(true);
+    const result = await loadPortalSupportTicketsWithRefresh(session);
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.data) setTickets(result.data);
+    setLoadingTickets(false);
+  }, [session]);
+
   // ── Load announcements for Progress Feed ──────────────────────────────────
   useEffect(() => {
     if (!session) return;
-    setLoadingFeed(true);
-    loadPortalAnnouncementsWithRefresh(session).then((result) => {
-      if (result.nextSession) saveSession(result.nextSession);
-      const published = (result.data ?? []).filter((a) => a.status === "PUBLISHED");
-      const mapped    = published.map(mapAnnouncementToFeedPost);
-      setFeedPosts(mapped);
-      setReactions(mapped.map((p) => ({ ...p.reactions })));
-      setReacted({});
-    }).finally(() => setLoadingFeed(false));
+    queueMicrotask(() => {
+      void loadFeed();
+    });
     loadPortalNotificationPrefsWithRefresh(session).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
       if (!result.error && result.data) setSubscribed(Boolean(result.data.projectUpdates));
     });
-  }, [session]);
+  }, [session, loadFeed]);
 
   // ── Load knowledge articles ───────────────────────────────────────────────
   useEffect(() => {
     if (tab !== "Knowledge Base" || !session) return;
-    setLoadingKB(true);
-    loadPortalKnowledgeArticlesWithRefresh(session).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (!r.error && r.data) setArticles(r.data);
-    }).finally(() => setLoadingKB(false));
-  }, [tab, session]);
+    queueMicrotask(() => {
+      void loadKnowledge();
+    });
+  }, [tab, session, loadKnowledge]);
 
   // ── Load support tickets ──────────────────────────────────────────────────
   useEffect(() => {
     if (tab !== "Support Tickets" || !session) return;
-    setLoadingTickets(true);
-    loadPortalSupportTicketsWithRefresh(session).then((result) => {
-      if (result.nextSession) saveSession(result.nextSession);
-      if (result.data) setTickets(result.data);
-    }).finally(() => setLoadingTickets(false));
-  }, [tab, session]);
+    queueMicrotask(() => {
+      void loadTickets();
+    });
+  }, [tab, session, loadTickets]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
 
@@ -258,18 +276,17 @@ export function SupportPage() {
     setCommentBusy(false);
   }, [session, commentTarget, commentText, notify]);
 
-  const toggleReaction = useCallback((postIndex: number, reactionType: ReactionType) => {
-    const key       = `${postIndex}-${reactionType}`;
-    const wasReacted = Boolean(reacted[key]);
-    setReacted((prev) => ({ ...prev, [key]: !wasReacted }));
-    setReactions((prev) =>
-      prev.map((item, idx) =>
-        idx === postIndex
-          ? { ...item, [reactionType]: wasReacted ? item[reactionType] - 1 : item[reactionType] + 1 }
-          : item,
-      ),
-    );
-  }, [reacted]);
+  const handleRefresh = useCallback(async () => {
+    if (tab === "Progress Feed") {
+      await loadFeed();
+      return;
+    }
+    if (tab === "Knowledge Base") {
+      await loadKnowledge();
+      return;
+    }
+    await loadTickets();
+  }, [tab, loadFeed, loadKnowledge, loadTickets]);
 
   return (
     <div className={cx("pageBody")}>
@@ -282,6 +299,13 @@ export function SupportPage() {
           <p className={cx("pageSub")}>Behind-the-scenes updates from the team, and answers to common project questions.</p>
         </div>
         <div className={cx("pageActions")}>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost")}
+            onClick={() => void handleRefresh()}
+          >
+            Refresh
+          </button>
           <button
             type="button"
             className={cx("btnSm", subscribed ? "btnAccent" : "btnGhost")}
@@ -316,17 +340,28 @@ export function SupportPage() {
       {tab === "Progress Feed" && (
         <>
           {/* ── Type filter pills ── */}
-          <div className={cx("pillTabs", "mb16")}>
-            {FEED_FILTERS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                className={cx("pillTab", feedFilter === f.id && "pillTabActive")}
-                onClick={() => setFeedFilter(f.id)}
-              >
-                {f.label}
-              </button>
-            ))}
+          <div className={cx("cardS1v2", "p12", "mb16", "supportFilterShell")}>
+            <div className={cx("supportFilterHead")}>
+              <div className={cx("supportFilterHeadIcon")}>
+                <Ic n="filter" sz={13} c="var(--lime)" />
+              </div>
+              <div className={cx("supportFilterHeadText")}>
+                <div className={cx("supportFilterHeadLabel")}>Feed Filters</div>
+                <div className={cx("supportFilterHeadSub")}>Narrow the update stream by announcement type.</div>
+              </div>
+            </div>
+            <div className={cx("filterRowWrap")}>
+              {FEED_FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  className={cx("btnSm", feedFilter === f.id ? "btnAccent" : "btnGhost")}
+                  onClick={() => setFeedFilter(f.id)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* ── Loading skeletons ── */}
@@ -356,14 +391,14 @@ export function SupportPage() {
             <div className={cx("emptyState")}>
               <div className={cx("emptyStateIcon")}><Ic n="filter" sz={22} c="var(--muted2)" /></div>
               <div className={cx("emptyStateTitle")}>No {feedFilter.toLowerCase()} posts yet</div>
-              <div className={cx("emptyStateSub")}>Try switching to "All Updates" to see everything.</div>
+              <div className={cx("emptyStateSub")}>Try switching to &quot;All Updates&quot; to see everything.</div>
             </div>
           )}
 
           {/* ── Feed posts grid ── */}
           {!loadingFeed && filteredPosts.length > 0 && (
             <div className={cx("grid2")}>
-              {filteredPosts.map((post, postIdx) => (
+              {filteredPosts.map((post) => (
                 <div key={post.id} className={cx("card", "p0", "overflowHidden")}>
 
                   {/* Post header */}
@@ -382,7 +417,9 @@ export function SupportPage() {
 
                   {/* Gradient media card */}
                   <div className={cx("mediaGradientCard", "dynBgColor")} style={{ "--bg-color": post.bg } as React.CSSProperties}>
-                    <span className={cx("text38", "lineH1")}>{post.emoji}</span>
+                    <div className={cx("iconBox40")} style={{ "--bg-color": "rgba(255,255,255,0.14)", "--color": "rgba(255,255,255,0.2)" } as React.CSSProperties}>
+                      <Ic n={post.icon} sz={22} c="#ffffff" />
+                    </div>
                     <div className={cx("absB8R10Label")}>
                       {post.type}
                     </div>
@@ -395,40 +432,17 @@ export function SupportPage() {
                     </div>
                   </div>
 
-                  {/* Reaction row */}
                   <div className={cx("flexRow", "gap6", "p10x16", "borderT")}>
-                    {(
-                      [
-                        { key: "love" as ReactionType, emoji: "❤️" },
-                        { key: "fire" as ReactionType, emoji: "🔥" },
-                        { key: "eyes" as ReactionType, emoji: "👀" },
-                      ]
-                    ).map((reaction) => {
-                      const reactionKey  = `${postIdx}-${reaction.key}`;
-                      const isReacted    = Boolean(reacted[reactionKey]);
-                      const count        = reactions[postIdx]?.[reaction.key] ?? 0;
-                      return (
-                        <button
-                          key={reaction.key}
-                          type="button"
-                          className={cx("reactionBtn")}
-                          style={{
-                            "--bg-color": isReacted ? "color-mix(in oklab, var(--lime) 12%, var(--s3))" : "var(--s3)",
-                            "--color": isReacted ? "color-mix(in oklab, var(--lime) 35%, transparent)" : "var(--b1)",
-                          } as React.CSSProperties}
-                          onClick={() => toggleReaction(postIdx, reaction.key)}
-                        >
-                          <span className={cx("text13")}>{reaction.emoji}</span>
-                          <span className={cx("text10", "fontMono", "dynColor")} style={{ "--color": isReacted ? "var(--lime)" : "var(--muted2)" } as React.CSSProperties}>{count}</span>
-                        </button>
-                      );
-                    })}
+                    <div className={cx("text10", "fontMono", "colorMuted2", "flexRow", "flexCenter", "gap6")}>
+                      <Ic n={post.icon} sz={12} c="var(--muted2)" />
+                      Posted by the delivery team
+                    </div>
                     <button
                       type="button"
                       onClick={() => setCommentTarget({ postId: post.id, postTitle: post.caption ?? post.type ?? "Announcement" })}
                       className={cx("flexRow", "gap4", "p4x10", "r20", "bgS3", "borderB1", "pointer", "mlAuto")}
                     >
-                      <span className={cx("text13")}>💬</span>
+                      <Ic n="message" sz={12} c="var(--muted2)" />
                       <span className={cx("text10", "colorMuted2")}>Comment</span>
                     </button>
                   </div>
@@ -539,7 +553,7 @@ export function SupportPage() {
                   key={article.id}
                   type="button"
                   className={cx("listRow")}
-                  onClick={() => notify("success", "Article opened", article.title)}
+                  onClick={() => setActiveArticle(article)}
                 >
                   <div className={cx("iconBox34")}
                     style={{
@@ -622,29 +636,55 @@ export function SupportPage() {
 
       {/* ── Comment modal ─────────────────────────────────────────────────── */}
       {commentTarget && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-          onClick={() => setCommentTarget(null)}>
-          <div className={cx("card")} style={{ width: "100%", maxWidth: 480, margin: 0 }} onClick={(e) => e.stopPropagation()}>
-            <div className={cx("cardHd")}>
-              <span className={cx("cardHdTitle")}>Add Comment</span>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setCommentTarget(null)}>✕</button>
+        <div className={cx("modalOverlay")} onClick={() => setCommentTarget(null)}>
+          <div className={cx("pmModalInner", "maxW480")} onClick={(e) => e.stopPropagation()}>
+            <div className={cx("pmModalHd")}>
+              <div className={cx("pmTitle")}>Add Comment</div>
+              <button type="button" className={cx("iconBtn40x34")} onClick={() => setCommentTarget(null)} aria-label="Close">
+                <Ic n="x" sz={14} c="var(--muted2)" />
+              </button>
             </div>
-            <div style={{ padding: "12px 16px 16px" }}>
+            <div className={cx("p16", "flexCol", "gap12")}>
               <div className={cx("text12", "colorMuted", "mb8")}>{commentTarget.postTitle}</div>
               <textarea
                 className={cx("profInput")}
                 placeholder="Share your thoughts…"
                 rows={4}
-                style={{ width: "100%", resize: "vertical" }}
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 autoFocus
               />
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 12 }}>
+              <div className={cx("flexRow", "gap8", "justifyEnd", "mt4")}>
                 <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setCommentTarget(null)}>Cancel</button>
                 <button type="button" className={cx("btnSm", "btnAccent")} disabled={commentBusy || !commentText.trim()} onClick={() => void handleCommentSubmit()}>
                   {commentBusy ? "Sending…" : "Send Comment"}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeArticle && (
+        <div className={cx("modalOverlay")} onClick={() => setActiveArticle(null)}>
+          <div className={cx("pmModalInner", "maxW640")} onClick={(e) => e.stopPropagation()}>
+            <div className={cx("pmModalHd")}>
+              <div>
+                <div className={cx("pmTitle")}>{activeArticle.title}</div>
+                <div className={cx("text11", "colorMuted", "mt2")}>
+                  {(activeArticle.category ?? "General") + " · " + new Date(activeArticle.updatedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
+                </div>
+              </div>
+              <button type="button" className={cx("iconBtn40x34")} onClick={() => setActiveArticle(null)} aria-label="Close">
+                <Ic n="x" sz={14} c="var(--muted2)" />
+              </button>
+            </div>
+            <div className={cx("p16", "flexCol", "gap12")}>
+              <div className={cx("text11", "colorMuted2")}>
+                {activeArticle.authorName?.trim() ? "Published by " + activeArticle.authorName : "Published in your client knowledge base"}
+              </div>
+              <div className={cx("cardS1v2", "p16", "text12", "lineH165")} style={{ whiteSpace: "pre-wrap" }}>
+                {activeArticle.content}
               </div>
             </div>
           </div>

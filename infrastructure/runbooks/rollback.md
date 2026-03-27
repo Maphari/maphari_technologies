@@ -19,7 +19,11 @@
    - Stop write traffic.
    - Restore database from latest validated backup.
    - Re-run app with previous image tags.
-4. Validate:
+4. Integration idempotency migration rollback (if required):
+   - If rollback requires removing strict idempotency uniqueness, run:
+     - `DROP INDEX IF EXISTS integration_sync_events_task_provider_idempotency_uniq;`
+   - Keep `idempotency_key` column in place unless full schema rollback is planned.
+5. Validate:
    - `/health` and `/metrics` for each service
    - Login, refresh, and protected route behavior
 

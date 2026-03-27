@@ -49,6 +49,29 @@ function mapReferral(r: Pick<PortalReferral, "id" | "referredByName" | "status" 
   };
 }
 
+function exportReferralsCsv(rows: ReferralRow[]): void {
+  const header = ["Reference", "Name", "Date", "Status", "Reward", "Credit Applied"];
+  const csvRows = rows.map((row) => [
+    row.id,
+    row.name,
+    row.date,
+    row.status,
+    row.reward,
+    row.creditApplied ? "Yes" : "No",
+  ]);
+  const escape = (value: string) => "\"" + value.replace(/"/g, "\"\"") + "\"";
+  const csv = [header, ...csvRows].map((row) => row.map((cell) => escape(String(cell))).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "referral-programme.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 // ── Static content ────────────────────────────────────────────────────────────
 
 const HOW_IT_WORKS = [
@@ -92,10 +115,10 @@ export function ReferralProgramPage() {
     if (r.data) setSummary(r.data);
   }, []);
 
-  useEffect(() => {
+  const loadReferralData = useCallback(async () => {
     if (!session) return;
     setDataLoading(true);
-    void Promise.all([
+    await Promise.all([
       loadPortalReferralsWithRefresh(session).then((r) => {
         if (r.nextSession) saveSession(r.nextSession);
         if (r.data) setApiReferrals(r.data);
@@ -103,6 +126,10 @@ export function ReferralProgramPage() {
       fetchSummary(session),
     ]).finally(() => setDataLoading(false));
   }, [session, fetchSummary]);
+
+  useEffect(() => {
+    void loadReferralData();
+  }, [loadReferralData]);
 
   const historyReferrals   = summary?.referrals ?? apiReferrals;
   const displayReferrals = historyReferrals.map(mapReferral);
@@ -147,6 +174,14 @@ export function ReferralProgramPage() {
           <div className={cx("pageEyebrow")}>Growth · Referrals</div>
           <h1 className={cx("pageTitle")}>Referral Programme</h1>
           <p className={cx("pageSub")}>Refer a business to Maphari and earn account credits or bonus support hours.</p>
+        </div>
+        <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadReferralData()} disabled={dataLoading}>
+            Refresh
+          </button>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => exportReferralsCsv(displayReferrals)} disabled={displayReferrals.length === 0}>
+            Export CSV
+          </button>
         </div>
       </div>
 
@@ -305,6 +340,13 @@ export function ReferralProgramPage() {
         {dataLoading && (
           <div className={cx("emptyPad24x16", "textCenter")}>
             <span className={cx("text11", "colorMuted")}>Loading referrals…</span>
+          </div>
+        )}
+        {!dataLoading && historyReferrals.length === 0 && (
+          <div className={cx("flexRow", "justifyEnd", "px16_px", "pt12")}>
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadReferralData()}>
+              Refresh
+            </button>
           </div>
         )}
         {!dataLoading && displayReferrals.length === 0 && (

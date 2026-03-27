@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { cx } from "../style";
+import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -32,34 +33,54 @@ function relTime(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function aliasEmoji(alias: string): string {
-  const animals: Record<string, string> = {
-    falcon: "🦅", hawk: "🦅", eagle: "🦅",
-    leopard: "🐆", lion: "🦁", tiger: "🐯",
-    otter: "🦦", bear: "🐻", wolf: "🐺",
-    shark: "🦈", whale: "🐳", dolphin: "🐬",
-    horse: "🐴", deer: "🦌", fox: "🦊",
-    owl: "🦉", raven: "🐦", crane: "🦢",
-  };
-  const animal = alias.split("-").pop() ?? "";
-  return animals[animal] ?? "🌿";
+function aliasMonogram(alias: string): string {
+  return alias
+    .split("-")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+function exportForumThreadsCsv(threads: ForumThread[]): void {
+  const header = ["Title", "Category", "Alias", "Replies", "Pinned", "Locked", "Created"];
+  const rows = threads.map((thread) => [
+    thread.title,
+    thread.category,
+    thread.anonAlias,
+    String(thread.replyCount),
+    thread.isPinned ? "Yes" : "No",
+    thread.isLocked ? "Yes" : "No",
+    thread.createdAt,
+  ]);
+  const escape = (value: string) => "\"" + value.replace(/"/g, "\"\"") + "\"";
+  const csv = [header, ...rows].map((row) => row.map((cell) => escape(String(cell))).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "community-forum.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
   { id: "all",           label: "All" },
-  { id: "tips",          label: "💡 Tips & Tricks" },
-  { id: "qa",            label: "❓ Q&A" },
-  { id: "announcements", label: "📢 Announcements" },
-  { id: "general",       label: "☕ General" },
+  { id: "tips",          label: "Tips & Tricks" },
+  { id: "qa",            label: "Q&A" },
+  { id: "announcements", label: "Announcements" },
+  { id: "general",       label: "General" },
 ];
 
 const CAT_LABELS: Record<string, string> = {
-  tips: "💡 Tips",
-  qa: "❓ Q&A",
-  announcements: "📢 Announcements",
-  general: "☕ General",
+  tips: "Tips",
+  qa: "Q&A",
+  announcements: "Announcements",
+  general: "General",
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -75,6 +96,7 @@ export default function CommunityForumPage() {
   const [showNewThread,  setShowNewThread]  = useState(false);
   const [newThread,      setNewThread]      = useState({ title: "", category: "general", body: "" });
   const [replyBody,      setReplyBody]      = useState("");
+  const [query,          setQuery]          = useState("");
   const [submitting,     setSubmitting]     = useState(false);
   const [error,          setError]          = useState<string | null>(null);
 
@@ -205,22 +227,43 @@ export default function CommunityForumPage() {
     setSelectedThread(null);
   }
 
+  const visibleThreads = threads.filter((thread) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return thread.title.toLowerCase().includes(q) || thread.anonAlias.toLowerCase().includes(q);
+  });
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className={cx("forumPage")}>
 
       {/* Header */}
-      <div className={cx("forumHeader")}>
+      <div className={cx("pageHeader", "mb0")}>
         <div>
-          <h1>Community Forum</h1>
-          <p className={cx("forumPrivacyNotice")}>
+          <div className={cx("pageEyebrow")}>Community · Forum</div>
+          <h1 className={cx("pageTitle")}>Community Forum</h1>
+          <p className={cx("pageSub", "forumPrivacyNotice")}>
             All posts are anonymous — your identity is never shown to other clients
           </p>
         </div>
-        <div className={cx("forumHeaderActions")}>
+        <div className={cx("pageActions")}>
           <button
-            className={cx("forumNewBtn")}
+            className={cx("btnSm", "btnGhost")}
+            onClick={() => void loadThreads(activeCategory)}
+            disabled={loading}
+          >
+            Refresh
+          </button>
+          <button
+            className={cx("btnSm", "btnGhost")}
+            onClick={() => exportForumThreadsCsv(visibleThreads)}
+            disabled={visibleThreads.length === 0}
+          >
+            Export CSV
+          </button>
+          <button
+            className={cx("btnSm", "btnAccent")}
             onClick={() => setShowNewThread(true)}
           >
             + New Thread
@@ -243,21 +286,38 @@ export default function CommunityForumPage() {
         </div>
       </div>
 
+      <div className={cx("relative", "mb12")}>
+        <span className={cx("searchIconWrap")}>
+          <Ic n="search" sz={13} c="var(--muted2)" />
+        </span>
+        <input
+          className={cx("input", "pl36")}
+          placeholder={"Search " + String(threads.length) + " threads…"}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
       {/* Error banner */}
       {error && (
-        <div className={cx("forumLockedNotice")} style={{ marginBottom: 12 }}>
-          {error}
+        <div className={cx("emptyState", "mb12")}>
+          <div className={cx("emptyStateIcon")}><Ic n="alert" sz={20} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+          <button type="button" className={cx("btnSm", "btnGhost", "mt12")} onClick={() => void loadThreads(activeCategory)}>
+            Retry
+          </button>
         </div>
       )}
 
       {/* Thread list */}
       {loading ? (
         <div className={cx("forumDetailEmpty")}>Loading threads…</div>
-      ) : threads.length === 0 ? (
+      ) : visibleThreads.length === 0 ? (
         <div className={cx("forumDetailEmpty")}>No threads yet in this category.</div>
       ) : (
         <div className={cx("forumThreadList")}>
-          {threads.map((thread) => {
+          {visibleThreads.map((thread) => {
             const isSelected = selectedThread?.id === thread.id;
             return (
               <div key={thread.id}>
@@ -274,22 +334,22 @@ export default function CommunityForumPage() {
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleThreadClick(thread); }}
                 >
                   <div className={cx("forumThreadAvatar")}>
-                    {aliasEmoji(thread.anonAlias)}
+                    {aliasMonogram(thread.anonAlias)}
                   </div>
                   <div className={cx("forumThreadMeta")}>
-                    <div className={cx("forumThreadMeta")} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <div className={cx("flexRow", "gap8", "flexAlignCenter", "flexWrap")}>
                       <span className={cx("forumCategoryBadge")}>
                         {CAT_LABELS[thread.category] ?? thread.category}
                       </span>
-                      {thread.isPinned && <span title="Pinned">📌</span>}
-                      {thread.isLocked && <span className={cx("forumLocked")} title="Locked">🔒</span>}
+                      {thread.isPinned && <Ic n="pin" sz={12} c="var(--accent)" />}
+                      {thread.isLocked && <Ic n="lock" sz={12} c="var(--muted2)" />}
                       <span className={cx("forumAlias")}>{thread.anonAlias}</span>
                       <span className={cx("forumReplyCount")}>
                         {thread.replyCount} {thread.replyCount === 1 ? "reply" : "replies"}
                       </span>
                       <span className={cx("forumReplyCount")}>{relTime(thread.createdAt)}</span>
                     </div>
-                    <div style={{ fontWeight: 500, marginTop: 4 }}>{thread.title}</div>
+                    <div className={cx("fw600", "mt4")}>{thread.title}</div>
                   </div>
                 </div>
 
@@ -299,11 +359,11 @@ export default function CommunityForumPage() {
                     <div className={cx("forumDetailHeader")}>
                       <span>{thread.title}</span>
                       <button
-                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: "1rem" }}
+                        className={cx("iconBtn40x34")}
                         onClick={() => setSelectedThread(null)}
                         aria-label="Close thread"
                       >
-                        ✕
+                        <Ic n="x" sz={14} c="var(--muted2)" />
                       </button>
                     </div>
 
@@ -318,9 +378,9 @@ export default function CommunityForumPage() {
                             selectedThread.posts.map((post) => (
                               <div key={post.id} className={cx("forumPostRow")}>
                                 <div className={cx("forumPostAvatar")}>
-                                  {aliasEmoji(post.anonAlias)}
+                                  {aliasMonogram(post.anonAlias)}
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
+                                <div className={cx("flex1", "minW0")}>
                                   <div className={cx("forumPostMeta")}>
                                     <span className={cx("forumAlias")}>{post.anonAlias}</span>
                                     <span className={cx("forumReplyCount")}>{relTime(post.createdAt)}</span>
@@ -335,7 +395,7 @@ export default function CommunityForumPage() {
                         {/* Reply form or locked notice */}
                         {selectedThread.isLocked ? (
                           <div className={cx("forumLockedNotice")}>
-                            🔒 This thread is locked
+                            <Ic n="lock" sz={12} c="var(--muted2)" /> This thread is locked
                           </div>
                         ) : (
                           <form className={cx("forumReplyForm")} onSubmit={handleReplySubmit}>
@@ -367,73 +427,78 @@ export default function CommunityForumPage() {
       {showNewThread && (
         <>
           <div
-            className={cx("forumSlideOver")}
+            className={cx("forumBackdrop")}
+            onClick={() => setShowNewThread(false)}
+            aria-hidden="true"
+          />
+          <div
+            className={cx("forumModalWrap")}
             aria-modal="true"
             role="dialog"
             aria-label="New Thread"
           >
-            <div className={cx("forumSlideOverHeader")}>
-              <span>New Thread</span>
-              <button
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: "1.1rem" }}
-                onClick={() => setShowNewThread(false)}
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleNewThreadSubmit}>
-              <div className={cx("forumSlideOverBody")}>
-                <div className={cx("forumInputGroup")}>
-                  <label htmlFor="forum-title">Title</label>
-                  <input
-                    id="forum-title"
-                    type="text"
-                    placeholder="Thread title…"
-                    value={newThread.title}
-                    onChange={(e) => setNewThread((p) => ({ ...p, title: e.target.value }))}
-                    required
-                  />
+            <div className={cx("pmModalInner", "maxW640")} onClick={(event) => event.stopPropagation()}>
+              <div className={cx("pmModalHd")}>
+                <div>
+                  <div className={cx("text10", "uppercase", "ls01", "colorMuted2", "mb3")}>Community</div>
+                  <div className={cx("pmTitle")}>New Thread</div>
+                  <div className={cx("text11", "colorMuted", "mt2")}>
+                    Start a new anonymous discussion for the client community.
+                  </div>
                 </div>
-                <div className={cx("forumInputGroup")}>
-                  <label htmlFor="forum-category">Category</label>
-                  <select
-                    id="forum-category"
-                    value={newThread.category}
-                    onChange={(e) => setNewThread((p) => ({ ...p, category: e.target.value }))}
-                  >
-                    {CATEGORIES.filter((c) => c.id !== "all").map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginTop: 4 }}>
-                  Your thread will be reviewed before it appears publicly. All posts are anonymous.
-                </p>
-              </div>
-              <div className={cx("forumSlideOverFooter")}>
                 <button
-                  type="button"
+                  className={cx("iconBtn40x34")}
                   onClick={() => setShowNewThread(false)}
-                  style={{ background: "none", border: "1px solid var(--b2)", color: "var(--muted)", borderRadius: "var(--r-sm)", padding: "8px 16px", cursor: "pointer" }}
+                  aria-label="Close"
                 >
-                  Cancel
-                </button>
-                <button type="submit" disabled={submitting || !newThread.title.trim()} className={cx("forumNewBtn")}>
-                  {submitting ? "Submitting…" : "Submit Thread"}
+                  <Ic n="x" sz={14} c="var(--muted2)" />
                 </button>
               </div>
-            </form>
+              <form onSubmit={handleNewThreadSubmit}>
+                <div className={cx("cardS1v2", "p16", "flexCol", "gap16")}>
+                  <div className={cx("forumInputGroup")}>
+                    <label htmlFor="forum-title">Title</label>
+                    <input
+                      id="forum-title"
+                      type="text"
+                      placeholder="Thread title…"
+                      value={newThread.title}
+                      onChange={(e) => setNewThread((p) => ({ ...p, title: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className={cx("forumInputGroup")}>
+                    <label htmlFor="forum-category">Category</label>
+                    <select
+                      id="forum-category"
+                      value={newThread.category}
+                      onChange={(e) => setNewThread((p) => ({ ...p, category: e.target.value }))}
+                    >
+                      {CATEGORIES.filter((c) => c.id !== "all").map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className={cx("forumLockedNotice", "m0")}>
+                    <Ic n="shield" sz={12} c="var(--muted2)" />
+                    Your thread will be reviewed before it appears publicly. All posts are anonymous.
+                  </div>
+                  <div className={cx("flexRow", "gap8", "justifyEnd")}>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewThread(false)}
+                      className={cx("btnSm", "btnGhost")}
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" disabled={submitting || !newThread.title.trim()} className={cx("btnSm", "btnAccent")}>
+                      {submitting ? "Submitting…" : "Submit Thread"}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
           </div>
-          {/* Backdrop */}
-          <div
-            style={{
-              position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
-              zIndex: 49, backdropFilter: "blur(2px)",
-            }}
-            onClick={() => setShowNewThread(false)}
-            aria-hidden="true"
-          />
         </>
       )}
     </div>

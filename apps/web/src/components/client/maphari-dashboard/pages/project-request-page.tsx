@@ -4,11 +4,14 @@
 // project-request-page.tsx — Request a New Project (revamped)
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { saveSession } from "../../../../lib/auth/session";
 import { useProjectLayer } from "../hooks/use-project-layer";
+import { buildProjectRequestAgreementPdf } from "@/lib/pdf/project-request-agreement";
+import { getPortalFileDownloadUrlWithRefresh } from "../../../../lib/api/portal/files";
 import {
   createPortalProjectRequestWithRefresh,
+  createPortalInlineFileWithRefresh,
   createPortalInvoiceWithRefresh,
   createPortalPaymentWithRefresh,
   initiatePortalPayfastWithRefresh,
@@ -257,6 +260,7 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
   const clientId = session?.user.clientId ?? null;
 
   const [step,          setStep]          = useState(1);
+  const [intakeMode,    setIntakeMode]    = useState<"guided" | "custom" | null>("guided");
   const [bizSize,       setBizSize]       = useState<BizSize | null>(null);
   const [goal,          setGoal]          = useState<GoalId | null>(null);
   const [selected,      setSelected]      = useState<Set<ServiceId>>(new Set());
@@ -264,17 +268,22 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
   const [submittedProject, setSubmittedProject] = useState<{
     id: string;
     referenceCode: string;
+    agreementFileId: string | null;
   } | null>(null);
   const [proofUploaded,    setProofUploaded]    = useState(false);
   const [proofUploading,   setProofUploading]   = useState(false);
   const [proofUploadError, setProofUploadError] = useState<string | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showAllBundles, setShowAllBundles] = useState(false);
+  const [showServiceCatalog, setShowServiceCatalog] = useState(false);
+  const [showAddons, setShowAddons] = useState(false);
   const [agreedToTerms,   setAgreedToTerms]   = useState(false);
   const [signatureText,   setSignatureText]   = useState("");
   const [scrolledToEnd,   setScrolledToEnd]   = useState(false);
   const [payMethod,       setPayMethod]       = useState<"EFT" | "PAYFAST" | null>(null);
   const [submitting,      setSubmitting]      = useState(false);
   const [submitError,     setSubmitError]     = useState<string | null>(null);
+  const [agreementOpening, setAgreementOpening] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Brief fields
@@ -290,9 +299,49 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
   const [ecPlatform,     setEcPlatform]     = useState("");
   const [hasBrandAssets, setHasBrandAssets] = useState("");
 
+  // Stable EFT reference suffix — generated once per component mount so it
+  // doesn't change on every re-render (Date.now() called inline would change
+  // on every state update).
+  const eftSuffix = useMemo(() => Date.now().toString().slice(-6), []);
+
+  const resetWizard = () => {
+    setStep(1);
+    setIntakeMode("guided");
+    setBizSize(null);
+    setGoal(null);
+    setSelected(new Set());
+    setAddons(new Set());
+    setSubmittedProject(null);
+    setProofUploaded(false);
+    setProofUploading(false);
+    setProofUploadError(null);
+    setShowBreakdown(false);
+    setShowAllBundles(false);
+    setShowServiceCatalog(false);
+    setShowAddons(false);
+    setAgreedToTerms(false);
+    setSignatureText("");
+    setScrolledToEnd(false);
+    setPayMethod(null);
+    setSubmitting(false);
+    setSubmitError(null);
+    setName("");
+    setOverview("");
+    setGoals("");
+    setAudience("");
+    setBudget("");
+    setTimeline("");
+    setReferences("");
+    setRequirements("");
+    setMobilePlatform("");
+    setEcPlatform("");
+    setHasBrandAssets("");
+  };
+
   // Derived
   const goalObj        = goal ? GOALS.find(g => g.id === goal) : null;
   const recommendedIds = new Set<ServiceId>(goalObj?.recs ?? []);
+  const featuredCombos = COMBOS.slice(0, 3);
   const selArr         = [...selected];
   const estMin         = selArr.reduce((s, id) => s + PRICE_MAP[id][0], 0);
   const estMax         = selArr.reduce((s, id) => s + PRICE_MAP[id][1], 0);
@@ -308,15 +357,31 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
   const finalCents     = quoteCents - depositCents - milestoneCents;
 
   const toggleService = (id: ServiceId) =>
-    setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const toggleAddon = (id: AddonId) =>
-    setAddons(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setAddons((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const isComboActive = (c: ComboItem) => c.services.every(s => selected.has(s));
   const selectCombo   = (c: ComboItem) => setSelected(prev => {
-    const n = new Set(prev);
-    isComboActive(c) ? c.services.forEach(s => n.delete(s)) : c.services.forEach(s => n.add(s));
-    return n;
+    const next = new Set(prev);
+    if (isComboActive(c)) c.services.forEach((s) => next.delete(s));
+    else c.services.forEach((s) => next.add(s));
+    return next;
   });
+  const applyRecommendedServices = () => {
+    if (!goalObj) return;
+    setSelected(new Set(goalObj.recs));
+    setShowServiceCatalog(false);
+  };
 
   // ── Stepper ────────────────────────────────────────────────────────────────
 
@@ -423,6 +488,7 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
     const refCode   = submittedProject.referenceCode;
     const projectId = submittedProject.id;
     const isEft     = payMethod === "EFT";
+    const canOpenAgreement = !!submittedProject.agreementFileId;
 
     return (
       <div className={cx("prqSuccessShell")}>
@@ -464,6 +530,52 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
               <span className={cx("prqSummaryLabel")}>Method</span>
               <span className={cx("prqSummaryValue")}>{payMethod}</span>
             </div>
+          </div>
+
+          <div className={cx("flexRow", "gap8", "mb16", "flexWrap")}>
+            <button
+              type="button"
+              className={cx("btnSm", "btnGhost")}
+              disabled={!canOpenAgreement || agreementOpening}
+              onClick={async () => {
+                if (!session || !submittedProject.agreementFileId) return;
+                setAgreementOpening(true);
+                try {
+                  const result = await getPortalFileDownloadUrlWithRefresh(session, submittedProject.agreementFileId);
+                  if (result.nextSession) saveSession(result.nextSession);
+                  if (!result.data?.downloadUrl) return;
+                  window.open(result.data.downloadUrl, "_blank", "noopener,noreferrer");
+                } finally {
+                  setAgreementOpening(false);
+                }
+              }}
+            >
+              <Ic n="file" sz={12} c="currentColor" /> {agreementOpening ? "Opening..." : "View agreement"}
+            </button>
+            <button
+              type="button"
+              className={cx("btnSm", "btnGhost")}
+              disabled={!canOpenAgreement || agreementOpening}
+              onClick={async () => {
+                if (!session || !submittedProject.agreementFileId) return;
+                setAgreementOpening(true);
+                try {
+                  const result = await getPortalFileDownloadUrlWithRefresh(session, submittedProject.agreementFileId);
+                  if (result.nextSession) saveSession(result.nextSession);
+                  if (!result.data?.downloadUrl) return;
+                  const link = document.createElement("a");
+                  link.href = result.data.downloadUrl;
+                  link.download = refCode + "-engagement-agreement.pdf";
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                } finally {
+                  setAgreementOpening(false);
+                }
+              }}
+            >
+              <Ic n="download" sz={12} c="currentColor" /> Download agreement
+            </button>
           </div>
 
           {/* Timeline */}
@@ -605,7 +717,20 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
           <h1 className={cx("pageTitle")}>Start a New Project</h1>
           <p className={cx("pageSub")}>Tell us what you need and we&apos;ll put together a tailored proposal within 24 hours.</p>
         </div>
+        <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => props.onNavigate?.("myProjects")}>My Projects</button>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={resetWizard}>Restart</button>
+        </div>
       </div>
+
+      {!session || !clientId ? (
+        <div className={cx("emptyState", "mt32")}>
+          <div className={cx("emptyStateIcon")}><Ic n="folder" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>Sign in to request a project</div>
+          <div className={cx("emptyStateSub")}>We need your client session before we can prepare a quote, create a deposit invoice, and submit the request.</div>
+        </div>
+      ) : (
+        <>
 
       {/* Trust strip */}
       <div className={cx("prqTrustStrip")}>
@@ -622,6 +747,56 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
       {/* ══ STEP 1 ════════════════════════════════════════════════════════════ */}
       {step === 1 && (
         <>
+          <div className={cx("mb12")}>
+            <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb8")}>
+              How would you like to start?
+            </div>
+            <div className={cx("text12", "colorMuted", "mb12")}>
+              Most clients do better with the guided path first. You can still open the full catalog whenever you want.
+            </div>
+          </div>
+
+          <div className={cx("grid2Cols", "gap10", "mb20")}>
+            <button
+              type="button"
+              className={cx("prqGoalCard", intakeMode === "guided" ? "prqGoalCardActive" : "")}
+              onClick={() => setIntakeMode("guided")}
+            >
+              <div className={cx("prqGoalIco", "dynBgColor")} style={{ "--bg-color": "color-mix(in oklab, var(--lime) 12%, transparent)" } as React.CSSProperties}>
+                <Ic n="sparkles" sz={14} c={intakeMode === "guided" ? "var(--lime)" : "var(--muted2)"} />
+              </div>
+              <div className={cx("prqGoalLabel")}>Guided Request</div>
+              <div className={cx("prqGoalSub")}>Tell us your goal first. We&apos;ll suggest the right service stack and keep the intake lighter.</div>
+            </button>
+            <button
+              type="button"
+              className={cx("prqGoalCard", intakeMode === "custom" ? "prqGoalCardActive" : "")}
+              onClick={() => {
+                setIntakeMode("custom");
+                setShowServiceCatalog(true);
+                setShowAllBundles(true);
+                setShowAddons(true);
+              }}
+            >
+              <div className={cx("prqGoalIco", "dynBgColor")} style={{ "--bg-color": "color-mix(in oklab, var(--accent) 12%, transparent)" } as React.CSSProperties}>
+                <Ic n="sliders" sz={14} c={intakeMode === "custom" ? "var(--accent)" : "var(--muted2)"} />
+              </div>
+              <div className={cx("prqGoalLabel")}>Custom Build</div>
+              <div className={cx("prqGoalSub")}>Choose bundles, individual services, and add-ons yourself if you already know the exact mix.</div>
+            </button>
+          </div>
+
+          {intakeMode === "guided" && !goalObj && (
+            <div className={cx("card", "mb20")}>
+              <div className={cx("cardBodyPad")}>
+                <div className={cx("fw700", "text12", "mb6")}>Recommended flow</div>
+                <div className={cx("text12", "colorMuted")}>
+                  Pick your business stage, choose your main goal, then we&apos;ll suggest the leanest service mix for the proposal. You do not need to browse every package first.
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── Business size ───────────────────────────────────────────────── */}
           <div className={cx("mb24")}>
             <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb10")}>
@@ -633,15 +808,8 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                 return (
                   <button key={s.id} type="button" onClick={() => setBizSize(active ? null : s.id as BizSize)}
                     className={cx("prqBizCard", "dynBgColor", "dynBorderLeft3")} style={{ "--bg-color": active ? `color-mix(in oklab, ${s.color} 8%, transparent)` : "var(--s2)", "--color": active ? s.color : "var(--b2)" } as React.CSSProperties}>
-                    <div className={cx("flexBetween")}>
-                      <div className={cx("prqBizIco", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${s.color} 15%, transparent)` } as React.CSSProperties}>
-                        <Ic n={s.icon} sz={13} c={active ? s.color : "var(--muted2)"} />
-                      </div>
-                      {active && (
-                        <div className={cx("iconDot16", "dynBgColor")} style={{ "--bg-color": s.color } as React.CSSProperties}>
-                          <Ic n="check" sz={9} c="var(--bg)" />
-                        </div>
-                      )}
+                    <div className={cx("prqBizIco", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${s.color} 15%, transparent)` } as React.CSSProperties}>
+                      <Ic n={s.icon} sz={13} c={active ? s.color : "var(--muted2)"} />
                     </div>
                     <div className={cx("fs08", "fw700", "colorText", "mt4")}>{s.label}</div>
                     <div className={cx("fs065", "colorMuted", "lineH14")}>{s.sub}</div>
@@ -674,16 +842,58 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
             </div>
           </div>
 
+          {intakeMode === "guided" && goalObj && (
+            <div className={cx("card", "mb20")}>
+              <div className={cx("cardHd")}>
+                <Ic n="sparkles" sz={14} c="var(--lime)" />
+                <span className={cx("cardHdTitle", "ml8")}>Recommended starting setup</span>
+                <span className={cx("badge", "badgeAccent", "mlAuto")}>{goalObj.recs.length} services</span>
+              </div>
+              <div className={cx("cardBodyPad")}>
+                <div className={cx("text12", "colorMuted", "mb12")}>
+                  Based on your goal, this is the leanest stack we&apos;d use to scope the proposal.
+                </div>
+                <div className={cx("tagWrapRow", "mb12")}>
+                  {goalObj.recs.map((id) => {
+                    const svc = SERVICES.find((service) => service.id === id);
+                    if (!svc) return null;
+                    return (
+                      <span key={id} className={cx("prqSelBarTag", "dynBgColor", "dynBorderLeft3")} style={{ "--bg-color": "color-mix(in oklab, " + svc.color + " 10%, transparent)", "--color": "color-mix(in oklab, " + svc.color + " 25%, transparent)" } as React.CSSProperties}>
+                        <Ic n={svc.icon} sz={10} c={svc.color} />
+                        <span className={cx("text11", "fw600", "dynColor")} style={{ "--color": svc.color } as React.CSSProperties}>{svc.label}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+                <div className={cx("flexRow", "gap8", "flexWrap")}>
+                  <button type="button" className={cx("btnSm", "btnAccent")} onClick={applyRecommendedServices}>
+                    Use recommended setup
+                  </button>
+                  <button
+                    type="button"
+                    className={cx("btnSm", "btnGhost")}
+                    onClick={() => {
+                      setIntakeMode("custom");
+                      setShowServiceCatalog(true);
+                    }}
+                  >
+                    Customise services
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── Bundle deals ────────────────────────────────────────────────── */}
           <div className={cx("mb28")}>
             <div className={cx("flexRow", "flexCenter", "gap10", "mb14")}>
               <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted")}>Bundle Deals</div>
               <span className={cx("text10", "colorMuted")}>— combine services & save more</span>
               <div className={cx("flexDivider")} />
-              <span className={cx("badge", "badgeAccent")}>{COMBOS.length} packages</span>
+              <span className={cx("badge", "badgeAccent")}>{showAllBundles || intakeMode === "custom" ? COMBOS.length : featuredCombos.length} shown</span>
             </div>
             <div className={cx("grid2Cols", "gap10")}>
-              {COMBOS.map(combo => {
+              {(showAllBundles || intakeMode === "custom" ? COMBOS : featuredCombos).map(combo => {
                 const active = isComboActive(combo);
                 return (
                   <div key={combo.id}
@@ -734,20 +944,36 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                 );
               })}
             </div>
+            {!showAllBundles && intakeMode !== "custom" && COMBOS.length > featuredCombos.length && (
+              <div className={cx("mt12", "flexRow", "justifyEnd")}>
+                <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setShowAllBundles(true)}>
+                  Show all packages
+                </button>
+              </div>
+            )}
           </div>
 
           {/* ── Individual services label ────────────────────────────────────── */}
-          <div className={cx("flexRow", "flexCenter", "gap10", "mb6")}>
+          <div className={cx("flexRow", "flexCenter", "gap10", "mb6", "flexWrap")}>
             <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted")}>Individual Services</div>
             <span className={cx("text10", "colorMuted")}>— mix & match, multi-select supported</span>
             {goal && <span className={cx("ml4", "colorAmber", "fs10", "fw500")}>· Recommended highlighted</span>}
             <div className={cx("flexDivider")} />
+            <button type="button" className={cx("btnSm", "btnGhost", "mlAuto")} onClick={() => setShowServiceCatalog((value) => !value)}>
+              {showServiceCatalog ? "Hide catalog" : "Open catalog"}
+            </button>
           </div>
+
+          {!showServiceCatalog && (
+            <div className={cx("text11", "colorMuted", "mb14")}>
+              Open the full catalog only if you want to fine-tune the request yourself. The guided recommendation is enough for us to scope the proposal.
+            </div>
+          )}
 
           <EstStrip />
 
           {/* ── Service grid — grouped ────────────────────────────────────────── */}
-          {SERVICE_GROUPS.map(group => (
+          {showServiceCatalog && SERVICE_GROUPS.map(group => (
             <div key={group.label} className={cx("mb22")}>
               <div className={cx("flexRow", "flexCenter", "gap8", "mb10")}>
                 <div className={cx("wh6", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": group.color } as React.CSSProperties} />
@@ -800,45 +1026,60 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
               <span className={cx("text10", "colorMuted")}>— bolt on to any service</span>
               <div className={cx("flexDivider")} />
               <span className={cx("badge", "badgeMuted")}>{ADDONS.length} available</span>
+              <button type="button" className={cx("btnSm", "btnGhost", "mlAuto")} onClick={() => setShowAddons((value) => !value)}>
+                {showAddons ? "Hide add-ons" : "Show add-ons"}
+              </button>
             </div>
-            <div className={cx("prqAddonGrid")}>
-              {ADDONS.map(a => {
-                const on = addons.has(a.id);
-                return (
-                  <button key={a.id} type="button" onClick={() => toggleAddon(a.id)}
-                    className={cx("prqAddonCard", "dynBgColor", "dynBorderLeft3")} style={{ "--bg-color": on ? `color-mix(in oklab, ${a.color} 8%, var(--s2))` : "var(--s2)", "--color": on ? a.color : "var(--b2)" } as React.CSSProperties}>
-                    {/* Icon + price row */}
-                    <div className={cx("flexBetween")}>
-                      <div className={cx("prqAddonIco", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${a.color} 16%, transparent)` } as React.CSSProperties}>
-                        <Ic n={a.icon} sz={15} c={on ? a.color : "var(--muted2)"} />
-                      </div>
-                      <span className={cx("prqAddonPrice", "dynBgColor", "dynColor")} style={{ "--bg-color": on ? `color-mix(in oklab, ${a.color} 18%, transparent)` : "var(--s3)", "--color": on ? a.color : "var(--muted2)" } as React.CSSProperties}>
-                        {a.price}
-                      </span>
-                    </div>
-                    {/* Label */}
-                    <div className={cx("fs08", "fw700", "colorText", "lineH13")}>{a.label}</div>
-                    {/* Description */}
-                    <div className={cx("text11", "colorMuted", "lineH16")}>{a.desc}</div>
-                    {/* Added indicator */}
-                    {on && (
-                      <div className={cx("prqAddonAddedRow", "dynBorderLeft3")} style={{ "--color": `color-mix(in oklab, ${a.color} 20%, transparent)` } as React.CSSProperties}>
-                        <div className={cx("iconDot14", "noShrink", "dynBgColor")} style={{ "--bg-color": a.color } as React.CSSProperties}>
-                          <Ic n="check" sz={8} c="var(--bg)" />
+            {showAddons && (
+              <div className={cx("prqAddonGrid")}>
+                {ADDONS.map(a => {
+                  const on = addons.has(a.id);
+                  return (
+                    <button key={a.id} type="button" onClick={() => toggleAddon(a.id)}
+                      className={cx("prqAddonCard", "dynBgColor", "dynBorderLeft3")} style={{ "--bg-color": on ? `color-mix(in oklab, ${a.color} 8%, var(--s2))` : "var(--s2)", "--color": on ? a.color : "var(--b2)" } as React.CSSProperties}>
+                      <div className={cx("flexBetween")}>
+                        <div className={cx("prqAddonIco", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${a.color} 16%, transparent)` } as React.CSSProperties}>
+                          <Ic n={a.icon} sz={15} c={on ? a.color : "var(--muted2)"} />
                         </div>
-                        <span className={cx("prqAddonAddedLabel", "dynColor")} style={{ "--color": a.color } as React.CSSProperties}>Added to project</span>
+                        <span className={cx("prqAddonPrice", "dynBgColor", "dynColor")} style={{ "--bg-color": on ? `color-mix(in oklab, ${a.color} 18%, transparent)` : "var(--s3)", "--color": on ? a.color : "var(--muted2)" } as React.CSSProperties}>
+                          {a.price}
+                        </span>
                       </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                      <div className={cx("fs08", "fw700", "colorText", "lineH13")} style={{ marginTop: 2 }}>{a.label}</div>
+                      <div className={cx("text11", "colorMuted", "lineH16")} style={{ flex: 1 }}>{a.desc}</div>
+                      {on && (
+                        <div className={cx("prqAddonAddedRow", "dynBorderLeft3")} style={{ "--color": `color-mix(in oklab, ${a.color} 20%, transparent)` } as React.CSSProperties}>
+                          <div className={cx("iconDot14", "noShrink", "dynBgColor")} style={{ "--bg-color": a.color } as React.CSSProperties}>
+                            <Ic n="check" sz={8} c="var(--bg)" />
+                          </div>
+                          <span className={cx("prqAddonAddedLabel", "dynColor")} style={{ "--color": a.color } as React.CSSProperties}>Added to project</span>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Bottom action row */}
-          <div className={cx("prqSelRow")}>
+          <div className={cx("prqSelRow", "flexWrap", "gap8")}>
+            {selected.size === 0 ? (
+              <span className={cx("text11", "colorMuted")}>
+                Choose a goal and accept the recommended setup, or open the catalog to build your own service mix.
+              </span>
+            ) : (
+              <span className={cx("text11", "colorMuted")}>
+                You can still adjust services later in this request before anything is submitted.
+              </span>
+            )}
             {selected.size > 0 && <span className={cx("badge", "badgeAccent")}>{selected.size} service{selected.size > 1 ? "s" : ""} selected</span>}
             {addons.size > 0 && <span className={cx("badge", "badgeMuted")}>{addons.size} add-on{addons.size > 1 ? "s" : ""}</span>}
+            {selected.size === 0 && intakeMode === "guided" && goalObj && (
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={applyRecommendedServices}>
+                Use recommended setup
+              </button>
+            )}
             <button type="button" className={cx("btnSm", "btnAccent", selected.size === 0 && "opacity45")} disabled={selected.size === 0} onClick={() => setStep(2)}>
               Next — Project Brief <Ic n="chevronRight" sz={12} c="var(--bg)" />
             </button>
@@ -1085,10 +1326,13 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
           <div className={cx("card", "mb14")}>
             <div className={cx("cardHd")}>
               <Ic n="shield" sz={14} c="var(--accent)" />
-              <span className={cx("cardHdTitle", "ml8")}>Engagement Agreement</span>
-              <span className={cx("colorMuted", "text11", "mlAuto")}>Scroll to read before signing</span>
+              <span className={cx("cardHdTitle", "ml8")}>Digital Acceptance</span>
+              <span className={cx("colorMuted", "text11", "mlAuto")}>Scroll to review the terms before accepting</span>
             </div>
-            <div className={cx("cardBodyPad")}>
+              <div className={cx("cardBodyPad")}>
+                <div className={cx("text11", "colorMuted", "mb12")}>
+                Your typed name is recorded with this request and attached to a generated agreement PDF saved to your legal records.
+              </div>
               <div
                 onScroll={(e) => {
                   const el = e.currentTarget;
@@ -1230,7 +1474,7 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                       ["Account Name", process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME ?? "Maphari Technologies (Pty) Ltd"],
                       ["Account Number", process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER ?? "—"],
                       ["Branch Code", process.env.NEXT_PUBLIC_BANK_BRANCH_CODE ?? "198765"],
-                      ["Reference", `DEP-${(name || "PROJECT").toUpperCase().replace(/\s+/g, "-").slice(0, 12)}-${Date.now().toString().slice(-6)}`],
+                      ["Reference", `DEP-${(name || "PROJECT").toUpperCase().replace(/\s+/g, "-").slice(0, 12)}-${eftSuffix}`],
                     ] as [string, string][]).map(([label, value]) => (
                       <div key={label} className={cx("flexRow", "gap12", "mb6")}>
                         <span className={cx("colorMuted", "text11")} style={{ minWidth: 120 }}>{label}</span>
@@ -1258,6 +1502,30 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                 setSubmitting(true);
                 setSubmitError(null);
                 try {
+                  const agreementAcceptedAt = new Date().toISOString();
+                  const serviceLabels = [...selected].map((id) => SERVICES.find((service) => service.id === id)?.label ?? id);
+                  const agreementPdf = await buildProjectRequestAgreementPdf({
+                    projectName: name || "Project request",
+                    services: serviceLabels,
+                    estimateLabel: isOngoing ? fmtR(estMin) + "/mo" : fmtR(estMin) + " – " + fmtR(estMax),
+                    overview,
+                    goals,
+                    budget: budget || "Budget to be confirmed during proposal review",
+                    timeline: timeline || "Timeline to be confirmed during proposal review",
+                    signerName: signatureText.trim(),
+                    acceptedAtIso: agreementAcceptedAt,
+                  });
+                  const agreementFile = await createPortalInlineFileWithRefresh(session, {
+                    fileName: agreementPdf.fileName,
+                    mimeType: "application/pdf",
+                    contentBase64: agreementPdf.contentBase64,
+                  });
+                  if (agreementFile.nextSession) saveSession(agreementFile.nextSession);
+                  if (agreementFile.error || !agreementFile.data) {
+                    setSubmitError(agreementFile.error?.message ?? "Unable to generate agreement record.");
+                    return;
+                  }
+
                   // 1. Create deposit invoice
                   const invoiceRef = `DEP-${Date.now()}`;
                   const invRes = await createPortalInvoiceWithRefresh(session, {
@@ -1291,14 +1559,21 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                   const selectedServices = [...new Set(
                     SERVICES.filter(s => selected.has(s.id)).map(s => SERVICE_TO_CONTRACT[s.id])
                   )];
+                  const acceptanceNote =
+                    "Digital acceptance recorded by " +
+                    signatureText.trim() +
+                    " on " +
+                    new Date(agreementAcceptedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
                   const reqRes = await createPortalProjectRequestWithRefresh(session, {
                     name: name || [...selected].map(id => SERVICES.find(s => s.id === id)?.label ?? id).join(" + "),
                     description: overview || undefined,
                     estimatedBudgetCents: quoteCents,
                     priority: "MEDIUM",
-                    scopePrompt: [overview, goals, audience, requirements].filter(Boolean).join("\n"),
+                    scopePrompt: [overview, goals, audience, requirements, acceptanceNote].filter(Boolean).join("\n"),
                     selectedServices,
-                    signedAgreementFileId: crypto.randomUUID(),
+                    signedAgreementSignerName: signatureText.trim(),
+                    signedAgreementAcceptedAt: agreementAcceptedAt,
+                    signedAgreementFileId: agreementFile.data.id,
                     estimatedQuoteCents: quoteCents,
                     depositInvoiceId: invoiceId,
                     depositPaymentId: paymentId,
@@ -1344,7 +1619,8 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
                     }
                     setSubmittedProject({
                       id: reqRes.data.id,
-                      referenceCode: reqRes.data.referenceCode
+                      referenceCode: reqRes.data.referenceCode,
+                      agreementFileId: agreementFile.data.id,
                     });
                   }
                 } catch {
@@ -1360,6 +1636,8 @@ export function ProjectRequestPage(props: ProjectRequestPageProps) {
         </>
       )}
 
+        </>
+      )}
     </div>
   );
 }

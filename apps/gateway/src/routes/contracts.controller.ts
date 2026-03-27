@@ -24,13 +24,17 @@ export class ContractsController {
   @Get("contracts")
   async listContracts(
     @Query("clientId") clientId?: string,
+    @Query("projectId") projectId?: string,
     @Headers("x-user-id") userId?: string,
     @Headers("x-user-role") role?: Role,
     @Headers("x-client-id") scopedClientId?: string,
     @Headers("x-request-id") requestId?: string,
     @Headers("x-trace-id") traceId?: string,
   ): Promise<ApiResponse> {
-    const qs = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
+    const params = new URLSearchParams();
+    if (clientId) params.set("clientId", clientId);
+    if (projectId) params.set("projectId", projectId);
+    const qs = params.toString() ? "?" + params.toString() : "";
     return proxyRequest(`${this.baseUrl}/contracts${qs}`, "GET", undefined, this.headers(userId, role, scopedClientId, requestId, traceId));
   }
 

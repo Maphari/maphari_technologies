@@ -21,9 +21,25 @@ import {
 export interface PortalIntegration {
   provider: string;
   label: string;
+  description: string;
   category: string;
-  status: "connected" | "not_connected";
+  kind: "oauth" | "assisted" | "coming_soon";
+  status: "connected" | "available" | "requested" | "coming_soon";
   connectedAt: string | null;
+  requestedAt: string | null;
+  requestId: string | null;
+  requestStatus: "REQUESTED" | "IN_PROGRESS" | "COMPLETED" | "REJECTED" | "CANCELLED" | null;
+}
+
+export interface PortalIntegrationRequest {
+  id: string;
+  clientId: string;
+  provider: string;
+  status: string;
+  requestedByUserId: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface GcalStatus {
@@ -58,6 +74,31 @@ export async function loadPortalIntegrationsWithRefresh(
       };
     }
     return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+export async function createPortalIntegrationRequestWithRefresh(
+  session: AuthSession,
+  body: { provider: string }
+): Promise<AuthorizedResult<PortalIntegrationRequest>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalIntegrationRequest>(
+      "/portal/settings/integrations/requests",
+      accessToken,
+      { method: "POST", body }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "INTEGRATION_REQUEST_FAILED",
+          response.payload.error?.message ?? "Unable to request integration setup."
+        ),
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
   });
 }
 

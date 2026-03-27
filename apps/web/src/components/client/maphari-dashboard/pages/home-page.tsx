@@ -4,7 +4,7 @@
 // home-page.tsx — Command Dashboard (revamped)
 // Real data:  deliverables, invoices, appointments, announcements, risks,
 //             milestoneApprovals, projects, budgetHealth, phases, session
-// Static:     VELOCITY dots, MANAGER fallback
+// Static:     none
 // Helpers:    ./home-page-helpers.ts
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -40,18 +40,11 @@ import {
   extractFirstName, getGreeting, formatDate, fmtCents,
   buildDynamicActions, mapDeliverablesToDisplay, computeSprintBadge,
   computeDeliverableProgress, computeScopeTags,
-  mapRisksToDisplay, buildRealFeed, buildTeamFromCollaborators,
+  mapRisksToDisplay, buildRealFeed, buildTeamFromCollaborators, buildVelocityDots,
   type DynamicAction,
 } from "./home-page-helpers";
 
 // ── Static visual constants ──────────────────────────────────────────────────
-
-const VELOCITY = ["done", "done", "done", "done", "fail", "done", "done", "active"] as const;
-
-const MANAGER = {
-  initials: "MT", name: "Maphari Team",
-  role: "Client Success", online: true,
-};
 
 const NPS_LABELS = ["Rough week", "Could be better", "Pretty good", "Really happy", "Absolutely stellar"];
 
@@ -146,7 +139,6 @@ export function HomePage({
   const [npsRating,         setNpsRating]         = useState<number | null>(null);
   const [npsStep,           setNpsStep]           = useState<"rating" | "feedback" | "done">("rating");
   const [npsText,           setNpsText]           = useState("");
-  const [rsvpd,             setRsvpd]             = useState<Set<string>>(new Set());
   const [announceDismissed, setAnnounceDismissed] = useState(false);
   const [celebDismissed,    setCelebDismissed]    = useState(false);
   const [contextDismissed,  setContextDismissed]  = useState(false);
@@ -164,6 +156,7 @@ export function HomePage({
   const [healthAlerts,       setHealthAlerts]       = useState<PortalNotificationJob[]>([]);
   const [healthAlertDismissed, setHealthAlertDismissed] = useState(false);
   const [dataLoading,        setDataLoading]        = useState(false);
+  const [todayMs]            = useState(() => Date.now());
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
@@ -183,7 +176,10 @@ export function HomePage({
   // ── Parallel data fetch ───────────────────────────────────────────────────
   useEffect(() => {
     if (!session || !projectId) return;
-    setDataLoading(true);
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (!cancelled) setDataLoading(true);
+    });
     Promise.allSettled([
       loadPortalPhasesWithRefresh(session, projectId),
       loadPortalDeliverablesWithRefresh(session, projectId),
@@ -220,6 +216,9 @@ export function HomePage({
         setHealthAlerts(alerts);
       }
     }).finally(() => setDataLoading(false));
+    return () => {
+      cancelled = true;
+    };
   }, [session, projectId]);
 
   // ── Derived: project ──────────────────────────────────────────────────────
@@ -246,7 +245,7 @@ export function HomePage({
     ? new Date(firstActiveProject.dueAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
     : "—";
   const daysUntilDelivery = firstActiveProject?.dueAt
-    ? Math.max(0, Math.ceil((new Date(firstActiveProject.dueAt).getTime() - Date.now()) / 86400000))
+    ? Math.max(0, Math.ceil((new Date(firstActiveProject.dueAt).getTime() - todayMs) / 86400000))
     : 0;
   const budgetLeft    = apiBudgetHealth ? fmtCents(apiBudgetHealth.totalBudgetCents - apiBudgetHealth.spentCents) : "—";
   const budgetTotal   = apiBudgetHealth ? fmtCents(apiBudgetHealth.totalBudgetCents) : "—";
@@ -344,8 +343,8 @@ export function HomePage({
 
   // ── Derived: team + feed ──────────────────────────────────────────────────
   const displayTeam = buildTeamFromCollaborators(firstActiveProject?.collaborators ?? []);
-  const liveCount   = displayTeam.filter(m => m.active).length;
   const displayFeed = buildRealFeed(deliverables, risks, appointments, announcements);
+  const velocityDots = buildVelocityDots(deliverables);
 
   // Silence unused-var lint for values kept for future use
   void dataLoading;
@@ -570,9 +569,9 @@ export function HomePage({
             </div>
             <div className={cx("flexRow", "gap16", "flexWrap")}>
               <div>
-                <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb4")}>Deposit Paid</div>
+                <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb4")}>Budget Estimate</div>
                 <div className={cx("fontMono", "fw700", "colorAccent")}>
-                  {pr.budgetCents > 0 ? `R ${Math.round(pr.budgetCents * 0.5 / 100).toLocaleString("en-ZA")}` : "Pending"}
+                  {pr.budgetCents > 0 ? `R ${Math.round(pr.budgetCents / 100).toLocaleString("en-ZA")}` : "Pending"}
                 </div>
               </div>
               <div>
@@ -692,31 +691,42 @@ export function HomePage({
           </div>
 
           {activeActions.length === 0 ? (
-            <div className={cx("p32x18", "flexCol", "flexCenter", "gap10")}>
+            <div className={cx("cmdEmptyState", "cmdEmptyStateSoft", "p32x18", "flexCol", "flexCenter", "gap10")}>
               <div className={cx("iconLimeCircle40")}>
                 <Ic n="check" sz={18} c="var(--lime)" />
               </div>
               <div className={cx("allClearTitle")}>All clear</div>
               <div className={cx("allClearSub")}>
-                No actions need your attention right now.
+                Approvals, invoices, and handoffs are up to date for now.
               </div>
             </div>
           ) : (
-            activeActions.slice(0, 5).map((a: DynamicAction, i: number) => {
-              const isHigh = a.dueCls === "hxCountOverdue";
-              const isMed  = a.badge === "badgeAmber";
+            activeActions.slice(0, 5).map((a: DynamicAction) => {
+              const isHigh   = a.dueCls === "hxCountOverdue";
+              const isMed    = a.badge === "badgeAmber";
+              const isAccent = a.badge === "badgeAccent";
               return (
                 <div key={a.id} className={cx("cmdFocusItem")}>
                   <div className={cx("cmdFocusPrio",
-                    isHigh ? "cmdFocusPrioHigh" : isMed ? "cmdFocusPrioMed" : "cmdFocusPrioLow",
+                    isHigh   ? "cmdFocusPrioHigh" :
+                    isMed    ? "cmdFocusPrioMed"  :
+                    isAccent ? "cmdFocusPrioAccent" :
+                    "cmdFocusPrioLow",
                   )} />
                   <div className={cx("flex1", "minW0")}>
                     <div className={cx("cmdFocusTitle")}>{a.title}</div>
                     <div className={cx("cmdFocusSub")}>{a.sub} · {a.due}</div>
                   </div>
                   <button type="button"
-                    className={cx("cmdFocusCta", isHigh ? "cmdFocusCtaRed" : "")}
-                    onClick={() => setDismissed(p => new Set([...p, a.id]))}
+                    className={cx("cmdFocusCta",
+                      isHigh   ? "cmdFocusCtaRed"    :
+                      isAccent ? "cmdFocusCtaAccent" :
+                      "",
+                    )}
+                    onClick={() => {
+                      if (a.ctaRoute) onNavigate?.(a.ctaRoute as import("../config").PageId);
+                      setDismissed(p => new Set([...p, a.id]));
+                    }}
                   >
                     {a.cta}
                   </button>
@@ -747,8 +757,8 @@ export function HomePage({
           {/* Visual node track */}
           <div className={cx("cmdPhaseTrack")}>
             {displayPhases.length === 0 ? (
-              <div className={cx("wFull", "py18_0", "textCenter", "colorMuted2", "fs06")}>
-                {dataLoading ? "Loading phases…" : "No phases configured yet"}
+              <div className={cx("cmdEmptyState", "cmdEmptyStateInline", "wFull", "py18_0", "textCenter", "colorMuted2", "fs06")}>
+                {dataLoading ? "Loading phases…" : "Kickoff planning is underway. Your delivery roadmap will appear here once phases are published."}
               </div>
             ) : displayPhases.map((ph, i) => (
               <Fragment key={ph.label}>
@@ -797,15 +807,17 @@ export function HomePage({
           <div className={cx("cmdCardHd")}>
             <Ic n="rocket" sz={13} c="var(--lime)" />
             <span className={cx("cmdCardHdTitle")}>Deliverable Pipeline</span>
-            <div className={cx("hxVelRow", "mlAuto")} title="Sprint velocity — last 8 sprints">
-              {VELOCITY.map((v, i) => (
-                <div key={i} className={cx("hxVelDot",
-                  v === "done"   ? "hxVelDotDone"   : "",
-                  v === "active" ? "hxVelDotActive"  : "",
-                  v === "fail"   ? "hxVelDotFail"    : "",
-                )} />
-              ))}
-            </div>
+            {deliverables.length > 0 && (
+              <div className={cx("hxVelRow", "mlAuto")} title="Sprint velocity — last 8 sprints">
+                {velocityDots.map((v, i) => (
+                  <div key={i} className={cx("hxVelDot",
+                    v === "done"   ? "hxVelDotDone"   : "",
+                    v === "active" ? "hxVelDotActive"  : "",
+                    v === "fail"   ? "hxVelDotFail"    : "",
+                  )} />
+                ))}
+              </div>
+            )}
             <span className={cx("badge", "badgeAccent")}>{sprintBadge}</span>
           </div>
 
@@ -816,9 +828,9 @@ export function HomePage({
                 style={{ "--bar-pct": String(deliverableProgress) } as React.CSSProperties}
               />
               {displayDeliverables.length === 0 ? (
-                <div className={cx("emptyPad28x0")}>
+                <div className={cx("cmdEmptyState", "cmdEmptyStateInline", "emptyPad28x0")}>
                   <span className={cx("emptyDeliverablesIcon")}>◫</span>
-                  {dataLoading ? "Loading deliverables…" : "No deliverables yet"}
+                  {dataLoading ? "Loading deliverables…" : "No deliverables have been published yet. The first approved scope items will appear here."}
                 </div>
               ) : displayDeliverables.map(d => (
                 <div key={d.id} className={cx("hxTrackNode")}>
@@ -886,8 +898,8 @@ export function HomePage({
             </div>
           ))}
           {displayFeed.length === 0 && (
-            <div className={cx("p16x20", "colorMuted2", "text11")}>
-              {dataLoading ? "Loading activity…" : "No recent activity yet — updates will appear here."}
+            <div className={cx("cmdEmptyState", "cmdEmptyStateFeed", "p16x20", "colorMuted2", "text11")}>
+              {dataLoading ? "Loading activity…" : "Your live project feed will start updating once meetings, deliverables, or team notes come in."}
             </div>
           )}
         </div>
@@ -927,8 +939,8 @@ export function HomePage({
           <div className={cx("cmdCardHd")}>
             <Ic n="users" sz={13} c="var(--lime)" />
             <span className={cx("cmdCardHdTitle")}>Project Team</span>
-            <span className={cx("badge", liveCount > 0 ? "badgeGreen" : "badgeMuted", "mlAuto")}>
-              {dataLoading ? "…" : liveCount > 0 ? `${liveCount} live` : "away"}
+            <span className={cx("badge", displayTeam.length > 0 ? "badgeBlue" : "badgeMuted", "mlAuto")}>
+              {dataLoading ? "…" : displayTeam.length > 0 ? `${displayTeam.length} assigned` : "pending"}
             </span>
           </div>
 
@@ -944,11 +956,7 @@ export function HomePage({
                   >
                     {m.av}
                   </div>
-                )) : (
-                  <div className={cx("cmdTeamAvWide")} style={{ "--av-color": "var(--accent)" } as React.CSSProperties}>
-                    {MANAGER.initials}
-                  </div>
-                )}
+                )) : null}
                 {displayTeam.length > 5 && (
                   <div className={cx("cmdTeamAvWide", "cmdTeamAvWideOverflow")} style={{ "--av-color": "var(--s3)" } as React.CSSProperties}>
                     +{displayTeam.length - 5}
@@ -960,34 +968,30 @@ export function HomePage({
                   ? "…"
                   : displayTeam.length > 0
                     ? `${displayTeam.length} member${displayTeam.length === 1 ? "" : "s"}`
-                    : "account team"}
+                    : "team pending"}
               </div>
               <div className={cx("fontSyne", "fs057", "colorMuted2", "textCenter")}>
-                {liveCount > 0 ? `${liveCount} online now` : "All away"}
+                {displayTeam.length === 0 ? "Contacts will appear once kickoff staffing is confirmed" : "Assigned to your delivery workstream"}
               </div>
             </div>
 
             {/* Right: member rows in 3-column grid */}
             <div className={cx("cmdTeamListWide")}>
-              {displayTeam.length > 0 ? displayTeam.slice(0, 6).map((m, i) => (
-                <div key={`row-${m.av}-${i}`} className={cx("cmdTeamRowWide")}>
+              {displayTeam.length > 0 ? displayTeam.slice(0, 6).map((m) => (
+                <div key={`row-${m.av}-${m.name}`} className={cx("cmdTeamRowWide")}>
                   <div className={cx("cmdTeamRowAv", "dynBgColor")} style={{ "--bg-color": m.color } as React.CSSProperties}>{m.av}</div>
                   <div className={cx("flex1", "minW0")}>
                     <div className={cx("cmdTeamRowName")}>{m.name}</div>
                     <div className={cx("syneXs", "colorMuted2", "mt2")}>{m.task}</div>
                   </div>
-                  {m.active
-                    ? <span className={cx("hxLive")}>● LIVE</span>
-                    : <span className={cx("fontSyne", "fs057", "colorMuted2")}>Away</span>}
+                  <span className={cx("fontSyne", "fs057", "colorMuted2")}>Assigned</span>
                 </div>
               )) : (
-                <div className={cx("cmdTeamRowWide")}>
-                  <div className={cx("cmdTeamRowAv", "dotBgAccent")}>{MANAGER.initials}</div>
+                <div className={cx("cmdTeamRowWide", "cmdEmptyState", "cmdEmptyStateTeam")}>
                   <div className={cx("flex1", "minW0")}>
-                    <div className={cx("cmdTeamRowName")}>{MANAGER.name}</div>
-                    <div className={cx("syneXs", "colorMuted2", "mt2")}>{MANAGER.role}</div>
+                    <div className={cx("cmdTeamRowName")}>Team allocation pending</div>
+                    <div className={cx("syneXs", "colorMuted2", "mt2")}>We will show your delivery lead, specialists, and active coverage here as soon as staffing is locked in.</div>
                   </div>
-                  <span className={cx("hxLive")}>● LIVE</span>
                 </div>
               )}
             </div>
@@ -1077,15 +1081,21 @@ export function HomePage({
                   </div>
                 </div>
                 <button type="button" className={cx("cmdCta")}
-                  onClick={() => setRsvpd(p => { const s = new Set(p); s.has(nextEvent.id) ? s.delete(nextEvent.id) : s.add(nextEvent.id); return s; })}>
+                  onClick={() => {
+                    if (nextEvent.videoRoomUrl) {
+                      window.open(nextEvent.videoRoomUrl, "_blank", "noopener,noreferrer");
+                      return;
+                    }
+                    onNavigate?.("bookCall");
+                  }}>
                   <Ic n="calendar" sz={12} c="var(--bg)" />
-                  {rsvpd.has(nextEvent.id) ? "✓ RSVPd" : "RSVP"}
+                  {nextEvent.videoRoomUrl ? "Open Meeting" : "Manage Booking"}
                 </button>
               </div>
             ) : (
               <div className={cx("flexRow", "flexCenter", "gap20", "p18x24")}>
                 <div className={cx("fontSerif", "fs11rem", "colorMuted", "flex1")}>
-                  No upcoming appointments scheduled.
+                  You do not have a call scheduled yet. Book time whenever you want a walkthrough, status update, or decision session.
                 </div>
                 <button type="button" className={cx("cmdCta")} onClick={() => onNavigate?.("bookCall")}>
                   <Ic n="calendar" sz={12} c="var(--bg)" />Book a Call

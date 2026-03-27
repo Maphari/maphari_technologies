@@ -26,6 +26,22 @@ function canManageStatus(role: string): boolean {
   return role === "ADMIN" || role === "STAFF";
 }
 
+async function canManageClientTeamAccess(input: {
+  role: string;
+  clientId: string;
+  email?: string;
+}): Promise<boolean> {
+  if (input.role === "ADMIN" || input.role === "STAFF") return true;
+  if (input.role !== "CLIENT" || !input.email) return false;
+
+  const primaryContact = await prisma.clientContact.findFirst({
+    where: { clientId: input.clientId, canManageAccess: true },
+    select: { email: true }
+  });
+
+  return (primaryContact?.email ?? "").trim().toLowerCase() === input.email.trim().toLowerCase();
+}
+
 async function logClientActivity(input: {
   clientId: string;
   type: string;
@@ -573,6 +589,14 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
           });
         }
 
+        const canManageAccess = parsed.data.canManageAccess ?? parsed.data.isPrimary ?? false;
+        if (canManageAccess) {
+          await tx.clientContact.updateMany({
+            where: { clientId: parsed.data.clientId },
+            data: { canManageAccess: false }
+          });
+        }
+
         const created = await tx.clientContact.create({
           data: {
             clientId: parsed.data.clientId,
@@ -580,7 +604,8 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
             email: parsed.data.email,
             phone: parsed.data.phone ?? null,
             role: parsed.data.role ?? null,
-            isPrimary: parsed.data.isPrimary ?? false
+            isPrimary: parsed.data.isPrimary ?? false,
+            canManageAccess
           }
         });
 
@@ -646,6 +671,14 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
           });
         }
 
+        const nextCanManageAccess = parsed.data.canManageAccess ?? contact.canManageAccess;
+        if (nextCanManageAccess) {
+          await tx.clientContact.updateMany({
+            where: { clientId: parsed.data.clientId, id: { not: contact.id } },
+            data: { canManageAccess: false }
+          });
+        }
+
         return tx.clientContact.update({
           where: { id: parsed.data.contactId },
           data: {
@@ -653,7 +686,8 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
             email: parsed.data.email ?? contact.email,
             phone: parsed.data.phone ?? contact.phone,
             role: parsed.data.role ?? contact.role,
-            isPrimary: parsed.data.isPrimary ?? contact.isPrimary
+            isPrimary: parsed.data.isPrimary ?? contact.isPrimary,
+            canManageAccess: nextCanManageAccess
           }
         });
       });
@@ -759,7 +793,8 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
         clientId: c.clientId,
         name: c.name,
         email: c.email,
-        role: c.isPrimary ? "Owner" : (c.role ?? "Viewer"),
+        role: c.canManageAccess ? "Owner" : (c.role ?? "Viewer"),
+        canManageAccess: c.canManageAccess,
         status: "Active",
         lastActiveAt: null as string | null,
         createdAt: c.createdAt.toISOString()
@@ -788,6 +823,22 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
     if (effectiveClientId && effectiveClientId !== params.clientId) {
       reply.status(403);
       return { success: false, error: { code: "FORBIDDEN", message: "Forbidden client scope" } } as ApiResponse;
+    }
+
+    const canManageTeam = await canManageClientTeamAccess({
+      role: scope.role,
+      clientId: params.clientId,
+      email: scope.email
+    });
+    if (!canManageTeam) {
+      reply.status(403);
+      return {
+        success: false,
+        error: {
+          code: "FORBIDDEN",
+          message: "Only the assigned client access admin or internal staff can manage team access."
+        }
+      } as ApiResponse;
     }
 
     const body = request.body as Record<string, unknown>;
@@ -820,7 +871,8 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
           email,
           // Prevent self-escalation: clients cannot invite an Owner via this route
           role: role === "Owner" ? "Collaborator" : role,
-          isPrimary: false
+          isPrimary: false,
+          canManageAccess: false
         }
       });
 
@@ -838,6 +890,7 @@ export async function registerClientRoutes(app: FastifyInstance): Promise<void> 
           id: contact.id,
           email: contact.email,
           role: contact.role ?? "Viewer",
+          canManageAccess: contact.canManageAccess,
           status: "Pending",
           createdAt: contact.createdAt.toISOString()
         },

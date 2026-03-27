@@ -7,7 +7,7 @@
 //   with category "SERVICE_REQUEST" so admin can act on it.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
@@ -87,9 +87,36 @@ function retainerToItem(plan: RetainerPlan, idx: number): ServiceItem {
   };
 }
 
-// ── Category display config ───────────────────────────────────────────────────
+function exportServiceCatalogCsv(services: ServiceItem[], addons: ServiceAddon[]): void {
+  const header = ["Type", "Name", "Price", "Timeline", "Description"];
+  const serviceRows = services.map((service) => [
+    service.category,
+    service.name,
+    service.from,
+    service.timeline,
+    service.description,
+  ]);
+  const addonRows = addons.map((addon) => [
+    "Add-on",
+    addon.name,
+    fmtPrice(addon.priceMinCents, addon.priceMaxCents),
+    addon.billingType ?? "",
+    addon.description ?? "",
+  ]);
+  const escape = (value: string) => "\"" + value.replace(/"/g, "\"\"") + "\"";
+  const csv = [header, ...serviceRows, ...addonRows].map((row) => row.map((cell) => escape(String(cell))).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "service-catalogue.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
-const CATEGORIES: SCategory[] = ["All", "Package", "Retainer"];
+// ── Category display config ───────────────────────────────────────────────────
 
 const CAT_BADGE: Record<"Package" | "Retainer", string> = {
   Package:  "badgeAccent",
@@ -121,8 +148,8 @@ export function ServiceCatalogPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // ── Load catalog ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (loaded.current) return;
+  const loadCatalog = useCallback(async (force = false) => {
+    if (loaded.current && !force) return;
     if (!session) { setLoading(false); return; }
     loaded.current = true;
     setLoading(true);
@@ -148,11 +175,26 @@ export function ServiceCatalogPage() {
     })();
   }, [session, notify]);
 
+  useEffect(() => {
+    void loadCatalog();
+  }, [loadCatalog]);
+
+  const availableCategories = useMemo<SCategory[]>(
+    () => [
+      "All",
+      ...(services.some((service) => service.category === "Package") ? ["Package" as const] : []),
+      ...(services.some((service) => service.category === "Retainer") ? ["Retainer" as const] : []),
+    ],
+    [services]
+  );
   const filtered     = category === "All" ? services : services.filter((s) => s.category === category);
   const popularCount = services.filter((s) => s.popular).length;
-  const startingFrom = services.length
-    ? services.reduce<string>((acc, s) => (acc ? acc : s.from), "")
-    : "—";
+
+  useEffect(() => {
+    if (category !== "All" && !availableCategories.includes(category)) {
+      setCategory("All");
+    }
+  }, [category, availableCategories]);
 
   // ── Add-ons grouped by category ───────────────────────────────────────────
   const addonGroups = addons.reduce<Record<string, ServiceAddon[]>>((acc, a) => {
@@ -200,13 +242,21 @@ export function ServiceCatalogPage() {
           <h1 className={cx("pageTitle")}>Service Catalogue</h1>
           <p className={cx("pageSub")}>Explore what Maphari can build for you next. Request a quote for any service directly from this page.</p>
         </div>
+        <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadCatalog(true)} disabled={loading}>
+            Refresh
+          </button>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => exportServiceCatalogCsv(filtered, addons)} disabled={services.length === 0 && addons.length === 0}>
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* ── Stat strip ──────────────────────────────────────────────────────── */}
       <div className={cx("topCardsStack")}>
         {[
           { label: "Services",    value: loading ? "…" : String(services.length), color: "statCardAccent" },
-          { label: "Categories",  value: String(CATEGORIES.length - 1),           color: "statCardBlue"   },
+          { label: "Categories",  value: loading ? "…" : String(Math.max(availableCategories.length - 1, 0)), color: "statCardBlue"   },
           { label: "Most Popular",value: loading ? "…" : String(popularCount),    color: "statCardAmber"  },
           { label: "Add-ons",     value: loading ? "…" : String(addons.length),   color: "statCardGreen"  },
         ].map((s) => (
@@ -219,7 +269,7 @@ export function ServiceCatalogPage() {
 
       {/* ── Category tabs ───────────────────────────────────────────────────── */}
       <div className={cx("pillTabs", "mb16")}>
-        {CATEGORIES.map((c) => (
+        {availableCategories.map((c) => (
           <button key={c} type="button" className={cx("pillTab", category === c && "pillTabActive")} onClick={() => setCategory(c)}>
             {c !== "All" && (
               <span className={cx("dot6", "inlineBlock", "mr5", "noShrink", "dynBgColor")} style={{ "--bg-color": CAT_COLOR[c] } as React.CSSProperties} />
@@ -243,15 +293,18 @@ export function ServiceCatalogPage() {
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateTitle")}>Something went wrong</div>
           <div className={cx("emptyStateSub")}>{error}</div>
+          <button type="button" className={cx("btn", "btnPrimary", "mt12")} onClick={() => void loadCatalog(true)}>
+            Retry
+          </button>
         </div>
       )}
 
       {/* ── Empty state ──────────────────────────────────────────────────────── */}
       {!loading && !error && services.length === 0 && (
         <div className={cx("emptyState")}>
-          <div className={cx("emptyIcon")}>📦</div>
-          <div className={cx("emptyTitle")}>No services available</div>
-          <div className={cx("emptySub")}>The service catalogue is being set up. Check back soon.</div>
+          <div className={cx("emptyStateIcon")}><Ic n="layers" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>No services available</div>
+          <div className={cx("emptyStateSub")}>No active packages or retainer plans are currently published to the portal.</div>
         </div>
       )}
 
@@ -377,70 +430,71 @@ export function ServiceCatalogPage() {
           className={cx("modalOverlayBlur")}
           onClick={(e) => { if (e.target === e.currentTarget) setRequesting(null); }}
         >
-          <div className={cx("modalBox480")}>
-            {/* Modal header */}
-            <div className={cx("flexAlignStart", "gap14", "mb20")}>
-              <div
-                className={cx("scModalIconBox", "dynBgColor", "dynBorderColor")}
-                style={{ "--bg-color": `color-mix(in oklab, ${CAT_COLOR[requesting.category]} 12%, var(--s2))`, "--border-color": `color-mix(in oklab, ${CAT_COLOR[requesting.category]} 25%, transparent)` } as React.CSSProperties}
-              >
-                {requesting.icon}
+          <div className={cx("pmModalInner", "maxW560")} onClick={(event) => event.stopPropagation()}>
+            <div className={cx("pmModalHd")}>
+              <div className={cx("flexRow", "gap12", "flexAlignStart")}>
+                <div
+                  className={cx("scModalIconBox", "dynBgColor", "dynBorderColor")}
+                  style={{ "--bg-color": `color-mix(in oklab, ${CAT_COLOR[requesting.category]} 12%, var(--s2))`, "--border-color": `color-mix(in oklab, ${CAT_COLOR[requesting.category]} 25%, transparent)` } as React.CSSProperties}
+                >
+                  {requesting.icon}
+                </div>
+                <div className={cx("flex1")}>
+                  <div className={cx("text10", "uppercase", "ls01", "colorMuted2", "mb3")}>Service Request</div>
+                  <div className={cx("pmTitle")}>{requesting.name}</div>
+                  <div className={cx("text11", "colorMuted", "mt2")}>From {requesting.from} · {requesting.timeline}</div>
+                </div>
               </div>
-              <div className={cx("flex1")}>
-                <div className={cx("text10", "colorMuted", "mb3")}>Service Request</div>
-                <div className={cx("fw700", "text14", "lineH13")}>{requesting.name}</div>
-                <div className={cx("text11", "colorMuted", "mt2")}>From {requesting.from} · {requesting.timeline}</div>
+              <button
+                type="button"
+                className={cx("iconBtn40x34")}
+                onClick={() => setRequesting(null)}
+                title="Close"
+              >
+                <Ic n="x" sz={14} />
+              </button>
+            </div>
+
+            <div className={cx("cardS1v2", "p16", "flexCol", "gap16")}>
+              <div>
+                <label className={cx("text11", "fw600", "dBlock", "mb6")}>
+                  What do you need? <span className={cx("colorRed")}>*</span>
+                </label>
+                <textarea
+                  className={cx("input", "textareaStd")}
+                  placeholder={`Briefly describe your requirements for ${requesting.name}…`}
+                  value={reqDesc}
+                  onChange={(e) => setReqDesc(e.target.value)}
+                  disabled={submitting}
+                />
               </div>
-              <button
-                type="button"
-                className={cx("btnSm", "btnGhost", "p4x8", "colorMuted2")}
-                onClick={() => setRequesting(null)}
-              >
-                <Ic n="x" sz={14} c="var(--muted2)" />
-              </button>
-            </div>
 
-            {/* Description field */}
-            <div className={cx("mb16")}>
-              <label className={cx("text11", "fw600", "dBlock", "mb6")}>
-                What do you need? <span className={cx("colorRed")}>*</span>
-              </label>
-              <textarea
-                className={cx("input", "textareaStd")}
-                placeholder={`Briefly describe your requirements for ${requesting.name}…`}
-                value={reqDesc}
-                onChange={(e) => setReqDesc(e.target.value)}
-                disabled={submitting}
-              />
-            </div>
+              <div className={cx("scInfoNote")}>
+                <Ic n="info" sz={13} c="var(--lime)" />
+                <span className={cx("text11", "colorMuted", "lineH155")}>
+                  Your request will be reviewed by the Maphari team within 1 business day.
+                  We will reach out to discuss scope, timeline, and pricing.
+                </span>
+              </div>
 
-            {/* Info note */}
-            <div className={cx("scInfoNote")}>
-              <Ic n="info" sz={13} c="var(--lime)" />
-              <span className={cx("text11", "colorMuted", "lineH155")}>
-                Your request will be reviewed by the Maphari team within 1 business day.
-                We will reach out to discuss scope, timeline, and pricing.
-              </span>
-            </div>
-
-            {/* Actions */}
-            <div className={cx("flexRow", "gap8", "justifyEnd")}>
-              <button
-                type="button"
-                className={cx("btnSm", "btnGhost")}
-                onClick={() => setRequesting(null)}
-                disabled={submitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={cx("btnSm", "btnAccent")}
-                onClick={submitRequest}
-                disabled={submitting || !reqDesc.trim()}
-              >
-                {submitting ? "Sending…" : "Submit Request"}
-              </button>
+              <div className={cx("flexRow", "gap8", "justifyEnd")}>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnGhost")}
+                  onClick={() => setRequesting(null)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnAccent")}
+                  onClick={submitRequest}
+                  disabled={submitting || !reqDesc.trim()}
+                >
+                  {submitting ? "Sending…" : "Submit Request"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

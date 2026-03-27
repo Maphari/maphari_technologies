@@ -10,6 +10,10 @@
   - `rememberMe` controls refresh token session duration.
 - Notifications durability:
   - Notification queue persisted in DB with retries and dead-letter.
+- Integrations hardening:
+  - External provider create-link flow uses retry/backoff + circuit breaker.
+  - Secrets are resolved via `*Ref`/`env:*` indirection (no plaintext metadata secrets).
+  - Idempotency key uniqueness is DB-enforced for `IntegrationSyncEvent`.
 
 ## Pre-Release Checks
 1. Database migrations:
@@ -32,6 +36,21 @@
      - `DATABASE_URL`
    - `services/core/.env` optionally includes:
      - `INTERNAL_NOTIFICATION_RECIPIENT_EMAIL`
+     - `INTEGRATION_ALERT_RECIPIENT_EMAIL`
+     - `INTEGRATION_PROVIDER_CIRCUIT_THRESHOLD`
+     - `INTEGRATION_PROVIDER_CIRCUIT_COOLDOWN_MS`
+     - `INTEGRATION_PROVIDER_RETRY_MAX_ATTEMPTS`
+     - `INTEGRATION_PROVIDER_RETRY_BASE_DELAY_MS`
+4. Integration migrations and rollback:
+   - Run core Prisma migrations in prod pipeline before web deploy.
+   - Validate migration chain includes:
+     - `20260326213000_add_idempotency_key_to_integration_sync_events`
+     - `20260326222500_strengthen_integration_sync_event_idempotency`
+   - Backfill policy:
+     - Existing rows keep `idempotencyKey = NULL` (no rewrite required).
+   - Rollback policy:
+     - App rollback is safe with column left in place.
+     - DB rollback requires dropping the unique index before reverting app behavior.
 
 ## Monitoring and Alerts
 1. Notifications:
@@ -54,6 +73,16 @@
      - `ROLE_MISMATCH`
      - `ACCOUNT_NOT_REGISTERED`
    - Alert on unusual increase in role mismatch/forbidden errors.
+4. Integrations:
+   - Monitor:
+     - `CreateExternalLinkFailedSpike` alert (`/admin/integrations/tasks/:taskId/create-external-link` 5xx spike)
+     - `IntegrationSyncLogEndpointErrors` alert (`/admin/tasks/:taskId/integration-sync-events` 5xx)
+     - notification events tagged with `EXTERNAL_CREATE_FAILED`
+   - Alert when:
+     - create-link 5xx errors exceed threshold for 10m
+     - sync-log endpoint 5xx errors persist for 10m
+   - Provider metadata templates:
+     - see `docs/integrations/admin-provider-metadata-templates.md`
 
 ## Manual Acceptance Scenarios
 1. Standard lifecycle:

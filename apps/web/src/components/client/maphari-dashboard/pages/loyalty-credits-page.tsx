@@ -4,12 +4,12 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import {
   loadMyLoyaltyWithRefresh,
-  createPortalSupportTicketWithRefresh,
+  redeemLoyaltyCreditsWithRefresh,
   type PortalLoyaltyAccount,
 } from "../../../../lib/api/portal";
 import { saveSession } from "../../../../lib/auth/session";
@@ -53,6 +53,29 @@ function nextTierName(tier: string): string {
   return "Max Tier";
 }
 
+function exportLoyaltyTransactionsCsv(account: PortalLoyaltyAccount | null): void {
+  const rows = account?.transactions ?? [];
+  const header = ["Date", "Type", "Points", "Description", "Reference"];
+  const csvRows = rows.map((transaction) => [
+    new Date(transaction.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }),
+    transaction.type,
+    String(transaction.points),
+    transaction.description ?? "",
+    transaction.referenceId ?? "",
+  ]);
+  const escape = (value: string) => "\"" + value.replace(/"/g, "\"\"") + "\"";
+  const csv = [header, ...csvRows].map((row) => row.map((cell) => escape(cell)).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "loyalty-credits.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export function LoyaltyCreditsPage() {
   const { session } = useProjectLayer();
@@ -61,6 +84,23 @@ export function LoyaltyCreditsPage() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
   const notify = usePageToast();
+
+  const loadLoyalty = useCallback(async () => {
+    if (!session) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
+    try {
+      const r = await loadMyLoyaltyWithRefresh(session);
+      if (r.nextSession) saveSession(r.nextSession);
+      if (r.error) {
+        setError(r.error.message ?? "Failed to load.");
+        return;
+      }
+      setAccount(r.data ?? null);
+    } finally {
+      setLoading(false);
+    }
+  }, [session]);
 
   // ── Derived values (declared early so handleRedeem can capture them) ──────
   const balance  = account?.balancePoints ?? 0;
@@ -75,33 +115,25 @@ export function LoyaltyCreditsPage() {
 
   // ── Load account data ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!session) { setLoading(false); return; }
-    setLoading(true);
-    setError(null);
-    void loadMyLoyaltyWithRefresh(session).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.error) { setError(r.error.message ?? "Failed to load."); return; }
-      if (r.data) setAccount(r.data);
-    }).finally(() => setLoading(false));
-  }, [session]);
+    void loadLoyalty();
+  }, [loadLoyalty]);
 
   // ── Redeem handler ────────────────────────────────────────────────────────
   async function handleRedeem(redemptionName: string, credits: number): Promise<void> {
     if (!session || redeeming) return;
     setRedeeming(redemptionName);
     try {
-      const r = await createPortalSupportTicketWithRefresh(session, {
-        clientId:    session.user.clientId ?? "",
-        title:       `Credit Redemption: ${redemptionName}`,
-        description: `The client has requested to redeem ${credits.toLocaleString()} loyalty credits for: ${redemptionName}.\n\nCurrent balance: ${balance.toLocaleString()} pts.`,
-        category:    "REDEMPTION",
-        priority:    "MEDIUM",
-      });
+      const r = await redeemLoyaltyCreditsWithRefresh(
+        session,
+        credits,
+        `Redeemed for ${redemptionName}`
+      );
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error) {
         notify("error", "Redemption failed", "Could not process your redemption. Please try again.");
       } else {
-        notify("success", "Redemption requested", `Your request for "${redemptionName}" has been submitted. The team will confirm within 24 hours.`);
+        notify("success", "Credits redeemed", `Your redemption for "${redemptionName}" has been applied.`);
+        await loadLoyalty();
       }
     } catch {
       notify("error", "Redemption failed", "Could not process your redemption. Please try again.");
@@ -124,10 +156,13 @@ export function LoyaltyCreditsPage() {
   if (error) {
     return (
       <div className={cx("pageBody")}>
-        <div className={cx("errorState")}>
-          <div className={cx("errorStateIcon")}>✕</div>
-          <div className={cx("errorStateTitle")}>Failed to load</div>
-          <div className={cx("errorStateSub")}>{error}</div>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="alert" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>Failed to load</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+          <button type="button" className={cx("btn", "btnPrimary", "mt12")} onClick={() => void loadLoyalty()}>
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -141,13 +176,21 @@ export function LoyaltyCreditsPage() {
           <h1 className={cx("pageTitle")}>Loyalty Credits</h1>
           <p className={cx("pageSub")}>Earn credits for on-time approvals, referrals, and loyalty milestones. Redeem for support hours, design reviews, and more.</p>
         </div>
+        <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadLoyalty()} disabled={loading || !!redeeming}>
+            Refresh
+          </button>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => exportLoyaltyTransactionsCsv(account)} disabled={!account || account.transactions.length === 0}>
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* Tier hero card */}
       <div className={cx("card", "borderLeftAmber", "mb20", "p20x24")}>
         <div className={cx("flexRow", "gap24", "flexWrap")}>
           <div className={cx("flexRow", "gap12")}>
-            <div className={cx("trophyIconBox")}>🏆</div>
+            <div className={cx("trophyIconBox")}><Ic n="star" sz={20} c="var(--amber)" /></div>
             <div>
               <span className={cx("badge", tierBadgeCls(tier), "mb4", "inlineBlock")}>{tierLabel(tier)} Tier</span>
               <div className={cx("fw700", "fs16rem", "lineH1")}>{balance.toLocaleString()} pts</div>

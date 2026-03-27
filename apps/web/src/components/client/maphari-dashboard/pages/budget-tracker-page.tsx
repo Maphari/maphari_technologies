@@ -4,12 +4,12 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
+import { usePageToast } from "../hooks/use-page-toast";
 import {
   loadPortalPhasesWithRefresh,
   loadPortalChangeRequestsWithRefresh,
   type PortalPhase,
   type PortalProjectChangeRequest,
-  type PortalInvoice,
 } from "../../../../lib/api/portal";
 import {
   loadPortalWeeklySpendWithRefresh,
@@ -26,60 +26,101 @@ const CHART_H = 120;
 // ── Change request risk colour map ────────────────────────────────────────
 const CR_RISK_COLOR = { green: "var(--green)", amber: "var(--amber)", red: "var(--red)" } as const;
 
+function csvCell(value: string | number): string {
+  return "\"" + String(value).replace(/"/g, "\"\"") + "\"";
+}
+
+function triggerBudgetExportDownload(input: {
+  totalBudget: number;
+  billedToDate: number;
+  paidToDate: number;
+  remainingBudget: number;
+  totalBudgetHours: number;
+  spentToDateHours: number;
+  remainingHours: number;
+  weeklySpend: Array<{ week: string; spend: number; forecast: boolean }>;
+  pendingCRs: Array<{ id: string; label: string; costCents: number | null; estimatedHours: number | null; risk: "amber" | "green" | "red" }>;
+  phaseRows: Array<{ name: string; budgetHours: number; loggedHours: number }>;
+}): void {
+  const summaryRows = [
+    ["Metric", "Value"],
+    ["Total Budget (ZAR)", input.totalBudget.toFixed(2)],
+    ["Billed To Date (ZAR)", input.billedToDate.toFixed(2)],
+    ["Paid To Date (ZAR)", input.paidToDate.toFixed(2)],
+    ["Remaining Budget (ZAR)", input.remainingBudget.toFixed(2)],
+    ["Budgeted Hours", input.totalBudgetHours.toFixed(1)],
+    ["Logged Hours", input.spentToDateHours.toFixed(1)],
+    ["Remaining Hours", input.remainingHours.toFixed(1)],
+  ].map((row) => row.map(csvCell).join(","));
+
+  const phaseRows = [
+    "",
+    "Phase Breakdown",
+    ["Phase", "Budget Hours", "Logged Hours"].map(csvCell).join(","),
+    ...input.phaseRows.map((phase) =>
+      [phase.name, phase.budgetHours.toFixed(1), phase.loggedHours.toFixed(1)].map(csvCell).join(",")
+    ),
+  ];
+
+  const weeklyRows = [
+    "",
+    "Weekly Spend",
+    ["Week", "Spend (ZAR)", "Forecast"].map(csvCell).join(","),
+    ...input.weeklySpend.map((week) =>
+      [week.week, week.spend.toFixed(2), week.forecast ? "Yes" : "No"].map(csvCell).join(",")
+    ),
+  ];
+
+  const crRows = [
+    "",
+    "Pending Change Requests",
+    ["ID", "Title", "Estimated Cost (ZAR)", "Estimated Hours", "Risk"].map(csvCell).join(","),
+    ...input.pendingCRs.map((cr) =>
+      [
+        cr.id,
+        cr.label,
+        cr.costCents === null ? "Pending estimate" : (cr.costCents / 100).toFixed(2),
+        cr.estimatedHours === null ? "Pending estimate" : cr.estimatedHours.toFixed(1),
+        cr.risk,
+      ].map(csvCell).join(",")
+    ),
+  ];
+
+  const csv = [...summaryRows, ...phaseRows, ...weeklyRows, ...crRows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = "maphari-budget-tracker.csv";
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
 // ── API mapper ─────────────────────────────────────────────────────────────────
-interface BudgetPhaseRow { name: string; budget: number; spent: number; color: string; icon: string }
-const HOURLY_RATE_ZAR = 1000; // R 1 000 / hr — estimated — used to convert hours → cost
+interface BudgetPhaseRow { name: string; budgetHours: number; loggedHours: number; color: string; icon: string }
 const BP_COLORS = ["var(--amber)", "var(--purple)", "var(--lime)", "var(--green)", "var(--muted2)"] as const;
 const BP_ICONS  = ["target", "layers", "code", "check", "rocket"] as const;
 
 function apiToPhaseRow(p: PortalPhase, idx: number): BudgetPhaseRow {
-  const budget = Math.max(p.budgetedHours * HOURLY_RATE_ZAR, 1);
-  const spent  = Math.min(p.loggedHours   * HOURLY_RATE_ZAR, budget);
   return {
     name:   p.name,
-    budget,
-    spent,
+    budgetHours: Math.max(p.budgetedHours, 0),
+    loggedHours: Math.max(p.loggedHours, 0),
     color: p.color ?? BP_COLORS[idx % BP_COLORS.length],
     icon:  BP_ICONS[idx % BP_ICONS.length],
   };
 }
 
 // ── CR mapper ─────────────────────────────────────────────────────────────
-type CrRow = { id: string; label: string; cost: number; icon: string; risk: "amber" | "green" | "red" };
+type CrRow = { id: string; label: string; costCents: number | null; estimatedHours: number | null; icon: string; risk: "amber" | "green" | "red" };
 
 function crToRow(cr: PortalProjectChangeRequest): CrRow {
-  const costCents =
-    cr.estimatedCostCents !== null ? cr.estimatedCostCents :
-    cr.estimatedHours    !== null ? cr.estimatedHours * HOURLY_RATE_ZAR * 100 : 0;
-  const cost = costCents / 100;
-  const risk: CrRow["risk"] = cost > 50_000 ? "red" : cost > 20_000 ? "amber" : "green";
-  return { id: cr.id, label: cr.title, cost, icon: "zap", risk };
-}
-
-// ── Monthly spend computer — derives from portal invoices ─────────────────
-type MonthRow = { month: string; actual: number; status: "done" | "current" | "forecast" };
-const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] as const;
-
-function computeMonthlySpend(invoices: PortalInvoice[]): MonthRow[] {
-  const now = new Date();
-  const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const byMonth = new Map<string, number>();
-  for (const inv of invoices) {
-    const raw = inv.issuedAt ?? inv.createdAt;
-    if (!raw) continue;
-    const d = new Date(raw);
-    if (isNaN(d.getTime())) continue;
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    byMonth.set(key, (byMonth.get(key) ?? 0) + inv.amountCents / 100);
-  }
-  return Array.from(byMonth.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, actual]) => {
-      const [yr, mo] = key.split("-");
-      const label = `${MONTH_ABBR[parseInt(mo, 10) - 1]} ${yr}`;
-      const status: MonthRow["status"] = key > currentKey ? "forecast" : key === currentKey ? "current" : "done";
-      return { month: label, actual, status };
-    });
+  const costCents = cr.estimatedCostCents ?? null;
+  const costRand = costCents !== null ? costCents / 100 : 0;
+  const risk: CrRow["risk"] = costCents === null ? "amber" : costRand > 50_000 ? "red" : costRand > 20_000 ? "amber" : "green";
+  return { id: cr.id, label: cr.title, costCents, estimatedHours: cr.estimatedHours ?? null, icon: "zap", risk };
 }
 
 // ── BudgetBurnGauge ───────────────────────────────────────────────────────
@@ -140,13 +181,14 @@ function BudgetBurnGauge({ projectId, session }: BudgetBurnGaugeProps) {
 
 // ── Props ─────────────────────────────────────────────────────────────────
 export interface BudgetTrackerPageProps {
-  invoices?: PortalInvoice[]
   currency?: string
 }
 
-export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTrackerPageProps) {
+export function BudgetTrackerPage({ currency = "ZAR" }: BudgetTrackerPageProps) {
   const { session, projectId } = useProjectLayer();
+  const notify = usePageToast();
   const [loading, setLoading]           = useState(true);
+  const [refreshing, setRefreshing]     = useState(false);
   const [error,   setError]             = useState<string | null>(null);
   const [phaseRows, setPhaseRows]       = useState<BudgetPhaseRow[]>([]);
   const [pendingCRs, setPendingCRs]     = useState<CrRow[]>([]);
@@ -154,66 +196,97 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
   const [weeklySpend, setWeeklySpend]   = useState<PortalWeeklySpendWeek[]>([]);
   const [weeklyBudgetCap, setWeeklyBudgetCap] = useState(0); // ZAR
   const [todayWeekLabel, setTodayWeekLabel]   = useState("");
+  const [burnData, setBurnData]         = useState<PortalBudgetBurn | null>(null);
 
-  const fmt = (v: number) => formatMoneyCents(Math.round(v) * 100, { currency: "ZAR", maximumFractionDigits: 0 });
+  const fmt = (v: number) => formatMoneyCents(Math.round(v) * 100, { currency, maximumFractionDigits: 0 });
+  const fmtHours = (v: number) => v.toLocaleString("en-ZA", { maximumFractionDigits: 1 }) + " hrs";
 
-  useEffect(() => {
-    if (!session || !projectId) { setLoading(false); return; }
+  const fetchBudgetTrackerData = useCallback(async (): Promise<boolean> => {
+    if (!session || !projectId) {
+      setLoading(false);
+      return false;
+    }
+
     setLoading(true);
     setError(null);
-    Promise.all([
+
+    const [phaseR, crR, weeklyR, burnR] = await Promise.all([
       loadPortalPhasesWithRefresh(session, projectId),
       loadPortalChangeRequestsWithRefresh(session, { projectId, status: "ESTIMATED" }),
       loadPortalWeeklySpendWithRefresh(session, projectId),
-    ]).then(([phaseR, crR, weeklyR]) => {
-      if (phaseR.nextSession) saveSession(phaseR.nextSession);
-      if (crR.nextSession) saveSession(crR.nextSession);
-      if (weeklyR.nextSession) saveSession(weeklyR.nextSession);
-      if (phaseR.error) { setError(phaseR.error.message ?? "Failed to load."); return; }
-      if (phaseR.data) setPhaseRows(phaseR.data.map(apiToPhaseRow));
-      if (crR.data) setPendingCRs(crR.data.map(crToRow));
-      if (weeklyR.data) {
-        setWeeklySpend(weeklyR.data.weeks.map((w) => ({
-          week: w.week,
-          amountCents: w.amountCents,
-          forecast: w.forecast,
-        })));
-        setWeeklyBudgetCap(weeklyR.data.weeklyBudgetCapCents / 100);
-        setTodayWeekLabel(weeklyR.data.currentWeekLabel);
-      }
-    }).finally(() => setLoading(false));
-  }, [session, projectId]);
+      loadBudgetBurnWithRefresh(session, projectId),
+    ]);
+
+    if (phaseR.nextSession) saveSession(phaseR.nextSession);
+    if (crR.nextSession) saveSession(crR.nextSession);
+    if (weeklyR.nextSession) saveSession(weeklyR.nextSession);
+    if (burnR.nextSession) saveSession(burnR.nextSession);
+
+    const firstError = phaseR.error ?? crR.error ?? weeklyR.error ?? burnR.error;
+    if (firstError) {
+      setError(firstError.message ?? "Failed to load budget tracker.");
+      setLoading(false);
+      return false;
+    }
+
+    setPhaseRows((phaseR.data ?? []).map(apiToPhaseRow));
+    setPendingCRs((crR.data ?? []).map(crToRow));
+    setBurnData(burnR.data ?? null);
+
+    if (weeklyR.data) {
+      setWeeklySpend(weeklyR.data.weeks.map((w) => ({
+        week: w.week,
+        amountCents: w.amountCents,
+        forecast: w.forecast,
+      })));
+      setWeeklyBudgetCap(weeklyR.data.weeklyBudgetCapCents / 100);
+      setTodayWeekLabel(weeklyR.data.currentWeekLabel);
+    } else {
+      setWeeklySpend([]);
+      setWeeklyBudgetCap(0);
+      setTodayWeekLabel("");
+    }
+
+    setLoading(false);
+    return true;
+  }, [projectId, session]);
+
+  useEffect(() => {
+    const frame = window.setTimeout(() => {
+      void fetchBudgetTrackerData();
+    }, 0);
+    return () => window.clearTimeout(frame);
+  }, [fetchBudgetTrackerData]);
 
   const toggleCR = (id: string) =>
-    setActiveCRs((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setActiveCRs((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
 
-  // ── Budget totals derived from API phase data ─────────────────────────────
-  const totalBudget    = useMemo(() => phaseRows.reduce((a, p) => a + p.budget, 0), [phaseRows]);
-  const spentToDate    = useMemo(() => phaseRows.reduce((a, p) => a + p.spent,  0), [phaseRows]);
-  const baseForecast      = totalBudget;
-  const forecastRemaining = baseForecast - spentToDate;
-  const headroom          = 0; // no headroom buffer (forecast == budget)
+  // ── Real totals ────────────────────────────────────────────────────────────
+  const totalBudget = burnData?.budgetRand ?? 0;
+  const billedToDate = burnData?.billedRand ?? 0;
+  const paidToDate = burnData?.paidRand ?? 0;
+  const remainingBudget = burnData?.remainingRand ?? 0;
+  const uncollectedBilled = Math.max(billedToDate - paidToDate, 0);
+  const utilizationPct = totalBudget > 0 ? Math.round((billedToDate / totalBudget) * 100) : 0;
 
-  // ── Monthly burn from real invoice data ───────────────────────────────────
-  const monthlySpend   = useMemo(() => computeMonthlySpend(invoices), [invoices]);
-  const monthlyBudget  = useMemo(
-    () => totalBudget > 0 && monthlySpend.length > 0 ? Math.round(totalBudget / monthlySpend.length) : totalBudget,
-    [totalBudget, monthlySpend]
-  );
-  const maxMonthly     = useMemo(
-    () => monthlySpend.length > 0 ? Math.max(...monthlySpend.map((m) => m.actual), monthlyBudget) : monthlyBudget || 1,
-    [monthlySpend, monthlyBudget]
-  );
+  const totalBudgetHours = useMemo(() => phaseRows.reduce((a, p) => a + p.budgetHours, 0), [phaseRows]);
+  const spentToDateHours = useMemo(() => phaseRows.reduce((a, p) => a + p.loggedHours, 0), [phaseRows]);
+  const remainingHours = Math.max(totalBudgetHours - spentToDateHours, 0);
 
   const crTotal = useMemo(
-    () => pendingCRs.filter((c) => activeCRs.has(c.id)).reduce((a, c) => a + c.cost, 0),
+    () => pendingCRs.filter((c) => activeCRs.has(c.id)).reduce((a, c) => a + ((c.costCents ?? 0) / 100), 0),
     [activeCRs, pendingCRs]
   );
-  const adjustedForecast = baseForecast + crTotal;
+  const adjustedForecast = billedToDate + crTotal;
   const adjustedHeadroom = totalBudget - adjustedForecast;
-  const utilizationPct   = totalBudget > 0 ? Math.round((spentToDate       / totalBudget) * 100) : 0;
-  const forecastPct      = totalBudget > 0 ? Math.round((forecastRemaining / totalBudget) * 100) : 0;
-  const headroomPct      = totalBudget > 0 ? Math.round((headroom          / totalBudget) * 100) : 0;
   const crImpactPct      = totalBudget > 0 ? Math.round((crTotal           / totalBudget) * 100) : 0;
   const isOverBudget     = adjustedForecast > totalBudget;
 
@@ -224,6 +297,32 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
   );
   const maxWeekSpend = weeklySpendZar.length > 0 ? Math.max(...weeklySpendZar.map((w) => w.spend)) : 0;
   const chartMax     = Math.max(maxWeekSpend, weeklyBudgetCap) * 1.15 || 1;
+  const paidPct = totalBudget > 0 ? Math.round((paidToDate / totalBudget) * 100) : 0;
+  const awaitingCollectionPct = totalBudget > 0 ? Math.round((uncollectedBilled / totalBudget) * 100) : 0;
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    const ok = await fetchBudgetTrackerData();
+    setRefreshing(false);
+    if (ok) {
+      notify("success", "Budget tracker refreshed", "Latest project budget figures have been loaded.");
+    }
+  };
+
+  const handleExport = () => {
+    triggerBudgetExportDownload({
+      totalBudget,
+      billedToDate,
+      paidToDate,
+      remainingBudget,
+      totalBudgetHours,
+      spentToDateHours,
+      remainingHours,
+      weeklySpend: weeklySpendZar,
+      pendingCRs,
+      phaseRows,
+    });
+    notify("success", "Downloading", "Budget tracker CSV is downloading.");
+  };
 
   if (loading) {
     return (
@@ -258,9 +357,22 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
           <h1 className={cx("pageTitle")}>Budget Tracker</h1>
           <p className={cx("pageSub")}>Track project spend, burn rate, and model the impact of pending change requests.</p>
         </div>
-        <div className={cx("pageActions")}>
-          <button type="button" className={cx("btnSm", "btnGhost", "flexRow", "flexCenter", "gap6")}>
-            <Ic n="download" sz={13} c="var(--muted2)" /> Export
+        <div className={cx("pageActions", "flexRow", "gap8", "flexWrap")}>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost", "flexRow", "flexCenter", "gap6")}
+            onClick={() => void handleRefresh()}
+            disabled={refreshing}
+          >
+            <Ic n="refresh" sz={13} c="var(--muted2)" /> {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost", "flexRow", "flexCenter", "gap6")}
+            onClick={handleExport}
+            disabled={phaseRows.length === 0 && weeklySpendZar.length === 0 && pendingCRs.length === 0}
+          >
+            <Ic n="download" sz={13} c="var(--muted2)" /> Export CSV
           </button>
         </div>
       </div>
@@ -271,10 +383,10 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
       {/* ── Stat cards ──────────────────────────────────────────────────── */}
       <div className={cx("topCardsStack", "mb20")}>
         {[
-          { label: "Total Budget",    value: totalBudget > 0 ? fmt(totalBudget)  : "—", color: "statCardBlue"   },
-          { label: "Spent to Date",   value: totalBudget > 0 ? fmt(spentToDate)  : "—", color: "statCardAccent" },
-          { label: "Base Forecast",   value: totalBudget > 0 ? fmt(baseForecast) : "—", color: "statCardAmber"  },
-          { label: "Budget Headroom", value: totalBudget > 0 ? fmt(headroom)     : "—", color: "statCardGreen"  },
+          { label: "Total Budget", value: totalBudget > 0 ? fmt(totalBudget) : "—", color: "statCardBlue" },
+          { label: "Billed To Date", value: billedToDate > 0 ? fmt(billedToDate) : "—", color: "statCardAccent" },
+          { label: "Paid To Date", value: paidToDate > 0 ? fmt(paidToDate) : "—", color: "statCardAmber" },
+          { label: "Remaining Budget", value: totalBudget > 0 ? fmt(remainingBudget) : "—", color: "statCardGreen" },
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.color)}>
             <div className={cx("statLabel")}>{s.label}</div>
@@ -297,42 +409,38 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
 
           {/* Stacked horizontal bar */}
           <div className={cx("budgetTrackerBar")}>
-            {/* Spent */}
             <div
-              title={`Spent: ${fmt(spentToDate)}`}
-              className={cx("animBarLime")} style={{ '--pct': `${utilizationPct}%` } as React.CSSProperties}
+              title={"Paid: " + fmt(paidToDate)}
+              className={cx("animBarLime")}
+              style={{ "--pct": paidPct + "%" } as React.CSSProperties}
             />
-            {/* Forecast remaining */}
             <div
-              title={`Forecast remaining: ${fmt(forecastRemaining)}`}
-              className={cx("budgetBarForecast")} style={{ '--pct': `${forecastPct}%` } as React.CSSProperties}
+              title={"Awaiting collection: " + fmt(uncollectedBilled)}
+              className={cx("budgetBarForecast")}
+              style={{ "--pct": awaitingCollectionPct + "%" } as React.CSSProperties}
             />
-            {/* CR impact */}
             {crImpactPct > 0 && (
               <div
-                title={`CR impact: +${fmt(crTotal)}`}
-                className={cx("budgetBarCR")} style={{ '--pct': `${crImpactPct}%` } as React.CSSProperties}
+                title={"Selected CR impact: +" + fmt(crTotal)}
+                className={cx("budgetBarCR")}
+                style={{ "--pct": Math.min(crImpactPct, 100) + "%" } as React.CSSProperties}
               />
             )}
-            {/* Headroom */}
-            <div
-              title={`Headroom: ${fmt(adjustedHeadroom)}`}
-              className={cx("flex1")}
-            />
+            <div title={"Remaining budget: " + fmt(remainingBudget)} className={cx("flex1")} />
           </div>
 
           {/* Legend row */}
           <div className={cx("budgetLegendRow")}>
             {[
-              { color: "var(--lime)",                                              label: "Spent to date",       value: fmt(spentToDate)        },
-              { color: "color-mix(in oklab, var(--amber) 55%, transparent)",       label: "Forecast remaining",  value: fmt(forecastRemaining)   },
-              ...(crTotal > 0 ? [{ color: "color-mix(in oklab, var(--red) 55%, transparent)", label: "CR impact", value: `+${fmt(crTotal)}` }] : []),
-              { color: "var(--s3)",                                                label: isOverBudget ? "OVER BUDGET" : "Headroom", value: isOverBudget ? `-${fmt(-adjustedHeadroom)}` : fmt(adjustedHeadroom) },
+              { color: "var(--lime)", label: "Paid", value: fmt(paidToDate) },
+              { color: "color-mix(in oklab, var(--amber) 55%, transparent)", label: "Awaiting collection", value: fmt(uncollectedBilled) },
+              ...(crTotal > 0 ? [{ color: "color-mix(in oklab, var(--red) 55%, transparent)", label: "Selected CR impact", value: "+" + fmt(crTotal) }] : []),
+              { color: "var(--s3)", label: isOverBudget ? "Over budget" : "Remaining", value: isOverBudget ? "-" + fmt(Math.abs(adjustedHeadroom)) : fmt(remainingBudget) },
             ].map((l) => (
               <div key={l.label} className={cx("flexRow", "flexCenter", "gap7")}>
                 <div className={cx("dot10sq", "noShrink", "dynBgColor")} style={{ "--bg-color": l.color } as React.CSSProperties} />
                 <span className={cx("text10", "colorMuted")}>{l.label}</span>
-                <span className={cx("text10", "fw700", "dynColor")} style={{ "--color": l.label === "OVER BUDGET" ? "var(--red)" : "inherit" } as React.CSSProperties}>{l.value}</span>
+                <span className={cx("text10", "fw700", "dynColor")} style={{ "--color": l.label === "Over budget" ? "var(--red)" : "inherit" } as React.CSSProperties}>{l.value}</span>
               </div>
             ))}
           </div>
@@ -434,19 +542,19 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
         <div className={cx("card", "p0", "overflowHidden")}>
           <div className={cx("cardHd")}>
             <span className={cx("cardHdTitle")}>Phase Breakdown</span>
-            <span className={cx("text10", "colorMuted", "mlAuto")}>Budget vs Spent</span>
+            <span className={cx("text10", "colorMuted", "mlAuto")}>Budgeted vs logged hours</span>
           </div>
 
           {/* Composition bar */}
           <div className={cx("phasedBudgetTrack")}>
             {phaseRows.map((p) => (
-              <div key={p.name} className={cx("phasedBudgetSegment", "dynBgColor")} style={{ "--flex": String(p.budget), "--bg-color": p.color } as React.CSSProperties} title={p.name} />
+              <div key={p.name} className={cx("phasedBudgetSegment", "dynBgColor")} style={{ "--flex": String(Math.max(p.budgetHours, 1)), "--bg-color": p.color } as React.CSSProperties} title={p.name} />
             ))}
           </div>
 
           <div className={cx("pb4")}>
             {phaseRows.map((p, i) => {
-              const spentPct = Math.round((p.spent / p.budget) * 100);
+              const spentPct = p.budgetHours > 0 ? Math.round((p.loggedHours / p.budgetHours) * 100) : 0;
               return (
                 <div key={p.name} className={cx("budgetProjectRow", i > 0 && "borderTopDivider")}>
                   <div className={cx("budgetProjectIconBox", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${p.color} 12%, var(--s2))` } as React.CSSProperties}>
@@ -456,9 +564,9 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
                     <div className={cx("budgetProjectMetaRow")}>
                       <span className={cx("text12", "fw600", "truncate")}>{p.name}</span>
                       <div className={cx("budgetProjectBadgePill")}>
-                        <span className={cx("text10", "colorMuted")}>{fmt(p.spent)}</span>
+                        <span className={cx("text10", "colorMuted")}>{fmtHours(p.loggedHours)}</span>
                         <span className={cx("text10", "colorMuted")}>/</span>
-                        <span className={cx("text10", "fw600")}>{fmt(p.budget)}</span>
+                        <span className={cx("text10", "fw600")}>{fmtHours(p.budgetHours)}</span>
                         <span className={cx("budgetStatusPill", "dynColor")} style={{ "--bg-color": `color-mix(in oklab, ${p.color} 14%, var(--s3))`, "--color": p.color } as React.CSSProperties}>
                           {spentPct}%
                         </span>
@@ -466,7 +574,7 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
                     </div>
                     {/* Dual bar: grey budget track, colored spent fill */}
                     <div className={cx("trackH5")}>
-                      <div className={cx("pctFillRInherit", "dynBgColor")} style={{ '--pct': `${spentPct}%`, "--bg-color": p.color } as React.CSSProperties} />
+                      <div className={cx("pctFillRInherit", "dynBgColor")} style={{ "--pct": spentPct + "%", "--bg-color": p.color } as React.CSSProperties} />
                     </div>
                   </div>
                 </div>
@@ -496,7 +604,7 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
 
         <div className={cx("p14x18x0")}>
           <p className={cx("text12", "colorMuted", "mb14")}>
-            Base forecast <span className={cx("fw700", "colorText")}>{totalBudget > 0 ? fmt(baseForecast) : "—"}</span> — toggle pending CRs to model budget impact.
+            Current billed position <span className={cx("fw700", "colorText")}>{totalBudget > 0 ? fmt(billedToDate) : "—"}</span> — toggle pending CRs to model budget impact using actual stored estimates only.
           </p>
 
           {/* CR toggle cards */}
@@ -533,8 +641,11 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
                   </div>
                   <div className={cx("textRight", "noShrink")}>
                     <div className={cx("fw700", "text12", "dynColor")} style={{ "--color": active ? rc : "var(--muted2)" } as React.CSSProperties}>
-                      +{fmt(cr.cost)}
+                      {cr.costCents === null ? "Estimate pending" : "+" + fmt(cr.costCents / 100)}
                     </div>
+                    {cr.estimatedHours !== null && (
+                      <div className={cx("text10", "colorMuted")}>{fmtHours(cr.estimatedHours)}</div>
+                    )}
                   </div>
                 </button>
               );
@@ -553,8 +664,7 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
               </span>
             </div>
             <div className={cx("trackH8")}>
-              {/* base forecast fill */}
-              <div className={cx("pctFillRInherit", "dynBgColor")} style={{ '--pct': `${totalBudget > 0 ? Math.min((adjustedForecast / totalBudget) * 100, 100) : 0}%`, "--bg-color": isOverBudget ? "var(--red)" : "var(--amber)" } as React.CSSProperties} />
+              <div className={cx("pctFillRInherit", "dynBgColor")} style={{ "--pct": (totalBudget > 0 ? Math.min((adjustedForecast / totalBudget) * 100, 100) : 0) + "%", "--bg-color": isOverBudget ? "var(--red)" : "var(--amber)" } as React.CSSProperties} />
             </div>
             <div className={cx("flexRow", "flexBetween", "mt4")}>
               <span className={cx("text9", "colorMuted")}>0</span>
@@ -585,76 +695,79 @@ export function BudgetTrackerPage({ invoices = [], currency = "ZAR" }: BudgetTra
               )}
             </div>
             {activeCRs.size > 0 && (
-              <button type="button" className={cx("btnSm", isOverBudget ? "btnGhost" : "btnAccent", "mlAuto")}>
-                Request {activeCRs.size} CR{activeCRs.size !== 1 ? "s" : ""} →
-              </button>
+              <div className={cx("mlAuto", "textRight")}>
+                <div className={cx("text10", "colorMuted")}>Scenario only</div>
+                <div className={cx("text11", "fw700", "dynColor")} style={{ "--color": isOverBudget ? "var(--red)" : "var(--amber)" } as React.CSSProperties}>
+                  Review selections in Change Requests
+                </div>
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* ── Monthly burn ────────────────────────────────────────────────── */}
+      {/* ── Weekly burn signals ─────────────────────────────────────────── */}
       <div className={cx("card", "p0", "overflowHidden")}>
         <div className={cx("cardHd")}>
           <div className={cx("flexRow", "gap8")}>
             <Ic n="calendar" sz={14} c="var(--muted2)" />
-            <span className={cx("cardHdTitle")}>Monthly Burn</span>
+            <span className={cx("cardHdTitle")}>Weekly Burn Signals</span>
           </div>
-          <span className={cx("text10", "colorMuted", "mlAuto")}>vs {fmt(monthlyBudget)}/mo budget</span>
+          <span className={cx("text10", "colorMuted", "mlAuto")}>
+            {weeklyBudgetCap > 0 ? "vs " + fmt(weeklyBudgetCap) + " / week cap" : "Live project spend"}
+          </span>
         </div>
 
-        {monthlySpend.length === 0 && (
+        {weeklySpendZar.length === 0 && (
           <p className={cx("text11", "colorMuted", "py16_px", "px18_px")}>
-            No invoice data yet for this project.
+            No weekly spend data yet for this project.
           </p>
         )}
-        {monthlySpend.map((m, i) => {
-          const barW = Math.round((m.actual / maxMonthly) * 100);
-          const budgetW = Math.round((monthlyBudget / maxMonthly) * 100);
-          const isOver = m.actual > monthlyBudget && m.status !== "forecast";
-          const isCurrent = m.status === "current";
-          const isForecast = m.status === "forecast";
+        {weeklySpendZar.map((m, i) => {
+          const barW = Math.round((m.spend / chartMax) * 100);
+          const budgetW = chartMax > 0 ? Math.round((weeklyBudgetCap / chartMax) * 100) : 0;
+          const isOver = weeklyBudgetCap > 0 && m.spend > weeklyBudgetCap && !m.forecast;
+          const isCurrent = m.week === todayWeekLabel;
+          const isForecast = m.forecast;
           const barColor = isOver ? "var(--red)" : isCurrent ? "var(--lime)" : isForecast ? "color-mix(in oklab, var(--lime) 30%, transparent)" : "var(--lime)";
           const statusColor = isOver ? "var(--red)" : isCurrent ? "var(--lime)" : isForecast ? "var(--muted2)" : "var(--green)";
 
           return (
-            <div key={m.month} className={cx("budgetMonthRow", i > 0 && "borderTopDivider")}>
-              {/* Status dot / icon */}
+            <div key={m.week} className={cx("budgetMonthRow", i > 0 && "borderTopDivider")}>
               <div className={cx("budgetMonthIconBox", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${statusColor} 12%, var(--s2))`, "--color": `color-mix(in oklab, ${statusColor} 25%, transparent)` } as React.CSSProperties}>
                 <Ic n={isOver ? "alert" : isCurrent ? "activity" : isForecast ? "clock" : "check"} sz={13} c={statusColor} />
               </div>
 
-              {/* Month + bar */}
               <div className={cx("flex1", "minW0")}>
                 <div className={cx("budgetMonthMetaRow")}>
                   <div className={cx("flexRow", "gap8")}>
-                    <span className={cx("fw600", "text12")}>{m.month}</span>
+                    <span className={cx("fw600", "text12")}>{m.week}</span>
                     {isForecast && <span className={cx("badge", "badgeMuted", "fs9")}>est.</span>}
                     {isCurrent && <span className={cx("badge", "badgeAccent", "fs9")}>current</span>}
                   </div>
                   <div className={cx("flexRow", "flexCenter", "gap8")}>
-                    <span className={cx("fw700", "text12", "dynColor")} style={{ "--color": isOver ? "var(--red)" : "inherit" } as React.CSSProperties}>{fmt(m.actual)}</span>
-                    <span className={cx("text10", "colorMuted")}>{totalBudget > 0 ? Math.round((m.actual / totalBudget) * 100) : 0}% of budget</span>
+                    <span className={cx("fw700", "text12", "dynColor")} style={{ "--color": isOver ? "var(--red)" : "inherit" } as React.CSSProperties}>{fmt(m.spend)}</span>
+                    <span className={cx("text10", "colorMuted")}>
+                      {weeklyBudgetCap > 0 ? Math.round((m.spend / weeklyBudgetCap) * 100) : 0}% of weekly cap
+                    </span>
                   </div>
                 </div>
-                {/* Bar track with budget marker */}
                 <div className={cx("progressTrackBase")}>
-                  {/* Actual/forecast bar */}
-                  <div className={cx("absBarFill", "dynBgColor")} style={{ '--pct': `${barW}%`, "--bg-color": barColor } as React.CSSProperties} />
-                  {/* Budget cap tick */}
-                  <div className={cx("budgetBudgetMarker")} style={{ "--left": `${budgetW}%` } as React.CSSProperties} />
+                  <div className={cx("absBarFill", "dynBgColor")} style={{ "--pct": barW + "%", "--bg-color": barColor } as React.CSSProperties} />
+                  {weeklyBudgetCap > 0 && (
+                    <div className={cx("budgetBudgetMarker")} style={{ "--left": budgetW + "%" } as React.CSSProperties} />
+                  )}
                 </div>
               </div>
             </div>
           );
         })}
 
-        {/* Monthly total footer */}
         <div className={cx("p12x18", "borderT", "flexRow", "gap20", "flexWrap")}>
           {[
-            { label: "Total actual", value: fmt(monthlySpend.filter(m => m.status !== "forecast").reduce((a, m) => a + m.actual, 0)), color: "var(--lime)" },
-            { label: "Total all months", value: fmt(monthlySpend.reduce((a, m) => a + m.actual, 0)), color: "var(--amber)" },
-            { label: "Budget envelope", value: totalBudget > 0 ? fmt(totalBudget) : "—", color: "var(--muted2)" },
+            { label: "Actual weeks", value: fmt(weeklySpendZar.filter((m) => !m.forecast).reduce((a, m) => a + m.spend, 0)), color: "var(--lime)" },
+            { label: "Including forecasts", value: fmt(weeklySpendZar.reduce((a, m) => a + m.spend, 0)), color: "var(--amber)" },
+            { label: "Weekly cap", value: weeklyBudgetCap > 0 ? fmt(weeklyBudgetCap) : "—", color: "var(--muted2)" },
           ].map((s) => (
             <div key={s.label} className={cx("catSummaryCol")}>
               <span className={cx("text10", "colorMuted", "mb2")}>{s.label}</span>

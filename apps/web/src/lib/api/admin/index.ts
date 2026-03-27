@@ -31,3 +31,4 @@ export * from "./webhooks";
 export * from "./calendar";
 export * from "./proposals";
 export * from "./community";
+export * from "./integrations";

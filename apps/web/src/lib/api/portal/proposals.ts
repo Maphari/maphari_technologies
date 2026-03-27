@@ -27,6 +27,7 @@ export interface ProposalItem {
 export interface PortalProposal {
   id:                 string;
   clientId:           string;
+  projectId:          string | null;
   title:              string;
   summary:            string | null;
   status:             "PENDING" | "ACCEPTED" | "DECLINED" | "EXPIRED";
@@ -46,10 +47,12 @@ export interface PortalProposal {
 // ── List proposals for client ─────────────────────────────────────────────────
 
 export async function loadPortalProposalsWithRefresh(
-  session: AuthSession
+  session: AuthSession,
+  projectId?: string
 ): Promise<AuthorizedResult<PortalProposal[]>> {
   return withAuthorizedSession(session, async (accessToken) => {
-    const response = await callGateway<PortalProposal[]>("/portal/proposals", accessToken);
+    const qs = projectId ? "?projectId=" + encodeURIComponent(projectId) : "";
+    const response = await callGateway<PortalProposal[]>("/portal/proposals" + qs, accessToken);
     if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
     if (!response.payload.success) {
       return {

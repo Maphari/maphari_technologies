@@ -20,12 +20,14 @@ import {
 export interface PortalContract {
   id:         string;
   clientId:   string;
+  projectId:  string | null;
   title:      string;
   type:       string;   // NDA | SOW | DPA | MSA | CONTRACT
   ref:        string | null;
   status:     string;   // PENDING | SIGNED | VOID
   signed:     boolean;
   signedAt:   string | null;
+  signedByName: string | null;
   fileId:     string | null;
   storageKey: string | null;
   mimeType:   string | null;
@@ -43,10 +45,12 @@ export interface PortalContractFileRef {
 // ── List contracts ────────────────────────────────────────────────────────────
 
 export async function loadPortalContractsWithRefresh(
-  session: AuthSession
+  session: AuthSession,
+  projectId?: string
 ): Promise<AuthorizedResult<PortalContract[]>> {
   return withAuthorizedSession(session, async (accessToken) => {
-    const response = await callGateway<PortalContract[]>("/contracts", accessToken);
+    const qs = projectId ? "?projectId=" + encodeURIComponent(projectId) : "";
+    const response = await callGateway<PortalContract[]>("/contracts" + qs, accessToken);
     if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
     if (!response.payload.success) {
       return {

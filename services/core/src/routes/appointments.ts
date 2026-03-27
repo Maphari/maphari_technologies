@@ -12,7 +12,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "../lib/prisma.js";
 import { withCache, CacheKeys, cache, eventBus } from "../lib/infrastructure.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
-import { createDailyRoom, deleteDailyRoom } from "../lib/daily.js";
+import { createLiveKitRoom, deleteLiveKitRoom } from "../lib/livekit.js";
 
 // ── Route registration ────────────────────────────────────────────────────────
 export async function registerAppointmentRoutes(app: FastifyInstance): Promise<void> {
@@ -84,9 +84,8 @@ export async function registerAppointmentRoutes(app: FastifyInstance): Promise<v
     });
 
     // After creating appointment, try to create a video room
-    const room = await createDailyRoom({
+    const room = await createLiveKitRoom({
       name:        `appt-${created.id.slice(0, 8)}`,
-      startsAt:    created.scheduledAt,
       durationMin: created.durationMins,
     });
 
@@ -94,8 +93,8 @@ export async function registerAppointmentRoutes(app: FastifyInstance): Promise<v
       ? await prisma.appointment.update({
           where: { id: created.id },
           data: {
-            videoRoomUrl:    room.url,
-            videoProvider:   "daily",
+            videoRoomUrl:    room.joinUrl,
+            videoProvider:   "livekit",
             videoCallStatus: "SCHEDULED",
           },
         })
@@ -153,7 +152,7 @@ export async function registerAppointmentRoutes(app: FastifyInstance): Promise<v
     // If cancelling and there is a video room, clean it up
     if (body.status === "CANCELLED" && existing.videoRoomUrl) {
       const roomName = `appt-${existing.id.slice(0, 8)}`;
-      await deleteDailyRoom(roomName);
+      await deleteLiveKitRoom(roomName);
     }
 
     const updated = await prisma.appointment.update({

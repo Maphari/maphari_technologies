@@ -6,11 +6,10 @@
 // Shows an honest empty state when the API returns no published articles.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
-import { usePageToast } from "../hooks/use-page-toast";
 import { saveSession } from "@/lib/auth/session";
 import {
   loadPortalKnowledgeArticlesWithRefresh,
@@ -33,6 +32,9 @@ interface ResourceItem {
   isNew:     boolean;
   desc:      string;
   viewCount: number;
+  authorName: string | null;
+  publishedAt: string | null;
+  content: string;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -124,26 +126,51 @@ function mapArticle(a: PortalKnowledgeArticle): ResourceItem {
     isNew,
     desc:      a.content.slice(0, 180) + (a.content.length > 180 ? "…" : ""),
     viewCount: a.viewCount,
+    authorName: a.authorName,
+    publishedAt: a.publishedAt,
+    content: a.content,
   };
+}
+
+function exportResourcesCsv(resources: ResourceItem[]): void {
+  const header = ["Title", "Category", "Updated", "Published", "Author", "Views"];
+  const rows = resources.map((resource) => [
+    resource.title,
+    resource.category,
+    resource.updated,
+    resource.publishedAt ? fmtDate(resource.publishedAt) : "",
+    resource.authorName ?? "",
+    String(resource.viewCount),
+  ]);
+  const escape = (value: string) => "\"" + value.replace(/"/g, "\"\"") + "\"";
+  const csv = [header, ...rows].map((row) => row.map((cell) => escape(String(cell))).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "resource-hub.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ResourceHubPage() {
   const { session }           = useProjectLayer();
-  const notify                = usePageToast();
   const [tab,     setTab]     = useState<RHCategory>("All");
   const [query,   setQuery]   = useState("");
   const [loading, setLoading] = useState(true);
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [error, setError]     = useState<string | null>(null);
+  const [selected, setSelected] = useState<ResourceItem | null>(null);
 
-  // ── Load knowledge articles (category=resource) from API ──────────────────
-  useEffect(() => {
+  const loadResources = useCallback(() => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
     setError(null);
-    loadPortalKnowledgeArticlesWithRefresh(session)
+    void loadPortalKnowledgeArticlesWithRefresh(session)
       .then((r) => {
         if (r.nextSession) saveSession(r.nextSession);
         const articles = (r.data ?? []).filter(
@@ -164,6 +191,13 @@ export function ResourceHubPage() {
       })
       .finally(() => setLoading(false));
   }, [session]);
+
+  // ── Load knowledge articles (category=resource) from API ──────────────────
+  useEffect(() => {
+    queueMicrotask(() => {
+      loadResources();
+    });
+  }, [loadResources]);
 
   // ── Derived counts for stat cards ─────────────────────────────────────────
   const templateCount  = resources.filter((r) => r.category === "Templates").length;
@@ -190,6 +224,14 @@ export function ResourceHubPage() {
           <h1 className={cx("pageTitle")}>Resource Hub</h1>
           <p className={cx("pageSub")}>Templates, guides, and tools to help you get the most from your project.</p>
         </div>
+        <div className={cx("flexRow", "gap8", "flexWrap")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={loadResources} disabled={loading}>
+            Refresh
+          </button>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => exportResourcesCsv(filtered)} disabled={filtered.length === 0}>
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* ── Stat cards ──────────────────────────────────────────────────────── */}
@@ -213,32 +255,34 @@ export function ResourceHubPage() {
           <div className={cx("emptyStateIcon")}><Ic n="alert" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>Unable to load resources</div>
           <div className={cx("emptyStateSub")}>{error}</div>
+          <button type="button" className={cx("btn", "btnPrimary", "mt12")} onClick={loadResources}>
+            Retry
+          </button>
         </div>
       )}
 
-      {/* ── Search ──────────────────────────────────────────────────────────── */}
-      <div className={cx("relative")}>
-        <span className={cx("searchIconWrap")}>
-          <Ic n="search" sz={13} c="var(--muted2)" />
-        </span>
-        <input
-          className={cx("input", "pl36")}
-          placeholder={`Search ${resources.length} resources…`}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </div>
-
-      {/* ── Category tabs ───────────────────────────────────────────────────── */}
-      <div className={cx("pillTabs")}>
-        {TABS.map((t) => (
-          <button key={t} type="button" className={cx("pillTab", tab === t && "pillTabActive")} onClick={() => setTab(t)}>
-            {t !== "All" && (
-              <span className={cx("wh6", "rounded50", "dynBgColor", "inlineBlock", "mr5", "noShrink")} style={{ "--bg-color": CAT_COLOR[t] } as React.CSSProperties} />
-            )}
-            {t}
-          </button>
-        ))}
+      <div className={cx("flexRow", "gap12", "flexAlignCenter", "mb20", "flexWrap")}>
+        <div className={cx("flexRow", "gap6", "flex1", "minW0", "overflowXAuto")}>
+          {TABS.map((t) => (
+            <button key={t} type="button" className={cx("pillTab", tab === t && "pillTabActive")} onClick={() => setTab(t)}>
+              {t !== "All" && (
+                <span className={cx("wh6", "rounded50", "dynBgColor", "inlineBlock", "mr5", "noShrink")} style={{ "--bg-color": CAT_COLOR[t] } as React.CSSProperties} />
+              )}
+              {t}
+            </button>
+          ))}
+        </div>
+        <div className={cx("relative", "minW200", "maxW260", "noShrink")}>
+          <span className={cx("searchIconWrap")}>
+            <Ic n="search" sz={13} c="var(--muted2)" />
+          </span>
+          <input
+            className={cx("input", "pl36")}
+            placeholder={"Search " + String(resources.length) + " resources…"}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* ── Loading skeleton ────────────────────────────────────────────────── */}
@@ -314,7 +358,7 @@ export function ResourceHubPage() {
                     <button
                       type="button"
                       className={cx("btnSm", "btnAccent", "flex1")}
-                      onClick={() => notify("info", "Opening resource", `"${r.title}" — contact your team for the latest version.`)}
+                      onClick={() => setSelected(r)}
                     >
                       <Ic n="eye" sz={14} c="var(--bg)" /> View
                     </button>
@@ -323,6 +367,34 @@ export function ResourceHubPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {selected && (
+        <div className={cx("modalOverlay")} onClick={(event) => { if (event.target === event.currentTarget) setSelected(null); }}>
+          <div className={cx("pmModalInner", "maxW720")}>
+            <div className={cx("pmModalHd")}>
+              <div>
+                <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>{selected.category}</div>
+                <div className={cx("pmTitle")}>{selected.title}</div>
+                <div className={cx("text11", "colorMuted", "mt4")}>
+                  {selected.authorName ? selected.authorName + " · " : ""}
+                  {selected.publishedAt ? "Published " + fmtDate(selected.publishedAt) : "Updated " + selected.updated}
+                </div>
+              </div>
+              <button type="button" className={cx("iconBtn40x34")} title="Close" onClick={() => setSelected(null)}>
+                <Ic n="x" sz={16} />
+              </button>
+            </div>
+            <div className={cx("cardS1v2", "p16", "flexCol", "gap12")}>
+              <div className={cx("flexRow", "gap8", "flexWrap")}>
+                <span className={cx("badge", CAT_BADGE[selected.category as RHCategory])}>{selected.category}</span>
+                <span className={cx("badge", "badgeMuted")}>{selected.viewCount.toLocaleString("en-ZA")} views</span>
+                <span className={cx("badge", "badgeMuted")}>{selected.ext}</span>
+              </div>
+              <div className={cx("text12", "colorText", "lineH16", "whiteSpacePreWrap")}>{selected.content}</div>
+            </div>
+          </div>
         </div>
       )}
     </div>

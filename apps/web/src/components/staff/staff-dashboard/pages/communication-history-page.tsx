@@ -1,18 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
 import { StaffEmptyState, EmptyIcons } from "../empty-state";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { getStaffAllComms } from "../../../../lib/api/staff/clients";
 
-// ─── Type icons (SVG) ────────────────────────────────────────────────────────
-
 function IcoMessage() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M14 2H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3l3 3 3-3h3a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"
-        stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+      <path d="M14 2H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3l3 3 3-3h3a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -35,28 +32,18 @@ function IcoInvoice() {
 function IcoCall() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M5.5 2H3.5A1 1 0 0 0 2.5 3c0 6.075 4.925 11 11 11a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1l-2.5-.5a1 1 0 0 0-1 .4l-.8 1C7.9 9.6 6.4 8.1 5.6 6.8l1-.8a1 1 0 0 0 .4-1L6.5 3a1 1 0 0 0-1-1Z"
-        stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+      <path d="M5.5 2H3.5A1 1 0 0 0 2.5 3c0 6.075 4.925 11 11 11a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1l-2.5-.5a1 1 0 0 0-1 .4l-.8 1C7.9 9.6 6.4 8.1 5.6 6.8l1-.8a1 1 0 0 0 .4-1L6.5 3a1 1 0 0 0-1-1Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
     </svg>
   );
 }
 function IcoFile() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M9 1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6L9 1Z"
-        stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+      <path d="M9 1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6L9 1Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
       <path d="M9 1v5h5" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
     </svg>
   );
 }
-
-const TYPE_ICONS: Record<string, React.ReactNode> = {
-  message:   <IcoMessage />,
-  milestone: <IcoMilestone />,
-  invoice:   <IcoInvoice />,
-  call:      <IcoCall />,
-  file:      <IcoFile />,
-};
 
 type EventType = "message" | "milestone" | "invoice" | "call" | "file";
 type Direction = "outbound" | "inbound" | "both";
@@ -75,16 +62,25 @@ type TimelineEvent = {
   direction: Direction;
   title: string;
   excerpt: string;
-  date: string;
-  time: string;
+  occurredAt: string;
+  dateLabel: string;
+  timeLabel: string;
 };
 
-const typeConfig: Record<EventType, { icon: string; label: string; iconClass: string; badgeClass: string }> = {
-  message: { icon: "✉", label: "Message", iconClass: "commsTypeMessage", badgeClass: "commsTypeBadgeMessage" },
-  milestone: { icon: "◎", label: "Milestone", iconClass: "commsTypeMilestone", badgeClass: "commsTypeBadgeMilestone" },
-  invoice: { icon: "₹", label: "Invoice", iconClass: "commsTypeInvoice", badgeClass: "commsTypeBadgeInvoice" },
-  call: { icon: "◌", label: "Call", iconClass: "commsTypeCall", badgeClass: "commsTypeBadgeCall" },
-  file: { icon: "⊡", label: "File", iconClass: "commsTypeFile", badgeClass: "commsTypeBadgeFile" }
+const TYPE_ICONS: Record<EventType, React.ReactNode> = {
+  message: <IcoMessage />,
+  milestone: <IcoMilestone />,
+  invoice: <IcoInvoice />,
+  call: <IcoCall />,
+  file: <IcoFile />
+};
+
+const typeConfig: Record<EventType, { label: string; iconClass: string }> = {
+  message: { label: "Message", iconClass: "commsTypeMessage" },
+  milestone: { label: "Milestone", iconClass: "commsTypeMilestone" },
+  invoice: { label: "Invoice", iconClass: "commsTypeInvoice" },
+  call: { label: "Call", iconClass: "commsTypeCall" },
+  file: { label: "File", iconClass: "commsTypeFile" }
 };
 
 const directionConfig: Record<Direction, { label: string; toneClass: string }> = {
@@ -93,74 +89,119 @@ const directionConfig: Record<Direction, { label: string; toneClass: string }> =
   both: { label: "Joint", toneClass: "commsDirectionBoth" }
 };
 
+function normalizeType(value: string): EventType {
+  if (value === "message" || value === "milestone" || value === "invoice" || value === "call" || value === "file") return value;
+  return "message";
+}
+
+function normalizeDirection(value: string): Direction {
+  if (value === "inbound" || value === "outbound" || value === "both") return value;
+  return "outbound";
+}
+
 export function CommunicationHistoryPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
   const [allEvents, setAllEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedClient, setSelectedClient] = useState<"all" | string>("all");
   const [filterType, setFilterType] = useState<"all" | EventType>("all");
-  const [filterDir, setFilterDir] = useState<"all" | "inbound" | "outbound">("all");
+  const [filterDir, setFilterDir] = useState<"all" | Direction>("all");
+  const [range, setRange] = useState<"all" | "7d" | "30d">("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!session) { setLoading(false); return; }
-    setLoading(true);
-    void getStaffAllComms(session).then((r) => {
-      if (r.data) {
-        setAllEvents(r.data.map((log): TimelineEvent => {
-          const d = new Date(log.occurredAt);
-          return {
-            id: log.id,
-            clientId: log.clientId,
-            clientName: log.clientName,
-            type: (["message", "milestone", "invoice", "call", "file"].includes(log.type) ? log.type : "message") as EventType,
-            direction: (log.direction === "inbound" || log.direction === "outbound" ? log.direction : "outbound") as Direction,
-            title: log.subject,
-            excerpt: log.actionLabel ?? "",
-            date: d.toLocaleDateString("en-ZA", { day: "numeric", month: "short" }),
-            time: d.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" }),
-          };
-        }));
+  const loadComms = useCallback(async (background: boolean) => {
+    if (!session) {
+      setLoading(false);
+      return;
+    }
+    if (background) setRefreshing(true);
+    else setLoading(true);
+    setError(null);
+    try {
+      const r = await getStaffAllComms(session);
+      if (r.error) {
+        setError(r.error.message ?? "Failed to load communication history.");
+        setAllEvents([]);
+        return;
       }
-    }).catch((err: unknown) => {
-      setError((err as Error)?.message ?? "Failed to load");
-    }).finally(() => setLoading(false));
+      const mapped = (r.data ?? []).map((log): TimelineEvent => {
+        const type = normalizeType(log.type);
+        const direction = normalizeDirection(log.direction);
+        const occurredAt = new Date(log.occurredAt);
+        const title = (log.subject ?? "").trim() || `${typeConfig[type].label} event`;
+        const excerpt = (log.actionLabel ?? "").trim() || `${directionConfig[direction].label} ${typeConfig[type].label.toLowerCase()}${log.fromName ? ` from ${log.fromName}` : ""}`;
+        return {
+          id: log.id,
+          clientId: log.clientId,
+          clientName: log.clientName,
+          type,
+          direction,
+          title,
+          excerpt,
+          occurredAt: occurredAt.toISOString(),
+          dateLabel: occurredAt.toLocaleDateString(undefined, { year: "numeric", day: "numeric", month: "short" }),
+          timeLabel: occurredAt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+        };
+      });
+      setAllEvents(mapped);
+    } catch (err: unknown) {
+      setError((err as Error)?.message ?? "Failed to load communication history.");
+      setAllEvents([]);
+    } finally {
+      if (background) setRefreshing(false);
+      else setLoading(false);
+    }
   }, [session]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    void loadComms(false);
+  }, [isActive, loadComms]);
 
   const clients = useMemo((): ClientRow[] => {
     const seen = new Map<string, ClientRow>();
-    for (const ev of allEvents) {
-      if (!seen.has(ev.clientId)) {
-        const initials = ev.clientName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-        seen.set(ev.clientId, { id: ev.clientId, name: ev.clientName, avatar: initials });
-      }
-    }
+    allEvents.forEach((event) => {
+      if (seen.has(event.clientId)) return;
+      const initials = event.clientName.split(" ").map((word) => word[0]).join("").slice(0, 2).toUpperCase();
+      seen.set(event.clientId, { id: event.clientId, name: event.clientName, avatar: initials });
+    });
     return Array.from(seen.values());
   }, [allEvents]);
 
-  const events = useMemo(
-    () =>
-      allEvents
-        .filter((event) => (selectedClient === "all" ? true : event.clientId === selectedClient))
-        .filter((event) => (filterType === "all" ? true : event.type === filterType))
-        .filter((event) => (filterDir === "all" ? true : event.direction === filterDir))
-        .filter(
-          (event) =>
-            !search
-            || event.title.toLowerCase().includes(search.toLowerCase())
-            || event.excerpt.toLowerCase().includes(search.toLowerCase())
-        )
-        .sort((a, b) => b.id.localeCompare(a.id)),
-    [allEvents, filterDir, filterType, search, selectedClient]
-  );
+  const events = useMemo(() => {
+    return allEvents
+      .filter((event) => selectedClient === "all" || event.clientId === selectedClient)
+      .filter((event) => filterType === "all" || event.type === filterType)
+      .filter((event) => filterDir === "all" || event.direction === filterDir)
+      .filter((event) => {
+        if (range === "all") return true;
+        const ageDays = (Date.now() - new Date(event.occurredAt).getTime()) / (1000 * 60 * 60 * 24);
+        return range === "7d" ? ageDays <= 7 : ageDays <= 30;
+      })
+      .filter((event) => {
+        if (!search.trim()) return true;
+        const q = search.toLowerCase();
+        return (
+          event.title.toLowerCase().includes(q)
+          || event.excerpt.toLowerCase().includes(q)
+          || event.clientName.toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => {
+        const delta = new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime();
+        return sortBy === "newest" ? -delta : delta;
+      });
+  }, [allEvents, selectedClient, filterType, filterDir, range, search, sortBy]);
 
   const groupedByDate = useMemo(() => {
-    return events.reduce<Record<string, TimelineEvent[]>>((accumulator, event) => {
-      if (!accumulator[event.date]) accumulator[event.date] = [];
-      accumulator[event.date].push(event);
-      return accumulator;
+    return events.reduce<Record<string, TimelineEvent[]>>((acc, event) => {
+      if (!acc[event.dateLabel]) acc[event.dateLabel] = [];
+      acc[event.dateLabel].push(event);
+      return acc;
     }, {});
   }, [events]);
 
@@ -172,7 +213,7 @@ export function CommunicationHistoryPage({ isActive, session }: { isActive: bool
           <h1 className={cx("pageTitleText")}>Communication History</h1>
         </div>
         <div className={cx("commsContent")}>
-          <StaffEmptyState icon={EmptyIcons.notes} title="Loading..." sub="Fetching communication history." />
+          <StaffEmptyState icon={EmptyIcons.notes} title="Loading…" sub="Fetching communication history." />
         </div>
       </section>
     );
@@ -197,51 +238,32 @@ export function CommunicationHistoryPage({ isActive, session }: { isActive: bool
       <div className={cx("pageHeaderBar", "borderB", "commsHeaderBar")}>
         <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
         <h1 className={cx("pageTitleText")}>Communication History</h1>
-        <p className={cx("pageSubtitleText", "mb16")}>Full interaction timeline across all clients</p>
+        <p className={cx("pageSubtitleText", "mb16")}>Interaction timeline across all clients</p>
 
-        {/* Stats strip */}
         <div className={cx("staffKpiStrip", "mb16")}>
-          {[
-            { label: "Total events", value: allEvents.length, cls: "" },
-            { label: "Clients",      value: clients.length,   cls: "" },
-            { label: "Types",        value: new Set(allEvents.map(e => e.type)).size, cls: "" },
-          ].map((stat) => (
-            <div key={stat.label} className={cx("staffKpiCell")}>
-              <div className={cx("staffKpiLabel")}>{stat.label}</div>
-              <div className={cx("staffKpiValue", stat.cls)}>{stat.value}</div>
-            </div>
-          ))}
+          <div className={cx("staffKpiCell")}>
+            <div className={cx("staffKpiLabel")}>Total events</div>
+            <div className={cx("staffKpiValue")}>{allEvents.length}</div>
+          </div>
+          <div className={cx("staffKpiCell")}>
+            <div className={cx("staffKpiLabel")}>Clients</div>
+            <div className={cx("staffKpiValue")}>{clients.length}</div>
+          </div>
+          <div className={cx("staffKpiCell")}>
+            <div className={cx("staffKpiLabel")}>Visible</div>
+            <div className={cx("staffKpiValue")}>{events.length}</div>
+          </div>
         </div>
 
-        {/* Filter row */}
-        <div className={cx("staffSectionHdFilter")}>
-          <select
-            className={cx("staffFilterInput")}
-            aria-label="Filter by client"
-            value={selectedClient === "all" ? "all" : selectedClient}
-            onChange={(e) => setSelectedClient(e.target.value === "all" ? "all" : e.target.value)}
-          >
+        <div className={cx("staffSectionHdFilter", "commsFiltersWrap")}>
+          <select className={cx("staffFilterInput")} aria-label="Filter by client" value={selectedClient} onChange={(e) => setSelectedClient(e.target.value === "all" ? "all" : e.target.value)}>
             <option value="all">All clients</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.name}
-              </option>
-            ))}
+            {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
           </select>
 
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search events…"
-            className={cx("staffFilterInput")}
-          />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search events…" className={cx("staffFilterInput")} />
 
-          <select
-            className={cx("staffFilterInput")}
-            aria-label="Filter by event type"
-            value={filterType}
-            onChange={(event) => setFilterType(event.target.value as "all" | EventType)}
-          >
+          <select className={cx("staffFilterInput")} aria-label="Filter by type" value={filterType} onChange={(e) => setFilterType(e.target.value as "all" | EventType)}>
             <option value="all">All types</option>
             <option value="message">Message</option>
             <option value="milestone">Milestone</option>
@@ -250,17 +272,41 @@ export function CommunicationHistoryPage({ isActive, session }: { isActive: bool
             <option value="file">File</option>
           </select>
 
-          <select
-            className={cx("staffFilterInput")}
-            aria-label="Filter by direction"
-            value={filterDir}
-            onChange={(event) => setFilterDir(event.target.value as "all" | "inbound" | "outbound")}
-          >
-            <option value="all">Both directions</option>
+          <select className={cx("staffFilterInput")} aria-label="Filter by direction" value={filterDir} onChange={(e) => setFilterDir(e.target.value as "all" | Direction)}>
+            <option value="all">All directions</option>
             <option value="inbound">Inbound</option>
             <option value="outbound">Outbound</option>
+            <option value="both">Joint</option>
           </select>
 
+          <select className={cx("staffFilterInput")} aria-label="Date range" value={range} onChange={(e) => setRange(e.target.value as "all" | "7d" | "30d")}>
+            <option value="all">All time</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+          </select>
+
+          <select className={cx("staffFilterInput")} aria-label="Sort order" value={sortBy} onChange={(e) => setSortBy(e.target.value as "newest" | "oldest")}>
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+
+          <button
+            type="button"
+            className={cx("commsGhostBtn")}
+            onClick={() => {
+              setSelectedClient("all");
+              setFilterType("all");
+              setFilterDir("all");
+              setRange("all");
+              setSortBy("newest");
+              setSearch("");
+            }}
+          >
+            Clear
+          </button>
+          <button type="button" className={cx("commsGhostBtn")} onClick={() => void loadComms(true)} disabled={refreshing}>
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </button>
           <span className={cx("staffRoleLabel")}>{events.length} events</span>
         </div>
       </div>
@@ -272,69 +318,72 @@ export function CommunicationHistoryPage({ isActive, session }: { isActive: bool
 
         {Object.entries(groupedByDate).map(([date, dateEvents]) => (
           <div key={date} className={cx("mb20")}>
-            {/* Date header */}
             <div className={cx("staffCommsDateHd")}>
               <span className={cx("staffCommsDateLabel")}>{date}</span>
               <div className={cx("staffCommsDateLine")} />
             </div>
 
-            {/* Event rows */}
             <div className={cx("staffCard")}>
               {dateEvents.map((event, index) => {
                 const tCfg = typeConfig[event.type];
                 const dCfg = directionConfig[event.direction];
                 const isExpanded = expanded === event.id;
                 const isLast = index === dateEvents.length - 1;
-
-                // map type to staffChip variant
-                const chipCls =
-                  event.type === "message" ? "staffChipAccent"
-                  : event.type === "milestone" ? "staffChipGreen"
-                  : event.type === "invoice" ? "staffChipAmber"
-                  : event.type === "call" ? "staffChipPurple"
-                  : "staffChip";
+                const chipCls = event.type === "message" ? "staffChipAccent" : event.type === "milestone" ? "staffChipGreen" : event.type === "invoice" ? "staffChipAmber" : event.type === "call" ? "staffChipPurple" : "staffChip";
+                const directionChipCls = dCfg.toneClass === "commsDirectionInbound" ? "staffChipGreen" : dCfg.toneClass === "commsDirectionBoth" ? "staffChipPurple" : "";
 
                 return (
                   <div
                     key={event.id}
-                    className={cx(
-                      "staffListRow",
-                      isLast && "staffCommsRowLast"
-                    )}
+                    className={cx("staffListRow", isLast && "staffCommsRowLast")}
                     style={{ cursor: "pointer", borderBottom: isLast ? "none" : "1px solid var(--border)", flexDirection: "column", alignItems: "stretch", gap: 0 }}
                     onClick={() => setExpanded(isExpanded ? null : event.id)}
                   >
-                    {/* Head */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px" }}>
-                      <div
-                        className={cx(
-                          "commsTimelineIcon",
-                          tCfg.iconClass
-                        )}
-                      >
-                        {TYPE_ICONS[event.type]}
-                      </div>
+                    <div className={cx("commsEventHeadRow")}>
+                      <div className={cx("commsTimelineIcon", tCfg.iconClass)}>{TYPE_ICONS[event.type]}</div>
                       <span className={cx("staffCommsTitle", "flex1")}>{event.title}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                        {selectedClient === "all" && (
-                          <span className={cx("staffRoleLabel")}>{event.clientName}</span>
-                        )}
+                      <div className={cx("commsEventMeta")}>
+                        {selectedClient === "all" ? (
+                          <button
+                            type="button"
+                            className={cx("commsClientFilterBtn")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedClient(event.clientId);
+                            }}
+                          >
+                            {event.clientName}
+                          </button>
+                        ) : null}
                         <span className={cx("staffChip", chipCls)}>{tCfg.label}</span>
-                        <span className={cx("staffChip", dCfg.toneClass === "commsDirectionOutbound" ? "" : dCfg.toneClass === "commsDirectionInbound" ? "staffChipGreen" : "staffChipPurple")}>{dCfg.label}</span>
-                        <span className={cx("staffCommsTimeCol")}>{event.time}</span>
+                        <span className={cx("staffChip", directionChipCls)}>{dCfg.label}</span>
+                        <span className={cx("staffCommsTimeCol")}>{event.timeLabel}</span>
                       </div>
                     </div>
 
-                    {/* Expanded */}
-                    {isExpanded && (
-                      <div style={{ padding: "0 14px 10px 14px" }}>
+                    {isExpanded ? (
+                      <div className={cx("commsExpandedBody")}>
                         <div className={cx("staffCommsExcerpt")}>{event.excerpt}</div>
-                        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                        <div className={cx("commsExpandedMeta")}>
                           <span className={cx("staffChip", chipCls)}>{tCfg.label}</span>
-                          <span className={cx("staffRoleLabel")}>{date} · {event.time}</span>
+                          <span className={cx("staffRoleLabel")}>{date} · {event.timeLabel}</span>
+                          <button
+                            type="button"
+                            className={cx("commsGhostBtn")}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                await navigator.clipboard.writeText(`[${event.clientName}] ${event.title} · ${event.excerpt}`);
+                              } catch {
+                                // noop
+                              }
+                            }}
+                          >
+                            Copy
+                          </button>
                         </div>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 );
               })}

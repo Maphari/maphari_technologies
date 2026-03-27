@@ -1,750 +1,676 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
-import { Ic, Av } from "../ui";
+import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
-import { loadPortalSignOffsWithRefresh, type PortalSignOff } from "../../../../lib/api/portal";
+import { usePageToast } from "../hooks/use-page-toast";
+import {
+  loadPortalSignOffsWithRefresh,
+  loadProjectRoadmapWithRefresh,
+  submitApprovalDecisionWithRefresh,
+  type PortalSignOff,
+  type RoadmapMilestone,
+} from "../../../../lib/api/portal";
 import { saveSession } from "../../../../lib/auth/session";
 
-type MStatus = "Approved" | "Pending Approval" | "Upcoming";
+type MStatus = "Approved" | "Pending Approval" | "Revisions Requested" | "Upcoming";
 type MTab = "All" | MStatus;
-type ReviewStep = 0 | 1 | 2;
-
-type MArtifact = { name: string; type: string; size: string };
-type MComment = { author: string; initials: string; text: string; when: string };
 
 type Milestone = {
   id: string;
   name: string;
-  phase: string;
-  due: string;
-  completedOn?: string;
   status: MStatus;
-  progress: number;
-  ownerName: string;
-  ownerInitials: string;
-  ownerRole: string;
+  due: string;
+  dueRaw: string | null;
+  recordedOn: string;
+  recordedOnRaw: string;
+  completedOn?: string;
+  completedOnRaw?: string | null;
+  signedByName?: string | null;
+  note: string;
   highlight: string;
-  criteria: string[];
-  artifacts: MArtifact[];
-  deliverableCount: number;
-  budget?: number;
-  tags: string[];
-  comments: MComment[];
+  paymentStage: string | null;
+  sourceStatus: string;
+  decisionUpdatedOn: string;
+  decisionUpdatedOnRaw: string;
+  roadmapMatched: boolean;
 };
 
 const STATUS_COLOR: Record<MStatus, string> = {
-  "Approved":         "var(--lime)",
+  "Approved": "var(--lime)",
   "Pending Approval": "var(--amber)",
-  "Upcoming":         "var(--muted2)",
+  "Revisions Requested": "var(--red)",
+  "Upcoming": "var(--muted2)",
 };
+
 const STATUS_BADGE: Record<MStatus, string> = {
-  "Approved":         "badgeGreen",
+  "Approved": "badgeGreen",
   "Pending Approval": "badgeAmber",
-  "Upcoming":         "badgeMuted",
+  "Revisions Requested": "badgeRed",
+  "Upcoming": "badgeMuted",
 };
+
 const STATUS_ICON: Record<MStatus, string> = {
-  "Approved":         "check",
+  "Approved": "check",
   "Pending Approval": "clock",
-  "Upcoming":         "calendar",
+  "Revisions Requested": "alert",
+  "Upcoming": "calendar",
 };
 
+const TABS: MTab[] = ["All", "Pending Approval", "Approved", "Revisions Requested", "Upcoming"];
 
-const TABS: MTab[] = ["All", "Pending Approval", "Approved", "Upcoming"];
-const REVIEW_STEPS = ["Review Artifacts", "Confirm Criteria", "Decision"] as const;
-const PHASES = ["Initiation", "Discovery", "Design", "Development", "QA", "Launch"] as const;
+function formatDate(value: string | null | undefined): string {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString("en-ZA", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 
-// ── API mapper ─────────────────────────────────────────────────────────────────
-function mapSignOffToMilestone(s: PortalSignOff): Milestone {
-  const statusMap: Record<string, MStatus> = {
-    SIGNED:  "Approved",
-    PENDING: "Pending Approval",
-  };
-  const mStatus: MStatus = statusMap[s.status?.toUpperCase()] ?? "Upcoming";
-  const initials = (s.signedByName ?? "—")
-    .split(" ").map((w: string) => w[0] ?? "").join("").slice(0, 2).toUpperCase() || "—";
+function normalizeMilestoneName(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function getMilestoneStatus(status: string): MStatus {
+  const value = status.toUpperCase();
+  if (value === "SIGNED" || value === "APPROVED") return "Approved";
+  if (value === "PENDING") return "Pending Approval";
+  if (value === "REVISION_REQUESTED" || value === "REJECTED") return "Revisions Requested";
+  return "Upcoming";
+}
+
+function buildRoadmapLookup(milestones: RoadmapMilestone[]): Map<string, RoadmapMilestone> {
+  const lookup = new Map<string, RoadmapMilestone>();
+  milestones.forEach((milestone) => {
+    lookup.set(normalizeMilestoneName(milestone.title), milestone);
+  });
+  return lookup;
+}
+
+function mapSignOffToMilestone(
+  signOff: PortalSignOff,
+  roadmapLookup: Map<string, RoadmapMilestone>
+): Milestone {
+  const roadmapMatch = roadmapLookup.get(normalizeMilestoneName(signOff.name));
+  const status = getMilestoneStatus(signOff.status);
+
   return {
-    id:              s.id,
-    name:            s.name,
-    phase:           "—",
-    due:             s.createdAt ? new Date(s.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }) : "—",
-    completedOn:     s.signedAt  ? new Date(s.signedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }) : undefined,
-    status:          mStatus,
-    progress:        mStatus === "Approved" ? 100 : mStatus === "Pending Approval" ? 75 : 0,
-    ownerName:       s.signedByName ?? "—",
-    ownerInitials:   initials,
-    ownerRole:       "—",
-    highlight:       s.description ?? "No additional details provided.",
-    criteria:        [],
-    artifacts:       [],
-    deliverableCount: 0,
-    tags:            [],
-    comments:        [],
+    id: signOff.id,
+    name: signOff.name,
+    status,
+    due: formatDate(roadmapMatch?.dueAt ?? null),
+    dueRaw: roadmapMatch?.dueAt ?? null,
+    recordedOn: formatDate(signOff.createdAt),
+    recordedOnRaw: signOff.createdAt,
+    completedOn: formatDate(signOff.signedAt),
+    completedOnRaw: signOff.signedAt,
+    signedByName: signOff.signedByName,
+    note: signOff.description ?? "",
+    highlight:
+      signOff.description?.trim() ||
+      (status === "Pending Approval"
+        ? "This milestone is ready for your decision."
+        : status === "Approved"
+          ? "Client approval has been recorded for this milestone."
+          : status === "Revisions Requested"
+            ? "Revision feedback has been recorded for the team."
+            : "This milestone has been logged and will become actionable once it is submitted for approval."),
+    paymentStage: roadmapMatch?.paymentStage ?? null,
+    sourceStatus: signOff.status,
+    decisionUpdatedOn: formatDate(signOff.updatedAt),
+    decisionUpdatedOnRaw: signOff.updatedAt,
+    roadmapMatched: Boolean(roadmapMatch),
   };
 }
 
 export function MilestonesPage() {
   const { session, projectId } = useProjectLayer();
+  const notify = usePageToast();
+
   const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [dataLoading, setDataLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<MTab>("All");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+
+  const loadMilestones = useCallback(async (mode: "initial" | "refresh" = "initial"): Promise<boolean> => {
+    if (!session || !projectId) {
+      setMilestones([]);
+      setLoading(false);
+      setRefreshing(false);
+      setError(null);
+      return false;
+    }
+
+    if (mode === "initial") setLoading(true);
+    if (mode === "refresh") setRefreshing(true);
+    setError(null);
+
+    try {
+      const [signOffResult, roadmapResult] = await Promise.all([
+        loadPortalSignOffsWithRefresh(session, projectId),
+        loadProjectRoadmapWithRefresh(session),
+      ]);
+
+      if (signOffResult.nextSession) saveSession(signOffResult.nextSession);
+      if (roadmapResult.nextSession) saveSession(roadmapResult.nextSession);
+
+      if (signOffResult.error) {
+        setError(signOffResult.error.message ?? "Unable to load milestone approvals.");
+        setMilestones([]);
+        return false;
+      }
+
+      const roadmapProject =
+        roadmapResult.data?.projects.find((project) => project.id === projectId) ?? null;
+      const roadmapLookup = buildRoadmapLookup(roadmapProject?.milestones ?? []);
+      const nextMilestones = (signOffResult.data ?? []).map((item) => mapSignOffToMilestone(item, roadmapLookup));
+      setMilestones(nextMilestones);
+      return true;
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load milestone approvals.");
+      setMilestones([]);
+      return false;
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [projectId, session]);
 
   useEffect(() => {
-    if (!session || !projectId) return;
-    setDataLoading(true);
-    loadPortalSignOffsWithRefresh(session, projectId).then(r => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.data) setMilestones(r.data.map(mapSignOffToMilestone));
-    }).finally(() => setDataLoading(false));
-  }, [session, projectId]);
-
-  const [approvedSet, setApprovedSet]       = useState<Record<string, boolean>>({});
-  const [reviewStarted, setReviewStarted]   = useState<Record<string, boolean>>({});
-  const [reviewStep, setReviewStep]         = useState<Record<string, ReviewStep>>({});
-  const [checked, setChecked]               = useState<Record<string, Record<string, boolean>>>({});
-  const [revNote, setRevNote]               = useState<Record<string, string>>({});
-  const [outcome, setOutcome]               = useState<Record<string, "approved" | "revisions" | null>>({});
-  const [newComment, setNewComment]         = useState<Record<string, string>>({});
-  const [extraComments, setExtraComments]   = useState<Record<string, MComment[]>>({});
-
-  function getStatus(m: Milestone): MStatus {
-    if (approvedSet[m.id]) return "Approved";
-    return m.status;
-  }
-
-  const totalCount    = milestones.length;
-  const approvedCount = milestones.filter(m => getStatus(m) === "Approved").length;
-  const pendingCount  = milestones.filter(m => getStatus(m) === "Pending Approval").length;
-  const upcomingCount = milestones.filter(m => getStatus(m) === "Upcoming").length;
-  const completionPct = totalCount > 0 ? Math.round((approvedCount / totalCount) * 100) : 0;
+    void loadMilestones("initial");
+  }, [loadMilestones]);
 
   const filtered = useMemo(() => {
-    let list = tab === "All" ? milestones : milestones.filter(m => m.status === tab);
-    const q = search.trim().toLowerCase();
-    if (q) list = list.filter(m =>
-      m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || m.phase.toLowerCase().includes(q)
+    const query = search.trim().toLowerCase();
+    const list = tab === "All" ? milestones : milestones.filter((item) => item.status === tab);
+    if (!query) return list;
+    return list.filter((item) =>
+      item.name.toLowerCase().includes(query) ||
+      item.id.toLowerCase().includes(query) ||
+      item.status.toLowerCase().includes(query) ||
+      (item.paymentStage ?? "").toLowerCase().includes(query)
     );
-    return list;
-  }, [tab, search, milestones]);
+  }, [milestones, search, tab]);
 
-  function toggleChecked(mid: string, criterion: string) {
-    setChecked(p => ({ ...p, [mid]: { ...p[mid], [criterion]: !p[mid]?.[criterion] } }));
+  const totalCount = milestones.length;
+  const approvedCount = milestones.filter((item) => item.status === "Approved").length;
+  const pendingCount = milestones.filter((item) => item.status === "Pending Approval").length;
+  const revisionCount = milestones.filter((item) => item.status === "Revisions Requested").length;
+  const upcomingCount = milestones.filter((item) => item.status === "Upcoming").length;
+  const completionPct = totalCount > 0 ? Math.round((approvedCount / totalCount) * 100) : 0;
+  const nextPending = milestones
+    .filter((item) => item.status === "Pending Approval")
+    .sort((a, b) => {
+      if (!a.dueRaw && !b.dueRaw) return 0;
+      if (!a.dueRaw) return 1;
+      if (!b.dueRaw) return -1;
+      return new Date(a.dueRaw).getTime() - new Date(b.dueRaw).getTime();
+    })[0] ?? null;
+
+  async function handleRefresh(): Promise<void> {
+    const ok = await loadMilestones("refresh");
+    if (ok) {
+      notify("success", "Milestones refreshed", "Latest milestone approval activity has been loaded.");
+    }
   }
 
-  function getStep(id: string): ReviewStep { return reviewStep[id] ?? 0; }
-  function setStep(id: string, s: ReviewStep) { setReviewStep(p => ({ ...p, [id]: s })); }
-  function getOutcome(id: string) { return outcome[id] ?? null; }
+  function handleExport(): void {
+    if (filtered.length === 0) {
+      notify("info", "Nothing to export", "There are no milestone records in the current view.");
+      return;
+    }
 
-  function finishApprove(id: string) {
-    setApprovedSet(p => ({ ...p, [id]: true }));
-    setReviewStarted(p => ({ ...p, [id]: false }));
-    setOutcome(p => ({ ...p, [id]: null }));
-    setExpanded(null);
+    const rows = [
+      ["Milestone", "Status", "Recorded On", "Due", "Completed On", "Payment Stage", "Signed By", "Latest Note"],
+      ...filtered.map((item) => [
+        item.name,
+        item.status,
+        item.recordedOn,
+        item.due,
+        item.completedOn ?? "—",
+        item.paymentStage ?? "—",
+        item.signedByName ?? "—",
+        item.note.replace(/\s+/g, " ").trim() || "—",
+      ]),
+    ];
+
+    const csv = rows
+      .map((row) => row.map((value) => `"${value.replace(/"/g, "\"\"")}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "milestones-approvals.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+    notify("success", "Downloading", "Milestones and approvals CSV is downloading.");
   }
 
-  function resetReview(id: string) {
-    setReviewStarted(p => ({ ...p, [id]: false }));
-    setReviewStep(p => ({ ...p, [id]: 0 }));
-    setChecked(p => ({ ...p, [id]: {} }));
-    setRevNote(p => ({ ...p, [id]: "" }));
-    setOutcome(p => ({ ...p, [id]: null }));
-  }
+  async function handleDecision(milestoneId: string, status: "APPROVED" | "REVISION_REQUESTED"): Promise<void> {
+    if (!session) {
+      notify("error", "Sign in required", "Sign in again to submit your milestone decision.");
+      return;
+    }
 
-  function addComment(mid: string) {
-    const text = (newComment[mid] ?? "").trim();
-    if (!text) return;
-    setExtraComments(p => ({ ...p, [mid]: [...(p[mid] ?? []), { author: "You", initials: "ME", text, when: "Just now" }] }));
-    setNewComment(p => ({ ...p, [mid]: "" }));
-  }
+    const note = (noteDraft[milestoneId] ?? "").trim();
+    if (status === "REVISION_REQUESTED" && !note) {
+      notify("error", "Feedback required", "Add revision notes before sending the milestone back.");
+      return;
+    }
 
-  // Donut ring maths: r=28 → circumference ≈ 175.9
-  const dashArray = `${(completionPct * 1.759).toFixed(1)} 175.9`;
+    setActionLoading((prev) => ({ ...prev, [milestoneId]: true }));
+    try {
+      const result = await submitApprovalDecisionWithRefresh(session, milestoneId, {
+        status,
+        notes: note || undefined,
+      });
+
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        notify(
+          "error",
+          status === "APPROVED" ? "Approval failed" : "Revision request failed",
+          result.error.message
+        );
+        return;
+      }
+
+      if (status === "APPROVED") {
+        notify("success", "Milestone approved", "Your approval has been recorded and the team has been notified.");
+      } else {
+        notify("success", "Revision request sent", "Your feedback has been recorded for the delivery team.");
+      }
+
+      setNoteDraft((prev) => ({ ...prev, [milestoneId]: "" }));
+      await loadMilestones("refresh");
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [milestoneId]: false }));
+    }
+  }
 
   return (
     <div className={cx("pageBody")}>
-      {/* Header */}
       <div className={cx("pageHeader", "mb0")}>
         <div>
-          <div className={cx("pageEyebrow")}>Projects · Milestones</div>
+          <div className={cx("pageEyebrow")}>Projects · Governance</div>
           <h1 className={cx("pageTitle")}>Milestones & Approvals</h1>
-          <p className={cx("pageSub")}>Track project milestones, review acceptance criteria, and record your formal approvals.</p>
+          <p className={cx("pageSub")}>
+            Review sign-off items, track what is due next, and submit real approval decisions for your project.
+          </p>
         </div>
         <div className={cx("flexRow", "gap8", "noShrink")}>
-          <button type="button" className={cx("btnGhost")}>
-            <Ic n="download" sz={14} /> Export Timeline
+          <button type="button" className={cx("btnGhost")} onClick={() => void handleRefresh()}>
+            <Ic n="refresh" sz={14} /> {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
+          <button type="button" className={cx("btnGhost")} onClick={handleExport}>
+            <Ic n="download" sz={14} /> Export CSV
           </button>
         </div>
       </div>
 
-      {/* Stat Cards */}
-      <div className={cx("topCardsStack", "mb20")}>
-        {([
-          ["Total Milestones", totalCount,    "statCardAccent"],
-          ["Approved",         approvedCount, "statCardGreen"],
-          ["Pending Approval", pendingCount,  "statCardAmber"],
-          ["Upcoming",         upcomingCount, "statCardBlue"],
-        ] as [string, number, string][]).map(([label, value, color]) => (
-          <div key={label} className={cx("statCard", color)}>
-            <div className={cx("statLabel")}>{label}</div>
-            <div className={cx("statValue")}>{value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Loading / empty state */}
-      {dataLoading && (
-        <div className={cx("emptyState")}>
-          <div className={cx("emptyStateSub")}>Loading milestones…</div>
-        </div>
-      )}
-      {!dataLoading && milestones.length === 0 && (
+      {!projectId && (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}><Ic n="flag" sz={22} c="var(--muted2)" /></div>
-          <div className={cx("emptyStateTitle")}>No milestones yet</div>
-          <div className={cx("emptyStateSub")}>Milestones will appear here once your project has been set up by your team.</div>
-        </div>
-      )}
-
-      {/* Overview Grid + full content — only when data is ready */}
-      {!dataLoading && milestones.length > 0 && (<>
-      <div className={cx("grid2", "mb20")}>
-
-        {/* Left — Project Timeline */}
-        <div className={cx("card")}>
-          <div className={cx("cardHd")}>
-            <Ic n="calendar" sz={14} c="var(--accent)" />
-            <span className={cx("cardHdTitle", "ml8")}>Project Timeline</span>
-            <span className={cx("badge", "badgeMuted", "mlAuto")}>{completionPct}% complete</span>
-          </div>
-          <div className={cx("cardBodyPad")}>
-            {/* Completion bar */}
-            <div className={cx("trackH6Mb22")}>
-              <div style={{ '--pct': `${completionPct}%` } as React.CSSProperties} />
-            </div>
-
-            {/* Vertical timeline */}
-            <div className={cx("relative", "pl28")}>
-              <div className={cx("timelineLineL9")} />
-              <div className={cx("flexCol", "gap0")}>
-                {milestones.map((m, i) => {
-                  const st  = getStatus(m);
-                  const col = STATUS_COLOR[st];
-                  return (
-                    <div key={m.id} className={cx("flexAlignStart", "gap10", "relative", i < milestones.length - 1 && "pb16")}>
-                      {/* dot */}
-                      <div className={cx("milestoneTimelineDot", "dynBgColor")} style={{ "--bg-color": st === "Upcoming" ? "var(--s3)" : `color-mix(in oklab, ${col} 15%, transparent)`, "--border-color": st === "Upcoming" ? "var(--b2)" : col } as React.CSSProperties}>
-                        <Ic n={STATUS_ICON[st]} sz={9} c={st === "Upcoming" ? "var(--muted2)" : col} />
-                      </div>
-                      <div className={cx("flex1")}>
-                        <div className={cx("flexRow", "flexCenter", "gap6", "mb1")}>
-                          <span className={cx("fw600", "text12")}>{m.name}</span>
-                          <span className={cx("badge", STATUS_BADGE[st], "fs06", "badgeSm2")}>
-                            {st === "Approved" ? "Done" : st === "Pending Approval" ? "Pending" : "Soon"}
-                          </span>
-                        </div>
-                        <div className={cx("text10", "colorMuted")}>
-                          {m.phase} · {st === "Approved" && m.completedOn ? `Completed ${m.completedOn}` : `Due ${m.due}`}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right — Approval Summary */}
-        <div className={cx("card")}>
-          <div className={cx("cardHd")}>
-            <Ic n="check" sz={14} c="var(--lime)" />
-            <span className={cx("cardHdTitle", "ml8")}>Approval Summary</span>
-          </div>
-          <div className={cx("cardBodyPad")}>
-            {/* Donut + legend */}
-            <div className={cx("flexRow", "flexCenter", "gap20", "mb22")}>
-              <div className={cx("relative", "w72h72", "noShrink")}>
-                <svg viewBox="0 0 72 72" className={cx("rotate90neg", "w72h72")}>
-                  <circle cx="36" cy="36" r="28" fill="none" stroke="var(--s3)" strokeWidth="10" />
-                  <circle cx="36" cy="36" r="28" fill="none" stroke="var(--lime)" strokeWidth="10"
-                    strokeDasharray={dashArray} strokeLinecap="round" />
-                </svg>
-                <div className={cx("absInset", "flexCol", "flexCenter", "justifyCenter")}>
-                  <span className={cx("fw700", "fs11rem", "lineH1")}>{completionPct}%</span>
-                  <span className={cx("text10", "colorMuted")}>done</span>
-                </div>
-              </div>
-              <div className={cx("flex1", "flexCol", "gap8")}>
-                {([
-                  ["Approved", approvedCount, "var(--lime)"],
-                  ["Pending",  pendingCount,  "var(--amber)"],
-                  ["Upcoming", upcomingCount, "var(--muted2)"],
-                ] as [string, number, string][]).map(([label, count, color]) => (
-                  <div key={label} className={cx("flexRow", "gap8")}>
-                    <div className={cx("wh8", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": color } as React.CSSProperties} />
-                    <span className={cx("text12", "flex1")}>{label}</span>
-                    <span className={cx("fw700", "text12")}>{count}</span>
-                    <div className={cx("trackW56h4")}>
-                      <div className={cx("pctFillR2", "dynBgColor")} style={{ '--pct': `${(count / totalCount) * 100}%`, "--bg-color": color } as React.CSSProperties} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Phase breakdown */}
-            <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls008", "mb10")}>Phase Breakdown</div>
-            <div className={cx("flexCol", "gap7")}>
-              {PHASES.map(phase => {
-                const pms  = milestones.filter(m => m.phase === phase);
-                if (!pms.length) return null;
-                const done = pms.filter(m => getStatus(m) === "Approved").length;
-                const pct  = (done / pms.length) * 100;
-                return (
-                  <div key={phase} className={cx("flexRow", "gap10")}>
-                    <span className={cx("text11", "w88", "noShrink")}>{phase}</span>
-                    <div className={cx("trackH5", "flex1")}>
-                      <div className={cx("pctFillR25", "dynBgColor")} style={{ '--pct': `${pct}%`, "--bg-color": pct === 100 ? "var(--lime)" : "var(--amber)" } as React.CSSProperties} />
-                    </div>
-                    <span className={cx("text10", "colorMuted", "noShrink")}>{done}/{pms.length}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Pending Alert */}
-      {pendingCount > 0 && (
-        <div className={cx("amberWarnBanner")}>
-          <Ic n="alert" sz={16} c="var(--amber)" />
-          <div className={cx("flex1")}>
-            <span className={cx("fw600", "text12", "colorAmber")}>
-              {pendingCount} milestone{pendingCount > 1 ? "s" : ""} awaiting your approval
-            </span>
-            <span className={cx("text12", "colorMuted")}> · Review and sign off to keep the project on track.</span>
+          <div className={cx("emptyStateTitle")}>Choose a project first</div>
+          <div className={cx("emptyStateSub")}>
+            Milestone approvals are tied to the active project in your client workspace.
           </div>
         </div>
       )}
 
-      {/* Tabs + Search */}
-      <div className={cx("flexRow", "flexCenter", "gap12", "mb16")}>
-        <div className={cx("flexRow", "h36")}>
-          <div className={cx("pillTabs")}>
-            {TABS.map(t => (
-              <button key={t} type="button" className={cx("pillTab", tab === t && "pillTabActive")} onClick={() => setTab(t)}>{t}</button>
+      {projectId && (
+        <>
+          <div className={cx("topCardsStack", "mb20")}>
+            {([
+              ["Total Sign-Offs", totalCount, "statCardAccent"],
+              ["Approved", approvedCount, "statCardGreen"],
+              ["Pending Approval", pendingCount, "statCardAmber"],
+              ["Revisions Requested", revisionCount, "statCardRed"],
+            ] as [string, number, string][]).map(([label, value, color]) => (
+              <div key={label} className={cx("statCard", color)}>
+                <div className={cx("statLabel")}>{label}</div>
+                <div className={cx("statValue")}>{value}</div>
+              </div>
             ))}
           </div>
-        </div>
-        <div className={cx("mlAuto", "relative")}>
-          <div className={cx("searchIconWrap")}>
-            <Ic n="filter" sz={13} c="var(--muted2)" />
-          </div>
-          <input
-            className={cx("inputSm", "pl30", "w200")}
-            placeholder="Search milestones…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-      </div>
 
-      {/* List Card */}
-      <div className={cx("card")}>
-        {/* Column headers */}
-        <div className={cx("msColHd")}>
-          <div />
-          <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls006")}>Milestone</div>
-          <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls006")}>Phase</div>
-          <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls006")}>Status</div>
-          <div />
-        </div>
+          {loading && (
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateSub")}>Loading milestone approvals…</div>
+            </div>
+          )}
 
-        {filtered.map((m, idx) => {
-          const st            = getStatus(m);
-          const col           = STATUS_COLOR[st];
-          const isExpanded    = expanded === m.id;
-          const isPending     = st === "Pending Approval";
-          const isApproved    = st === "Approved";
-          const started       = reviewStarted[m.id] ?? false;
-          const step          = getStep(m.id);
-          const mo            = getOutcome(m.id);
-          const allCriteriaMet = m.criteria.every(c => checked[m.id]?.[c]);
-          const allComments   = [...m.comments, ...(extraComments[m.id] ?? [])];
+          {!loading && error && (
+            <div className={cx("amberWarnBanner")}>
+              <Ic n="alert" sz={16} c="var(--amber)" />
+              <div className={cx("flex1")}>
+                <span className={cx("fw600", "text12", "colorAmber")}>Unable to load milestone approvals</span>
+                <span className={cx("text12", "colorMuted")}> · {error}</span>
+              </div>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadMilestones("refresh")}>
+                Retry
+              </button>
+            </div>
+          )}
 
-          return (
-            <div key={m.id}>
-              {/* Row header */}
-              <div
-                onClick={() => setExpanded(isExpanded ? null : m.id)}
-                className={cx("msRowHd", "dynBorderLeft3", "dynBgColor")} style={{ "--color": col, "--bg-color": isExpanded ? "var(--s2)" : "transparent" } as React.CSSProperties}
-              >
-                <div className={cx("iconBox40")} style={{ "--bg-color": `color-mix(in oklab, ${col} 12%, transparent)`, "--color": `color-mix(in oklab, ${col} 25%, transparent)` } as React.CSSProperties}>
-                  <Ic n={STATUS_ICON[st]} sz={16} c={col} />
-                </div>
-                <div>
-                  <div className={cx("flexRow", "flexCenter", "gap8", "mb2")}>
-                    <span className={cx("badge", "badgeMuted")}>{m.id}</span>
-                    <span className={cx("fw600", "text13")}>{m.name}</span>
+          {!loading && !error && milestones.length === 0 && (
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}><Ic n="flag" sz={22} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateTitle")}>No milestone approvals yet</div>
+              <div className={cx("emptyStateSub")}>
+                Sign-off items will appear here once your delivery team submits milestones for review.
+              </div>
+            </div>
+          )}
+
+          {!loading && !error && milestones.length > 0 && (
+            <>
+              <div className={cx("grid2", "mb20")}>
+                <div className={cx("card")}>
+                  <div className={cx("cardHd")}>
+                    <Ic n="check" sz={14} c="var(--lime)" />
+                    <span className={cx("cardHdTitle", "ml8")}>Approval Snapshot</span>
+                    <span className={cx("badge", "badgeMuted", "mlAuto")}>{completionPct}% complete</span>
                   </div>
-                  <div className={cx("text11", "colorMuted")}>
-                    Due {m.due}{m.completedOn ? ` · Completed ${m.completedOn}` : ""} · {m.deliverableCount} deliverable{m.deliverableCount !== 1 ? "s" : ""}
+                  <div className={cx("cardBodyPad")}>
+                    <div className={cx("trackH6Mb22")}>
+                      <div style={{ "--pct": completionPct + "%" } as React.CSSProperties} />
+                    </div>
+                    <div className={cx("flexCol", "gap10")}>
+                      {([
+                        ["Approved", approvedCount, "var(--lime)"],
+                        ["Pending", pendingCount, "var(--amber)"],
+                        ["Revisions", revisionCount, "var(--red)"],
+                        ["Upcoming", upcomingCount, "var(--muted2)"],
+                      ] as [string, number, string][]).map(([label, count, color]) => (
+                        <div key={label} className={cx("flexRow", "gap8")}>
+                          <div className={cx("wh8", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": color } as React.CSSProperties} />
+                          <span className={cx("text12", "flex1")}>{label}</span>
+                          <span className={cx("fw700", "text12")}>{count}</span>
+                          <div className={cx("trackW56h4")}>
+                            <div
+                              className={cx("pctFillR2", "dynBgColor")}
+                              style={{ "--pct": (totalCount > 0 ? (count / totalCount) * 100 : 0) + "%", "--bg-color": color } as React.CSSProperties}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <span className={cx("badge", "badgeMuted")}>{m.phase}</span>
-                <span className={cx("badge", STATUS_BADGE[st])}>{isApproved ? "Approved" : st}</span>
-                <div className={cx("chevronIcon", isExpanded ? "chevronMuted2Rotated" : "chevronMuted2")}>
-                  <Ic n="chevronDown" sz={14} c="var(--muted2)" />
+
+                <div className={cx("card")}>
+                  <div className={cx("cardHd")}>
+                    <Ic n="calendar" sz={14} c="var(--accent)" />
+                    <span className={cx("cardHdTitle", "ml8")}>Next Review Window</span>
+                  </div>
+                  <div className={cx("cardBodyPad", "flexCol", "gap14")}>
+                    {nextPending ? (
+                      <>
+                        <div>
+                          <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls008", "mb6")}>Next Pending Milestone</div>
+                          <div className={cx("fw700", "text14", "mb4")}>{nextPending.name}</div>
+                          <div className={cx("text12", "colorMuted")}>
+                            Due {nextPending.due}{nextPending.paymentStage ? " · " + nextPending.paymentStage : ""}
+                          </div>
+                        </div>
+                        <div className={cx("cardS1v2", "p14")}>
+                          <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls007", "mb8")}>Latest context</div>
+                          <div className={cx("text12")}>{nextPending.highlight}</div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className={cx("emptyStateSub")}>
+                        There are no milestones awaiting your approval right now. Completed and upcoming sign-offs remain listed below.
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Expanded */}
-              {isExpanded && (
-                <div className={cx("msExpandBody", "dynBorderLeft3")} style={{ "--color": col } as React.CSSProperties}>
-
-                  {/* Left column */}
-                  <div className={cx("flexCol", "gap18")}>
-
-                    {/* Highlight */}
-                    <p className={cx("text12", "colorMuted", "m0")}>{m.highlight}</p>
-
-                    {/* Progress bar */}
-                    {m.progress > 0 && m.progress < 100 && (
-                      <div>
-                        <div className={cx("flexBetween", "mb4")}>
-                          <span className={cx("text11", "colorMuted")}>Completion</span>
-                          <span className={cx("text11", "fw600", "dynColor")} style={{ "--color": col } as React.CSSProperties}>{m.progress}%</span>
-                        </div>
-                        <div className={cx("trackH5")}>
-                          <div className={cx("pctFillR25", "dynBgColor")} style={{ '--pct': `${m.progress}%`, "--bg-color": col } as React.CSSProperties} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Acceptance Criteria */}
-                    <div>
-                      <div className={cx("text10", "fw600", "colorMuted", "uppercase", "ls007", "mb8")}>Acceptance Criteria</div>
-                      <div className={cx("flexCol", "gap6")}>
-                        {m.criteria.map(c => (
-                          <div key={c} className={cx("flexRow", "flexAlignStart", "gap8")}>
-                            <div className={cx("mt1", "noShrink")}>
-                              <Ic n={isApproved ? "check" : "clock"} sz={12} c={isApproved ? "var(--lime)" : "var(--muted2)"} />
-                            </div>
-                            <span className={cx("text12", "dynColor")} style={{ "--color": isApproved ? "inherit" : "var(--muted2)" } as React.CSSProperties}>{c}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Artifacts */}
-                    {m.artifacts.length > 0 && (
-                      <div>
-                        <div className={cx("text10", "fw600", "colorMuted", "uppercase", "ls007", "mb8")}>Artifacts</div>
-                        <div className={cx("flexCol", "gap6")}>
-                          {m.artifacts.map(art => (
-                            <div key={art.name} className={cx("listChip")}>
-                              <div className={cx("msArtIconBox")}>
-                                {art.type}
-                              </div>
-                              <div className={cx("flex1")}>
-                                <div className={cx("fw600", "text12")}>{art.name}</div>
-                                <div className={cx("text10", "colorMuted")}>{art.size}</div>
-                              </div>
-                              <button type="button" className={cx("btnSm", "btnGhost")}>
-                                <Ic n="eye" sz={12} /> Preview
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Inline Review Flow — Pending only */}
-                    {isPending && (
-                      <div className={cx("msReviewBox")}>
-                        <div className={cx("msReviewBoxHd")}>
-                          <Ic n="alert" sz={13} c="var(--amber)" />
-                          <span className={cx("fw600", "text12", "colorAmber")}>Approval Required</span>
-                        </div>
-                        <div className={cx("py14_px", "px16_px")}>
-
-                          {/* Not started, no outcome */}
-                          {!started && !mo && (
-                            <div className={cx("flexRow", "gap10")}>
-                              <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setReviewStarted(p => ({ ...p, [m.id]: true }))}>
-                                Start Review →
-                              </button>
-                              <span className={cx("text11", "colorMuted")}>{m.criteria.length} criteria · {m.artifacts.length} artifact{m.artifacts.length !== 1 ? "s" : ""}</span>
-                            </div>
-                          )}
-
-                          {/* Stepper active */}
-                          {started && !mo && (
-                            <div>
-                              {/* Step indicators */}
-                              <div className={cx("msStepRow")}>
-                                {REVIEW_STEPS.map((label, i) => {
-                                  const isActive = step === i;
-                                  const isDone   = step > i;
-                                  return (
-                                    <div key={label} className={cx("flexRow", "flexCenter", i < REVIEW_STEPS.length - 1 && "flex1")}>
-                                      <div className={cx("flexCol", "flexCenter", "gap2")}>
-                                        <div
-                                          onClick={() => isDone && setStep(m.id, i as ReviewStep)}
-                                          className={cx("msStepCircle", "dynBgColor")} style={{ "--bg-color": isDone ? "var(--lime)" : isActive ? "color-mix(in oklab, var(--lime) 15%, transparent)" : "var(--s3)", "--color": isDone ? "var(--s1)" : isActive ? "var(--lime)" : "var(--muted2)", "--border-color": isActive ? "var(--lime)" : isDone ? "transparent" : "var(--b2)" } as React.CSSProperties}
-                                        >
-                                          {isDone ? "✓" : i + 1}
-                                        </div>
-                                        <span className={cx("msStepLabel", "dynColor")} style={{ "--color": isActive ? "var(--lime)" : "var(--muted2)" } as React.CSSProperties}>{label}</span>
-                                      </div>
-                                      {i < REVIEW_STEPS.length - 1 && (
-                                        <div className={cx("stepConnH15sm", "dynBgColor", "mb14")} style={{ "--bg-color": isDone ? "var(--lime)" : "var(--b2)" } as React.CSSProperties} />
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              {/* Step 0: Artifacts */}
-                              {step === 0 && (
-                                <div>
-                                  <div className={cx("text12", "fw600", "mb10")}>Review the delivered files before proceeding.</div>
-                                  {m.artifacts.length === 0
-                                    ? <div className={cx("text11", "colorMuted", "mb12")}>No artifacts uploaded yet for this milestone.</div>
-                                    : (
-                                      <div className={cx("flexCol", "gap6", "mb12")}>
-                                        {m.artifacts.map(art => (
-                                          <div key={art.name} className={cx("listChip")}>
-                                            <div className={cx("msArtIconBoxSm")}>
-                                              {art.type}
-                                            </div>
-                                            <div className={cx("flex1")}>
-                                              <div className={cx("fw600", "text12")}>{art.name}</div>
-                                              <div className={cx("text10", "colorMuted")}>{art.size}</div>
-                                            </div>
-                                            <button type="button" className={cx("btnSm", "btnGhost")}>Preview</button>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )
-                                  }
-                                  <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setStep(m.id, 1)}>Files reviewed — Next →</button>
-                                </div>
-                              )}
-
-                              {/* Step 1: Criteria */}
-                              {step === 1 && (
-                                <div>
-                                  <div className={cx("text12", "fw600", "mb3")}>Confirm each acceptance criterion is met.</div>
-                                  <div className={cx("text11", "colorMuted", "mb12")}>All criteria must be ticked to proceed.</div>
-                                  <div className={cx("flexCol", "gap6", "mb12")}>
-                                    {m.criteria.map(c => {
-                                      const isChk = !!checked[m.id]?.[c];
-                                      return (
-                                        <div
-                                          key={c}
-                                          onClick={() => toggleChecked(m.id, c)}
-                                          className={cx("msCriteriaRow", "dynBgColor", "dynBorderLeft3")} style={{ "--bg-color": isChk ? "color-mix(in oklab, var(--lime) 6%, transparent)" : "var(--s1)", "--color": isChk ? "color-mix(in oklab, var(--lime) 40%, transparent)" : "var(--b2)" } as React.CSSProperties}
-                                        >
-                                          <div className={cx("customChk", "dynBgColor")} style={{ "--bg-color": isChk ? "var(--lime)" : "transparent", "--border-color": isChk ? "var(--lime)" : "var(--b2)" } as React.CSSProperties}>
-                                            {isChk ? "✓" : ""}
-                                          </div>
-                                          <span className={cx("text12", "dynColor")} style={{ "--color": isChk ? "inherit" : "var(--muted2)" } as React.CSSProperties}>{c}</span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                  <div className={cx("flexRow", "gap8")}>
-                                    <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setStep(m.id, 0)}>← Back</button>
-                                    <button
-                                      type="button"
-                                      className={cx("btnSm", allCriteriaMet ? "btnAccent" : "btnGhost", !allCriteriaMet && "opacity40")}
-                                      disabled={!allCriteriaMet}
-                                      onClick={() => allCriteriaMet && setStep(m.id, 2)}
-                                    >
-                                      {allCriteriaMet ? "All met — Next →" : `${m.criteria.filter(c => !checked[m.id]?.[c]).length} remaining`}
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Step 2: Decision */}
-                              {step === 2 && (
-                                <div>
-                                  <div className={cx("text12", "fw600", "mb3")}>Final decision for <strong>{m.name}</strong></div>
-                                  <div className={cx("text11", "colorMuted", "mb14")}>All {m.criteria.length} criteria confirmed. Choose your action.</div>
-                                  <button
-                                    type="button"
-                                    className={cx("msApproveBtn")}
-                                    onClick={() => setOutcome(p => ({ ...p, [m.id]: "approved" }))}
-                                  >
-                                    <Ic n="check" sz={16} c="var(--lime)" />
-                                    <div>
-                                      <div className={cx("fw700", "text12", "colorAccent")}>Approve this milestone</div>
-                                      <div className={cx("text11", "colorMuted")}>Marks complete. Team notified immediately.</div>
-                                    </div>
-                                  </button>
-                                  <div className={cx("text12", "fw600", "mb6")}>Or request revisions:</div>
-                                  <textarea
-                                    className={cx("textarea", "resizeV", "mb8", "fs075")} rows={2}
-                                    placeholder="Describe what needs to change…"
-                                    value={revNote[m.id] ?? ""}
-                                    onChange={e => setRevNote(p => ({ ...p, [m.id]: e.target.value }))}
-                                  />
-                                  <div className={cx("flexRow", "gap8")}>
-                                    <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setStep(m.id, 1)}>← Back</button>
-                                    <button
-                                      type="button"
-                                      className={cx("btnSm", "btnGhost", "colorAmber", "borderAmber", !(revNote[m.id] ?? "").trim() && "opacity40")}
-                                      disabled={!(revNote[m.id] ?? "").trim()}
-                                      onClick={() => (revNote[m.id] ?? "").trim() && setOutcome(p => ({ ...p, [m.id]: "revisions" }))}
-                                    >
-                                      Send Revision Request
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Outcome: Approved */}
-                          {mo === "approved" && (
-                            <div className={cx("textCenter", "py16_0")}>
-                              <div className={cx("outcomeCircle")} style={{ "--bg-color": "color-mix(in oklab, var(--lime) 15%, transparent)", "--color": "var(--lime)" } as React.CSSProperties}>
-                                <Ic n="check" sz={18} c="var(--lime)" />
-                              </div>
-                              <div className={cx("outcomeTitle", "dynColor")} style={{ "--color": "var(--lime)" } as React.CSSProperties}>Milestone Approved!</div>
-                              <p className={cx("text12", "colorMuted", "mb14")}>Your approval for <strong>{m.name}</strong> has been recorded. The team has been notified.</p>
-                              <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => finishApprove(m.id)}>Done ✓</button>
-                            </div>
-                          )}
-
-                          {/* Outcome: Revisions */}
-                          {mo === "revisions" && (
-                            <div className={cx("textCenter", "py16_0")}>
-                              <div className={cx("outcomeCircle")} style={{ "--bg-color": "color-mix(in oklab, var(--amber) 15%, transparent)", "--color": "var(--amber)" } as React.CSSProperties}>
-                                <Ic n="edit" sz={16} c="var(--amber)" />
-                              </div>
-                              <div className={cx("outcomeTitle", "dynColor")} style={{ "--color": "var(--amber)" } as React.CSSProperties}>Revision Request Sent</div>
-                              <p className={cx("text12", "colorMuted", "mb14")}>Your feedback has been sent to the project team. They will revise and re-submit.</p>
-                              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => resetReview(m.id)}>← Start Over</button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Comments */}
-                    <div>
-                      <div className={cx("text10", "fw600", "colorMuted", "uppercase", "ls007", "mb8")}>Comments ({allComments.length})</div>
-                      {allComments.length > 0 && (
-                        <div className={cx("flexCol", "gap8", "mb10")}>
-                          {allComments.map((c, i) => (
-                            <div key={i} className={cx("flexRow", "flexAlignStart", "gap10")}>
-                              <Av initials={c.initials} size={26} />
-                              <div className={cx("commentBubble")}>
-                                <div className={cx("flexRow", "flexCenter", "gap6", "mb3")}>
-                                  <span className={cx("fw600", "text11")}>{c.author}</span>
-                                  <span className={cx("text10", "colorMuted")}>{c.when}</span>
-                                </div>
-                                <span className={cx("text12")}>{c.text}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className={cx("commentTextAreaRow")}>
-                        <textarea
-                          className={cx("textarea", "commentTextAreaFlex")} rows={1}
-                          placeholder="Add a comment…"
-                          value={newComment[m.id] ?? ""}
-                          onChange={e => setNewComment(p => ({ ...p, [m.id]: e.target.value }))}
-                        />
-                        <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => addComment(m.id)}>
-                          <Ic n="send" sz={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right column */}
-                  <div className={cx("flexCol", "gap12")}>
-
-                    {/* Owner */}
-                    <div className={cx("cardS1v2", "p14")}>
-                      <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls007", "mb10")}>Milestone Owner</div>
-                      <div className={cx("flexRow", "gap10")}>
-                        <Av initials={m.ownerInitials} size={36} />
-                        <div>
-                          <div className={cx("fw600", "text12")}>{m.ownerName}</div>
-                          <div className={cx("text11", "colorMuted")}>{m.ownerRole}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Details grid */}
-                    <div className={cx("cardS1v2", "p12x14")}>
-                      <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls007", "mb10")}>Details</div>
-                      <div className={cx("grid2Cols", "gap8")}>
-                        {([
-                          ["Phase",        m.phase],
-                          ["Due",          m.due],
-                          ["Deliverables", String(m.deliverableCount)],
-                          ["Budget",       m.budget != null ? `R ${m.budget.toLocaleString()}` : "—"],
-                          ["Criteria",     String(m.criteria.length)],
-                          ["Artifacts",    String(m.artifacts.length)],
-                        ] as [string, string][]).map(([label, value]) => (
-                          <div key={label}>
-                            <div className={cx("text10", "colorMuted", "mb1")}>{label}</div>
-                            <div className={cx("fw600", "text12")}>{value}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Tags */}
-                    {m.tags.length > 0 && (
-                      <div>
-                        <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls007", "mb6")}>Tags</div>
-                        <div className={cx("flexRow", "gap4", "flexWrap")}>
-                          {m.tags.map(tag => (
-                            <span key={tag} className={cx("badge", "badgeMuted")}>{tag}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className={cx("flexCol", "gap6", "mtAuto")}>
-                      {isApproved && (
-                        <button type="button" className={cx("btnSm", "btnGhost", "wFull", "justifyCenter")} onClick={() => window.print()}>
-                          <Ic n="download" sz={12} /> Download Report
-                        </button>
-                      )}
-                      {m.artifacts.length > 0 && (
-                        <button type="button" className={cx("btnSm", "btnGhost", "wFull", "justifyCenter")}>
-                          <Ic n="paperclip" sz={12} /> View All Artifacts
-                        </button>
-                      )}
-                    </div>
+              {pendingCount > 0 && (
+                <div className={cx("amberWarnBanner")}>
+                  <Ic n="alert" sz={16} c="var(--amber)" />
+                  <div className={cx("flex1")}>
+                    <span className={cx("fw600", "text12", "colorAmber")}>
+                      {pendingCount} milestone{pendingCount !== 1 ? "s" : ""} awaiting your approval
+                    </span>
+                    <span className={cx("text12", "colorMuted")}> · Review the pending items below to keep delivery moving.</span>
                   </div>
                 </div>
               )}
-            </div>
-          );
-        })}
 
-        {filtered.length === 0 && (
-          <div className={cx("emptyPad40x16", "textCenter")}>
-            <Ic n="flag" sz={24} c="var(--muted2)" />
-            <div className={cx("text12", "colorMuted", "mt8")}>No milestones match your filter.</div>
-          </div>
-        )}
-      </div>
-      </>)}
+              <div className={cx("flexRow", "flexCenter", "gap12", "mb16")}>
+                <div className={cx("flexRow", "h36")}>
+                  <div className={cx("pillTabs")}>
+                    {TABS.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        className={cx("pillTab", tab === item && "pillTabActive")}
+                        onClick={() => setTab(item)}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className={cx("mlAuto", "relative")}>
+                  <div className={cx("searchIconWrap")}>
+                    <Ic n="filter" sz={13} c="var(--muted2)" />
+                  </div>
+                  <input
+                    className={cx("inputSm", "pl30", "w200")}
+                    placeholder="Search milestone approvals…"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className={cx("card")}>
+                <div className={cx("msColHd")} style={{ gridTemplateColumns: "minmax(0, 2.1fr) 120px 120px 140px 84px" }}>
+                  <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls006")}>Milestone</div>
+                  <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls006")}>Recorded</div>
+                  <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls006")}>Due</div>
+                  <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls006")}>Status</div>
+                  <div />
+                </div>
+
+                {filtered.map((milestone) => {
+                  const isExpanded = expanded === milestone.id;
+                  const color = STATUS_COLOR[milestone.status];
+                  const loadingAction = actionLoading[milestone.id] ?? false;
+                  const decisionNote = noteDraft[milestone.id] ?? "";
+                  const canReview = milestone.status === "Pending Approval" || milestone.status === "Revisions Requested";
+
+                  return (
+                    <div key={milestone.id}>
+                      <div
+                        onClick={() => setExpanded(isExpanded ? null : milestone.id)}
+                        className={cx("msRowHd", "dynBorderLeft3", "dynBgColor")}
+                        style={{
+                          "--color": color,
+                          "--bg-color": isExpanded ? "var(--s2)" : "transparent",
+                          gridTemplateColumns: "minmax(0, 2.1fr) 120px 120px 140px 84px",
+                        } as React.CSSProperties}
+                      >
+                        <div className={cx("flexRow", "gap10", "minW0")}>
+                          <div
+                            className={cx("iconBox40")}
+                            style={{ "--bg-color": "color-mix(in oklab, " + color + " 12%, transparent)", "--color": "color-mix(in oklab, " + color + " 25%, transparent)" } as React.CSSProperties}
+                          >
+                            <Ic n={STATUS_ICON[milestone.status]} sz={16} c={color} />
+                          </div>
+                          <div className={cx("minW0")}>
+                            <div className={cx("flexRow", "flexCenter", "gap8", "mb2", "flexWrap")}>
+                              <span className={cx("fw600", "text13")}>{milestone.name}</span>
+                              {milestone.paymentStage ? <span className={cx("badge", "badgeMuted")}>{milestone.paymentStage}</span> : null}
+                              {!milestone.roadmapMatched ? <span className={cx("badge", "badgeMuted")}>Sign-off only</span> : null}
+                            </div>
+                            <div className={cx("text11", "colorMuted")}>
+                              {milestone.highlight}
+                            </div>
+                          </div>
+                        </div>
+                        <div className={cx("text11", "colorMuted")}>{milestone.recordedOn}</div>
+                        <div className={cx("text11", "colorMuted")}>{milestone.due}</div>
+                        <div>
+                          <span className={cx("badge", STATUS_BADGE[milestone.status])}>{milestone.status}</span>
+                        </div>
+                        <div className={cx("chevronIcon", isExpanded ? "chevronMuted2Rotated" : "chevronMuted2")}>
+                          <Ic n="chevronDown" sz={14} c="var(--muted2)" />
+                        </div>
+                      </div>
+
+                      {isExpanded ? (
+                        <div className={cx("msExpandBody", "dynBorderLeft3")} style={{ "--color": color } as React.CSSProperties}>
+                          <div className={cx("flexCol", "gap16")}>
+                            <div className={cx("grid2Cols", "gap10")}>
+                              <div className={cx("cardS1v2", "p14")}>
+                                <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls007", "mb8")}>Approval Context</div>
+                                <div className={cx("text12", "mb10")}>{milestone.highlight}</div>
+                                {milestone.note ? (
+                                  <div className={cx("text11", "colorMuted")}>{milestone.note}</div>
+                                ) : (
+                                  <div className={cx("text11", "colorMuted")}>No additional notes have been recorded for this milestone yet.</div>
+                                )}
+                              </div>
+                              <div className={cx("cardS1v2", "p14")}>
+                                <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls007", "mb8")}>Timeline</div>
+                                <div className={cx("flexCol", "gap8")}>
+                                  <div className={cx("flexBetween", "gap10")}>
+                                    <span className={cx("text11", "colorMuted")}>Recorded</span>
+                                    <span className={cx("text12", "fw600")}>{milestone.recordedOn}</span>
+                                  </div>
+                                  <div className={cx("flexBetween", "gap10")}>
+                                    <span className={cx("text11", "colorMuted")}>Due date</span>
+                                    <span className={cx("text12", "fw600")}>{milestone.due}</span>
+                                  </div>
+                                  <div className={cx("flexBetween", "gap10")}>
+                                    <span className={cx("text11", "colorMuted")}>Last updated</span>
+                                    <span className={cx("text12", "fw600")}>{milestone.decisionUpdatedOn}</span>
+                                  </div>
+                                  <div className={cx("flexBetween", "gap10")}>
+                                    <span className={cx("text11", "colorMuted")}>Signed on</span>
+                                    <span className={cx("text12", "fw600")}>{milestone.completedOn ?? "—"}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className={cx("cardS1v2", "p14")}>
+                              <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls007", "mb8")}>Decision Record</div>
+                              <div className={cx("grid2Cols", "gap10")}>
+                                <div>
+                                  <div className={cx("text10", "colorMuted", "mb3")}>Current status</div>
+                                  <div className={cx("fw600", "text12")}>{milestone.status}</div>
+                                </div>
+                                <div>
+                                  <div className={cx("text10", "colorMuted", "mb3")}>Signed by</div>
+                                  <div className={cx("fw600", "text12")}>{milestone.signedByName ?? "—"}</div>
+                                </div>
+                                <div>
+                                  <div className={cx("text10", "colorMuted", "mb3")}>Payment stage</div>
+                                  <div className={cx("fw600", "text12")}>{milestone.paymentStage ?? "—"}</div>
+                                </div>
+                                <div>
+                                  <div className={cx("text10", "colorMuted", "mb3")}>Source state</div>
+                                  <div className={cx("fw600", "text12")}>{milestone.sourceStatus}</div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {canReview ? (
+                              <div className={cx("msReviewBox")}>
+                                <div className={cx("msReviewBoxHd")}>
+                                  <Ic n="alert" sz={13} c={milestone.status === "Revisions Requested" ? "var(--red)" : "var(--amber)"} />
+                                  <span className={cx("fw600", "text12", milestone.status === "Revisions Requested" ? "colorRed" : "colorAmber")}>
+                                    {milestone.status === "Revisions Requested" ? "Revision Loop Active" : "Approval Required"}
+                                  </span>
+                                </div>
+                                <div className={cx("py14_px", "px16_px")}>
+                                  <div className={cx("text12", "fw600", "mb4")}>Submit a real milestone decision</div>
+                                  <div className={cx("text11", "colorMuted", "mb12")}>
+                                    Approving records the sign-off immediately. Requesting revisions sends your note back to the team.
+                                  </div>
+                                  <textarea
+                                    className={cx("textarea", "resizeV", "mb10")}
+                                    rows={3}
+                                    placeholder="Add optional approval context or required revisions..."
+                                    value={decisionNote}
+                                    onChange={(event) => setNoteDraft((prev) => ({ ...prev, [milestone.id]: event.target.value }))}
+                                  />
+                                  <div className={cx("flexRow", "gap8", "flexWrap")}>
+                                    <button
+                                      type="button"
+                                      className={cx("btnSm", "btnAccent")}
+                                      disabled={loadingAction}
+                                      onClick={() => void handleDecision(milestone.id, "APPROVED")}
+                                    >
+                                      <Ic n="check" sz={12} /> {loadingAction ? "Saving..." : "Approve Milestone"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={cx("btnSm", "btnGhost")}
+                                      disabled={loadingAction}
+                                      onClick={() => void handleDecision(milestone.id, "REVISION_REQUESTED")}
+                                    >
+                                      <Ic n="edit" sz={12} /> Request Revisions
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className={cx("flexCol", "gap12")}>
+                            <div className={cx("cardS1v2", "p14")}>
+                              <div className={cx("text10", "colorMuted", "fw600", "uppercase", "ls007", "mb8")}>Review Readiness</div>
+                              <div className={cx("flexCol", "gap8")}>
+                                <div className={cx("text12")}>
+                                  {milestone.roadmapMatched
+                                    ? "Timeline data is linked to this sign-off, so due dates and payment-stage context are available."
+                                    : "This sign-off is stored without linked roadmap metadata, so only approval records are available here."}
+                                </div>
+                                <div className={cx("text11", "colorMuted")}>
+                                  {milestone.status === "Pending Approval"
+                                    ? "This item is ready for your decision."
+                                    : milestone.status === "Approved"
+                                      ? "No further action is required unless a new sign-off is issued."
+                                      : milestone.status === "Revisions Requested"
+                                        ? "The team should revise and resubmit this milestone."
+                                        : "This milestone has not been submitted for approval yet."}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+
+                {filtered.length === 0 ? (
+                  <div className={cx("emptyPad40x16", "textCenter")}>
+                    <Ic n="flag" sz={24} c="var(--muted2)" />
+                    <div className={cx("text12", "colorMuted", "mt8")}>No milestone approvals match your current filter.</div>
+                  </div>
+                ) : null}
+              </div>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }

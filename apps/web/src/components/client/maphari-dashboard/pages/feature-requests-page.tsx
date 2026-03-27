@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { cx } from "../style";
+import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -108,8 +109,16 @@ export default function FeatureRequestsPage() {
       if (st !== "all") params.status = st;
       const r = await loadPortalFeatureRequestsWithRefresh(session, params);
       if (r.nextSession) saveSession(r.nextSession);
-      if (r.error) { setError(r.error.message); return; }
-      if (r.data) setRequests(r.data.data);
+      if (r.error) {
+        setError(r.error.message);
+        setRequests([]);
+        return;
+      }
+      if (r.data) {
+        setRequests(Array.isArray(r.data.data) ? r.data.data : []);
+      } else {
+        setRequests([]);
+      }
     } catch {
       setError("Failed to load feature requests.");
     } finally {
@@ -184,15 +193,15 @@ export default function FeatureRequestsPage() {
     <div className={cx("frPage")}>
 
       {/* Header */}
-      <div className={cx("frHeader")}>
+      <div className={cx("pageHeader", "mb0")}>
         <div>
-          <h1>Feature Requests</h1>
-          <p style={{ fontSize: "0.78rem", color: "var(--muted)", marginTop: 4 }}>
-            Vote on ideas or submit your own — all submissions are anonymous
-          </p>
+          <div className={cx("pageTitle")}>Feature Requests</div>
+          <div className={cx("pageSub")}>
+            Vote on ideas or submit your own. All community submissions remain anonymous while they are reviewed.
+          </div>
         </div>
-        <div className={cx("frHeaderActions")}>
-          <button className={cx("frSubmitBtn")} onClick={() => setShowSubmit(true)}>
+        <div className={cx("pageActions")}>
+          <button className={cx("btnSm", "btnAccent")} onClick={() => setShowSubmit(true)}>
             + Submit Idea
           </button>
         </div>
@@ -245,14 +254,25 @@ export default function FeatureRequestsPage() {
 
       {/* Request list */}
       {loading ? (
-        <div className={cx("frEmptyState")}>Loading feature requests…</div>
+        <div className={cx("emptyState", "mt32")}>
+          <div className={cx("emptyStateIcon")}><Ic n="spark" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>Loading feature requests</div>
+          <div className={cx("emptyStateSub")}>Pulling the latest community ideas and vote counts.</div>
+        </div>
       ) : requests.length === 0 ? (
-        <div className={cx("frEmptyState")}>No feature requests found.</div>
+        <div className={cx("emptyState", "mt32")}>
+          <div className={cx("emptyStateIcon")}><Ic n="message" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>No feature requests yet</div>
+          <div className={cx("emptyStateSub")}>
+            There are no published requests in this view yet. Try another filter or submit the first idea for review.
+          </div>
+        </div>
       ) : (
         <div className={cx("frList")}>
           {requests.map((req) => {
             const userId = session?.user.id ?? "";
-            const hasVoted = req.votes.some((v) => v.voterId === userId);
+            const requestVotes = Array.isArray(req.votes) ? req.votes : [];
+            const hasVoted = requestVotes.some((v) => v.voterId === userId);
             const isVoting = votingId === req.id;
             const isDeclined = req.status === "declined";
 
@@ -319,11 +339,11 @@ export default function FeatureRequestsPage() {
             <div className={cx("frSlideOverHeader")}>
               <span>Submit an Idea</span>
               <button
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: "1.1rem" }}
+                className={cx("iconBtn40x34")}
                 onClick={() => { setShowSubmit(false); setSubmitSuccess(false); }}
                 aria-label="Close"
               >
-                ✕
+                <Ic n="x" sz={14} c="var(--muted2)" />
               </button>
             </div>
 
@@ -373,7 +393,7 @@ export default function FeatureRequestsPage() {
                     />
                   </div>
 
-                  <p style={{ fontSize: "0.72rem", color: "var(--muted)" }}>
+                  <p className={cx("text11", "colorMuted")}>
                     All submissions are anonymous and will be reviewed before appearing publicly.
                   </p>
                 </div>
@@ -382,14 +402,7 @@ export default function FeatureRequestsPage() {
                   <button
                     type="button"
                     onClick={() => setShowSubmit(false)}
-                    style={{
-                      background: "none",
-                      border: "1px solid var(--b2)",
-                      color: "var(--muted)",
-                      borderRadius: "var(--r-sm)",
-                      padding: "8px 16px",
-                      cursor: "pointer",
-                    }}
+                    className={cx("btnSm", "btnGhost")}
                   >
                     Cancel
                   </button>
@@ -407,13 +420,7 @@ export default function FeatureRequestsPage() {
 
           {/* Backdrop */}
           <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.45)",
-              zIndex: 49,
-              backdropFilter: "blur(2px)",
-            }}
+            className={cx("frBackdrop")}
             onClick={() => { setShowSubmit(false); setSubmitSuccess(false); }}
             aria-hidden="true"
           />

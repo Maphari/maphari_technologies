@@ -30,6 +30,9 @@ export interface PortalDeliverable {
   status: string;
   dueAt: string | null;
   deliveredAt: string | null;
+  clientFeedback?: string | null;
+  reviewedAt?: string | null;
+  reviewedByName?: string | null;
   createdAt: string;
   updatedAt: string;
 }

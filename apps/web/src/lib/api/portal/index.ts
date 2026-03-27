@@ -15,6 +15,7 @@ export * from "./meetings";
 export * from "./brand";
 export * from "./feedback";
 export * from "./billing-downloads";
+export * from "./invoice-reminders";
 export * from "./contracts";
 export * from "./proposals";
 export * from "./services";

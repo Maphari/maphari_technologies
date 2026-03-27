@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
@@ -38,19 +38,32 @@ export function ProjectBriefPage({ onNavigate }: { onNavigate?: (page: PageId) =
   const [brief, setBrief] = useState<PortalBrief | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (!session || !projectId) { setLoading(false); return; }
-    setLoading(true);
+  const loadBrief = useCallback(async (mode: "initial" | "refresh" = "initial") => {
+    if (!session || !projectId) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+    if (mode === "initial") setLoading(true);
+    if (mode === "refresh") setRefreshing(true);
     setError(null);
-    void loadPortalBriefWithRefresh(session, projectId).then((result) => {
+    try {
+      const result = await loadPortalBriefWithRefresh(session, projectId);
       if (result.nextSession) saveSession(result.nextSession);
       setBrief(result.data ?? null);
-    }).catch((err: unknown) => {
+    } catch (err: unknown) {
       setError((err as Error)?.message ?? "Failed to load");
-    }).finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.accessToken, projectId]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [projectId, session]);
+
+  useEffect(() => {
+    void loadBrief("initial");
+  }, [loadBrief]);
 
   // ── Derived display data ──────────────────────────────────────────────────
   const objectives   = brief ? parseLines(brief.objectives)   : [];
@@ -58,6 +71,12 @@ export function ProjectBriefPage({ onNavigate }: { onNavigate?: (page: PageId) =
   const outOfScope   = brief ? parseLines(brief.outOfScope)   : [];
   const contactLines = brief ? parseLines(brief.contacts)     : [];
   const statusBadge  = brief ? (STATUS_BADGE[brief.status] ?? "badgeMuted") : "badgeMuted";
+  const summaryCards = useMemo(() => ([
+    { label: "Version", value: brief ? String(brief.version) : "—", color: "statCardAccent" },
+    { label: "Objectives", value: String(objectives.length), color: "statCardBlue" },
+    { label: "In Scope", value: String(inScopeLines.length), color: "statCardGreen" },
+    { label: "Out of Scope", value: String(outOfScope.length), color: "statCardAmber" },
+  ]), [brief, objectives.length, inScopeLines.length, outOfScope.length]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -77,6 +96,9 @@ export function ProjectBriefPage({ onNavigate }: { onNavigate?: (page: PageId) =
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateTitle")}>Something went wrong</div>
           <div className={cx("emptyStateSub")}>{error}</div>
+          <div className={cx("mt12")}>
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadBrief("refresh")}>Try again</button>
+          </div>
         </div>
       </div>
     );
@@ -92,12 +114,24 @@ export function ProjectBriefPage({ onNavigate }: { onNavigate?: (page: PageId) =
           <div className={cx("pageSub")}>Agreed scope, objectives, and key contacts for your project</div>
         </div>
         <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadBrief("refresh")} disabled={refreshing}>
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => onNavigate?.("projectRoadmap")}>Project Roadmap</button>
           <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => onNavigate?.("changeRequests")}>Request Amendment</button>
         </div>
       </div>
 
+      {!projectId && (
+        <div className={cx("emptyState", "mt32")}>
+          <div className={cx("emptyStateIcon")}><Ic n="folder" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>Select a project first</div>
+          <div className={cx("emptyStateSub")}>Open a project from My Projects to review its published brief.</div>
+        </div>
+      )}
+
       {/* ── Empty state (no brief yet) ── */}
-      {!brief && (
+      {projectId && !brief && (
         <div className={cx("emptyState", "mt32")}>
           <div className={cx("emptyStateIcon")}><Ic n="file" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No project brief yet</div>
@@ -108,12 +142,21 @@ export function ProjectBriefPage({ onNavigate }: { onNavigate?: (page: PageId) =
       {/* ── Brief content ── */}
       {brief && (
         <>
+          <div className={cx("topCardsStack", "mb16")}>
+            {summaryCards.map((card) => (
+              <div key={card.label} className={cx("statCard", card.color)}>
+                <div className={cx("statLabel")}>{card.label}</div>
+                <div className={cx("statValue")}>{card.value}</div>
+              </div>
+            ))}
+          </div>
+
           {/* ── Hero card ── */}
           <div className={cx("card", "pbrHero")}>
             <div>
               <div className={cx("pbrProjectName")}>Project Brief</div>
               <div className={cx("text12", "colorMuted", "mt4")}>
-                Version {brief.version} · Last updated {new Date(brief.updatedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
+                Version {brief.version} · Published {new Date(brief.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })} · Last updated {new Date(brief.updatedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
               </div>
             </div>
             <span className={cx("badge", statusBadge)}>{brief.status === "ACTIVE" ? "Active" : brief.status === "DRAFT" ? "Draft" : "Archived"}</span>

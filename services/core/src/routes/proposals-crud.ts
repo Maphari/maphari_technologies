@@ -14,6 +14,7 @@
 
 import type { FastifyInstance } from "fastify";
 import type { ApiResponse } from "@maphari/contracts";
+import type { Prisma } from "../generated/prisma/index.js";
 import { prisma } from "../lib/prisma.js";
 import { readScopeHeaders } from "../lib/scope.js";
 
@@ -22,6 +23,7 @@ import { readScopeHeaders } from "../lib/scope.js";
 function serializeProposal(p: {
   id: string;
   clientId: string;
+  projectId?: string | null;
   title: string;
   summary: string | null;
   status: string;
@@ -35,7 +37,7 @@ function serializeProposal(p: {
   acceptedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  items: Array<{
+  items?: Array<{
     id: string;
     description: string;
     icon: string;
@@ -46,6 +48,7 @@ function serializeProposal(p: {
   return {
     id:                 p.id,
     clientId:           p.clientId,
+    projectId:          p.projectId ?? null,
     title:              p.title,
     summary:            p.summary,
     status:             p.status,
@@ -59,7 +62,7 @@ function serializeProposal(p: {
     acceptedAt:         p.acceptedAt?.toISOString() ?? null,
     createdAt:          p.createdAt.toISOString(),
     updatedAt:          p.updatedAt.toISOString(),
-    items:              p.items
+    items:              (p.items ?? [])
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((item) => ({
         id:          item.id,
@@ -85,6 +88,7 @@ export async function registerProposalCrudRoutes(app: FastifyInstance): Promise<
     const body = request.body as Record<string, unknown> | null;
     const clientId       = typeof body?.clientId       === "string" ? body.clientId       : null;
     const title          = typeof body?.title          === "string" ? body.title.trim()   : null;
+    const projectId      = typeof body?.projectId      === "string" ? body.projectId      : null;
     const summary        = typeof body?.summary        === "string" ? body.summary.trim() : null;
     const amountCents    = typeof body?.amountCents    === "number" ? body.amountCents    : 0;
     const currency       = typeof body?.currency       === "string" ? body.currency.toUpperCase() : "ZAR";
@@ -102,6 +106,7 @@ export async function registerProposalCrudRoutes(app: FastifyInstance): Promise<
       const proposal = await prisma.proposal.create({
         data: {
           clientId,
+          projectId,
           title,
           summary: summary ?? null,
           amountCents,
@@ -117,7 +122,7 @@ export async function registerProposalCrudRoutes(app: FastifyInstance): Promise<
               sortOrder:   Number(it.sortOrder ?? idx),
             })),
           },
-        },
+        } as Prisma.ProposalUncheckedCreateInput,
         include: { items: true },
       });
 
@@ -196,6 +201,7 @@ export async function registerProposalCrudRoutes(app: FastifyInstance): Promise<
     // Clients see their own; staff/admin can pass clientId param
     const query = (request.query as Record<string, string>) ?? {};
     let clientId: string | null = null;
+    const projectId = typeof query.projectId === "string" ? query.projectId : null;
 
     if (scope.role === "CLIENT") {
       clientId = scope.clientId ?? null;
@@ -220,7 +226,7 @@ export async function registerProposalCrudRoutes(app: FastifyInstance): Promise<
       });
 
       const proposals = await prisma.proposal.findMany({
-        where: { clientId },
+        where: { clientId, ...(projectId ? { projectId } : {}) },
         include: { items: true },
         orderBy: { createdAt: "desc" },
       });

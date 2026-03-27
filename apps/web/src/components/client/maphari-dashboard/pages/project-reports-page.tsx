@@ -5,7 +5,7 @@
 //             GET  /projects/:id/sprints/:sid/tasks → per-sprint detail (lazy)
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
@@ -39,11 +39,6 @@ type ValueRow = {
   status: string;
 };
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const BENCHMARK_ROI = 2.1;
-const PROJECTED_ROI = 2.3;
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function deliverableStatusLabel(apiStatus: string): string {
@@ -72,6 +67,36 @@ function sprintToReport(sprint: PortalSprint, tasks: PortalSprintTask[]): Report
   };
 }
 
+function exportProjectReportCsv(
+  activeTab: ReportTab,
+  valueTable: ValueRow[],
+  report: ReportData | null
+): void {
+  const header = activeTab === "Value Realized"
+    ? ["Deliverable", "Type", "Status"]
+    : ["Section", "Item"];
+  const rows = activeTab === "Value Realized"
+    ? valueTable.map((row) => [row.milestone, row.type, row.status])
+    : report
+      ? [
+          ...report.completed.map((item) => ["Completed", item]),
+          ...report.inProgress.map((item) => ["In Progress", item]),
+          ...report.blockers.map((item) => ["Blocker", item]),
+        ]
+      : [];
+  const escape = (value: string) => "\"" + value.replace(/"/g, "\"\"") + "\"";
+  const csv = [header, ...rows].map((row) => row.map((cell) => escape(String(cell))).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "project-report.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ProjectReportsPage() {
@@ -88,13 +113,12 @@ export function ProjectReportsPage() {
   // Track which sprint IDs we've already started loading (avoids duplicate fetches)
   const loadingSprintIds = useRef(new Set<string>());
 
-  // ── Load deliverables + sprints on mount ────────────────────────────────────
-  useEffect(() => {
+  const loadReports = useCallback(() => {
     if (!session || !projectId) { setLoading(false); return; }
     setLoading(true);
     setError(null);
 
-    Promise.all([
+    void Promise.all([
       loadPortalDeliverablesWithRefresh(session, projectId),
       loadPortalSprintsWithRefresh(session, projectId),
     ]).then(([delivRes, sprintRes]) => {
@@ -107,6 +131,13 @@ export function ProjectReportsPage() {
     }).finally(() => setLoading(false));
   }, [session, projectId]);
 
+  // ── Load deliverables + sprints on mount ────────────────────────────────────
+  useEffect(() => {
+    queueMicrotask(() => {
+      loadReports();
+    });
+  }, [loadReports]);
+
   // ── Lazy-load tasks when a sprint tab is selected ───────────────────────────
   const isValueTab = activeTab === "Value Realized";
 
@@ -118,17 +149,19 @@ export function ProjectReportsPage() {
     // Skip if already loaded or currently loading
     if (sprint.id in sprintTasks || loadingSprintIds.current.has(sprint.id)) return;
 
-    loadingSprintIds.current.add(sprint.id);
-    setLoadingTasks(true);
+    queueMicrotask(() => {
+      loadingSprintIds.current.add(sprint.id);
+      setLoadingTasks(true);
 
-    loadPortalSprintTasksWithRefresh(session, projectId, sprint.id).then(r => {
-      if (r.nextSession) saveSession(r.nextSession);
-      setSprintTasks(prev => ({ ...prev, [sprint.id]: r.data ?? [] }));
-      loadingSprintIds.current.delete(sprint.id);
-      setLoadingTasks(false);
-    }).catch(() => {
-      loadingSprintIds.current.delete(sprint.id);
-      setLoadingTasks(false);
+      loadPortalSprintTasksWithRefresh(session, projectId, sprint.id).then(r => {
+        if (r.nextSession) saveSession(r.nextSession);
+        setSprintTasks(prev => ({ ...prev, [sprint.id]: r.data ?? [] }));
+        loadingSprintIds.current.delete(sprint.id);
+        setLoadingTasks(false);
+      }).catch(() => {
+        loadingSprintIds.current.delete(sprint.id);
+        setLoadingTasks(false);
+      });
     });
   }, [session, projectId, activeTab, sprints, isValueTab, sprintTasks]);
 
@@ -155,6 +188,18 @@ export function ProjectReportsPage() {
     : null;
 
   const isSprintLoading = !isValueTab && (loadingTasks || (currentSprint !== null && currentTasks === undefined));
+
+  if (!projectId) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="file" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>Select a project to view reports</div>
+          <div className={cx("emptyStateSub")}>Project reporting appears once an active project is selected in the dashboard.</div>
+        </div>
+      </div>
+    );
+  }
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -195,6 +240,17 @@ export function ProjectReportsPage() {
           <p className={cx("pageSub")}>Weekly progress reports from your project team — what was done, what&apos;s next, and any blockers.</p>
         </div>
         <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={loadReports} disabled={loading || loadingTasks}>
+            Refresh
+          </button>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost")}
+            onClick={() => exportProjectReportCsv(activeTab, valueTable, report)}
+            disabled={isValueTab ? valueTable.length === 0 : !report}
+          >
+            Export CSV
+          </button>
           <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => window.print()}>Download PDF</button>
         </div>
       </div>
@@ -236,7 +292,7 @@ export function ProjectReportsPage() {
                   <div className={cx("text12", "mt8")}>
                     {inProgressCount} deliverable{inProgressCount !== 1 ? "s" : ""} currently in progress
                   </div>
-                  <div className={cx("text10", "colorMuted", "mt4")}>Monetary ROI available once billing milestones are finalised</div>
+                  <div className={cx("text10", "colorMuted", "mt4")}>This report tracks delivery progress only. Financial performance lives in Financial Reports.</div>
                 </div>
                 <div className={cx("prHeroProgress")}>
                   <div className={cx("flexBetween", "mb6")}>
@@ -247,12 +303,11 @@ export function ProjectReportsPage() {
                   </div>
                   <div className={cx("progressTrackB1")}>
                     <div className={cx("prProgressFill")} style={{ '--pct': `${valueTable.length > 0 ? Math.round((completedCount / valueTable.length) * 100) : 0}%` } as React.CSSProperties} />
-                    <div className={cx("prBenchmarkLine")} style={{ '--left': `${(BENCHMARK_ROI / PROJECTED_ROI) * 100}%` } as React.CSSProperties} />
                   </div>
                   <div className={cx("flexBetween", "mt6")}>
                     <span className={cx("text10", "colorMuted")}>{completedCount} done</span>
-                    <span className={cx("text10", "colorAmber")}>{BENCHMARK_ROI}× benchmark ROI</span>
-                    <span className={cx("text10", "colorMuted")}>{PROJECTED_ROI}× projected</span>
+                    <span className={cx("text10", "colorMuted")}>{inProgressCount} in progress</span>
+                    <span className={cx("text10", "colorMuted")}>{valueTable.length - completedCount - inProgressCount} upcoming</span>
                   </div>
                 </div>
               </div>
@@ -296,18 +351,14 @@ export function ProjectReportsPage() {
                 </div>
               </div>
             </div>
-
-            {/* Benchmark card */}
             <div className={cx("card", "borderLeftAmber")}>
-              <div className={cx("cardHd")}><span className={cx("cardHdTitle")}>Industry Benchmark</span></div>
+              <div className={cx("cardHd")}><span className={cx("cardHdTitle")}>Reporting scope</span></div>
               <div className={cx("cardBodyPad")}>
                 <p className={cx("text12", "mb12")}>
-                  Maphari clients average <span className={cx("fw700")}>{BENCHMARK_ROI}×</span> ROI. Your detailed monetary value report
-                  will be available once project billing milestones are finalised. Projected ROI:{" "}
-                  <span className={cx("fw700", "colorAmber")}>{PROJECTED_ROI}×</span> by project end.
+                  This page summarizes delivery progress, completed work, and sprint blockers. Use Financial Reports for invoice performance and Budget Tracker for budget burn.
                 </p>
-                <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => window.print()}>
-                  Download Deliverables Report →
+                <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => exportProjectReportCsv(activeTab, valueTable, report)}>
+                  Export project report →
                 </button>
               </div>
             </div>

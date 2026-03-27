@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
-import { generateSignature, verifyItnSignature } from "../lib/payfast";
+import { generateSignature, normalizePayfastUrl, verifyItnSignature } from "../lib/payfast";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -7,8 +7,8 @@ import { generateSignature, verifyItnSignature } from "../lib/payfast";
 
 /** Minimal valid ITN body that PayFast would POST to a merchant's notify URL. */
 const BASE_BODY: Record<string, string> = {
-  merchant_id: "10000100",
-  merchant_key: "46f0cd694581a",
+  merchant_id: "10004002",
+  merchant_key: "q1cd2rdny4a53",
   return_url: "https://example.com/return",
   cancel_url: "https://example.com/cancel",
   notify_url: "https://example.com/notify",
@@ -71,7 +71,7 @@ describe("verifyItnSignature — no passphrase", () => {
 // ---------------------------------------------------------------------------
 
 describe("verifyItnSignature — with passphrase", () => {
-  const PASSPHRASE = "s3cr3tPassPhrase!";
+  const PASSPHRASE = "payfast";
 
   beforeEach(() => {
     process.env.PAYFAST_PASSPHRASE = PASSPHRASE;
@@ -127,5 +127,17 @@ describe("verifyItnSignature — edge cases", () => {
   it("returns false for a completely fabricated signature", () => {
     const body = { ...BASE_BODY, signature: "00000000000000000000000000000000" };
     expect(verifyItnSignature(body)).toBe(false);
+  });
+});
+
+describe("normalizePayfastUrl", () => {
+  it("rewrites localhost to 127.0.0.1 for sandbox-friendly local redirects", () => {
+    expect(normalizePayfastUrl("http://localhost:3000/client/payments?tab=all"))
+      .toBe("http://127.0.0.1:3000/client/payments?tab=all");
+  });
+
+  it("leaves non-localhost URLs unchanged", () => {
+    expect(normalizePayfastUrl("https://portal.maphari.com/client/payments"))
+      .toBe("https://portal.maphari.com/client/payments");
   });
 });

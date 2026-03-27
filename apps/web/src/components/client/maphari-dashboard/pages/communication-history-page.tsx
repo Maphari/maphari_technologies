@@ -1,11 +1,6 @@
-// ════════════════════════════════════════════════════════════════════════════
-// communication-history-page.tsx — Client Communication History
-// Data     : loadPortalCommLogsWithRefresh → GET /clients/:id/comms
-// Mobile   : filter bar wraps; table scrolls horizontally
-// ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
@@ -14,28 +9,39 @@ import {
   type PortalCommLog
 } from "../../../../lib/api/portal";
 import { saveSession } from "../../../../lib/auth/session";
+import { usePageToast } from "../hooks/use-page-toast";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 type CommType = "email" | "meeting" | "message" | "document" | "call" | "other";
+type Direction = "Inbound" | "Outbound" | "Internal";
+type CommFilter = "all" | CommType;
 
 interface UiComm {
   id: string;
   type: CommType;
   subject: string;
-  date: string;
-  from: string;
-  action: string;
+  summary: string;
+  dateLabel: string;
+  fromLabel: string;
+  direction: Direction;
+  actionLabel: string | null;
+  hasFile: boolean;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function toCommType(raw: string): CommType {
-  const t = raw.toLowerCase();
-  if (t === "email") return "email";
-  if (t === "meeting") return "meeting";
-  if (t === "message") return "message";
-  if (t === "document") return "document";
-  if (t === "call" || t === "phone") return "call";
+  const value = raw.toLowerCase();
+  if (value === "email") return "email";
+  if (value === "meeting") return "meeting";
+  if (value === "message") return "message";
+  if (value === "document") return "document";
+  if (value === "call" || value === "phone") return "call";
   return "other";
+}
+
+function toDirection(raw: string): Direction {
+  const value = raw.toUpperCase();
+  if (value === "INBOUND") return "Inbound";
+  if (value === "OUTBOUND") return "Outbound";
+  return "Internal";
 }
 
 function formatDate(raw: string): string {
@@ -43,61 +49,152 @@ function formatDate(raw: string): string {
 }
 
 function mapLog(log: PortalCommLog): UiComm {
+  const type = toCommType(log.type);
   return {
     id: log.id,
-    type: toCommType(log.type),
+    type,
     subject: log.subject,
-    date: formatDate(log.occurredAt),
-    from: log.fromName ?? "Maphari Team",
-    action: log.actionLabel ?? "View"
+    summary: log.body?.trim() || log.actionLabel?.trim() || "No additional communication detail recorded.",
+    dateLabel: formatDate(log.occurredAt),
+    fromLabel: log.fromName?.trim() || "Maphari Team",
+    direction: toDirection(log.direction),
+    actionLabel: log.actionLabel,
+    hasFile: Boolean(log.relatedFileId),
   };
 }
 
-// ── Static config ─────────────────────────────────────────────────────────────
-const typeIcons: Record<CommType, string> = {
-  email: "✉",
-  meeting: "◷",
-  message: "◎",
-  document: "⊡",
-  call: "⌕",
-  other: "•"
+const typeBadge: Record<CommType, string> = {
+  email: "badgeAccent",
+  meeting: "badgeAmber",
+  call: "badgeGreen",
+  document: "badgeMuted",
+  message: "badgePurple",
+  other: "badgeMuted",
 };
 
-function typeBadge(t: CommType) {
-  if (t === "email") return "badgeAccent";
-  if (t === "meeting") return "badgeAmber";
-  if (t === "call") return "badgeGreen";
-  if (t === "document") return "badgeMuted";
-  return "badgeMuted";
+const typeIcon: Record<CommType, string> = {
+  email: "mail",
+  meeting: "calendar",
+  message: "message",
+  document: "file",
+  call: "video",
+  other: "activity",
+};
+
+const directionBadge: Record<Direction, string> = {
+  Inbound: "badgeAmber",
+  Outbound: "badgeAccent",
+  Internal: "badgeMuted",
+};
+
+const filters: Array<CommFilter> = ["all", "email", "meeting", "message", "document", "call"];
+
+function buildCommCsv(items: UiComm[]): string {
+  const rows = [
+    ["Communication ID", "Type", "Subject", "Direction", "Date", "From", "Summary", "Action Label", "Has File"],
+    ...items.map((item) => [
+      item.id,
+      item.type,
+      item.subject,
+      item.direction,
+      item.dateLabel,
+      item.fromLabel,
+      item.summary,
+      item.actionLabel ?? "—",
+      item.hasFile ? "Yes" : "No",
+    ]),
+  ];
+
+  return rows
+    .map((row) => row.map((value) => '"' + String(value ?? "").replace(/"/g, '""') + '"').join(","))
+    .join("\n");
 }
 
-const filters: Array<"all" | CommType> = ["all", "email", "meeting", "message", "document", "call"];
-
-// ── Component ─────────────────────────────────────────────────────────────────
 export function CommunicationHistoryPage() {
   const { session } = useProjectLayer();
+  const notify = usePageToast();
+
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commHistory, setCommHistory] = useState<UiComm[]>([]);
-  const [filter, setFilter] = useState<"all" | CommType>("all");
+  const [filter, setFilter] = useState<CommFilter>("all");
+  const [search, setSearch] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  async function fetchCommHistory(showRefreshToast = false) {
+    if (!session) {
+      setCommHistory([]);
+      setError(null);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
+    if (loading) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
+    setError(null);
+
+    try {
+      const result = await loadPortalCommLogsWithRefresh(session, session.user.clientId ?? "");
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        setError(result.error.message ?? "Unable to load communication history.");
+        return;
+      }
+      setCommHistory((result.data ?? []).map(mapLog));
+      if (showRefreshToast) {
+        notify("success", "Communication history refreshed", "Latest communication logs loaded.");
+      }
+    } catch (err) {
+      setError((err as Error)?.message ?? "Unable to load communication history.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
 
   useEffect(() => {
-    if (!session) { setLoading(false); return; }
-    setLoading(true);
-    setError(null);
-    loadPortalCommLogsWithRefresh(session, session.user.clientId ?? "").then((result) => {
-      if (result.nextSession) saveSession(result.nextSession);
-      if (result.error) { setError(result.error.message ?? "Failed to load."); return; }
-      if (result.data) setCommHistory(result.data.map(mapLog));
-    })
-    .catch((err) => setError(err?.message ?? "Failed to load"))
-    .finally(() => setLoading(false));
+    void fetchCommHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
-  const messagesCount = commHistory.filter((c) => c.type === "message" || c.type === "email").length;
-  const meetingsCount = commHistory.filter((c) => c.type === "meeting" || c.type === "call").length;
-  const docsCount = commHistory.filter((c) => c.type === "document").length;
-  const filtered = filter === "all" ? commHistory : commHistory.filter((c) => c.type === filter);
+  const filtered = useMemo(() => {
+    let list = filter === "all" ? commHistory : commHistory.filter((item) => item.type === filter);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((item) =>
+        item.subject.toLowerCase().includes(q) ||
+        item.fromLabel.toLowerCase().includes(q) ||
+        item.summary.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [commHistory, filter, search]);
+
+  const messageCount = commHistory.filter((item) => item.type === "message" || item.type === "email").length;
+  const meetingsCount = commHistory.filter((item) => item.type === "meeting" || item.type === "call").length;
+  const docsCount = commHistory.filter((item) => item.type === "document").length;
+  const outboundCount = commHistory.filter((item) => item.direction === "Outbound").length;
+
+  function handleExport() {
+    if (filtered.length === 0) {
+      notify("info", "Nothing to export", "There are no communication logs in the current view.");
+      return;
+    }
+    const csv = buildCommCsv(filtered);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "communication-history.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   if (loading) {
     return (
@@ -110,13 +207,29 @@ export function CommunicationHistoryPage() {
       </div>
     );
   }
+
+  if (!session) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="message" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>Sign in to view communication history</div>
+          <div className={cx("emptyStateSub")}>Client communications appear once your account session is active.</div>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className={cx("pageBody")}>
         <div className={cx("errorState")}>
           <div className={cx("errorStateIcon")}>✕</div>
-          <div className={cx("errorStateTitle")}>Failed to load</div>
+          <div className={cx("errorStateTitle")}>Unable to load communication history</div>
           <div className={cx("errorStateSub")}>{error}</div>
+          <button type="button" className={cx("btnSm", "btnGhost", "mt12")} onClick={() => void fetchCommHistory()}>
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -124,71 +237,130 @@ export function CommunicationHistoryPage() {
 
   return (
     <div className={cx("pageBody")}>
-      {/* ── Header ── */}
       <div className={cx("pageHeader")}>
         <div>
           <div className={cx("pageEyebrow")}>COMMUNICATION</div>
           <h1 className={cx("pageTitle")}>Communication History</h1>
-          <div className={cx("pageSub")}>A complete log of all interactions between you and your Maphari team</div>
+          <div className={cx("pageSub")}>A real ledger of emails, calls, meetings, documents, and client message history.</div>
+        </div>
+        <div className={cx("pageActions", "flexRow", "gap8")}>
+          <button type="button" className={cx("btnSm", "btnGhost", "flexRow", "gap6")} onClick={() => void fetchCommHistory(true)} disabled={refreshing}>
+            <Ic n="refresh" sz={13} />
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
+          <button type="button" className={cx("btnSm", "btnGhost", "flexRow", "gap6")} onClick={handleExport}>
+            <Ic n="download" sz={13} /> Export CSV
+          </button>
         </div>
       </div>
 
-      {/* ── KPI row ── */}
-      <div className={cx("cohKpiRow")}>
+      <div className={cx("topCardsStack", "mb16")}>
         {[
-          { label: "Messages & Emails", value: String(messagesCount), sub: "This month" },
-          { label: "Meetings & Calls", value: String(meetingsCount), sub: "Sessions held" },
-          { label: "Documents Shared", value: String(docsCount), sub: "Files exchanged" },
-          { label: "Total Interactions", value: String(commHistory.length), sub: "All time" },
-        ].map((k) => (
-          <div key={k.label} className={cx("cohKpiCard")}>
-            <div className={cx("cohKpiLabel")}>{k.label}</div>
-            <div className={cx("cohKpiValue")}>{k.value}</div>
-            <div className={cx("cohKpiMeta")}>{k.sub}</div>
+          { label: "Messages & Emails", value: messageCount, sub: "Logged communications", color: "statCardBlue", icon: "mail", ic: "var(--cyan)" },
+          { label: "Meetings & Calls", value: meetingsCount, sub: "Recorded sessions", color: "statCardAmber", icon: "calendar", ic: "var(--amber)" },
+          { label: "Documents Shared", value: docsCount, sub: "Document events", color: "statCard", icon: "file", ic: "var(--muted2)" },
+          { label: "Outbound Updates", value: outboundCount, sub: "Team-to-client updates", color: "statCardGreen", icon: "send", ic: "var(--lime)" },
+        ].map((item) => (
+          <div key={item.label} className={cx("statCard", item.color)}>
+            <div className={cx("flexBetween", "mb8")}>
+              <div className={cx("statLabel")}>{item.label}</div>
+              <Ic n={item.icon as "mail"} sz={14} c={item.ic} />
+            </div>
+            <div className={cx("statValue")}>{item.value}</div>
+            <div className={cx("text11", "colorMuted")}>{item.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* ── Filter bar ── */}
-      <div className={cx("card", "p12", "flexRow", "gap8", "flexWrap", "mb4")}>
-        {filters.map((f) => (
-          <button
-            key={f}
-            type="button"
-            className={cx("btnSm", filter === f ? "btnAccent" : "btnGhost")}
-            onClick={() => setFilter(f)}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Timeline list ── */}
-      <div className={cx("card", "overflowHidden")}>
-        <div className={cx("cohHead")}>
-          {["Type", "Subject", "Date", "From", "Action"].map((h) => (
-            <span key={h}>{h}</span>
+      <div className={cx("flexRow", "flexCenter", "gap10", "mb10")}>
+        <div className={cx("flexRow", "gap6", "flex1", "minW0", "overflowXAuto")} style={{ flexWrap: "nowrap" } as React.CSSProperties}>
+          {filters.map((item) => (
+            <button key={item} type="button" className={cx("pillTab", filter === item ? "pillTabActive" : "")} onClick={() => setFilter(item)}>
+              {item.charAt(0).toUpperCase() + item.slice(1)}
+            </button>
           ))}
         </div>
+        <input
+          type="text"
+          className={cx("input", "w260", "h36", "noShrink")}
+          placeholder="Search subject, sender, or detail"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+      </div>
+
+      <div className={cx("card", "overflowHidden")}>
+        {filtered.length > 0 && (
+          <div className={cx("cohHead")}>
+            {["Type", "Subject", "Date", "Direction", "From", ""].map((heading) => (
+              <span key={heading}>{heading}</span>
+            ))}
+          </div>
+        )}
+
         {filtered.length === 0 ? (
           <div className={cx("emptyState")}>
             <div className={cx("emptyStateIcon")}><Ic n="message" sz={22} c="var(--muted2)" /></div>
             <div className={cx("emptyStateTitle")}>No communication logs</div>
-            <div className={cx("emptyStateSub")}>All emails, meetings, calls and documents shared with your team will appear here.</div>
+            <div className={cx("emptyStateSub")}>
+              {search ? 'No results for "' + search + '"' : "Emails, calls, meetings and document shares will appear here as they are recorded."}
+            </div>
           </div>
         ) : (
-          filtered.map((item) => (
-            <div key={item.id} className={cx("cohRow")}>
-              <div className={cx("flexRow", "gap8", "alignCenter")}>
-                <span className={cx("cohIcon")}>{typeIcons[item.type]}</span>
-                <span className={cx("badge", typeBadge(item.type))}>{item.type}</span>
+          filtered.map((item) => {
+            const isOpen = expanded === item.id;
+            return (
+              <div key={item.id} className={cx("borderB")}>
+                <button type="button" className={cx("cohRow")} onClick={() => setExpanded(isOpen ? null : item.id)}>
+                  <div className={cx("flexRow", "gap8", "alignCenter")}>
+                    <span className={cx("pmIconBox36", "dynBgColor")} style={{ "--bg-color": "color-mix(in oklab, var(--cyan) 10%, var(--s2))" } as React.CSSProperties}>
+                      <Ic n={typeIcon[item.type] as "mail"} sz={14} c="var(--cyan)" />
+                    </span>
+                    <span className={cx("badge", typeBadge[item.type])}>{item.type}</span>
+                  </div>
+                  <span className={cx("fw600", "text13")}>{item.subject}</span>
+                  <span className={cx("fontMono", "text12")}>{item.dateLabel}</span>
+                  <span className={cx("badge", directionBadge[item.direction])}>{item.direction}</span>
+                  <span className={cx("text12", "colorMuted")}>{item.fromLabel}</span>
+                  <span className={cx("chevronIcon", "dynTransform", "flexRow", "justifyCenter")} style={{ "--transform": isOpen ? "rotate(90deg)" : "none" } as React.CSSProperties}>
+                    <Ic n="chevronRight" sz={14} c="var(--muted2)" />
+                  </span>
+                </button>
+                {isOpen && (
+                  <div className={cx("p14x20x16x17", "borderT", "cardS1")}>
+                    <div className={cx("grid2Cols252")}>
+                      <div className={cx("panelL")}>
+                        <div className={cx("cardS1v2", "p12x14")}>
+                          <div className={cx("flexRow", "flexCenter", "gap6", "mb8")}>
+                            <Ic n="message" sz={12} c="var(--cyan)" />
+                            <span className={cx("fontMono", "fw700", "text10", "uppercase", "ls01", "colorAccent")}>Log Detail</span>
+                          </div>
+                          <div className={cx("text11", "colorMuted", "lineH165")}>{item.summary}</div>
+                        </div>
+                      </div>
+                      <div className={cx("sectionPanelL")}>
+                        <div className={cx("cardS1v2", "p12x14")}>
+                          <div className={cx("grid2Cols", "gap8")}>
+                            {[
+                              { label: "Type", value: item.type },
+                              { label: "Direction", value: item.direction },
+                              { label: "Sender", value: item.fromLabel },
+                              { label: "Shared File", value: item.hasFile ? "Yes" : "No" },
+                            ].map((meta) => (
+                              <div key={meta.label} className={cx("infoChipSm")}>
+                                <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls008", "mb2", "fs058")}>{meta.label}</div>
+                                <div className={cx("fw600", "text11")}>{meta.value}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <span className={cx("fw600", "text13")}>{item.subject}</span>
-              <span className={cx("fontMono", "text12")}>{item.date}</span>
-              <span className={cx("text12", "colorMuted")}>{item.from}</span>
-              <button type="button" className={cx("btnSm", "btnGhost")}>{item.action}</button>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

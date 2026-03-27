@@ -34,6 +34,8 @@ export function fmtCents(cents: number): string {
   return `R ${Math.round(cents / 100).toLocaleString("en-ZA")}`;
 }
 
+export type VelocityDotState = "done" | "active" | "fail";
+
 // ── Time-ago helper (internal) ────────────────────────────────────────────────
 
 function timeAgo(ts: number): string {
@@ -263,6 +265,19 @@ export function buildPulseStats(
   ];
 }
 
+export function buildVelocityDots(deliverables: PortalDeliverable[]): VelocityDotState[] {
+  const recent = [...deliverables]
+    .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+    .slice(0, 8)
+    .reverse();
+
+  return recent.map((deliverable) => {
+    if (deliverable.status === "APPROVED") return "done";
+    if (deliverable.status === "REJECTED") return "fail";
+    return "active";
+  });
+}
+
 // ── Team from project collaborators ──────────────────────────────────────────
 
 export interface TeamMemberDisplay {
@@ -279,17 +294,14 @@ export function buildTeamFromCollaborators(
   collaborators: Array<{ name: string; role: string }>,
 ): TeamMemberDisplay[] {
   if (collaborators.length === 0) {
-    return [{
-      av: "MT", color: "var(--lime)", name: "Maphari Team",
-      task: "Working on your project", active: true,
-    }];
+    return [];
   }
   return collaborators.slice(0, 4).map((c, i) => ({
     av: initials(c.name, "MT"),
     color: TEAM_COLORS[i % TEAM_COLORS.length] as string,
     name: c.name,
     task: c.role,
-    active: true,
+    active: false,
   }));
 }
 
@@ -310,6 +322,7 @@ export interface DynamicAction {
   title: string;
   sub: string;
   cta: string;
+  ctaRoute: string | null;   // PageId to navigate to on CTA click
   secondaryCta: string | null;
   detail: string;
 }
@@ -342,6 +355,7 @@ export function buildDynamicActions(
       title:        `Pay Invoice ${inv.number ?? inv.id.slice(0, 6).toUpperCase()}`,
       sub:          `${fmtCents(inv.amountCents)} · Due ${formatDate(inv.dueAt)}`,
       cta:          "Pay Now",
+      ctaRoute:     "invoices",
       secondaryCta: "View Invoice",
       detail:       "This invoice is overdue. Contact your account manager to arrange payment.",
     });
@@ -365,6 +379,7 @@ export function buildDynamicActions(
       title:        `Approve Milestone`,
       sub:          "Milestone approval required",
       cta:          "Review & Approve",
+      ctaRoute:     "milestones",
       secondaryCta: "View Milestone",
       detail:       "Your approval is required to proceed to the next project stage.",
     });
@@ -390,6 +405,7 @@ export function buildDynamicActions(
       title:        `Review ${del.name}`,
       sub:          del.dueAt ? `Due ${formatDate(del.dueAt)}` : "Awaiting your feedback",
       cta:          "View & Review",
+      ctaRoute:     "deliverables",
       secondaryCta: null,
       detail:       "This deliverable is ready for your review.",
     });
@@ -415,6 +431,7 @@ export function buildDynamicActions(
       title:        "Book a Strategy Call",
       sub:          "Schedule your next check-in with the team",
       cta:          "Pick a Time",
+      ctaRoute:     "bookCall",
       secondaryCta: null,
       detail:       "Regular calls keep your project on track and give you a chance to review progress.",
     });

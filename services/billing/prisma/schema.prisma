@@ -190,3 +190,32 @@ model VendorContract {
   @@index([status])
   @@map("vendor_contracts")
 }
+
+model InvoiceReminderPreference {
+  id           String   @id @default(uuid())
+  clientId     String   @unique
+  enabled      Boolean  @default(true)
+  intervalDays Int      @default(3)
+  channels     String[]
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([enabled, updatedAt])
+  @@map("invoice_reminder_preferences")
+}
+
+model InvoiceReminderDispatch {
+  id             String   @id @default(uuid())
+  dispatchKey    String   @unique
+  clientId       String
+  invoiceId      String
+  channel        String
+  triggerType    String
+  triggeredForAt DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([clientId, createdAt])
+  @@index([invoiceId, channel])
+  @@map("invoice_reminder_dispatches")
+}

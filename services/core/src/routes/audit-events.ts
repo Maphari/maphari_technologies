@@ -131,9 +131,76 @@ export async function registerAuditEventRoutes(app: FastifyInstance): Promise<vo
       reply.status(403);
       return { success: false, error: { code: "FORBIDDEN", message: "Not allowed" } } as ApiResponse;
     }
+    if (!scope.clientId) {
+      reply.status(400);
+      return { success: false, error: { code: "VALIDATION_ERROR", message: "Client scope is required" } } as ApiResponse;
+    }
 
     try {
+      const [projects, appointments, tickets, contracts] = await Promise.all([
+        prisma.project.findMany({
+          where: { clientId: scope.clientId },
+          select: { id: true }
+        }),
+        prisma.appointment.findMany({
+          where: { clientId: scope.clientId },
+          select: { id: true }
+        }),
+        prisma.supportTicket.findMany({
+          where: { clientId: scope.clientId },
+          select: { id: true }
+        }),
+        prisma.clientContract.findMany({
+          where: { clientId: scope.clientId },
+          select: { id: true }
+        })
+      ]);
+
+      const projectIds = projects.map((project) => project.id);
+      const [milestones, tasks, sprints, deliverables] = projectIds.length > 0
+        ? await Promise.all([
+            prisma.projectMilestone.findMany({
+              where: { projectId: { in: projectIds } },
+              select: { id: true }
+            }),
+            prisma.projectTask.findMany({
+              where: { projectId: { in: projectIds } },
+              select: { id: true }
+            }),
+            prisma.projectSprint.findMany({
+              where: { projectId: { in: projectIds } },
+              select: { id: true }
+            }),
+            prisma.projectDeliverable.findMany({
+              where: { projectId: { in: projectIds } },
+              select: { id: true }
+            })
+          ])
+        : [[], [], [], []];
+
+      const scopedOr = [
+        projectIds.length > 0 ? { resourceType: "Project", resourceId: { in: projectIds } } : null,
+        milestones.length > 0 ? { resourceType: "Milestone", resourceId: { in: milestones.map((item) => item.id) } } : null,
+        tasks.length > 0 ? { resourceType: "Task", resourceId: { in: tasks.map((item) => item.id) } } : null,
+        sprints.length > 0 ? { resourceType: "Sprint", resourceId: { in: sprints.map((item) => item.id) } } : null,
+        deliverables.length > 0 ? { resourceType: "Deliverable", resourceId: { in: deliverables.map((item) => item.id) } } : null,
+        appointments.length > 0 ? { resourceType: "Appointment", resourceId: { in: appointments.map((item) => item.id) } } : null,
+        tickets.length > 0 ? { resourceType: "SupportTicket", resourceId: { in: tickets.map((item) => item.id) } } : null,
+        contracts.length > 0 ? { resourceType: "Contract", resourceId: { in: contracts.map((item) => item.id) } } : null,
+      ].filter(Boolean);
+
+      if (scopedOr.length === 0) {
+        return {
+          success: true,
+          data: [],
+          meta: { requestId: scope.requestId, count: 0 }
+        } as ApiResponse<ActivityItem[]>;
+      }
+
       const events = await prisma.auditEvent.findMany({
+        where: {
+          OR: scopedOr as Array<{ resourceType: string; resourceId: { in: string[] } }>
+        },
         orderBy: { createdAt: "desc" },
         take: 50,
       });

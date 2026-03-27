@@ -14,8 +14,8 @@ export const PAYFAST_ENDPOINT =
  *
  * Algorithm:
  * 1. Remove undefined / empty-string fields and the `signature` key itself.
- * 2. Sort remaining keys alphabetically.
- * 3. URL-encode each value (replacing %20 with +), join as query string.
+ * 2. Preserve the field order exactly as supplied.
+ * 3. URL-encode each trimmed value (replacing %20 with +), join as query string.
  * 4. If PAYFAST_PASSPHRASE is set, append `&passphrase=<encoded>`.
  * 5. MD5-hash the result → lowercase hex string.
  */
@@ -24,12 +24,11 @@ export function generateSignature(fields: Record<string, string | undefined>): s
 
   const params = Object.entries(fields)
     .filter(([k, v]) => k !== "signature" && v !== undefined && v !== "")
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}=${encodeURIComponent(v as string).replace(/%20/g, "+")}`)
+    .map(([k, v]) => `${k}=${encodeURIComponent((v as string).trim()).replace(/%20/g, "+")}`)
     .join("&");
 
   const base = passphrase
-    ? `${params}&passphrase=${encodeURIComponent(passphrase).replace(/%20/g, "+")}`
+    ? `${params}&passphrase=${encodeURIComponent(passphrase.trim()).replace(/%20/g, "+")}`
     : params;
 
   return createHash("md5").update(base).digest("hex");
@@ -52,6 +51,24 @@ export function verifyItnSignature(body: Record<string, string>): boolean {
  */
 export function centsToZar(amountCents: number): string {
   return (amountCents / 100).toFixed(2);
+}
+
+/**
+ * PayFast sandbox rejects `localhost` URLs in request payloads.
+ * For local development we normalize them to 127.0.0.1 without touching
+ * production hosts or malformed values that the caller should inspect.
+ */
+export function normalizePayfastUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "localhost") {
+      parsed.hostname = "127.0.0.1";
+      return parsed.toString();
+    }
+    return url;
+  } catch {
+    return url;
+  }
 }
 
 /**

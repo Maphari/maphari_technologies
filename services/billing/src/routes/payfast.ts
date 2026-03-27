@@ -5,7 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { publishBillingEvent } from "../lib/events.js";
 import { cache, CacheKeys } from "../lib/infrastructure.js";
 import { readScopeHeaders } from "../lib/scope.js";
-import { PAYFAST_ENDPOINT, generateSignature, verifyItnSignature, centsToZar, zarToCents } from "../lib/payfast.js";
+import { PAYFAST_ENDPOINT, generateSignature, verifyItnSignature, centsToZar, normalizePayfastUrl, zarToCents } from "../lib/payfast.js";
 
 /**
  * Registers PayFast payment routes:
@@ -66,12 +66,15 @@ export async function registerPayFastRoutes(app: FastifyInstance): Promise<void>
 
     const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:3000";
     const serviceBaseUrl = process.env.BILLING_BASE_URL ?? `http://localhost:${process.env.PORT ?? 4006}`;
+    const servicePublicBaseUrl = process.env.BILLING_PUBLIC_BASE_URL?.trim() || serviceBaseUrl;
 
     const resolvedReturnUrl =
       returnUrl ?? `${appBaseUrl}/client/invoices/${invoice.id}?payment=success`;
     const resolvedCancelUrl =
       cancelUrl ?? `${appBaseUrl}/client/invoices/${invoice.id}?payment=cancelled`;
-    const resolvedNotifyUrl = notifyUrl ?? `${serviceBaseUrl}/payfast/itn`;
+    const resolvedNotifyUrl = normalizePayfastUrl(
+      notifyUrl ?? `${servicePublicBaseUrl}/payfast/itn`
+    );
 
     const fields: Record<string, string> = {
       merchant_id: merchantId,

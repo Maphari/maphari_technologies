@@ -113,6 +113,44 @@ type Params = {
   searchQuery: string;
 };
 
+function summarizeStructuredDetails(value: string | null, type: string): string {
+  if (!value) return formatStatus(type);
+  const trimmed = value.trim();
+  if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return value;
+
+  try {
+    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return value;
+
+    const selectedServices = Array.isArray(parsed.selectedServices)
+      ? parsed.selectedServices.filter((item): item is string => typeof item === "string")
+      : [];
+    const depositStatus = typeof parsed.depositPaymentStatus === "string" ? parsed.depositPaymentStatus : null;
+    const buildMode = typeof parsed.buildMode === "string" ? parsed.buildMode : null;
+    const serviceType = typeof parsed.serviceType === "string" ? parsed.serviceType : null;
+    const scopePrompt = typeof parsed.scopePrompt === "string" ? parsed.scopePrompt : null;
+
+    const parts: string[] = [];
+    if (serviceType) parts.push(formatStatus(serviceType));
+    if (buildMode) parts.push(`Build ${formatStatus(buildMode)}`);
+    if (selectedServices.length > 0) parts.push(selectedServices.map((item) => formatStatus(item)).join(", "));
+    if (depositStatus) parts.push(`Deposit ${formatStatus(depositStatus)}`);
+
+    if (parts.length > 0) return parts.join(" · ");
+    if (scopePrompt && scopePrompt.trim().length > 0) return "Scope prompt submitted";
+    return formatStatus(type);
+  } catch {
+    return value;
+  }
+}
+
+function formatEventTitle(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return "Activity";
+  // Normalize machine event codes like PROJECT_REQUESTED
+  return formatStatus(trimmed);
+}
+
 export function useStaffActivity({
   conversations,
   clientById,
@@ -142,7 +180,7 @@ export function useStaffActivity({
           icon,
           tone,
           color,
-          text: activity.details ?? formatStatus(activity.type),
+          text: summarizeStructuredDetails(activity.details, activity.type),
           detail: `${project.name} · ${clientName}`,
           time: formatDateLong(activity.createdAt),
           timestamp: new Date(activity.createdAt).getTime()
@@ -183,8 +221,8 @@ export function useStaffActivity({
         icon: event.category === "BLOCKER" ? "⚠" : event.category === "LEAD" ? "◎" : "•",
         tone,
         color,
-        text: event.title,
-        detail: event.detail ?? "Shared timeline event",
+        text: formatEventTitle(event.title),
+        detail: summarizeStructuredDetails(event.detail, event.title),
         time: formatDateLong(event.createdAt),
         timestamp: new Date(event.createdAt).getTime()
       });
@@ -342,8 +380,8 @@ export function useStaffActivity({
       .forEach((event) => {
         digest.push({
           id: `timeline-${event.id}`,
-          title: event.title,
-          detail: event.detail ?? formatStatus(event.category),
+          title: formatEventTitle(event.title),
+          detail: summarizeStructuredDetails(event.detail, event.title),
           occurredAt: event.createdAt
         });
       });

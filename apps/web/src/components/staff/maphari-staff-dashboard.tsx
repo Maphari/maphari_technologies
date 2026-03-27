@@ -1,11 +1,18 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useDashboardToasts, DashboardToastStack, DashboardLoadingFallback } from "../shared/dashboard-core";
 import {
   loadNotificationJobsWithRefresh,
   processNotificationQueueWithRefresh,
   setNotificationReadStateWithRefresh,
+  updateProjectBlockerWithRefresh,
+  loadAdminIntegrationRequestsWithRefresh,
+  loadAdminTaskIntegrationSyncEventsWithRefresh,
+  updateAdminIntegrationRequestWithRefresh,
+  type AdminIntegrationRequestItem,
+  type AdminTaskIntegrationSyncEvent,
   type ProjectChangeRequest,
   type ProjectHandoffExportRecord
 } from "../../lib/api/admin";
@@ -165,6 +172,8 @@ const STAFF_CMD_TYPE_BG: Record<string, string> = {
 };
 
 export function MaphariStaffDashboard() {
+  const router = useRouter();
+
   // ─── Navigation + UI state kept in orchestrator ───
   const [activePage, setActivePage] = useState<PageId>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -218,6 +227,12 @@ export function MaphariStaffDashboard() {
     escalateConversation,
     updateConversationAssignee
   } = useStaffWorkspace();
+
+  // ─── Session expiry redirect ───
+  useEffect(() => {
+    if (session || loading) return;
+    router.replace("/staff/login?next=/staff");
+  }, [session, loading, router]);
 
   useCursorTrail(cursorRef, ringRef, { cursorOffset: 4, ringOffset: 15, easing: 0.1 });
   const animateProgress = useDelayedFlag(activePage, 200);
@@ -354,10 +369,13 @@ export function MaphariStaffDashboard() {
     highPriorityClients,
     handleTaskAction,
     handleMoveTask,
-    handleCreateTask
+    handleCreateTask,
+    handleAddTaskExternalLink,
+    handleRemoveTaskExternalLink,
+    handleCreateExternalTask,
+    creatingExternalTaskId
   } = useStaffTasks({
     session,
-    projectDetails,
     setProjectDetails,
     topbarSearch,
     clientById,
@@ -406,7 +424,6 @@ export function MaphariStaffDashboard() {
     inProgressLimit,
     nowTs,
     topbarSearch,
-    setProjectDetails,
     setFeedback,
     refreshWorkspace,
     staffName
@@ -457,6 +474,9 @@ export function MaphariStaffDashboard() {
     setThreadFilter,
     composeMessage,
     setComposeMessage,
+    sendingMessage,
+    lastSendFailed,
+    lastSendError,
     noteText,
     setNoteText,
     escalationReason,
@@ -472,6 +492,7 @@ export function MaphariStaffDashboard() {
     effectiveNewThreadClientId,
     threadItems,
     threadCounts,
+    queueCounts,
     visibleThreadItems,
     conversationByProjectId,
     selectedConversation,
@@ -479,12 +500,19 @@ export function MaphariStaffDashboard() {
     openConversations,
     handleClientClick,
     handleSendMessage,
+    handleRetrySendMessage,
     handleCreateThread,
     handleAddNote,
     handleEscalate,
+    handleEscalationAcknowledge,
+    handleEscalationResolve,
+    handleEscalationReopen,
+    handleEscalationAssignToMe,
     handleAssignConversationToMe,
     handleUnassignConversation,
     handleCreateTaskFromThread,
+    handlePrefillFollowUpNote,
+    handleScheduleCallback,
     handleOpenConversationTaskContext,
     handleOpenConversationFiles,
     handleOpenDashboardThread,
@@ -659,6 +687,95 @@ export function MaphariStaffDashboard() {
     });
     return () => { cancelled = true; };
   }, [session?.accessToken]);
+
+  // ─── Integrations ops queue (roadmap: staff lifecycle controls) ───
+  const [integrationQueue, setIntegrationQueue] = useState<AdminIntegrationRequestItem[]>([]);
+  const [integrationQueueBusyId, setIntegrationQueueBusyId] = useState<string | null>(null);
+  const [taskSyncEventsByTaskId, setTaskSyncEventsByTaskId] = useState<Record<string, AdminTaskIntegrationSyncEvent[]>>({});
+  const [taskSyncEventsLoadingId, setTaskSyncEventsLoadingId] = useState<string | null>(null);
+
+  const refreshIntegrationQueue = useCallback(async () => {
+    if (!session) return;
+    const result = await loadAdminIntegrationRequestsWithRefresh(session);
+    if (result.nextSession) saveSession(result.nextSession);
+    if (result.error) {
+      setFeedback({ tone: "error", message: result.error.message ?? "Unable to load integration request queue." });
+      return;
+    }
+    setIntegrationQueue((result.data ?? []).filter((item) => item.status === "REQUESTED" || item.status === "IN_PROGRESS"));
+  }, [session, setFeedback]);
+
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    void loadAdminIntegrationRequestsWithRefresh(session).then((result) => {
+      if (cancelled) return;
+      if (result.nextSession) saveSession(result.nextSession);
+      setIntegrationQueue((result.data ?? []).filter((item) => item.status === "REQUESTED" || item.status === "IN_PROGRESS"));
+    });
+    return () => { cancelled = true; };
+  }, [session?.accessToken]);
+
+  const handleIntegrationQueueAction = useCallback(async (
+    requestId: string,
+    action: "claim" | "start" | "complete"
+  ) => {
+    if (!session || integrationQueueBusyId) return;
+    const me = session.user.id;
+    const payload =
+      action === "claim"
+        ? { assignedToUserId: me, status: "IN_PROGRESS" as const }
+        : action === "start"
+          ? { status: "IN_PROGRESS" as const, assignedToUserId: me }
+          : { status: "COMPLETED" as const, assignedToUserId: me };
+    setIntegrationQueueBusyId(requestId);
+    try {
+      const result = await updateAdminIntegrationRequestWithRefresh(session, requestId, payload);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        setFeedback({ tone: "error", message: result.error.message ?? "Unable to update integration request." });
+        return;
+      }
+      await refreshIntegrationQueue();
+      setFeedback({
+        tone: "success",
+        message: action === "complete" ? "Integration request marked completed." : "Integration request updated."
+      });
+    } finally {
+      setIntegrationQueueBusyId(null);
+    }
+  }, [integrationQueueBusyId, refreshIntegrationQueue, session, setFeedback]);
+
+  const integrationProvidersByClientId = useMemo<Record<string, string[]>>(() => {
+    const byClient = new Map<string, Set<string>>();
+    integrationQueue.forEach((item) => {
+      if (item.status !== "COMPLETED") return;
+      const current = byClient.get(item.clientId) ?? new Set<string>();
+      current.add(item.providerKey.toLowerCase());
+      byClient.set(item.clientId, current);
+    });
+    const output: Record<string, string[]> = {};
+    byClient.forEach((providers, clientId) => {
+      output[clientId] = Array.from(providers.values()).sort();
+    });
+    return output;
+  }, [integrationQueue]);
+
+  const handleLoadTaskIntegrationSyncEvents = useCallback(async (taskId: string) => {
+    if (!session || !taskId) return;
+    setTaskSyncEventsLoadingId(taskId);
+    try {
+      const result = await loadAdminTaskIntegrationSyncEventsWithRefresh(session, taskId);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        setFeedback({ tone: "error", message: result.error.message ?? "Unable to load integration sync events." });
+        return;
+      }
+      setTaskSyncEventsByTaskId((prev) => ({ ...prev, [taskId]: result.data ?? [] }));
+    } finally {
+      setTaskSyncEventsLoadingId((current) => (current === taskId ? null : current));
+    }
+  }, [session, setFeedback]);
   const atRiskClients = useMemo(() => healthEntries.filter((e) => e.score < 65).sort((a, b) => a.score - b.score), [healthEntries]);
   const atRiskClientsCount = atRiskClients.length;
 
@@ -782,6 +899,39 @@ export function MaphariStaffDashboard() {
     setAcknowledgingAutomationFailures(false);
     setFeedback({ tone: "success", message: `${failedUnread.length} failed alert${failedUnread.length === 1 ? "" : "s"} acknowledged.` });
   }, [acknowledgingAutomationFailures, notificationJobs, session, setNotificationJobs]);
+
+  const handleAutoEscalateKanbanBlocked = useCallback(async () => {
+    if (!session) return;
+    const actionable = projectBlockers.filter((blocker) => blocker.status !== "RESOLVED");
+    if (actionable.length === 0) {
+      setFeedback({ tone: "success", message: "No active blockers to escalate." });
+      return;
+    }
+    const fallbackEta = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const updates = await Promise.all(
+      actionable.map(async (blocker) => {
+        const result = await updateProjectBlockerWithRefresh(session, blocker.id, {
+          severity: "CRITICAL",
+          status: blocker.status === "OPEN" ? "IN_PROGRESS" : blocker.status,
+          ownerRole: "STAFF",
+          ownerName: blocker.ownerName ?? staffName,
+          etaAt: blocker.etaAt ?? fallbackEta
+        });
+        if (result.nextSession) saveSession(result.nextSession);
+        return result;
+      })
+    );
+    const failed = updates.filter((result) => !!result.error).length;
+    const succeeded = updates.length - failed;
+    await refreshWorkspace(session, { background: true });
+    setFeedback({
+      tone: failed > 0 ? "warning" : "success",
+      message:
+        failed > 0
+          ? `Escalated ${succeeded}/${updates.length} blockers. ${failed} update${failed === 1 ? "" : "s"} failed.`
+          : `Escalated ${succeeded} blocker${succeeded === 1 ? "" : "s"} to CRITICAL with 24h ETA.`
+    });
+  }, [projectBlockers, refreshWorkspace, session, setFeedback, staffName]);
 
   function handleWelcomeModalDismiss() {
     setShowWelcomeModal(false);
@@ -1018,14 +1168,18 @@ export function MaphariStaffDashboard() {
               dashboardLastSeenAt={dashboardLastSeenAt ?? null}
               slaBurn={slaBurn}
               flowHealth={flowHealth}
+              integrationQueue={integrationQueue}
+              integrationQueueBusyId={integrationQueueBusyId}
+              onIntegrationQueueAction={handleIntegrationQueueAction}
             />
 
-            <NotificationsPage isActive={activePage === "notifications"} session={session ?? null} />
+            <NotificationsPage isActive={activePage === "notifications"} session={session ?? null} onNavigate={setActivePage} />
 
             <TasksPage
               isActive={activePage === "tasks"}
               openTasksCount={openTasks.length}
               projectsCount={projects.length}
+              taskCounts={taskCounts}
               projects={projects.map((project) => ({ id: project.id, name: project.name }))}
               taskTabs={taskTabs}
               activeTaskTab={activeTaskTab}
@@ -1054,9 +1208,19 @@ export function MaphariStaffDashboard() {
               onCreateTask={() => void handleCreateTask(projects)}
               filteredTasks={filteredTasks}
               onTaskAction={handleTaskAction}
+              onAddTaskExternalLink={handleAddTaskExternalLink}
+              onRemoveTaskExternalLink={handleRemoveTaskExternalLink}
+              onCreateExternalTask={handleCreateExternalTask}
+              creatingExternalTaskId={creatingExternalTaskId}
+              taskSyncEventsByTaskId={taskSyncEventsByTaskId}
+              taskSyncEventsLoadingId={taskSyncEventsLoadingId}
+              onLoadTaskIntegrationSyncEvents={handleLoadTaskIntegrationSyncEvents}
               onOpenTaskThread={handleOpenTaskThread}
               hasProjectThread={(projectId) => conversationByProjectId.has(projectId)}
               initialProjectFilter={filterProjectId}
+              integrationOpenRequestsCount={integrationQueue.length}
+              integrationProvidersByClientId={integrationProvidersByClientId}
+              onNavigate={setActivePage}
             />
 
             <KanbanPage
@@ -1097,6 +1261,8 @@ export function MaphariStaffDashboard() {
               onTaskAction={handleTaskAction}
               onOpenTaskThread={handleOpenTaskThread}
               hasProjectThread={(projectId) => conversationByProjectId.has(projectId)}
+              integrationProvidersByClientId={integrationProvidersByClientId}
+              onCreateExternalTask={handleCreateExternalTask}
               blockDraft={kanbanBlockDraft}
               blockReason={kanbanBlockReason}
               blockSeverity={kanbanBlockSeverity}
@@ -1122,10 +1288,9 @@ export function MaphariStaffDashboard() {
                 void handleMoveTask(taskId, projectId, currentStatus, nextStatus)
               }
               announcement={kanbanAnnouncement}
-              onAutoEscalateBlocked={async () => {
-                await new Promise((r) => setTimeout(r, 800));
-                setFeedback({ tone: "success", message: `Blocked & aging tasks escalated — project managers notified.` });
-              }}
+              onAutoEscalateBlocked={handleAutoEscalateKanbanBlocked}
+              integrationOpenRequestsCount={integrationQueue.length}
+              onOpenIntegrationQueue={() => setActivePage("myintegrations")}
             />
 
             <ClientsPage
@@ -1153,6 +1318,9 @@ export function MaphariStaffDashboard() {
               conversationEscalations={conversationEscalations}
               messagesLoading={messagesLoading}
               composeMessage={composeMessage}
+              sendingMessage={sendingMessage}
+              lastSendFailed={lastSendFailed}
+              lastSendError={lastSendError}
               noteText={noteText}
               escalationReason={escalationReason}
               escalationSeverity={escalationSeverity}
@@ -1161,17 +1329,25 @@ export function MaphariStaffDashboard() {
               onEscalationReasonChange={setEscalationReason}
               onEscalationSeverityChange={setEscalationSeverity}
               onSendMessage={handleSendMessage}
+              onRetrySendMessage={handleRetrySendMessage}
               onAddNote={handleAddNote}
               onEscalate={handleEscalate}
+              onEscalationAcknowledge={handleEscalationAcknowledge}
+              onEscalationResolve={handleEscalationResolve}
+              onEscalationReopen={handleEscalationReopen}
+              onEscalationAssignToMe={handleEscalationAssignToMe}
               onClientClick={handleClientClick}
               onOpenThreadTask={handleOpenConversationTaskContext}
               onOpenThreadFiles={handleOpenConversationFiles}
               onCreateTaskFromThread={handleCreateTaskFromThread}
+              onPrefillFollowUpNote={handlePrefillFollowUpNote}
+              onScheduleCallback={handleScheduleCallback}
               onComposeSubmitShortcut={() => void handleSendMessage()}
               staffInitials={staffInitials}
               viewerUserId={session?.user.id ?? null}
               onAssignToMe={() => void handleAssignConversationToMe()}
               onUnassign={() => void handleUnassignConversation()}
+              queueCounts={queueCounts}
             />
 
             <AutoDraftUpdatesPage isActive={activePage === "autodraft"} session={session ?? null} />
@@ -1317,7 +1493,11 @@ export function MaphariStaffDashboard() {
 
             <TeamPerformancePage isActive={activePage === "teamperformance"} session={session ?? null} />
 
-            <MyIntegrationsPage isActive={activePage === "myintegrations"} session={session ?? null} />
+            <MyIntegrationsPage
+              isActive={activePage === "myintegrations"}
+              session={session ?? null}
+              onNotify={(tone, msg) => setFeedback({ tone, message: msg })}
+            />
 
             <ChangeRequestsPage isActive={activePage === "changeRequests"} session={session ?? null} />
 

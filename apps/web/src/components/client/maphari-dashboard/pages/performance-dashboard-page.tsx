@@ -4,7 +4,7 @@
 // Source  : snapshot.invoices + snapshot.projects (passed as props)
 // Scope   : CLIENT own-tenant; KPIs derived from billing + project data
 // ════════════════════════════════════════════════════════
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import type { PortalInvoice, PortalProject } from "../../../../lib/api/portal/types";
@@ -13,6 +13,22 @@ import type { PortalInvoice, PortalProject } from "../../../../lib/api/portal/ty
 interface KpiItem {
   label: string; value: string; sub: string; display: string;
   trend: string; positive: boolean; color: string; sparkline: number[];
+}
+
+function exportPerformanceCsv(kpis: KpiItem[]): void {
+  const header = ["Metric", "Value", "Summary"];
+  const rows = kpis.map((kpi) => [kpi.label, kpi.display, kpi.sub]);
+  const escape = (value: string) => "\"" + value.replace(/"/g, "\"\"") + "\"";
+  const csv = [header, ...rows].map((row) => row.map((cell) => escape(cell)).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "performance-dashboard.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // ── Sparkline subcomponent ─────────────────────────────────────────────────
@@ -122,17 +138,6 @@ export function PerformanceDashboardPage({
   invoices: PortalInvoice[];
   projects: PortalProject[];
 }) {
-  const [missionControl, setMissionControl] = useState(false);
-
-  useEffect(() => {
-    if (!missionControl) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMissionControl(false);
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [missionControl]);
-
   const KPI_DATA = useMemo(
     () => buildKpiData(invoices, projects),
     [invoices, projects],
@@ -144,15 +149,14 @@ export function PerformanceDashboardPage({
         <div>
           <div className={cx("pageEyebrow")}>Reporting · Performance</div>
           <h1 className={cx("pageTitle")}>Performance Dashboard</h1>
-          <p className={cx("pageSub")}>Key performance indicators, team delivery metrics, and quality benchmarks across your project.</p>
+          <p className={cx("pageSub")}>Core payment and portfolio performance metrics derived from your invoices and active project status.</p>
         </div>
         <div className={cx("pageActions")}>
-          <button
-            type="button"
-            className={cx("btnSm", "btnAccent")}
-            onClick={() => setMissionControl(true)}
-          >
-            ⊕ Mission Control
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => exportPerformanceCsv(KPI_DATA)} disabled={KPI_DATA.length === 0}>
+            Export CSV
+          </button>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => window.print()}>
+            Download PDF
           </button>
         </div>
       </div>
@@ -175,64 +179,49 @@ export function PerformanceDashboardPage({
         ))}
       </div>
 
-      {/* ── Team Performance ─────────────────────────────────────────────── */}
       <div className={cx("card", "mb16")}>
-        <div className={cx("cardHd")}><span className={cx("cardHdTitle")}>Team Performance</span></div>
-        <div className={cx("listGroup")}>
-          <div className={cx("emptyState")}>
-            <div className={cx("emptyStateIcon")}><Ic n="users" sz={22} c="var(--muted2)" /></div>
-            <div className={cx("emptyStateTitle")}>No team data yet</div>
-            <div className={cx("emptyStateSub")}>Team performance data not yet available.</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Milestone Delivery History ───────────────────────────────────── */}
-      <div className={cx("card")}>
-        <div className={cx("cardHd")}><span className={cx("cardHdTitle")}>Milestone Delivery History</span></div>
-        <div className={cx("listGroup")}>
-          <div className={cx("emptyState")}>
-            <div className={cx("emptyStateIcon")}><Ic n="flag" sz={22} c="var(--muted2)" /></div>
-            <div className={cx("emptyStateTitle")}>No milestones completed</div>
-            <div className={cx("emptyStateSub")}>Delivery history will appear once milestones are completed.</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Mission Control Overlay ──────────────────────────────────────── */}
-      {missionControl && (
-        <div className={cx("fullscreenPanel")}>
-          <div className={cx("p14x24", "borderB", "flexBetween", "noShrink")}>
-            <div>
-              <span className={cx("fw700", "text13")}>Mission Control</span>
-              <span className={cx("text11", "colorMuted", "ml12")}>Performance · Live</span>
-            </div>
-            <div className={cx("flexRow", "gap12")}>
-              <span className={cx("pdLiveIndicator")}>
-                <span className={cx("dotAccentSm", "inlineBlock")} />
-                Live
-              </span>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setMissionControl(false)}>✕ Exit</button>
-            </div>
-          </div>
-          <div className={cx("pdMcGrid")}>
-            {KPI_DATA.map((k, i) => (
-              <div
-                key={k.label}
-                className={cx("pdMcCell", i % 2 === 0 && "pdMcCellBorderR", i < 2 && "pdMcCellBorderB")}
-              >
-                <div className={cx("text11", "colorMuted", "ls008", "textUpper")}>{k.label}</div>
-                <div className={cx("pdMcValue")}>{k.display}</div>
-                <div className={cx("text11", "colorAccent", "opacity70")}>{k.trend}</div>
-                <div className={cx("wMin200x60p")}><Sparkline data={k.sparkline} height={48} /></div>
+        <div className={cx("cardHd")}><span className={cx("cardHdTitle")}>What this dashboard covers</span></div>
+        <div className={cx("cardBodyPad")}>
+          <div className={cx("grid2Cols12Gap")}>
+            <div className={cx("cardS1v2", "p14", "flexCol", "gap6")}>
+              <div className={cx("text11", "fw600", "colorText")}>Included now</div>
+              <div className={cx("text11", "colorMuted", "lineH15")}>
+                Payment rate, invoiced value, active-project stability, and portfolio health derived from your current invoices and project statuses.
               </div>
-            ))}
-          </div>
-          <div className={cx("p8x24", "borderT", "textCenter")}>
-            <span className={cx("text10", "colorMuted")}>Press ESC or click ✕ Exit to close</span>
+            </div>
+            <div className={cx("cardS1v2", "p14", "flexCol", "gap6")}>
+              <div className={cx("text11", "fw600", "colorText")}>Not included yet</div>
+              <div className={cx("text11", "colorMuted", "lineH15")}>
+                Team utilization, milestone-by-milestone delivery timing, and quality scoring are not shown here until those signals are exposed by real client-facing data.
+              </div>
+            </div>
           </div>
         </div>
-      )}
+      </div>
+
+      <div className={cx("card")}>
+        <div className={cx("cardHd")}><span className={cx("cardHdTitle")}>Metric Detail</span></div>
+        <div className={cx("listGroup")}>
+          {KPI_DATA.length === 0 ? (
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}><Ic n="chart" sz={22} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateTitle")}>No performance data yet</div>
+              <div className={cx("emptyStateSub")}>Once invoices and projects are active, this panel will summarize the live KPI detail for your account.</div>
+            </div>
+          ) : KPI_DATA.map((kpi) => (
+            <div key={kpi.label} className={cx("listRow")}>
+              <div className={cx("flexRow", "gap14", "flexAlignCenter", "flexWrap")}>
+                <div className={cx("flex1", "minW160")}>
+                  <div className={cx("fw600", "text12", "mb2")}>{kpi.label}</div>
+                  <div className={cx("text11", "colorMuted")}>{kpi.sub}</div>
+                </div>
+                <div className={cx("text12", "fw700", "noShrink")}>{kpi.display}</div>
+                <div className={cx("wMin120x60p", "noShrink")}><Sparkline data={kpi.sparkline} height={28} /></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

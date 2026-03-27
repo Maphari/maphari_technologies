@@ -111,3 +111,105 @@ export async function setPortalNotificationReadStateWithRefresh(
     return { unauthorized: false, data: response.payload.data, error: null };
   });
 }
+
+export async function setPortalNotificationArchiveStateWithRefresh(
+  session: AuthSession,
+  id: string,
+  archived: boolean
+): Promise<AuthorizedResult<PortalNotificationJob>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalNotificationJob>(`/notifications/jobs/${id}/archive-state`, accessToken, {
+      method: "PATCH",
+      body: { archived }
+    });
+    if (isUnauthorized(response)) {
+      return { unauthorized: true, data: null, error: null };
+    }
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "NOTIFICATION_ARCHIVE_STATE_FAILED",
+          response.payload.error?.message ?? "Unable to update archive state."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function setPortalNotificationSnoozeStateWithRefresh(
+  session: AuthSession,
+  id: string,
+  snoozedUntil: string | null
+): Promise<AuthorizedResult<PortalNotificationJob>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalNotificationJob>(`/notifications/jobs/${id}/snooze-state`, accessToken, {
+      method: "PATCH",
+      body: { snoozedUntil }
+    });
+    if (isUnauthorized(response)) {
+      return { unauthorized: true, data: null, error: null };
+    }
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "NOTIFICATION_SNOOZE_STATE_FAILED",
+          response.payload.error?.message ?? "Unable to update snooze state."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function archiveAllPortalNotificationsWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<{ count: number }>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ count: number }>(
+      "/notifications/archive-all",
+      accessToken,
+      { method: "PATCH" }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "NOTIFICATION_ARCHIVE_ALL_FAILED",
+          response.payload.error?.message ?? "Unable to archive notifications."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? { count: 0 }, error: null };
+  });
+}
+
+export async function restoreSnoozedPortalNotificationsWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<{ count: number }>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ count: number }>(
+      "/notifications/restore-snoozed",
+      accessToken,
+      { method: "PATCH" }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "NOTIFICATION_RESTORE_SNOOZED_FAILED",
+          response.payload.error?.message ?? "Unable to restore snoozed notifications."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? { count: 0 }, error: null };
+  });
+}

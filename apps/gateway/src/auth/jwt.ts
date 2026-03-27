@@ -4,6 +4,7 @@ import type { Role } from "@maphari/contracts";
 export interface JwtScope {
   /** User ID (JWT `sub` claim) */
   userId: string;
+  email?: string;
   role: Role;
   clientId?: string;
   /** JWT ID — unique per-token, used for blacklist-based revocation */
@@ -24,6 +25,7 @@ export function verifyAccessToken(token: string, secret: string): JwtScope | nul
       audience: "maphari-api"
     }) as {
       sub?: string;
+      email?: string;
       role?: Role;
       clientId?: string | null;
       jti?: string;
@@ -35,6 +37,7 @@ export function verifyAccessToken(token: string, secret: string): JwtScope | nul
 
     return {
       userId:   payload.sub,
+      email:    payload.email ?? undefined,
       role:     payload.role,
       clientId: payload.clientId ?? undefined,
       jti:      payload.jti      ?? undefined

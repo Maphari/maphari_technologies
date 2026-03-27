@@ -2,7 +2,9 @@ import {
   createNotificationJobSchema,
   getNotificationJobsQuerySchema,
   providerCallbackSchema,
+  setNotificationArchiveStateSchema,
   setNotificationReadStateSchema,
+  setNotificationSnoozeStateSchema,
   type ApiResponse
 } from "@maphari/contracts";
 import { verifyWebhookSignature } from "@maphari/platform";
@@ -10,11 +12,15 @@ import type { FastifyInstance } from "fastify";
 import { enforceCallbackRateLimit } from "../lib/callback-rate-limit.js";
 import {
   applyProviderCallback,
+  archiveAllJobs,
   enqueueJob,
   listJobs,
   markAllJobsRead,
   processNextJob,
+  restoreSnoozedJobs,
+  setNotificationArchiveState,
   setNotificationReadState,
+  setNotificationSnoozeState,
   unreadCounts
 } from "../lib/queue.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
@@ -161,6 +167,77 @@ export async function registerNotificationRoutes(app: FastifyInstance): Promise<
     } as ApiResponse<typeof updated>;
   });
 
+  app.patch<{ Params: { id: string } }>("/notifications/jobs/:id/archive-state", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const parsedBody = setNotificationArchiveStateSchema.safeParse(request.body);
+    if (!parsedBody.success) {
+      reply.status(400);
+      return {
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Invalid archive-state payload",
+          details: parsedBody.error.flatten()
+        }
+      } as ApiResponse;
+    }
+
+    const updated = await setNotificationArchiveState(request.params.id, parsedBody.data.archived, {
+      userId: scope.userId,
+      role: scope.role
+    });
+    if (!updated) {
+      reply.status(404);
+      return {
+        success: false,
+        error: {
+          code: "JOB_NOT_FOUND",
+          message: "Notification job not found"
+        }
+      } as ApiResponse;
+    }
+
+    return {
+      success: true,
+      data: updated,
+      meta: { requestId: scope.requestId }
+    } as ApiResponse<typeof updated>;
+  });
+
+  app.patch<{ Params: { id: string } }>("/notifications/jobs/:id/snooze-state", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    const parsedBody = setNotificationSnoozeStateSchema.safeParse(request.body);
+    if (!parsedBody.success) {
+      reply.status(400);
+      return {
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Invalid snooze payload",
+          details: parsedBody.error.flatten()
+        }
+      } as ApiResponse;
+    }
+
+    const updated = await setNotificationSnoozeState(request.params.id, parsedBody.data.snoozedUntil);
+    if (!updated) {
+      reply.status(404);
+      return {
+        success: false,
+        error: {
+          code: "JOB_NOT_FOUND",
+          message: "Notification job not found"
+        }
+      } as ApiResponse;
+    }
+
+    return {
+      success: true,
+      data: updated,
+      meta: { requestId: scope.requestId }
+    } as ApiResponse<typeof updated>;
+  });
+
   app.patch("/notifications/mark-all-read", async (request, reply) => {
     const scope = readScopeHeaders(request);
     const clientId = resolveClientFilter(scope.role, scope.clientId);
@@ -168,6 +245,31 @@ export async function registerNotificationRoutes(app: FastifyInstance): Promise<
       userId: scope.userId,
       role: scope.role as "ADMIN" | "STAFF" | "CLIENT"
     });
+    return {
+      success: true,
+      data: result,
+      meta: { requestId: scope.requestId }
+    } as ApiResponse<typeof result>;
+  });
+
+  app.patch("/notifications/archive-all", async (request) => {
+    const scope = readScopeHeaders(request);
+    const clientId = resolveClientFilter(scope.role, scope.clientId);
+    const result = await archiveAllJobs(clientId, {
+      userId: scope.userId,
+      role: scope.role as "ADMIN" | "STAFF" | "CLIENT"
+    });
+    return {
+      success: true,
+      data: result,
+      meta: { requestId: scope.requestId }
+    } as ApiResponse<typeof result>;
+  });
+
+  app.patch("/notifications/restore-snoozed", async (request) => {
+    const scope = readScopeHeaders(request);
+    const clientId = resolveClientFilter(scope.role, scope.clientId);
+    const result = await restoreSnoozedJobs(clientId);
     return {
       success: true,
       data: result,

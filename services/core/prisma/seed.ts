@@ -48,8 +48,65 @@ const now = new Date();
 const daysFromNow = (d: number) => new Date(now.getTime() + d * 24 * 60 * 60 * 1000);
 const daysAgo = (d: number) => new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
 
+const INTEGRATION_PROVIDERS = [
+  { id: "f1000000-0000-0000-0000-000000000001", key: "gcal",       label: "Google Calendar", category: "calendar",           kind: "oauth",       availabilityStatus: "active",      isRequestEnabled: false, supportsDisconnect: true,  supportsReconnect: true,  supportsHealthChecks: true,  sortOrder: 1, iconKey: "gcal",       description: "Sync scheduled meetings and milestone due dates to your Google Calendar." },
+  { id: "f1000000-0000-0000-0000-000000000002", key: "slack",      label: "Slack",           category: "communication",      kind: "oauth",       availabilityStatus: "beta",        isRequestEnabled: false, supportsDisconnect: true,  supportsReconnect: true,  supportsHealthChecks: true,  sortOrder: 2, iconKey: "slack",      description: "Receive project notifications, approvals, and alerts directly in your Slack workspace." },
+  { id: "f1000000-0000-0000-0000-000000000003", key: "msteams",    label: "Microsoft Teams", category: "communication",      kind: "assisted",    availabilityStatus: "active",      isRequestEnabled: true,  supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 3, iconKey: "msteams",    description: "Route project notifications and updates to your Teams channels." },
+  { id: "f1000000-0000-0000-0000-000000000004", key: "gdrive",     label: "Google Drive",    category: "files",              kind: "assisted",    availabilityStatus: "beta",        isRequestEnabled: true,  supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 4, iconKey: "gdrive",     description: "Export approved deliverables and project files into your Google Drive workspace." },
+  { id: "f1000000-0000-0000-0000-000000000005", key: "dropbox",    label: "Dropbox",         category: "files",              kind: "assisted",    availabilityStatus: "active",      isRequestEnabled: true,  supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 5, iconKey: "dropbox",    description: "Automatically sync project file deliverables to your Dropbox folder." },
+  { id: "f1000000-0000-0000-0000-000000000006", key: "quickbooks", label: "QuickBooks",      category: "finance",            kind: "assisted",    availabilityStatus: "beta",        isRequestEnabled: true,  supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 6, iconKey: "quickbooks", description: "Push approved invoices and finance records into QuickBooks." },
+  { id: "f1000000-0000-0000-0000-000000000007", key: "xero",       label: "Xero",            category: "finance",            kind: "assisted",    availabilityStatus: "active",      isRequestEnabled: true,  supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 7, iconKey: "xero",       description: "Automatically push approved invoices to your Xero accounting platform." },
+  { id: "f1000000-0000-0000-0000-000000000008", key: "zapier",     label: "Zapier",          category: "automation",         kind: "coming_soon", availabilityStatus: "coming_soon", isRequestEnabled: false, supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 8, iconKey: "zapier",     description: "Connect your project data to thousands of tools via automated Zapier workflows." },
+  { id: "f1000000-0000-0000-0000-000000000009", key: "hubspot",    label: "HubSpot",         category: "crm",                kind: "coming_soon", availabilityStatus: "coming_soon", isRequestEnabled: false, supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 9, iconKey: "hubspot",    description: "View project health and delivery metrics inside your HubSpot CRM." },
+  { id: "f1000000-0000-0000-0000-000000000010", key: "salesforce", label: "Salesforce",      category: "crm",                kind: "coming_soon", availabilityStatus: "coming_soon", isRequestEnabled: false, supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 10, iconKey: "salesforce", description: "Expose project health and delivery signals to your Salesforce workflows." },
+  { id: "f1000000-0000-0000-0000-000000000011", key: "notion",     label: "Notion",          category: "documentation",      kind: "coming_soon", availabilityStatus: "coming_soon", isRequestEnabled: false, supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 11, iconKey: "notion",     description: "Export meeting notes and decision logs directly to a Notion workspace." },
+  { id: "f1000000-0000-0000-0000-000000000012", key: "jira",       label: "Jira",            category: "project_management", kind: "coming_soon", availabilityStatus: "coming_soon", isRequestEnabled: false, supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 12, iconKey: "jira",       description: "Bridge project tasks, milestones, and delivery updates into Jira." },
+  { id: "f1000000-0000-0000-0000-000000000013", key: "asana",      label: "Asana",           category: "project_management", kind: "coming_soon", availabilityStatus: "coming_soon", isRequestEnabled: false, supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 13, iconKey: "asana",      description: "Synchronize planning and delivery workflows with Asana." },
+  { id: "f1000000-0000-0000-0000-000000000014", key: "clickup",    label: "ClickUp",         category: "project_management", kind: "coming_soon", availabilityStatus: "coming_soon", isRequestEnabled: false, supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 14, iconKey: "clickup",    description: "Keep work management aligned by syncing delivery updates to ClickUp." },
+  { id: "f1000000-0000-0000-0000-000000000015", key: "docusign",   label: "DocuSign",        category: "approvals",          kind: "coming_soon", availabilityStatus: "coming_soon", isRequestEnabled: false, supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 15, iconKey: "docusign",   description: "Route agreements and approvals into DocuSign signature workflows." },
+  { id: "f1000000-0000-0000-0000-000000000016", key: "pandadoc",   label: "PandaDoc",        category: "approvals",          kind: "coming_soon", availabilityStatus: "coming_soon", isRequestEnabled: false, supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 16, iconKey: "pandadoc",   description: "Send client approvals and commercial documents through PandaDoc." },
+  { id: "f1000000-0000-0000-0000-000000000017", key: "sharepoint", label: "SharePoint",      category: "files",              kind: "assisted",    availabilityStatus: "beta",        isRequestEnabled: true,  supportsDisconnect: false, supportsReconnect: false, supportsHealthChecks: false, sortOrder: 17, iconKey: "sharepoint", description: "Sync approved deliverables to enterprise SharePoint libraries." },
+] as const;
+
 async function main() {
   console.log("🌱 Seeding core database…");
+
+  for (const provider of INTEGRATION_PROVIDERS) {
+    await prisma.integrationProvider.upsert({
+      where: { key: provider.key },
+      update: {
+        label: provider.label,
+        description: provider.description,
+        category: provider.category,
+        kind: provider.kind,
+        availabilityStatus: provider.availabilityStatus,
+        iconKey: provider.iconKey,
+        isClientVisible: true,
+        isRequestEnabled: provider.isRequestEnabled,
+        supportsDisconnect: provider.supportsDisconnect,
+        supportsReconnect: provider.supportsReconnect,
+        supportsHealthChecks: provider.supportsHealthChecks,
+        sortOrder: provider.sortOrder,
+      },
+      create: {
+        id: provider.id,
+        key: provider.key,
+        label: provider.label,
+        description: provider.description,
+        category: provider.category,
+        kind: provider.kind,
+        availabilityStatus: provider.availabilityStatus,
+        iconKey: provider.iconKey,
+        isClientVisible: true,
+        isRequestEnabled: provider.isRequestEnabled,
+        supportsDisconnect: provider.supportsDisconnect,
+        supportsReconnect: provider.supportsReconnect,
+        supportsHealthChecks: provider.supportsHealthChecks,
+        sortOrder: provider.sortOrder,
+      },
+    });
+  }
+  console.log(`  ✓ Integration providers (${INTEGRATION_PROVIDERS.length})`);
 
   // ── 1. Clients ───────────────────────────────────────────────────────────
   await prisma.client.upsert({

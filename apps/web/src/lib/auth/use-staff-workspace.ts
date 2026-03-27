@@ -186,13 +186,22 @@ export function useStaffWorkspace() {
     }
 
     saveSession(result.nextSession);
-    setState((previous) => ({
-      ...previous,
-      session: result.nextSession,
-      conversationMessages: result.data ?? [],
-      messagesLoading: options.background ? previous.messagesLoading : false,
-      error: result.error?.message ?? null
-    }));
+    setState((previous) => {
+      if (previous.selectedConversationId !== conversationId) {
+        return {
+          ...previous,
+          session: result.nextSession,
+          messagesLoading: options.background ? previous.messagesLoading : false,
+        };
+      }
+      return {
+        ...previous,
+        session: result.nextSession,
+        conversationMessages: result.data ?? [],
+        messagesLoading: options.background ? previous.messagesLoading : false,
+        error: result.error?.message ?? null
+      };
+    });
   }, [applySignedOutState]);
 
   const refreshConversationContext = useCallback(async (
@@ -215,13 +224,18 @@ export function useStaffWorkspace() {
       return;
     }
     saveSession(nextSession);
-    setState((previous) => ({
-      ...previous,
-      session: nextSession,
-      conversationNotes: notesResult.data ?? [],
-      conversationEscalations: escalationsResult.data ?? [],
-      error: notesResult.error?.message ?? escalationsResult.error?.message ?? null
-    }));
+    setState((previous) => {
+      if (previous.selectedConversationId !== conversationId) {
+        return { ...previous, session: nextSession };
+      }
+      return {
+        ...previous,
+        session: nextSession,
+        conversationNotes: notesResult.data ?? [],
+        conversationEscalations: escalationsResult.data ?? [],
+        error: notesResult.error?.message ?? escalationsResult.error?.message ?? null
+      };
+    });
   }, [applySignedOutState]);
 
   useEffect(() => {
@@ -300,13 +314,17 @@ export function useStaffWorkspace() {
   }, [applySignedOutState]);
 
   const selectConversation = useCallback((conversationId: string) => {
-    setState((previous) => ({
-      ...previous,
-      selectedConversationId: conversationId,
-      conversationMessages: [],
-      conversationNotes: [],
-      conversationEscalations: []
-    }));
+    setState((previous) => {
+      if (previous.selectedConversationId === conversationId) return previous;
+      return {
+        ...previous,
+        selectedConversationId: conversationId,
+        conversationMessages: [],
+        conversationNotes: [],
+        conversationEscalations: [],
+        messagesLoading: true,
+      };
+    });
   }, []);
 
   const sendMessage = useCallback(async (conversationId: string, content: string) => {

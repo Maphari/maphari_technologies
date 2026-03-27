@@ -1,0 +1,28 @@
+groups:
+  - name: maphari-integration-operations
+    rules:
+      - alert: CreateExternalLinkFailedSpike
+        expr: |
+          sum(rate(http_requests_total{service="core",route="/admin/integrations/tasks/:taskId/create-external-link",status=~"5.."}[10m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service_group: integrations
+        annotations:
+          summary: "Create external link failures are elevated"
+          description: "Core create-external-link endpoint is returning sustained 5xx responses."
+          runbook: "infrastructure/runbooks/alert-thresholds.md#createexternallinkfailedspike"
+
+      - alert: IntegrationSyncLogEndpointErrors
+        expr: |
+          sum(rate(http_requests_total{service="core",route="/admin/tasks/:taskId/integration-sync-events",status=~"5.."}[10m])) > 0.02
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service_group: integrations
+        annotations:
+          summary: "Integration sync-log endpoint errors detected"
+          description: "Task integration sync-log retrieval is failing with sustained 5xx responses."
+          runbook: "infrastructure/runbooks/alert-thresholds.md#integrationsynclogendpointerrors"

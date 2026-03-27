@@ -26,6 +26,7 @@ export interface ClientContact {
   phone: string | null;
   role: string | null;
   isPrimary: boolean;
+  canManageAccess: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -113,11 +114,22 @@ export interface ProjectTask {
   projectId: string;
   title: string;
   assigneeName: string | null;
+  externalLinks?: ProjectTaskExternalLink[] | null;
   status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
   dueAt: string | null;
   createdAt: string;
   updatedAt: string;
   collaborators?: ProjectTaskCollaborator[];
+}
+
+export interface ProjectTaskExternalLink {
+  id: string;
+  providerKey: string;
+  externalId: string;
+  externalUrl: string;
+  title?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ProjectDependency {

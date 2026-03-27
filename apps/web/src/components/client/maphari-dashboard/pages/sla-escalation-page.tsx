@@ -6,7 +6,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
@@ -106,21 +106,42 @@ export function SlaEscalationPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // ── Fetch tickets ─────────────────────────────────────────────────────────
-  useEffect(() => {
+  const loadTickets = useCallback(async () => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
     setError(null);
-    loadPortalSupportTicketsWithRefresh(session).then((result) => {
+    try {
+      const result = await loadPortalSupportTicketsWithRefresh(session);
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.error) { setError(result.error.message ?? "Failed to load."); return; }
-      if (result.data) setTickets(result.data.map(mapTicket));
-    }).catch((err: unknown) => {
+      if (result.error) {
+        setError(result.error.message ?? "Failed to load.");
+        setTickets([]);
+        return;
+      }
+      setTickets((result.data ?? []).map(mapTicket));
+    } catch (err: unknown) {
       setError((err as Error)?.message ?? "Failed to load");
-    }).finally(() => setLoading(false));
+      setTickets([]);
+    } finally {
+      setLoading(false);
+    }
   }, [session]);
 
+  // ── Fetch tickets ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadTickets();
+    });
+  }, [loadTickets]);
+
   const openTickets = tickets.filter((t) => t.status !== "Resolved");
+  const highPriorityOpen = openTickets.filter((t) => t.priority === "High").length;
+  const resolvedTickets = tickets.filter((t) => t.status === "Resolved").length;
+  const assignedCoverage = useMemo(() => {
+    if (openTickets.length === 0) return "No active queue";
+    const assigned = openTickets.filter((t) => t.assignedName !== "Unassigned").length;
+    return assigned + "/" + openTickets.length + " assigned";
+  }, [openTickets]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -165,10 +186,15 @@ export function SlaEscalationPage() {
   if (error) {
     return (
       <div className={cx("pageBody")}>
-        <div className={cx("errorState")}>
-          <div className={cx("errorStateIcon")}>✕</div>
-          <div className={cx("errorStateTitle")}>Failed to load</div>
-          <div className={cx("errorStateSub")}>{error}</div>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="alert" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>Unable to load support SLA data</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+          <div className={cx("mt12")}>
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadTickets()}>
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -185,56 +211,60 @@ export function SlaEscalationPage() {
           <p className={cx("pageSub")}>Your service level agreement, response times, and escalation process.</p>
         </div>
         <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadTickets()}>
+            Refresh
+          </button>
           <a href="#raise-ticket" className={cx("btnSm", "btnAccent")}>
             <Ic n="plus" sz={13} c="var(--bg)" /> Raise a Ticket
           </a>
         </div>
       </div>
 
-      {/* ── Metric stat cards ── */}
-      <div className={cx("topCardsStack")}>
-        <div className={cx("statCard", "statCardAccent")}>
-          <div className={cx("statLabel")}>Overall SLA Health</div>
-          <div className={cx("statValue")}>98%</div>
-          <div className={cx("flexRow", "flexCenter", "gap5", "mt6")}>
-            <Ic n="trending" sz={11} c="var(--lime)" />
-            <span className={cx("fs065", "colorAccent", "fw600")}>Excellent</span>
+      <div className={cx("grid2", "mb16")}>
+        <div className={cx("cardS1v2", "p20")}>
+          <div className={cx("flexBetween", "gap12", "mb16", "flexWrap")}>
+            <div>
+              <div className={cx("text10", "uppercase", "tracking", "colorMuted", "mb4")}>Professional Tier</div>
+              <div className={cx("text16", "fw800", "mb4")}>Client Support Coverage</div>
+              <div className={cx("text12", "colorMuted", "lineH165")}>
+                Your account is covered by the standard response window, directed escalation, and tracked ticket ownership.
+              </div>
+            </div>
+            <div className={cx("badge", "badgeAccent", "selfStart")}>Live SLA</div>
           </div>
-        </div>
-        <div className={cx("statCard", "statCardGreen")}>
-          <div className={cx("statLabel")}>Response Time</div>
-          <div className={cx("statValue")}>&lt; 2h</div>
-          <div className={cx("flexRow", "flexCenter", "gap5", "mt6")}>
-            <Ic n="check" sz={11} c="var(--green)" />
-            <span className={cx("fs065", "colorGreen", "fw600")}>Achieved</span>
-          </div>
-        </div>
-        <div className={cx("statCard", "statCardGreen")}>
-          <div className={cx("statLabel")}>Resolution Time</div>
-          <div className={cx("statValue")}>&lt; 24h</div>
-          <div className={cx("flexRow", "flexCenter", "gap5", "mt6")}>
-            <Ic n="check" sz={11} c="var(--green)" />
-            <span className={cx("fs065", "colorGreen", "fw600")}>Achieved</span>
-          </div>
-        </div>
-        <div className={cx("statCard", "statCardAmber")}>
-          <div className={cx("statLabel")}>Open Tickets</div>
-          <div className={cx("statValue")}>{openTickets.length}</div>
-          <div className={cx("flexRow", "flexCenter", "gap5", "mt6")}>
-            <Ic n="clock" sz={11} c="var(--amber)" />
-            <span className={cx("fs065", "colorAmber", "fw600")}>Awaiting resolution</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Two-col: SLA Tier + Active Tickets ── */}
-      <div className={cx("grid2")}>
-
-        {/* Current SLA tier */}
-        <div className={cx("card", "borderLeftAccent")}>
-          <div className={cx("cardHd")}>
-            <span className={cx("cardHdTitle")}>Current SLA Tier</span>
-            <span className={cx("badge", "badgeAccent")}>Professional</span>
+          <div className={cx("grid2Cols12Gap", "mb16")}>
+            <div className={cx("statCard", "statCardAccent")}>
+              <div className={cx("statLabel")}>Active Queue</div>
+              <div className={cx("statValue")}>{openTickets.length}</div>
+              <div className={cx("flexRow", "flexCenter", "gap5", "mt6")}>
+                <Ic n="clock" sz={11} c="var(--lime)" />
+                <span className={cx("fs065", "colorAccent", "fw600")}>{openTickets.length === 0 ? "No open tickets" : "Awaiting response"}</span>
+              </div>
+            </div>
+            <div className={cx("statCard", "statCardGreen")}>
+              <div className={cx("statLabel")}>Resolved Tickets</div>
+              <div className={cx("statValue")}>{resolvedTickets}</div>
+              <div className={cx("flexRow", "flexCenter", "gap5", "mt6")}>
+                <Ic n="check" sz={11} c="var(--green)" />
+                <span className={cx("fs065", "colorGreen", "fw600")}>Closed successfully</span>
+              </div>
+            </div>
+            <div className={cx("statCard", "statCardGreen")}>
+              <div className={cx("statLabel")}>Assigned Coverage</div>
+              <div className={cx("statValue")}>{assignedCoverage}</div>
+              <div className={cx("flexRow", "flexCenter", "gap5", "mt6")}>
+                <Ic n="users" sz={11} c="var(--green)" />
+                <span className={cx("fs065", "colorGreen", "fw600")}>Current ownership</span>
+              </div>
+            </div>
+            <div className={cx("statCard", "statCardAmber")}>
+              <div className={cx("statLabel")}>High Priority</div>
+              <div className={cx("statValue")}>{highPriorityOpen}</div>
+              <div className={cx("flexRow", "flexCenter", "gap5", "mt6")}>
+                <Ic n="alert" sz={11} c="var(--amber)" />
+                <span className={cx("fs065", "colorAmber", "fw600")}>{highPriorityOpen === 0 ? "No urgent escalations" : "Needs close attention"}</span>
+              </div>
+            </div>
           </div>
           <div className={cx("listGroup")}>
             {SLA_FEATURES.map((f) => {
@@ -257,18 +287,19 @@ export function SlaEscalationPage() {
           </div>
         </div>
 
-        {/* Active tickets */}
-        <div className={cx("card")}>
+        <div className={cx("card", "p0", "overflowHidden")}>
           <div className={cx("cardHd")}>
-            <span className={cx("cardHdTitle")}>Active Tickets</span>
+            <span className={cx("cardHdTitle")}>Live Support Queue</span>
             <span className={cx("badge", openTickets.length > 0 ? "badgeAmber" : "badgeGreen")}>
               {openTickets.length} Open
             </span>
           </div>
           <div className={cx("listGroup")}>
             {openTickets.length === 0 ? (
-              <div className={cx("cardInner")}>
-                <p className={cx("text13", "colorMuted")}>No open tickets. All clear!</p>
+              <div className={cx("emptyState")}>
+                <div className={cx("emptyStateIcon")}><Ic n="check" sz={22} c="var(--muted2)" /></div>
+                <div className={cx("emptyStateTitle")}>No active support tickets</div>
+                <div className={cx("emptyStateSub")}>Your queue is clear. Raise a ticket below if you need help from the team.</div>
               </div>
             ) : (
               openTickets.map((t) => {
@@ -277,12 +308,13 @@ export function SlaEscalationPage() {
                   <div key={t.id} className={cx("listRow", "slaTicketRow", "dynBorderLeft3")} style={{ "--color": pColor } as React.CSSProperties}>
                     <div className={cx("flexBetweenStart", "gap8")}>
                       <div className={cx("flex1", "minW0")}>
-                        <div className={cx("flexRow", "flexCenter", "gap8", "mb4")}>
+                        <div className={cx("flexRow", "flexCenter", "gap8", "mb4", "flexWrap")}>
                           <span className={cx("text10", "colorMuted", "fw600")}>{t.id}</span>
                           <span className={cx("badge", PRIORITY_BADGE[t.priority])}>{t.priority}</span>
+                          <span className={cx("badge", t.status === "In Progress" ? "badgeAccent" : "badgeAmber")}>{t.status}</span>
                         </div>
                         <div className={cx("text12", "fw600", "mb6")}>{t.subject}</div>
-                        <div className={cx("flexRow", "gap12")}>
+                        <div className={cx("flexRow", "gap12", "flexWrap")}>
                           <div className={cx("flexRow", "gap4")}>
                             <Ic n="clock" sz={11} c="var(--muted2)" />
                             <span className={cx("text10", "colorMuted")}>Opened {t.opened}</span>
@@ -303,8 +335,8 @@ export function SlaEscalationPage() {
                       <button type="button" className={cx("btnSm", "btnGhost")}>
                         <Ic n="eye" sz={12} c="var(--muted)" /> View
                       </button>
-                      <button type="button" className={cx("btnSm", "btnGhost")}>
-                        <Ic n="alert" sz={12} c="var(--amber)" /> Escalate
+                      <button type="button" className={cx("btnSm", "btnGhost")} disabled={t.priority !== "High"}>
+                        <Ic n="alert" sz={12} c={t.priority === "High" ? "var(--amber)" : "var(--muted2)"} /> Escalate
                       </button>
                     </div>
                   </div>

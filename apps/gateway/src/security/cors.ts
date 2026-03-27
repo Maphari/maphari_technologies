@@ -1,5 +1,6 @@
 export interface CorsPolicy {
   credentials: boolean;
+  methods: string[];
   origin: (origin: string | undefined, callback: (error: Error | null, allowed: boolean) => void) => void;
 }
 
@@ -26,6 +27,7 @@ export function createCorsPolicy(env: NodeJS.ProcessEnv = process.env): CorsPoli
 
   return {
     credentials: true,
+    methods: ["GET", "HEAD", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     origin(origin, callback) {
       // ── Missing Origin header ──────────────────────────────────────────────
       // In production environments, every browser request carries an Origin.

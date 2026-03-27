@@ -90,6 +90,10 @@ const P: Record<string, string> = {
   layers: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
   search: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
   user: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z",
+  "mic-off": "M16 11a4 4 0 01-8 0m8 0V7a4 4 0 00-8 0v4m8 0a4 4 0 01-8 0M12 19v4m-4 0h8M1 1l22 22",
+  "video-off": "M16 16v1a2 2 0 01-2 2H3a2 2 0 01-2-2V7a2 2 0 012-2h2m5.66 0H14a2 2 0 012 2v3.34l1 1L21 7v10M1 1l22 22",
+  "phone-off": "M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7 2 2 0 011.72 2v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.42 19.42 0 013.43 9.65M1 1l22 22",
+  "file-text": "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8",
 };
 
 // ── Ic — SVG icon component ───────────────────────────────────────────────
@@ -111,7 +115,7 @@ export function Ic({
       height={sz}
       viewBox="0 0 24 24"
       fill="none"
-      stroke={c}
+      style={{ stroke: c }}
       strokeWidth={sw}
       strokeLinecap="round"
       strokeLinejoin="round"

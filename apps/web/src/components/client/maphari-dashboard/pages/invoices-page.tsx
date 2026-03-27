@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { cx } from "../style";
-import { Ic, Av } from "../ui";
+import { Ic } from "../ui";
 import { usePageToast } from "../hooks/use-page-toast";
 import type { PortalInvoice } from "../../../../lib/api/portal/types";
 import { formatMoneyCents } from "../../../../lib/i18n/currency";
@@ -9,6 +9,11 @@ import { useCurrencyConverter } from "../../../../lib/i18n/exchange-rates";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import { saveSession } from "../../../../lib/auth/session";
 import { initiatePortalPayfastWithRefresh } from "../../../../lib/api/portal/projects";
+import {
+  loadPortalInvoiceReminderPreferenceWithRefresh,
+  savePortalInvoiceReminderPreferenceWithRefresh,
+  sendPortalInvoiceRemindersWithRefresh
+} from "../../../../lib/api/portal";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -18,11 +23,10 @@ type ICategory = "Development" | "Design" | "Retainer" | "Strategy" | "QA";
 
 interface InvItem { desc: string; qty: number; rate: string; total: string; totalRaw: number }
 interface Invoice {
-  id: string; ref: string; date: string; due: string; paidDate?: string;
+  id: string; displayId: string; ref: string; date: string; due: string; paidDate?: string;
   amount: string; amountRaw: number; amountCents: number; currency: string;
   status: IStatus; items: InvItem[];
-  issuedMs: number; category: ICategory; project: string;
-  contact: string; contactInitials: string; notes?: string;
+  issuedMs: number; category: ICategory; notes?: string;
 }
 
 // ── Config ─────────────────────────────────────────────────────────────────────
@@ -45,6 +49,47 @@ const TABS: ITab[] = ["All", "Paid", "Outstanding", "Overdue"];
 const daysOverdue = (issuedMs: number, now: number) => Math.max(0, Math.floor((now - issuedMs) / 86_400_000));
 
 // ── Keyframe animations ────────────────────────────────────────────────────────
+
+function triggerInvoiceCsvDownload(invoices: Invoice[]): void {
+  const header = "Invoice Number,Date,Description,Amount,Status";
+  const rows = invoices.map((invoice) => {
+    const description = invoice.items[0]?.desc ?? invoice.ref;
+    const escapedDescription = description.replace(/"/g, '""');
+    return (
+      invoice.ref +
+      "," +
+      invoice.date +
+      ',"' +
+      escapedDescription +
+      '",' +
+      invoice.amount +
+      "," +
+      invoice.status
+    );
+  });
+  const csv = [header, ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = "maphari-invoices.csv";
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
+const REMINDER_INTERVALS = [
+  { value: "3", label: "3 days before due" },
+  { value: "1", label: "1 day before due" },
+  { value: "0", label: "On due date" },
+];
+
+const CHANNELS = [
+  { value: "email", label: "Email" },
+  { value: "sms", label: "SMS" },
+  { value: "portal", label: "Portal notification" },
+];
 
 const PAGE_STYLES = `
   @keyframes invFadeSlideUp {
@@ -75,10 +120,263 @@ const PAGE_STYLES = `
   .inv-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; }
   .inv-bar-fill { transition: width 800ms cubic-bezier(0.23,1,0.32,1); }
 
+  .reminderPanelCard {
+    width: min(540px, 96vw);
+    max-height: 86vh;
+    overflow-y: auto;
+    padding: 0;
+  }
+  .invPreviewOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    justify-content: flex-end;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .invPreviewPanel {
+    position: relative;
+    width: min(480px, 100vw);
+    height: 100dvh;
+    z-index: 10000;
+    background: var(--s1);
+    border-left: 1px solid var(--b2);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .invPreviewHeader {
+    padding: 18px 20px 16px;
+    border-bottom: 1px solid var(--b1);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+  .invPreviewBrandRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .invPreviewTopMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .invPreviewKicker {
+    font-family: var(--font-dm-mono), monospace;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .invPreviewTitle {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  .invPreviewSub {
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .invPreviewBadgeRow {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .invPreviewDatesCard {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    border-radius: 14px;
+    padding: 14px;
+    background:
+      radial-gradient(circle at top right, rgba(200, 241, 53, 0.1), transparent 36%),
+      linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .invPreviewDateCell {
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: color-mix(in oklab, var(--s2) 92%, #0b1220);
+    border: 1px solid color-mix(in oklab, white 6%, transparent);
+  }
+  .invPreviewBody {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+  }
+  .invPreviewMetaGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .reminderModalOverlay {
+    background: rgba(7, 11, 18, 0.72);
+    backdrop-filter: blur(8px) brightness(0.82);
+    -webkit-backdrop-filter: blur(8px) brightness(0.82);
+  }
+  .reminderPanelBody {
+    padding: 0 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .reminderHeroCard {
+    position: relative;
+    overflow: hidden;
+    border-radius: 14px;
+    margin-top: 10px;
+    padding: 22px 16px 16px;
+    background:
+      radial-gradient(circle at top right, rgba(200, 241, 53, 0.14), transparent 36%),
+      linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .reminderHeroCard::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 36%);
+  }
+  .reminderHeroKicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-dm-mono), monospace;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--lime);
+    margin-bottom: 10px;
+  }
+  .reminderHeroText {
+    font-size: 0.74rem;
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 42ch;
+  }
+  .reminderMetricGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .reminderMetricCard {
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: color-mix(in oklab, var(--s2) 90%, #0b1220);
+    border: 1px solid color-mix(in oklab, white 6%, transparent);
+  }
+  .reminderSuccessIcon {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .reminderSectionCard {
+    border-radius: 14px;
+    padding: 14px;
+    background: var(--s2);
+    border: 1px solid color-mix(in oklab, white 6%, transparent);
+  }
+  .reminderPanelHeader { font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted2); margin-bottom: 6px; }
+  .reminderPanelTitle { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 14px; }
+  .reminderSectionLabel { color: color-mix(in oklab, white 82%, var(--muted2)); }
+  .reminderRow { display: flex; gap: 10px; flex-wrap: wrap; }
+  .reminderChip {
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--b3) 92%, transparent);
+    background: color-mix(in oklab, var(--s2) 94%, #0b1220);
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text);
+    transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  }
+  .reminderChip:hover { border-color: color-mix(in oklab, var(--accent) 40%, var(--b3)); }
+  .reminderChip:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 28%, transparent);
+  }
+  .reminderChipActive {
+    border-color: color-mix(in oklab, var(--accent) 88%, white);
+    background: color-mix(in oklab, var(--accent) 22%, var(--s2));
+    color: color-mix(in oklab, white 92%, var(--accent));
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent);
+  }
+  .reminderHint {
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .reminderActions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 24px 24px;
+  }
+  .reminderNoteInput {
+    color: var(--text);
+    background: color-mix(in oklab, var(--s2) 94%, #0b1220);
+    border-color: color-mix(in oklab, var(--b3) 92%, transparent);
+  }
+  .reminderNoteInput::placeholder { color: var(--muted2); }
+  .reminderNoteInput:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 28%, transparent);
+    outline: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .inv-row, .inv-expand, .inv-check-pop, .inv-modal-in { animation: none; }
     .inv-spinner { animation: invSpin 1.5s linear infinite; }
     .inv-chevron, .inv-progress-fill, .inv-bar-fill { transition: none; }
+  }
+  @media (max-width: 640px) {
+    .invPreviewPanel {
+      width: 100vw;
+    }
+    .invPreviewHeader {
+      padding: 16px;
+      gap: 12px;
+    }
+    .invPreviewBody {
+      padding: 16px;
+    }
+    .invPreviewDatesCard,
+    .invPreviewMetaGrid {
+      grid-template-columns: 1fr;
+    }
+    .reminderPanelBody {
+      padding: 0 16px 16px;
+      gap: 12px;
+    }
+    .reminderMetricGrid {
+      grid-template-columns: 1fr;
+    }
+    .reminderActions {
+      padding: 0 16px 16px;
+      flex-direction: column-reverse;
+      align-items: stretch;
+    }
+    .reminderActions > button {
+      width: 100%;
+    }
   }
 `;
 
@@ -111,33 +409,31 @@ function InvoicePreview({ inv, onClose, onPay, onError }: { inv: Invoice; onClos
   const catCfg = CAT[inv.category];
 
   const metaItems = [
-    { label: "Issue Date", value: inv.date },
-    { label: "Due Date", value: inv.due },
     { label: "Category", value: inv.category },
-    { label: "Project", value: inv.project },
-    { label: "Contact", value: inv.contact },
     { label: "Reference", value: inv.ref },
     ...(inv.paidDate ? [{ label: "Paid On", value: inv.paidDate }] : []),
   ];
 
   return (
-    <>
-      <div onClick={onClose} className={cx("modalBg", "z49")} />
-      <div className={cx("slidePanel")}>
+    <div onClick={onClose} className={cx("invPreviewOverlay")}>
+      <div className={cx("invPreviewPanel")} onClick={(event) => event.stopPropagation()}>
 
-        {/* Brand header */}
-        <div className={cx("invSlidePanelHd")}>
-          <div className={cx("flexBetween", "mb12")}>
-            <span className={cx("fontMono", "fw800", "uppercase", "invRefLabel")}>
-              Maphari Technologies
-            </span>
-            <button type="button" onClick={onClose} className={cx("iconBtn")}>
+        <div className={cx("invPreviewHeader")}>
+          <div className={cx("invPreviewBrandRow")}>
+            <div className={cx("invPreviewTopMeta")}>
+              <span className={cx("invPreviewKicker")}>Maphari Technologies</span>
+              <div className={cx("invPreviewTitle")}>{inv.ref}</div>
+              <div className={cx("invPreviewSub")}>
+                Review the invoice details, line items, due date, and payment state before downloading or paying.
+              </div>
+            </div>
+            <button type="button" onClick={onClose} className={cx("iconBtn", "noShrink")}>
               <Ic n="x" sz={18} />
             </button>
           </div>
-          <div className={cx("flexRow", "flexCenter", "gap8", "flexWrap")}>
+          <div className={cx("invPreviewBadgeRow")}>
             <span className={cx("badge", "badgeMuted")}>
-              <span className={cx("fontMono")}>{inv.id}</span>
+              <span className={cx("fontMono")}>{inv.displayId}</span>
             </span>
             <span className={cx("badge", statusBadge(inv.status))}>{inv.status}</span>
             <span className={cx("badge", "badgeMuted", "inlineFlex", "gap4")}>
@@ -145,13 +441,24 @@ function InvoicePreview({ inv, onClose, onPay, onError }: { inv: Invoice; onClos
               <span>{inv.category}</span>
             </span>
           </div>
+
+          <div className={cx("invPreviewDatesCard")}>
+            <div className={cx("invPreviewDateCell")}>
+              <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls012", "mb4")}>Issue date</div>
+              <div className={cx("fw700", "text12")}>{inv.date}</div>
+            </div>
+            <div className={cx("invPreviewDateCell")}>
+              <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls012", "mb4")}>Due date</div>
+              <div className={cx("fw700", "text12")}>{inv.due}</div>
+            </div>
+          </div>
         </div>
 
         {/* Scrollable content */}
-        <div className={cx("flex1", "overflowYAuto", "py20_px", "px24_px")}>
+        <div className={cx("invPreviewBody")}>
 
           {/* Meta grid */}
-          <div className={cx("grid2Cols", "gap10", "mb24")}>
+          <div className={cx("invPreviewMetaGrid")}>
             {metaItems.map(({ label, value }) => (
               <div key={label} className={cx("invMetaCell")}>
                 <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls012", "mb4")}>{label}</div>
@@ -235,7 +542,7 @@ function InvoicePreview({ inv, onClose, onPay, onError }: { inv: Invoice; onClos
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -256,6 +563,21 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
   const [payLoading, setPayLoading] = useState(false);
+  const [reminderPanelOpen, setReminderPanelOpen] = useState(false);
+  const [reminderInterval, setReminderInterval] = useState<string>("3");
+  const [reminderChannels, setReminderChannels] = useState<string[]>(["email"]);
+  const [reminderNote, setReminderNote] = useState("");
+  const [reminderLoading, setReminderLoading] = useState(false);
+  const [reminderSuccess, setReminderSuccess] = useState<string | null>(null);
+  const [reminderPrefsLoaded, setReminderPrefsLoaded] = useState(false);
+
+  function buildPayfastReturnUrl(invoiceId: string, status: "success" | "cancelled"): string {
+    const url = new URL(window.location.href);
+    url.searchParams.set("payment", status);
+    url.searchParams.set("paymentProvider", "payfast");
+    url.searchParams.set("paymentInvoiceId", invoiceId);
+    return url.toString();
+  }
 
   const now = Date.now();
 
@@ -267,8 +589,8 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
     setPayError(null);
     const r = await initiatePortalPayfastWithRefresh(session, {
       invoiceId,
-      returnUrl: window.location.href,
-      cancelUrl: window.location.href,
+      returnUrl: buildPayfastReturnUrl(invoiceId, "success"),
+      cancelUrl: buildPayfastReturnUrl(invoiceId, "cancelled"),
     });
     if (r.nextSession) saveSession(r.nextSession);
     if (r.error || !r.data) {
@@ -296,11 +618,23 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
       form.appendChild(input);
     });
 
+    const fallbackTimer = window.setTimeout(() => {
+      if (document.visibilityState === "visible") {
+        form.remove();
+        setPayError("PayFast did not open. Please try again. If this persists, reload the portal and try again.");
+        setPayLoading(false);
+      }
+    }, 4000);
+
     try {
       document.body.appendChild(form);
-      form.submit();
+      requestAnimationFrame(() => {
+        window.clearTimeout(fallbackTimer);
+        form.submit();
+      });
     } catch {
-      document.body.removeChild(form);
+      window.clearTimeout(fallbackTimer);
+      form.remove();
       setPayError("Failed to redirect to PayFast. Please try again.");
       setPayLoading(false);
     }
@@ -319,8 +653,9 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
       const invCurrency = inv.currency || "ZAR";
       const fmtInv = (cents: number) => formatMoneyCents(cents, { currency: invCurrency });
       return {
-        id: inv.number || inv.id.slice(0, 8).toUpperCase(),
-        ref: `Invoice ${inv.number}`,
+        id: inv.id,
+        displayId: inv.number || inv.id.slice(0, 8).toUpperCase(),
+        ref: "Invoice " + inv.number,
         date: inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—",
         due: inv.dueAt ? new Date(inv.dueAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—",
         paidDate: inv.paidAt ? new Date(inv.paidAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : undefined,
@@ -329,22 +664,155 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
         amountCents,
         currency: invCurrency,
         status,
-        items: [{ desc: `Service - Invoice ${inv.number}`, qty: 1, rate: fmtInv(amountCents), total: fmtInv(amountCents), totalRaw: amountRaw }],
+        items: [{ desc: "Service - Invoice " + inv.number, qty: 1, rate: fmtInv(amountCents), total: fmtInv(amountCents), totalRaw: amountRaw }],
         issuedMs: inv.issuedAt ? new Date(inv.issuedAt).getTime() : new Date(inv.createdAt).getTime(),
         category: "Development" as ICategory,
-        project: "Active Project",
-        contact: "Account Manager",
-        contactInitials: "AM",
       };
     });
   }, [apiInvoices]);
+
+  const outstandingInvoices = invoiceData.filter((invoice) => invoice.status !== "Paid");
+  const hasInvoices = invoiceData.length > 0;
+  const reminderIntervalLabel = REMINDER_INTERVALS.find((option) => option.value === reminderInterval)?.label ?? "Reminder";
+
+  const openReminderPanel = () => {
+    if (!hasInvoices) return;
+    setReminderSuccess(null);
+    setReminderPrefsLoaded(false);
+    setReminderPanelOpen(true);
+  };
+
+  const closeReminderPanel = () => {
+    if (reminderLoading) return;
+    setReminderPanelOpen(false);
+  };
+
+  const toggleReminderChannel = (channel: string) => {
+    setReminderChannels((list) =>
+      list.includes(channel) ? list.filter((item) => item !== channel) : [...list, channel]
+    );
+  };
+
+  useEffect(() => {
+    if (!reminderPanelOpen || !session || reminderPrefsLoaded) return;
+
+    let active = true;
+    void (async () => {
+      const response = await loadPortalInvoiceReminderPreferenceWithRefresh(session);
+      if (!active) return;
+      if (response.nextSession) saveSession(response.nextSession);
+      if (response.error) {
+        notify("error", "Unable to load reminder settings", response.error.message);
+        return;
+      }
+      if (response.data) {
+        setReminderInterval(String(response.data.intervalDays));
+        setReminderChannels(response.data.channels.length > 0 ? response.data.channels : ["email"]);
+        setReminderNote(response.data.note ?? "");
+      }
+      setReminderPrefsLoaded(true);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [notify, reminderPanelOpen, reminderPrefsLoaded, session]);
+
+  async function handleSavePreferences() {
+    if (!session) {
+      notify("error", "Unable to save preferences", "Sign in again to update reminder settings.");
+      return;
+    }
+    if (reminderChannels.length === 0) {
+      notify("error", "Choose a channel", "Select at least one reminder channel.");
+      return;
+    }
+
+    setReminderLoading(true);
+    const response = await savePortalInvoiceReminderPreferenceWithRefresh(session, {
+      enabled: true,
+      intervalDays: Number(reminderInterval) as 0 | 1 | 3,
+      channels: reminderChannels as Array<"email" | "sms" | "portal">,
+      note: reminderNote.trim() || undefined
+    });
+    setReminderLoading(false);
+    if (response.nextSession) saveSession(response.nextSession);
+    if (response.error || !response.data) {
+      notify("error", "Preferences not saved", response.error?.message ?? "Unable to save reminder preferences.");
+      return;
+    }
+    setReminderPrefsLoaded(true);
+    notify(
+      "success",
+      "Preferences saved",
+      "We’ll remind you " +
+        reminderIntervalLabel.toLowerCase() +
+        " using " +
+        reminderChannels.join(" & ") +
+        "."
+    );
+  };
+
+  async function handleSendReminderRequest() {
+    if (!session || !session.user?.clientId) {
+      notify("error", "Unable to request reminder", "Sign in again to request payment reminders.");
+      return;
+    }
+    if (reminderChannels.length === 0) {
+      notify("error", "Choose a channel", "Select at least one reminder channel.");
+      return;
+    }
+    if (outstandingInvoices.length === 0) {
+      notify("info", "No outstanding invoices", "All invoices are settled. No reminders needed.");
+      return;
+    }
+    setReminderLoading(true);
+    const response = await sendPortalInvoiceRemindersWithRefresh(session, {
+      invoiceIds: outstandingInvoices.map((invoice) => invoice.id),
+      channels: reminderChannels as Array<"email" | "sms" | "portal">,
+      note: reminderNote.trim() || undefined
+    });
+    setReminderLoading(false);
+    if (response.nextSession) saveSession(response.nextSession);
+    if (response.error || !response.data) {
+      notify("error", "Reminder Request Failed", response.error?.message ?? "Unable to send reminders.");
+      return;
+    }
+    setReminderSuccess(
+      "Reminder queued for " +
+      response.data.invoicesMatched +
+      " invoice" +
+      (response.data.invoicesMatched === 1 ? "" : "s") +
+      " across " +
+      response.data.notificationsQueued +
+      " " +
+      (response.data.notificationsQueued === 1 ? "delivery" : "deliveries") +
+      "."
+    );
+    notify("success", "Reminder sent", "Reminder delivery has been queued for your outstanding invoices.");
+  }
+
+  const handleDownloadAll = () => {
+    if (!hasInvoices) return;
+    triggerInvoiceCsvDownload(invoiceData);
+    notify("success", "Downloading", "Invoice history CSV is downloading.");
+  };
+
+  async function handleDownloadInvoicePdf(invoice: Invoice) {
+    try {
+      const { downloadInvoicePdf } = await import("@/lib/pdf/invoice");
+      await downloadInvoicePdf(invoice);
+    } catch {
+      notify("error", "Download failed", "PDF download failed. Please try again.");
+    }
+  }
 
   const filtered = useMemo(() => {
     let list = tab === "All" ? invoiceData : invoiceData.filter((i) => i.status === tab);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
-        (i) => i.id.toLowerCase().includes(q) || i.ref.toLowerCase().includes(q) ||
+        (i) => i.id.toLowerCase().includes(q) || i.displayId.toLowerCase().includes(q) || i.ref.toLowerCase().includes(q) ||
           i.amount.includes(q) || i.category.toLowerCase().includes(q)
       );
     }
@@ -405,13 +873,31 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
           <h1 className={cx("pageTitle")}>Invoice History</h1>
           <p className={cx("pageSub")}>Review line items, preview branded invoices, and pay directly from this portal.</p>
         </div>
-        <div className={cx("pageActions")}>
-          <button type="button" className={cx("btnSm", "btnGhost", "flexRow", "gap6")} title="Download not yet available" disabled>
-            <Ic n="download" sz={13} /> Download All
-          </button>
-          <button type="button" className={cx("btnSm", "btnGhost", "flexRow", "gap6")} title="Reminders not yet available" disabled>
-            <Ic n="bell" sz={13} /> Payment Reminders
-          </button>
+        <div className={cx("pageActions", "flexCol", "gap6")}>
+          <div className={cx("flexRow", "gap10", "flexWrap")}>
+            <button
+              type="button"
+              className={cx("btnSm", "btnGhost", "flexRow", "gap6")}
+              disabled={!hasInvoices}
+              onClick={handleDownloadAll}
+            >
+              <Ic n="download" sz={13} /> Download All
+            </button>
+            <button
+              type="button"
+              className={cx("btnSm", "btnGhost", "flexRow", "gap6")}
+              disabled={!hasInvoices}
+              onClick={openReminderPanel}
+            >
+              <Ic n="bell" sz={13} /> Payment Reminders
+            </button>
+          </div>
+          {reminderSuccess && (
+            <div className={cx("flexRow", "flexCenter", "gap6", "text11", "colorAccent")}>
+              <Ic n="check" sz={16} c="var(--accent)" />
+              <span>{reminderSuccess}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -419,20 +905,47 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
       <div className={cx("topCardsStack", "mb16")}>
         {[
           {
-            label: "Total Invoiced", value: `${prefix}${formatMoneyCents(totalInvoicedCents, { currency })}`, color: "statCardBlue",
-            trend: `${apiInvoices.length} invoices issued`, icon: "invoiceDoc", iconColor: "var(--cyan)",
+            label: "Total Invoiced",
+            value: prefix + formatMoneyCents(totalInvoicedCents, { currency }),
+            color: "statCardBlue",
+            trend: apiInvoices.length + " invoices issued",
+            icon: "invoiceDoc",
+            iconColor: "var(--cyan)",
           },
           {
-            label: "Collected", value: `${prefix}${formatMoneyCents(totalPaidCents, { currency })}`, color: "statCardGreen",
-            trend: `${apiInvoices.filter((i) => i.status === "PAID").length} of ${apiInvoices.length} paid`, icon: "check", iconColor: "var(--green)",
+            label: "Collected",
+            value: prefix + formatMoneyCents(totalPaidCents, { currency }),
+            color: "statCardGreen",
+            trend:
+              apiInvoices.filter((i) => i.status === "PAID").length +
+              " of " +
+              apiInvoices.length +
+              " paid",
+            icon: "check",
+            iconColor: "var(--green)",
           },
           {
-            label: "Outstanding", value: `${prefix}${formatMoneyCents(totalOutstandingCents, { currency })}`, color: "statCardAmber",
-            trend: `${apiInvoices.filter((i) => i.status !== "PAID").length} invoice${apiInvoices.filter((i) => i.status !== "PAID").length !== 1 ? "s" : ""} pending`, icon: "clock", iconColor: "var(--amber)",
+            label: "Outstanding",
+            value: prefix + formatMoneyCents(totalOutstandingCents, { currency }),
+            color: "statCardAmber",
+            trend:
+              apiInvoices.filter((i) => i.status !== "PAID").length +
+              " invoice" +
+              (apiInvoices.filter((i) => i.status !== "PAID").length !== 1 ? "s" : "") +
+              " pending",
+            icon: "clock",
+            iconColor: "var(--amber)",
           },
           {
-            label: "Overdue", value: `${prefix}${formatMoneyCents(totalOverdueCents, { currency })}`, color: "statCardRed",
-            trend: overdue.length > 0 ? `${daysOverdue(overdue[0].issuedMs, now)}d since due` : "None overdue", icon: "alert", iconColor: "var(--red)",
+            label: "Overdue",
+            value: prefix + formatMoneyCents(totalOverdueCents, { currency }),
+            color: "statCardRed",
+            trend:
+              overdue.length > 0
+                ? daysOverdue(overdue[0].issuedMs, now) + "d since due"
+                : "None overdue",
+            icon: "alert",
+            iconColor: "var(--red)",
           },
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.color)}>
@@ -463,33 +976,46 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
 
           {/* Stacked bar */}
           <div className={cx("invPayBarTrack")}>
-            <div className={`inv-bar-fill ${cx("dotBgAccent")}`} style={{ '--pct': `${paidPct}%` } as React.CSSProperties} />
+            <div
+              className={cx("inv-bar-fill", "dotBgAccent")}
+              style={{ "--pct": paidPct + "%" } as React.CSSProperties}
+            />
             {outstandingPct > 0 && (
-              <div className={`inv-bar-fill ${cx("dotBgAmber")}`} style={{ '--pct': `${outstandingPct}%` } as React.CSSProperties} />
+              <div
+                className={cx("inv-bar-fill", "dotBgAmber")}
+                style={{ "--pct": outstandingPct + "%" } as React.CSSProperties}
+              />
             )}
             {overduePct > 0 && (
-              <div className={`inv-bar-fill ${cx("dotBgRed")}`} style={{ '--pct': `${overduePct}%` } as React.CSSProperties} />
+              <div
+                className={cx("inv-bar-fill", "dotBgRed")}
+                style={{ "--pct": overduePct + "%" } as React.CSSProperties}
+              />
             )}
           </div>
 
           {/* Legend */}
           <div className={cx("flexRow", "gap12")}>
-            {[
-              { label: "Paid", color: "var(--lime)", amount: totalPaid, pct: paidPct },
-              { label: "Outstanding", color: "var(--amber)", amount: totalOutstanding, pct: outstandingPct },
-              { label: "Overdue", color: "var(--red)", amount: totalOverdue, pct: overduePct },
-            ].map(({ label, color, amount, pct }) => (
-              <div key={label} className={cx("invLineCard", "dynBorderLeft3")} style={{ "--color": `color-mix(in oklab, ${color} 20%, var(--b1))` } as React.CSSProperties}>
-                <div className={cx("flexRow", "flexCenter", "gap6", "mb6")}>
-                  <span className={cx("wh8", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": color } as React.CSSProperties} />
-                  <span className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01")}>{label}</span>
-                </div>
-                <div className={cx("fontMono", "fw800", "text12", "invLineAmt", "dynColor")} style={{ "--color": color } as React.CSSProperties}>
-                  {`${prefix}${formatMoneyCents(Math.round(amount * 100), { currency })}`}
-                </div>
-                <div className={cx("fontMono", "text10", "colorMuted2")}>{pct}% of total</div>
-              </div>
-            ))}
+                  {[
+                  { label: "Paid", color: "var(--lime)", amount: totalPaid, pct: paidPct },
+                  { label: "Outstanding", color: "var(--amber)", amount: totalOutstanding, pct: outstandingPct },
+                  { label: "Overdue", color: "var(--red)", amount: totalOverdue, pct: overduePct },
+                ].map(({ label, color, amount, pct }) => (
+                  <div
+                    key={label}
+                    className={cx("invLineCard", "dynBorderLeft3")}
+                    style={{ "--color": "color-mix(in oklab, " + color + " 20%, var(--b1))" } as React.CSSProperties}
+                  >
+                    <div className={cx("flexRow", "flexCenter", "gap6", "mb6")}>
+                      <span className={cx("wh8", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": color } as React.CSSProperties} />
+                      <span className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01")}>{label}</span>
+                    </div>
+                    <div className={cx("fontMono", "fw800", "text12", "invLineAmt", "dynColor")} style={{ "--color": color } as React.CSSProperties}>
+                      {prefix + formatMoneyCents(Math.round(amount * 100), { currency })}
+                    </div>
+                    <div className={cx("fontMono", "text10", "colorMuted2")}>{pct}% of total</div>
+                  </div>
+                ))}
           </div>
         </div>
 
@@ -526,10 +1052,19 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
                       </span>
                       <div className={cx("flex1", "flexCol", "gap3")}>
                         <div className={cx("microBarTrack")}>
-                          <div className={cx("dotBgMuted2")} style={{ '--pct': `${(m.invoiced / displayMonthlyMax) * 100}%` } as React.CSSProperties} />
+                          <div
+                            className={cx("dotBgMuted2")}
+                            style={{
+                              "--pct": ((m.invoiced / displayMonthlyMax) * 100) + "%",
+                            } as React.CSSProperties}
+                          />
                         </div>
                         <div className={cx("microBarTrack")}>
-                          <div style={{ '--pct': `${(m.collected / displayMonthlyMax) * 100}%` } as React.CSSProperties} />
+                          <div
+                            style={{
+                              "--pct": ((m.collected / displayMonthlyMax) * 100) + "%",
+                            } as React.CSSProperties}
+                          />
                         </div>
                       </div>
                       <span className={cx("fontMono", "text10", "fw700", "w34", "textRight", "noShrink", "tabularNums", "dynColor")} style={{ "--color": collectRate === 100 ? "var(--lime)" : collectRate > 0 ? "var(--amber)" : "var(--muted2)" } as React.CSSProperties}>
@@ -557,11 +1092,11 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
           <Ic n="alert" sz={16} c="var(--red)" />
           <div className={cx("flex1")}>
             <span className={cx("fs078")}>
-              <strong className={cx("fontMono")}>{overdue[0].id}</strong>
+              <strong className={cx("fontMono")}>{overdue[0].displayId}</strong>
               <span className={cx("colorMuted")}> — {overdue[0].amount} · Due {overdue[0].due}</span>
             </span>
             <div className={cx("fontMono", "text10", "colorMuted2", "mt2")}>
-              {overdue[0].ref} · {overdue[0].project}
+              {overdue[0].ref}
             </div>
           </div>
           <span className={cx("badge", "badgeRed", "fontMono", "noShrink")}>
@@ -580,14 +1115,14 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
 
       {/* ── Tabs + Search ─────────────────────────────────────────────────── */}
       <div className={cx("flexBetween", "gap10", "mb16")}>
-        <div className={cx("pillTabs", "gap6", "mb0")}>
+        <div className={cx("pillTabs", "gap6")} style={{ marginBottom: 0 }}>
           {TABS.map((t) => (
             <button key={t} type="button" className={cx("pillTab", tab === t && "pillTabActive")} onClick={() => { setTab(t); setSearch(""); }}>
               {t}
             </button>
           ))}
         </div>
-        <div className={`inv-search-wrap ${cx("minW200", "maxW260")}`} >
+        <div className={cx("inv-search-wrap", "minW200", "maxW260")} >
           <span className="inv-search-icon">
             <Ic n="filter" sz={13} c="var(--muted2)" />
           </span>
@@ -606,7 +1141,7 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
         {/* Column headers */}
         {filtered.length > 0 && (
           <div className={cx("tableHeadGrid6col")}>
-            {["", "Reference", "Issued", "Amount", "Status", ""].map((h, i) => (
+            {["Reference", "Issued", "Amount", "Status", ""].map((h, i) => (
               <span key={i} className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls012")}>{h}</span>
             ))}
           </div>
@@ -618,7 +1153,9 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
             <Ic n="file" sz={32} c="var(--muted2)" />
             <div className={cx("fw800", "text13", "mt12", "mb4")}>No invoices</div>
             <div className={cx("text12", "colorMuted")}>
-              {search ? `No results for "${search}"` : `No ${tab === "All" ? "" : tab.toLowerCase() + " "}invoices found.`}
+              {search
+                ? "No results for \"" + search + "\""
+                : "No " + (tab === "All" ? "" : tab.toLowerCase() + " ") + "invoices found."}
             </div>
             {search && (
               <button type="button" className={cx("btnSm", "btnGhost", "mt16")} onClick={() => setSearch("")}>
@@ -635,28 +1172,41 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
             return (
               <div
                 key={inv.id}
-                className={`inv-row ${cx("dynBorderLeft3")}`} style={{ "--color": statusColor } as React.CSSProperties}
+                className={cx("inv-row", "dynBorderLeft3")}
+                style={{ "--color": statusColor } as React.CSSProperties}
               >
                 {/* Row trigger */}
-                <button
-                  type="button"
-                  aria-expanded={isOpen}
-                  className={`inv-row-bg ${cx("gridRowBtn6col", "transBack")}`}
-                  onClick={() => setExpanded(isOpen ? null : inv.id)}
-                >
-                  {/* Category icon box */}
-                  <div className={cx("pmIconBox36", "dynBgColor")} style={{ "--bg-color": `color-mix(in oklab, ${catCfg.color} 12%, var(--s2))`, "--color": `color-mix(in oklab, ${catCfg.color} 25%, transparent)` } as React.CSSProperties}>
-                    <Ic n={catCfg.icon} sz={15} c={catCfg.color} />
-                  </div>
-
-                  {/* Reference + ID */}
-                  <div className={cx("minW0")}>
-                    <div className={cx("fw600", "text12", "truncate")}>{inv.ref}</div>
-                    <div className={cx("flexRow", "flexCenter", "gap6", "mt2")}>
-                      <span className={cx("fontMono", "text10", "colorAccent")}>{inv.id}</span>
-                      <span className={cx("fontMono", "text10", "pmCatBadge", "dynBgColor", "dynColor")} style={{ "--bg-color": `color-mix(in oklab, ${catCfg.color} 10%, var(--s3))`, "--color": catCfg.color } as React.CSSProperties}>
-                        {inv.category}
-                      </span>
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    className={cx("inv-row-bg", "gridRowBtn6col", "transBack")}
+                    onClick={() => setExpanded(isOpen ? null : inv.id)}
+                  >
+                  {/* Reference + ID (icon inline) */}
+                  <div className={cx("flexRow", "gap10", "minW0")}>
+                    <div
+                      className={cx("pmIconBox36", "noShrink", "dynBgColor")}
+                      style={{
+                        "--bg-color": "color-mix(in oklab, " + catCfg.color + " 12%, var(--s2))",
+                        "--color": "color-mix(in oklab, " + catCfg.color + " 25%, transparent)",
+                      } as React.CSSProperties}
+                    >
+                      <Ic n={catCfg.icon} sz={15} c={catCfg.color} />
+                    </div>
+                    <div className={cx("minW0")}>
+                      <div className={cx("fw600", "text12", "truncate")}>{inv.ref}</div>
+                      <div className={cx("flexRow", "flexCenter", "gap6", "mt2")}>
+                        <span className={cx("fontMono", "text10", "colorAccent")}>{inv.displayId}</span>
+                        <span
+                          className={cx("fontMono", "text10", "pmCatBadge", "dynBgColor", "dynColor")}
+                          style={{
+                            "--bg-color": "color-mix(in oklab, " + catCfg.color + " 10%, var(--s3))",
+                            "--color": catCfg.color,
+                          } as React.CSSProperties}
+                        >
+                          {inv.category}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -664,24 +1214,32 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
                   <span className={cx("fontMono", "text10", "colorMuted2")}>{inv.date}</span>
 
                   {/* Amount */}
-                  <span className={cx("fontMono", "fw700", "text12", "textRight", "tabularNums")}>{inv.amount}</span>
+                  <span className={cx("fontMono", "fw700", "text12", "tabularNums")}>{inv.amount}</span>
 
                   {/* Status badge */}
-                  <span className={cx("badge", statusBadge(inv.status))}>{inv.status}</span>
+                  <span className={cx("badge", statusBadge(inv.status))} style={{ justifySelf: "start" }}>{inv.status}</span>
 
                   {/* Chevron */}
-                  <span className={`inv-chevron${isOpen ? " inv-chevron-open" : ""}`}>
+                  <span
+                    className={cx("inv-chevron", isOpen && "inv-chevron-open")}
+                    style={{ justifySelf: "end", display: "flex" }}
+                  >
                     <Ic n="chevronRight" sz={14} c="var(--muted2)" />
                   </span>
                 </button>
 
                 {/* Expanded area */}
                 {isOpen && (
-                  <div className={`inv-expand ${cx("payRowExpanded", "dynBgColor")}`} style={{ "--bg-color": `color-mix(in oklab, ${statusColor} 4%, var(--s2))` } as React.CSSProperties}>
-                    <div className={cx("grid2Cols260")}>
+                  <div
+                    className={cx("inv-expand", "payRowExpanded", "dynBgColor")}
+                    style={{
+                      "--bg-color": "color-mix(in oklab, " + statusColor + " 4%, var(--s2))",
+                    } as React.CSSProperties}
+                  >
+                    <div className={cx("payRowGrid")}>
 
                       {/* Left: Line items + totals */}
-                      <div className={cx("panelLWide")}>
+                      <div className={cx("flexCol", "borderR")}>
                         {/* Items header */}
                         <div className={cx("invItemsHd")}>
                           {["Description", "Qty", "Rate", "Total"].map((h) => (
@@ -690,7 +1248,7 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
                         </div>
 
                         {inv.items.map((item, i) => (
-                          <div key={i} className={cx("tableRowGrid", "invItemRow", "borderB")}>
+                          <div key={i} className={cx("invItemRow", "borderB")}>
                             <span className={cx("text11", "fw600")}>{item.desc}</span>
                             <span className={cx("fontMono", "text10", "colorMuted2", "textCenter")}>{item.qty}</span>
                             <span className={cx("fontMono", "text10", "colorMuted")}>{item.rate}</span>
@@ -720,15 +1278,6 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
 
                       {/* Right: Details + actions */}
                       <div className={cx("p16x20", "flexCol", "gap10")}>
-                        {/* Contact */}
-                        <div className={cx("infoChip")}>
-                          <Av initials={inv.contactInitials} size={32} />
-                          <div className={cx("minW0")}>
-                            <div className={cx("fw700", "text11", "truncate")}>{inv.contact}</div>
-                            <div className={cx("fontMono", "text10", "colorMuted2")}>{inv.project}</div>
-                          </div>
-                        </div>
-
                         {/* Key dates */}
                         <div className={cx("flexCol", "gap6")}>
                           {[
@@ -756,7 +1305,11 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
                         {/* Actions */}
                         <div className={cx("flexCol", "gap6", "mtAuto")}>
                           <div className={cx("flexRow", "gap6")}>
-                            <button type="button" className={cx("btnSm", "btnGhost", "flex1", "flexCenter", "gap5", "colorInherit")}>
+                            <button
+                              type="button"
+                              className={cx("btnSm", "btnGhost", "flex1", "flexCenter", "gap5", "colorInherit")}
+                              onClick={() => void handleDownloadInvoicePdf(inv)}
+                            >
                               <Ic n="download" sz={12} /> PDF
                             </button>
                             <button
@@ -808,8 +1361,8 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
         const inv = invoiceData.find(i => i.id === payingInvoiceId);
         if (!inv) return null;
         return (
-          <div className={cx("modalOverlay")}>
-            <div className={`inv-modal-in ${cx("pmModalInner")}`}>
+        <div className={cx("modalOverlay", "fixedOverlay9999")}>
+            <div className={cx("inv-modal-in", "pmModalInner")}>
               <div className={cx("pmModalHd")}>
                 <div className={cx("flexRow", "gap8")}>
                   <Ic n="shieldCheck" sz={15} c="var(--lime)" />
@@ -829,7 +1382,35 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
                 </div>
                 <div className={cx("text11", "colorMuted", "mt4", "mb2")}>{inv.ref}</div>
                 <div className={cx("text11", "colorMuted2", "mt4")}>
-                  You will be redirected to PayFast to complete payment securely.
+                  You’ll leave the portal briefly for PayFast-hosted checkout.
+                </div>
+              </div>
+              <div className={cx("px24_0", "mt12")}>
+                <div className={cx("cardS2", "p12x14")}>
+                  <div className={cx("grid2Cols", "gap8", "mb10")}>
+                    <div>
+                      <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls012", "mb4")}>Merchant</div>
+                      <div className={cx("fw700", "text11")}>Maphari Technologies</div>
+                    </div>
+                    <div>
+                      <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls012", "mb4")}>Return</div>
+                      <div className={cx("fw700", "text11")}>Back to Portal</div>
+                    </div>
+                  </div>
+                  <div className={cx("flexCol", "gap6")}>
+                    <div className={cx("flexRow", "gap8", "itemsCenter")}>
+                      <Ic n="check" sz={12} c="var(--lime)" sw={2.5} />
+                      <span className={cx("text11", "colorMuted")}>Confirm the same amount appears in PayFast checkout.</span>
+                    </div>
+                    <div className={cx("flexRow", "gap8", "itemsCenter")}>
+                      <Ic n="check" sz={12} c="var(--lime)" sw={2.5} />
+                      <span className={cx("text11", "colorMuted")}>Check that the merchant name is Maphari Technologies.</span>
+                    </div>
+                    <div className={cx("flexRow", "gap8", "itemsCenter")}>
+                      <Ic n="check" sz={12} c="var(--lime)" sw={2.5} />
+                      <span className={cx("text11", "colorMuted")}>After payment or cancel, you’ll return to this portal.</span>
+                    </div>
+                  </div>
                 </div>
               </div>
               {payError && (
@@ -845,7 +1426,7 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
                   disabled={payLoading}
                 >
                   <Ic n="lock" sz={14} />
-                  {payLoading ? "Redirecting…" : `Pay ${formatMoneyCents(inv.amountCents, { currency: inv.currency })} via PayFast`}
+                  {payLoading ? "Opening PayFast…" : "Continue to PayFast"}
                 </button>
                 <button
                   type="button"
@@ -860,6 +1441,129 @@ export function InvoicesPage({ invoices: apiInvoices = [], currency = "ZAR" }: {
           </div>
         );
       })()}
+      {reminderPanelOpen && (
+        <div className={cx("modalOverlay", "fixedOverlay9999", "reminderModalOverlay")} onClick={closeReminderPanel}>
+          <div className={cx("pmModalInner", "inv-modal-in", "reminderPanelCard")} onClick={(event) => event.stopPropagation()}>
+            <div className={cx("pmModalHd")}>
+              <div>
+                <div className={cx("reminderPanelHeader")}>Payment reminders</div>
+                <div className={cx("reminderPanelTitle")}>Stay ahead of due dates</div>
+              </div>
+              <button type="button" onClick={closeReminderPanel} className={cx("iconBtn")} disabled={reminderLoading}>
+                <Ic n="x" sz={16} />
+              </button>
+            </div>
+            <div className={cx("reminderPanelBody")}>
+              <div className={cx("reminderHeroCard")}>
+                <div className={cx("reminderHeroKicker")}>
+                  <Ic n="bell" sz={12} c="var(--lime)" />
+                  Billing follow-up
+                </div>
+                <div className={cx("text12", "fw700")}>Set the timing once, then send or automate reminders from here.</div>
+                <p className={cx("reminderHeroText", "m0")}>
+                  Choose when reminders should go out, which channels to use, and add any billing context you want attached to the message.
+                </p>
+                <div className={cx("reminderMetricGrid")}>
+                  <div className={cx("reminderMetricCard")}>
+                    <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01")}>Outstanding</div>
+                    <div className={cx("fw700", "text12", "mt4")}>
+                      {outstandingInvoices.length} invoice{outstandingInvoices.length === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                  <div className={cx("reminderMetricCard")}>
+                    <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01")}>Amount in play</div>
+                    <div className={cx("fontMono", "fw700", "text12", "mt4")}>
+                      {formatMoneyCents(totalOutstandingCents, { currency })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={cx("reminderSectionCard")}>
+                <div className={cx("text10", "uppercase", "ls01", "mb6", "reminderSectionLabel")}>Reminder interval</div>
+                <div className={cx("reminderRow")}>
+                  {REMINDER_INTERVALS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={cx("reminderChip", reminderInterval === option.value && "reminderChipActive")}
+                      onClick={() => setReminderInterval(option.value)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <div className={cx("reminderHint")}>
+                  Automatic reminders use this schedule. The send-now action below ignores the date and queues delivery immediately.
+                </div>
+              </div>
+
+              <div className={cx("reminderSectionCard")}>
+                <div className={cx("text10", "uppercase", "ls01", "mb6", "reminderSectionLabel")}>Notify via</div>
+                <div className={cx("reminderRow")}>
+                  {CHANNELS.map((channel) => (
+                    <button
+                      key={channel.value}
+                      type="button"
+                      className={cx("reminderChip", reminderChannels.includes(channel.value) && "reminderChipActive")}
+                      onClick={() => toggleReminderChannel(channel.value)}
+                    >
+                      {channel.label}
+                    </button>
+                  ))}
+                </div>
+                <div className={cx("reminderHint")}>
+                  Choose one or more delivery channels. Portal notifications stay inside the client dashboard.
+                </div>
+              </div>
+
+              <div className={cx("reminderSectionCard")}>
+                <label className={cx("text11", "uppercase", "ls01", "mb6", "reminderSectionLabel")}>Optional note</label>
+                <textarea
+                  className={cx("input", "textArea", "reminderNoteInput")}
+                  placeholder="Add context or scheduling preferences…"
+                  value={reminderNote}
+                  onChange={(event) => setReminderNote(event.target.value)}
+                  rows={4}
+                />
+                <div className={cx("reminderHint")}>
+                  This note is attached to the reminder content and saved with your preferences.
+                </div>
+              </div>
+
+              {!!reminderSuccess && (
+                <div className={cx("cardS3", "p12x14")}>
+                  <div className={cx("flexRow", "gap10", "itemsCenter")}>
+                    <div className={cx("dotBgAccent", "flexCenter", "noShrink", "reminderSuccessIcon")}>
+                      <Ic n="check" sz={18} c="#0b0c12" sw={2.5} />
+                    </div>
+                    <div className={cx("flex1")}>
+                      <div className={cx("fw700", "text12")}>Reminder queued</div>
+                      <div className={cx("text10", "colorMuted", "mt4")}>{reminderSuccess}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className={cx("reminderActions")}>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={closeReminderPanel} disabled={reminderLoading}>
+                Close
+              </button>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={handleSavePreferences} disabled={reminderLoading}>
+                Save preferences
+              </button>
+              <button
+                type="button"
+                className={cx("btnSm", "btnAccent", "flexRow", "gap6")}
+                onClick={handleSendReminderRequest}
+                disabled={reminderLoading || outstandingInvoices.length === 0}
+              >
+                {reminderLoading ? "Sending…" : "Send reminder now"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

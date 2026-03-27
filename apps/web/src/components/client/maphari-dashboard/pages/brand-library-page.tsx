@@ -32,8 +32,6 @@ const TAB_COLOR: Record<BLTab, string> = {
   Downloads:  "var(--accent)",
 };
 
-// ── Font format labels ────────────────────────────────────────────────────────
-
 const FONT_FORMAT: Record<string, string> = {
   "font/ttf":              "TTF",
   "font/otf":              "OTF",
@@ -45,15 +43,6 @@ const FONT_FORMAT: Record<string, string> = {
   "application/font-woff2":   "WOFF2",
 };
 
-const GUIDELINES_RULES = [
-  { good: true,  rule: "Always use the approved colour variants",          detail: "Only use hex values from the defined primary and secondary palette." },
-  { good: true,  rule: "Maintain minimum clear space around the logo",    detail: "Keep clear space of at least 1× the logo height on all four sides." },
-  { good: true,  rule: "Syne & DM Mono are the exclusive typefaces",      detail: "Do not substitute with Arial, Helvetica, or any other font." },
-  { good: false, rule: "Never stretch or distort the logo",               detail: "Always maintain original aspect ratio. Use SVG for best results." },
-  { good: false, rule: "Never place the logo on a low-contrast background", detail: "Ensure a minimum contrast ratio of 4.5:1 for accessibility." },
-  { good: false, rule: "Never use the logo at sizes below 24px height",   detail: "Use the icon mark variant for small sizes (below 32px height)." },
-];
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -63,11 +52,35 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function exportBrandAssetsCsv(assets: PortalBrandAsset[]): void {
+  const header = ["Name", "Type", "Variant", "Value", "Mime type", "Size bytes", "Created"];
+  const lines = assets.map((asset) => [
+    asset.name,
+    asset.type,
+    asset.variant ?? "",
+    asset.value ?? "",
+    asset.mimeType ?? "",
+    String(asset.sizeBytes ?? ""),
+    asset.createdAt,
+  ]);
+  const escape = (value: string) => `"${value.replace(/"/g, "\"\"")}"`;
+  const csv = [header, ...lines].map((line) => line.map((cell) => escape(String(cell))).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "brand-library.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function SectionHeader({ label, color }: { label: string; color: string }) {
   return (
-    <div className={cx("flexRow", "flexCenter", "gap10", "mb14")}>
+    <div className={cx("flexRow", "flexAlignCenter", "gap10", "mb14")}>
       <div className={cx("bar3x16", "noShrink", "dynBgColor")} style={{ "--bg-color": color } as React.CSSProperties} />
       <span className={cx("text13", "fw600", "colorText")}>{label}</span>
     </div>
@@ -120,7 +133,7 @@ export function BrandLibraryPage() {
     } finally {
       setLoading(false);
     }
-  }, [session?.accessToken]);
+  }, [session]);
 
   useEffect(() => { void loadAssets(); }, [loadAssets]);
 
@@ -278,6 +291,12 @@ export function BrandLibraryPage() {
           <div className={cx("pageSub")}>Manage logos, colours, typography, and brand guidelines</div>
         </div>
         <div className={cx("flexRow", "gap8", "flexWrap")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadAssets()} disabled={loading || uploading}>
+            Refresh
+          </button>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => exportBrandAssetsCsv(assets)} disabled={assets.length === 0}>
+            Export CSV
+          </button>
           {showLogos && (
             <>
               <input ref={logoInputRef} type="file" accept="image/*,.svg" title="Upload logo file" className={cx("dNone")}
@@ -310,21 +329,27 @@ export function BrandLibraryPage() {
       </div>
 
       {/* Stats */}
-      <div className={cx("flexRow", "gap12", "mb4")}>
-        {[
-          { label: "Total Assets",  value: String(assets.length),                                ic: "layers" },
-          { label: "Logos",         value: String(logos.length),                                 ic: "image"  },
-          { label: "Colours",       value: String(colors.length),                                ic: "layers" },
-          { label: "Storage Used",  value: totalSize > 0 ? formatBytes(totalSize) : "—",         ic: "file"   },
-        ].map(({ label, value, ic }) => (
-          <div key={label} className={cx("statCard", "statCardAccent", "flex1", "minW0")}>
-            <div className={cx("flexRow", "flexCenter", "gap8", "mb6")}>
-              <Ic n={ic} sz={14} c="var(--lime)" />
-              <span className={cx("text11", "colorMuted")}>{label}</span>
-            </div>
-            <div className={cx("fontMono", "blStatValue")}>{value}</div>
-          </div>
-        ))}
+      <div className={cx("grid4", "gap12", "mb20")}>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Total assets</div>
+          <div className={cx("text22", "fw800", "colorAccent")}>{String(assets.length)}</div>
+          <div className={cx("text12", "colorMuted")}>Brand items currently stored in the portal</div>
+        </div>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Logos</div>
+          <div className={cx("text22", "fw800", "colorSuccess")}>{String(logos.length)}</div>
+          <div className={cx("text12", "colorMuted")}>Uploaded logo files available to download</div>
+        </div>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Colours</div>
+          <div className={cx("text22", "fw800", "colorAmber")}>{String(colors.length)}</div>
+          <div className={cx("text12", "colorMuted")}>Saved palette entries in your brand system</div>
+        </div>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Storage used</div>
+          <div className={cx("text22", "fw800", "colorBlue")}>{totalSize > 0 ? formatBytes(totalSize) : "—"}</div>
+          <div className={cx("text12", "colorMuted")}>Combined size of uploaded brand assets</div>
+        </div>
       </div>
 
       {/* Tab strip */}
@@ -349,6 +374,9 @@ export function BrandLibraryPage() {
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateTitle")}>Something went wrong</div>
           <div className={cx("emptyStateSub")}>{error}</div>
+          <button type="button" className={cx("btn", "btnPrimary", "mt12")} onClick={() => void loadAssets()}>
+            Retry
+          </button>
         </div>
       ) : (
         <div className={cx("flexCol", "gap28")}>
@@ -399,7 +427,7 @@ export function BrandLibraryPage() {
                 <div className={cx("emptyState")}>
                   <div className={cx("emptyStateIcon")}><Ic n="layers" sz={22} c="var(--muted2)" /></div>
                   <div className={cx("emptyStateTitle")}>No colours added yet</div>
-                  <div className={cx("emptyStateSub")}>Use the "Add Colour" button above to add your brand colours.</div>
+                  <div className={cx("emptyStateSub")}>Use the &quot;Add Colour&quot; button above to add your brand colours.</div>
                 </div>
               ) : (
               <div className={cx("blColorsGrid")}>
@@ -441,7 +469,7 @@ export function BrandLibraryPage() {
                 <div className={cx("emptyState")}>
                   <div className={cx("emptyStateIcon")}><Ic n="file" sz={22} c="var(--muted2)" /></div>
                   <div className={cx("emptyStateTitle")}>No fonts added yet</div>
-                  <div className={cx("emptyStateSub")}>Use "Add Font" above to upload your brand typefaces (.ttf, .otf, .woff, .woff2).</div>
+                  <div className={cx("emptyStateSub")}>Use &quot;Add Font&quot; above to upload your brand typefaces (.ttf, .otf, .woff, .woff2).</div>
                 </div>
               ) : (
                 <div className={cx("flexCol", "gap10")}>
@@ -518,19 +546,12 @@ export function BrandLibraryPage() {
                   <div className={cx("emptyStateSub")}>Upload PDF or image guideline documents using the button above.</div>
                 </div>
               )}
-              <div className={cx("text11", "fw600", "mb10", "colorText")}>Usage Rules</div>
-              <div className={cx("flexCol", "gap8")}>
-                {GUIDELINES_RULES.map((g, i) => (
-                  <div key={i} className={cx("card", "p14", "flexAlignStart", "gap12")}>
-                    <div className={cx("statusDot20", "dynBgColor")} style={{ "--bg-color": g.good ? "var(--green)" : "var(--red)" } as React.CSSProperties}>
-                      <Ic n={g.good ? "check" : "x"} sz={11} c="#fff" />
-                    </div>
-                    <div>
-                      <div className={cx("text12", "fw600", "mb2")}>{g.rule}</div>
-                      <div className={cx("text11", "colorFg2")}>{g.detail}</div>
-                    </div>
-                  </div>
-                ))}
+              <div className={cx("cardS2", "p14")}>
+                <div className={cx("text11", "fw600", "mb6", "colorText")}>Guideline coverage</div>
+                <div className={cx("text11", "colorFg2", "lineH15")}>
+                  This area only shows uploaded guideline files. If you want usage rules shown here,
+                  they should come from a real brand-governance source instead of hardcoded examples.
+                </div>
               </div>
             </section>
           )}

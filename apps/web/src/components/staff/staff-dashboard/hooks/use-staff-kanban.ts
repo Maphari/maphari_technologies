@@ -7,27 +7,7 @@ import {
   updateProjectTaskWithRefresh
 } from "../../../../lib/api/admin";
 import type { KanbanColumn, TaskContext } from "../types";
-import { formatDateShort, formatStatus } from "../utils";
-
-type AdminProject = {
-  id: string;
-  clientId: string;
-  name: string;
-  status: string;
-  progressPercent: number;
-  dueAt?: string | null;
-  slaDueAt?: string | null;
-  updatedAt: string;
-};
-
-type AdminConversation = {
-  id: string;
-  clientId: string;
-  projectId: string | null;
-  subject: string;
-  status: string;
-  updatedAt: string;
-};
+import { formatDateShort } from "../utils";
 
 export type UseStaffKanbanReturn = {
   kanbanViewMode: "all" | "my_work" | "urgent" | "client_waiting" | "blocked";
@@ -62,7 +42,6 @@ type Params = {
   inProgressLimit: number;
   nowTs: number;
   topbarSearch: string;
-  setProjectDetails: React.Dispatch<React.SetStateAction<import("../../../../lib/api/admin").ProjectDetail[]>>;
   setFeedback: (feedback: { tone: "success" | "error" | "warning" | "info"; message: string }) => void;
   refreshWorkspace: (session: AuthSession, opts?: { background?: boolean }) => Promise<void>;
   staffName: string;
@@ -76,7 +55,6 @@ export function useStaffKanban({
   inProgressLimit,
   nowTs,
   topbarSearch,
-  setProjectDetails,
   setFeedback,
   refreshWorkspace,
   staffName
@@ -192,12 +170,13 @@ export function useStaffKanban({
         return {
           id: task.id,
           projectId: task.projectId,
+          clientId: task.clientId,
           clientName: task.clientName,
           status: task.status,
           tag: tagResolver ? tagResolver(task) : `${task.projectName}`,
           title: task.title,
           priority: task.priority,
-          due: task.status === "DONE" ? `${formatDateShort(task.dueAt)} ✓` : task.dueAt ? formatDateShort(task.dueAt) : "TBD",
+          due: task.status === "DONE" ? `${formatDateShort(task.dueAt)} ✓` : task.dueAt ? formatDateShort(task.dueAt) : "No due date",
           dueAt: task.dueAt,
           createdAt: task.createdAt,
           dueTone: task.dueAt && task.dueTone === "var(--red)" ? "today" : undefined,
@@ -209,7 +188,8 @@ export function useStaffKanban({
           blocked: variant === "blocked",
           serviceClass,
           needsPrep,
-          needsPrepReason
+          needsPrepReason,
+          externalLinks: task.externalLinks
         };
       });
 
@@ -281,7 +261,7 @@ export function useStaffKanban({
       },
       {
         id: "blocked",
-        title: "In Review",
+        title: "Blocked",
         count: String(blocked.length),
         tone: "var(--amber)",
         countTone: "var(--amber)",
@@ -305,7 +285,7 @@ export function useStaffKanban({
         tasks: toKanbanTasks(done, "done")
       }
     ];
-  }, [filteredKanbanTasks, kanbanSwimlane, nowTs]);
+  }, [filteredKanbanTasks, inProgressLimit, kanbanSwimlane, nowTs]);
 
   const kanbanHealth = useMemo(
     () => ({
@@ -362,7 +342,7 @@ export function useStaffKanban({
     } finally {
       movingRef.current = false;
     }
-  }, [creatingKanbanBlocker, kanbanBlockDraft, kanbanBlockEta, kanbanBlockReason, kanbanBlockSeverity, refreshWorkspace, session?.accessToken, setFeedback, staffName]);
+  }, [creatingKanbanBlocker, kanbanBlockDraft, kanbanBlockEta, kanbanBlockReason, kanbanBlockSeverity, refreshWorkspace, session, setFeedback, staffName]);
 
   return {
     kanbanViewMode,

@@ -9,48 +9,50 @@ datasource db {
 }
 
 model Client {
-  id                  String                     @id @default(uuid())
-  name                String
-  status              String                     @default("ACTIVE")
-  priority            String                     @default("MEDIUM")
-  tier                String                     @default("STARTER")
-  timezone            String?
-  billingEmail        String?
-  ownerName           String?
-  contractStartAt     DateTime?
-  contractRenewalAt   DateTime?
-  slaTier             String                     @default("STANDARD")
-  slaResponseHours    Int                        @default(24)
-  notes               String?
-  createdAt           DateTime                   @default(now())
-  updatedAt           DateTime                   @updatedAt
-  projects            Project[]
-  leads               Lead[]
-  contacts            ClientContact[]
-  activities          ClientActivity[]
-  statusHistory       ClientStatusHistory[]
-  milestoneApprovals  MilestoneApproval[]
-  timeEntries         ProjectTimeEntry[]
-  blockers            ProjectBlocker[]
-  changeRequests      ProjectChangeRequest[]
-  collaborators       ProjectTaskCollaborator[]
-  collaborationNotes  ProjectCollaborationNote[]
-  workSessions        ProjectWorkSession[]
-  healthScores        ClientHealthScore[]
-  healthSignals       ClientHealthSignal[]
-  interventions       ClientIntervention[]
-  satisfactionSurveys SatisfactionSurvey[]
-  surveyTokens        SurveyToken[]
-  onboardingRecords   ClientOnboardingRecord[]
-  offboardingTasks    OffboardingTask[]
-  communicationLogs   CommunicationLog[]
-  slaRecords          SLARecord[]
-  appointments        Appointment[]
-  supportTickets      SupportTicket[]
-  profile             ClientProfile?
-  brandAssets         BrandAsset[]
-  contracts           ClientContract[]
-  proposals           Proposal[]
+  id                     String                        @id @default(uuid())
+  name                   String
+  status                 String                        @default("ACTIVE")
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
+  priority               String                        @default("MEDIUM")
+  tier                   String                        @default("STARTER")
+  timezone               String?
+  billingEmail           String?
+  ownerName              String?
+  contractStartAt        DateTime?
+  contractRenewalAt      DateTime?
+  slaTier                String                        @default("STANDARD")
+  slaResponseHours       Int                           @default(24)
+  notes                  String?
+  appointments           Appointment[]
+  brandAssets            BrandAsset[]
+  activities             ClientActivity[]
+  contacts               ClientContact[]
+  contracts              ClientContract[]
+  healthScores           ClientHealthScore[]
+  healthSignals          ClientHealthSignal[]
+  interventions          ClientIntervention[]
+  onboardingRecords      ClientOnboardingRecord[]
+  profile                ClientProfile?
+  statusHistory          ClientStatusHistory[]
+  communicationLogs      CommunicationLog[]
+  leads                  Lead[]
+  milestoneApprovals     MilestoneApproval[]
+  offboardingTasks       OffboardingTask[]
+  blockers               ProjectBlocker[]
+  changeRequests         ProjectChangeRequest[]
+  collaborationNotes     ProjectCollaborationNote[]
+  collaborators          ProjectTaskCollaborator[]
+  integrationConnections ClientIntegrationConnection[]
+  integrationRequests    ClientIntegrationRequest[]
+  timeEntries            ProjectTimeEntry[]
+  workSessions           ProjectWorkSession[]
+  projects               Project[]
+  proposals              Proposal[]
+  satisfactionSurveys    SatisfactionSurvey[]
+  slaRecords             SLARecord[]
+  supportTickets         SupportTicket[]
+  surveyTokens           SurveyToken[]
 
   @@index([status])
   @@index([priority])
@@ -60,16 +62,17 @@ model Client {
 }
 
 model ClientContact {
-  id        String   @id @default(uuid())
-  clientId  String
-  name      String
-  email     String
-  phone     String?
-  role      String?
-  isPrimary Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  id              String   @id @default(uuid())
+  clientId        String
+  name            String
+  email           String
+  phone           String?
+  role            String?
+  isPrimary       Boolean  @default(false)
+  canManageAccess Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([clientId, createdAt])
   @@index([email])
@@ -112,6 +115,8 @@ model Project {
   name               String
   description        String?
   status             String                     @default("PLANNING")
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
   ownerName          String?
   priority           String                     @default("MEDIUM")
   riskLevel          String                     @default("LOW")
@@ -121,33 +126,33 @@ model Project {
   budgetCents        BigInt                     @default(0)
   progressPercent    Int                        @default(0)
   slaDueAt           DateTime?
-  createdAt          DateTime                   @default(now())
-  updatedAt          DateTime                   @updatedAt
-  referenceCode      String?                    @unique // PRJ-XXXXXX — human-readable reference, generated server-side
-  eftVerification    EftVerification?
-  client             Client                     @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  milestones         ProjectMilestone[]
-  tasks              ProjectTask[]
-  dependencies       ProjectDependency[]        @relation("ProjectDependencies")
-  blocking           ProjectDependency[]        @relation("ProjectBlocking")
-  activities         ProjectActivity[]
-  milestoneApprovals MilestoneApproval[]
-  timeEntries        ProjectTimeEntry[]
-  blockers           ProjectBlocker[]
-  changeRequests     ProjectChangeRequest[]
-  collaborators      ProjectTaskCollaborator[]
-  collaborationNotes ProjectCollaborationNote[]
-  workSessions       ProjectWorkSession[]
-  deliverables       ProjectDeliverable[]
-  risks              ProjectRisk[]
-  decisions          ProjectDecision[]
-  sprints            ProjectSprint[]
-  signOffs           ProjectSignOff[]
-  phases             ProjectPhase[]
-  brief              ProjectBrief?
+  referenceCode      String?                    @unique(map: "projects_referencecode_key")
   designReviews      DesignReview[]
+  eftVerification    EftVerification?
   handoverRecords    HandoverRecord[]
+  milestoneApprovals MilestoneApproval[]
+  contracts          ClientContract[]
+  proposals          Proposal[]
+  activities         ProjectActivity[]
+  blockers           ProjectBlocker[]
+  brief              ProjectBrief?
+  changeRequests     ProjectChangeRequest[]
   closeoutReports    ProjectCloseoutReport[]
+  collaborationNotes ProjectCollaborationNote[]
+  decisions          ProjectDecision[]
+  deliverables       ProjectDeliverable[]
+  blocking           ProjectDependency[]        @relation("ProjectBlocking")
+  dependencies       ProjectDependency[]        @relation("ProjectDependencies")
+  milestones         ProjectMilestone[]
+  phases             ProjectPhase[]
+  risks              ProjectRisk[]
+  signOffs           ProjectSignOff[]
+  sprints            ProjectSprint[]
+  collaborators      ProjectTaskCollaborator[]
+  tasks              ProjectTask[]
+  timeEntries        ProjectTimeEntry[]
+  workSessions       ProjectWorkSession[]
+  client             Client                     @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([clientId, createdAt])
   @@index([status])
@@ -163,14 +168,14 @@ model ProjectMilestone {
   title           String
   status          String               @default("PENDING")
   dueAt           DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
   fileId          String?              @db.Uuid
   progressPercent Int                  @default(0)
   tags            String?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  project         Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
   approval        MilestoneApproval?
   deliverables    ProjectDeliverable[]
+  project         Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, createdAt])
   @@index([status])
@@ -179,7 +184,7 @@ model ProjectMilestone {
 
 model MilestoneApproval {
   id          String           @id @default(uuid())
-  milestoneId String
+  milestoneId String           @unique
   projectId   String
   clientId    String
   status      String           @default("PENDING")
@@ -187,11 +192,10 @@ model MilestoneApproval {
   decidedAt   DateTime?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  client      Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
   milestone   ProjectMilestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
   project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  client      Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  @@unique([milestoneId])
   @@index([clientId, createdAt])
   @@index([projectId, createdAt])
   @@index([status])
@@ -233,19 +237,20 @@ model ProjectTask {
   projectId       String
   title           String
   assigneeName    String?
+  externalLinks   Json?
   status          String                    @default("TODO")
-  priority        String                    @default("MEDIUM")
-  estimateMinutes Int?
-  storyPoints     Int?
-  blockedAt       DateTime?
-  progressPercent Int                       @default(0)
-  sprintId        String?
   dueAt           DateTime?
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
-  project         Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  sprint          ProjectSprint?            @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  blockedAt       DateTime?
+  estimateMinutes Int?
+  priority        String                    @default("MEDIUM")
+  progressPercent Int                       @default(0)
+  sprintId        String?
+  storyPoints     Int?
   collaborators   ProjectTaskCollaborator[]
+  project         Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sprint          ProjectSprint?            @relation(fields: [sprintId], references: [id])
   workSessions    ProjectWorkSession[]
 
   @@index([projectId, createdAt])
@@ -266,9 +271,9 @@ model ProjectTaskCollaborator {
   active            Boolean     @default(true)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
+  client            Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
   project           Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   task              ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  client            Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([projectId, createdAt])
   @@index([taskId, createdAt])
@@ -288,8 +293,8 @@ model ProjectCollaborationNote {
   message    String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, createdAt])
   @@index([clientId, createdAt])
@@ -311,9 +316,9 @@ model ProjectWorkSession {
   endedAt    DateTime?
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
-  project    Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   client     Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  task       ProjectTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  project    Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task       ProjectTask? @relation(fields: [taskId], references: [id])
 
   @@index([projectId, createdAt])
   @@index([clientId, createdAt])
@@ -322,25 +327,28 @@ model ProjectWorkSession {
 }
 
 model ProjectTimeEntry {
-  id            String    @id @default(uuid())
-  projectId     String
-  clientId      String
-  phaseId       String?
-  staffUserId   String?   @db.Uuid
-  staffName     String?
-  taskLabel     String
-  minutes       Int
-  startedAt     DateTime?
-  endedAt       DateTime?
-  status        String    @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | REJECTED
-  submittedAt   DateTime?
-  submittedWeek String? // "2026-W12" ISO week format
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  project Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  client  Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  phase   ProjectPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+  id              String        @id @default(uuid())
+  projectId       String
+  clientId        String
+  staffUserId     String?       @db.Uuid
+  staffName       String?
+  taskLabel       String
+  minutes         Int
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  phaseId         String?
+  status          String        @default("DRAFT")
+  submittedAt     DateTime?
+  submittedWeek   String?
+  approvedAt      DateTime?
+  approvedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  phase           ProjectPhase? @relation(fields: [phaseId], references: [id])
+  project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([clientId, createdAt])
   @@index([projectId, createdAt])
@@ -356,8 +364,8 @@ model ProjectDependency {
   blockedByProjectId String
   type               String   @default("BLOCKS")
   createdAt          DateTime @default(now())
-  project            Project  @relation("ProjectDependencies", fields: [projectId], references: [id], onDelete: Cascade)
   blockedByProject   Project  @relation("ProjectBlocking", fields: [blockedByProjectId], references: [id], onDelete: Cascade)
+  project            Project  @relation("ProjectDependencies", fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, createdAt])
   @@index([blockedByProjectId])
@@ -392,8 +400,8 @@ model ProjectBlocker {
   resolvedAt  DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([clientId, createdAt])
   @@index([projectId, createdAt])
@@ -429,8 +437,8 @@ model ProjectChangeRequest {
   clientDecidedByName String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
-  project             Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   client              Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project             Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([clientId, createdAt])
   @@index([projectId, createdAt])
@@ -445,17 +453,17 @@ model Lead {
   source         String?
   status         String         @default("NEW")
   notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  ownerName      String?
+  nextFollowUpAt DateTime?
+  lostReason     String?
   contactName    String?
   contactEmail   String?
   contactPhone   String?
   company        String?
-  ownerName      String?
-  nextFollowUpAt DateTime?
-  lostReason     String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  client         Client?        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   activities     LeadActivity[]
+  client         Client?        @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([clientId, createdAt])
   @@index([status])
@@ -492,7 +500,117 @@ model UserPreference {
   @@map("user_preferences")
 }
 
-// ─── Batch A: Project Layer Extensions ───────────────────────────────────────
+model ClientIntegrationRequest {
+  id                String    @id @default(uuid())
+  clientId          String
+  provider          String
+  status            String    @default("REQUESTED")
+  requestedByUserId String?
+  assignedToUserId  String?
+  notes             String?
+  completedByUserId String?
+  rejectedReason    String?
+  priority          String?
+  requestedVia      String?
+  sourceContext     Json?
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  client            Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, createdAt])
+  @@index([clientId, provider, status])
+  @@index([status, assignedToUserId, createdAt])
+  @@map("client_integration_requests")
+}
+
+model IntegrationProvider {
+  id                   String                        @id @default(uuid())
+  key                  String                        @unique
+  label                String
+  description          String
+  category             String
+  kind                 String
+  availabilityStatus   String                        @default("active")
+  iconKey              String
+  isClientVisible      Boolean                       @default(true)
+  isRequestEnabled     Boolean                       @default(false)
+  supportsDisconnect   Boolean                       @default(false)
+  supportsReconnect    Boolean                       @default(false)
+  supportsHealthChecks Boolean                       @default(false)
+  sortOrder            Int                           @default(0)
+  launchStage          String?
+  helpUrl              String?
+  setupGuideUrl        String?
+  metadata             Json?
+  createdAt            DateTime                      @default(now())
+  updatedAt            DateTime                      @updatedAt
+  connections          ClientIntegrationConnection[]
+
+  @@index([isClientVisible, sortOrder])
+  @@index([availabilityStatus, sortOrder])
+  @@map("integration_providers")
+}
+
+model ClientIntegrationConnection {
+  id                      String                 @id @default(uuid())
+  clientId                String
+  providerId              String
+  providerKey             String
+  status                  String
+  connectionType          String
+  connectedByUserId       String?
+  connectedByContactEmail String?
+  assignedOwnerUserId     String?
+  connectedAt             DateTime?
+  disconnectedAt          DateTime?
+  lastCheckedAt           DateTime?
+  lastSyncedAt            DateTime?
+  lastSuccessfulSyncAt    DateTime?
+  lastErrorCode           String?
+  lastErrorMessage        String?
+  healthStatus            String?
+  configurationSummary    Json?
+  externalAccountId       String?
+  externalAccountLabel    String?
+  metadata                Json?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  client                  Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  provider                IntegrationProvider    @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  syncEvents              IntegrationSyncEvent[]
+
+  @@unique([clientId, providerKey])
+  @@index([clientId, status])
+  @@index([providerKey, status])
+  @@index([healthStatus, updatedAt])
+  @@map("client_integration_connections")
+}
+
+model IntegrationSyncEvent {
+  id             String                      @id @default(uuid())
+  connectionId   String
+  clientId       String
+  taskId         String?
+  providerKey    String
+  idempotencyKey String?
+  status         String
+  startedAt      DateTime
+  finishedAt     DateTime?
+  durationMs     Int?
+  summary        String?
+  errorCode      String?
+  errorMessage   String?
+  details        Json?
+  createdAt      DateTime                    @default(now())
+  connection     ClientIntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([connectionId, createdAt])
+  @@index([clientId, providerKey, createdAt])
+  @@index([taskId, createdAt])
+  @@index([taskId, providerKey, idempotencyKey])
+  @@map("integration_sync_events")
+}
 
 model ProjectDeliverable {
   id             String            @id @default(uuid())
@@ -508,8 +626,8 @@ model ProjectDeliverable {
   reviewedByName String?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
+  milestone      ProjectMilestone? @relation(fields: [milestoneId], references: [id])
   project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  milestone      ProjectMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
 
   @@index([projectId, createdAt])
   @@index([status])
@@ -629,8 +747,6 @@ model ProjectBrief {
   @@map("project_briefs")
 }
 
-// ─── Batch B: Client CX Models ───────────────────────────────────────────────
-
 model ClientHealthScore {
   id                 String    @id @default(uuid())
   clientId           String
@@ -690,8 +806,8 @@ model SatisfactionSurvey {
   completedAt DateTime?
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
-  client      Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
   responses   SatisfactionResponse[]
+  client      Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
   tokens      SurveyToken[]
 
   @@index([clientId, periodStart])
@@ -703,8 +819,8 @@ model SatisfactionResponse {
   surveyId  String
   question  String
   answer    String
-  comment   String?
   createdAt DateTime           @default(now())
+  comment   String?
   survey    SatisfactionSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
 
   @@index([surveyId])
@@ -719,8 +835,8 @@ model SurveyToken {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime           @default(now())
-  survey    SatisfactionSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
   client    Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  survey    SatisfactionSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
 
   @@map("survey_tokens")
 }
@@ -760,20 +876,17 @@ model OffboardingTask {
 }
 
 model CommunicationLog {
-  id             String   @id @default(uuid())
-  clientId       String
-  type           String
-  subject        String
-  fromName       String?
-  direction      String   @default("OUTBOUND")
-  relatedFileId  String?
-  actionLabel    String?
-  body           String? // message body / content
-  sentimentScore Float? // -1.0 (negative) to 1.0 (positive)
-  sentimentLabel String? // POSITIVE | NEUTRAL | NEGATIVE
-  occurredAt     DateTime
-  createdAt      DateTime @default(now())
-  client         Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  id            String   @id @default(uuid())
+  clientId      String
+  type          String
+  subject       String
+  fromName      String?
+  direction     String   @default("OUTBOUND")
+  relatedFileId String?
+  actionLabel   String?
+  occurredAt    DateTime
+  createdAt     DateTime @default(now())
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([clientId, occurredAt])
   @@map("communication_logs")
@@ -800,23 +913,40 @@ model SLARecord {
 }
 
 model Appointment {
-  id              String   @id @default(uuid())
-  clientId        String
-  type            String   @default("CHECK_IN")
-  scheduledAt     DateTime
-  durationMins    Int      @default(60)
-  ownerName       String?
-  status          String   @default("PENDING")
-  notes           String?
-  videoRoomUrl    String?
-  videoProvider   String? // "daily" | null
-  videoCallStatus String?  @default("NONE") // NONE | SCHEDULED | ACTIVE | ENDED
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  id               String            @id @default(uuid())
+  clientId         String
+  type             String            @default("CHECK_IN")
+  scheduledAt      DateTime
+  durationMins     Int               @default(60)
+  ownerName        String?
+  status           String            @default("PENDING")
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  videoCallStatus  String?           @default("NONE")
+  videoProvider    String?
+  videoRoomUrl     String?
+  client           Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  availabilitySlot AvailabilitySlot?
 
   @@index([clientId, scheduledAt])
   @@map("appointments")
+}
+
+model AvailabilitySlot {
+  id            String       @id @default(uuid())
+  adminId       String
+  startsAt      DateTime
+  endsAt        DateTime
+  booked        Boolean      @default(false)
+  appointmentId String?      @unique
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([startsAt, booked])
+  @@index([adminId, startsAt])
+  @@map("availability_slots")
 }
 
 model Referral {
@@ -828,7 +958,6 @@ model Referral {
   rewardAmountCents Int?
   rewardedAt        DateTime?
   notes             String?
-  creditApplied     Boolean   @default(false) // set true when credit applied to invoice
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -855,8 +984,6 @@ model SupportTicket {
   @@map("support_tickets")
 }
 
-// ─── Batch C: Staff & HR Models ──────────────────────────────────────────────
-
 model StaffProfile {
   id                String                  @id @default(uuid())
   userId            String?
@@ -872,17 +999,16 @@ model StaffProfile {
   uifRatePct        Float                   @default(0)
   bankLast4         String?
   isActive          Boolean                 @default(true)
-  skills            String? // JSON array of skill tags e.g. ["React","TypeScript","SEO"]
   createdAt         DateTime                @default(now())
   updatedAt         DateTime                @updatedAt
-  payslips          StaffPayslip[]
   leaveRequests     LeaveRequest[]
-  onboardingRecords StaffOnboardingRecord[]
-  trainingRecords   TrainingRecord[]
-  standupEntries    StandupEntry[]
-  givenReviews      PeerReview[]            @relation("reviewer")
   receivedReviews   PeerReview[]            @relation("reviewee")
+  givenReviews      PeerReview[]            @relation("reviewer")
   recurringTasks    RecurringTask[]
+  onboardingRecords StaffOnboardingRecord[]
+  payslips          StaffPayslip[]
+  standupEntries    StandupEntry[]
+  trainingRecords   TrainingRecord[]
 
   @@index([isActive])
   @@index([department])
@@ -1030,16 +1156,15 @@ model PeerReview {
   submittedAt DateTime?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  reviewer    StaffProfile @relation("reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  quarter     String?
   reviewee    StaffProfile @relation("reviewee", fields: [revieweeId], references: [id], onDelete: Cascade)
+  reviewer    StaffProfile @relation("reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
 
   @@index([reviewerId])
   @@index([revieweeId])
   @@index([status])
   @@map("peer_reviews")
 }
-
-// ─── Batch D: Operations, Content & Governance ───────────────────────────────
 
 model Announcement {
   id          String    @id @default(uuid())
@@ -1109,12 +1234,9 @@ model MeetingRecord {
   recordingFileId  String?
   actionItemStatus String   @default("NONE")
   notes            String?
-  clientMoodRating Int?
-  transcriptText   String?
-  aiSummary        String?
-  recordingId      String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  clientMoodRating Int?
 
   @@index([clientId, meetingAt])
   @@map("meeting_records")
@@ -1167,11 +1289,10 @@ model HandoverRecord {
   clientId      String?
   status        String    @default("PENDING")
   notes         String?
-  aiSummary     String? // AI-generated structured summary
   transferDate  DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  project       Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  project       Project?  @relation(fields: [projectId], references: [id])
 
   @@index([projectId])
   @@index([clientId])
@@ -1216,15 +1337,13 @@ model MarketIntelEntry {
   @@map("market_intel_entries")
 }
 
-// ─── Recurring Tasks ──────────────────────────────────────────────────────────
-
 model RecurringTask {
   id            String       @id @default(uuid())
   staffId       String
   clientId      String?
   title         String
-  frequency     String       @default("Weekly") // Daily | Weekly | Bi-weekly | Monthly
-  dayOfWeek     String? // Mon | Tue | ... for Weekly/Bi-weekly
+  frequency     String       @default("Weekly")
+  dayOfWeek     String?
   estimateHours Float        @default(0.5)
   category      String       @default("Admin")
   isActive      Boolean      @default(true)
@@ -1241,38 +1360,86 @@ model RecurringTask {
   @@map("recurring_tasks")
 }
 
-// ─── Client Profile ────────────────────────────────────────────────────────────
-
 model ClientProfile {
-  id            String   @id @default(uuid())
-  clientId      String   @unique
-  companyName   String?
-  tagline       String?
-  mission       String?
-  vision        String?
-  description   String?
-  industry      String?
-  website       String?
-  logoUrl       String?
-  primaryColor  String?
-  socialLinks   Json? // { linkedin, twitter, instagram, github }
-  yearFounded   Int?
-  teamSize      String? // e.g. "1-10", "11-50", "51-200"
-  hqLocation    String?
-  coverImageUrl String?
-  updatedAt     DateTime @updatedAt
-  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  id                  String                     @id @default(uuid())
+  clientId            String                     @unique
+  accountType         String                     @default("COMPANY")
+  companyName         String?
+  projectName         String?
+  projectBrief        String?
+  legalCompanyName    String?
+  tradingName         String?
+  primaryContactName  String?
+  primaryContactRole  String?
+  primaryContactEmail String?
+  primaryContactPhone String?
+  tagline             String?
+  mission             String?
+  vision              String?
+  description         String?
+  officialBlurb       String?
+  partnerBlurb        String?
+  industry            String?
+  website             String?
+  logoUrl             String?
+  primaryColor        String?
+  updatedAt           DateTime                   @updatedAt
+  coverImageUrl       String?
+  hqLocation          String?
+  socialLinks         Json?
+  approvedBrandColors Json?
+  approvalPreferences Json?
+  identityAssets      Json?
+  onboardingCompleted Boolean                    @default(false)
+  teamSize            String?
+  yearFounded         Int?
+  client              Client                     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  stakeholders        ClientProfileStakeholder[]
+  auditEvents         ClientProfileAuditEvent[]
 
   @@map("client_profiles")
 }
 
-// ─── Feedback Extensions ──────────────────────────────────────────────────────
+model ClientProfileStakeholder {
+  id               String        @id @default(uuid())
+  clientProfileId  String
+  role             String
+  fullName         String
+  jobTitle         String?
+  email            String?
+  phone            String?
+  preferredChannel String?
+  isPrimary        Boolean       @default(false)
+  notes            String?
+  sortOrder        Int           @default(0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  clientProfile    ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+
+  @@index([clientProfileId, role])
+  @@map("client_profile_stakeholders")
+}
+
+model ClientProfileAuditEvent {
+  id              String        @id @default(uuid())
+  clientProfileId String
+  actorUserId     String?
+  actorRole       String?
+  actorName       String?
+  section         String
+  summary         String
+  createdAt       DateTime      @default(now())
+  clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+
+  @@index([clientProfileId, createdAt])
+  @@map("client_profile_audit_events")
+}
 
 model FeedbackReaction {
   id        String   @id @default(uuid())
   ticketId  String
   clientId  String
-  emoji     String // e.g. "👍" | "❤️" | "🙏"
+  emoji     String
   createdAt DateTime @default(now())
 
   @@unique([ticketId, clientId, emoji])
@@ -1284,7 +1451,7 @@ model FeedbackReply {
   id         String   @id @default(uuid())
   ticketId   String
   authorId   String?
-  authorRole String   @default("CLIENT") // CLIENT | STAFF | ADMIN
+  authorRole String   @default("CLIENT")
   authorName String?
   body       String
   createdAt  DateTime @default(now())
@@ -1294,21 +1461,19 @@ model FeedbackReply {
   @@map("feedback_replies")
 }
 
-// ─── Brand Assets ───────────────────────────────────────────────────────────
-
 model BrandAsset {
   id         String   @id @default(uuid())
-  clientId   String
-  type       String // LOGO | COLOR | FONT | GUIDELINE
+  type       String
   name       String
+  value      String?
+  variant    String?
+  clientId   String
+  createdAt  DateTime @default(now())
   fileId     String?
-  storageKey String?
   mimeType   String?
   sizeBytes  Int?
-  value      String? // hex for colors, family name for fonts, URL for logos
-  variant    String? // PRIMARY | SECONDARY | DARK | LIGHT
   sortOrder  Int      @default(0)
-  createdAt  DateTime @default(now())
+  storageKey String?
   updatedAt  DateTime @updatedAt
   client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
@@ -1316,20 +1481,17 @@ model BrandAsset {
   @@map("brand_assets")
 }
 
-// ─── Client Contracts ─────────────────────────────────────────────────────────
-
 model ClientContract {
   id           String    @id @default(uuid())
   clientId     String
+  projectId    String?
   title        String
-  type         String    @default("CONTRACT") // NDA | SOW | DPA | MSA | CONTRACT
+  type         String    @default("CONTRACT")
   ref          String?
-  status       String    @default("PENDING") // PENDING | SIGNED | VOID
+  status       String    @default("PENDING")
   signed       Boolean   @default(false)
   signedAt     DateTime?
-  signedByName String?
-  expiresAt    DateTime? // contract expiry date for renewal tracking
-  fileId       String? // links to the file service record
+  fileId       String?
   storageKey   String?
   mimeType     String?
   sizeBytes    Int?
@@ -1337,26 +1499,26 @@ model ClientContract {
   sortOrder    Int       @default(0)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  signedByName String?
+  expiresAt    DateTime?
   client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project      Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([clientId, type])
   @@index([clientId, status])
+  @@index([projectId])
   @@map("client_contracts")
 }
-
-// ─── Project Closeout Reports ──────────────────────────────────────────────────
-// Submitted at project completion to capture budget variance and lessons learned.
-// Admin can approve or request changes before archiving.
 
 model ProjectCloseoutReport {
   id                  String    @id @default(uuid())
   projectId           String
   projectName         String
   clientName          String
-  submittedBy         String // staff display name
-  status              String    @default("PENDING_REVIEW") // PENDING_REVIEW | APPROVED | CHANGES_REQUESTED
-  budgetVarianceCents BigInt    @default(0) // positive = over budget, negative = under
-  lessonsLearned      String? // JSON array of lesson strings
+  submittedBy         String
+  status              String    @default("PENDING_REVIEW")
+  budgetVarianceCents BigInt    @default(0)
+  lessonsLearned      String?
   lessonsCount        Int       @default(0)
   notes               String?
   approvedBy          String?
@@ -1370,47 +1532,43 @@ model ProjectCloseoutReport {
   @@map("project_closeout_reports")
 }
 
-// ─── Feature Flags ────────────────────────────────────────────────────────────
-// Admin-managed feature toggles.  key is the unique machine identifier.
-
 model FeatureFlag {
-  key         String   @id // e.g. "ai_auto_draft"
-  name        String // display name
+  key         String   @id
+  name        String
   description String?
   enabled     Boolean  @default(false)
-  scope       String   @default("All users") // "All users" | "All staff" | "Disabled" | custom
-  updatedBy   String? // user-id of last editor
+  scope       String   @default("All users")
+  updatedBy   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("feature_flags")
 }
 
-// ─── Proposals (client-facing quotes) ────────────────────────────────────────
-// Admin creates proposals for clients. Clients can accept or decline.
-// Items are the line-item breakdown rendered in the portal.
-
 model Proposal {
   id                 String         @id @default(uuid())
   clientId           String
+  projectId          String?
   title              String
   summary            String?
-  status             String         @default("PENDING") // PENDING | ACCEPTED | DECLINED | EXPIRED
+  status             String         @default("PENDING")
   amountCents        Int            @default(0)
   currency           String         @default("ZAR")
-  preparedBy         String? // display name of staff who prepared it
-  preparedByInitials String? // 1-2 char initials for avatar
+  preparedBy         String?
+  preparedByInitials String?
   validUntil         DateTime?
   declinedAt         DateTime?
   declineReason      String?
   acceptedAt         DateTime?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
-  client             Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
   items              ProposalItem[]
+  client             Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project            Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([clientId, status])
   @@index([clientId, createdAt])
+  @@index([projectId])
   @@map("proposals")
 }
 
@@ -1418,7 +1576,7 @@ model ProposalItem {
   id          String   @id @default(uuid())
   proposalId  String
   description String
-  icon        String   @default("star") // Lucide icon name shown in portal
+  icon        String   @default("star")
   amountCents Int      @default(0)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
@@ -1427,11 +1585,6 @@ model ProposalItem {
   @@index([proposalId])
   @@map("proposal_items")
 }
-
-// ─── Service Catalog ──────────────────────────────────────────────────────────
-// Database-driven pricing: replaces hardcoded service arrays in the frontend.
-// Packages are once-off projects; retainers are monthly plans; addons are extras.
-// Bundles group packages together with an optional discount.
 
 model ServicePackage {
   id             String                 @id @default(uuid())
@@ -1516,17 +1669,15 @@ model ServiceBundlePackage {
   @@map("service_bundle_packages")
 }
 
-// ── Competitor Intelligence ───────────────────────────────────────────────────
-
 model Competitor {
   id             String         @id @default(uuid())
   name           String
-  type           String         @default("Direct") // Direct | Adjacent | Indirect
-  tier           String         @default("Same tier") // Same tier | Below us | Above us
+  type           String         @default("Direct")
+  tier           String         @default("Same tier")
   color          String         @default("var(--red)")
-  services       String         @default("[]") // JSON string array
-  strengths      String         @default("[]") // JSON string array
-  weaknesses     String         @default("[]") // JSON string array
+  services       String         @default("[]")
+  strengths      String         @default("[]")
+  weaknesses     String         @default("[]")
   pricing        String?
   positioning    String?
   beatStrategy   String?
@@ -1547,13 +1698,13 @@ model WinLossEntry {
   id           String      @id @default(uuid())
   date         String
   prospect     String
-  outcome      String      @default("pending") // won | lost | pending
+  outcome      String      @default("pending")
   competitorId String?
-  competitor   Competitor? @relation(fields: [competitorId], references: [id], onDelete: SetNull)
   reason       String?
   notes        String?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+  competitor   Competitor? @relation(fields: [competitorId], references: [id])
 
   @@index([outcome])
   @@index([competitorId])
@@ -1579,7 +1730,7 @@ model MarketRate {
 model EntityComment {
   id         String   @id @default(uuid()) @db.VarChar(36)
   clientId   String   @db.VarChar(36)
-  entityType String   @db.VarChar(64) // "deliverable" | "task" | "invoice" | "milestone" | "ticket"
+  entityType String   @db.VarChar(64)
   entityId   String   @db.VarChar(36)
   authorName String   @db.VarChar(128)
   authorRole String   @default("CLIENT") @db.VarChar(32)
@@ -1594,8 +1745,8 @@ model EntityComment {
 model Crisis {
   id          String    @id @default(cuid())
   title       String
-  severity    String // LOW | MEDIUM | HIGH | CRITICAL
-  status      String // ACTIVE | MONITORING | RESOLVED
+  severity    String
+  status      String
   description String?
   ownerId     String?
   clientId    String?
@@ -1610,9 +1761,9 @@ model Crisis {
 
 model ComplianceRecord {
   id        String   @id @default(cuid())
-  area      String // e.g. "GDPR", "POPIA", "SARS", "ISO27001"
-  status    String // "COMPLIANT" | "AT_RISK" | "NON_COMPLIANT"
-  riskLevel String // "LOW" | "MEDIUM" | "HIGH"
+  area      String
+  status    String
+  riskLevel String
   lastAudit DateTime
   nextAudit DateTime
   notes     String?
@@ -1629,7 +1780,7 @@ model DataRetentionPolicy {
   retainYears Int
   lastPurge   DateTime?
   nextPurge   DateTime
-  status      String // "CURRENT" | "DUE" | "OVERDUE"
+  status      String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -1639,12 +1790,12 @@ model DataRetentionPolicy {
 
 model FyChecklistItem {
   id         String    @id @default(cuid())
-  fiscalYear String // e.g. "2025-2026"
+  fiscalYear String
   label      String
-  category   String // "REVENUE" | "TAX" | "PAYROLL" | "ARCHIVE"
+  category   String
   done       Boolean   @default(false)
   doneAt     DateTime?
-  doneBy     String? // userId of who checked it
+  doneBy     String?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
@@ -1659,9 +1810,9 @@ model StaffGoal {
   title       String
   description String?
   targetDate  DateTime
-  progress    Int      @default(0) // 0-100 percentage
-  status      String   @default("ACTIVE") // ACTIVE | ACHIEVED | CANCELLED
-  quarter     String // "Q1-2026", "Q2-2026", etc.
+  progress    Int      @default(0)
+  status      String   @default("ACTIVE")
+  quarter     String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -1697,10 +1848,10 @@ model ProjectTemplate {
 
 model ForumThread {
   id         String      @id @default(uuid())
-  category   String // "tips" | "qa" | "announcements" | "general"
+  category   String
   title      String      @db.VarChar(200)
-  authorId   String // real userId — never exposed to other clients
-  anonAlias  String      @db.VarChar(60) // e.g. "@amber-falcon"
+  authorId   String
+  anonAlias  String      @db.VarChar(60)
   isPinned   Boolean     @default(false)
   isLocked   Boolean     @default(false)
   isApproved Boolean     @default(false)
@@ -1717,14 +1868,14 @@ model ForumThread {
 model ForumPost {
   id         String      @id @default(uuid())
   threadId   String
-  thread     ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
   authorId   String
   anonAlias  String      @db.VarChar(60)
-  body       String      @db.Text
+  body       String
   isApproved Boolean     @default(false)
   isRejected Boolean     @default(false)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
+  thread     ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
   @@index([threadId, isApproved])
   @@map("forum_posts")
@@ -1732,12 +1883,12 @@ model ForumPost {
 
 model FeatureRequest {
   id          String        @id @default(uuid())
-  category    String // "portal-ux" | "reporting" | "integrations" | "delivery" | "billing" | "other"
+  category    String
   title       String        @db.VarChar(200)
-  description String        @db.Text
+  description String
   authorId    String
   anonAlias   String        @db.VarChar(60)
-  status      String        @default("under_review") // "under_review" | "planned" | "in_progress" | "done" | "declined"
+  status      String        @default("under_review")
   voteCount   Int           @default(0)
   isApproved  Boolean       @default(false)
   isRejected  Boolean       @default(false)
@@ -1753,68 +1904,17 @@ model FeatureRequest {
 model FeatureVote {
   id               String         @id @default(uuid())
   featureRequestId String
-  featureRequest   FeatureRequest @relation(fields: [featureRequestId], references: [id], onDelete: Cascade)
   voterId          String
   createdAt        DateTime       @default(now())
+  featureRequest   FeatureRequest @relation(fields: [featureRequestId], references: [id], onDelete: Cascade)
 
   @@unique([featureRequestId, voterId])
   @@map("feature_votes")
 }
 
-model AdminProposedAction {
-  id             String    @id @default(cuid())
-  proposedBy     String
-  proposedByName String?
-  action         String
-  resourceType   String
-  resourceId     String?
-  payload        String?
-  reason         String?
-  status         String    @default("PENDING")
-  reviewedBy     String?
-  reviewedByName String?
-  reviewedAt     DateTime?
-  reviewNote     String?
-  executedAt     DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  @@map("admin_proposed_actions")
-}
-
-model AvailabilitySlot {
-  id            String   @id @default(cuid())
-  adminId       String
-  startsAt      DateTime
-  endsAt        DateTime
-  booked        Boolean  @default(false)
-  appointmentId String?
-  createdAt     DateTime @default(now())
-
-  @@map("availability_slots")
-}
-
-model WebhookEndpoint {
-  id        String   @id @default(cuid())
-  url       String
-  events    String // comma-separated: "project.created,invoice.paid"
-  secret    String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("webhook_endpoints")
-}
-
-enum EftVerificationStatus {
-  PENDING
-  VERIFIED
-  REJECTED
-}
-
 model EftVerification {
   id              String                @id @default(cuid())
-  projectId       String                @unique
+  projectId       String                @unique(map: "eft_verifications_projectid_key")
   clientId        String
   proofFileId     String
   proofFileName   String
@@ -1826,8 +1926,27 @@ model EftVerification {
   notes           String?
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project         Project               @relation(fields: [projectId], references: [id], onDelete: Cascade, map: "eft_verifications_projectid_fkey")
 
   @@map("eft_verifications")
+}
+
+model calendar_events {
+  id         String   @id
+  title      String
+  startAt    DateTime
+  endAt      DateTime
+  type       String
+  sourceId   String
+  sourceType String
+  roles      String[]
+  clientId   String?
+  staffId    String?
+  createdAt  DateTime @default(now())
+}
+
+enum EftVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
 }

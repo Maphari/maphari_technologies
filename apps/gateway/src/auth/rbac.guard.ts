@@ -74,6 +74,7 @@ export class RbacGuard implements CanActivate {
     const role     = jwtScope?.role;
     const userId   = jwtScope?.userId;
     const clientId = jwtScope?.clientId;
+    const email    = jwtScope?.email;
 
     if (!role || !userId) {
       throw new UnauthorizedException("Missing or invalid authentication");
@@ -88,12 +89,13 @@ export class RbacGuard implements CanActivate {
     }
 
     // ── Attach scoped context to request ────────────────────────────────────
-    request.scopedRequest = { userId, role, clientId };
+    request.scopedRequest = { userId, role, clientId, email };
 
     // Normalise headers so downstream controllers forward a consistent scope.
     request.headers["x-user-id"]   = userId;
     request.headers["x-user-role"] = role;
     if (clientId) request.headers["x-client-id"] = clientId;
+    if (email) request.headers["x-user-email"] = email;
 
     return true;
   }

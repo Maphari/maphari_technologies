@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 // integrations-page.tsx — Client Portal Integrations Hub
 // Google Calendar uses a real OAuth2 flow.
-// All other integrations submit a support-ticket request.
+// Assisted integrations use explicit integration-request records.
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useMemo } from "react";
@@ -14,44 +14,36 @@ import { useProjectLayer } from "../hooks/use-project-layer";
 import { usePageToast } from "../hooks/use-page-toast";
 import { saveSession } from "../../../../lib/auth/session";
 import {
-  getPortalPreferenceWithRefresh,
-  setPortalPreferenceWithRefresh,
-  createPortalSupportTicketWithRefresh,
-} from "../../../../lib/api/portal";
-import {
+  createPortalIntegrationRequestWithRefresh,
   getGoogleCalendarAuthUrlWithRefresh,
   getGoogleCalendarStatusWithRefresh,
   disconnectGoogleCalendarWithRefresh,
+  loadPortalIntegrationsWithRefresh,
   type GcalStatus,
+  type PortalIntegration,
 } from "../../../../lib/api/portal/integrations";
 
-// ── OAuth is not yet configured — connections are requested via support ticket ──
-// When OAuth client IDs are set up in env, replace this with real OAuth flows.
+const PRESENTATION: Record<string, { icon: string; iconColor: string }> = {
+  gcal: { icon: "G", iconColor: "var(--lime)" },
+  slack: { icon: "S", iconColor: "var(--purple)" },
+  xero: { icon: "X", iconColor: "#13B5EA" },
+  msteams: { icon: "T", iconColor: "var(--purple)" },
+  dropbox: { icon: "D", iconColor: "#0061FF" },
+  notion: { icon: "N", iconColor: "var(--muted2)" },
+  zapier: { icon: "Z", iconColor: "var(--amber)" },
+  hubspot: { icon: "H", iconColor: "var(--red)" },
+};
 
-// ── Static integration catalogue ─────────────────────────────────────────────
-
-type IntegrationStatus = "Available" | "Coming Soon";
-
-interface Integration {
-  id:          string;
-  name:        string;
-  description: string;
-  category:    string;
-  status:      IntegrationStatus;
-  icon:        string;
-  iconColor:   string;
+function formatShortDate(value: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 }
-
-const INTEGRATIONS: Integration[] = [
-  { id: "slack",     name: "Slack",           description: "Receive project notifications, approvals, and alerts directly in your Slack workspace.",  category: "Communication",  status: "Available",    icon: "S", iconColor: "var(--purple)" },
-  { id: "gcal",      name: "Google Calendar", description: "Sync scheduled meetings and milestone due dates to your Google Calendar.",                 category: "Calendar",       status: "Available",    icon: "G", iconColor: "var(--lime)"   },
-  { id: "xero",      name: "Xero",            description: "Automatically push approved invoices to your Xero accounting platform.",                    category: "Finance",        status: "Available",    icon: "X", iconColor: "#13B5EA"       },
-  { id: "msteams",   name: "Microsoft Teams", description: "Route project notifications and updates to your Teams channels.",                           category: "Communication",  status: "Available",    icon: "T", iconColor: "var(--purple)" },
-  { id: "dropbox",   name: "Dropbox",         description: "Automatically sync project file deliverables to your Dropbox folder.",                      category: "Files",          status: "Available",    icon: "D", iconColor: "#0061FF"       },
-  { id: "notion",    name: "Notion",          description: "Export meeting notes and decision logs directly to a Notion workspace.",                     category: "Documentation",  status: "Coming Soon",  icon: "N", iconColor: "var(--muted2)" },
-  { id: "zapier",    name: "Zapier",          description: "Connect your project data to 3,000+ tools via automated Zapier workflows.",                 category: "Automation",     status: "Coming Soon",  icon: "Z", iconColor: "var(--amber)"  },
-  { id: "hubspot",   name: "HubSpot",         description: "View project health and delivery metrics in your HubSpot CRM.",                             category: "CRM",            status: "Coming Soon",  icon: "H", iconColor: "var(--red)"    },
-];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -60,8 +52,7 @@ export function IntegrationsPage() {
   const notify       = usePageToast();
   const searchParams = useSearchParams();
 
-  const [connected,      setConnected]      = useState<Record<string, boolean>>({});
-  const [requested,      setRequested]      = useState<Record<string, boolean>>({});
+  const [integrations,   setIntegrations]   = useState<PortalIntegration[]>([]);
   const [loading,        setLoading]        = useState(true);
   const [requesting,     setRequesting]     = useState<string | null>(null);
 
@@ -70,15 +61,13 @@ export function IntegrationsPage() {
   const [gcalConnecting, setGcalConnecting] = useState(false);
   const [gcalDisconn,    setGcalDisconn]    = useState(false);
 
-  // Load connected state from preferences + Google Calendar status
+  // Load real catalog state + Google Calendar status
   useEffect(() => {
     if (!session) { setLoading(false); return; }
 
-    const prefPromise = getPortalPreferenceWithRefresh(session, "settingsApiAccess").then((r) => {
+    const integrationsPromise = loadPortalIntegrationsWithRefresh(session).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
-      if (r.data?.value) {
-        try { setConnected(JSON.parse(r.data.value) as Record<string, boolean>); } catch { /**/ }
-      }
+      setIntegrations(r.data ?? []);
     });
 
     const gcalPromise = getGoogleCalendarStatusWithRefresh(session).then((r) => {
@@ -86,7 +75,7 @@ export function IntegrationsPage() {
       if (r.data) setGcalStatus(r.data);
     });
 
-    void Promise.all([prefPromise, gcalPromise]).finally(() => setLoading(false));
+    void Promise.all([integrationsPromise, gcalPromise]).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
 
@@ -99,9 +88,14 @@ export function IntegrationsPage() {
       notify("success", "Google Calendar connected", "Your calendar is now synced.");
       // Refresh status
       if (session) {
-        void getGoogleCalendarStatusWithRefresh(session).then((r) => {
-          if (r.nextSession) saveSession(r.nextSession);
-          if (r.data) setGcalStatus(r.data);
+        void Promise.all([
+          getGoogleCalendarStatusWithRefresh(session),
+          loadPortalIntegrationsWithRefresh(session),
+        ]).then(([statusResult, integrationsResult]) => {
+          if (statusResult.nextSession) saveSession(statusResult.nextSession);
+          if (integrationsResult.nextSession) saveSession(integrationsResult.nextSession);
+          if (statusResult.data) setGcalStatus(statusResult.data);
+          setIntegrations(integrationsResult.data ?? []);
         });
       }
     } else if (error === "oauth_failed") {
@@ -111,13 +105,6 @@ export function IntegrationsPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function persistConnected(next: Record<string, boolean>): void {
-    if (session) {
-      void setPortalPreferenceWithRefresh(session, { key: "settingsApiAccess", value: JSON.stringify(next) })
-        .then((r) => { if (r.nextSession) saveSession(r.nextSession); });
-    }
-  }
 
   async function handleConnectGoogleCalendar(): Promise<void> {
     if (!session || gcalConnecting) return;
@@ -152,20 +139,31 @@ export function IntegrationsPage() {
     }
   }
 
-  async function handleRequestConnection(integration: Integration): Promise<void> {
-    if (!session || requesting === integration.id) return;
-    setRequesting(integration.id);
+  async function handleRequestConnection(integration: PortalIntegration): Promise<void> {
+    if (!session || requesting === integration.provider) return;
+    setRequesting(integration.provider);
     try {
-      const r = await createPortalSupportTicketWithRefresh(session, {
-        clientId:    session.user.clientId ?? "",
-        title:       `Integration Setup Request: ${integration.name}`,
-        description: `The client has requested to connect their portal to ${integration.name}.\n\nIntegration: ${integration.name}\nCategory: ${integration.category}\nDescription: ${integration.description}\n\nPlease set up this integration and notify the client when it's ready.`,
-        category:    "GENERAL",
-        priority:    "MEDIUM",
+      const r = await createPortalIntegrationRequestWithRefresh(session, {
+        provider: integration.provider,
       });
       if (r.nextSession) saveSession(r.nextSession);
-      setRequested((prev) => ({ ...prev, [integration.id]: true }));
-      notify("success", "Request sent", `We'll set up your ${integration.name} connection and notify you when it's ready.`);
+      if (!r.data) {
+        notify("error", "Request failed", r.error?.message ?? "Please try again or contact support.");
+        return;
+      }
+      const createdRequest = r.data;
+      setIntegrations((current) => current.map((entry) => (
+        entry.provider === integration.provider
+          ? {
+              ...entry,
+              status: "requested",
+              requestedAt: createdRequest.createdAt ?? entry.requestedAt,
+              requestId: createdRequest.id,
+              requestStatus: createdRequest.status as PortalIntegration["requestStatus"],
+            }
+          : entry
+      )));
+      notify("success", "Request sent", `We'll set up your ${integration.label} connection and notify you when it's ready.`);
     } catch {
       notify("error", "Request failed", "Please try again or contact support.");
     } finally {
@@ -173,22 +171,14 @@ export function IntegrationsPage() {
     }
   }
 
-  function handleDisconnect(integration: Integration): void {
-    setConnected((prev) => {
-      const next = { ...prev, [integration.id]: false };
-      persistConnected(next);
-      return next;
-    });
-    notify("info", `${integration.name} disconnected`, "Integration has been removed.");
-  }
-
   const gcalConnected  = gcalStatus?.connected === true;
+  const requestedCount = useMemo(() => integrations.filter((item) => item.status === "requested").length, [integrations]);
   const connectedCount = useMemo(
-    () => Object.values(connected).filter(Boolean).length + (gcalConnected ? 1 : 0),
-    [connected, gcalConnected]
+    () => integrations.filter((item) => item.status === "connected").length || (gcalConnected ? 1 : 0),
+    [integrations, gcalConnected]
   );
-  const availableCount  = INTEGRATIONS.filter((i) => i.status === "Available").length;
-  const comingSoonCount = INTEGRATIONS.filter((i) => i.status === "Coming Soon").length;
+  const availableCount  = integrations.filter((i) => i.status === "available").length;
+  const comingSoonCount = integrations.filter((i) => i.status === "coming_soon").length;
 
   return (
     <div className={cx("pageBody")}>
@@ -207,10 +197,11 @@ export function IntegrationsPage() {
       {/* ── Stat cards ── */}
       <div className={cx("topCardsStack", "mb20")}>
         {[
-          { label: "Total Available",      value: String(INTEGRATIONS.length), color: "statCardAccent" },
+          { label: "Catalog Size",         value: String(integrations.length), color: "statCardAccent" },
           { label: "Available to Connect", value: String(availableCount),      color: "statCardBlue"   },
           { label: "Coming Soon",          value: String(comingSoonCount),     color: "statCardAmber"  },
-          { label: "Connected",            value: String(connectedCount),      color: connectedCount > 0 ? "statCardGreen" : "statCard" },
+          { label: "Live Connections",     value: String(connectedCount),      color: connectedCount > 0 ? "statCardGreen" : "statCard" },
+          { label: "Setup Requests",       value: String(requestedCount),      color: requestedCount > 0 ? "statCardBlue" : "statCard" },
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.color)}>
             <div className={cx("statLabel")}>{s.label}</div>
@@ -223,7 +214,7 @@ export function IntegrationsPage() {
       <div className={cx("intInfoBanner")}>
         <Ic n="info" sz={14} c="var(--lime)" />
         <span className={cx("text12", "colorMuted")}>
-          Clicking <strong>Connect</strong> opens an OAuth authorization window. Integration credentials are handled securely — we never store passwords.
+          The catalog and statuses on this page come from the backend. Google Calendar is self-serve; assisted integrations move through a real request workflow.
         </span>
       </div>
 
@@ -292,31 +283,39 @@ export function IntegrationsPage() {
         </div>
       ) : (
         <div className={cx("grid2Cols12Gap")}>
-          {INTEGRATIONS.filter((i) => i.id !== "gcal").map((integration) => {
-            const isComingSoon  = integration.status === "Coming Soon";
-            const isConnected   = !isComingSoon && (connected[integration.id] === true);
-            const borderColor   = isConnected ? "var(--lime)" : isComingSoon ? "var(--b2)" : "var(--b2)";
+          {integrations.filter((i) => i.provider !== "gcal").map((integration) => {
+            const isComingSoon  = integration.status === "coming_soon";
+            const isConnected   = integration.status === "connected";
+            const isRequested   = integration.status === "requested";
+            const isInSetup     = integration.requestStatus === "IN_PROGRESS";
+            const visual = PRESENTATION[integration.provider] ?? { icon: integration.label.charAt(0).toUpperCase(), iconColor: "var(--muted2)" };
+            const borderColor   = isConnected ? "var(--green)" : isRequested ? "var(--blue)" : "var(--b2)";
+            const requestedLabel = isInSetup ? "In Setup" : "Requested";
+            const requestedDate = formatShortDate(integration.requestedAt);
+            const connectedDate = formatShortDate(integration.connectedAt);
 
             return (
               <div
-                key={integration.id}
+                key={integration.provider}
                 className={cx("card", "borderLeft3")} style={{ "--border-color": borderColor } as React.CSSProperties}
               >
                 <div className={cx("cardBodyPad", "pt16")}>
                   <div className={cx("flexRow", "gap12", "mb10")}>
                     {/* Brand-tinted icon box */}
-                    <div className={cx("intIconBox", "dynBgColor", "dynBorderColor", "dynColor")} style={{ "--bg-color": `color-mix(in oklab, ${integration.iconColor} 15%, transparent)`, "--border-color": `color-mix(in oklab, ${integration.iconColor} 30%, transparent)`, "--color": integration.iconColor } as React.CSSProperties}>
-                      {integration.icon}
+                    <div className={cx("intIconBox", "dynBgColor", "dynBorderColor", "dynColor")} style={{ "--bg-color": `color-mix(in oklab, ${visual.iconColor} 15%, transparent)`, "--border-color": `color-mix(in oklab, ${visual.iconColor} 30%, transparent)`, "--color": visual.iconColor } as React.CSSProperties}>
+                      {visual.icon}
                     </div>
 
                     <div className={cx("flex1")}>
-                      <div className={cx("fw700", "text12")}>{integration.name}</div>
+                      <div className={cx("fw700", "text12")}>{integration.label}</div>
                       <span className={cx("text10", "colorMuted")}>{integration.category}</span>
                     </div>
 
                     {/* Status badge */}
                     {isConnected ? (
                       <span className={cx("badge", "badgeGreen", "noShrink", "alignSelfStart")}>Connected</span>
+                    ) : isRequested ? (
+                      <span className={cx("badge", isInSetup ? "badgeAccent" : "badgeBlue", "noShrink", "alignSelfStart")}>{requestedLabel}</span>
                     ) : isComingSoon ? (
                       <span className={cx("badge", "badgeAmber", "noShrink", "alignSelfStart")}>Coming Soon</span>
                     ) : (
@@ -328,30 +327,31 @@ export function IntegrationsPage() {
                     {integration.description}
                   </div>
 
+                  {(isConnected || isRequested) && (
+                    <div className={cx("text10", "colorMuted", "mb12")}>
+                      {isConnected && connectedDate ? `Live since ${connectedDate}.` : null}
+                      {isRequested && requestedDate ? `${requestedLabel} on ${requestedDate}.` : null}
+                      {isInSetup ? " Our delivery team is handling the configuration." : null}
+                    </div>
+                  )}
+
                   <div className={cx("flexRow", "gap8")}>
                     {isComingSoon ? (
                       <button type="button" className={cx("btnSm", "btnGhost", "opacity50")} disabled>
                         Notify Me
                       </button>
                     ) : isConnected ? (
-                      <>
-                        <span className={cx("text11", "colorGreen", "flexRow", "alignCenter", "gap4", "mr4")}>
-                          <Ic n="check" sz={11} c="var(--green)" /> Active
-                        </span>
-                        <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => handleDisconnect(integration)}>
-                          Disconnect
-                        </button>
-                      </>
-                    ) : requested[integration.id] ? (
-                      <span className={cx("badge", "badgeGreen")}>Requested ✓</span>
+                      <span className={cx("badge", "badgeGreen")}>Live</span>
+                    ) : isRequested ? (
+                      <span className={cx("badge", isInSetup ? "badgeAccent" : "badgeBlue")}>{requestedLabel}</span>
                     ) : (
                       <button
                         type="button"
                         className={cx("btnSm", "btnAccent")}
-                        disabled={requesting === integration.id}
+                        disabled={requesting === integration.provider}
                         onClick={() => void handleRequestConnection(integration)}
                       >
-                        {requesting === integration.id ? "Requesting…" : "Request Connection"}
+                        {requesting === integration.provider ? "Requesting…" : "Request Connection"}
                       </button>
                     )}
                   </div>

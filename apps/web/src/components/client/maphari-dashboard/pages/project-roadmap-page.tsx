@@ -1,11 +1,11 @@
 // ════════════════════════════════════════════════════════════════════════════
 // project-roadmap-page.tsx — Client Portal: Project Roadmap
-// Shows all active/upcoming projects grouped with a proportional horizontal
-// milestone timeline, a "Today" marker, and an upcoming milestone list.
+// Shows all active/upcoming projects with a slim elapsed-time bar, milestone
+// dots on the track, and a milestone row list per project.
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
@@ -36,7 +36,7 @@ function milestoneLeftPct(mDue: string | null, projStart: string | null, projEnd
   return Math.max(0, Math.min(100, pct));
 }
 
-/** Returns left% (0-100) for today's marker on the project track. */
+/** Returns left% (0-100) for today's marker, or null if outside range. */
 function todayLeftPct(projStart: string | null, projEnd: string | null): number | null {
   const now  = Date.now();
   const sTs  = toTs(projStart);
@@ -94,31 +94,49 @@ export function ProjectRoadmapPage() {
   const [projects, setProjects] = useState<RoadmapProject[]>([]);
   const [loading, setLoading]   = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [nowTs, setNowTs] = useState(() => Date.now());
 
-  useEffect(() => {
-    if (!session) { setLoading(false); return; }
-    setLoading(true);
-    loadProjectRoadmapWithRefresh(session)
-      .then((r) => {
-        if (r.nextSession) saveSession(r.nextSession);
-        if (r.error || !r.data) {
-          setLoadError(r.error?.message ?? "Failed to load project roadmap. Please try again.");
-          return;
-        }
-        setLoadError(null);
-        setProjects(r.data.projects);
-      })
-      .finally(() => setLoading(false));
+  const loadRoadmap = useCallback(async (mode: "initial" | "refresh" = "initial") => {
+    if (!session) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+    if (mode === "initial") setLoading(true);
+    if (mode === "refresh") setRefreshing(true);
+    const r = await loadProjectRoadmapWithRefresh(session);
+    if (r.nextSession) saveSession(r.nextSession);
+    if (r.error || !r.data) {
+      setLoadError(r.error?.message ?? "Failed to load project roadmap. Please try again.");
+    } else {
+      setLoadError(null);
+      setNowTs(Date.now());
+      setProjects(r.data.projects);
+    }
+    setLoading(false);
+    setRefreshing(false);
   }, [session]);
 
-  // All upcoming milestones sorted by dueAt across all projects
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadRoadmap("initial");
+  }, [loadRoadmap]);
+
+  // KPI counts
+  const kpis = useMemo(() => {
+    const allMilestones = projects.flatMap((p) => p.milestones);
+    const completed = allMilestones.filter((m) => resolveMStatus(m) === "completed").length;
+    const upcoming  = allMilestones.filter((m) => resolveMStatus(m) !== "completed").length;
+    return { total: projects.length, milestones: allMilestones.length, completed, upcoming };
+  }, [projects]);
+
+  // Upcoming milestones across all projects, sorted by due date
   const upcomingMilestones = useMemo(() => {
-    const now = Date.now();
     const list: Array<{ project: RoadmapProject; milestone: RoadmapMilestone }> = [];
     for (const p of projects) {
       for (const m of p.milestones) {
-        const st = resolveMStatus(m);
-        if (st !== "completed") {
+        if (resolveMStatus(m) !== "completed") {
           list.push({ project: p, milestone: m });
         }
       }
@@ -130,9 +148,9 @@ export function ProjectRoadmapPage() {
     });
     return list.filter(({ milestone }) => {
       const ts = toTs(milestone.dueAt);
-      return ts === null || ts >= now - 1000 * 60 * 60 * 24 * 7; // include up to 1 week overdue
+      return ts === null || ts >= nowTs - 1000 * 60 * 60 * 24 * 7;
     }).slice(0, 20);
-  }, [projects]);
+  }, [projects, nowTs]);
 
   if (loading) {
     return (
@@ -148,25 +166,27 @@ export function ProjectRoadmapPage() {
 
   return (
     <div className={cx("pageBody")}>
-      {/* ── Header ────────────────────────────────────────────────────────── */}
+
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className={cx("pageHeader", "mb0")}>
         <div>
           <div className={cx("pageEyebrow")}>Projects · Roadmap</div>
           <h1 className={cx("pageTitle")}>Project Roadmap</h1>
           <p className={cx("pageSub")}>Your projects and milestones at a glance.</p>
         </div>
+        <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadRoadmap("refresh")} disabled={refreshing}>
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {loadError && (
-        <Alert
-          variant="error"
-          message={loadError}
-          onRetry={() => { setLoadError(null); }}
-        />
+        <Alert variant="error" message={loadError} onRetry={() => void loadRoadmap("refresh")} />
       )}
 
-      {/* ── Empty state ───────────────────────────────────────────────────── */}
-      {!loading && projects.length === 0 && (
+      {/* ── Empty state ──────────────────────────────────────────────────────── */}
+      {projects.length === 0 && (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}>
             <Ic n="calendar" sz={22} c="var(--muted2)" />
@@ -178,137 +198,240 @@ export function ProjectRoadmapPage() {
         </div>
       )}
 
-      {/* ── Main content ──────────────────────────────────────────────────── */}
-      {!loading && projects.length > 0 && (
-        <div className={cx("rdmWrap")}>
+      {/* ── KPI strip ────────────────────────────────────────────────────────── */}
+      {projects.length > 0 && (
+        <>
+          <div className={cx("topCardsStack", "mb20")}>
+            {[
+              { label: "Projects",         value: String(kpis.total),      color: "statCardAccent" },
+              { label: "Total Milestones", value: String(kpis.milestones), color: "statCardBlue"   },
+              { label: "Completed",        value: String(kpis.completed),  color: "statCardGreen"  },
+              { label: "Upcoming",         value: String(kpis.upcoming),   color: "statCardAmber"  },
+            ].map((s) => (
+              <div key={s.label} className={cx("statCard", s.color)}>
+                <div className={cx("statLabel")}>{s.label}</div>
+                <div className={cx("statValue")}>{s.value}</div>
+              </div>
+            ))}
+          </div>
 
-          {/* ── Per-project timeline blocks ─────────────────────────────── */}
-          {projects.map((project) => {
-            const todayPct = todayLeftPct(project.startAt, project.endAt);
-            const todayLeft = todayPct !== null ? Math.min(100, Math.max(0, todayPct)) : null;
+          {/* ── Project cards ─────────────────────────────────────────────────── */}
+          <div className={cx("rdmWrap")}>
+            {projects.map((project) => {
+              const todayPct  = todayLeftPct(project.startAt, project.endAt);
+              const todayLeft = todayPct !== null ? Math.min(100, Math.max(0, todayPct)) : null;
+              const hasDates  = project.startAt !== null && project.endAt !== null;
+              const sortedMilestones = [...project.milestones].sort((a, b) => {
+                const aTs = toTs(a.dueAt) ?? Number.MAX_SAFE_INTEGER;
+                const bTs = toTs(b.dueAt) ?? Number.MAX_SAFE_INTEGER;
+                return aTs - bTs;
+              });
+              const nextMilestone = sortedMilestones.find((milestone) => resolveMStatus(milestone) !== "completed") ?? null;
+              const completedMilestones = sortedMilestones.filter((milestone) => resolveMStatus(milestone) === "completed");
+              const openMilestones = sortedMilestones.filter((milestone) => resolveMStatus(milestone) !== "completed");
+              const overdueCount = openMilestones.filter((milestone) => {
+                const dueTs = toTs(milestone.dueAt);
+                return dueTs !== null && dueTs < nowTs;
+              }).length;
+              const completedPct = sortedMilestones.length > 0
+                ? Math.round((completedMilestones.length / sortedMilestones.length) * 100)
+                : 0;
 
-            return (
-              <div key={project.id} className={cx("rdmProjectBlock")}>
+              return (
+                <div key={project.id} className={cx("rdmCard")}>
 
-                {/* Project header */}
-                <div className={cx("rdmProjectHeader")}>
-                  <Ic n="briefcase" sz={14} c="var(--accent)" />
-                  <span className={cx("fw700", "text14")}>{project.name}</span>
-                  <span className={cx("badge", projectBadge(project.status))}>
-                    {project.status}
-                  </span>
-                  <span className={cx("text11", "colorMuted", "mlAuto")}>
-                    {fmtDate(project.startAt)} → {fmtDate(project.endAt)}
-                  </span>
-                </div>
+                  {/* Card header */}
+                  <div className={cx("rdmCardHd")}>
+                    <div className={cx("flexRow", "flexCenter", "gap10")}>
+                      <Ic n="briefcase" sz={14} c="var(--accent)" />
+                      <span className={cx("fw700", "text14")}>{project.name}</span>
+                      <span className={cx("badge", projectBadge(project.status))}>{project.status}</span>
+                    </div>
+                    <span className={cx("rdmCardDates")}>
+                      {fmtDate(project.startAt)} → {fmtDate(project.endAt)}
+                    </span>
+                  </div>
 
-                {/* Horizontal track */}
-                <div className={cx("rdmProjectWrap")}>
-                <div className={cx("rdmTrackOuter")}>
-                  {/* Background span bar */}
-                  <div
-                    className={cx("rdmTrackBar")}
-                    style={{ left: "2%", width: "96%" }}
-                  />
+                  <div className={cx("grid2", "gap12", "mb14")}>
+                    <div className={cx("card", "p12")}>
+                      <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb6")}>Next milestone</div>
+                      {nextMilestone ? (
+                        <>
+                          <div className={cx("fw700", "text13", "mb4")}>{nextMilestone.title}</div>
+                          <div className={cx("text11", "colorMuted", "mb8")}>
+                            Due {fmtDate(nextMilestone.dueAt)}
+                          </div>
+                          <div className={cx("flexRow", "gap6", "flexWrap")}>
+                            <span className={cx("badge", overdueCount > 0 && nextMilestone.dueAt && (toTs(nextMilestone.dueAt) ?? 0) < nowTs ? "badgeRed" : M_BADGE[resolveMStatus(nextMilestone)])}>
+                              {overdueCount > 0 && nextMilestone.dueAt && (toTs(nextMilestone.dueAt) ?? 0) < nowTs ? "Overdue" : M_BADGE_LABEL[resolveMStatus(nextMilestone)]}
+                            </span>
+                            {nextMilestone.paymentStage && (
+                              <span className={cx("badge", "badgePurple")}>{nextMilestone.paymentStage}</span>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className={cx("fw700", "text13", "mb4")}>Delivery complete</div>
+                          <div className={cx("text11", "colorMuted")}>All currently published milestones are complete.</div>
+                        </>
+                      )}
+                    </div>
 
-                  {/* Today line */}
-                  {todayLeft !== null && (
-                    <div
-                      className={cx("rdmTodayLine")}
-                      style={{ left: `${todayLeft}%` }}
-                      title="Today"
-                    />
-                  )}
+                    <div className={cx("card", "p12")}>
+                      <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb6")}>Progress snapshot</div>
+                      <div className={cx("fw700", "text13", "mb4")}>{completedPct}% milestone completion</div>
+                      <div className={cx("text11", "colorMuted", "mb8")}>
+                        {completedMilestones.length} of {sortedMilestones.length} milestones complete
+                      </div>
+                      <div className={cx("flexRow", "gap6", "flexWrap")}>
+                        <span className={cx("badge", overdueCount > 0 ? "badgeRed" : "badgeGreen")}>
+                          {overdueCount > 0 ? String(overdueCount) + " overdue" : "On pace"}
+                        </span>
+                        <span className={cx("badge", "badgeMuted")}>{openMilestones.length} open</span>
+                      </div>
+                    </div>
+                  </div>
 
-                  {/* Milestone markers */}
-                  {project.milestones.map((m) => {
-                    const rawLeftPct = milestoneLeftPct(m.dueAt, project.startAt, project.endAt);
-                    const milestoneLeft = Math.min(96, Math.max(2, rawLeftPct));
-                    const mStatus = resolveMStatus(m);
-                    return (
-                      <div
-                        key={m.id}
-                        className={cx(
-                          "rdmMilestone",
-                          mStatus === "completed" ? "rdmMilestoneCompleted" :
-                          mStatus === "in-progress" ? "rdmMilestoneInProgress" : ""
+                  {/* Timeline track */}
+                  {hasDates && (
+                    <div className={cx("rdmTimelineWrap")}>
+                      <div className={cx("rdmTimelineBar")}>
+                        {todayLeft !== null && (
+                          <div className={cx("rdmTimelineFill")} style={{ width: `${todayLeft}%` }} />
                         )}
-                        style={{ left: `${milestoneLeft}%` }}
-                        title={`${m.title} · ${fmtDate(m.dueAt)}`}
-                      >
-                        <div
-                          className={cx("rdmMilestoneDot")}
-                        />
-                        <div className={cx("rdmMilestoneLabel")}>
-                          {m.title}
-                        </div>
+                        {todayLeft !== null && (
+                          <div className={cx("rdmTodayPin")} style={{ left: `${todayLeft}%` }}>
+                            <span className={cx("rdmTodayTag")}>Today</span>
+                          </div>
+                        )}
+                        {project.milestones.map((m) => {
+                          const leftPct = Math.min(96, Math.max(2, milestoneLeftPct(m.dueAt, project.startAt, project.endAt)));
+                          const mSt = resolveMStatus(m);
+                          return (
+                            <div
+                              key={m.id}
+                              className={cx("rdmMPin")}
+                              style={{ left: `${leftPct}%`, "--pin-c": M_DOT_COLOR[mSt] } as React.CSSProperties}
+                              title={`${m.title} · ${fmtDate(m.dueAt)}`}
+                            />
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
-                </div>
-
-                {/* Legend row */}
-                <div className={cx("flexRow", "gap16", "flexWrap")}>
-                  {(["completed", "in-progress", "upcoming"] as MStatus[]).map((st) => {
-                    const count = project.milestones.filter((m) => resolveMStatus(m) === st).length;
-                    if (count === 0) return null;
-                    return (
-                      <div key={st} className={cx("flexRow", "flexCenter", "gap6")}>
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: M_DOT_COLOR[st], flexShrink: 0 }} />
-                        <span className={cx("text11", "colorMuted")}>{count} {M_BADGE_LABEL[st]}</span>
+                      <div className={cx("rdmTimelineDates")}>
+                        <span className={cx("text10", "colorMuted2")}>{fmtDate(project.startAt)}</span>
+                        <span className={cx("text10", "colorMuted2")}>{fmtDate(project.endAt)}</span>
                       </div>
-                    );
-                  })}
-                  {project.milestones.length === 0 && (
-                    <span className={cx("text11", "colorMuted")}>No milestones defined</span>
+                    </div>
                   )}
-                </div>
-              </div>
-            );
-          })}
 
-          {/* ── Upcoming milestones list ─────────────────────────────────── */}
-          {upcomingMilestones.length > 0 && (
-            <div className={cx("card", "mt8")}>
-              <div className={cx("cardHd")}>
-                <Ic n="flag" sz={14} c="var(--accent)" />
-                <span className={cx("cardHdTitle", "ml8")}>Upcoming Milestones</span>
-                <span className={cx("badge", "badgeMuted", "mlAuto")}>{upcomingMilestones.length}</span>
-              </div>
-              <div className={cx("cardBodyPad")}>
-                <div className={cx("rdmUpcomingList")}>
-                  {upcomingMilestones.map(({ project, milestone }) => {
-                    const mStatus = resolveMStatus(milestone);
-                    const isOverdue = toTs(milestone.dueAt) !== null && (toTs(milestone.dueAt) as number) < Date.now();
-                    return (
-                      <div key={milestone.id} className={cx("rdmUpcomingRow")}>
-                        <div
-                          style={{
-                            width: 8, height: 8, borderRadius: "50%",
-                            background: isOverdue ? "var(--red)" : M_DOT_COLOR[mStatus],
-                            flexShrink: 0,
-                          }}
-                        />
-                        <div className={cx("flex1")}>
-                          <span className={cx("fw600", "text12")}>{milestone.title}</span>
-                          <span className={cx("text11", "colorMuted")}> · {project.name}</span>
+                  {/* Milestone rows */}
+                  {sortedMilestones.length > 0 ? (
+                    <>
+                      {openMilestones.length > 0 && (
+                        <div className={cx("mb12")}>
+                          <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb8")}>Open milestones</div>
+                          <div className={cx("rdmMRows")}>
+                            {openMilestones.map((m) => {
+                              const mSt    = resolveMStatus(m);
+                              const dueTs = toTs(m.dueAt);
+                              const overdue = dueTs !== null && dueTs < nowTs && mSt !== "completed";
+                              return (
+                                <div key={m.id} className={cx("rdmMRow")}>
+                                  <div className={cx("rdmMDot")} style={{ background: overdue ? "var(--red)" : M_DOT_COLOR[mSt] }} />
+                                  <span className={cx("fw600", "text12", "flex1")}>{m.title}</span>
+                                  {m.paymentStage && (
+                                    <span className={cx("badge", "badgePurple")}>{m.paymentStage}</span>
+                                  )}
+                                  <span className={cx("badge", overdue ? "badgeRed" : M_BADGE[mSt])}>
+                                    {overdue ? "Overdue" : M_BADGE_LABEL[mSt]}
+                                  </span>
+                                  <span className={cx("text11", "colorMuted", "noShrink", "fontMono")}>
+                                    {fmtDate(m.dueAt)}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                        <span className={cx("badge", isOverdue ? "badgeRed" : M_BADGE[mStatus])}>
-                          {isOverdue ? "Overdue" : M_BADGE_LABEL[mStatus]}
-                        </span>
-                        <span className={cx("text11", "colorMuted", "noShrink")}>
-                          {fmtDate(milestone.dueAt)}
-                        </span>
-                      </div>
-                    );
-                  })}
+                      )}
+
+                      {completedMilestones.length > 0 && (
+                        <div>
+                          <div className={cx("text10", "uppercase", "tracking", "fw700", "colorMuted", "mb8")}>Completed milestones</div>
+                          <div className={cx("rdmMRows")}>
+                            {completedMilestones.map((m) => {
+                              const mSt = resolveMStatus(m);
+                              return (
+                                <div key={m.id} className={cx("rdmMRow")}>
+                                  <div className={cx("rdmMDot")} style={{ background: M_DOT_COLOR[mSt] }} />
+                                  <span className={cx("fw600", "text12", "flex1")}>{m.title}</span>
+                                  <span className={cx("badge", M_BADGE[mSt])}>{M_BADGE_LABEL[mSt]}</span>
+                                  <span className={cx("text11", "colorMuted", "noShrink", "fontMono")}>
+                                    {m.completedAt ? "Completed " + fmtDate(m.completedAt) : fmtDate(m.dueAt)}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className={cx("rdmNoMilestones")}>
+                      <Ic n="flag" sz={13} c="var(--muted2)" />
+                      <span className={cx("text12", "colorMuted")}>No milestones defined yet</span>
+                    </div>
+                  )}
+
+                </div>
+              );
+            })}
+
+            {/* ── Upcoming milestones panel ──────────────────────────────────── */}
+            {upcomingMilestones.length > 0 && (
+              <div className={cx("card", "mt8")}>
+                <div className={cx("cardHd")}>
+                  <Ic n="flag" sz={14} c="var(--accent)" />
+                  <span className={cx("cardHdTitle", "ml8")}>Upcoming Milestones</span>
+                  <span className={cx("badge", "badgeMuted", "mlAuto")}>{upcomingMilestones.length}</span>
+                </div>
+                <div className={cx("cardBodyPad")}>
+                  <div className={cx("rdmUpcomingList")}>
+                    {upcomingMilestones.map(({ project, milestone }) => {
+                      const mStatus  = resolveMStatus(milestone);
+                      const dueTs = toTs(milestone.dueAt);
+                      const isOverdue = dueTs !== null && dueTs < nowTs;
+                      return (
+                        <div key={milestone.id} className={cx("rdmUpcomingRow")}>
+                          <div
+                            style={{
+                              width: 8, height: 8, borderRadius: "50%",
+                              background: isOverdue ? "var(--red)" : M_DOT_COLOR[mStatus],
+                              flexShrink: 0,
+                            }}
+                          />
+                          <div className={cx("flex1")}>
+                            <span className={cx("fw600", "text12")}>{milestone.title}</span>
+                            <span className={cx("text11", "colorMuted")}> · {project.name}</span>
+                          </div>
+                          <span className={cx("badge", isOverdue ? "badgeRed" : M_BADGE[mStatus])}>
+                            {isOverdue ? "Overdue" : M_BADGE_LABEL[mStatus]}
+                          </span>
+                          <span className={cx("text11", "colorMuted", "noShrink")}>
+                            {fmtDate(milestone.dueAt)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </>
       )}
+
     </div>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useState, useEffect } from "react";
+import { SessionExpiredModal } from "./maphari-dashboard/components/session-expired-modal";
+import { LiveKitCallModal } from "./maphari-dashboard/components/livekit-call-modal";
 import {
   useDashboardToasts,
   DashboardToastStack,
@@ -108,7 +110,7 @@ import { OnboardingBanner } from "./maphari-dashboard/components/onboarding-bann
 import { CompletionBanner } from "./maphari-dashboard/components/completion-banner";
 import { OnboardingChecklist } from "./maphari-dashboard/onboarding-checklist";
 
-import type { NotificationPreference } from "./maphari-dashboard/types";
+import type { ConnectedIntegration, NotificationPreference, SessionInfo } from "./maphari-dashboard/types";
 
 const DEFAULT_NOTIFICATION_PREFS: NotificationPreference[] = [
   { category: "Project Updates",   inApp: true,  email: true,  push: true  },
@@ -121,10 +123,9 @@ const DEFAULT_NOTIFICATION_PREFS: NotificationPreference[] = [
   { category: "Weekly Digest",     inApp: false, email: true,  push: false },
 ];
 import { getPortalPreferenceWithRefresh, setPortalPreferenceWithRefresh } from "@/lib/api/portal/settings";
-import { inferCountryFromLocale, currencyFromCountry } from "@/lib/i18n/currency";
-import { loadPortalProfileWithRefresh, type PortalClientProfile } from "@/lib/api/portal/profile";
+import { loadMyAuthSessionsWithRefresh, loadPortalProfileWithRefresh, type PortalClientProfile } from "@/lib/api/portal/profile";
 import { loadPortalBrandingWithRefresh, type ClientBranding } from "@/lib/api/portal/brand";
-import { disconnectGoogleCalendarWithRefresh } from "@/lib/api/portal/integrations";
+import { disconnectGoogleCalendarWithRefresh, loadPortalIntegrationsWithRefresh } from "@/lib/api/portal/integrations";
 import { saveSession } from "@/lib/auth/session";
 
 // ── Command search constants ──────────────────────────────────────────────────
@@ -175,6 +176,15 @@ export function MaphariClientDashboard() {
     refreshSnapshot,
     selectConversation,
   } = workspace;
+
+  // ── Session expiry — show in-place modal instead of hard redirect ─────────
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [liveKitJoinUrl, setLiveKitJoinUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (loading) return;
+    if (!session) setSessionExpired(true);
+    else setSessionExpired(false);
+  }, [session, loading]);
 
   // ── 2. Toast system ──────────────────────────────────────────────────────
   const { toasts, setFeedback } = useDashboardToasts();
@@ -293,6 +303,53 @@ export function MaphariClientDashboard() {
   // ── 10. Theme ───────────────────────────────────────────────────────────
   const themeHook = useTheme();
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const paymentStatus = url.searchParams.get("payment") ?? url.searchParams.get("pf");
+    if (!paymentStatus) return;
+
+    const paymentInvoiceId = url.searchParams.get("paymentInvoiceId");
+    const paymentProvider = url.searchParams.get("paymentProvider") ?? "payfast";
+
+    if (paymentStatus === "success") {
+      setFeedback({
+        tone: "success",
+        message: paymentInvoiceId
+          ? `Payment completed in ${paymentProvider}. Refreshing invoice ${paymentInvoiceId.slice(0, 8)}…`
+          : `Payment completed in ${paymentProvider}. Refreshing your finance data…`,
+      });
+
+      void refreshSnapshot(undefined, { background: true });
+      const retryOne = window.setTimeout(() => { void refreshSnapshot(undefined, { background: true }); }, 1800);
+      const retryTwo = window.setTimeout(() => { void refreshSnapshot(undefined, { background: true }); }, 4500);
+
+      url.searchParams.delete("payment");
+      url.searchParams.delete("pf");
+      url.searchParams.delete("paymentProvider");
+      url.searchParams.delete("paymentInvoiceId");
+      window.history.replaceState({}, "", url.toString());
+
+      return () => {
+        window.clearTimeout(retryOne);
+        window.clearTimeout(retryTwo);
+      };
+    }
+
+    if (paymentStatus === "cancelled") {
+      setFeedback({
+        tone: "info",
+        message: "PayFast checkout was cancelled.",
+      });
+    }
+
+    url.searchParams.delete("payment");
+    url.searchParams.delete("pf");
+    url.searchParams.delete("paymentProvider");
+    url.searchParams.delete("paymentInvoiceId");
+    window.history.replaceState({}, "", url.toString());
+  }, [refreshSnapshot, setFeedback]);
+
   // ── 11. Quick compose ───────────────────────────────────────────────────
   const quickCompose = useQuickCompose({
     session: session ?? null,
@@ -374,11 +431,7 @@ export function MaphariClientDashboard() {
   }, [branding]);
 
   // ── Currency preference ──────────────────────────────────────────────────
-  const [currency, setCurrency] = useState<string>(() => {
-    if (typeof navigator === "undefined") return "USD";
-    const country = inferCountryFromLocale(navigator.language);
-    return currencyFromCountry(country) ?? "USD";
-  });
+  const [currency, setCurrency] = useState<string>("ZAR");
 
   useEffect(() => {
     if (!session) return;
@@ -391,6 +444,8 @@ export function MaphariClientDashboard() {
 
   // ── Notification preferences (loaded from portal preferences API) ─────────
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreference[]>(DEFAULT_NOTIFICATION_PREFS);
+  const [settingsIntegrations, setSettingsIntegrations] = useState<ConnectedIntegration[]>([]);
+  const [settingsSessions, setSettingsSessions] = useState<SessionInfo[]>([]);
 
   useEffect(() => {
     if (!session) return;
@@ -402,6 +457,39 @@ export function MaphariClientDashboard() {
           if (Array.isArray(parsed) && parsed.length > 0) setNotificationPrefs(parsed);
         } catch { /* keep defaults */ }
       }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+
+  useEffect(() => {
+    if (!session) return;
+    void loadPortalIntegrationsWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      const mapped = (r.data ?? []).map((item) => ({
+        id: item.provider,
+        name: item.label,
+        status: item.status === "connected" ? "connected" : "disconnected",
+        connectedAt: item.connectedAt,
+      } as ConnectedIntegration));
+      setSettingsIntegrations(mapped);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+
+  useEffect(() => {
+    if (!session) return;
+    void loadMyAuthSessionsWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      const mapped = (r.data ?? []).map((entry, index) => ({
+        id: entry.id,
+        device: entry.userAgent ?? "Unknown device",
+        location: "Unknown location",
+        ip: entry.ipAddress ?? "Unknown IP",
+        lastActiveAt: entry.createdAt,
+        current: index === 0,
+        icon: "💻",
+      } as SessionInfo));
+      setSettingsSessions(mapped);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
@@ -467,11 +555,11 @@ export function MaphariClientDashboard() {
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
-  const contentStyle = undefined;
-
   return (
     <ProjectLayerCtx.Provider value={{ session, projectId: selectedProjectId ?? snapshot.projects[0]?.id ?? null }}>
     <DashboardToastCtx.Provider value={pageNotify}>
+    <SessionExpiredModal key={sessionExpired ? "expired-open" : "expired-closed"} isOpen={sessionExpired} />
+    <LiveKitCallModal joinUrl={liveKitJoinUrl} onClose={() => setLiveKitJoinUrl(null)} />
     <div className={`${styles.clientRoot} ${styles.root} dashboardScale dashboardBlendClient`}>
       <div className={styles.shell}>
         {/* ── Sidebar ─────────────────────────────────────────────────── */}
@@ -550,7 +638,7 @@ export function MaphariClientDashboard() {
             isRealtimeConnected={isRealtimeConnected}
           />
 
-          <div className={styles.content} style={contentStyle}>
+          <div className={nav.activePage === "messages" ? `${styles.content} ${styles.contentMessages}` : styles.content}>
             <DashboardErrorBoundary>
             {/* ── FTUE: No-project holding page ───────────────────────── */}
             {hasNoProjects && nav.activePage !== "projectRequest" && nav.activePage !== "messages" && nav.activePage !== "bookCall" ? (
@@ -593,13 +681,13 @@ export function MaphariClientDashboard() {
             {nav.activePage === "milestones" && <MilestonesPage />}
             {nav.activePage === "sprintBoard" && <SprintBoardPage />}
             {nav.activePage === "deliverables" && <DeliverablesPage />}
-            {nav.activePage === "changeRequests" && <ChangeRequestsPage />}
+            {nav.activePage === "changeRequests" && <ChangeRequestsPage projects={clientData.projects} />}
             {nav.activePage === "riskRegister" && <RiskRegisterPage />}
             {nav.activePage === "decisionLog" && <DecisionLogPage />}
             {nav.activePage === "contentApproval" && <ContentApprovalPage />}
 
             {/* ── Finance ─────────────────────────────────────────────── */}
-            {nav.activePage === "payments" && <PaymentsPage payments={snapshot.payments} invoices={snapshot.invoices} currency={currency} />}
+            {nav.activePage === "payments" && <PaymentsPage payments={snapshot.payments} invoices={snapshot.invoices} currency={currency} onNavigate={handleNavigate} />}
             {nav.activePage === "invoices" && <InvoicesPage invoices={snapshot.invoices} currency={currency} />}
             {nav.activePage === "budgetTracker" && <BudgetTrackerPage invoices={snapshot.invoices} currency={currency} />}
             {nav.activePage === "legalHub" && <LegalHubPage />}
@@ -608,8 +696,8 @@ export function MaphariClientDashboard() {
             {nav.activePage === "invoiceHistory" && <InvoiceHistoryPage invoices={snapshot.invoices} />}
 
             {/* ── Communication ───────────────────────────────────────── */}
-            {nav.activePage === "messages" && <MessagesPage threads={clientData.threads} />}
-            {nav.activePage === "bookCall" && <BookCallPage />}
+            {nav.activePage === "messages" && <MessagesPage threads={clientData.threads} onJoinCall={setLiveKitJoinUrl} />}
+            {nav.activePage === "bookCall" && <BookCallPage threads={clientData.threads} onSnapshotRefresh={() => void refreshSnapshot(undefined, { background: true })} onJoinCall={setLiveKitJoinUrl} />}
             {nav.activePage === "announcements" && <AnnouncementsPage />}
             {nav.activePage === "designReview" && <DesignReviewPage />}
             {nav.activePage === "meetingArchive" && <MeetingArchivePage />}
@@ -667,24 +755,24 @@ export function MaphariClientDashboard() {
             {nav.activePage === "settings" && (
               <SettingsPage
                 notificationPrefs={notificationPrefs}
-                integrations={[]}
-                sessions={[]}
+                integrations={settingsIntegrations}
+                sessions={settingsSessions}
                 onToggleNotification={handleToggleNotification}
                 onDisconnectIntegration={(id) => {
                   if (!session) return;
-                  if (id === "google-calendar") {
+                  if (id === "gcal") {
                     void disconnectGoogleCalendarWithRefresh(session).then((result) => {
                       if (result.nextSession) saveSession(result.nextSession);
                       if (result.data?.disconnected) {
                         setFeedback({ tone: "success", message: "Google Calendar disconnected." });
+                        setSettingsIntegrations((current) => current.map((item) => (
+                          item.id === "gcal" ? { ...item, status: "disconnected", connectedAt: null } : item
+                        )));
                       } else {
                         setFeedback({ tone: "error", message: "Failed to disconnect integration." });
                       }
                     });
                   }
-                }}
-                onRevokeSession={(_id) => {
-                  setFeedback({ tone: "info", message: "Session management is handled via your admin. Contact support to revoke a session." });
                 }}
                 theme={themeHook.theme}
                 onToggleTheme={themeHook.toggleTheme}
@@ -990,19 +1078,6 @@ export function MaphariClientDashboard() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* ── Floating Quick Ask button ───────────────────────────────────── */}
-      {!quickCompose.isOpen && (
-        <button
-          type="button"
-          className={cx("floatingAskBtn")}
-          onClick={() => quickCompose.open(snapshot.projects[0]?.id)}
-          aria-label="Quick ask — send a message to your team"
-        >
-          <Ic n="message" sz={13} c="var(--bg)" />
-          Quick Ask
-        </button>
       )}
 
       {/* ── FTUE Welcome Modal ──────────────────────────────────────────── */}

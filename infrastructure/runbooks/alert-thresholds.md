@@ -4,6 +4,7 @@
 
 This runbook defines alert thresholds for metrics emitted by `services/chat` and `services/files`.
 Phase 7 service thresholds are documented in `infrastructure/runbooks/phase7-services.md`.
+Integration operation thresholds are documented below and sourced from `infrastructure/monitoring/alerts/integration-operations.rules.yml`.
 
 ## Alert Definitions
 
@@ -84,6 +85,32 @@ Phase 7 service thresholds are documented in `infrastructure/runbooks/phase7-ser
 - Immediate mitigation:
   1. Route traffic to prior healthy chat deployment.
   2. Disable realtime UI mode and fall back to polling for active incidents.
+
+### CreateExternalLinkFailedSpike
+
+- Source rule: `infrastructure/monitoring/alerts/integration-operations.rules.yml`
+- Trigger: sustained 5xx responses from `POST /admin/integrations/tasks/:taskId/create-external-link` for `10m`.
+- Severity: `warning`
+- Primary checks:
+  1. Check `IntegrationSyncEvent` rows with `status=FAILED` and latest `errorCode` values.
+  2. Confirm provider connection metadata is complete and uses secret refs (not plaintext).
+  3. Validate provider upstream status/rate limits and circuit breaker state.
+- Immediate mitigation:
+  1. Pause create-link actions for affected provider/client scope.
+  2. Route retries after provider cooldown and verify one manual create succeeds.
+
+### IntegrationSyncLogEndpointErrors
+
+- Source rule: `infrastructure/monitoring/alerts/integration-operations.rules.yml`
+- Trigger: sustained 5xx responses from `GET /admin/tasks/:taskId/integration-sync-events` for `10m`.
+- Severity: `warning`
+- Primary checks:
+  1. Verify core DB connectivity and `integration_sync_events` query latency.
+  2. Confirm deployment included latest Prisma migration chain.
+  3. Inspect route error logs for serialization/schema mismatch.
+- Immediate mitigation:
+  1. Roll back the latest core deploy if errors started immediately after release.
+  2. Run migration drift check and re-apply missing migration if detected.
 
 ## Escalation Matrix
 

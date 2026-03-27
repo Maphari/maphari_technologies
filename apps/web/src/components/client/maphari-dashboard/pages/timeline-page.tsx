@@ -391,12 +391,16 @@ export function TimelinePage() {
                   </div>
                 </div>
 
-                {/* Today line */}
-                <div className={cx("chartMaskR")}>
-                  <div className={cx("todayLine")} style={{ "--left": gCtr(TODAY_WEEK) } as React.CSSProperties}>
-                    <div className={cx("ganttTodayLabel")}>TODAY</div>
-                  </div>
+                {/* Today line — positioned over the gantt grid, accounting for the 130px label column */}
+                <div
+                  className={cx("absInset", "pointerNone")}
+                  style={{ left: `calc(130px + (100% - 130px) * ${(TODAY_WEEK - 0.5) / TOTAL_WEEKS})`, right: "auto", width: "1.5px", background: "var(--lime)" }}
+                >
+                  <div className={cx("ganttTodayLabel")}>TODAY</div>
                 </div>
+
+                {/* Right-edge fade mask */}
+                <div className={cx("chartMaskR")} />
 
                 {/* Phase rows */}
                 {displayPhases.map(ph => (

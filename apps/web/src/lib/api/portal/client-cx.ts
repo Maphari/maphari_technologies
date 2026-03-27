@@ -36,6 +36,18 @@ export interface PortalOnboardingRecord {
   updatedAt: string;
 }
 
+export interface PortalOnboardingChecklistStep {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
+export interface PortalOnboardingChecklist {
+  steps: PortalOnboardingChecklistStep[];
+  allDone: boolean;
+  completedCount: number;
+}
+
 export interface PortalOffboardingTask {
   id: string;
   clientId: string;
@@ -72,6 +84,7 @@ export interface PortalCommLog {
   clientId: string;
   type: string;
   subject: string;
+  body?: string | null;
   fromName: string | null;
   direction: string;
   relatedFileId: string | null;
@@ -110,6 +123,22 @@ export interface PortalAppointment {
   videoCallStatus: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PortalAvailabilitySlot {
+  id: string;
+  adminId: string;
+  startsAt: string;
+  endsAt: string;
+  booked: boolean;
+  appointmentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PortalBookedAppointmentResult {
+  appointment: PortalAppointment;
+  videoRoomUrl: string | null;
 }
 
 export interface PortalReferral {
@@ -170,11 +199,31 @@ export async function loadPortalOnboardingWithRefresh(
   });
 }
 
+export async function loadPortalOnboardingChecklistWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<PortalOnboardingChecklist>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalOnboardingChecklist>("/portal/onboarding/checklist", accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: { steps: [], allDone: false, completedCount: 0 },
+        error: toGatewayError(
+          response.payload.error?.code ?? "ONBOARDING_CHECKLIST_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load onboarding checklist."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
 export async function patchPortalOnboardingRecordWithRefresh(
   session: AuthSession,
   clientId: string,
   recordId: string,
-  patch: { status?: string; notes?: string }
+  patch: { status?: string; notes?: string; estimatedAt?: string; completedAt?: string }
 ): Promise<AuthorizedResult<PortalOnboardingRecord>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const response = await callGateway<PortalOnboardingRecord>(
@@ -318,6 +367,33 @@ export async function createPortalAppointmentWithRefresh(
     if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
     if (!response.payload.success || !response.payload.data) {
       return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "APPOINTMENT_CREATE_FAILED", response.payload.error?.message ?? "Unable to book appointment.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function loadPortalAvailabilityWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<PortalAvailabilitySlot[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalAvailabilitySlot[]>(`/portal/availability`, accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return { unauthorized: false, data: [], error: toGatewayError(response.payload.error?.code ?? "AVAILABILITY_FETCH_FAILED", response.payload.error?.message ?? "Unable to load availability.") };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+export async function bookPortalAvailabilitySlotWithRefresh(
+  session: AuthSession,
+  body: { slotId: string; topic?: string; projectId?: string }
+): Promise<AuthorizedResult<PortalBookedAppointmentResult>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalBookedAppointmentResult>(`/portal/appointments/book`, accessToken, { method: "POST", body });
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "APPOINTMENT_BOOK_FAILED", response.payload.error?.message ?? "Unable to book appointment.") };
     }
     return { unauthorized: false, data: response.payload.data, error: null };
   });

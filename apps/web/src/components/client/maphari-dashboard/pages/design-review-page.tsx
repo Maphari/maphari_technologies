@@ -1,131 +1,123 @@
-// ════════════════════════════════════════════════════════════════════════════
-// design-review-page.tsx — Client Portal: Design Review
-// Data      : GET /projects/:id/design-reviews  (via getPortalDesignReviewsWithRefresh)
-//             PATCH /design-reviews/:id/resolve  (via approvePortalDesignReviewWithRefresh)
-// ════════════════════════════════════════════════════════════════════════════
 "use client";
-import { useState, useMemo, useEffect } from "react";
+
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { cx } from "../style";
-import { Ic, Av } from "../ui";
+import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import {
-  getPortalDesignReviewsWithRefresh,
   approvePortalDesignReviewWithRefresh,
+  getPortalDesignReviewsWithRefresh,
   type PortalDesignReview,
 } from "../../../../lib/api/portal";
 import { saveSession } from "../../../../lib/auth/session";
 
-type DRStatus = "Awaiting Feedback" | "Approved" | "Revisions Requested";
-type DRTab    = "All" | "Awaiting Feedback" | "Approved" | "Revisions Requested";
+type ReviewTab = "All" | "Awaiting Feedback" | "Approved";
 
-// ── API → UI mappers ──────────────────────────────────────────────────────────
+const TABS: ReviewTab[] = ["All", "Awaiting Feedback", "Approved"];
 
-const API_STATUS_MAP: Record<PortalDesignReview["status"], DRStatus> = {
-  PENDING:           "Awaiting Feedback",
-  APPROVED:          "Approved",
-  CHANGES_REQUESTED: "Revisions Requested",
-  REJECTED:          "Revisions Requested",
-};
-
-type ScreenRow = {
-  id: string; name: string; version: string; date: string;
-  status: DRStatus; comments: number; designer: string;
-  figmaUrl: string | null; reviewId: string;
-};
-
-function apiToScreen(r: PortalDesignReview, idx: number): ScreenRow {
-  const dateStr = new Date(r.requestedAt).toLocaleDateString("en-ZA", {
-    day: "numeric", month: "short", year: "numeric",
-  });
-  return {
-    reviewId: r.id,
-    id:       r.id.slice(-6).toUpperCase(),
-    name:     r.title,
-    version:  `v${idx + 1}`,
-    date:     dateStr,
-    status:   API_STATUS_MAP[r.status] ?? "Awaiting Feedback",
-    comments: 0,
-    designer: "—",
-    figmaUrl: r.figmaUrl,
-  };
+function formatDate(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
 }
 
-// ── Static lookup tables (keys are DRStatus — never rename) ──────────────────
+function mapStatus(status: PortalDesignReview["status"]): Exclude<ReviewTab, "All"> {
+  return status === "APPROVED" ? "Approved" : "Awaiting Feedback";
+}
 
-const STATUS_COLOR: Record<DRStatus, string> = {
-  "Approved":            "var(--green)",
-  "Awaiting Feedback":   "var(--amber)",
-  "Revisions Requested": "var(--red)",
-};
-
-const STATUS_BADGE: Record<DRStatus, string> = {
-  "Approved":            "badgeGreen",
-  "Awaiting Feedback":   "badgeAmber",
-  "Revisions Requested": "badgeRed",
-};
-
-const STATUS_ICON: Record<DRStatus, string> = {
-  "Approved":            "check",
-  "Awaiting Feedback":   "clock",
-  "Revisions Requested": "edit",
-};
-
-const TAB_COLOR: Record<DRTab, string> = {
-  "All":                 "var(--muted)",
-  "Awaiting Feedback":   "var(--amber)",
-  "Approved":            "var(--green)",
-  "Revisions Requested": "var(--red)",
-};
-
-const TABS: DRTab[] = ["All", "Awaiting Feedback", "Approved", "Revisions Requested"];
-
-// ── Component ─────────────────────────────────────────────────────────────────
+function exportReviewsCsv(rows: PortalDesignReview[]) {
+  const header = ["Title", "Status", "Requested", "Resolved", "Created", "Updated"];
+  const lines = rows.map((row) => [
+    row.title,
+    mapStatus(row.status),
+    row.requestedAt,
+    row.resolvedAt ?? "",
+    row.createdAt,
+    row.updatedAt,
+  ]);
+  const escape = (value: string) => `"${value.replace(/"/g, "\"\"")}"`;
+  const csv = [header, ...lines].map((line) => line.map((cell) => escape(String(cell))).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "design-reviews.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 export function DesignReviewPage() {
   const { session, projectId } = useProjectLayer();
 
-  const [tab,      setTab]      = useState<DRTab>("All");
-  const [screens,  setScreens]  = useState<ScreenRow[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState<string | null>(null);
-  const [approved, setApproved] = useState<Record<string, boolean>>({});
+  const [tab, setTab] = useState<ReviewTab>("All");
+  const [reviews, setReviews] = useState<PortalDesignReview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!session || !projectId) { setLoading(false); return; }
+  function loadReviews() {
+    if (!session || !projectId) {
+      setReviews([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    void getPortalDesignReviewsWithRefresh(session, projectId).then(r => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.data && r.data.length > 0) {
-        setScreens(r.data.map(apiToScreen));
-      }
-    }).catch((err: unknown) => {
-      setError((err as Error)?.message ?? "Failed to load");
-    }).finally(() => setLoading(false));
-  }, [session, projectId]);
-
-  // ── Approve handler ────────────────────────────────────────────────────────
-  function handleApprove(s: ScreenRow) {
-    setApproved(p => ({ ...p, [s.reviewId]: true }));
-    if (!session) return;
-    approvePortalDesignReviewWithRefresh(session, s.reviewId).then(r => {
-      if (r.nextSession) saveSession(r.nextSession);
-    });
+    void getPortalDesignReviewsWithRefresh(session, projectId)
+      .then((result) => {
+        if (result.nextSession) saveSession(result.nextSession);
+        if (result.error) {
+          setError(result.error.message ?? "Unable to load design reviews.");
+          setReviews([]);
+          return;
+        }
+        setReviews(result.data ?? []);
+      })
+      .catch((err: unknown) => {
+        setError((err as Error)?.message ?? "Unable to load design reviews.");
+        setReviews([]);
+      })
+      .finally(() => setLoading(false));
   }
 
-  // ── Derived stats ──────────────────────────────────────────────────────────
-  const total          = screens.length;
-  const approvedCount  = screens.filter(s => approved[s.reviewId] || s.status === "Approved").length;
-  const awaitingCount  = screens.filter(s => !approved[s.reviewId] && s.status === "Awaiting Feedback").length;
-  const revisionsCount = screens.filter(s => !approved[s.reviewId] && s.status === "Revisions Requested").length;
+  const loadReviewsEffect = useEffectEvent(() => {
+    loadReviews();
+  });
 
-  const filtered = useMemo(
-    () => tab === "All" ? screens : screens.filter((s) => s.status === tab),
-    [tab, screens],
-  );
+  useEffect(() => {
+    loadReviewsEffect();
+  }, [session, projectId]);
 
-  // ── Loading / empty states ─────────────────────────────────────────────────
+  async function handleApprove(review: PortalDesignReview) {
+    if (!session || approvingId) return;
+    setApprovingId(review.id);
+    try {
+      const result = await approvePortalDesignReviewWithRefresh(session, review.id);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        setError(result.error.message ?? "Unable to approve design review.");
+        return;
+      }
+      setReviews((current) => current.map((item) => item.id === review.id && result.data ? result.data : item));
+    } catch (err: unknown) {
+      setError((err as Error)?.message ?? "Unable to approve design review.");
+    } finally {
+      setApprovingId(null);
+    }
+  }
+
+  const totalCount = reviews.length;
+  const awaitingCount = reviews.filter((item) => mapStatus(item.status) === "Awaiting Feedback").length;
+  const approvedCount = reviews.filter((item) => mapStatus(item.status) === "Approved").length;
+  const latestRequest = reviews[0]?.requestedAt ?? null;
+
+  const filtered = useMemo(() => {
+    if (tab === "All") return reviews;
+    return reviews.filter((item) => mapStatus(item.status) === tab);
+  }, [reviews, tab]);
+
   if (loading) {
     return (
       <div className={cx("pageBody")}>
@@ -137,12 +129,29 @@ export function DesignReviewPage() {
       </div>
     );
   }
-  if (error) {
+
+  if (!projectId) {
     return (
       <div className={cx("pageBody")}>
         <div className={cx("emptyState")}>
-          <div className={cx("emptyStateTitle")}>Something went wrong</div>
-          <div className={cx("emptyStateSub")}>{error}</div>
+          <div className={cx("emptyStateIcon")}><Ic n="image" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>Select a project first</div>
+          <div className={cx("emptyStateSub")}>Design reviews appear once a project is active in your client dashboard.</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cx("pageBody")}>
+        <div className={cx("errorState")}>
+          <div className={cx("errorStateIcon")}>✕</div>
+          <div className={cx("errorStateTitle")}>Unable to load design reviews</div>
+          <div className={cx("errorStateSub")}>{error}</div>
+          <button type="button" className={cx("btn", "btnPrimary", "mt12")} onClick={loadReviews}>
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -150,198 +159,146 @@ export function DesignReviewPage() {
 
   return (
     <div className={cx("pageBody")}>
-
-      {/* ── Page header ─────────────────────────────────────────────────── */}
       <div className={cx("pageHeader", "mb0")}>
         <div>
           <div className={cx("pageEyebrow")}>Communication · Design</div>
           <h1 className={cx("pageTitle")}>Design Review</h1>
-          <p className={cx("pageSub")}>Review screen designs, leave feedback, and approve screens to unblock the development team.</p>
+          <p className={cx("pageSub")}>Review submitted design rounds, confirm approval, and keep the delivery team moving with real sign-off decisions.</p>
+        </div>
+        <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={loadReviews}>
+            Refresh
+          </button>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => exportReviewsCsv(reviews)}>
+            Export CSV
+          </button>
         </div>
       </div>
 
-      {/* ── Stat cards ──────────────────────────────────────────────────── */}
-      <div className={cx("topCardsStack")}>
-        {[
-          { label: "Total Screens",     value: String(total),          color: "statCardAccent" },
-          { label: "Approved",          value: String(approvedCount),  color: "statCardGreen"  },
-          { label: "Awaiting Feedback", value: String(awaitingCount),  color: "statCardAmber"  },
-          { label: "Revisions",         value: String(revisionsCount), color: "statCardRed"    },
-        ].map((s) => (
-          <div key={s.label} className={cx("statCard", s.color)}>
-            <div className={cx("statLabel")}>{s.label}</div>
-            <div className={cx("statValue")}>{s.value}</div>
-          </div>
-        ))}
+      <div className={cx("grid4", "gap12", "mb20")}>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Rounds</div>
+          <div className={cx("text22", "fw800", "colorBlue")}>{totalCount}</div>
+          <div className={cx("text12", "colorMuted")}>Design submissions in this project</div>
+        </div>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Awaiting feedback</div>
+          <div className={cx("text22", "fw800", "colorAmber")}>{awaitingCount}</div>
+          <div className={cx("text12", "colorMuted")}>Reviews still waiting on your approval</div>
+        </div>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Approved</div>
+          <div className={cx("text22", "fw800", "colorSuccess")}>{approvedCount}</div>
+          <div className={cx("text12", "colorMuted")}>Rounds already signed off</div>
+        </div>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Latest request</div>
+          <div className={cx("text22", "fw800", "colorAccent")}>{formatDate(latestRequest)}</div>
+          <div className={cx("text12", "colorMuted")}>Most recent design submission date</div>
+        </div>
       </div>
 
-      {/* ── Approval progress bar ────────────────────────────────────────── */}
-      {total > 0 && (
-        <div className={cx("card")}>
-          <div className={cx("cardBodyPad", "pt14")}>
-            <div className={cx("flexBetween", "mb8")}>
-              <div className={cx("flexRow", "gap6")}>
-                <Ic n="layers" sz={13} c="var(--lime)" />
-                <span className={cx("fw600", "text12")}>Approval Progress</span>
-              </div>
-              <span className={cx("fw700", "text12", "colorGreen")}>
-                {approvedCount} / {total} screens approved
-              </span>
-            </div>
-            <div className={cx("trackH8")}>
-              <div className={cx("pctFillRInherit", "dotBgGreen")} style={{ '--pct': `${total > 0 ? (approvedCount / total) * 100 : 0}%` } as React.CSSProperties} />
-            </div>
-            <div className={cx("flexRow", "gap16", "mt10", "flexWrap")}>
-              {[
-                { color: "var(--green)",  label: `Approved — ${approvedCount}` },
-                { color: "var(--amber)",  label: `Awaiting Feedback — ${awaitingCount}` },
-                { color: "var(--red)",    label: `Revisions Requested — ${revisionsCount}` },
-              ].map((leg) => (
-                <div key={leg.label} className={cx("flexRow", "gap5")}>
-                  <div className={cx("dot8")} style={{ "--bg-color": leg.color } as React.CSSProperties} />
-                  <span className={cx("text10", "colorMuted")}>{leg.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Category tabs ───────────────────────────────────────────────── */}
-      <div className={cx("pillTabs")}>
-        {TABS.map((t) => (
-          <button key={t} type="button" className={cx("pillTab", tab === t && "pillTabActive")} onClick={() => setTab(t)}>
-            {t !== "All" && (
-              <span className={cx("dot6", "inlineBlock", "mr5", "noShrink")} style={{ "--bg-color": TAB_COLOR[t] } as React.CSSProperties} />
-            )}
-            {t}
+      <div className={cx("pillTabs", "mb12")}>
+        {TABS.map((item) => (
+          <button
+            key={item}
+            type="button"
+            className={cx("pillTab", tab === item && "pillTabActive")}
+            onClick={() => setTab(item)}
+          >
+            {item}
           </button>
         ))}
       </div>
 
-      {/* ── Empty state ──────────────────────────────────────────────────── */}
-      {screens.length === 0 && (
+      {filtered.length === 0 ? (
         <div className={cx("emptyState", "mt32")}>
           <div className={cx("emptyStateIcon")}><Ic n="image" sz={22} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No design reviews yet</div>
-          <div className={cx("emptyStateSub")}>Design screens will appear here once your team uploads them for review.</div>
+          <div className={cx("emptyStateSub")}>Submitted design rounds will appear here once your team sends them through for client review.</div>
         </div>
-      )}
-
-      {/* ── Screen card grid ─────────────────────────────────────────────── */}
-      {filtered.length > 0 && (
-        <div className={cx("grid2Cols14Gap")}>
-          {filtered.map((s) => {
-            const effectiveStatus: DRStatus = approved[s.reviewId] ? "Approved" : s.status;
-            const color = STATUS_COLOR[effectiveStatus];
+      ) : (
+        <div className={cx("flexCol", "gap12")}>
+          {filtered.map((review) => {
+            const status = mapStatus(review.status);
+            const canApprove = status === "Awaiting Feedback";
             return (
-              <div key={s.reviewId} className={cx("card", "p0", "overflowHidden", "flexCol")}>
-
-                {/* Status accent bar */}
-                <div className={cx("h3", "dynBgColor", "noShrink")} style={{ "--bg-color": color } as React.CSSProperties} />
-
-                <div className={cx("p16x18", "flexCol", "flex1")}>
-
-                  {/* ID + version + status badge */}
-                  <div className={cx("flexBetween", "mb12")}>
-                    <div className={cx("flexRow", "gap6")}>
-                      <span className={cx("badge", "badgeMuted")}>{s.id}</span>
-                      <span className={cx("drVerTag")}>{s.version}</span>
+              <div key={review.id} className={cx("cardS1v2", "p16", "flexCol", "gap12")}>
+                <div className={cx("flexBetween", "gap12", "flexWrap")}>
+                  <div className={cx("flexCol", "gap6", "minW0")}>
+                    <div className={cx("flexRow", "gap8", "alignCenter", "flexWrap")}>
+                      <span className={cx("badge", status === "Approved" ? "badgeGreen" : "badgeAmber")}>{status}</span>
+                      <span className={cx("badge", "badgeMuted")}>{review.id.slice(-6).toUpperCase()}</span>
                     </div>
-                    <div className={cx("flexRow", "gap5")}>
-                      <Ic n={STATUS_ICON[effectiveStatus]} sz={12} c={color} />
-                      <span className={cx("badge", STATUS_BADGE[effectiveStatus])}>{effectiveStatus}</span>
-                    </div>
-                  </div>
-
-                  {/* Screen mockup preview */}
-                  <div className={cx("drMockupBox", "flexCol")}>
-                    {/* Browser chrome bar */}
-                    <div className={cx("drBrowserBar")}>
-                      {["var(--red)", "var(--amber)", "var(--green)"].map((c, i) => (
-                        <div key={i} className={cx("drChromeDot")} style={{ "--bg-color": c } as React.CSSProperties} />
-                      ))}
-                      <div className={cx("flex1", "h4", "rounded2", "dotBgB2", "ml6")} />
-                    </div>
-                    {/* Simulated content lines */}
-                    <div className={cx("drContentArea", "flexCol", "gap5")}>
-                      <div className={cx("h6px", "rounded2", "dynBgColor", "w55p")} style={{ "--bg-color": `color-mix(in oklab, ${color} 18%, var(--b2))` } as React.CSSProperties} />
-                      <div className={cx("skeleBarW85")} />
-                      <div className={cx("skeleBarW68")} />
-                    </div>
-                  </div>
-
-                  {/* Screen name + date */}
-                  <div className={cx("fw700", "text13", "mb4", "lineH13")}>{s.name}</div>
-                  <div className={cx("text10", "colorMuted", "mb12")}>Submitted {s.date}</div>
-
-                  {/* Designer + comments */}
-                  <div className={cx("flexRow", "flexCenter", "gap8", "mb14")}>
-                    <Av initials={s.designer === "—" ? "?" : s.designer} size={20} />
-                    <span className={cx("text10", "colorMuted")}>{s.designer === "—" ? "Designer" : s.designer}</span>
-                    {s.comments > 0 && (
-                      <div className={cx("flexRow", "flexCenter", "gap4", "mlAuto")}>
-                        <Ic n="message" sz={11} c="var(--muted2)" />
-                        <span className={cx("text10", "colorMuted")}>{s.comments} comment{s.comments !== 1 ? "s" : ""}</span>
-                      </div>
+                    <div className={cx("text16", "fw800", "lineH13")}>{review.title}</div>
+                    {review.description ? (
+                      <div className={cx("text12", "colorMuted", "lineH15")}>{review.description}</div>
+                    ) : (
+                      <div className={cx("text12", "colorMuted", "lineH15")}>This review was submitted for client approval. Open the linked design file if one has been attached.</div>
                     )}
                   </div>
-
-                  {/* Actions */}
-                  <div className={cx("flexRow", "gap6", "mtAuto")}>
-                    {s.figmaUrl ? (
+                  <div className={cx("flexRow", "gap8", "flexWrap")}>
+                    {review.figmaUrl ? (
                       <a
-                        href={s.figmaUrl}
+                        href={review.figmaUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={cx("btnSm", "btnGhost", "flex1", "noUnderline", "flexCenter", "gap4")}
+                        className={cx("btnSm", "btnGhost", "noUnderline", "flexCenter", "gap4")}
                       >
-                        <Ic n="externalLink" sz={12} c="var(--muted)" /> View in Figma
+                        <Ic n="externalLink" sz={12} c="var(--muted)" /> Open design
                       </a>
                     ) : (
-                      <button type="button" className={cx("btnSm", "btnGhost", "flex1")} disabled>
-                        <Ic n="externalLink" sz={12} c="var(--muted)" /> View in Figma
+                      <button type="button" className={cx("btnSm", "btnGhost")} disabled>
+                        No design link
                       </button>
                     )}
-                    {effectiveStatus === "Awaiting Feedback" && (
+                    {canApprove && (
                       <button
                         type="button"
-                        className={cx("btnSm", "btnAccent", "flex1")}
-                        onClick={() => handleApprove(s)}
+                        className={cx("btnSm", "btnAccent")}
+                        onClick={() => handleApprove(review)}
+                        disabled={approvingId === review.id}
                       >
-                        <Ic n="check" sz={12} c="var(--bg)" /> Approve
-                      </button>
-                    )}
-                    {effectiveStatus === "Revisions Requested" && (
-                      <button type="button" className={cx("btnSm", "btnGhost", "flex1", "colorRed")}>
-                        <Ic n="edit" sz={12} c="var(--red)" /> Add Feedback
+                        <Ic n="check" sz={12} c="var(--bg)" /> {approvingId === review.id ? "Approving..." : "Approve"}
                       </button>
                     )}
                   </div>
                 </div>
+
+                <div className={cx("grid3Cols12Gap")}>
+                  <div className={cx("cardS2", "p12", "flexCol", "gap4")}>
+                    <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Requested</div>
+                    <div className={cx("text13", "fw700")}>{formatDate(review.requestedAt)}</div>
+                    <div className={cx("text11", "colorMuted")}>When the review round was submitted</div>
+                  </div>
+                  <div className={cx("cardS2", "p12", "flexCol", "gap4")}>
+                    <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Resolved</div>
+                    <div className={cx("text13", "fw700")}>{formatDate(review.resolvedAt)}</div>
+                    <div className={cx("text11", "colorMuted")}>Client approval completion date</div>
+                  </div>
+                  <div className={cx("cardS2", "p12", "flexCol", "gap4")}>
+                    <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Screens</div>
+                    <div className={cx("text13", "fw700")}>{review.screensCount ?? "—"}</div>
+                    <div className={cx("text11", "colorMuted")}>Attached screen count from the design handoff</div>
+                  </div>
+                </div>
+
+                {(review.designerNote || review.figmaUrl) && (
+                  <div className={cx("cardS2", "p12", "flexCol", "gap8")}>
+                    <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Review context</div>
+                    {review.designerNote && (
+                      <div className={cx("text12", "colorMuted", "lineH15")}>{review.designerNote}</div>
+                    )}
+                    {review.figmaUrl && (
+                      <div className={cx("text12", "colorMuted")}>A design file link is available for this review round.</div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       )}
-
-      {/* ── Approval guidelines ──────────────────────────────────────────── */}
-      <div className={cx("card", "borderLeftAmber")}>
-        <div className={cx("cardHd")}>
-          <span className={cx("cardHdTitle", "flexRow", "gap6")}>
-            <Ic n="alert" sz={14} c="var(--amber)" /> Approval Guidelines
-          </span>
-        </div>
-        <div className={cx("cardBodyPad")}>
-          <div className={cx("text11", "colorMuted", "lineH17")}>
-            Please review each screen and approve or request revisions within{" "}
-            <span className={cx("fw600")}>2 business days</span>. Approved screens are handed to
-            development immediately. Any revision requests delay the sprint by the time required
-            to action feedback.
-          </div>
-        </div>
-      </div>
-
     </div>
   );
 }

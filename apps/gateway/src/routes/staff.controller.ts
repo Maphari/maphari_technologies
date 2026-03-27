@@ -622,7 +622,7 @@ export class StaffController {
   }
 
   // ── GET /meetings ─────────────────────────────────────────────────────────
-  @Roles("ADMIN", "STAFF")
+  @Roles("ADMIN", "STAFF", "CLIENT")
   @Get("meetings")
   async listMeetings(
     @Headers("x-user-id")     userId?: string,

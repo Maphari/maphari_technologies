@@ -15,6 +15,7 @@
 
 import type { FastifyInstance } from "fastify";
 import type { ApiResponse } from "@maphari/contracts";
+import type { Prisma } from "../generated/prisma/index.js";
 import { prisma } from "../lib/prisma.js";
 import { cache, CacheKeys, withCache } from "../lib/infrastructure.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
@@ -227,6 +228,18 @@ const CONTRACT_TEMPLATES: Array<{
   },
 ];
 
+function resolveContractProjectId(contract: { notes?: string | null } & Record<string, unknown>): string | null {
+  const directProjectId = typeof contract.projectId === "string" ? contract.projectId : null;
+  if (directProjectId) return directProjectId;
+  if (typeof contract.notes !== "string" || !contract.notes.trim()) return null;
+  try {
+    const parsed = JSON.parse(contract.notes) as Record<string, unknown>;
+    return typeof parsed.projectId === "string" ? parsed.projectId : null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Route registration ────────────────────────────────────────────────────────
 
 export async function registerContractRoutes(app: FastifyInstance): Promise<void> {
@@ -235,8 +248,20 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
   app.get("/contracts", async (request) => {
     const scope          = readScopeHeaders(request);
     const scopedClientId = resolveClientFilter(scope.role, scope.clientId);
-    const where          = scopedClientId ? { clientId: scopedClientId } : {};
-    const cacheKey       = CacheKeys.contracts(scopedClientId ?? "all");
+    const query = (request.query as Record<string, string>) ?? {};
+    const projectId = typeof query.projectId === "string" ? query.projectId : null;
+    const where = projectId
+      ? {
+          ...(scopedClientId ? { clientId: scopedClientId } : {}),
+          OR: [
+            { projectId },
+            { notes: { contains: "\"projectId\":\"" + projectId + "\"" } },
+          ],
+        }
+      : {
+          ...(scopedClientId ? { clientId: scopedClientId } : {}),
+        };
+    const cacheKey = CacheKeys.contracts(scopedClientId ?? "all") + ":" + (projectId ?? "all");
 
     const data = await withCache(cacheKey, 120, () =>
       prisma.clientContract.findMany({
@@ -291,6 +316,7 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
 
     const body = request.body as {
       clientId: string;
+      projectId?: string;
       title: string;
       type?: string;
       ref?: string;
@@ -311,6 +337,7 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
       const contract = await prisma.clientContract.create({
         data: {
           clientId:   body.clientId,
+          projectId:  body.projectId ?? null,
           title:      body.title,
           type:       body.type       ?? "CONTRACT",
           ref:        body.ref        ?? null,
@@ -320,10 +347,11 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
           sizeBytes:  body.sizeBytes  ?? null,
           notes:      body.notes      ?? null,
           sortOrder:  body.sortOrder  ?? 0,
-        }
+        } as Prisma.ClientContractUncheckedCreateInput
       });
 
       await cache.delete(CacheKeys.contracts(body.clientId));
+      if (body.projectId) await cache.delete(CacheKeys.contracts(body.clientId) + ":" + body.projectId);
       await cache.delete(CacheKeys.contracts("all"));
 
       writeAuditEvent({
@@ -376,14 +404,16 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
       const contract = await prisma.clientContract.create({
         data: {
           clientId,
+          projectId: projectId ?? null,
           title: template.title,
           type: template.type,
           status: "PENDING",
           signed: false,
           notes: JSON.stringify({ templateId, projectId: projectId ?? null, variables }),
-        },
+        } as Prisma.ClientContractUncheckedCreateInput,
       });
       await cache.delete(CacheKeys.contracts(clientId));
+      if (projectId) await cache.delete(CacheKeys.contracts(clientId) + ":" + projectId);
       writeAuditEvent({
         actorId:      scope.userId,
         actorRole:    scope.role,
@@ -447,6 +477,10 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
         }
         const updated = await prisma.clientContract.update({ where: { id }, data: clientUpdate });
         await cache.delete(CacheKeys.contracts(existing.clientId));
+        {
+          const existingProjectId = resolveContractProjectId(existing as Record<string, unknown> & { notes?: string | null });
+          if (existingProjectId) await cache.delete(CacheKeys.contracts(existing.clientId) + ":" + existingProjectId);
+        }
         if (body.signed) {
           writeAuditEventAndDispatch({
             actorId:      scope.userId,
@@ -480,6 +514,10 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
 
       const updated = await prisma.clientContract.update({ where: { id }, data: updateData });
       await cache.delete(CacheKeys.contracts(existing.clientId));
+      {
+        const existingProjectId = resolveContractProjectId(existing as Record<string, unknown> & { notes?: string | null });
+        if (existingProjectId) await cache.delete(CacheKeys.contracts(existing.clientId) + ":" + existingProjectId);
+      }
       await cache.delete(CacheKeys.contracts("all"));
 
       if (body.signed) {
@@ -549,6 +587,10 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
       });
 
       await cache.delete(CacheKeys.contracts(existing.clientId));
+      {
+        const existingProjectId = resolveContractProjectId(existing as Record<string, unknown> & { notes?: string | null });
+        if (existingProjectId) await cache.delete(CacheKeys.contracts(existing.clientId) + ":" + existingProjectId);
+      }
       await cache.delete(CacheKeys.contracts("all"));
 
       writeAuditEventAndDispatch({

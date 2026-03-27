@@ -4,7 +4,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { cx } from "../style";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
@@ -12,6 +12,7 @@ import { getStaffMeetingsWithRefresh, type StaffMeeting } from "../../../../lib/
 
 type Priority = "high" | "medium" | "low";
 type MainTab = "brief" | "agenda" | "notes";
+type MeetingFilter = "all" | "scheduled" | "completed" | "cancelled";
 
 // Derive avatar initials from a title or id
 function toInitials(str: string): string {
@@ -21,16 +22,15 @@ function toInitials(str: string): string {
 }
 
 // Map meeting status to a human-friendly time label
-function formatScheduledAt(scheduledAt: string): string {
+function formatScheduledAt(scheduledAt: string, nowMs: number, timezone: string): string {
   const d = new Date(scheduledAt);
-  const now = new Date();
-  const diffDays = Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  const timeStr = d.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
-  const dateStr = d.toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" });
-  if (diffDays === 0)  return `Today - ${timeStr}`;
-  if (diffDays === 1)  return `Tomorrow - ${timeStr}`;
-  if (diffDays === -1) return `Yesterday - ${timeStr}`;
-  return `${dateStr} - ${timeStr}`;
+  const diffDays = Math.round((d.getTime() - nowMs) / (1000 * 60 * 60 * 24));
+  const timeStr = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", timeZone: timezone });
+  const dateStr = d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", timeZone: timezone });
+  if (diffDays === 0) return `Today · ${timeStr}`;
+  if (diffDays === 1) return `Tomorrow · ${timeStr}`;
+  if (diffDays === -1) return `Yesterday · ${timeStr}`;
+  return `${dateStr} · ${timeStr}`;
 }
 
 function formatDuration(minutes: number | null): string {
@@ -60,6 +60,13 @@ const priorityConfig: Record<Priority, { toneClass: string; boxClass: string }> 
   medium: { toneClass: "mpToneAmber",  boxClass: "mpCheckBoxMedium" },
   low:    { toneClass: "mpToneMuted2", boxClass: "mpCheckBoxLow"    },
 };
+
+function meetingStatusClass(status: StaffMeeting["status"]): string {
+  if (status === "SCHEDULED") return "mpStatusScheduled";
+  if (status === "COMPLETED") return "mpStatusCompleted";
+  if (status === "CANCELLED") return "mpStatusCancelled";
+  return "mpStatusNeutral";
+}
 
 /* ── SVG icons ── */
 function IcoVideo() {
@@ -118,41 +125,104 @@ export function MeetingPrepPage({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<MainTab>("brief");
   const [checked, setChecked]     = useState<Record<string, boolean>>({});
-  const [noteText, setNoteText]   = useState("");
+  const [noteTextByMeeting, setNoteTextByMeeting] = useState<Record<string, string>>({});
   const [extraAgendaItems, setExtraAgendaItems] = useState<string[]>([]);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<MeetingFilter>("all");
+  const [sortBy, setSortBy] = useState<"soonest" | "latest">("soonest");
+  const [refreshing, setRefreshing] = useState(false);
+  const [nowMs, setNowMs] = useState(() => new Date().getTime());
+  const timezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", []);
+
+  const loadMeetings = useCallback(async () => {
+    if (!session) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setRefreshing(true);
+    setError(null);
+    try {
+      const result = await getStaffMeetingsWithRefresh(session);
+      if (result.nextSession) saveSession(result.nextSession);
+      if (result.error) {
+        setError(result.error.message ?? "Failed to load meetings.");
+        setMeetings([]);
+        return;
+      }
+      const all = result.data ?? [];
+      all.sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+      setMeetings(all);
+      if (all.length > 0) {
+        setSelectedId((prev) => (prev && all.some((item) => item.id === prev) ? prev : all[0].id));
+      }
+    } catch (err: unknown) {
+      const msg = (err as Error)?.message ?? "Failed to load meetings.";
+      setError(msg);
+      setMeetings([]);
+      onNotify?.("error", msg);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [session, onNotify]);
 
   useEffect(() => {
-    if (!session || !isActive) { setLoading(false); return; }
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
+    if (!session || !isActive) {
+      setLoading(false);
+      return;
+    }
+    void loadMeetings();
+  }, [isActive, loadMeetings, session]);
 
-    void (async () => {
-      try {
-        const result = await getStaffMeetingsWithRefresh(session);
-        if (cancelled) return;
-        if (result.nextSession) saveSession(result.nextSession);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(new Date().getTime()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
-        const all = (result.data ?? []).filter((m) => m.status !== "CANCELLED");
-        // Sort upcoming first, then past
-        all.sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
-        setMeetings(all);
-        if (all.length > 0) setSelectedId(all[0].id);
-      } catch (err: unknown) {
-        if (cancelled) return;
-        const msg = (err as Error)?.message ?? "Failed to load meetings.";
-        setError(msg);
-        onNotify?.("error", msg);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isActive, session?.accessToken]);
+  const filteredMeetings = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    let list = [...meetings];
+    if (filter !== "all") {
+      list = list.filter((meeting) => meeting.status.toLowerCase() === filter);
+    }
+    if (q) {
+      list = list.filter((meeting) => {
+        const blob = `${meeting.title} ${meeting.status} ${meeting.agenda ?? ""} ${meeting.notes ?? ""}`.toLowerCase();
+        return blob.includes(q);
+      });
+    }
+    list.sort((a, b) => {
+      const delta = new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+      return sortBy === "soonest" ? delta : -delta;
+    });
+    return list;
+  }, [filter, meetings, query, sortBy]);
 
-  const meeting = meetings.find((m) => m.id === selectedId) ?? null;
+  useEffect(() => {
+    if (!filteredMeetings.length) {
+      setSelectedId(null);
+      return;
+    }
+    if (!selectedId || !filteredMeetings.some((item) => item.id === selectedId)) {
+      setSelectedId(filteredMeetings[0].id);
+    }
+  }, [filteredMeetings, selectedId]);
+
+  const meeting = filteredMeetings.find((m) => m.id === selectedId) ?? null;
   const openItems = meeting ? agendaToOpenItems(meeting.agenda) : [];
   const doneCount = openItems.filter((_, i) => checked[`open-${i}`]).length;
+  const noteText = meeting ? (noteTextByMeeting[meeting.id] ?? meeting.notes ?? "") : "";
+  const prepReadiness = useMemo(() => {
+    if (!meeting) return 0;
+    const score = [
+      Boolean(meeting.agenda && meeting.agenda.trim().length > 0),
+      Boolean(meeting.notes && meeting.notes.trim().length > 0),
+      Boolean(meeting.videoRoomUrl),
+      openItems.length > 0
+    ].filter(Boolean).length;
+    return Math.round((score / 4) * 100);
+  }, [meeting, openItems.length]);
 
   const toggleCheck = (key: string) =>
     setChecked((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -200,11 +270,11 @@ export function MeetingPrepPage({
         </div>
         <div className={cx("mpLayout")}>
           <div className={cx("mpSidebar")}>
-            <div className={cx("mpSidebarLabel")}>Upcoming · 0</div>
+            <div className={cx("mpSidebarLabel")}>Meetings · 0</div>
           </div>
           <div className={cx("flexCol", "mpDetailWrap")}>
             <div className={cx("mpTabContent")}>
-              <div className={cx("text13", "colorMuted2")}>No upcoming meetings.</div>
+              <div className={cx("text13", "colorMuted2")}>No meetings match the current filters.</div>
             </div>
           </div>
         </div>
@@ -229,12 +299,45 @@ export function MeetingPrepPage({
         {/* ── Left: meeting list ── */}
         <div className={cx("mpSidebar")}>
           <div className={cx("mpSidebarLabel")}>
-            {`Upcoming · ${meetings.length}`}
+            {`Meetings · ${filteredMeetings.length}`}
           </div>
-          {meetings.map((item) => {
+          <div className={cx("mpFilters")}>
+            <input
+              className={cx("mpSearchInput")}
+              placeholder="Search meetings…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <div className={cx("mpFilterRow")}>
+              {(["all", "scheduled", "completed", "cancelled"] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={cx("mpFilterBtn", filter === value && "mpFilterBtnActive")}
+                  onClick={() => setFilter(value)}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+            <div className={cx("mpFilterRow")}>
+              <select
+                className={cx("mpSortSelect")}
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "soonest" | "latest")}
+              >
+                <option value="soonest">Soonest first</option>
+                <option value="latest">Latest first</option>
+              </select>
+              <button type="button" className={cx("mpRefreshBtn")} onClick={() => void loadMeetings()} disabled={refreshing}>
+                {refreshing ? "Refreshing…" : "Refresh"}
+              </button>
+            </div>
+          </div>
+          {filteredMeetings.map((item) => {
             const isSelected = selectedId === item.id;
             const initials   = toInitials(item.title);
-            const scheduled  = formatScheduledAt(item.scheduledAt);
+            const scheduled  = formatScheduledAt(item.scheduledAt, nowMs, timezone);
             return (
               <div
                 key={item.id}
@@ -260,7 +363,7 @@ export function MeetingPrepPage({
                 </div>
                 {/* Status row */}
                 <div className={cx("flexRow", "gap6", "mb5")}>
-                  <span className={cx("staffChip", "mpMeetingType")}>{item.status}</span>
+                  <span className={cx("staffChip", "mpMeetingType", meetingStatusClass(item.status))}>{item.status}</span>
                   {item.durationMinutes ? (
                     <span className={cx("staffChip", "mpPlatformChip", "mpPlatformDefault")}>{formatDuration(item.durationMinutes)}</span>
                   ) : null}
@@ -287,30 +390,52 @@ export function MeetingPrepPage({
                     <div>
                       <div className={cx("fontDisplay", "fw800", "colorText", "mpClientName")}>{meeting.title}</div>
                       <div className={cx("text11", "colorMuted2")}>
-                        {formatScheduledAt(meeting.scheduledAt)}{meeting.durationMinutes ? ` · ${formatDuration(meeting.durationMinutes)}` : ""}
+                        {formatScheduledAt(meeting.scheduledAt, nowMs, timezone)}{meeting.durationMinutes ? ` · ${formatDuration(meeting.durationMinutes)}` : ""}
                       </div>
                     </div>
                   </div>
                   <div className={cx("flexRow", "gap8", "flexWrap")}>
-                    {[meeting.status, formatScheduledAt(meeting.scheduledAt), formatDuration(meeting.durationMinutes)].map((label) => (
+                    {[meeting.status, formatScheduledAt(meeting.scheduledAt, nowMs, timezone), formatDuration(meeting.durationMinutes), `Readiness ${prepReadiness}%`].map((label) => (
                       <span key={label} className={cx("mpMetaBadge")}>{label}</span>
                     ))}
                   </div>
+                  <div className={cx("text10", "colorMuted2", "mt8")}>Timezone: {timezone}</div>
                 </div>
 
                 {/* Join call CTA */}
-                {meeting.videoRoomUrl ? (
+                <div className={cx("flexCol", "gap8")}>
+                  {meeting.videoRoomUrl ? (
+                    <button
+                      type="button"
+                      className={cx("mpJoinBtn")}
+                      onClick={() => window.open(meeting.videoRoomUrl!, "_blank", "noopener,noreferrer")}
+                    >
+                      <IcoVideo />
+                      <span>Join Video Call</span>
+                    </button>
+                  ) : (
+                    <div className={cx("text11", "colorMuted2", "fontItalic")}>No video link available.</div>
+                  )}
                   <button
                     type="button"
-                    className={cx("mpJoinBtn")}
-                    onClick={() => window.open(meeting.videoRoomUrl!, "_blank", "noopener,noreferrer")}
+                    className={cx("mpCopyBtn")}
+                    onClick={async () => {
+                      if (!meeting.videoRoomUrl) {
+                        onNotify?.("warning", "No video link to copy.");
+                        return;
+                      }
+                      try {
+                        await navigator.clipboard.writeText(meeting.videoRoomUrl);
+                        onNotify?.("success", "Video link copied.");
+                      } catch {
+                        onNotify?.("error", "Clipboard unavailable.");
+                      }
+                    }}
                   >
-                    <IcoVideo />
-                    <span>Join Video Call</span>
+                    <IcoCopy />
+                    Copy link
                   </button>
-                ) : (
-                  <div className={cx("text11", "colorMuted2", "fontItalic")}>No video link yet</div>
-                )}
+                </div>
               </div>
 
               {/* Tab bar */}
@@ -391,7 +516,7 @@ export function MeetingPrepPage({
                       </div>
                       <div className={cx("staffListRow", "mpSnapshotRow")}>
                         <span className={cx("text11", "colorMuted2")}>Scheduled</span>
-                        <span className={cx("text11", "colorMuted")}>{formatScheduledAt(meeting.scheduledAt)}</span>
+                        <span className={cx("text11", "colorMuted")}>{formatScheduledAt(meeting.scheduledAt, nowMs, timezone)}</span>
                       </div>
                       <div className={cx("staffListRow", "mpSnapshotRow")}>
                         <span className={cx("text11", "colorMuted2")}>Duration</span>
@@ -404,6 +529,10 @@ export function MeetingPrepPage({
                       <div className={cx("staffListRow", "mpSnapshotRow")}>
                         <span className={cx("text11", "colorMuted2")}>Open items</span>
                         <span className={cx("text11", "colorMuted")}>{openItems.length}</span>
+                      </div>
+                      <div className={cx("staffListRow", "mpSnapshotRow")}>
+                        <span className={cx("text11", "colorMuted2")}>Readiness</span>
+                        <span className={cx("text11", "colorMuted")}>{prepReadiness}%</span>
                       </div>
                     </div>
                   </div>
@@ -483,11 +612,11 @@ export function MeetingPrepPage({
                   <div className={cx("staffCard")}>
                     <div className={cx("staffSectionHd")}>
                       <span className={cx("staffSectionTitle")}>Call Notes</span>
-                      <span className={cx("text10", "colorMuted2")}>{meeting.title} · {formatScheduledAt(meeting.scheduledAt)}</span>
+                      <span className={cx("text10", "colorMuted2")}>{meeting.title} · {formatScheduledAt(meeting.scheduledAt, nowMs, timezone)}</span>
                     </div>
                     <textarea
                       value={noteText}
-                      onChange={(e) => setNoteText(e.target.value)}
+                      onChange={(e) => setNoteTextByMeeting((prev) => ({ ...prev, [meeting.id]: e.target.value }))}
                       placeholder={`Notes from the meeting…\n\n- Decisions made\n- Actions agreed\n- Follow-ups`}
                       className={cx("staffInput", "mpNoteInput")}
                     />
@@ -499,14 +628,18 @@ export function MeetingPrepPage({
                       className={cx("mpSaveBtn")}
                       onClick={() => {
                         if (!noteText.trim()) { onNotify?.("error", "No notes to save."); return; }
-                        // TODO: wire to /staff/decisions API when available
-                        const existing = JSON.parse(localStorage.getItem("decision-log") ?? "[]") as Array<{ note: string; date: string }>;
-                        localStorage.setItem("decision-log", JSON.stringify([...existing, { note: noteText, date: new Date().toISOString() }]));
-                        onNotify?.("success", "Notes saved to decision log.");
+                        const textBlob = new Blob([noteText], { type: "text/plain;charset=utf-8" });
+                        const objectUrl = URL.createObjectURL(textBlob);
+                        const link = document.createElement("a");
+                        link.href = objectUrl;
+                        link.download = `meeting-notes-${meeting.id}.txt`;
+                        link.click();
+                        URL.revokeObjectURL(objectUrl);
+                        onNotify?.("success", "Notes exported.");
                       }}
                     >
                       <IcoSave />
-                      Save to decision log
+                      Export notes
                     </button>
                     <button
                       type="button"
@@ -530,7 +663,13 @@ export function MeetingPrepPage({
 
             </div>
           </div>
-        ) : null}
+        ) : (
+          <div className={cx("flexCol", "mpDetailWrap")}>
+            <div className={cx("mpTabContent")}>
+              <div className={cx("text13", "colorMuted2")}>No meetings match the selected filters.</div>
+            </div>
+          </div>
+        )}
 
       </div>
     </section>

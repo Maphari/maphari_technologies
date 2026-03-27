@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { cx } from "../style";
+import { Ic } from "../ui";
 import { useProjectLayer } from "../hooks/use-project-layer";
 import { saveSession } from "../../../../lib/auth/session";
 import { callPortalAiGenerateWithRefresh, type AiInsightType } from "../../../../lib/api/portal/ai";
@@ -74,45 +75,72 @@ function fmtR(cents: number): string {
   return `R${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function exportAiInsightsCsv(
+  activeProjectName: string | null,
+  insights: InsightMap
+): void {
+  const header = ["Project", "Insight", "Generated", "Content"];
+  const rows: string[][] = [
+    ["Project Status Summary", insights.summary.content ?? "", insights.summary.generatedAt ? insights.summary.generatedAt.toISOString() : ""],
+    ["Risk Radar", insights.riskRadar.content ?? "", insights.riskRadar.generatedAt ? insights.riskRadar.generatedAt.toISOString() : ""],
+    ["Delivery Prediction", insights.delivery.content ?? "", insights.delivery.generatedAt ? insights.delivery.generatedAt.toISOString() : ""],
+    ["Budget Forecast", insights.budget.content ?? "", insights.budget.generatedAt ? insights.budget.generatedAt.toISOString() : ""],
+  ].map((row) => [activeProjectName ?? "", row[0], row[2], row[1]]);
+  const escape = (value: string) => "\"" + value.replace(/"/g, "\"\"") + "\"";
+  const csv = [header, ...rows].map((row) => row.map((cell) => escape(cell)).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "ai-intelligence-hub.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 interface InsightCardProps {
   id:           InsightId;
   icon:         string;
   title:        string;
+  subtitle:     string;
   state:        InsightState;
   onGenerate:   (id: InsightId) => void;
   tokens?:      number;
 }
 
-function InsightCard({ id, icon, title, state, onGenerate, tokens }: InsightCardProps) {
+function InsightCard({ id, icon, title, subtitle, state, onGenerate, tokens }: InsightCardProps) {
   return (
-    <div className={cx("card", "p20")}>
-      {/* Header */}
-      <div className={cx("flexRow", "flexCenter", "spaceBetween", "mb12")}>
-        <div className={cx("flexRow", "flexCenter", "gap8")}>
-          <span className={cx("text16")}>{icon}</span>
-          <span className={cx("fw600", "text13")}>{title}</span>
+    <div className={cx("cardS1v2", "p16", "flexCol", "gap14")}>
+      <div className={cx("flexRow", "spaceBetween", "gap12", "flexAlignStart")}>
+        <div className={cx("flexRow", "gap12", "flexAlignStart", "minW0", "flex1")}>
+          <div className={cx("iconSquare36", "noShrink")}>
+            <Ic n={icon} sz={16} c="var(--accent)" />
+          </div>
+          <div className={cx("flex1", "minW0")}>
+            <div className={cx("fw700", "text13", "mb4")}>{title}</div>
+            <div className={cx("text11", "colorMuted", "lineH15")}>{subtitle}</div>
+          </div>
         </div>
+        <span className={cx("badge", state.content ? "badgeGreen" : "badgeMuted", "noShrink")}>
+          {state.loading ? "Running" : state.content ? "Ready" : "Idle"}
+        </span>
+      </div>
+
+      <div className={cx("flexRow", "gap8", "flexWrap")}>
         {state.generatedAt && (
-          <span className={cx("text10", "colorMuted")}>
-            Last generated: {formatMinutesAgo(state.generatedAt)}
+          <span className={cx("badge", "badgeMuted")}>
+            Updated {formatMinutesAgo(state.generatedAt)}
           </span>
+        )}
+        {tokens !== undefined && tokens > 0 && (
+          <span className={cx("badge", "badgeMuted")}>{formatTokens(tokens)}</span>
         )}
       </div>
 
-      {/* Generate button */}
-      <button
-        type="button"
-        className={cx("btnSm", state.content ? "btnGhost" : "btnAccent", "mb12")}
-        onClick={() => onGenerate(id)}
-        disabled={state.loading}
-      >
-        {state.loading ? "Generating…" : state.content ? "Refresh" : "Generate"}
-      </button>
-
-      {/* Content area */}
-      <div className={cx("aiCardContent")}>
+      <div className={cx("card", "p14", "aiCardContent")}>
         {state.loading ? (
           <div className={cx("flexCol", "gap8")}>
             <div className={cx("skeletonBlock", "skeleBarW85", "skeleBarSm")} />
@@ -126,22 +154,26 @@ function InsightCard({ id, icon, title, state, onGenerate, tokens }: InsightCard
         ) : state.content ? (
           <>
             {state.content.split("\n\n").filter(Boolean).map((para, i) => (
-              <p key={i} className={cx("text12", "colorMuted", "lineH18")}>{para}</p>
+              <p key={i} className={cx("text12", "colorMuted", "lineH18", i > 0 && "mt8")}>{para}</p>
             ))}
           </>
         ) : (
           <p className={cx("text12", "colorMuted")}>
-            Click Generate to get AI insights.
+            Generate this insight when you want a fresh summary from the current project snapshot.
           </p>
         )}
       </div>
 
-      {/* Footer token count */}
-      {tokens !== undefined && tokens > 0 && (
-        <div className={cx("mt8")}>
-          <span className={cx("text10", "colorMuted")}>{formatTokens(tokens)}</span>
-        </div>
-      )}
+      <div className={cx("flexRow", "gap8", "flexWrap")}>
+        <button
+          type="button"
+          className={cx("btnSm", state.content ? "btnGhost" : "btnAccent")}
+          onClick={() => onGenerate(id)}
+          disabled={state.loading}
+        >
+          {state.loading ? "Generating…" : state.content ? "Refresh insight" : "Generate insight"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -164,47 +196,35 @@ function DigestModal({ insights, onClose }: DigestModalProps) {
   const hasContent = sections.some((s) => insights[s.id].content);
 
   return (
-    // Inline styles are intentional here — modal overlay needs fixed positioning
-    // that cannot be expressed via a CSS module scoped to the page component.
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.5)",
-        zIndex: 1000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-      }}
-      onClick={onClose}
-    >
+    <div className={cx("modalOverlay")} onClick={onClose}>
       <div
-        className={cx("card", "p24")}
-        style={{ maxWidth: "600px", width: "100%", maxHeight: "80vh", overflowY: "auto" }}
+        className={cx("pmModalInner", "maxW720")}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className={cx("flexRow", "flexCenter", "spaceBetween", "mb16")}>
-          <h2 className={cx("fw600", "text14")}>Weekly AI Digest</h2>
-          <button type="button" className={cx("btnSm", "btnGhost")} onClick={onClose}>Close</button>
+        <div className={cx("pmModalHd")}>
+          <div className={cx("pmTitle")}>Weekly AI Digest</div>
+          <button type="button" className={cx("iconBtn40x34")} title="Close" onClick={onClose}>
+            ×
+          </button>
         </div>
-
-        {!hasContent ? (
-          <p className={cx("text12", "colorMuted")}>
-            Generate at least one insight to see the weekly digest.
-          </p>
-        ) : (
-          sections
-            .filter((s) => insights[s.id].content)
-            .map((s) => (
-              <div key={s.id} className={cx("mb16")}>
-                <div className={cx("fw600", "text12", "mb4")}>{s.label}</div>
-                {insights[s.id].content!.split("\n\n").filter(Boolean).map((para, i) => (
-                  <p key={i} className={cx("text12", "colorMuted", "lineH18")}>{para}</p>
-                ))}
-              </div>
-            ))
-        )}
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap16", "maxH70vh", "overflowYAuto")}>
+          {!hasContent ? (
+            <p className={cx("text12", "colorMuted")}>
+              Generate at least one insight to see the weekly digest.
+            </p>
+          ) : (
+            sections
+              .filter((s) => insights[s.id].content)
+              .map((s) => (
+                <div key={s.id}>
+                  <div className={cx("fw600", "text12", "mb4")}>{s.label}</div>
+                  {insights[s.id].content!.split("\n\n").filter(Boolean).map((para, i) => (
+                    <p key={i} className={cx("text12", "colorMuted", "lineH18")}>{para}</p>
+                  ))}
+                </div>
+              ))
+          )}
+        </div>
       </div>
     </div>
   );
@@ -234,6 +254,12 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
   // Guard ref for generateAll — prevents concurrent re-trigger
   const generatingAllRef = useRef(false);
 
+  const resetInsights = useCallback(() => {
+    setInsights(INITIAL_INSIGHTS);
+    setTokens({});
+    setDigestOpen(false);
+  }, []);
+
   // Load risks + deliverables for active project once session is ready
   useEffect(() => {
     if (!session || !activeProject) return;
@@ -254,9 +280,10 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
 
   // Clear insights (and close digest) when the active project changes
   useEffect(() => {
-    setInsights(INITIAL_INSIGHTS);
-    setDigestOpen(false);
-  }, [activeProject?.id]);
+    queueMicrotask(() => {
+      resetInsights();
+    });
+  }, [activeProject?.id, resetInsights]);
 
   // ── Insight prompt builders ──────────────────────────────────────────────
 
@@ -380,13 +407,17 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
   // ── Render ───────────────────────────────────────────────────────────────
 
   const CARD_DEFS: Array<{ id: InsightId; icon: string; title: string }> = [
-    { id: "summary",   icon: "📊", title: "Project Status Summary" },
-    { id: "riskRadar", icon: "🔭", title: "Risk Radar" },
-    { id: "delivery",  icon: "🚀", title: "Delivery Prediction" },
-    { id: "budget",    icon: "💰", title: "Budget Forecast" },
+    { id: "summary",   icon: "chart", title: "Project Status Summary", subtitle: "Executive readout of progress, current momentum, and immediate watchpoints." },
+    { id: "riskRadar", icon: "shield", title: "Risk Radar", subtitle: "Top live risks, likely blockers, and mitigation actions from the current register." },
+    { id: "delivery",  icon: "flag", title: "Delivery Prediction", subtitle: "Likelihood of hitting the current delivery path based on progress and open work." },
+    { id: "budget",    icon: "invoiceDoc", title: "Budget Forecast", subtitle: "Invoice-based forecast of spend position, paid value, and financial pressure points." },
   ];
 
   const anyLoading = Object.values(insights).some((s) => s.loading);
+  const openRiskCount = risks.filter((risk) => risk.status === "OPEN").length;
+  const completedDeliverables = deliverables.filter((deliverable) => deliverable.status === "DELIVERED" || deliverable.status === "APPROVED").length;
+  const overdueInvoices = invoices.filter((invoice) => invoice.status === "OVERDUE").length;
+  const readyInsightCount = Object.values(insights).filter((state) => Boolean(state.content)).length;
 
   return (
     <div className={cx("pageBody")}>
@@ -396,11 +427,27 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
           <div className={cx("pageEyebrow")}>Reporting · AI</div>
           <h1 className={cx("pageTitle")}>AI Intelligence Hub</h1>
           <p className={cx("pageSub")}>
-            AI-powered project insights generated from your live data.
+            Generated analysis based on your live project, risk, deliverable, and invoice data.
             {activeProject ? ` Showing insights for ${activeProject.name}.` : ""}
           </p>
         </div>
         <div className={cx("pageActions")}>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost")}
+            onClick={resetInsights}
+            disabled={anyLoading}
+          >
+            Reset
+          </button>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost")}
+            onClick={() => exportAiInsightsCsv(activeProject?.name ?? null, insights)}
+            disabled={Object.values(insights).every((state) => !state.content)}
+          >
+            Export CSV
+          </button>
           <button
             type="button"
             className={cx("btnSm", "btnGhost")}
@@ -430,34 +477,70 @@ export function AiInsightsPage({ projects, invoices }: AiInsightsPageProps) {
 
       {/* Insight cards — 2-column grid */}
       {activeProject && (
-        <div className={cx("grid2Cols14Gap", "mt20")}>
+        <>
+          <div className={cx("card", "borderLeftAccent", "p20", "mt20", "mb16")}>
+            <div className={cx("flexRow", "spaceBetween", "gap16", "flexWrap")}>
+              <div className={cx("flex1", "minW220")}>
+                <div className={cx("text10", "uppercase", "ls01", "colorMuted2", "mb6")}>Live intelligence workspace</div>
+                <div className={cx("fw800", "text16", "mb6")}>{activeProject.name}</div>
+                <div className={cx("text12", "colorMuted", "lineH16")}>
+                  Generated analysis based on the current project snapshot, active risks, deliverable progress, and invoice history already available in the portal.
+                </div>
+              </div>
+              <div className={cx("flexRow", "gap12", "flexWrap")}>
+                <div className={cx("cardS1v2", "p12x14", "flexCol", "gap4", "minW120")}>
+                  <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Project status</div>
+                  <div className={cx("text13", "fw700")}>{activeProject.status}</div>
+                  <div className={cx("text10", "colorMuted")}>{activeProject.progress}% complete</div>
+                </div>
+                <div className={cx("cardS1v2", "p12x14", "flexCol", "gap4", "minW120")}>
+                  <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Open risks</div>
+                  <div className={cx("text13", "fw700")}>{String(openRiskCount)}</div>
+                  <div className={cx("text10", "colorMuted")}>{activeProject.riskLevel} project signal</div>
+                </div>
+                <div className={cx("cardS1v2", "p12x14", "flexCol", "gap4", "minW120")}>
+                  <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Deliverables</div>
+                  <div className={cx("text13", "fw700")}>{String(completedDeliverables) + "/" + String(deliverables.length || 0)}</div>
+                  <div className={cx("text10", "colorMuted")}>completed</div>
+                </div>
+                <div className={cx("cardS1v2", "p12x14", "flexCol", "gap4", "minW120")}>
+                  <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Insight pack</div>
+                  <div className={cx("text13", "fw700")}>{String(readyInsightCount) + "/4"}</div>
+                  <div className={cx("text10", "colorMuted")}>{String(overdueInvoices)} overdue invoices</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={cx("grid2Cols14Gap")}>
           {CARD_DEFS.map((def) => (
             <InsightCard
               key={def.id}
               id={def.id}
               icon={def.icon}
               title={def.title}
+              subtitle={def.subtitle}
               state={insights[def.id]}
               onGenerate={(id) => void generateInsight(id)}
               tokens={tokens[def.id]}
             />
           ))}
-        </div>
+          </div>
+        </>
       )}
 
       {/* Bottom CTA — Weekly Digest */}
       {activeProject && (
-        <div className={cx("card", "p20", "mt16")}>
-          <div className={cx("flexRow", "flexCenter", "spaceBetween")}>
-            <div>
-              <div className={cx("fw600", "text13", "mb4")}>Weekly Digest</div>
-              <p className={cx("text12", "colorMuted")}>
-                View a combined AI summary of all four insights in one place. Generate insights first.
+        <div className={cx("cardS1v2", "p16", "mt16")}>
+          <div className={cx("flexRow", "spaceBetween", "gap16", "flexWrap", "flexAlignCenter")}>
+            <div className={cx("flex1", "minW220")}>
+              <div className={cx("fw700", "text13", "mb4")}>Weekly Digest</div>
+              <p className={cx("text12", "colorMuted", "lineH16")}>
+                Pull the generated insight cards into one executive digest for circulation or review. Generate the cards you need first, then open the digest.
               </p>
             </div>
             <button
               type="button"
-              className={cx("btnSm", "btnGhost")}
+              className={cx("btnSm", "btnGhost", "noShrink")}
               onClick={() => setDigestOpen(true)}
             >
               Open Digest

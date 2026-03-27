@@ -44,8 +44,6 @@ export async function createDailyRoom(options: {
         enable_screenshare: true,
         start_video_off:    false,
         start_audio_off:    false,
-        enable_recording:   "cloud",
-        enable_transcription: true,
       },
     }),
   });

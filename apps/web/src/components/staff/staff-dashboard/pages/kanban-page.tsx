@@ -83,6 +83,12 @@ type KanbanPageProps = {
   onTaskAction: (taskId: string, projectId: string, status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE") => void;
   onOpenTaskThread: (projectId: string) => void;
   hasProjectThread: (projectId: string) => boolean;
+  integrationProvidersByClientId?: Record<string, string[]>;
+  onCreateExternalTask?: (
+    taskId: string,
+    projectId: string,
+    input: { providerKey: string; title?: string; description?: string }
+  ) => void;
   kanbanViewMode: "all" | "my_work" | "urgent" | "client_waiting" | "blocked";
   onKanbanViewModeChange: (mode: "all" | "my_work" | "urgent" | "client_waiting" | "blocked") => void;
   kanbanSwimlane: "status" | "project" | "client";
@@ -119,6 +125,8 @@ type KanbanPageProps = {
   announcement: string;
   /** Optional automation callback — escalate all blocked tasks */
   onAutoEscalateBlocked?: () => Promise<void>;
+  integrationOpenRequestsCount?: number;
+  onOpenIntegrationQueue?: () => void;
 };
 
 /* ─── component ─────────────────────────────────────────────────── */
@@ -139,6 +147,8 @@ export function KanbanPage({
   onTaskAction,
   onOpenTaskThread,
   hasProjectThread,
+  integrationProvidersByClientId = {},
+  onCreateExternalTask,
   kanbanViewMode,
   onKanbanViewModeChange,
   kanbanSwimlane,
@@ -159,6 +169,8 @@ export function KanbanPage({
   onMoveTask,
   announcement,
   onAutoEscalateBlocked,
+  integrationOpenRequestsCount = 0,
+  onOpenIntegrationQueue,
 }: KanbanPageProps) {
   const throughputDelta = flowMetrics.throughput7d - flowMetrics.throughputPrev7d;
   const chartMax = Math.max(1, ...flowMetrics.points.map((p) => Math.max(p.created, p.completed)));
@@ -208,6 +220,16 @@ export function KanbanPage({
               <button className={cx("btnSm", "btnGhost", "kbAlertBtn", "kbAlertBtnAmber")} type="button" onClick={onOpenOverdueQueue}>
                 <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4"/><path d="M8 5v3.5l2 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
                 {overdueTasksCount} Overdue
+              </button>
+            )}
+            {onOpenIntegrationQueue && integrationOpenRequestsCount > 0 && (
+              <button className={cx("btnSm", "btnGhost", "kbAlertBtn")} type="button" onClick={onOpenIntegrationQueue}>
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <rect x="2.2" y="2.2" width="4.8" height="4.8" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                  <rect x="9" y="2.2" width="4.8" height="4.8" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                  <rect x="5.6" y="9" width="4.8" height="4.8" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                </svg>
+                Integration Queue {integrationOpenRequestsCount}
               </button>
             )}
             <button className={cx("btnSm", "btnGhost")} type="button" onClick={onOpenTaskFilters}>
@@ -464,6 +486,26 @@ export function KanbanPage({
                         {/* Title */}
                         <div className={cx("kbCardTitleV3", task.faded && "kbCardTitleFaded")}>{task.title}</div>
 
+                        {task.externalLinks && task.externalLinks.length > 0 && (
+                          <div className={cx("kbCardIntegrationRow")}>
+                            {task.externalLinks.slice(0, 2).map((link) => (
+                              <a
+                                key={link.id}
+                                href={link.externalUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={cx("kbCardIntegrationLink")}
+                                title={`${link.providerKey.toUpperCase()} ${link.externalId}`}
+                              >
+                                {`${link.providerKey.toUpperCase()} · ${link.externalId}`}
+                              </a>
+                            ))}
+                            {task.externalLinks.length > 2 && (
+                              <span className={cx("kbCardIntegrationMore")}>{`+${task.externalLinks.length - 2}`}</span>
+                            )}
+                          </div>
+                        )}
+
                         {/* Progress bar */}
                         {task.progress && (
                           <div className={cx("kbCardProgressV3")}>
@@ -516,6 +558,20 @@ export function KanbanPage({
                               onClick={() => onOpenBlockDraft(task.id, task.projectId, task.title)}
                               title="Flag as blocked">
                               Block
+                            </button>
+                          )}
+
+                          {task.clientId && onCreateExternalTask && (integrationProvidersByClientId[task.clientId] ?? []).length > 0 && (
+                            <button
+                              className={cx("btnXs", "buttonGhost")}
+                              type="button"
+                              onClick={() => onCreateExternalTask(task.id, task.projectId, {
+                                providerKey: (integrationProvidersByClientId[task.clientId!] ?? [])[0] ?? "jira",
+                                title: task.title
+                              })}
+                              title="Create external ticket"
+                            >
+                              External
                             </button>
                           )}
 

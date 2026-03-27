@@ -4,7 +4,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import { saveSession } from "../../../../lib/auth/session";
@@ -48,17 +48,31 @@ export function KnowledgeBasePage() {
   const [search,    setSearch]    = useState("");
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
+  const [activeArticle, setActiveArticle] = useState<PortalKnowledgeArticle | null>(null);
 
-  useEffect(() => {
+  const loadArticles = useCallback(async () => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
     setError(null);
-    void loadPortalKnowledgeArticlesWithRefresh(session).then((r) => {
+    try {
+      const r = await loadPortalKnowledgeArticlesWithRefresh(session);
       if (r.nextSession) saveSession(r.nextSession);
-      if (r.error) { setError(r.error.message ?? "Failed to load."); return; }
-      if (r.data) setArticles(r.data);
-    }).finally(() => setLoading(false));
+      if (r.error) {
+        setError(r.error.message ?? "Failed to load.");
+        setArticles([]);
+        return;
+      }
+      setArticles(r.data ?? []);
+    } finally {
+      setLoading(false);
+    }
   }, [session]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadArticles();
+    });
+  }, [loadArticles]);
 
   // Derive unique categories from real data
   const categories = useMemo(() => {
@@ -89,10 +103,15 @@ export function KnowledgeBasePage() {
   if (error) {
     return (
       <div className={cx("pageBody")}>
-        <div className={cx("errorState")}>
-          <div className={cx("errorStateIcon")}>✕</div>
-          <div className={cx("errorStateTitle")}>Failed to load</div>
-          <div className={cx("errorStateSub")}>{error}</div>
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="alert" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>Unable to load knowledge articles</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+          <div className={cx("mt12")}>
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadArticles()}>
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -100,10 +119,24 @@ export function KnowledgeBasePage() {
 
   return (
     <div className={cx("pageBody")}>
+      <div className={cx("pageHeader", "mb0")}>
+        <div>
+          <div className={cx("pageEyebrow")}>Support · Knowledge Base</div>
+          <h1 className={cx("pageTitle")}>Knowledge Base</h1>
+          <p className={cx("pageSub")}>
+            Search published guides, answers, and process notes for your client workspace.
+          </p>
+        </div>
+        <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => void loadArticles()}>
+            Refresh
+          </button>
+        </div>
+      </div>
+
       {/* ── Search Hero ── */}
       <div className={cx("kbSearchHero")}>
-        <div className={cx("pageEyebrow", "mb8")}>Support · Knowledge Base</div>
-        <h1 className={cx("pageTitle", "mb6")}>How can we help?</h1>
+        <h2 className={cx("pageTitle", "mb6")}>How can we help?</h2>
         <p className={cx("pageSub", "mb20")}>
           Search {articles.length > 0 ? `${articles.length} articles` : "our knowledge base"} for answers to your questions.
         </p>
@@ -175,12 +208,44 @@ export function KnowledgeBasePage() {
                         <span className={cx("text10", "colorMuted")}>by {a.authorName}</span>
                       )}
                     </div>
-                    <button type="button" className={cx("btnSm", "btnAccent", "text11")}>Read →</button>
+                    <button
+                      type="button"
+                      className={cx("btnSm", "btnAccent", "text11")}
+                      onClick={() => setActiveArticle(a)}
+                    >
+                      Read
+                    </button>
                   </div>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {activeArticle && (
+        <div className={cx("modalOverlay")} onClick={() => setActiveArticle(null)}>
+          <div className={cx("pmModalInner", "maxW640")} onClick={(event) => event.stopPropagation()}>
+            <div className={cx("pmModalHd")}>
+              <div>
+                <div className={cx("pmTitle")}>{activeArticle.title}</div>
+                <div className={cx("text11", "colorMuted", "mt2")}>
+                  {(activeArticle.category ?? "General") + " · " + new Date(activeArticle.updatedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
+                </div>
+              </div>
+              <button type="button" className={cx("iconBtn40x34")} onClick={() => setActiveArticle(null)} aria-label="Close">
+                <Ic n="x" sz={14} c="var(--muted2)" />
+              </button>
+            </div>
+            <div className={cx("p16", "flexCol", "gap12")}>
+              <div className={cx("text11", "colorMuted2")}>
+                {activeArticle.authorName?.trim() ? "Published by " + activeArticle.authorName : "Published in your client knowledge base"}
+              </div>
+              <div className={cx("cardS1v2", "p16", "text12", "lineH165")} style={{ whiteSpace: "pre-wrap" }}>
+                {activeArticle.content}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

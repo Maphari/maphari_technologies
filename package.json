@@ -28,7 +28,8 @@
     "dev:analytics": "pnpm --filter @maphari/analytics dev",
     "dev:notifications": "pnpm --filter @maphari/notifications dev",
     "dev:public-api": "pnpm --filter @maphari/public-api dev",
-    "dev:all": "pnpm infra:up && pnpm db:migrate && (pnpm dev:auth & pnpm dev:gateway & pnpm dev:core & pnpm dev:chat & pnpm dev:files & pnpm dev:billing & pnpm dev:automation & pnpm dev:ai & pnpm dev:analytics & pnpm dev:notifications & pnpm dev:public-api & pnpm dev:web & wait)",
+    "dev:agent": "pnpm --filter @maphari/agent dev",
+    "dev:all": "pnpm infra:up && pnpm db:migrate && (pnpm dev:auth & pnpm dev:gateway & pnpm dev:core & pnpm dev:chat & pnpm dev:files & pnpm dev:billing & pnpm dev:automation & pnpm dev:ai & pnpm dev:analytics & pnpm dev:notifications & pnpm dev:public-api & pnpm dev:agent & pnpm dev:web & wait)",
     "dev:all:min": "pnpm infra:up && pnpm db:migrate && (pnpm dev:auth & pnpm dev:gateway & pnpm dev:web & wait)"
   },
   "devDependencies": {

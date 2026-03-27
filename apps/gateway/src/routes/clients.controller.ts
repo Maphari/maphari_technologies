@@ -521,6 +521,25 @@ export class ClientsController {
     });
   }
 
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Post("meetings/:id/mood")
+  async rateMeeting(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
+    return proxyRequest(`${baseUrl}/meetings/${id}/mood`, "POST", body as Record<string, unknown>, {
+      "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "", "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
   // ── CX: Referrals ────────────────────────────────────────────────────────────
 
   @Roles("CLIENT")
@@ -647,6 +666,7 @@ export class ClientsController {
   async listClientTeam(
     @Param("clientId") clientId: string,
     @Headers("x-user-id") userId?: string,
+    @Headers("x-user-email") userEmail?: string,
     @Headers("x-user-role") role?: Role,
     @Headers("x-client-id") scopedClientId?: string,
     @Headers("x-request-id") requestId?: string,
@@ -655,6 +675,7 @@ export class ClientsController {
     const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
     return proxyRequest(`${baseUrl}/clients/${clientId}/team`, "GET", undefined, {
       "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-user-email": userEmail ?? "",
       "x-client-id": scopedClientId ?? "", "x-request-id": requestId ?? "",
       "x-trace-id": traceId ?? requestId ?? ""
     });
@@ -666,6 +687,7 @@ export class ClientsController {
     @Param("clientId") clientId: string,
     @Body() body: unknown,
     @Headers("x-user-id") userId?: string,
+    @Headers("x-user-email") userEmail?: string,
     @Headers("x-user-role") role?: Role,
     @Headers("x-client-id") scopedClientId?: string,
     @Headers("x-request-id") requestId?: string,
@@ -674,6 +696,7 @@ export class ClientsController {
     const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
     return proxyRequest(`${baseUrl}/clients/${clientId}/team/invite`, "POST", body as Record<string, unknown>, {
       "x-user-id": userId ?? "", "x-user-role": role ?? "CLIENT",
+      "x-user-email": userEmail ?? "",
       "x-client-id": scopedClientId ?? "", "x-request-id": requestId ?? "",
       "x-trace-id": traceId ?? requestId ?? ""
     });
@@ -971,39 +994,6 @@ export class ClientsController {
     });
   }
 
-  // ── Comments: GET /comments ───────────────────────────────────────────────
-
-  @Roles("ADMIN", "STAFF", "CLIENT")
-  @Get("comments")
-  async getComments(
-    @Query() query: unknown,
-    @Headers("x-user-id") userId?: string,
-    @Headers("x-user-role") role?: Role,
-    @Headers("x-client-id") clientId?: string,
-    @Headers("x-request-id") requestId?: string,
-    @Headers("x-trace-id") traceId?: string
-  ): Promise<ApiResponse> {
-    const params = new URLSearchParams();
-    if (query && typeof query === "object") {
-      Object.entries(query as Record<string, unknown>).forEach(([k, v]) => {
-        if (v !== undefined && v !== null) params.set(k, String(v));
-      });
-    }
-    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
-    return proxyRequest(
-      `${baseUrl}/comments?${params.toString()}`,
-      "GET",
-      undefined,
-      {
-        "x-user-id": userId ?? "",
-        "x-user-role": role ?? "CLIENT",
-        "x-client-id": clientId ?? "",
-        "x-request-id": requestId ?? "",
-        "x-trace-id": traceId ?? requestId ?? "",
-      }
-    );
-  }
-
   // ── POST /admin/clients/broadcast ─────────────────────────────────────────
   @Roles("ADMIN")
   @Post("admin/clients/broadcast")
@@ -1046,25 +1036,4 @@ export class ClientsController {
     });
   }
 
-  // ── Comments: POST /comments ──────────────────────────────────────────────
-
-  @Roles("ADMIN", "STAFF", "CLIENT")
-  @Post("comments")
-  async postComment(
-    @Body() body: unknown,
-    @Headers("x-user-id") userId?: string,
-    @Headers("x-user-role") role?: Role,
-    @Headers("x-client-id") clientId?: string,
-    @Headers("x-request-id") requestId?: string,
-    @Headers("x-trace-id") traceId?: string
-  ): Promise<ApiResponse> {
-    const baseUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
-    return proxyRequest(`${baseUrl}/comments`, "POST", body as Record<string, unknown>, {
-      "x-user-id": userId ?? "",
-      "x-user-role": role ?? "CLIENT",
-      "x-client-id": clientId ?? "",
-      "x-request-id": requestId ?? "",
-      "x-trace-id": traceId ?? requestId ?? "",
-    });
-  }
 }

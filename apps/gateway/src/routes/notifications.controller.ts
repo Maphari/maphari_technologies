@@ -3,7 +3,9 @@ import {
   createNotificationJobSchema,
   getNotificationJobsQuerySchema,
   providerCallbackSchema,
+  setNotificationArchiveStateSchema,
   setNotificationReadStateSchema,
+  setNotificationSnoozeStateSchema,
   type ApiResponse,
   type Role
 } from "@maphari/contracts";
@@ -130,6 +132,56 @@ export class NotificationsController {
   }
 
   @Roles("ADMIN", "STAFF", "CLIENT")
+  @Patch("notifications/jobs/:id/archive-state")
+  async updateArchiveState(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const parsedBody = setNotificationArchiveStateSchema.safeParse(body);
+    if (!parsedBody.success) {
+      throw new BadRequestException("Invalid notification archive payload");
+    }
+    const baseUrl = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:4009";
+    return proxyRequest(`${baseUrl}/notifications/jobs/${id}/archive-state`, "PATCH", parsedBody.data, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Patch("notifications/jobs/:id/snooze-state")
+  async updateSnoozeState(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const parsedBody = setNotificationSnoozeStateSchema.safeParse(body);
+    if (!parsedBody.success) {
+      throw new BadRequestException("Invalid notification snooze payload");
+    }
+    const baseUrl = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:4009";
+    return proxyRequest(`${baseUrl}/notifications/jobs/${id}/snooze-state`, "PATCH", parsedBody.data, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
   @Patch("notifications/mark-all-read")
   async markAllRead(
     @Headers("x-user-id") userId?: string,
@@ -140,6 +192,44 @@ export class NotificationsController {
   ): Promise<ApiResponse> {
     const baseUrl = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:4009";
     return proxyRequest(`${baseUrl}/notifications/mark-all-read`, "PATCH", undefined, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Patch("notifications/archive-all")
+  async archiveAll(
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:4009";
+    return proxyRequest(`${baseUrl}/notifications/archive-all`, "PATCH", undefined, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Patch("notifications/restore-snoozed")
+  async restoreSnoozed(
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:4009";
+    return proxyRequest(`${baseUrl}/notifications/restore-snoozed`, "PATCH", undefined, {
       "x-user-id": userId ?? "",
       "x-user-role": role ?? "CLIENT",
       "x-client-id": clientId ?? "",

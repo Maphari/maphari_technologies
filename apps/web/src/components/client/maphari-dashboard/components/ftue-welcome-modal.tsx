@@ -14,8 +14,8 @@ type FtueWelcomeModalProps = {
 const TILES = [
   { icon: "zap",         label: "Mission Control", sub: "Your project at a glance"   },
   { icon: "message",     label: "Messages",         sub: "Talk directly with your team" },
-  { icon: "checkSquare", label: "Deliverables",     sub: "Review and approve work"    },
-  { icon: "fileText",    label: "Invoices",          sub: "Track payments and budget"  },
+  { icon: "shieldCheck", label: "Deliverables",     sub: "Review and approve work"    },
+  { icon: "invoiceDoc",  label: "Invoices",          sub: "Track payments and budget"  },
 ] as const;
 
 export function FtueWelcomeModal({ onDismiss }: FtueWelcomeModalProps) {

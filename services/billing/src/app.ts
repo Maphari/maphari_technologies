@@ -9,6 +9,7 @@ import { registerVendorRoutes } from "./routes/vendors.js";
 import { registerLoyaltyRoutes } from "./routes/loyalty.js";
 import { registerInstallmentRoutes } from "./routes/installments.js";
 import { registerBillingAnalyticsRoutes } from "./routes/analytics.js";
+import { registerInvoiceReminderRoutes } from "./routes/invoice-reminders.js";
 
 export async function createBillingApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
@@ -74,6 +75,7 @@ export async function createBillingApp(): Promise<FastifyInstance> {
   await registerLoyaltyRoutes(app);
   await registerInstallmentRoutes(app);
   await registerBillingAnalyticsRoutes(app);
+  await registerInvoiceReminderRoutes(app);
 
   return app;
 }

@@ -126,6 +126,7 @@ export class ProposalsController {
   @Get("portal/proposals")
   async listPortalProposals(
     @Query("clientId") qClientId?: string,
+    @Query("projectId") projectId?: string,
     @Headers("x-user-id") userId?: string,
     @Headers("x-user-role") role?: Role,
     @Headers("x-client-id") clientId?: string,
@@ -134,6 +135,7 @@ export class ProposalsController {
   ): Promise<ApiResponse> {
     const params = new URLSearchParams();
     if (qClientId) params.set("clientId", qClientId);
+    if (projectId) params.set("projectId", projectId);
     const qs = params.toString() ? `?${params.toString()}` : "";
     return proxyRequest(
       `${this.baseUrl}/portal/proposals${qs}`,

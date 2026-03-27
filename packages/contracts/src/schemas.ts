@@ -142,6 +142,8 @@ export const createProjectRequestSchema = z.object({
     )
     .max(8)
     .optional(),
+  signedAgreementSignerName: z.string().trim().min(2).max(120),
+  signedAgreementAcceptedAt: z.iso.datetime(),
   signedAgreementFileId: z.uuid(),
   estimatedQuoteCents: z.number().int().positive().max(10_000_000_000),
   depositInvoiceId: z.uuid(),
@@ -198,7 +200,8 @@ export const createClientContactSchema = z.object({
   email: z.email().trim().toLowerCase(),
   phone: z.string().trim().max(32).optional(),
   role: z.string().trim().max(80).optional(),
-  isPrimary: z.boolean().optional()
+  isPrimary: z.boolean().optional(),
+  canManageAccess: z.boolean().optional()
 });
 
 export const updateClientContactSchema = z.object({
@@ -208,7 +211,8 @@ export const updateClientContactSchema = z.object({
   email: z.email().trim().toLowerCase().optional(),
   phone: z.string().trim().max(32).optional(),
   role: z.string().trim().max(80).optional(),
-  isPrimary: z.boolean().optional()
+  isPrimary: z.boolean().optional(),
+  canManageAccess: z.boolean().optional()
 });
 
 export const getClientQuerySchema = z.object({
@@ -282,7 +286,16 @@ export const createProjectTaskSchema = z.object({
   title: z.string().trim().min(2).max(180),
   assigneeName: z.string().trim().max(120).optional(),
   status: z.enum(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"]).optional(),
-  dueAt: z.iso.datetime().optional()
+  dueAt: z.iso.datetime().optional(),
+  externalLinks: z.array(z.object({
+    id: z.string().trim().min(2).max(120),
+    providerKey: z.string().trim().min(2).max(64),
+    externalId: z.string().trim().min(1).max(160),
+    externalUrl: z.url().trim().max(500),
+    title: z.string().trim().min(1).max(180).optional(),
+    createdAt: z.iso.datetime().optional(),
+    updatedAt: z.iso.datetime().optional()
+  })).max(20).optional()
 });
 
 export const createTimeEntrySchema = z.object({
@@ -307,7 +320,16 @@ export const updateProjectTaskSchema = z.object({
   title: z.string().trim().min(2).max(180).optional(),
   assigneeName: z.string().trim().max(120).optional(),
   status: z.enum(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"]).optional(),
-  dueAt: z.iso.datetime().nullable().optional()
+  dueAt: z.iso.datetime().nullable().optional(),
+  externalLinks: z.array(z.object({
+    id: z.string().trim().min(2).max(120),
+    providerKey: z.string().trim().min(2).max(64),
+    externalId: z.string().trim().min(1).max(160),
+    externalUrl: z.url().trim().max(500),
+    title: z.string().trim().min(1).max(180).optional(),
+    createdAt: z.iso.datetime().optional(),
+    updatedAt: z.iso.datetime().optional()
+  })).max(20).optional()
 });
 
 export const createTaskCollaboratorSchema = z.object({
@@ -467,9 +489,18 @@ export const upsertProjectPreferencesSchema = z.object({
     "dashboardLastSeenAt",
     "kanbanBoardPrefs",
     "documentCenterAdminTemplates",
-    "documentCenterClientAgreements"
+    "documentCenterClientAgreements",
+    "privacyConsents",
+    "settingsCurrency",
+    "readAnnouncements",
+    "weeklyPulse",
+    "notificationMutes",
+    "portal_ftue_v1_seen",
+    "onboarding_banner_dismissed",
+    "completion_banner_dismissed",
+    "onboarding_wizard_seen"
   ]),
-  value: z.string().trim().min(2).max(5000)
+  value: z.string().trim().min(1).max(5000)
 });
 
 export const getProjectPreferencesQuerySchema = z.object({
@@ -485,7 +516,16 @@ export const getProjectPreferencesQuerySchema = z.object({
     "dashboardLastSeenAt",
     "kanbanBoardPrefs",
     "documentCenterAdminTemplates",
-    "documentCenterClientAgreements"
+    "documentCenterClientAgreements",
+    "privacyConsents",
+    "settingsCurrency",
+    "readAnnouncements",
+    "weeklyPulse",
+    "notificationMutes",
+    "portal_ftue_v1_seen",
+    "onboarding_banner_dismissed",
+    "completion_banner_dismissed",
+    "onboarding_wizard_seen"
   ])
 });
 
@@ -721,6 +761,21 @@ export const createPaymentSchema = z.object({
   paidAt: z.iso.datetime().optional()
 });
 
+export const invoiceReminderChannelSchema = z.enum(["email", "sms", "portal"]);
+
+export const upsertInvoiceReminderPreferenceSchema = z.object({
+  enabled: z.boolean().optional(),
+  intervalDays: z.union([z.literal(0), z.literal(1), z.literal(3)]),
+  channels: z.array(invoiceReminderChannelSchema).min(1).max(3),
+  note: z.string().trim().max(1000).optional()
+});
+
+export const sendInvoiceReminderSchema = z.object({
+  invoiceIds: z.array(z.uuid()).min(1).max(100),
+  channels: z.array(invoiceReminderChannelSchema).min(1).max(3).optional(),
+  note: z.string().trim().max(1000).optional()
+});
+
 export const aiGenerateSchema = z.object({
   clientId: z.uuid().optional(),
   type: z.enum([
@@ -806,6 +861,14 @@ export const getNotificationJobsQuerySchema = z.object({
 
 export const setNotificationReadStateSchema = z.object({
   read: z.boolean()
+});
+
+export const setNotificationArchiveStateSchema = z.object({
+  archived: z.boolean()
+});
+
+export const setNotificationSnoozeStateSchema = z.object({
+  snoozedUntil: z.iso.datetime().nullable()
 });
 
 export const publicApiKeyIssueSchema = z.object({
@@ -906,6 +969,9 @@ export type IssueUploadUrlInput = z.infer<typeof issueUploadUrlSchema>;
 export type ConfirmUploadInput = z.infer<typeof confirmUploadSchema>;
 export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>;
 export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;
+export type InvoiceReminderChannel = z.infer<typeof invoiceReminderChannelSchema>;
+export type UpsertInvoiceReminderPreferenceInput = z.infer<typeof upsertInvoiceReminderPreferenceSchema>;
+export type SendInvoiceReminderInput = z.infer<typeof sendInvoiceReminderSchema>;
 export type AiGenerateInput = z.infer<typeof aiGenerateSchema>;
 export type AiLeadQualificationInput = z.infer<typeof aiLeadQualificationSchema>;
 export type AiProposalDraftInput = z.infer<typeof aiProposalDraftSchema>;
@@ -916,6 +982,8 @@ export type CreateNotificationJobInput = z.infer<typeof createNotificationJobSch
 export type ProviderCallbackInput = z.infer<typeof providerCallbackSchema>;
 export type GetNotificationJobsQueryInput = z.infer<typeof getNotificationJobsQuerySchema>;
 export type SetNotificationReadStateInput = z.infer<typeof setNotificationReadStateSchema>;
+export type SetNotificationArchiveStateInput = z.infer<typeof setNotificationArchiveStateSchema>;
+export type SetNotificationSnoozeStateInput = z.infer<typeof setNotificationSnoozeStateSchema>;
 export type PublicApiKeyIssueInput = z.infer<typeof publicApiKeyIssueSchema>;
 export type PublicApiProjectCreateInput = z.infer<typeof publicApiProjectCreateSchema>;
 export type PublicContactRequestInput = z.infer<typeof publicContactRequestSchema>;

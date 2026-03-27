@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { cx, styles } from "../style";
+import { cx } from "../style";
 import { usePageToast } from "../hooks/use-page-toast";
 import type { NotificationPreference, ConnectedIntegration, SessionInfo } from "../types";
 import type { PageId } from "../config";
@@ -12,8 +12,9 @@ import { setPortalPreferenceWithRefresh, getPortalPreferenceWithRefresh } from "
 import { requestDataExportWithRefresh, requestAccountDeletionWithRefresh, revokeAllSessionsWithRefresh } from "../../../../lib/api/portal/profile";
 import { callGateway, withAuthorizedSession } from "../../../../lib/api/portal/internal";
 import { loadPortalNotificationPrefsWithRefresh, updatePortalNotificationPrefsWithRefresh, loadPortalNotifPrefsWithRefresh, updatePortalNotifPrefWithRefresh, type NotifPrefKey } from "../../../../lib/api/portal/notification-prefs";
-import { loadPortalTeamMembersWithRefresh } from "../../../../lib/api/portal/team";
+import { invitePortalTeamMemberWithRefresh, loadPortalTeamMembersWithRefresh } from "../../../../lib/api/portal/team";
 import { callPortalAiGenerateWithRefresh } from "../../../../lib/api/portal/ai";
+import { disableClient2faWithRefresh, getClient2faStatusWithRefresh, setupClient2faWithRefresh, verifyClient2faWithRefresh } from "../../../../lib/api/portal/auth-2fa";
 import { Ic } from "../ui";
 
 export interface SettingsPageProps {
@@ -22,7 +23,6 @@ export interface SettingsPageProps {
   sessions: SessionInfo[];
   onToggleNotification: (category: string, channel: "inApp" | "email" | "push", value: boolean) => void;
   onDisconnectIntegration: (id: string) => void;
-  onRevokeSession: (id: string) => void;
   theme: "light" | "dark";
   onToggleTheme: () => void;
   mode?: "profile" | "security";
@@ -64,6 +64,21 @@ type GdprItem = {
   tone: "green" | "amber" | "red" | "purple";
   action?: string;
   danger?: boolean;
+};
+
+type WorkspacePreferenceState = {
+  language: string;
+  timezone: string;
+  dateFormat: string;
+  portalToggles: Record<string, boolean>;
+};
+
+type SecurityPreferenceState = {
+  securityToggles: Record<string, boolean>;
+  timeoutValue: string;
+  mfaMethod: string;
+  phoneNumber: string;
+  phoneVerified: boolean;
 };
 
 const SETTINGS_TABS: Array<{ value: SettingsTab; label: string }> = [
@@ -116,14 +131,6 @@ const DEFAULT_ACCESS_USERS: AccessUser[] = [/* loaded from team API — Batch 5 
 
 const SECURITY_AUDIT: AuditEntry[] = [/* loaded from audit-log API — Batch 5 */];
 
-const SECURITY_DOCS = [
-  { name: "Client-Proposal-v3.pdf", viewers: "4 people" },
-  { name: "Q1-Financial-Report.xlsx", viewers: "2 people" },
-  { name: "Brand-Guidelines-2026.pdf", viewers: "All team" },
-  { name: "NDA-Veldt-Finance.pdf", viewers: "Owner only" },
-  { name: "UAT-Checklist-Sprint4.xlsx", viewers: "3 people" },
-] as const;
-
 const GDPR_ITEMS: GdprItem[] = [
   {
     title: "Data Processing Agreement",
@@ -161,8 +168,6 @@ const GDPR_ITEMS: GdprItem[] = [
   },
 ];
 
-const QR_DATA: number[] = [1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,1,0,1,1,0,1,0,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,0,1,0,0,0,1,1,0,0,1,0,1,1,1,0,1,0,1,1,0,0,1,0,1,0,0,0,0,0,1,0,1,0,0,1,1,0,1,1,1,1,1,1,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,1,0,0,1,0,1,0,1,1,1,0,0,1,0,1,1,1,0,0,1,0,1,0,0,0,1,0,1,0,1,0,1,0,1,1,1,0,1,1,0,0,1,0,0,0,1,0,1,0,1,0,1,1,1,0,0,1,1,0,1,0,1,1,1,1,1,0,1,0,0,1,1,0,1,0,1,0,0,0,0,0,0,1,1,0];
-
 const DEFAULT_PORTAL_TOGGLES: Record<string, boolean> = {
 
   "Weekly Digest": true,
@@ -189,13 +194,22 @@ const CURRENCY_OPTIONS: Array<{ code: string; label: string }> = [
   { code: "NGN", label: "NGN - Nigerian Naira (₦)" },
 ];
 
+function makeBackupCodes(count = 8): string[] {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const nextCode = () => {
+    const left = Array.from({ length: 4 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
+    const right = Array.from({ length: 4 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
+    return `${left}-${right}`;
+  };
+  return Array.from({ length: count }, nextCode);
+}
+
 export function SettingsPage({
   notificationPrefs,
   integrations,
   sessions,
   onToggleNotification,
   onDisconnectIntegration,
-  onRevokeSession,
   theme,
   onToggleTheme,
   mode = "security",
@@ -219,16 +233,25 @@ export function SettingsPage({
   const [selectedLanguage, setSelectedLanguage] = useState<string>("English");
   const [selectedDateFormat, setSelectedDateFormat] = useState<string>("DD/MM/YYYY");
   const [selectedTimezone, setSelectedTimezone] = useState<string>("Africa/Johannesburg (UTC+2)");
+  const [savedWorkspaceState, setSavedWorkspaceState] = useState<WorkspacePreferenceState>({
+    language: "English",
+    timezone: "Africa/Johannesburg (UTC+2)",
+    dateFormat: "DD/MM/YYYY",
+    portalToggles: DEFAULT_PORTAL_TOGGLES,
+  });
+  const [saveBusy, setSaveBusy] = useState(false);
   // currency is controlled via prop + onCurrencyChange
   const [securityTab, setSecurityTab] = useState<SecurityTab>("Overview");
   const [securityToggles, setSecurityToggles] = useState<Record<string, boolean>>(SECURITY_DEFAULTS);
   const [mfaMethod, setMfaMethod] = useState("Authenticator App");
   const [timeoutValue, setTimeoutValue] = useState("30 min");
   const [inviteRole, setInviteRole] = useState<RoleName>("Viewer");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteFullName, setInviteFullName] = useState("");
+  const [inviteBusy, setInviteBusy] = useState(false);
   const [auditFilter, setAuditFilter] = useState<"All" | "Ok" | "Info" | "Warn" | "Critical">("All");
   const [securitySessions, setSecuritySessions] = useState<SessionInfo[]>(sessions);
   const [accessUsers, setAccessUsers] = useState<AccessUser[]>(DEFAULT_ACCESS_USERS);
-  const [revokeSessionId, setRevokeSessionId] = useState<string | null>(null);
   const [signingOutAll, setSigningOutAll] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [gdprTarget, setGdprTarget] = useState<GdprItem | null>(null);
@@ -249,6 +272,17 @@ export function SettingsPage({
   const [phoneOtpBusy, setPhoneOtpBusy] = useState(false);
   const [phoneOtpError, setPhoneOtpError] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [totpSecret, setTotpSecret] = useState<string | null>(null);
+  const [totpQrUrl, setTotpQrUrl] = useState<string | null>(null);
+  const [totpSetupBusy, setTotpSetupBusy] = useState(false);
+  const [totpVerifyCode, setTotpVerifyCode] = useState("");
+  const [totpVerifyBusy, setTotpVerifyBusy] = useState(false);
+  const [twoFaEnabled, setTwoFaEnabled] = useState(false);
+  const [twoFaEnabledAt, setTwoFaEnabledAt] = useState<string | null>(null);
+  const [twoFaDisablePassword, setTwoFaDisablePassword] = useState("");
+  const [twoFaDisableBusy, setTwoFaDisableBusy] = useState(false);
+  const [securityPrefsLoaded, setSecurityPrefsLoaded] = useState(false);
 
   // PWA install prompt
   const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
@@ -266,11 +300,6 @@ export function SettingsPage({
   const [digestPreviewBusy,   setDigestPreviewBusy]   = useState(false);
   const [digestToggleBusy,    setDigestToggleBusy]    = useState(false);
 
-  const unreadPrefsCount = useMemo(
-    () => notificationPrefs.filter((pref) => pref.inApp || pref.email || pref.push).length,
-    [notificationPrefs],
-  );
-
   const securityEnabledCount = useMemo(
     () => Object.values(securityToggles).filter(Boolean).length,
     [securityToggles],
@@ -281,11 +310,34 @@ export function SettingsPage({
     [securityEnabledCount, securityToggles],
   );
 
+  const workspaceDirty = useMemo(() => {
+    if (selectedLanguage !== savedWorkspaceState.language) return true;
+    if (selectedTimezone !== savedWorkspaceState.timezone) return true;
+    if (selectedDateFormat !== savedWorkspaceState.dateFormat) return true;
+    const currentToggles = Object.entries(portalToggles);
+    const savedToggles = savedWorkspaceState.portalToggles;
+    if (currentToggles.length !== Object.keys(savedToggles).length) return true;
+    return currentToggles.some(([key, value]) => savedToggles[key] !== value);
+  }, [
+    portalToggles,
+    savedWorkspaceState.language,
+    savedWorkspaceState.portalToggles,
+    savedWorkspaceState.timezone,
+    savedWorkspaceState.dateFormat,
+    selectedLanguage,
+    selectedTimezone,
+    selectedDateFormat,
+  ]);
+
   const filteredAudit = useMemo(() => {
     if (auditFilter === "All") return SECURITY_AUDIT;
     if (auditFilter === "Critical") return SECURITY_AUDIT.filter((row) => row.sev === "crit");
     return SECURITY_AUDIT.filter((row) => row.sev === auditFilter.toLowerCase());
   }, [auditFilter]);
+  const securityAlertCount = useMemo(
+    () => SECURITY_AUDIT.filter((row) => row.sev === "warn" || row.sev === "crit").length,
+    [],
+  );
 
   const passwordScore = useMemo(() => {
     if (!password) return { w: 0, label: "", color: "var(--muted3)" };
@@ -294,6 +346,35 @@ export function SettingsPage({
     if (password.length < 14) return { w: 70, label: "Good", color: "var(--accent)" };
     return { w: 100, label: "Strong", color: "var(--green)" };
   }, [password]);
+
+  const securityTabBlurb = useMemo(() => {
+    if (securityTab === "Overview") return "Review baseline controls and password security.";
+    if (securityTab === "Two-Factor Auth") return "Set your preferred verification method and backup codes.";
+    if (securityTab === "Active Sessions") return "Monitor devices and revoke sessions you do not recognize.";
+    if (securityTab === "Access Control") return "Manage teammate permissions by role.";
+    if (securityTab === "Audit Log") return "Track security-relevant activity and investigate anomalies.";
+    return "Manage export, retention, and deletion requests.";
+  }, [securityTab]);
+
+  const notificationEventRows = useMemo(
+    () => [
+      { label: "Invoice updates",   emailKey: "notif_email_invoice" as NotifPrefKey, inAppKey: "notif_inapp_invoice" as NotifPrefKey },
+      { label: "Milestone reached", emailKey: "notif_email_milestone" as NotifPrefKey, inAppKey: "notif_inapp_milestone" as NotifPrefKey },
+      { label: "New message",       emailKey: "notif_email_message" as NotifPrefKey, inAppKey: "notif_inapp_message" as NotifPrefKey },
+      { label: "Announcements",     emailKey: "notif_email_announcement" as NotifPrefKey, inAppKey: "notif_inapp_announcement" as NotifPrefKey },
+    ] as const,
+    [],
+  );
+
+  const preferenceChannelEnabledCount = useMemo(
+    () => notificationPrefs.reduce((total, pref) => total + Number(pref.inApp) + Number(pref.email) + Number(pref.push), 0),
+    [notificationPrefs],
+  );
+
+  const eventChannelEnabledCount = useMemo(
+    () => (notifPrefs ? Object.values(notifPrefs).filter(Boolean).length : 0),
+    [notifPrefs],
+  );
 
   useEffect(() => {
     setSecuritySessions(sessions);
@@ -310,13 +391,12 @@ export function SettingsPage({
       if (e.key === "Escape") {
         if (digestPreviewOpen) setDigestPreviewOpen(false);
         else if (inviteModalOpen) setInviteModalOpen(false);
-        else if (revokeSessionId !== null) setRevokeSessionId(null);
         else if (gdprTarget !== null) setGdprTarget(null);
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [digestPreviewOpen, inviteModalOpen, revokeSessionId, gdprTarget]);
+  }, [digestPreviewOpen, inviteModalOpen, gdprTarget]);
 
   // PWA install prompt listener
   useEffect(() => {
@@ -400,11 +480,85 @@ export function SettingsPage({
       if (r.data?.value) {
         try {
           const saved = JSON.parse(r.data.value) as { language?: string; timezone?: string; dateFormat?: string; portalToggles?: Record<string, boolean> };
-          if (saved.language)      setSelectedLanguage(saved.language);
-          if (saved.timezone)      setSelectedTimezone(saved.timezone);
-          if (saved.dateFormat)    setSelectedDateFormat(saved.dateFormat);
-          if (saved.portalToggles) setPortalToggles((prev) => ({ ...prev, ...saved.portalToggles }));
+          const nextState: WorkspacePreferenceState = {
+            language: saved.language ?? "English",
+            timezone: saved.timezone ?? "Africa/Johannesburg (UTC+2)",
+            dateFormat: saved.dateFormat ?? "DD/MM/YYYY",
+            portalToggles: { ...DEFAULT_PORTAL_TOGGLES, ...(saved.portalToggles ?? {}) },
+          };
+          setSelectedLanguage(nextState.language);
+          setSelectedTimezone(nextState.timezone);
+          setSelectedDateFormat(nextState.dateFormat);
+          setPortalToggles(nextState.portalToggles);
+          setSavedWorkspaceState(nextState);
         } catch { /* ignore malformed */ }
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+
+  // Load persisted security preferences
+  useEffect(() => {
+    if (!session) {
+      setSecurityPrefsLoaded(false);
+      return;
+    }
+    void getPortalPreferenceWithRefresh(session, "settingsSecurity")
+      .then((r) => {
+        if (r.nextSession) saveSession(r.nextSession);
+        if (r.data?.value) {
+          try {
+            const saved = JSON.parse(r.data.value) as Partial<SecurityPreferenceState>;
+            if (saved.securityToggles) setSecurityToggles({ ...SECURITY_DEFAULTS, ...saved.securityToggles });
+            if (saved.timeoutValue) setTimeoutValue(saved.timeoutValue);
+            if (saved.mfaMethod) setMfaMethod(saved.mfaMethod);
+            if (typeof saved.phoneNumber === "string") setPhoneNumber(saved.phoneNumber);
+            if (typeof saved.phoneVerified === "boolean") setPhoneVerified(saved.phoneVerified);
+          } catch {
+            // Ignore malformed stored preference
+          }
+        }
+      })
+      .finally(() => setSecurityPrefsLoaded(true));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
+
+  // Persist security preferences (debounced)
+  useEffect(() => {
+    if (!session || !securityPrefsLoaded) return;
+    const payload: SecurityPreferenceState = {
+      securityToggles,
+      timeoutValue,
+      mfaMethod,
+      phoneNumber,
+      phoneVerified,
+    };
+    const timer = window.setTimeout(() => {
+      void setPortalPreferenceWithRefresh(session, {
+        key: "settingsSecurity",
+        value: JSON.stringify(payload),
+      }).then((r) => {
+        if (r.nextSession) saveSession(r.nextSession);
+      });
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [
+    session,
+    securityPrefsLoaded,
+    securityToggles,
+    timeoutValue,
+    mfaMethod,
+    phoneNumber,
+    phoneVerified,
+  ]);
+
+  useEffect(() => {
+    if (!session) return;
+    void getClient2faStatusWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) {
+        setTwoFaEnabled(r.data.enabled);
+        setTwoFaEnabledAt(r.data.enabledAt);
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -433,19 +587,35 @@ export function SettingsPage({
     setHasChanges(false);
   };
 
-  const handleSave = () => {
-    setHasChanges(false);
-    if (session) {
-      const workspace = JSON.stringify({ language: selectedLanguage, timezone: selectedTimezone, dateFormat: selectedDateFormat, portalToggles });
-      void setPortalPreferenceWithRefresh(session, { key: "settingsWorkspace", value: workspace })
-        .then((r) => { if (r.nextSession) saveSession(r.nextSession); });
+  const handleSave = async () => {
+    if (!session || saveBusy) return;
+    setSaveBusy(true);
+    const workspaceState: WorkspacePreferenceState = {
+      language: selectedLanguage,
+      timezone: selectedTimezone,
+      dateFormat: selectedDateFormat,
+      portalToggles,
+    };
+    const workspace = JSON.stringify(workspaceState);
+    const result = await setPortalPreferenceWithRefresh(session, { key: "settingsWorkspace", value: workspace });
+    if (result.nextSession) saveSession(result.nextSession);
+    setSaveBusy(false);
+    if (result.error) {
+      notify("error", "Save failed", result.error.message ?? "Unable to save workspace settings.");
+      return;
     }
-    notify("success", "Settings saved", "All preferences updated successfully.");
+    setSavedWorkspaceState(workspaceState);
+    setHasChanges(false);
+    notify("success", "Settings saved", "Workspace preferences updated successfully.");
   };
 
   const handleDiscard = () => {
+    setSelectedLanguage(savedWorkspaceState.language);
+    setSelectedTimezone(savedWorkspaceState.timezone);
+    setSelectedDateFormat(savedWorkspaceState.dateFormat);
+    setPortalToggles(savedWorkspaceState.portalToggles);
     setHasChanges(false);
-    notify("success", "Changes discarded", "Settings restored to last saved state.");
+    notify("success", "Changes discarded", "Workspace settings restored to last saved state.");
   };
 
   async function handleToggleWeeklyDigest(): Promise<void> {
@@ -496,12 +666,6 @@ export function SettingsPage({
     markChanged();
   };
 
-  const revokeSecuritySession = (id: string) => {
-    setSecuritySessions((prev) => prev.filter((session) => session.id !== id));
-    setRevokeSessionId(null);
-    notify("success", "Session revoked", "Device signed out successfully.");
-  };
-
   async function handleSignOutAll(): Promise<void> {
     if (!session || signingOutAll) return;
     setSigningOutAll(true);
@@ -534,9 +698,37 @@ export function SettingsPage({
               <span className={cx("fw700", "text12", "fontMono", "dynColor")} style={{ "--color": securityScore >= 80 ? "var(--lime)" : securityScore >= 60 ? "var(--amber)" : "var(--red)" } as React.CSSProperties}>{securityScore}%</span>
             </div>
           ) : null}
-          <button type="button" className={cx("btnSm", "btnGhost")} onClick={handleDiscard}>Discard</button>
-          <button className={cx("btnSm", "btnGhost")} type="button" onClick={() => { resetLocalDefaults(); notify("success", "Settings reset", "Local preferences restored to defaults."); }}>Reset</button>
-          <button className={cx("btnSm", "btnAccent")} type="button" onClick={handleSave}>Save Changes</button>
+          {activeTab === "workspace" ? (
+            <>
+              <button
+                type="button"
+                className={cx("btnSm", "btnGhost")}
+                onClick={handleDiscard}
+                disabled={!workspaceDirty || saveBusy}
+              >
+                Discard
+              </button>
+              <button
+                className={cx("btnSm", "btnGhost")}
+                type="button"
+                onClick={() => {
+                  resetLocalDefaults();
+                  notify("success", "Settings reset", "Workspace preferences restored to defaults.");
+                }}
+                disabled={saveBusy}
+              >
+                Reset
+              </button>
+              <button
+                className={cx("btnSm", "btnAccent")}
+                type="button"
+                onClick={() => void handleSave()}
+                disabled={!workspaceDirty || saveBusy}
+              >
+                {saveBusy ? "Saving…" : "Save Changes"}
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -574,21 +766,30 @@ export function SettingsPage({
                   <button
                     type="button"
                     className={cx("btnSm", "btnGhost")}
-                    onClick={() => notify("success", "Upload ready", "Choose a photo from your device.")}
+                    onClick={() => {
+                      onNavigate?.("profile");
+                      notify("info", "Profile update", "Upload and logo changes are managed in Company Profile.");
+                    }}
                   >
                     Upload Photo
                   </button>
                   <button
                     type="button"
                     className={cx("btnSm", "btnGhost")}
-                    onClick={() => notify("success", "Photo removed", "Initials will be shown instead.")}
+                    onClick={() => {
+                      onNavigate?.("profile");
+                      notify("info", "Profile update", "Avatar and logo changes are managed in Company Profile.");
+                    }}
                   >
                     Remove Photo
                   </button>
                   <button
                     type="button"
                     className={cx("btnSm", "btnGhost")}
-                    onClick={() => notify("success", "Email sent", "Password reset link sent to your email.")}
+                    onClick={() => {
+                      setActiveTab("security");
+                      setSecurityTab("Overview");
+                    }}
                   >
                     Change Password
                   </button>
@@ -603,24 +804,27 @@ export function SettingsPage({
                     <div className={cx("profCardHeader")}>
                       <div>
                         <div className={cx("profCardTitle")}>Personal Information</div>
-                        <div className={cx("profCardSub")}>Update your name, contact, and company details.</div>
+                        <div className={cx("profCardSub")}>Managed in Company Profile.</div>
                       </div>
+                      <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => onNavigate?.("profile")}>
+                        Edit Profile
+                      </button>
                     </div>
 
                     <label className={cx("profLabel")}>Full Name</label>
-                    <input className={cx("profInput")} defaultValue={clientName} onChange={markChanged} />
+                    <input className={cx("profInput")} value={clientName} readOnly />
 
                     <label className={cx("profLabel")}>Email Address</label>
-                    <input className={cx("profInput")} defaultValue={clientEmail} onChange={markChanged} />
+                    <input className={cx("profInput")} value={clientEmail} readOnly />
 
                     <label className={cx("profLabel")}>Phone Number</label>
-                    <input className={cx("profInput")} defaultValue="" placeholder="+27 82 000 0000" onChange={markChanged} />
+                    <input className={cx("profInput")} value="Managed in Company Profile" readOnly />
 
                     <label className={cx("profLabel")}>Company Name</label>
-                    <input className={cx("profInput")} defaultValue={companyName} onChange={markChanged} />
+                    <input className={cx("profInput")} value={companyName} readOnly />
 
                     <label className={cx("profLabel")}>Role / Title</label>
-                    <input className={cx("profInput")} defaultValue="" placeholder="e.g. Chief Product Officer" onChange={markChanged} />
+                    <input className={cx("profInput")} value="Managed in Company Profile" readOnly />
                   </section>
 
                   <section className={cx("card", "profCard")}>
@@ -635,7 +839,7 @@ export function SettingsPage({
                     <div className={cx("profMiniList")}>
                       {integrations.length === 0 ? (
                         <div className={cx("profMiniRow")}>
-                          <span className={cx("profMiniMeta")}>No integrations connected. Visit the Integrations page to connect Slack, Google Drive, Jira, and Figma.</span>
+                          <span className={cx("profMiniMeta")}>No integrations connected. Visit the Integrations page to connect available providers.</span>
                         </div>
                       ) : integrations.slice(0, 2).map((integration) => (
                         <div key={integration.id} className={cx("profMiniRow")}>
@@ -661,23 +865,18 @@ export function SettingsPage({
 
                     <div className={cx("profMiniHeader")}>Active Sessions</div>
                     <div className={cx("profMiniList")}>
-                      {sessions.slice(0, 2).map((session) => (
+                      {sessions.length === 0 ? (
+                        <div className={cx("profMiniRow")}>
+                          <span className={cx("profMiniMeta")}>No active session history available for this account yet.</span>
+                        </div>
+                      ) : sessions.slice(0, 2).map((session) => (
                         <div key={session.id} className={cx("profMiniRow")}>
                           <div className={cx("profMiniWrap")}>
                             <div className={cx("profMiniName")}>{session.device}</div>
                             <div className={cx("profMiniMeta")}>Last active {formatRelative(session.lastActiveAt)}</div>
                           </div>
                           {!session.current ? (
-                            <button
-                              type="button"
-                              className={cx("btnSm", "btnGhost")}
-                              onClick={() => {
-                                onRevokeSession(session.id);
-                                markChanged();
-                              }}
-                            >
-                              Revoke
-                            </button>
+                            <span className={cx("badge", "badgeMuted")}>Other session</span>
                           ) : (
                             <span className={cx("badge", "badgeGreen")}>Current</span>
                           )}
@@ -1008,223 +1207,151 @@ export function SettingsPage({
           ) : null}
 
           {activeTab === "notifications" ? (
-            <div className={cx("profStack16")}>
-              <section className={cx("card", "profCard")}>
-                <div className={cx("profCardHeader")}>
-                  <div>
-                    <div className={cx("profCardTitle")}>Notification Preferences</div>
-                    <div className={cx("profCardSub")}>Choose how you receive updates for each event type.</div>
-                  </div>
-                  <span className={cx("badge", "badgeAccent")}>{unreadPrefsCount} active</span>
-                </div>
-
-                {notificationPrefs.length === 0 ? (
-                  <div className={cx("emptyState")}>
-                    <div className={cx("emptyStateIcon")}>--</div>
-                    <div className={cx("emptyStateTitle")}>No notification categories</div>
-                    <div className={cx("emptyStateDesc")}>Preferences will appear once account setup completes.</div>
-                  </div>
-                ) : (
-                  <>
-                    <div className={cx("profNotifHead")}> 
-                      <span>Event</span>
-                      <span>In-App</span>
-                      <span>Email</span>
-                      <span>Push</span>
-                    </div>
-                    <div className={cx("profNotifList")}>
-                      {notificationPrefs.map((pref) => (
-                        <div key={pref.category} className={cx("profNotifRow")}> 
-                          <span className={cx("profNotifName")}>{pref.category}</span>
-                          {(["inApp", "email", "push"] as const).map((channel) => (
-                            <span key={channel} className={cx("profSwitchWrap")}>
-                              <button
-                                type="button"
-                                className={cx("profMiniToggle", pref[channel] && "profMiniToggleOn")}
-                                onClick={() => {
-                                  onToggleNotification(pref.category, channel, !pref[channel]);
-                                  markChanged();
-                                }}
-                              >
-                                <span className={cx("profMiniToggleKnob", pref[channel] && "profMiniToggleKnobOn")} />
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </section>
-
-              <section className={cx("card", "profCard", "profCardNarrow")}> 
-                <div className={cx("profCardHeader")}>
-                  <div>
-                    <div className={cx("profCardTitle")}>Quiet Hours</div>
-                    <div className={cx("profCardSub")}>Pause all notifications during these hours.</div>
-                  </div>
-                </div>
-                <div className={cx("profChoiceGrid2")}>
-                  <div>
-                    <label className={cx("profLabel")}>From</label>
-                    <input className={cx("profInput")} type="time" defaultValue="22:00" onChange={markChanged} />
-                  </div>
-                  <div>
-                    <label className={cx("profLabel")}>Until</label>
-                    <input className={cx("profInput")} type="time" defaultValue="07:00" onChange={markChanged} />
-                  </div>
-                </div>
-              </section>
-            </div>
-          ) : null}
-
-          {activeTab === "notifications" ? (
-            <div className={cx("profGrid", "profGridSingleCol")}>
-              <div className={cx("card")}>
+            <div className={cx("grid2Cols", "gap16", "py20_0")}>
+              <div className={cx("card")} style={{ gridColumn: "1 / -1" }}>
                 <div className={cx("cardHd")}>
-                  <span className={cx("cardHdTitle")}>Notification Preferences</span>
+                  <span className={cx("cardHdTitle")}>Notification Center</span>
+                  <span className={cx("text10", "colorMuted", "mlAuto")}>Delivery overview</span>
                 </div>
-                <div className={cx("cardBodyPad")}>
-                  <div className={cx("text12", "colorMuted", "mb16")}>
-                    Choose how and when you want to be notified about activity on your project.
+                <div className={cx("p12161616", "grid3Cols8Gap")}>
+                  <div className={cx("card", "p12x16x16")}>
+                    <div className={cx("text10", "colorMuted")}>Preference toggles</div>
+                    <div className={cx("text14", "fw700")}>{preferenceChannelEnabledCount}</div>
                   </div>
-                  <table className={cx("wFull", "borderCollapse")}>
-                    <thead>
-                      <tr>
-                        <th scope="col" className={cx("thLeft")}>Event</th>
-                        <th scope="col" className={cx("thCenter80")}>In-App</th>
-                        <th scope="col" className={cx("thCenter80")}>Email</th>
-                        <th scope="col" className={cx("thCenter80")}>Push</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {notificationPrefs.map((pref) => (
-                        <tr key={pref.category} className={cx("borderT")}>
-                          <td className={cx("py12_0")}>
-                            <div className={cx("fw600", "text12")}>{pref.category}</div>
-                          </td>
-                          {(["inApp", "email", "push"] as const).map((channel) => (
-                            <td key={channel} className={cx("textCenter")}>
-                              <button
-                                type="button"
-                                aria-label={`Toggle ${channel} for ${pref.category}`}
-                                onClick={() => onToggleNotification(pref.category, channel, !pref[channel])}
-                                className={cx("settingsToggleTrack", "dynBgColor")} style={{ "--bg-color": pref[channel] ? "var(--lime)" : "var(--b2)" } as React.CSSProperties}
-                              >
-                                <span className={cx("settingsToggleThumb")} style={{ "--left": pref[channel] ? "18px" : "3px" } as React.CSSProperties} />
-                              </button>
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className={cx("card", "p12x16x16")}>
+                    <div className={cx("text10", "colorMuted")}>Event channels enabled</div>
+                    <div className={cx("text14", "fw700")}>{eventChannelEnabledCount}</div>
+                  </div>
+                  <div className={cx("card", "p12x16x16")}>
+                    <div className={cx("text10", "colorMuted")}>AI weekly digest</div>
+                    <div className={cx("text14", "fw700")}>{weeklyDigestEnabled ? "Active" : "Inactive"}</div>
+                  </div>
                 </div>
               </div>
 
-              {/* ── Notification Channels card ─────────────────────────────── */}
               <div className={cx("card")}>
                 <div className={cx("cardHd")}>
-                  <span className={cx("cardHdTitle")}>Notification Channels</span>
-                  <span className={cx("text10", "colorMuted", "mlAuto")}>Email &amp; In-App per event</span>
+                  <span className={cx("cardHdTitle")}>Delivery Preferences</span>
                 </div>
-                <div className={cx("cardBodyPad")}>
-                  {notifPrefsLoading ? (
-                    <div className={cx("text12", "colorMuted")}>Loading…</div>
-                  ) : notifPrefs === null ? (
-                    <div className={cx("text12", "colorMuted2")}>Unable to load channel preferences.</div>
-                  ) : (
-                    <table className={cx("wFull", "borderCollapse")}>
-                      <thead>
-                        <tr>
-                          <th scope="col" className={cx("thLeft")}>Event</th>
-                          <th scope="col" className={cx("thCenter80")}>Email</th>
-                          <th scope="col" className={cx("thCenter80")}>In-App</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(
-                          [
-                            { label: "Invoice updates",   emailKey: "notif_email_invoice"      as NotifPrefKey, inAppKey: "notif_inapp_invoice"      as NotifPrefKey },
-                            { label: "Milestone reached", emailKey: "notif_email_milestone"    as NotifPrefKey, inAppKey: "notif_inapp_milestone"    as NotifPrefKey },
-                            { label: "New message",       emailKey: "notif_email_message"      as NotifPrefKey, inAppKey: "notif_inapp_message"      as NotifPrefKey },
-                            { label: "Announcements",     emailKey: "notif_email_announcement" as NotifPrefKey, inAppKey: "notif_inapp_announcement" as NotifPrefKey },
-                          ] as const
-                        ).map(({ label, emailKey, inAppKey }) => (
-                          <tr key={label} className={cx("borderT")}>
-                            <td className={cx("py12_0")}>
-                              <div className={cx("fw600", "text12")}>{label}</div>
-                            </td>
-                            <td className={cx("textCenter")}>
+                <div className={cx("p12161616", "flexCol", "gap4")}>
+                  <div className={cx("text11", "colorMuted", "mb8")}>Choose how each category reaches you.</div>
+                  {notificationPrefs.map((pref) => (
+                    <div key={pref.category} className={cx("borderB", "py12_0")}>
+                      <div className={cx("fw600", "text12", "mb8")}>{pref.category}</div>
+                      <div className={cx("flexRow", "gap12", "flexWrap")}>
+                        {([
+                          { channel: "inApp", label: "In-App", icon: "bell" },
+                          { channel: "email", label: "Email", icon: "mail" },
+                          { channel: "push", label: "Push", icon: "monitor" },
+                        ] as const).map(({ channel, label, icon }) => (
+                          <button
+                            key={channel}
+                            type="button"
+                            aria-label={`Toggle ${channel} for ${pref.category}`}
+                            onClick={() => onToggleNotification(pref.category, channel, !pref[channel])}
+                            className={cx("flexRow", "gap8", "alignCenter")}
+                            style={{ background: "transparent", border: "none", padding: 0 }}
+                          >
+                            <Ic n={icon} sz={13} c={pref[channel] ? "var(--lime)" : "var(--muted2)"} />
+                            <span className={cx("text10", "colorMuted2")}>{label}</span>
+                            <span className={cx("profMiniToggle", pref[channel] && "profMiniToggleOn")}>
+                              <span className={cx("profMiniToggleKnob", pref[channel] && "profMiniToggleKnobOn")} />
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className={cx("flexCol", "gap16")}>
+                <div className={cx("card")}>
+                  <div className={cx("cardHd")}>
+                    <span className={cx("cardHdTitle")}>Event Channel Overrides</span>
+                    <span className={cx("text10", "colorMuted", "mlAuto")}>Email &amp; In-App</span>
+                  </div>
+                  <div className={cx("p12161616")}>
+                    {notifPrefsLoading ? (
+                      <div className={cx("text12", "colorMuted")}>Loading…</div>
+                    ) : notifPrefs === null ? (
+                      <div className={cx("text12", "colorMuted2")}>Unable to load channel preferences.</div>
+                    ) : (
+                      <div className={cx("flexCol", "gap4")}>
+                        {notificationEventRows.map(({ label, emailKey, inAppKey }) => (
+                          <div key={label} className={cx("flexBetween", "gap10", "borderB", "py12_0")}>
+                            <div className={cx("text12", "fw600")}>{label}</div>
+                            <div className={cx("flexRow", "gap12")}>
                               <button
                                 type="button"
                                 aria-label={`Toggle email for ${label}`}
                                 onClick={() => void handleNotifToggle(emailKey, notifPrefs[emailKey])}
-                                className={cx("profMiniToggle", notifPrefs[emailKey] && "profMiniToggleOn")}
+                                className={cx("flexRow", "gap6", "alignCenter")}
+                                style={{ background: "transparent", border: "none", padding: 0 }}
                               >
-                                <span className={cx("profMiniToggleKnob", notifPrefs[emailKey] && "profMiniToggleKnobOn")} />
+                                <Ic n="mail" sz={12} c={notifPrefs[emailKey] ? "var(--lime)" : "var(--muted2)"} />
+                                <span className={cx("text10", "colorMuted2")}>Email</span>
+                                <span className={cx("profMiniToggle", notifPrefs[emailKey] && "profMiniToggleOn")}>
+                                  <span className={cx("profMiniToggleKnob", notifPrefs[emailKey] && "profMiniToggleKnobOn")} />
+                                </span>
                               </button>
-                            </td>
-                            <td className={cx("textCenter")}>
                               <button
                                 type="button"
                                 aria-label={`Toggle in-app for ${label}`}
                                 onClick={() => void handleNotifToggle(inAppKey, notifPrefs[inAppKey])}
-                                className={cx("profMiniToggle", notifPrefs[inAppKey] && "profMiniToggleOn")}
+                                className={cx("flexRow", "gap6", "alignCenter")}
+                                style={{ background: "transparent", border: "none", padding: 0 }}
                               >
-                                <span className={cx("profMiniToggleKnob", notifPrefs[inAppKey] && "profMiniToggleKnobOn")} />
+                                <Ic n="bell" sz={12} c={notifPrefs[inAppKey] ? "var(--lime)" : "var(--muted2)"} />
+                                <span className={cx("text10", "colorMuted2")}>In-App</span>
+                                <span className={cx("profMiniToggle", notifPrefs[inAppKey] && "profMiniToggleOn")}>
+                                  <span className={cx("profMiniToggleKnob", notifPrefs[inAppKey] && "profMiniToggleKnobOn")} />
+                                </span>
                               </button>
-                            </td>
-                          </tr>
+                            </div>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </div>
-
-              {/* ── AI Weekly Digest card ──────────────────────────────────── */}
-              <div className={cx("card")}>
-                <div className={cx("cardHd")}>
-                  <Ic n="mail" sz={14} c="var(--accent)" />
-                  <span className={cx("cardHdTitle", "ml8")}>AI Weekly Digest</span>
-                  {weeklyDigestEnabled && (
-                    <span className={cx("badge", "badgeAccent", "mlAuto")}>Active</span>
-                  )}
-                </div>
-                <div className={cx("cardBodyPad")}>
-                  <div className={cx("text12", "colorMuted", "mb16", "lineH17")}>
-                    Receive an AI-generated project summary every Monday morning with your key metrics, milestones, budget status, and action items.
+                      </div>
+                    )}
                   </div>
+                </div>
 
-                  {/* Toggle row */}
-                  <div className={cx("flexBetween", "mb16")}>
-                    <div>
-                      <div className={cx("fw600", "text12")}>Enable Weekly Digest</div>
-                      <div className={cx("text11", "colorMuted2", "mt2")}>Delivered every Monday at 08:00</div>
+                <div className={cx("card")}>
+                  <div className={cx("cardHd")}>
+                    <Ic n="mail" sz={14} c="var(--accent)" />
+                    <span className={cx("cardHdTitle", "ml8")}>AI Weekly Digest</span>
+                    {weeklyDigestEnabled && <span className={cx("badge", "badgeAccent", "mlAuto")}>Active</span>}
+                  </div>
+                  <div className={cx("p12161616", "flexCol", "gap12")}>
+                    <div className={cx("text12", "colorMuted", "lineH17")}>
+                      Receive a concise AI-generated Monday summary with progress, milestones, budget status, and pending actions.
+                    </div>
+                    <div className={cx("flexBetween")}>
+                      <div>
+                        <div className={cx("fw600", "text12")}>Enable Weekly Digest</div>
+                        <div className={cx("text11", "colorMuted2", "mt2")}>Delivered every Monday at 08:00</div>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label="Toggle weekly digest"
+                        onClick={() => void handleToggleWeeklyDigest()}
+                        disabled={digestToggleBusy || digestLoading}
+                        className={cx("profMiniToggle", weeklyDigestEnabled && "profMiniToggleOn")}
+                        style={{ background: "transparent" }}
+                      >
+                        <span className={cx("profMiniToggleKnob", weeklyDigestEnabled && "profMiniToggleKnobOn")} />
+                      </button>
                     </div>
                     <button
                       type="button"
-                      aria-label="Toggle weekly digest"
-                      onClick={() => void handleToggleWeeklyDigest()}
-                      disabled={digestToggleBusy || digestLoading}
-                      className={cx("settingsToggleTrack", "dynBgColor")}
-                      style={{ "--bg-color": weeklyDigestEnabled ? "var(--lime)" : "var(--b2)" } as React.CSSProperties}
+                      className={cx("btnSm", "btnGhost", "flexRow", "flexCenter", "gap6")}
+                      onClick={() => void handlePreviewDigest()}
+                      disabled={digestPreviewBusy || !session}
                     >
-                      <span className={cx("settingsToggleThumb")} style={{ "--left": weeklyDigestEnabled ? "18px" : "3px" } as React.CSSProperties} />
+                      <Ic n="eye" sz={12} c="var(--muted)" />
+                      {digestPreviewBusy ? "Generating…" : "Preview this week's digest"}
                     </button>
                   </div>
-
-                  {/* Preview button */}
-                  <button
-                    type="button"
-                    className={cx("btnSm", "btnGhost", "flexRow", "flexCenter", "gap6")}
-                    onClick={() => void handlePreviewDigest()}
-                    disabled={digestPreviewBusy || !session}
-                  >
-                    <Ic n="eye" sz={12} c="var(--muted)" />
-                    {digestPreviewBusy ? "Generating…" : "Preview this week's digest"}
-                  </button>
                 </div>
               </div>
             </div>
@@ -1242,17 +1369,17 @@ export function SettingsPage({
                 <div className={cx("statCard", "statCardPurple")}>
                   <div className={cx("statLabel")}>Active Sessions</div>
                   <div className={cx("statValue", "fontMono")}>{securitySessions.length}</div>
-                  <div className={cx("statSub")}>1 current device</div>
+                  <div className={cx("statSub")}>{securitySessions.length === 1 ? "1 device" : `${securitySessions.length} devices`}</div>
                 </div>
                 <div className={cx("statCard", "statCardAmber")}>
-                  <div className={cx("statLabel")}>Failed Logins</div>
-                  <div className={cx("statValue", "fontMono")}>2</div>
-                  <div className={cx("statSub")}>Last 30 days</div>
+                  <div className={cx("statLabel")}>Team Access</div>
+                  <div className={cx("statValue", "fontMono")}>{accessUsers.length}</div>
+                  <div className={cx("statSub")}>{accessUsers.length === 1 ? "1 active member" : `${accessUsers.length} active members`}</div>
                 </div>
-                <div className={cx("statCard", "statCardRed")}>
-                  <div className={cx("statLabel")}>Flagged Events</div>
-                  <div className={cx("statValue", "fontMono")}>1</div>
-                  <div className={cx("statSub")}>Suspicious IP detected</div>
+                <div className={cx("statCard", securityAlertCount > 0 ? "statCardAmber" : "statCardGreen")}>
+                  <div className={cx("statLabel")}>Alerts</div>
+                  <div className={cx("statValue", "fontMono")}>{securityAlertCount}</div>
+                  <div className={cx("statSub")}>{securityAlertCount > 0 ? "Review audit log" : "No flagged events"}</div>
                 </div>
               </div>
 
@@ -1262,10 +1389,25 @@ export function SettingsPage({
                   <button key={t} type="button" className={cx("pillTab", securityTab === t && "pillTabActive")} onClick={() => setSecurityTab(t)}>{t}</button>
                 ))}
               </div>
+              <div className={cx("card", "p12161616")}>
+                <div className={cx("fw600", "text12")}>{securityTab}</div>
+                <div className={cx("text11", "colorMuted", "mt4")}>{securityTabBlurb}</div>
+              </div>
 
               {/* ── Overview ── */}
               {securityTab === "Overview" ? (
                 <div className={cx("grid2Cols", "gap16")}>
+                  <div className={cx("card")}>
+                    <div className={cx("cardHd")}>
+                      <span className={cx("cardHdTitle")}>Quick Actions</span>
+                    </div>
+                    <div className={cx("p12161616", "flexRow", "gap8", "flexWrap")}>
+                      <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setSecurityTab("Two-Factor Auth")}>Set up 2FA</button>
+                      <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setSecurityTab("Active Sessions")}>Review sessions</button>
+                      <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setSecurityTab("Access Control")}>Manage access</button>
+                      <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setSecurityTab("GDPR & Privacy")}>Privacy requests</button>
+                    </div>
+                  </div>
                   {[
                     { title: "Authentication", sub: "Login & identity controls", keys: ["Two-Factor Authentication", "Login Notifications", "Suspicious IP Alerts", "Magic Link Login"] },
                     { title: "Data & Sessions", sub: "Access and data controls", keys: ["Session Expiry", "Download Logging", "Single Sign-On (SSO)", "Encrypted Storage"] },
@@ -1371,15 +1513,21 @@ export function SettingsPage({
 
               {/* ── Two-Factor Auth ── */}
               {securityTab === "Two-Factor Auth" ? (
-                <div className={cx("grid2Cols", "gap16")}>
+                <div className={cx("grid2Cols", "gap16", "py20_0")}>
                   <div className={cx("card")}>
-                    <div className={cx("cardHd")}><span className={cx("cardHdTitle")}>Authentication Method</span></div>
-                    <div className={cx("p12161616")}>
-                      <div className={cx("grid3Cols", "gap10")}>
+                    <div className={cx("cardHd")}>
+                      <span className={cx("cardHdTitle")}>Authentication Method</span>
+                      <span className={cx("badge", "badgeAccent", "mlAuto")}>{mfaMethod}</span>
+                    </div>
+                    <div className={cx("p12161616", "flexCol", "gap12")}>
+                      <div className={cx("text11", "colorMuted", "lineH16")}>
+                        Choose your primary verification method. Authenticator apps are recommended for strongest account protection.
+                      </div>
+                      <div className={cx("flexCol", "gap8")}>
                         {[
-                          { label: "Authenticator App", icon: "📱", sub: "Google Authenticator / Authy" },
-                          { label: "SMS One-Time Pin", icon: "💬", sub: "To +27 82 *** 6789" },
-                          { label: "Email OTP", icon: "📧", sub: "naledi@veldt.co.za" },
+                          { label: "Authenticator App", icon: "shieldCheck", sub: "Recommended · Google Authenticator / Authy" },
+                          { label: "SMS One-Time Pin", icon: "phone", sub: phoneNumber ? `To ${phoneNumber}` : "Phone number required" },
+                          { label: "Email OTP", icon: "mail", sub: clientEmail || "Email required" },
                         ].map((method) => {
                           const isActive = mfaMethod === method.label;
                           return (
@@ -1387,32 +1535,171 @@ export function SettingsPage({
                               key={method.label}
                               type="button"
                               onClick={() => setMfaMethod(method.label)}
-                              className={cx("settingsMfaBtn", "dynBgColor", isActive && "settingsMfaBtnActive")} style={{ "--bg-color": isActive ? "color-mix(in oklab, var(--lime) 9%, transparent)" : "var(--s3)", "--border-color": isActive ? "var(--lime)" : "var(--b2)" } as React.CSSProperties}
+                              className={cx("settingsMfaBtn", "dynBgColor", isActive && "settingsMfaBtnActive")}
+                              style={{
+                                "--bg-color": isActive ? "color-mix(in oklab, var(--lime) 9%, transparent)" : "var(--s3)",
+                                "--border-color": isActive ? "var(--lime)" : "var(--b2)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "12px",
+                                textAlign: "left",
+                              } as React.CSSProperties}
                             >
-                              <div className={cx("settingsMfaIcon")}>{method.icon}</div>
-                              <div className={cx("settingsMfaLabel", "dynColor")} style={{ "--color": isActive ? "var(--lime)" : "inherit" } as React.CSSProperties}>{method.label}</div>
-                              <div className={cx("fontMono", "fs058", "colorMuted2", "lineH15")}>{method.sub}</div>
+                              <div className={cx("flexRow", "gap10", "alignCenter")}>
+                                <div className={cx("settingsMfaIcon")}>
+                                  <Ic n={method.icon} sz={16} c={isActive ? "var(--lime)" : "var(--muted2)"} />
+                                </div>
+                                <div>
+                                  <div className={cx("settingsMfaLabel", "dynColor")} style={{ "--color": isActive ? "var(--lime)" : "inherit" } as React.CSSProperties}>{method.label}</div>
+                                  <div className={cx("text10", "colorMuted2")}>{method.sub}</div>
+                                </div>
+                              </div>
+                              <span className={cx("badge", isActive ? "badgeGreen" : "badgeMuted")}>{isActive ? "Selected" : "Available"}</span>
                             </button>
                           );
                         })}
                       </div>
+                      <div className={cx("borderT", "pt12")}>
+                        <div className={cx("text11", "fw600", "mb8")}>Setup</div>
+                        <div className={cx("text10", "colorMuted", "mb10")}>Complete this step to finish enabling {mfaMethod}.</div>
+                      </div>
                       {mfaMethod === "Authenticator App" && (
                         <div className={cx("secuQrWrap")}>
-                          <div className={cx("secuQrBox")}>
-                            {QR_DATA.map((cell, i) => <div key={i} className={cx(cell === 0 ? "secuQrCellW" : "secuQrCell")} />)}
-                          </div>
+                          {totpQrUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={totpQrUrl} alt="Authenticator QR code" className={cx("secuQrBox")} />
+                          ) : (
+                            <div className={cx("secuQrBox", "flexCol", "flexCenter", "textCenter", "p12x16x16")}>
+                              <Ic n="shieldCheck" sz={20} c="var(--muted2)" />
+                              <div className={cx("text10", "colorMuted2", "mt8")}>Load setup secret to generate QR</div>
+                            </div>
+                          )}
                           <div className={cx("secuQrInfo")}>
                             <div className={cx("secuQrTitle")}>Scan with your authenticator</div>
-                            <div className={cx("secuQrDesc")}>Open Google Authenticator, Authy, or 1Password and scan. You&apos;ll need a 6-digit code on each login.</div>
-                            <button type="button" className={cx("btnSm", "btnGhost")} onClick={async () => {
-                              const secretKey = "JBSWY3DPEHPK3PXP";
-                              try {
-                                await navigator.clipboard.writeText(secretKey);
-                                notify("success", "Secret key copied", "Paste it into your authenticator app.");
-                              } catch {
-                                notify("error", "Clipboard not available", "Copy the key manually from the QR code.");
-                              }
-                            }}>Copy Secret Key</button>
+                            <div className={cx("secuQrDesc")}>Use your authenticator app to scan this QR, then confirm with the 6-digit code below.</div>
+                            <div className={cx("flexRow", "gap8", "mt8", "flexWrap")}>
+                              <button
+                                type="button"
+                                className={cx("btnSm", "btnGhost")}
+                                disabled={totpSetupBusy}
+                                onClick={() => {
+                                  if (!session) {
+                                    notify("error", "Setup failed", "Please log in again.");
+                                    return;
+                                  }
+                                  setTotpSetupBusy(true);
+                                  void setupClient2faWithRefresh(session).then((result) => {
+                                    if (result.nextSession) saveSession(result.nextSession);
+                                    setTotpSetupBusy(false);
+                                    if (result.error || !result.data) {
+                                      notify("error", "Setup failed", result.error?.message ?? "Unable to retrieve authenticator secret.");
+                                      return;
+                                    }
+                                    setTotpSecret(result.data.secret);
+                                    setTotpQrUrl(result.data.qrCodeDataUrl);
+                                    setBackupCodes(result.data.backupCodes);
+                                    notify("success", "2FA setup ready", "Authenticator secret and backup codes loaded.");
+                                  });
+                                }}
+                              >
+                                {totpSetupBusy ? "Loading…" : "Load Setup Secret"}
+                              </button>
+                              {totpSecret ? (
+                                <button
+                                  type="button"
+                                  className={cx("btnSm", "btnGhost")}
+                                  onClick={async () => {
+                                    try {
+                                      await navigator.clipboard.writeText(totpSecret);
+                                      notify("success", "Copied", "Authenticator secret copied.");
+                                    } catch {
+                                      notify("error", "Copy failed", "Please copy the secret manually.");
+                                    }
+                                  }}
+                                >
+                                  Copy Setup Secret
+                                </button>
+                              ) : null}
+                            </div>
+                            {totpSecret ? (
+                              <div className={cx("text10", "colorMuted2", "mt8")}>Setup secret: <span className={cx("fontMono")}>{totpSecret}</span></div>
+                            ) : null}
+                            <div className={cx("secuInlineRow", "mt8")}>
+                              <input
+                                className={cx("profInput")}
+                                placeholder="Enter 6-digit authenticator code"
+                                maxLength={6}
+                                value={totpVerifyCode}
+                                onChange={(e) => setTotpVerifyCode(e.target.value)}
+                              />
+                              {!twoFaEnabled ? (
+                                <button
+                                  type="button"
+                                  className={cx("btnSm", "btnAccent")}
+                                  disabled={totpVerifyBusy || !totpVerifyCode.trim() || !session}
+                                  onClick={() => {
+                                    if (!session) return;
+                                    setTotpVerifyBusy(true);
+                                    void verifyClient2faWithRefresh(session, totpVerifyCode.trim()).then((result) => {
+                                      if (result.nextSession) saveSession(result.nextSession);
+                                      setTotpVerifyBusy(false);
+                                      if (result.error) {
+                                        notify("error", "Verification failed", result.error.message ?? "Unable to verify authenticator code.");
+                                        return;
+                                      }
+                                      setTwoFaEnabled(true);
+                                      setTwoFaEnabledAt(new Date().toISOString());
+                                      setTotpVerifyCode("");
+                                      notify("success", "2FA enabled", "Authenticator-based 2FA is now active.");
+                                    });
+                                  }}
+                                >
+                                  {totpVerifyBusy ? "Verifying…" : "Enable 2FA"}
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className={cx("btnSm", "btnGhost")}
+                                  disabled={twoFaDisableBusy || !session}
+                                  onClick={() => {
+                                    if (!session || !twoFaDisablePassword.trim()) {
+                                      notify("error", "Disable failed", "Enter your account password to disable 2FA.");
+                                      return;
+                                    }
+                                    setTwoFaDisableBusy(true);
+                                    void disableClient2faWithRefresh(session, twoFaDisablePassword.trim()).then((result) => {
+                                      if (result.nextSession) saveSession(result.nextSession);
+                                      setTwoFaDisableBusy(false);
+                                      if (result.error) {
+                                        notify("error", "Disable failed", result.error.message ?? "Unable to disable 2FA.");
+                                        return;
+                                      }
+                                      setTwoFaEnabled(false);
+                                      setTwoFaEnabledAt(null);
+                                      setTwoFaDisablePassword("");
+                                      setTotpSecret(null);
+                                      setTotpQrUrl(null);
+                                      notify("success", "2FA disabled", "Authenticator-based 2FA has been disabled.");
+                                    });
+                                  }}
+                                >
+                                  {twoFaDisableBusy ? "Disabling…" : "Disable 2FA"}
+                                </button>
+                              )}
+                            </div>
+                            {twoFaEnabled ? (
+                              <div className={cx("mt8")}>
+                                <div className={cx("text10", "colorMuted2")}>2FA status: <span className={cx("colorGreen")}>Enabled</span>{twoFaEnabledAt ? ` · ${formatRelative(twoFaEnabledAt)}` : ""}</div>
+                                <input
+                                  className={cx("profInput", "mt8")}
+                                  type="password"
+                                  placeholder="Current password required to disable"
+                                  value={twoFaDisablePassword}
+                                  onChange={(e) => setTwoFaDisablePassword(e.target.value)}
+                                />
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       )}
@@ -1504,33 +1791,77 @@ export function SettingsPage({
                           )}
                         </div>
                       )}
+                      {mfaMethod === "Email OTP" && (
+                        <div className={cx("secuSmsVerify")}>
+                          <div className={cx("text12", "fw600")}>Email verification channel</div>
+                          <div className={cx("text11", "colorMuted", "mt4")}>
+                            Login codes will be sent to <span className={cx("fw600")}>{clientEmail || "your account email"}</span>.
+                          </div>
+                          <div className={cx("text10", "colorMuted2", "mt8")}>
+                            Use this when authenticator app or phone-based verification is not available.
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className={cx("card")}>
                     <div className={cx("cardHd")}>
-                      <span className={cx("cardHdTitle")}>Emergency Backup Codes</span>
-                      <span className={cx("text10", "colorMuted", "mlAuto")}>Each code is single-use</span>
+                      <span className={cx("cardHdTitle")}>Recovery & Backup</span>
+                      <span className={cx("text10", "colorMuted", "mlAuto")}>Single-use codes</span>
                     </div>
-                    <div className={cx("p12161616")}>
-                      <div className={cx("secuCodeGrid")}>
-                        {["K9X2-MNPL", "7YQR-4TBV", "FZAC-8WDE", "P3LN-XKGM", "HJ6T-RVWY", "2QSB-ZDCU", "MTFA-9XPL", "CNRV-4YHB"].map((code) => (
-                          <span key={code} className={cx("secuCodeItem")}>{code}</span>
-                        ))}
+                    <div className={cx("p12161616", "flexCol", "gap12")}>
+                      <div className={cx("flexBetween", "gap10")}>
+                        <div>
+                          <div className={cx("text11", "fw600")}>Backup codes</div>
+                          <div className={cx("text10", "colorMuted")}>{backupCodes.length > 0 ? `${backupCodes.length} codes ready` : "No codes generated"}</div>
+                        </div>
+                        <span className={cx("badge", backupCodes.length > 0 ? "badgeGreen" : "badgeAmber")}>{backupCodes.length > 0 ? "Ready" : "Pending"}</span>
                       </div>
+                      <div className={cx("flexBetween", "gap10")}>
+                        <div>
+                          <div className={cx("text11", "fw600")}>Phone verification</div>
+                          <div className={cx("text10", "colorMuted")}>{phoneVerified ? "Verified for SMS OTP" : "Not verified"}</div>
+                        </div>
+                        <span className={cx("badge", phoneVerified ? "badgeGreen" : "badgeMuted")}>{phoneVerified ? "Verified" : "Optional"}</span>
+                      </div>
+                      <div className={cx("borderT", "pt12")}>
+                        <div className={cx("text11", "fw600", "mb8")}>Emergency Backup Codes</div>
+                        <div className={cx("text10", "colorMuted", "mb10")}>Store these offline in a password manager. Each code can be used once.</div>
+                      </div>
+                      {backupCodes.length === 0 ? (
+                        <div className={cx("text11", "colorMuted")}>No backup codes generated yet for this session.</div>
+                      ) : (
+                        <div className={cx("secuCodeGrid")}>
+                          {backupCodes.map((code) => (
+                            <span key={code} className={cx("secuCodeItem")}>{code}</span>
+                          ))}
+                        </div>
+                      )}
                       <div className={cx("flexRow", "gap8", "mt14")}>
-                        <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => notify("success", "Codes regenerated", "Previous codes are now invalid")}>Regenerate</button>
+                        <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => {
+                          setBackupCodes(makeBackupCodes());
+                          notify("success", "Codes generated", "Store them in a secure password manager.");
+                        }}>{backupCodes.length > 0 ? "Regenerate" : "Generate"}</button>
                         <button type="button" className={cx("btnSm", "btnGhost")} onClick={async () => {
-                          const codes = ["K9X2-MNPL", "7YQR-4TBV", "FZAC-8WDE", "P3LN-XKGM", "HJ6T-RVWY", "2QSB-ZDCU", "MTFA-9XPL", "CNRV-4YHB"];
+                          const codes = backupCodes;
+                          if (codes.length === 0) {
+                            notify("info", "No codes", "Generate backup codes first.");
+                            return;
+                          }
                           try {
                             await navigator.clipboard.writeText(codes.join("\n"));
                             notify("success", "Backup codes copied", "Store them in a secure password manager.");
                           } catch {
                             notify("error", "Clipboard not available", "Copy the codes manually.");
                           }
-                        }}>📋 Copy Codes</button>
+                        }}>Copy Codes</button>
                         <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => {
-                          const codes = ["K9X2-MNPL", "7YQR-4TBV", "FZAC-8WDE", "P3LN-XKGM", "HJ6T-RVWY", "2QSB-ZDCU", "MTFA-9XPL", "CNRV-4YHB"];
+                          const codes = backupCodes;
+                          if (codes.length === 0) {
+                            notify("info", "No codes", "Generate backup codes first.");
+                            return;
+                          }
                           const text = "Maphari Emergency Backup Codes\n" + "=".repeat(30) + "\n\n" + codes.join("\n") + "\n\nStore these in a secure location. Each code can only be used once.";
                           const blob = new Blob([text], { type: "text/plain" });
                           const url = URL.createObjectURL(blob);
@@ -1542,7 +1873,7 @@ export function SettingsPage({
                           document.body.removeChild(a);
                           URL.revokeObjectURL(url);
                           notify("success", "Downloaded", "backup-codes.txt saved to your device.");
-                        }}>↓ Download</button>
+                        }}>Download</button>
                       </div>
                     </div>
                   </div>
@@ -1555,30 +1886,40 @@ export function SettingsPage({
                   <div className={cx("card")}>
                     <div className={cx("cardHd")}>
                       <span className={cx("cardHdTitle")}>Devices & Sessions</span>
-                      <button
-                        type="button"
-                        className={cx("btnSm", "btnGhost", "mlAuto")}
-                        disabled={signingOutAll}
-                        onClick={() => { void handleSignOutAll(); }}
-                      >{signingOutAll ? "Signing out…" : "Sign out all devices"}</button>
                     </div>
                     <div className={cx("listGroup")}>
-                      {securitySessions.map((session) => (
-                        <div key={session.id} className={cx("listRow", "gap12", "flexAlignStart")}>
-                          <div className={cx("emoji22noShrink")}>{session.icon ?? "💻"}</div>
-                          <div className={cx("flex1")}>
-                            <div className={cx("fw600", "text12")}>{session.device}</div>
-                            <div className={cx("text10", "colorMuted")}>{session.location} · {session.ip}</div>
-                            <div className={cx("text10", "colorMuted")}>Last active {formatRelative(session.lastActiveAt)}</div>
-                            <span className={cx("badge", session.current ? "badgeGreen" : "badgeMuted", "mt6", "inlineBlock")}>
-                              {session.current ? "Current session" : "Previously active"}
-                            </span>
-                          </div>
-                          {!session.current && (
-                            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setRevokeSessionId(session.id)}>Revoke</button>
-                          )}
+                      {securitySessions.length === 0 ? (
+                        <div className={cx("emptyState", "py24")}>
+                          <div className={cx("emptyStateTitle")}>No active sessions found</div>
+                          <div className={cx("emptyStateSub")}>Session activity will appear here once devices authenticate.</div>
                         </div>
-                      ))}
+                      ) : (
+                        securitySessions.map((session) => (
+                          <div key={session.id} className={cx("listRow", "gap12", "flexAlignStart")}>
+                            <div className={cx("emoji22noShrink")}>{session.icon ?? "💻"}</div>
+                            <div className={cx("flex1")}>
+                              <div className={cx("fw600", "text12")}>{session.device}</div>
+                              <div className={cx("text10", "colorMuted")}>{session.location} · {session.ip}</div>
+                              <div className={cx("text10", "colorMuted")}>Last active {formatRelative(session.lastActiveAt)}</div>
+                              <span className={cx("badge", session.current ? "badgeGreen" : "badgeMuted", "mt6", "inlineBlock")}>
+                                {session.current ? "Current session" : "Previously active"}
+                              </span>
+                            </div>
+                            {!session.current ? <span className={cx("badge", "badgeMuted")}>Other session</span> : null}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className={cx("p12161616", "borderT")}>
+                      <div className={cx("text10", "colorMuted", "mb8")}>This signs out every device including your current one.</div>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnGhost")}
+                        disabled={signingOutAll}
+                        onClick={() => { void handleSignOutAll(); }}
+                      >
+                        {signingOutAll ? "Signing out…" : "Sign out all devices"}
+                      </button>
                     </div>
                   </div>
 
@@ -1642,10 +1983,19 @@ export function SettingsPage({
                   <div className={cx("pCustom0161616")}>
                     <div className={cx("secuAuditTableHead")}><span>Timestamp</span><span>Event</span><span>User</span><span>Severity</span></div>
                     <div className={cx("secuAuditRows")}>
-                      <div className={cx("emptyState", "py24")}>
-                        <div className={cx("emptyStateTitle")}>No audit events yet</div>
-                        <div className={cx("emptyStateSub")}>Security events will appear here as they occur.</div>
-                      </div>
+                      {filteredAudit.length === 0 ? (
+                        <div className={cx("emptyState", "py24")}>
+                          <div className={cx("emptyStateTitle")}>No audit events yet</div>
+                          <div className={cx("emptyStateSub")}>Security events will appear here as they occur.</div>
+                        </div>
+                      ) : filteredAudit.map((event) => (
+                        <div key={`${event.time}-${event.event}-${event.user}`} className={cx("flexBetween", "gap12", "py10", "borderB")}>
+                          <span className={cx("fontMono", "text10", "flex1")}>{event.time}</span>
+                          <span className={cx("text11", "flex1")}>{event.event}</span>
+                          <span className={cx("text11", "colorMuted", "flex1")}>{event.user}</span>
+                          <span className={cx("badge", event.sev === "crit" ? "badgeRed" : event.sev === "warn" ? "badgeAmber" : event.sev === "ok" ? "badgeGreen" : "badgeMuted")}>{event.sev.toUpperCase()}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -1653,26 +2003,71 @@ export function SettingsPage({
 
               {/* ── GDPR & Privacy ── */}
               {securityTab === "GDPR & Privacy" ? (
-                <div className={cx("card")}>
-                  <div className={cx("cardHd")}><span className={cx("cardHdTitle")}>Data & Privacy Controls</span></div>
-                  <div className={cx("pCustom0161616")}>
-                  <div className={cx("secuGdprList")}>
-                    {GDPR_ITEMS.map((item) => (
-                      <div key={item.title} className={cx("secuGdprItem")}>
-                        <div className={cx("secuGdprIcon", item.tone === "green" ? "secuGdprIconAccent" : item.tone === "purple" ? "secuGdprIconPurple" : item.tone === "red" ? "secuGdprIconRed" : item.tone === "amber" ? "secuGdprIconAmber" : "secuGdprIconMuted")}>
-                          {item.tone === "green" ? "🔒" : item.tone === "purple" ? "📥" : item.tone === "red" ? "🗑" : item.tone === "amber" ? "👁" : "🍪"}
+                <div className={cx("grid2Cols", "gap16", "py20_0")}>
+                  <div className={cx("card")}>
+                    <div className={cx("cardHd")}>
+                      <span className={cx("cardHdTitle")}>Privacy Control Center</span>
+                      <span className={cx("badge", "badgeGreen", "mlAuto")}>Compliant</span>
+                    </div>
+                    <div className={cx("p12161616", "flexCol", "gap12")}>
+                      <div className={cx("text11", "colorMuted", "lineH16")}>
+                        Manage your legal rights, data lifecycle, and export or deletion requests from one place.
+                      </div>
+                      <div className={cx("grid2Cols12Gap")}>
+                        <div className={cx("card", "p12x16x16")}>
+                          <div className={cx("text10", "colorMuted")}>Available Requests</div>
+                          <div className={cx("text14", "fw700")}>{GDPR_ITEMS.filter((item) => Boolean(item.action)).length}</div>
                         </div>
-                        <div className={cx("secuGdprContent")}>
-                          <div className={cx("secuGdprTitle")}>{item.title}</div>
-                          <div className={cx("secuGdprDesc")}>{item.desc}</div>
-                          <div className={cx("secuGdprRow")}>
-                            <span className={cx("badge", item.tone === "green" ? "badgeGreen" : item.tone === "amber" ? "badgeAmber" : item.tone === "red" ? "badgeRed" : "badgePurple")}>{item.status}</span>
-                            {item.action ? <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setGdprTarget(item)}>{item.action}</button> : null}
-                          </div>
+                        <div className={cx("card", "p12x16x16")}>
+                          <div className={cx("text10", "colorMuted")}>High-Risk Actions</div>
+                          <div className={cx("text14", "fw700")}>{GDPR_ITEMS.filter((item) => item.danger).length}</div>
                         </div>
                       </div>
-                    ))}
+                      <div className={cx("borderT", "pt12", "flexCol", "gap8")}>
+                        <div className={cx("text11", "fw600")}>Data Subject Requests</div>
+                        {GDPR_ITEMS.filter((item) => Boolean(item.action)).map((item) => (
+                          <div key={item.title} className={cx("flexBetween", "gap10", "py10", "borderB")}>
+                            <div className={cx("flexRow", "gap10", "alignCenter")}>
+                              <Ic n={item.danger ? "trash" : "download"} sz={16} c={item.danger ? "var(--red)" : "var(--accent)"} />
+                              <div>
+                                <div className={cx("text12", "fw600")}>{item.title}</div>
+                                <div className={cx("text10", "colorMuted")}>{item.desc}</div>
+                              </div>
+                            </div>
+                            <button type="button" className={cx("btnSm", item.danger ? "btnGhost" : "btnAccent")} onClick={() => setGdprTarget(item)}>
+                              {item.action}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
+
+                  <div className={cx("card")}>
+                    <div className={cx("cardHd")}>
+                      <span className={cx("cardHdTitle")}>Compliance & Retention</span>
+                      <span className={cx("text10", "colorMuted", "mlAuto")}>Policy status</span>
+                    </div>
+                    <div className={cx("p12161616", "flexCol", "gap8")}>
+                      {GDPR_ITEMS.filter((item) => !item.action).map((item) => (
+                        <div key={item.title} className={cx("flexBetween", "gap10", "py12", "borderB")}>
+                          <div className={cx("flexRow", "gap10", "alignCenter", "flex1")}>
+                            <Ic
+                              n={item.tone === "green" ? "shieldCheck" : item.tone === "amber" ? "clock" : item.tone === "red" ? "alert" : "settings"}
+                              sz={16}
+                              c={item.tone === "green" ? "var(--green)" : item.tone === "amber" ? "var(--amber)" : item.tone === "red" ? "var(--red)" : "var(--muted2)"}
+                            />
+                            <div>
+                              <div className={cx("text12", "fw600")}>{item.title}</div>
+                              <div className={cx("text10", "colorMuted")}>{item.desc}</div>
+                            </div>
+                          </div>
+                          <span className={cx("badge", item.tone === "green" ? "badgeGreen" : item.tone === "amber" ? "badgeAmber" : item.tone === "red" ? "badgeRed" : "badgePurple")}>
+                            {item.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -1761,24 +2156,6 @@ export function SettingsPage({
         </div>
       </div>
 
-      {revokeSessionId ? (
-        <div className={cx("secuModalBackdrop")} onClick={() => setRevokeSessionId(null)}>
-          <div className={cx("secuModal")} onClick={(event) => event.stopPropagation()}>
-            <div className={cx("secuModalHeader")}>
-              <div className={cx("secuModalTitle")}>Revoke Session</div>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setRevokeSessionId(null)}>Close</button>
-            </div>
-            <div className={cx("secuModalBody")}>
-              <p className={cx("text12", "colorMuted")}>This will immediately sign out the selected device session. You can re-authenticate at any time.</p>
-            </div>
-            <div className={cx("secuModalFooter")}>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setRevokeSessionId(null)}>Cancel</button>
-              <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => revokeSecuritySession(revokeSessionId)}>Revoke Session</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       {inviteModalOpen ? (
         <div className={cx("secuModalBackdrop")} onClick={() => setInviteModalOpen(false)}>
           <div className={cx("secuModal")} onClick={(event) => event.stopPropagation()}>
@@ -1789,11 +2166,11 @@ export function SettingsPage({
             <div className={cx("secuModalBody")}>
               <div>
                 <div className={cx("text11", "fw600", "mb6")}>Email Address</div>
-                <input className={cx("input")} placeholder="colleague@company.co.za" />
+                <input className={cx("input")} placeholder="colleague@company.co.za" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
               </div>
               <div>
                 <div className={cx("text11", "fw600", "mb6")}>Full Name</div>
-                <input className={cx("input")} placeholder="First and last name" />
+                <input className={cx("input")} placeholder="First and last name" value={inviteFullName} onChange={(e) => setInviteFullName(e.target.value)} />
               </div>
               <div>
                 <div className={cx("text11", "fw600", "mb8")}>Role</div>
@@ -1811,12 +2188,36 @@ export function SettingsPage({
               <button
                 type="button"
                 className={cx("btnSm", "btnAccent")}
+                disabled={inviteBusy}
                 onClick={() => {
-                  setInviteModalOpen(false);
-                  notify("success", "Invite sent", `Dispatched · Role: ${inviteRole}`);
+                  if (!session || !session.user.clientId) {
+                    notify("error", "Invite failed", "Missing client context.");
+                    return;
+                  }
+                  if (!inviteEmail.trim()) {
+                    notify("error", "Invite failed", "Email is required.");
+                    return;
+                  }
+                  setInviteBusy(true);
+                  void invitePortalTeamMemberWithRefresh(session, session.user.clientId, {
+                    email: inviteEmail.trim(),
+                    role: inviteRole,
+                    name: inviteFullName.trim() || undefined,
+                  }).then((result) => {
+                    if (result.nextSession) saveSession(result.nextSession);
+                    setInviteBusy(false);
+                    if (result.error) {
+                      notify("error", "Invite failed", result.error.message ?? "Unable to send invitation.");
+                      return;
+                    }
+                    setInviteModalOpen(false);
+                    setInviteEmail("");
+                    setInviteFullName("");
+                    notify("success", "Invite sent", `${inviteEmail.trim()} invited as ${inviteRole}.`);
+                  });
                 }}
               >
-                Send Invite
+                {inviteBusy ? "Sending…" : "Send Invite"}
               </button>
             </div>
           </div>

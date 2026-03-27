@@ -3,6 +3,7 @@ import { callGateway, isUnauthorized, toGatewayError, withAuthorizedSession } fr
 import type { AuthorizedResult } from "./_shared";
 import type {
   ProjectTask,
+  ProjectTaskExternalLink,
   ProjectDependency,
   ProjectTimeEntry,
   ProjectTaskCollaborator,
@@ -13,7 +14,13 @@ import type {
 export async function createProjectTaskWithRefresh(
   session: AuthSession,
   projectId: string,
-  input: { title: string; assigneeName?: string; status?: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE"; dueAt?: string }
+  input: {
+    title: string;
+    assigneeName?: string;
+    status?: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
+    dueAt?: string;
+    externalLinks?: ProjectTaskExternalLink[];
+  }
 ): Promise<AuthorizedResult<ProjectTask>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const response = await callGateway<ProjectTask>(`/projects/${projectId}/tasks`, accessToken, {
@@ -39,7 +46,13 @@ export async function updateProjectTaskWithRefresh(
   session: AuthSession,
   projectId: string,
   taskId: string,
-  input: { title?: string; assigneeName?: string; status?: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE"; dueAt?: string | null }
+  input: {
+    title?: string;
+    assigneeName?: string;
+    status?: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
+    dueAt?: string | null;
+    externalLinks?: ProjectTaskExternalLink[];
+  }
 ): Promise<AuthorizedResult<ProjectTask>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const response = await callGateway<ProjectTask>(`/projects/${projectId}/tasks/${taskId}`, accessToken, {

@@ -56,7 +56,7 @@ export function setAuthCookies(
       maxAgeSeconds: rememberMe ? refreshMaxAge : undefined,
       httpOnly: false,
       secure,
-      sameSite: "Strict",
+      sameSite: "Lax",
       path: "/"
     }),
     serializeCookie(REMEMBER_ME_COOKIE, rememberMe ? "1" : "0", {

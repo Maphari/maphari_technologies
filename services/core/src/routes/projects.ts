@@ -59,6 +59,32 @@ function toProjectDto<T extends { budgetCents: bigint }>(p: T): Omit<T, "budgetC
   return { ...p, budgetCents: Number(p.budgetCents) };
 }
 
+type ProjectTaskExternalLink = {
+  id: string;
+  providerKey: string;
+  externalId: string;
+  externalUrl: string;
+  title?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+function normalizeTaskExternalLinks(
+  links: ProjectTaskExternalLink[] | undefined
+): ProjectTaskExternalLink[] | undefined {
+  if (links === undefined) return undefined;
+  const nowIso = new Date().toISOString();
+  return links.slice(0, 20).map((link) => ({
+    id: link.id.trim(),
+    providerKey: link.providerKey.trim().toLowerCase(),
+    externalId: link.externalId.trim(),
+    externalUrl: link.externalUrl.trim(),
+    ...(link.title?.trim() ? { title: link.title.trim() } : {}),
+    createdAt: link.createdAt ?? nowIso,
+    updatedAt: nowIso
+  }));
+}
+
 const INTERNAL_NOTIFICATION_RECIPIENT = process.env.INTERNAL_NOTIFICATION_RECIPIENT_EMAIL ?? "ops@maphari.com";
 
 async function publishProjectRequestNotification(input: {
@@ -188,6 +214,8 @@ type ProjectRequestDetailsV2 = {
   selectedServices: string[];
   addonServices: string[];
   scopePrompt: string | null;
+  signedAgreementSignerName: string;
+  signedAgreementAcceptedAt: string;
   signedAgreementFileId: string;
   signedAgreementFileName: string;
   estimatedQuoteCents: number;
@@ -203,6 +231,8 @@ function parseProjectRequestDetails(details: string | null | undefined): Project
   try {
     const parsed = JSON.parse(details) as Partial<ProjectRequestDetailsV2> | null;
     if (!parsed || parsed.version !== 2 || parsed.source !== "client_portal") return null;
+    if (typeof parsed.signedAgreementSignerName !== "string") return null;
+    if (typeof parsed.signedAgreementAcceptedAt !== "string") return null;
     if (typeof parsed.signedAgreementFileId !== "string") return null;
     if (typeof parsed.estimatedQuoteCents !== "number") return null;
     if (typeof parsed.depositAmountCents !== "number") return null;
@@ -211,6 +241,30 @@ function parseProjectRequestDetails(details: string | null | undefined): Project
   } catch {
     return null;
   }
+}
+
+function resolveRoadmapMilestoneCompletedAt(input: {
+  status: string;
+  updatedAt: Date;
+  approval?: { status: string; decidedAt: Date | null } | null;
+}): string | null {
+  const status = input.status.toUpperCase();
+  if (status === "DONE" || status === "COMPLETED" || status === "SIGNED") {
+    return input.updatedAt.toISOString();
+  }
+  if (input.approval?.status === "APPROVED") {
+    return (input.approval.decidedAt ?? input.updatedAt).toISOString();
+  }
+  return null;
+}
+
+function resolveRoadmapMilestonePaymentStage(tags: string | null | undefined): string | null {
+  if (!tags) return null;
+  const normalized = tags.toUpperCase();
+  if (normalized.includes("MILESTONE_30")) return "30% Milestone";
+  if (normalized.includes("FINAL_20")) return "Final 20%";
+  if (normalized.includes("DEPOSIT_50")) return "50% Deposit";
+  return null;
 }
 
 type ProjectPaymentMilestoneStatus = {
@@ -838,6 +892,8 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
         selectedServices: parsedBody.data.selectedServices ?? [],
         addonServices: parsedBody.data.addonServices ?? [],
         scopePrompt: parsedBody.data.scopePrompt ?? null,
+        signedAgreementSignerName: parsedBody.data.signedAgreementSignerName,
+        signedAgreementAcceptedAt: parsedBody.data.signedAgreementAcceptedAt,
         signedAgreementFileId: parsedBody.data.signedAgreementFileId,
         signedAgreementFileName: signedAgreementFileName,
         estimatedQuoteCents: parsedBody.data.estimatedQuoteCents,
@@ -865,9 +921,35 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
         }
       });
 
+      await prisma.clientContract.create({
+        data: {
+          clientId,
+          projectId: project.id,
+          title: "Project Request Engagement Agreement",
+          type: "SOW",
+          ref: referenceCode + "-AGREEMENT",
+          status: "SIGNED",
+          signed: true,
+          signedAt: new Date(parsedBody.data.signedAgreementAcceptedAt),
+          signedByName: parsedBody.data.signedAgreementSignerName,
+          fileId: parsedBody.data.signedAgreementFileId,
+          notes: JSON.stringify({
+            source: "project_request",
+            projectId: project.id,
+            referenceCode,
+            signedAgreementFileName,
+            estimatedQuoteCents: parsedBody.data.estimatedQuoteCents,
+            selectedServices: parsedBody.data.selectedServices ?? [],
+          }),
+          sortOrder: 0,
+        } as Prisma.ClientContractUncheckedCreateInput,
+      });
+
       await Promise.all([
         cache.delete(CacheKeys.projects(clientId)),
         cache.delete(CacheKeys.projects()),
+        cache.delete(CacheKeys.contracts(clientId)),
+        cache.delete(CacheKeys.contracts(clientId) + ":" + project.id),
         logProjectActivity({
           projectId: project.id,
           clientId: project.clientId,
@@ -1614,7 +1696,10 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
           title: parsed.data.title,
           assigneeName: parsed.data.assigneeName ?? null,
           status: parsed.data.status ?? "TODO",
-          dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : null
+          dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : null,
+          ...(parsed.data.externalLinks !== undefined
+            ? { externalLinks: normalizeTaskExternalLinks(parsed.data.externalLinks as ProjectTaskExternalLink[]) }
+            : {})
         }
       });
       await logProjectActivity({
@@ -1667,7 +1752,10 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
               ? parsed.data.dueAt
                 ? new Date(parsed.data.dueAt)
                 : null
-              : task.dueAt
+              : task.dueAt,
+          ...(parsed.data.externalLinks !== undefined
+            ? { externalLinks: normalizeTaskExternalLinks(parsed.data.externalLinks as ProjectTaskExternalLink[]) }
+            : {})
         }
       });
       await logProjectActivity({
@@ -2530,7 +2618,12 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
           ...(clientId ? { clientId } : {}),
           status: { not: "ARCHIVED" },
         },
-        include: { milestones: { orderBy: { dueAt: "asc" } } },
+        include: {
+          milestones: {
+            include: { approval: true },
+            orderBy: { dueAt: "asc" },
+          },
+        },
         orderBy: { startAt: "asc" },
       });
 
@@ -2545,8 +2638,14 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
           title: m.title,
           status: m.status,
           dueAt: m.dueAt?.toISOString() ?? null,
-          completedAt: null as string | null,
-          paymentStage: null as string | null,
+          completedAt: resolveRoadmapMilestoneCompletedAt({
+            status: m.status,
+            updatedAt: m.updatedAt,
+            approval: m.approval
+              ? { status: m.approval.status, decidedAt: m.approval.decidedAt }
+              : null,
+          }),
+          paymentStage: resolveRoadmapMilestonePaymentStage(m.tags),
         })),
       }));
 

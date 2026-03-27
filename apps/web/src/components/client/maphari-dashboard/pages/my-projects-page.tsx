@@ -34,26 +34,34 @@ function healthColor(h: number) {
 export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { projects?: ProjectCard[]; onNavigate?: (page: PageId) => void }) {
   const [tab, setTab] = useState<PTab>("Active");
 
-  // ── Portfolio KPI derivations ─────────────────────────────────────────────
+  const fmtMoney = (cents: number) =>
+    "R " + Math.round(cents / 100).toLocaleString("en-ZA");
+
   const portfolioKpis = useMemo(() => {
     if (apiProjects.length === 0) {
-      return { healthScore: null, totalBudgetUsed: null, activeCount: 0, alertCount: 0 };
+      return {
+        healthScore: null,
+        activeCount: 0,
+        alertCount: 0,
+        totalContractValue: null,
+        averageProgress: null,
+        onTrackCount: 0,
+      };
     }
 
     const healthScore = Math.round(
       apiProjects.reduce((sum, p) => sum + (100 - riskScore(p.riskLevel) * 10), 0) / apiProjects.length
     );
-
-    const totalBudgetUsedCents = apiProjects.reduce(
-      (sum, p) => sum + p.budgetCents * (p.progressPercent / 100),
-      0
-    );
-    const totalBudgetUsed = `R ${Math.round(totalBudgetUsedCents / 100).toLocaleString("en-ZA")}`;
-
-    const activeCount = apiProjects.filter((p) => isActiveStatus(p.status)).length;
+    const activeProjects = apiProjects.filter((p) => isActiveStatus(p.status));
+    const activeCount = activeProjects.length;
     const alertCount = apiProjects.filter((p) => isHighRisk(p.riskLevel)).length;
+    const totalContractValue = fmtMoney(apiProjects.reduce((sum, p) => sum + p.budgetCents, 0));
+    const averageProgress = activeProjects.length > 0
+      ? Math.round(activeProjects.reduce((sum, p) => sum + p.progressPercent, 0) / activeProjects.length)
+      : null;
+    const onTrackCount = activeProjects.filter((p) => !isHighRisk(p.riskLevel)).length;
 
-    return { healthScore, totalBudgetUsed, activeCount, alertCount };
+    return { healthScore, activeCount, alertCount, totalContractValue, averageProgress, onTrackCount };
   }, [apiProjects]);
 
   const alertProjects = useMemo(
@@ -74,9 +82,6 @@ export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { pro
         : riskLevel === "HIGH" ? 50
         : riskLevel === "MEDIUM" ? 70
         : 85;
-      const budgetUsed = p.budgetCents * (p.progressPercent / 100);
-      const fmtMoney = (cents: number) =>
-        `R ${Math.round(cents / 100).toLocaleString("en-ZA")}`;
       return {
         id: p.id,
         tab,
@@ -92,11 +97,16 @@ export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { pro
         due: p.dueAt ? new Date(p.dueAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—",
         status: p.status,
         borderColor: p.riskLevel === "HIGH" || p.riskLevel === "CRITICAL" ? "var(--red)" : p.progressPercent > 80 ? "var(--lime)" : "var(--amber)",
-        budgetPct: p.progressPercent,
-        budgetUsed: fmtMoney(budgetUsed),
-        budgetTotal: fmtMoney(p.budgetCents),
-        nextMilestone: "—",
-        milestoneUrgent: false,
+        contractValue: fmtMoney(p.budgetCents),
+        taskSummary: p.taskCount > 0
+          ? String(p.completedTaskCount) + " / " + String(p.taskCount) + " tasks complete"
+          : "Task plan not published yet",
+        scopeSummary: p.scopeCurrent > 0
+          ? String(p.scopeCurrent) + " active scope items"
+          : "Scope not published yet",
+        scopeDriftLabel: p.scopeDriftPercent === 0
+          ? "Scope aligned"
+          : (p.scopeDriftPercent > 0 ? "+" : "") + String(p.scopeDriftPercent) + "% scope drift",
       };
     });
 
@@ -119,46 +129,10 @@ export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { pro
           <p className={cx("pageSub")}>All your active and completed projects with health scores and progress.</p>
         </div>
         <div className={cx("pageActions")}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => onNavigate?.("projectRoadmap")}>Project Roadmap</button>
           <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => onNavigate?.("projectBrief")}>+ New Project Brief</button>
         </div>
       </div>
-
-      {/* ── Portfolio KPI strip ─────────────────────────────────────────── */}
-      {apiProjects.length > 0 && (
-        <div className={cx("topCardsStack", "mb12")}>
-          {[
-            {
-              label: "Overall Health Score",
-              value: portfolioKpis.healthScore !== null ? `${portfolioKpis.healthScore}%` : "—",
-              color: portfolioKpis.healthScore !== null && portfolioKpis.healthScore > 80
-                ? "statCardGreen"
-                : portfolioKpis.healthScore !== null && portfolioKpis.healthScore > 60
-                  ? "statCardAmber"
-                  : "statCardRed",
-            },
-            {
-              label: "Total Budget Used",
-              value: portfolioKpis.totalBudgetUsed ?? "N/A",
-              color: "statCardBlue",
-            },
-            {
-              label: "Active Projects",
-              value: String(portfolioKpis.activeCount),
-              color: "statCardAccent",
-            },
-            {
-              label: "Alerts",
-              value: String(portfolioKpis.alertCount),
-              color: portfolioKpis.alertCount > 0 ? "statCardRed" : "statCardGreen",
-            },
-          ].map((s) => (
-            <div key={s.label} className={cx("statCard", s.color)}>
-              <div className={cx("statLabel")}>{s.label}</div>
-              <div className={cx("statValue")}>{s.value}</div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* ── Alert strip (high-risk projects) ────────────────────────────── */}
       {alertProjects.length > 0 && (
@@ -188,10 +162,27 @@ export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { pro
 
       <div className={cx("topCardsStack", "mb20")}>
         {[
-          { label: "Active Projects", value: String(displayProjects.filter(p => p.tab === "Active").length), color: "statCardAccent" },
-          { label: "Avg Health Score", value: displayProjects.length > 0 ? `${Math.round(displayProjects.reduce((sum, p) => sum + p.health, 0) / displayProjects.length)}%` : "—", color: "statCardGreen" },
-          { label: "On Schedule", value: `${displayProjects.filter(p => p.tab === "Active" && !["At Risk", "Critical"].includes(p.status)).length} / ${displayProjects.filter(p => p.tab === "Active").length}`, color: "statCardAmber" },
-          { label: "Total Contract Value", value: apiProjects.length > 0 ? `R ${Math.round(apiProjects.reduce((sum, p) => sum + p.budgetCents, 0) / 100).toLocaleString("en-ZA")}` : "—", color: "statCardBlue" },
+          { label: "Total Projects", value: String(apiProjects.length), color: "statCardAccent" },
+          {
+            label: "Avg Health Score",
+            value: portfolioKpis.healthScore !== null ? String(portfolioKpis.healthScore) + "%" : "—",
+            color: portfolioKpis.healthScore !== null && portfolioKpis.healthScore > 80 ? "statCardGreen" : "statCardAmber",
+          },
+          {
+            label: "On Track",
+            value: String(portfolioKpis.onTrackCount) + " / " + String(portfolioKpis.activeCount),
+            color: portfolioKpis.alertCount > 0 ? "statCardAmber" : "statCardGreen",
+          },
+          {
+            label: "Total Contract Value",
+            value: portfolioKpis.totalContractValue ?? "—",
+            color: "statCardBlue",
+          },
+          {
+            label: "Average Progress",
+            value: portfolioKpis.averageProgress !== null ? String(portfolioKpis.averageProgress) + "%" : "—",
+            color: "statCardAccent",
+          },
         ].map((s) => (
           <div key={s.label} className={cx("statCard", s.color)}>
             <div className={cx("statLabel")}>{s.label}</div>
@@ -242,25 +233,26 @@ export function MyProjectsPage({ projects: apiProjects = [], onNavigate }: { pro
                 </div>
               </div>
 
-              {/* Budget burn */}
               <div className={cx("mb10")}>
                 <div className={cx("flexBetween", "mb4")}>
-                  <span className={cx("text11", "colorMuted")}>Budget</span>
-                  <span className={cx("text11", "colorMuted")}>{p.budgetUsed} of {p.budgetTotal}</span>
+                  <span className={cx("text11", "colorMuted")}>Contract Value</span>
+                  <span className={cx("text11", "colorMuted")}>{p.contractValue}</span>
                 </div>
-                <div className={cx("mpBudgetTrack")}>
-                  <div className={cx("pctFillRInherit", "dynBgColor")} style={{ '--pct': p.budgetPct, "--bg-color": p.budgetPct > 85 ? "var(--red)" : p.budgetPct > 60 ? "var(--amber)" : "var(--lime)" } as React.CSSProperties} />
+                <div className={cx("flexBetween", "mb4")}>
+                  <span className={cx("text11", "colorMuted")}>Delivery</span>
+                  <span className={cx("text11", "colorMuted")}>{p.taskSummary}</span>
                 </div>
               </div>
 
-              {/* Next milestone */}
-              {p.nextMilestone !== "—" && (
-                <div className={cx("flexRow", "gap6", "mb10", "alignCenter")}>
-                  <div className={cx("wh6", "rounded50", "dynBgColor", "noShrink")} style={{ "--bg-color": p.milestoneUrgent ? "var(--amber)" : "var(--muted2)" } as React.CSSProperties} />
-                  <span className={cx("text11", "colorMuted")}>Next: </span>
-                  <span className={cx("text11", "fw600")}>{p.nextMilestone}</span>
-                </div>
-              )}
+              <div className={cx("flexBetween", "mb10")}>
+                <span className={cx("text11", "colorMuted")}>{p.scopeSummary}</span>
+                <span className={cx("text11", p.highRisk ? "colorRed" : "colorMuted")}>{p.scopeDriftLabel}</span>
+              </div>
+
+              <div className={cx("flexBetween", "mb10")}>
+                <span className={cx("text11", "colorMuted")}>Due date</span>
+                <span className={cx("text11", "fw600")}>{p.due}</span>
+              </div>
 
               {/* Footer: avatars + quick links */}
               <div className={cx("flexBetween", "mt4")}>

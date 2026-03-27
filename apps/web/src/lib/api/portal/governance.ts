@@ -98,11 +98,9 @@ export interface PortalDecision {
   projectId: string;
   clientId: string;
   title: string;
-  detail: string | null;
-  rationale: string | null;
-  impact: string | null;
-  category: string | null;
-  status: string;
+  context: string | null;
+  decidedByName: string | null;
+  decidedByRole: string | null;
   decidedAt: string | null;
   createdAt: string;
   updatedAt: string;

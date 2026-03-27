@@ -33,7 +33,6 @@ import type {
   PortalProjectChangeRequest,
   PortalProjectPaymentMilestone,
   PortalMilestoneApproval,
-  PortalFile as _PortalFile,
   UploadUrlPayload
 } from "./types";
 
@@ -145,6 +144,8 @@ export async function createPortalProjectRequestWithRefresh(
     scopePrompt?: string;
     selectedServices?: PortalProjectRequestServiceOption[];
     addonServices?: PortalProjectRequestAddonOption[];
+    signedAgreementSignerName: string;
+    signedAgreementAcceptedAt: string;
     signedAgreementFileId: string;
     estimatedQuoteCents: number;
     depositInvoiceId: string;
@@ -166,6 +167,36 @@ export async function createPortalProjectRequestWithRefresh(
         error: toGatewayError(
           response.payload.error?.code ?? "PROJECT_REQUEST_CREATE_FAILED",
           response.payload.error?.message ?? "Unable to submit project request"
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function createPortalInlineFileWithRefresh(
+  session: AuthSession,
+  input: {
+    fileName: string;
+    mimeType: string;
+    contentBase64: string;
+  }
+): Promise<AuthorizedResult<PortalFile>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<PortalFile>("/files/inline", accessToken, {
+      method: "POST",
+      body: input
+    });
+    if (isUnauthorized(response)) {
+      return { unauthorized: true, data: null, error: null };
+    }
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "INLINE_FILE_CREATE_FAILED",
+          response.payload.error?.message ?? "Unable to create agreement file"
         )
       };
     }

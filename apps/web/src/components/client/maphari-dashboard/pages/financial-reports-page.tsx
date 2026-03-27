@@ -7,6 +7,7 @@
 import { useState, useMemo } from "react";
 import { cx } from "../style";
 import { Ic, Av } from "../ui";
+import { usePageToast } from "../hooks/use-page-toast";
 import type { PortalInvoice } from "@/lib/api/portal/types";
 
 // ── Local types ────────────────────────────────────────────────────────────
@@ -15,12 +16,29 @@ type SummaryRow = {
   invoiced: number;
   paid: number;
   outstanding: number;
-  hoursLogged: number;
-  avgHourlyRate: string;
+  invoiceCount: number;
+  paidCount: number;
+  overdueCount: number;
+  avgInvoiceValue: number;
   growth: string | null;
 };
 type InvStatus = "Paid" | "Outstanding" | "Overdue";
-type InvRow = { id: string; desc: string; amount: number; status: InvStatus; date: string; catColor: string; av: string };
+type InvoiceFilter = "All" | InvStatus;
+type InvRow = {
+  id: string;
+  desc: string;
+  amount: number;
+  status: InvStatus;
+  date: string;
+  dueDate: string;
+  paidDate: string;
+  issueIso: string | null;
+  dueIso: string | null;
+  paidIso: string | null;
+  collectionLagDays: number | null;
+  catColor: string;
+  av: string;
+};
 
 // ── Display maps ───────────────────────────────────────────────────────────
 const STATUS_BADGE:  Record<InvStatus, string> = { Paid: "badgeGreen", Outstanding: "badgeAmber", Overdue: "badgeRed"   };
@@ -49,6 +67,14 @@ function pickYear(inv: PortalInvoice): number {
   return new Date(inv.issuedAt ?? inv.createdAt).getFullYear();
 }
 
+function diffDays(from: string | null, to: string | null): number | null {
+  if (!from || !to) return null;
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+  const ms = toDate.getTime() - fromDate.getTime();
+  return ms >= 0 ? Math.round(ms / 86400000) : null;
+}
+
 // ── Derived data computation ───────────────────────────────────────────────
 function buildFinancialData(allInvoices: PortalInvoice[]) {
   const yearSet = new Set<number>();
@@ -68,8 +94,20 @@ function buildFinancialData(allInvoices: PortalInvoice[]) {
     const invoiced    = filtered.reduce((s, i) => s + i.amountCents, 0) / 100;
     const paid        = filtered.filter(i => i.status === "PAID").reduce((s, i) => s + i.amountCents, 0) / 100;
     const outstanding = Math.max(0, invoiced - paid);
+    const invoiceCount = filtered.length;
+    const paidCount = filtered.filter(i => i.status === "PAID").length;
+    const overdueCount = filtered.filter(i => i.status === "OVERDUE").length;
+    const avgInvoiceValue = invoiceCount > 0 ? invoiced / invoiceCount : 0;
+    const priorYear = String(Number(yr) - 1);
+    const priorYearInvoices = allInvoices.filter(inv => String(pickYear(inv)) === priorYear);
+    const priorYearInvoiced = priorYearInvoices.reduce((sum, inv) => sum + inv.amountCents, 0) / 100;
+    let growth: string | null = null;
+    if (priorYearInvoiced > 0) {
+      const growthPct = Math.round(((invoiced - priorYearInvoiced) / priorYearInvoiced) * 100);
+      growth = (growthPct > 0 ? "+" : "") + String(growthPct) + "%";
+    }
 
-    summary[yr] = { invoiced, paid, outstanding, hoursLogged: 0, avgHourlyRate: "—", growth: null };
+    summary[yr] = { invoiced, paid, outstanding, invoiceCount, paidCount, overdueCount, avgInvoiceValue, growth };
 
     // ── Monthly bar chart data ─────────────────────────────────────────────
     const monthMap: Record<number, { invoiced: number; paid: number }> = {};
@@ -95,6 +133,12 @@ function buildFinancialData(allInvoices: PortalInvoice[]) {
           amount:   inv.amountCents / 100,
           status:   st,
           date:     fmtDate(inv.issuedAt),
+          dueDate:  fmtDate(inv.dueAt),
+          paidDate: fmtDate(inv.paidAt),
+          issueIso: inv.issuedAt,
+          dueIso:   inv.dueAt,
+          paidIso:  inv.paidAt,
+          collectionLagDays: diffDays(inv.issuedAt, inv.paidAt),
           catColor: STATUS_COLOR[st],
           av:       inv.number.slice(-2).toUpperCase(),
         };
@@ -106,6 +150,7 @@ function buildFinancialData(allInvoices: PortalInvoice[]) {
 
 // ── Component ──────────────────────────────────────────────────────────────
 export function FinancialReportsPage({ invoices: allInvoices }: { invoices: PortalInvoice[] }) {
+  const notify = usePageToast();
 
   const { periods, summary, monthly, invoicesMap } = useMemo(
     () => buildFinancialData(allInvoices),
@@ -113,11 +158,13 @@ export function FinancialReportsPage({ invoices: allInvoices }: { invoices: Port
   );
 
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("");
+  const [invoiceFilter, setInvoiceFilter] = useState<InvoiceFilter>("All");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Resolve which period is active; fall back to most recent when state is stale
   const period = periods.includes(selectedPeriod) ? selectedPeriod : (periods[0] ?? "");
 
-  const summaryData    = summary[period]      ?? { invoiced: 0, paid: 0, outstanding: 0, hoursLogged: 0, avgHourlyRate: "—", growth: null };
+  const summaryData    = summary[period]      ?? { invoiced: 0, paid: 0, outstanding: 0, invoiceCount: 0, paidCount: 0, overdueCount: 0, avgInvoiceValue: 0, growth: null };
   const months         = monthly[period]      ?? [];
   const invoices       = invoicesMap[period]  ?? [];
 
@@ -136,13 +183,40 @@ export function FinancialReportsPage({ invoices: allInvoices }: { invoices: Port
 
   const paidInvoices      = invoices.filter(i => i.status === "Paid").length;
   const outstandingAmount = invoices.filter(i => i.status !== "Paid").reduce((s, i) => s + i.amount, 0);
+  const filteredInvoices = invoices.filter((invoice) => {
+    const matchesFilter = invoiceFilter === "All" ? true : invoice.status === invoiceFilter;
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const matchesSearch = normalizedSearch.length === 0
+      ? true
+      : invoice.id.toLowerCase().includes(normalizedSearch) || invoice.desc.toLowerCase().includes(normalizedSearch);
+    return matchesFilter && matchesSearch;
+  });
+
+  const oldestUnpaidInvoice = invoices
+    .filter((invoice) => invoice.status !== "Paid" && invoice.dueIso)
+    .slice()
+    .sort((left, right) => new Date(left.dueIso ?? 0).getTime() - new Date(right.dueIso ?? 0).getTime())[0] ?? null;
+
+  const biggestOpenInvoice = invoices
+    .filter((invoice) => invoice.status !== "Paid")
+    .slice()
+    .sort((left, right) => right.amount - left.amount)[0] ?? null;
+
+  const currentMonthKey = new Date().toISOString().slice(0, 7);
+  const invoicesThisMonth = invoices.filter((invoice) => (invoice.issueIso ?? "").slice(0, 7) === currentMonthKey).length;
+  const avgCollectionLagDays = (() => {
+    const paidWithLag = invoices.filter((invoice) => invoice.collectionLagDays !== null);
+    if (paidWithLag.length === 0) return null;
+    const totalLag = paidWithLag.reduce((sum, invoice) => sum + (invoice.collectionLagDays ?? 0), 0);
+    return Math.round(totalLag / paidWithLag.length);
+  })();
 
   // ── In-browser export helpers ────────────────────────────────────────────
   const handleExportCsv = () => {
     if (invoices.length === 0) return;
-    const header = "Invoice Number,Description,Amount (ZAR),Status,Issue Date";
+    const header = "Invoice Number,Description,Amount (ZAR),Status,Issue Date,Due Date,Paid Date,Collection Lag (Days)";
     const rows = invoices.map(r =>
-      `${r.id},"${r.desc}",${r.amount},${r.status},${r.date}`
+      `${r.id},"${r.desc}",${r.amount},${r.status},${r.date},${r.dueDate},${r.paidDate},${r.collectionLagDays ?? ""}`
     );
     const csv = [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -157,6 +231,33 @@ export function FinancialReportsPage({ invoices: allInvoices }: { invoices: Port
   };
 
   const handleExportPdf = () => window.print();
+
+  const handleDownloadInvoicePdf = async (invoiceNumber: string) => {
+    const sourceInvoice = allInvoices.find((invoice) => invoice.number === invoiceNumber);
+    if (!sourceInvoice) {
+      notify("error", "Invoice not found", "The selected invoice could not be matched to the current report data.");
+      return;
+    }
+
+    try {
+      const { downloadInvoicePdf } = await import("@/lib/pdf/invoice");
+      await downloadInvoicePdf({
+        id: sourceInvoice.id,
+        ref: sourceInvoice.number,
+        client: "Maphari Client",
+        date: fmtDate(sourceInvoice.issuedAt),
+        due: fmtDate(sourceInvoice.dueAt),
+        amount: fmt(sourceInvoice.amountCents / 100),
+        amountRaw: sourceInvoice.amountCents / 100,
+        status: toInvStatus(sourceInvoice.status),
+        category: "Retainer",
+        paidDate: sourceInvoice.paidAt ? fmtDate(sourceInvoice.paidAt) : null,
+        terms: "Net 7",
+      });
+    } catch {
+      notify("error", "PDF download failed", "Please try again.");
+    }
+  };
 
   return (
     <div className={cx("pageBody")}>
@@ -217,7 +318,7 @@ export function FinancialReportsPage({ invoices: allInvoices }: { invoices: Port
             { label: "Total Invoiced", value: fmt(summaryData.invoiced),         color: "statCardBlue"   },
             { label: "Total Paid",     value: fmt(summaryData.paid),             color: "statCardGreen"  },
             { label: "Outstanding",    value: fmt(summaryData.outstanding),      color: "statCardAmber"  },
-            { label: "Hours Logged",   value: `${summaryData.hoursLogged} hrs`,  color: "statCardPurple" },
+            { label: "Invoices Issued", value: String(summaryData.invoiceCount), color: "statCardPurple" },
           ] as { label: string; value: string; color: string }[]).map(s => (
             <div key={s.label} className={cx("statCard", s.color)}>
               <div className={cx("statLabel")}>{s.label}</div>
@@ -228,6 +329,43 @@ export function FinancialReportsPage({ invoices: allInvoices }: { invoices: Port
       )}
 
       {/* ── Revenue chart ────────────────────────────────────────────────── */}
+      {periods.length > 0 && (
+        <div className={cx("topCardsStack")}>
+          {[
+            {
+              label: "Oldest Unpaid",
+              value: oldestUnpaidInvoice ? oldestUnpaidInvoice.id : "None",
+              color: oldestUnpaidInvoice ? "statCardAmber" : "statCardMuted",
+              detail: oldestUnpaidInvoice ? oldestUnpaidInvoice.dueDate : "Everything due is settled",
+            },
+            {
+              label: "Largest Open Invoice",
+              value: biggestOpenInvoice ? fmt(biggestOpenInvoice.amount) : "None",
+              color: biggestOpenInvoice ? "statCardRed" : "statCardMuted",
+              detail: biggestOpenInvoice ? biggestOpenInvoice.id : "No open invoices",
+            },
+            {
+              label: "Issued This Month",
+              value: String(invoicesThisMonth),
+              color: invoicesThisMonth > 0 ? "statCardBlue" : "statCardMuted",
+              detail: period,
+            },
+            {
+              label: "Collection Lag",
+              value: avgCollectionLagDays !== null ? String(avgCollectionLagDays) + " days" : "—",
+              color: avgCollectionLagDays !== null ? "statCardGreen" : "statCardMuted",
+              detail: avgCollectionLagDays !== null ? "Average paid invoice cycle" : "No paid invoices yet",
+            },
+          ].map((stat) => (
+            <div key={stat.label} className={cx("statCard", stat.color)}>
+              <div className={cx("statLabel")}>{stat.label}</div>
+              <div className={cx("statValue")}>{stat.value}</div>
+              <div className={cx("text10", "colorMuted", "mt4")}>{stat.detail}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {periods.length > 0 && (
         <div className={cx("card")}>
           <div className={cx("cardHd")}>
@@ -329,8 +467,10 @@ export function FinancialReportsPage({ invoices: allInvoices }: { invoices: Port
               { k: "Total Invoiced",      v: fmt(summaryData.invoiced),        ic: "file",  c: "var(--blue, #4f9cf9)" },
               { k: "Total Paid",          v: fmt(summaryData.paid),            ic: "check", c: "var(--green)"          },
               { k: "Outstanding Balance", v: fmt(summaryData.outstanding),     ic: "clock", c: summaryData.outstanding > 0 ? "var(--amber)" : "var(--muted2)" },
-              { k: "Hours Logged",        v: `${summaryData.hoursLogged} hrs`, ic: "clock", c: "var(--purple)"         },
-              { k: "Avg Hourly Rate",     v: summaryData.avgHourlyRate,        ic: "zap",   c: "var(--lime)"           },
+              { k: "Invoices Issued",     v: String(summaryData.invoiceCount),  ic: "file",  c: "var(--purple)"         },
+              { k: "Paid Invoices",       v: String(summaryData.paidCount),     ic: "check", c: "var(--lime)"           },
+              { k: "Overdue Invoices",    v: String(summaryData.overdueCount),  ic: "alert", c: summaryData.overdueCount > 0 ? "var(--red)" : "var(--muted2)" },
+              { k: "Average Invoice",     v: fmt(summaryData.avgInvoiceValue),  ic: "zap",   c: "var(--cyan)"           },
             ] as { k: string; v: string; ic: string; c: string }[]).map(({ k, v, ic, c }) => (
               <div key={k} className={cx("flexBetween", "py9_0", "borderB")}>
                 <div className={cx("flexRow", "flexCenter", "gap7")}>
@@ -395,6 +535,36 @@ export function FinancialReportsPage({ invoices: allInvoices }: { invoices: Port
             </div>
           </div>
 
+          <div className={cx("cardBodyPad", "borderB")}>
+            <div className={cx("flexRow", "gap8", "flexWrap", "mt12", "mb14")}>
+              {(["All", "Paid", "Outstanding", "Overdue"] as InvoiceFilter[]).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={cx("pillTab", invoiceFilter === option && "pillTabActive")}
+                  onClick={() => setInvoiceFilter(option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            <div className={cx("mt8")}>
+              <div className={cx("relative")}>
+                <span className={cx("searchIconWrap")}>
+                  <Ic n="filter" sz={13} c="var(--muted2)" />
+                </span>
+                <input
+                  type="search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search by invoice number"
+                  className={cx("input", "searchInput")}
+                />
+              </div>
+              <div className={cx("text10", "colorMuted", "mt6")}>{filteredInvoices.length} shown</div>
+            </div>
+          </div>
+
           {invoices.length === 0 && (
             <div className={cx("emptyState")}>
               <div className={cx("emptyStateIcon")}><Ic n="file" sz={22} c="var(--muted2)" /></div>
@@ -402,7 +572,14 @@ export function FinancialReportsPage({ invoices: allInvoices }: { invoices: Port
               <div className={cx("emptyStateSub")}>Invoice history will appear here once financial records are available.</div>
             </div>
           )}
-          {invoices.map((inv, idx) => (
+          {invoices.length > 0 && filteredInvoices.length === 0 && (
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}><Ic n="filter" sz={22} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateTitle")}>No invoices match</div>
+              <div className={cx("emptyStateSub")}>Try a different status filter or invoice number search.</div>
+            </div>
+          )}
+          {filteredInvoices.map((inv, idx) => (
             <div
               key={inv.id}
               className={cx("frInvRow", "dynBorderLeft3", idx > 0 && "borderT")}
@@ -425,7 +602,12 @@ export function FinancialReportsPage({ invoices: allInvoices }: { invoices: Port
                 <div className={cx("flexRow", "gap6")}>
                   <Av initials={inv.av} size={16} />
                   <Ic n="calendar" sz={10} c="var(--muted2)" />
-                  <span className={cx("text10", "colorMuted")}>{inv.date}</span>
+                  <span className={cx("text10", "colorMuted")}>Issued {inv.date}</span>
+                </div>
+                <div className={cx("flexRow", "gap10", "mt4", "flexWrap")}>
+                  <span className={cx("text10", "colorMuted")}>Due {inv.dueDate}</span>
+                  {inv.paidIso ? <span className={cx("text10", "colorMuted")}>Paid {inv.paidDate}</span> : null}
+                  {inv.collectionLagDays !== null ? <span className={cx("text10", "colorMuted")}>{inv.collectionLagDays} day cycle</span> : null}
                 </div>
               </div>
 
@@ -433,7 +615,7 @@ export function FinancialReportsPage({ invoices: allInvoices }: { invoices: Port
               <div className={cx("flexRow", "flexCenter", "gap10", "noShrink")}>
                 <span className={cx("fw700", "text13")}>{fmt(inv.amount)}</span>
                 <span className={cx("badge", STATUS_BADGE[inv.status])}>{inv.status}</span>
-                <button type="button" className={cx("btnSm", "btnGhost", "py5_px", "px10_px")}>
+                <button type="button" className={cx("btnSm", "btnGhost", "py5_px", "px10_px")} onClick={() => { void handleDownloadInvoicePdf(inv.id); }}>
                   <Ic n="download" sz={12} c="var(--muted)" />
                 </button>
               </div>

@@ -75,11 +75,15 @@ export async function registerRetainerRoutes(app: FastifyInstance): Promise<void
       const entries = await prisma.projectTimeEntry.findMany({
         where: {
           ...(clientId ? { clientId } : {}),
-          createdAt: { gte: windowStart }
+          OR: [
+            { startedAt: { gte: windowStart } },
+            { startedAt: null, createdAt: { gte: windowStart } }
+          ]
         },
         select: {
           taskLabel: true,
           minutes: true,
+          startedAt: true,
           createdAt: true
         },
         orderBy: { createdAt: "asc" }
@@ -92,7 +96,8 @@ export async function registerRetainerRoutes(app: FastifyInstance): Promise<void
       >();
 
       for (const entry of entries) {
-        const ws = isoWeekStart(entry.createdAt);
+        const entryDate = entry.startedAt ?? entry.createdAt;
+        const ws = isoWeekStart(entryDate);
         const key = toDateString(ws);
 
         if (!buckets.has(key)) {

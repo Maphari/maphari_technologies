@@ -1,0 +1,86 @@
+/* ── Call page layout ──────────────────────────────────────────────────── */
+
+.callWrap {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #0d0d14;
+  color: #e8e5e0;
+}
+
+.callTopbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #111118;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.callLogo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #b5ff4d;
+  color: #0d0d14;
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.callRoomName {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #e8e5e0;
+  opacity: 0.8;
+  font-family: monospace;
+}
+
+.callBrand {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.3);
+}
+
+.lkRoom {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Error state ─────────────────────────────────────────────────────────── */
+
+.errorWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #0d0d14;
+  padding: 24px;
+}
+
+.errorCard {
+  background: #1a1a24;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 400px;
+  text-align: center;
+}
+
+.errorTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e8e5e0;
+  margin-bottom: 10px;
+}
+
+.errorSub {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.55;
+}

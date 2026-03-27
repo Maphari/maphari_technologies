@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { cx } from "./style";
 
 // ─── New canonical props ──────────────────────────────────────────────────────
@@ -11,8 +11,11 @@ interface TopbarProps {
   onSearch: () => void;
   onAdd: () => void;
   onHamburger: () => void;
-  /** Accepted for interface completeness; avatar lives in sidebar */
   userInitials?: string;
+  userName?: string;
+  userEmail?: string;
+  onLogout?: () => void;
+  isLoggingOut?: boolean;
 }
 
 export function Topbar({
@@ -22,7 +25,32 @@ export function Topbar({
   onSearch,
   onAdd,
   onHamburger,
+  userInitials,
+  userName,
+  userEmail,
+  onLogout,
+  isLoggingOut,
 }: TopbarProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
   return (
     <header className={cx("topbar")}>
       {/* Mobile hamburger — hidden on desktop via CSS */}
@@ -46,9 +74,9 @@ export function Topbar({
         <span className={cx("topbarPage")}>{pageName}</span>
       </div>
 
-      {/* Right actions — search pill + bell + Add */}
+      {/* Right actions */}
       <div className={cx("topbarActions")}>
-        {/* Search trigger pill (right-aligned) */}
+        {/* Search trigger pill */}
         <button
           type="button"
           className={cx("topbarSearch")}
@@ -67,11 +95,7 @@ export function Topbar({
         <button
           type="button"
           className={cx("topbarIconBtn")}
-          aria-label={
-            notifCount > 0
-              ? `Notifications (${notifCount} unread)`
-              : "Notifications"
-          }
+          aria-label={notifCount > 0 ? `Notifications (${notifCount} unread)` : "Notifications"}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path d="M8 1a5 5 0 00-5 5v3l-1.5 2h13L13 9V6a5 5 0 00-5-5zM6.5 13a1.5 1.5 0 003 0H6.5z"/>
@@ -89,6 +113,44 @@ export function Topbar({
         >
           + Add
         </button>
+
+        {/* Profile / logout */}
+        {onLogout && (
+          <div className={cx("topbarUserMenu")} ref={menuRef}>
+            <button
+              type="button"
+              className={cx("topbarUserBtn")}
+              onClick={() => setMenuOpen(v => !v)}
+              aria-expanded={menuOpen}
+              aria-label="Open profile menu"
+            >
+              <span className={cx("topbarUserAvatar")}>
+                {userInitials ?? "S"}
+              </span>
+              <span className={`${cx("topbarUserChevron")} ${menuOpen ? cx("topbarUserChevronOpen") : ""}`}>
+                ▾
+              </span>
+            </button>
+            {menuOpen && (
+              <div className={cx("topbarUserDropdown")}>
+                {(userName || userEmail) && (
+                  <div className={cx("topbarUserInfo")}>
+                    {userName && <div className={cx("topbarUserName")}>{userName}</div>}
+                    {userEmail && <div className={cx("topbarUserEmail")}>{userEmail}</div>}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className={`${cx("topbarUserItem")} ${cx("topbarSignOut")}`}
+                  onClick={() => { setMenuOpen(false); onLogout(); }}
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? "Signing out…" : "Sign Out"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );
@@ -127,6 +189,10 @@ export function StaffTopbar({
   unreadNotificationsCount,
   onMenuToggle,
   staffInitials,
+  staffName,
+  staffEmail,
+  onLogout,
+  isLoggingOut,
 }: StaffTopbarProps) {
   return (
     <Topbar
@@ -141,6 +207,10 @@ export function StaffTopbar({
       }}
       onHamburger={onMenuToggle ?? (() => {})}
       userInitials={staffInitials}
+      userName={staffName}
+      userEmail={staffEmail}
+      onLogout={onLogout}
+      isLoggingOut={isLoggingOut}
     />
   );
 }

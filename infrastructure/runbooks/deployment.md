@@ -18,6 +18,9 @@
 3. Apply DB migrations service-by-service:
    - `@maphari/auth`
    - `@maphari/core`
+   - For integrations hardening, confirm core migration chain includes:
+     - `20260326213000_add_idempotency_key_to_integration_sync_events`
+     - `20260326222500_strengthen_integration_sync_event_idempotency`
 4. Deploy services in this order:
    1. `services/auth`
    2. `services/core`
@@ -33,3 +36,7 @@
 - Smoke login flow and token refresh through gateway.
 - Smoke client/project/lead reads through gateway.
 - Confirm alerting dashboard sees fresh metrics.
+- Smoke integration operations:
+  - create external task link once with a connected provider.
+  - replay with same idempotency key and verify idempotent response.
+  - verify sync-log endpoint returns events for the task.

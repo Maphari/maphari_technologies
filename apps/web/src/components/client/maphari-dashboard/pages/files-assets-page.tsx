@@ -90,6 +90,29 @@ function formatDate(raw: string): string {
   return new Date(raw).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function exportFilesCsv(files: PortalFile[]): void {
+  const header = ["File name", "Type", "Size bytes", "Approval", "Created", "Version note"];
+  const lines = files.map((file) => [
+    file.fileName,
+    toFType(file.mimeType),
+    String(file.sizeBytes),
+    file.approvalStatus ?? "PENDING_REVIEW",
+    file.createdAt,
+    file.versionNote ?? "",
+  ]);
+  const escape = (value: string) => `"${value.replace(/"/g, "\"\"")}"`;
+  const csv = [header, ...lines].map((line) => line.map((cell) => escape(String(cell))).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "files-and-assets.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 function toFType(mimeType: string): FType {
   if (mimeType.includes("figma") || mimeType.includes("sketch") || mimeType.startsWith("image/")) return "Design";
   if (mimeType.startsWith("video/") || mimeType.startsWith("audio/")) return "Media";
@@ -219,6 +242,7 @@ export function FilesAssetsPage() {
   // ── Load files on mount ───────────────────────────────────────────────────
   const loadFiles = useCallback(() => {
     if (!session) { setLoading(false); return; }
+    setLoading(true);
     setError(null);
     loadPortalFilesWithRefresh(session).then((result) => {
       if (result.nextSession) saveSession(result.nextSession);
@@ -302,7 +326,7 @@ export function FilesAssetsPage() {
   }, [session, notify]);
 
   // ── Download handler (presigned GET → window.open) ────────────────────────
-  const handleDownload = useCallback(async (fileId: string, fileName: string) => {
+  const handleDownload = useCallback(async (fileId: string) => {
     if (!session) return;
     // Find the original PortalFile by matching display id prefix
     const original = files.find((f) => f.id.slice(0, 8).toUpperCase() === fileId || f.id === fileId);
@@ -392,6 +416,22 @@ export function FilesAssetsPage() {
           <button
             type="button"
             className={cx("btnSm", "btnGhost")}
+            disabled={loading || uploading}
+            onClick={loadFiles}
+          >
+            Refresh
+          </button>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost")}
+            disabled={files.length === 0}
+            onClick={() => exportFilesCsv(files)}
+          >
+            Export CSV
+          </button>
+          <button
+            type="button"
+            className={cx("btnSm", "btnGhost")}
             disabled={uploading}
             onClick={() => uploadInputRef.current?.click()}
           >
@@ -419,24 +459,36 @@ export function FilesAssetsPage() {
       </div>
 
       {/* ── Stat cards ──────────────────────────────────────────────────── */}
-      <div className={cx("topCardsStack")}>
-        {[
-          { label: "Total Files",   value: loading ? "…" : String(rows.length),          color: "statCardAccent"  },
-          { label: "Design Files",  value: loading ? "…" : String(designCount),           color: "statCardPurple"  },
-          { label: "Documents",     value: loading ? "…" : String(docCount),              color: "statCardBlue"    },
-          { label: "Total Size",    value: loading ? "…" : formatBytes(totalSizeBytes),   color: "statCardAmber"   },
-        ].map((s) => (
-          <div key={s.label} className={cx("statCard", s.color)}>
-            <div className={cx("statLabel")}>{s.label}</div>
-            <div className={cx("statValue")}>{s.value}</div>
-          </div>
-        ))}
+      <div className={cx("grid4", "gap12", "mb20")}>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Total files</div>
+          <div className={cx("text22", "fw800", "colorAccent")}>{loading ? "…" : String(rows.length)}</div>
+          <div className={cx("text12", "colorMuted")}>Files currently available in your portal</div>
+        </div>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Design files</div>
+          <div className={cx("text22", "fw800", "colorPurple")}>{loading ? "…" : String(designCount)}</div>
+          <div className={cx("text12", "colorMuted")}>Images, design source files, and prototypes</div>
+        </div>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Documents</div>
+          <div className={cx("text22", "fw800", "colorBlue")}>{loading ? "…" : String(docCount)}</div>
+          <div className={cx("text12", "colorMuted")}>Documents, briefs, PDFs, and delivery notes</div>
+        </div>
+        <div className={cx("cardS1v2", "p16", "flexCol", "gap6")}>
+          <div className={cx("text10", "uppercase", "ls01", "colorMuted2")}>Total size</div>
+          <div className={cx("text22", "fw800", "colorAmber")}>{loading ? "…" : formatBytes(totalSizeBytes)}</div>
+          <div className={cx("text12", "colorMuted")}>Combined size of the current file library</div>
+        </div>
       </div>
 
       {error && (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateTitle")}>Something went wrong</div>
           <div className={cx("emptyStateSub")}>{error}</div>
+          <button type="button" className={cx("btn", "btnPrimary", "mt12")} onClick={loadFiles}>
+            Retry
+          </button>
         </div>
       )}
 
@@ -557,7 +609,7 @@ export function FilesAssetsPage() {
                     <button
                       type="button"
                       className={cx("btnSm", "btnGhost", "py4_px", "px10_px")}
-                      onClick={() => handleDownload(f.id, f.name)}
+                      onClick={() => handleDownload(f.id)}
                     >
                       <Ic n="download" sz={12} c="var(--muted)" />
                     </button>
@@ -655,7 +707,7 @@ export function FilesAssetsPage() {
                   <button
                     type="button"
                     className={cx("btnSm", "btnAccent")}
-                    onClick={() => handleDownload(f.id, f.name)}
+                    onClick={() => handleDownload(f.id)}
                   >
                     <Ic n="download" sz={13} c="var(--bg)" /> Download
                   </button>

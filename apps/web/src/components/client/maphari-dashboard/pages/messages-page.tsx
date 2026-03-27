@@ -24,15 +24,15 @@ import {
   type PortalRisk,
 } from "../../../../lib/api/portal";
 import { createInstantVideoRoomWithRefresh } from "../../../../lib/api/portal/video";
-import { VideoRoomModal } from "../components/video-room-modal";
 import type { Thread as WorkspaceThread } from "../types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type MsgTab = "Inbox" | "Activity" | "AI Assistant" | "Support";
+type MsgTab = "Inbox" | "Activity";
 type Priority = "Low" | "Medium" | "High";
 type ActivityTone = "accent" | "amber" | "purple" | "red" | "green";
 type ActivityFilter = "All" | "Deliverables" | "Risks";
+type ThreadListFilter = "All" | "Messages" | "Calls";
 
 type Thread = {
   id: string;
@@ -60,37 +60,28 @@ type ActivityItem = {
   title: string;
   sub: string;
   time: string;
+  timestamp: number;
 };
 
 type AiMsg = { role: "ai" | "user"; text: string };
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
-const TABS: MsgTab[] = ["Inbox", "Activity", "AI Assistant", "Support"];
+const TABS: MsgTab[] = ["Inbox", "Activity"];
 
 const ACTIVITY_FILTERS: ActivityFilter[] = ["All", "Deliverables", "Risks"];
+const THREAD_FILTERS: ThreadListFilter[] = ["All", "Messages", "Calls"];
 
 const AI_PROMPTS = [
-  "What's the current project status?",
-  "Any blockers I should know about?",
-  "When is the next milestone?",
-  "How is budget tracking?",
+  "Summarise recent delivery activity",
+  "Any high-impact risks open?",
+  "What should I follow up on next?",
+  "Can you help with budget questions?",
 ];
 
 const AI_INITIAL: AiMsg = {
   role: "ai",
-  text: "Hi! I'm your AI project assistant. I have full context on your active projects, milestones, budget, and team activity. Ask me anything.",
-};
-
-const AI_REPLIES: Record<string, string> = {
-  "What's the current project status?":
-    "Your project is currently in active development. The team is on track with the current sprint and deliverables are progressing as planned.",
-  "Any blockers I should know about?":
-    "No critical blockers at the moment. Check the Risks page for any flagged concerns that the team is monitoring.",
-  "When is the next milestone?":
-    "Your next milestone is coming up at the end of this sprint. Visit the Milestones page for exact dates and deliverable details.",
-  "How is budget tracking?":
-    "Budget is on track. For a detailed breakdown visit the Billing page or ask your project manager for the latest forecast.",
+  text: "Hi! I can summarise the live deliverables and risks loaded in this workspace. I do not invent milestone or budget answers if that data is not available here.",
 };
 
 const TONE_DOT: Record<ActivityTone, string> = {
@@ -130,6 +121,7 @@ function deliverableToActivity(d: PortalDeliverable): ActivityItem {
     title: d.name,
     sub: `Status: ${d.status.replace(/_/g, " ")}`,
     time: fmtAgo(d.updatedAt),
+    timestamp: new Date(d.updatedAt).getTime(),
   };
 }
 
@@ -141,15 +133,90 @@ function riskToActivity(r: PortalRisk): ActivityItem {
     title: r.name,
     sub: `Impact: ${r.impact} · Likelihood: ${r.likelihood}`,
     time: fmtAgo(r.updatedAt),
+    timestamp: new Date(r.updatedAt).getTime(),
   };
 }
 
+function buildAssistantReply(question: string, deliverables: PortalDeliverable[], risks: PortalRisk[]): string {
+  const q = question.toLowerCase();
+  const openHighRisks = risks.filter((risk) => (risk.impact === "HIGH" || risk.impact === "CRITICAL") && risk.status !== "MITIGATED");
+  const inReviewDeliverables = deliverables.filter((item) => item.status === "IN_REVIEW");
+  const doneDeliverables = deliverables.filter((item) => item.status === "DONE");
+  const nextDueDeliverable = [...deliverables]
+    .filter((item) => item.dueAt)
+    .sort((left, right) => new Date(left.dueAt as string).getTime() - new Date(right.dueAt as string).getTime())[0];
+
+  if (q.includes("summarise") || q.includes("recent delivery") || q.includes("status")) {
+    return "I can see " + deliverables.length + " deliverable" + (deliverables.length === 1 ? "" : "s") +
+      ", with " + doneDeliverables.length + " marked done and " + inReviewDeliverables.length +
+      " currently in review. There are " + risks.length + " logged risk" + (risks.length === 1 ? "" : "s") +
+      ", including " + openHighRisks.length + " high-impact item" + (openHighRisks.length === 1 ? "" : "s") + " still open or under monitoring.";
+  }
+
+  if (q.includes("risk") || q.includes("blocker")) {
+    if (openHighRisks.length === 0) {
+      return "There are no open high-impact risks in the live register from this page. For the full picture, cross-check the Risk Register.";
+    }
+    const first = openHighRisks[0];
+    return "Yes. " + openHighRisks.length + " high-impact risk" + (openHighRisks.length === 1 ? "" : "s") +
+      " remain open or under monitoring. The most urgent visible item is \"" + first.name + "\" with likelihood " +
+      first.likelihood + " and impact " + first.impact + ".";
+  }
+
+  if (q.includes("follow up") || q.includes("next")) {
+    if (inReviewDeliverables.length > 0) {
+      return "The clearest follow-up is content or deliverables currently in review. I can see " +
+        inReviewDeliverables.length + " item" + (inReviewDeliverables.length === 1 ? "" : "s") +
+        " awaiting movement, so reviewing those first would unblock the team fastest.";
+    }
+    if (nextDueDeliverable?.name) {
+      return "The next visible item to watch is \"" + nextDueDeliverable.name + "\" due on " +
+        isoToDay(nextDueDeliverable.dueAt as string) + ".";
+    }
+    return "I do not see a clear immediate follow-up in the live data here. The next best step is checking Messages or Support for any team requests.";
+  }
+
+  if (q.includes("budget") || q.includes("invoice") || q.includes("financial")) {
+    return "I cannot answer budget or invoice questions from the Messages page alone. Use Financial Reports, Invoice History, or Budget Tracker for real finance data.";
+  }
+
+  return "I can help with live delivery and risk context from this page. Try asking about recent activity, open risks, or what needs follow-up next.";
+}
+
+function cleanPreview(raw: string): string {
+  if (!raw) return "";
+  if (raw.startsWith("CALL_ROOM::")) return "Video call link";
+  return raw;
+}
+
+function formatLegacyCallPreview(raw: string): string {
+  const parts = raw.split(/\s*,\s*/).filter(Boolean);
+  if (parts.length < 2) return raw;
+  const trailing = parts.pop();
+  return trailing ? `${parts.join(", ")} · ${trailing}` : raw;
+}
+
+function isCallThread(t: { subject: string; preview: string }): boolean {
+  return t.subject === "Instant Calls" || t.subject.startsWith("Instant Call") || t.preview?.startsWith("CALL_ROOM::");
+}
+
 function mapThread(t: WorkspaceThread): Thread {
+  // For call threads with a date embedded in the subject ("Instant Call — Tue, 24 Mar, 14:16"),
+  // surface the date/time as the preview so each call is distinguishable in the list.
+  let subject = t.subject;
+  let preview = cleanPreview(t.preview);
+  const callDateMatch = t.subject.match(/^Instant Call\s+[—–-]\s+(.+)$/);
+  if (callDateMatch?.[1]) {
+    subject = "Instant Call";
+    preview = formatLegacyCallPreview(callDateMatch[1]);
+  } else if (subject === "Instant Calls" && (!preview || preview === `Re: ${subject}` || preview.startsWith("Re: Instant Call"))) {
+    preview = "Latest room link and follow-ups";
+  }
   return {
     id: t.id,
     conversationId: t.id,
-    subject: t.subject,
-    preview: t.preview,
+    subject,
+    preview,
     time: fmtAgo(t.lastMessageAt),
     unread: t.unread,
     avatarInitials: t.senderInitials,
@@ -158,16 +225,101 @@ function mapThread(t: WorkspaceThread): Thread {
   };
 }
 
+const EXTRA_THREADS_KEY = "msgu_extra_threads";
+
+// ─── Call-room card renderer ──────────────────────────────────────────────────
+
+function CallRoomCard({ url, expiresAt, dateLabel, onJoin }: { url: string; expiresAt: string; dateLabel: string; onJoin?: (url: string) => void }) {
+  const expiresMs = new Date(expiresAt).getTime();
+  const expired = Number.isNaN(expiresMs);
+  const expiresLabel = new Date(expiresAt).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <div className={cx("msguCallCard")}>
+      <div className={cx("msguCallCardTop")}>
+        <div className={cx("msguCallCardTitle")}>
+          <Ic n="video" sz={14} c="var(--lime)" />
+          Instant Video Call
+        </div>
+        <div className={cx("msguCallCardMeta")}>
+          Started {dateLabel}
+        </div>
+      </div>
+      <div className={cx("msguCallCardDivider")} />
+      <div className={cx("msguCallCardActions")}>
+        <span className={cx("msguCallCardExpiry")}>
+          {expired ? "Room expired" : `Expires at ${expiresLabel}`}
+        </span>
+        {!expired && (
+          <button
+            type="button"
+            className={cx("msguCallCardJoin")}
+            onClick={() => onJoin?.(url)}
+          >
+            <Ic n="video" sz={11} c="#0d0d14" />
+            Join Call
+          </button>
+        )}
+      </div>
+      <div className={cx("msguCallCardFooter")}>
+        Use this thread for notes, questions and follow-ups during or after the call.
+      </div>
+    </div>
+  );
+}
+
+function MessageContent({ content, onJoin }: { content: string; onJoin?: (url: string) => void }) {
+  // Detect structured call-room messages: CALL_ROOM::url::expiresISO::dateLabel
+  if (content.startsWith("CALL_ROOM::")) {
+    const parts = content.slice("CALL_ROOM::".length).split("::");
+    const url = parts[0] ?? "";
+    const expiresAt = parts[1] ?? "";
+    const dateLabel = parts[2] ?? "";
+    return <CallRoomCard url={url} expiresAt={expiresAt} dateLabel={dateLabel} onJoin={onJoin} />;
+  }
+
+  // Normal text: preserve line breaks and linkify URLs
+  const lines = content.split("\n");
+  return (
+    <>
+      {lines.map((line, i) => {
+        // Detect bare URL lines
+        const urlMatch = line.match(/^(https?:\/\/\S+)$/);
+        if (urlMatch) {
+          return (
+            <span key={i}>
+              <a href={urlMatch[1]} target="_blank" rel="noopener noreferrer"
+                style={{ color: "var(--lime)", wordBreak: "break-all" }}>
+                {urlMatch[1]}
+              </a>
+              {i < lines.length - 1 && <br />}
+            </span>
+          );
+        }
+        return (
+          <span key={i}>
+            {line}
+            {i < lines.length - 1 && <br />}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function MessagesPage({ threads: apiThreads = [] }: { threads?: WorkspaceThread[] }) {
+export function MessagesPage({ threads: apiThreads = [], onJoinCall }: { threads?: WorkspaceThread[]; onJoinCall?: (url: string) => void }) {
   const { session, projectId } = useProjectLayer();
   const showToast = usePageToast();
 
   // ── Core state ────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<MsgTab>("Inbox");
+  const [showAiAssistant, setShowAiAssistant] = useState(false);
+  const [showSupportPanel, setShowSupportPanel] = useState(false);
   const [activeThread, setActiveThread] = useState<Thread | null>(null);
   const [threadSearch, setThreadSearch] = useState("");
+  const [threadFilter, setThreadFilter] = useState<ThreadListFilter>("All");
 
   // ── Inbox ─────────────────────────────────────────────────────────────────
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -181,10 +333,22 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
   const [newSubject, setNewSubject] = useState("");
   const [creatingThread, setCreatingThread] = useState(false);
 
+  // ── Optimistic threads (locally created, persist across navigation) ─────
+  const [extraThreads, setExtraThreads] = useState<Thread[]>(() => {
+    try {
+      const raw = sessionStorage.getItem(EXTRA_THREADS_KEY);
+      return raw ? (JSON.parse(raw) as Thread[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
   // ── Activity ──────────────────────────────────────────────────────────────
   const [activityItems, setActivityItems] = useState<ActivityItem[]>([]);
   const [activityLoaded, setActivityLoaded] = useState(false);
   const [actFilter, setActFilter] = useState<ActivityFilter>("All");
+  const [activityDeliverables, setActivityDeliverables] = useState<PortalDeliverable[]>([]);
+  const [activityRisks, setActivityRisks] = useState<PortalRisk[]>([]);
 
   // ── AI Assistant ──────────────────────────────────────────────────────────
   const [aiChat, setAiChat] = useState<AiMsg[]>([AI_INITIAL]);
@@ -200,23 +364,38 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
   const [supSending, setSupSending] = useState(false);
   const [supDone, setSupDone] = useState(false);
 
-  // ── Video room ────────────────────────────────────────────────────────────
-  const [videoModalOpen, setVideoModalOpen] = useState(false);
-  const [videoRoomUrl, setVideoRoomUrl] = useState("");
+  // ── Video call ────────────────────────────────────────────────────────────
   const [videoLoading, setVideoLoading] = useState(false);
 
+  // Persist extra threads to sessionStorage whenever they change
+  useEffect(() => {
+    try { sessionStorage.setItem(EXTRA_THREADS_KEY, JSON.stringify(extraThreads)); } catch { /* ignore */ }
+  }, [extraThreads]);
+
   // ── Derived ───────────────────────────────────────────────────────────────
-  const threads = useMemo(() => apiThreads.map(mapThread), [apiThreads]);
+  const threads = useMemo(() => {
+    const apiMapped = apiThreads.map(mapThread);
+    const apiIds = new Set(apiMapped.map((t) => t.id));
+    // extraThreads that haven't landed in the API yet come first (optimistic)
+    const dedupedExtra = extraThreads.filter((t) => !apiIds.has(t.id));
+    return [...dedupedExtra, ...apiMapped];
+  }, [extraThreads, apiThreads]);
 
   const filteredThreads = useMemo(
     () =>
       threads.filter(
-        (t) =>
-          threadSearch === "" ||
-          t.subject.toLowerCase().includes(threadSearch.toLowerCase()) ||
-          t.projectName.toLowerCase().includes(threadSearch.toLowerCase()),
+        (t) => {
+          const matchesFilter =
+            threadFilter === "All" ||
+            (threadFilter === "Calls" ? isCallThread(t) : !isCallThread(t));
+          const matchesSearch =
+            threadSearch === "" ||
+            t.subject.toLowerCase().includes(threadSearch.toLowerCase()) ||
+            t.projectName.toLowerCase().includes(threadSearch.toLowerCase());
+          return matchesFilter && matchesSearch;
+        },
       ),
-    [threads, threadSearch],
+    [threads, threadFilter, threadSearch],
   );
 
   const filteredActivity = useMemo(() => {
@@ -225,13 +404,18 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
     return activityItems.filter((a) => a.id.startsWith("risk-"));
   }, [activityItems, actFilter]);
 
+  const emptyThreadLabel =
+    threadFilter === "Calls"
+      ? "No call threads yet"
+      : threadFilter === "Messages"
+        ? "No message threads yet"
+        : "No conversations yet";
+
   // ── Load messages on thread change ────────────────────────────────────────
   useEffect(() => {
     if (!session || !activeThread) {
-      setMessages([]);
       return;
     }
-    setLoadingMsgs(true);
     void loadConversationMessagesWithRefresh(session, activeThread.conversationId).then((r) => {
       if (r.nextSession) saveSession(r.nextSession);
       if (r.data) {
@@ -246,25 +430,27 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
       }
       setLoadingMsgs(false);
     });
-  }, [activeThread?.conversationId, session?.accessToken]);
+  }, [activeThread, session]);
 
   // ── Load activity feed (lazy — first time Activity tab opens) ─────────────
   useEffect(() => {
-    if (activeTab !== "Activity" || activityLoaded || !session || !projectId) return;
+    if ((activeTab !== "Activity" && activeTab !== "AI Assistant") || activityLoaded || !session || !projectId) return;
     void Promise.all([
       loadPortalDeliverablesWithRefresh(session, projectId),
       loadPortalRisksWithRefresh(session, projectId),
     ]).then(([dr, rr]) => {
       if (dr.nextSession) saveSession(dr.nextSession);
       if (rr.nextSession) saveSession(rr.nextSession);
+      setActivityDeliverables(dr.data ?? []);
+      setActivityRisks(rr.data ?? []);
       const items: ActivityItem[] = [
         ...(dr.data ?? []).map(deliverableToActivity),
         ...(rr.data ?? []).map(riskToActivity),
-      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      ].sort((a, b) => b.timestamp - a.timestamp);
       setActivityItems(items);
       setActivityLoaded(true);
     });
-  }, [activeTab, activityLoaded, session?.accessToken, projectId]);
+  }, [activeTab, activityLoaded, session, projectId]);
 
   // ── Scroll to bottom on new messages ──────────────────────────────────────
   useEffect(() => {
@@ -282,6 +468,8 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   function selectThread(thread: Thread) {
+    setMessages([]);
+    setLoadingMsgs(true);
     setActiveThread(thread);
     setActiveTab("Inbox");
   }
@@ -290,8 +478,9 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
     if (!compose.trim() || !session || !activeThread) return;
     setSending(true);
     const content = compose.trim();
+    const optimisticId = `opt-${Date.now()}`;
     const optimistic: ChatMessage = {
-      id: `opt-${Date.now()}`,
+      id: optimisticId,
       content,
       mine: true,
       createdAt: new Date().toISOString(),
@@ -303,7 +492,24 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
       content,
     });
     if (r.nextSession) saveSession(r.nextSession);
-    if (r.error) showToast("error", "Failed to send message");
+    if (r.error || !r.data) {
+      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
+      setCompose(content);
+      showToast("error", "Failed to send message");
+    } else {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === optimisticId
+            ? {
+                id: r.data!.id,
+                content: r.data!.content,
+                mine: r.data!.authorRole === "CLIENT",
+                createdAt: r.data!.createdAt,
+              }
+            : msg
+        )
+      );
+    }
     setSending(false);
   }
 
@@ -319,37 +525,59 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
   }
 
   async function handleCreateThread() {
-    if (!newSubject.trim() || !session) return;
+    if (!newSubject.trim()) return;
+    if (!session) {
+      showToast("error", "You must be signed in to create a conversation");
+      return;
+    }
     setCreatingThread(true);
+    const subject = newSubject.trim();
     const r = await createPortalConversationWithRefresh(session, {
-      subject: newSubject.trim(),
+      subject,
       projectId: projectId ?? undefined,
     });
     if (r.nextSession) saveSession(r.nextSession);
-    if (r.error) showToast("error", "Failed to create conversation");
-    else showToast("success", "Conversation started");
     setCreatingThread(false);
     setNewSubject("");
     setShowNewThread(false);
+    if (r.error) {
+      showToast("error", "Failed to create conversation");
+    } else {
+      // Optimistically add to thread list and navigate to it
+      const newThread: Thread = {
+        id: r.data?.id ?? `opt-${Date.now()}`,
+        conversationId: r.data?.id ?? `opt-${Date.now()}`,
+        subject,
+        preview: "No messages yet",
+        time: "just now",
+        unread: false,
+        avatarInitials: "T",
+        avatarBg: "#1e2a1e",
+        projectName: projectId ? "Project" : "General",
+      };
+      setExtraThreads((prev) => [newThread, ...prev]);
+      setLoadingMsgs(true);
+      setActiveThread(newThread);
+      setActiveTab("Inbox");
+      showToast("success", "Conversation started");
+    }
   }
 
-  function handleAiPrompt(prompt: string) {
-    setAiInput(prompt);
-  }
-
-  function handleSendAi() {
-    const q = aiInput.trim();
-    if (!q) return;
+  function handleSendAi(overrideText?: string) {
+    const q = (overrideText ?? aiInput).trim();
+    if (!q || aiTyping) return;
     setAiInput("");
     setAiChat((prev) => [...prev, { role: "user", text: q }]);
     setAiTyping(true);
     setTimeout(() => {
-      const reply =
-        AI_REPLIES[q] ??
-        "I don't have specific data on that right now. Your project manager can give you an accurate answer.";
+      const reply = buildAssistantReply(q, activityDeliverables, activityRisks);
       setAiChat((prev) => [...prev, { role: "ai", text: reply }]);
       setAiTyping(false);
     }, 900);
+  }
+
+  function handleAiPrompt(prompt: string) {
+    handleSendAi(prompt);
   }
 
   function handleAiKey(e: KeyboardEvent<HTMLInputElement>) {
@@ -361,7 +589,11 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
 
   async function handleSupportSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!session || !supTitle.trim() || !supDesc.trim()) return;
+    if (!supTitle.trim() || !supDesc.trim()) return;
+    if (!session) {
+      showToast("error", "You must be signed in to submit a ticket");
+      return;
+    }
     setSupSending(true);
     const r = await createPortalSupportTicketWithRefresh(session, {
       clientId: session.user?.clientId ?? "",
@@ -378,6 +610,7 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
       setSupDone(true);
       setSupTitle("");
       setSupDesc("");
+      setShowSupportPanel(true);
       showToast("success", "Support ticket submitted");
     }
   }
@@ -385,17 +618,14 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
   async function handleStartVideoCall() {
     if (!session) return;
     setVideoLoading(true);
-    setVideoModalOpen(true);
-    setVideoRoomUrl("");
     const r = await createInstantVideoRoomWithRefresh(session);
     if (r.nextSession) saveSession(r.nextSession);
     setVideoLoading(false);
     if (r.error || !r.data) {
       showToast("error", r.error?.message ?? "Failed to start video call");
-      setVideoModalOpen(false);
       return;
     }
-    setVideoRoomUrl(r.data.joinUrl);
+    onJoinCall?.(r.data.joinUrl);
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -426,11 +656,25 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
             </button>
           </div>
 
+          <div className={cx("msguThreadFilters", "filterBar")}>
+            {THREAD_FILTERS.map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                className={cx("filterChip", threadFilter === filter ? "filterChipActive" : "")}
+                onClick={() => setThreadFilter(filter)}
+                aria-pressed={threadFilter === filter}
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
+
           {/* Thread list */}
           <div className={cx("msguThreadList")}>
             {filteredThreads.length === 0 ? (
               <div className={cx("msguThreadEmpty")}>
-                <span>No conversations yet</span>
+                <span>{emptyThreadLabel}</span>
               </div>
             ) : (
               filteredThreads.map((thread) => (
@@ -439,9 +683,9 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                   type="button"
                   className={cx(
                     "msguThreadItem",
-                    "rdStudioRow",
                     activeThread?.id === thread.id ? "msguThreadItemActive" : "",
                     thread.unread ? "msguThreadItemUnread" : "",
+                    isCallThread(thread) ? "msguThreadItemCall" : "",
                   )}
                   onClick={() => selectThread(thread)}
                 >
@@ -451,7 +695,10 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                   </div>
                   <div className={cx("msguThreadBody")}>
                     <div className={cx("msguThreadTop")}>
-                      <span className={cx("msguThreadName")}>{thread.subject}</span>
+                      <span className={cx("msguThreadNameGroup")}>
+                        {isCallThread(thread) && <Ic n="video" sz={11} c="var(--lime)" />}
+                        <span className={cx("msguThreadName")}>{thread.subject}</span>
+                      </span>
                       <span className={cx("msguThreadTime", "fontMono", "rdStudioLabel")}>{thread.time}</span>
                     </div>
                     <div className={cx("msguThreadPreview")}>{thread.preview}</div>
@@ -469,7 +716,7 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
         <div className={cx("msguRightPane")}>
           {/* Tab bar */}
           <div className={cx("msguTopBar")}>
-            <div className={cx("pillTabs")}>
+            <div className={cx("pillTabs")} style={{ marginBottom: 0, flexWrap: "nowrap", gap: "4px" }}>
               {TABS.map((tab) => (
                 <button
                   key={tab}
@@ -481,16 +728,36 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              className={cx("btnSm", "btnGhost", "mlAuto")}
-              onClick={() => void handleStartVideoCall()}
-              disabled={videoLoading || !session}
-              title="Start an instant video call"
-            >
-              <Ic n="video" sz={13} c="var(--text)" />
-              {videoLoading ? "Starting…" : "Start Call"}
-            </button>
+            <div className={cx("flexRow", "gap8", "flexCenter")}>
+              <button
+                type="button"
+                className={cx("btnSm", "btnGhost", "flexRow", "gap5")}
+                onClick={() => setShowAiAssistant(true)}
+                title="Open AI assistant"
+              >
+                <Ic n="sparkle" sz={12} c="var(--lime)" />
+                AI Assistant
+              </button>
+              <button
+                type="button"
+                className={cx("btnSm", "btnGhost", "flexRow", "gap5")}
+                onClick={() => setShowSupportPanel(true)}
+                title="Open support form"
+              >
+                <Ic n="alert" sz={12} c="var(--amber)" />
+                Support
+              </button>
+              <button
+                type="button"
+                className={cx("msguCallBtn")}
+                onClick={() => void handleStartVideoCall()}
+                disabled={videoLoading || !session}
+                title="Start an instant video call"
+              >
+                <Ic n="video" sz={13} c="currentColor" />
+                {videoLoading ? "Starting…" : "Start Call"}
+              </button>
+            </div>
           </div>
 
           {/* ── INBOX ───────────────────────────────────────────────────── */}
@@ -550,11 +817,11 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                                 <div className={cx("msguBubbleContent")}>
                                   <div
                                     className={cx(
-                                      "msguBubble",
-                                      msg.mine ? "msguBubbleMine" : "msguBubbleTheirs",
+                                      msg.content.startsWith("CALL_ROOM::") ? "" : "msguBubble",
+                                      msg.content.startsWith("CALL_ROOM::") ? "" : (msg.mine ? "msguBubbleMine" : "msguBubbleTheirs"),
                                     )}
                                   >
-                                    {msg.content}
+                                    <MessageContent content={msg.content} onJoin={onJoinCall} />
                                   </div>
                                   <div
                                     className={cx(
@@ -579,7 +846,7 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                     <div className={cx("msguComposeBar")}>
                       <textarea
                         className={cx("msguComposeInput")}
-                        placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
+                        placeholder="Type a message…"
                         value={compose}
                         onChange={(e) => setCompose(e.target.value)}
                         onKeyDown={handleComposeKey}
@@ -593,11 +860,8 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                         disabled={sending || !compose.trim()}
                         title="Send message"
                       >
-                        <Ic n="send" sz={16} c="var(--dark)" />
+                        <Ic n="send" sz={16} c="currentColor" />
                       </button>
-                    </div>
-                    <div className={cx("msguComposeHint")}>
-                      <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line · <kbd>Cmd+Enter</kbd> to send
                     </div>
                   </div>
                 </>
@@ -665,218 +929,261 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
             </div>
           )}
 
-          {/* ── AI ASSISTANT ────────────────────────────────────────────── */}
-          {activeTab === "AI Assistant" && (
-            <div className={cx("msguAiPage")}>
-              {/* Header */}
-              <div className={cx("msguAiHeader")}>
-                <div className={cx("msguAiAvatar")}>
-                  <Ic n="sparkle" sz={16} c="var(--lime)" />
-                </div>
-                <div>
-                  <div className={cx("text13", "fw700")}>
-                    Maphari AI
-                  </div>
-                  <div className={cx("text11", "colorMuted")}>Project intelligence assistant</div>
-                </div>
-              </div>
-
-              {/* Chat feed */}
-              <div className={cx("msguAiFeed")} ref={aiBodyRef}>
-                {aiChat.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={cx(
-                      "msguAiBubbleRow",
-                      msg.role === "user" ? "msguAiBubbleRowUser" : "",
-                    )}
-                  >
-                    {msg.role === "ai" && (
-                      <div className={cx("msguAiAvatar", "noShrink")}>
-                        <Ic n="sparkle" sz={13} c="var(--lime)" />
-                      </div>
-                    )}
-                    <div
-                      className={cx(
-                        "msguAiBubble",
-                        msg.role === "ai" ? "msguAiBubbleAi" : "msguAiBubbleUser",
-                      )}
-                    >
-                      {msg.text}
-                    </div>
-                  </div>
-                ))}
-                {aiTyping && (
-                  <div className={cx("msguAiBubbleRow")}>
-                    <div className={cx("msguAiAvatar", "noShrink")}>
-                      <Ic n="sparkle" sz={13} c="var(--lime)" />
-                    </div>
-                    <div className={cx("msguAiBubble", "msguAiBubbleAi", "colorMuted")}>
-                      Thinking…
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Suggested prompts */}
-              <div className={cx("msguAiPrompts")}>
-                {AI_PROMPTS.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    className={cx("btnSm", "btnGhost")}
-                    onClick={() => handleAiPrompt(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-
-              {/* AI compose */}
-              <div className={cx("msguComposeWrap")}>
-                <div className={cx("msguComposeBar")}>
-                  <input
-                    className={cx("msguComposeInput")}
-                    placeholder="Ask me anything about your project…"
-                    value={aiInput}
-                    onChange={(e) => setAiInput(e.target.value)}
-                    onKeyDown={handleAiKey}
-                    title="AI assistant input"
-                  />
-                  <button
-                    type="button"
-                    className={cx("msguSendBtn")}
-                    onClick={handleSendAi}
-                    disabled={!aiInput.trim() || aiTyping}
-                    title="Send to AI"
-                  >
-                    <Ic n="send" sz={16} c="var(--dark)" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── SUPPORT ─────────────────────────────────────────────────── */}
-          {activeTab === "Support" && (
-            <div className={cx("msguSupportPage")}>
-              <div className={cx("msguSupportHeader")}>
-                <div className={cx("text14", "fw700")}>
-                  Submit a Support Ticket
-                </div>
-                <div className={cx("text12", "colorMuted")}>
-                  Our team will respond within your SLA window.
-                </div>
-              </div>
-
-              {supDone ? (
-                <div className={cx("emptyState")}>
-                  <div className={cx("emptyStateIcon")}>
-                    <Ic n="check" sz={22} c="var(--lime)" />
-                  </div>
-                  <div className={cx("emptyStateTitle")}>Ticket submitted</div>
-                  <div className={cx("emptyStateSub")}>
-                    We've received your request and will be in touch shortly.
-                  </div>
-                  <button
-                    type="button"
-                    className={cx("btnSm", "btnAccent", "mt16")}
-                    onClick={() => setSupDone(false)}
-                  >
-                    Submit another
-                  </button>
-                </div>
-              ) : (
-                <form className={cx("msguSupportForm")} onSubmit={(e) => void handleSupportSubmit(e)}>
-                  <div className={cx("msguFieldGroup")}>
-                    <label className={cx("msguFieldLabel")} htmlFor="sup-title">
-                      Subject
-                    </label>
-                    <input
-                      id="sup-title"
-                      className={cx("msguFieldInput")}
-                      placeholder="Brief description of the issue"
-                      value={supTitle}
-                      onChange={(e) => setSupTitle(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className={cx("msguFieldGroup")}>
-                    <label className={cx("msguFieldLabel")} htmlFor="sup-desc">
-                      Description
-                    </label>
-                    <textarea
-                      id="sup-desc"
-                      className={cx("msguFieldTextarea")}
-                      placeholder="Describe the issue in detail…"
-                      value={supDesc}
-                      onChange={(e) => setSupDesc(e.target.value)}
-                      rows={4}
-                      required
-                    />
-                  </div>
-
-                  <div className={cx("msguSupportRow")}>
-                    <div className={cx("msguFieldGroup")}>
-                      <label className={cx("msguFieldLabel")} htmlFor="sup-cat">
-                        Category
-                      </label>
-                      <select
-                        id="sup-cat"
-                        className={cx("msguFieldInput")}
-                        value={supCategory}
-                        onChange={(e) => setSupCategory(e.target.value)}
-                      >
-                        <option value="GENERAL">General</option>
-                        <option value="BILLING">Billing</option>
-                        <option value="TECHNICAL">Technical</option>
-                        <option value="PROJECT">Project</option>
-                        <option value="OTHER">Other</option>
-                      </select>
-                    </div>
-                    <div className={cx("msguFieldGroup")}>
-                      <label className={cx("msguFieldLabel")}>Priority</label>
-                      <div className={cx("msguPriorityGrid")}>
-                        {(["Low", "Medium", "High"] as Priority[]).map((p) => (
-                          <button
-                            key={p}
-                            type="button"
-                            className={cx(
-                              "msguPriorityBtn",
-                              p === "Low" ? "msguPriorityLow" : p === "Medium" ? "msguPriorityMed" : "msguPriorityHigh",
-                              supPriority === p ? "msguPriorityBtnActive" : "",
-                            )}
-                            onClick={() => setSupPriority(p)}
-                          >
-                            {p}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className={cx("msguSubmitBtn")}
-                    disabled={supSending || !supTitle.trim() || !supDesc.trim()}
-                  >
-                    {supSending ? "Submitting…" : "Submit ticket"}
-                  </button>
-                </form>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* ── Video Room Modal ─────────────────────────────────────────────── */}
-      <VideoRoomModal
-        isOpen={videoModalOpen}
-        onClose={() => setVideoModalOpen(false)}
-        roomUrl={videoRoomUrl}
-        isLoading={videoLoading}
-      />
+      {showAiAssistant && (
+        <div
+          className={cx("modalOverlay")}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowAiAssistant(false); }}
+        >
+          <div className={cx("pmModalInner")} style={{ width: "min(680px, 95vw)" } as React.CSSProperties}>
+            <div className={cx("pmModalHd")}>
+              <span className={cx("modalTitle")}>AI Assistant</span>
+              <button type="button" className={cx("iconBtn40x34")} onClick={() => setShowAiAssistant(false)} title="Close">
+                <Ic n="x" sz={16} sw={2.5} c="var(--muted2)" />
+              </button>
+            </div>
+            <div className={cx("modalBody", "p20", "cardS1")}>
+              <div className={cx("msguAiPage")}>
+                <div className={cx("msguAiHeader", "cardS1v2")}>
+                  <div className={cx("msguAiAvatar")}>
+                    <Ic n="sparkle" sz={16} c="var(--lime)" />
+                  </div>
+                  <div>
+                    <div className={cx("text13", "fw700")}>Maphari AI</div>
+                    <div className={cx("text11", "colorMuted")}>Live workspace assistant</div>
+                  </div>
+                </div>
+
+                <div className={cx("msguAiFeed")} ref={aiBodyRef}>
+                  {aiChat.map((msg, i) => (
+                    <div key={i} className={cx("msguAiBubbleRow", msg.role === "user" ? "msguAiBubbleRowUser" : "")}>
+                      {msg.role === "ai" && (
+                        <div className={cx("msguAiAvatar", "noShrink")}>
+                          <Ic n="sparkle" sz={13} c="var(--lime)" />
+                        </div>
+                      )}
+                      <div className={cx("msguAiBubble", msg.role === "ai" ? "msguAiBubbleAi" : "msguAiBubbleUser")}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                  {aiTyping && (
+                    <div className={cx("msguAiBubbleRow")}>
+                      <div className={cx("msguAiAvatar", "noShrink")}>
+                        <Ic n="sparkle" sz={13} c="var(--lime)" />
+                      </div>
+                      <div className={cx("msguAiBubble", "msguAiBubbleAi", "colorMuted")}>Thinking…</div>
+                    </div>
+                  )}
+                </div>
+
+                <div className={cx("msguAiPrompts", "cardS1v2")}>
+                  {AI_PROMPTS.map((p) => (
+                    <button key={p} type="button" className={cx("btnSm", "btnGhost")} onClick={() => handleAiPrompt(p)}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+
+                <div className={cx("msguComposeWrap", "cardS1v2")}>
+                  <div className={cx("msguComposeBar")}>
+                    <input
+                      className={cx("msguComposeInput")}
+                      placeholder="Ask about delivery or risk activity…"
+                      value={aiInput}
+                      onChange={(e) => setAiInput(e.target.value)}
+                      onKeyDown={handleAiKey}
+                      title="AI assistant input"
+                    />
+                    <button
+                      type="button"
+                      className={cx("msguSendBtn")}
+                      onClick={() => handleSendAi()}
+                      disabled={!aiInput.trim() || aiTyping}
+                      title="Send to AI"
+                    >
+                      <Ic n="send" sz={16} c="currentColor" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSupportPanel && (
+        <div
+          className={cx("modalOverlay")}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowSupportPanel(false); }}
+        >
+          <div className={cx("pmModalInner", "supportModalWide")}>
+            <div className={cx("pmModalHd")}>
+              <span className={cx("modalTitle")}>Support</span>
+              <button type="button" className={cx("iconBtn40x34")} onClick={() => setShowSupportPanel(false)} title="Close">
+                <Ic n="x" sz={16} sw={2.5} c="var(--muted2)" />
+              </button>
+            </div>
+            <div className={cx("supportModalBody", "cardS1")}>
+              <div className={cx("msguSupportPage")}>
+                <div className={cx("cardS1v2", "p16x20", "mb12")}>
+                  <div className={cx("flexRow", "gap12", "flexAlignStart")}>
+                    <div className={cx("iconBox44")}>
+                      <Ic n="alert" sz={18} c="var(--amber)" />
+                    </div>
+                    <div className={cx("flex1")}>
+                      <div className={cx("text14", "fw700", "mb4")}>Client Support Desk</div>
+                      <div className={cx("text12", "colorMuted", "lineH16")}>
+                        Use this form for billing, technical, or delivery issues that need a tracked response from the team.
+                      </div>
+                    </div>
+                    <span className={cx("badge", "badgeAccent", "noShrink")}>SLA-backed</span>
+                  </div>
+                </div>
+
+                <div className={cx("grid3Cols", "gap8", "mb12")}>
+                  {[
+                    {
+                      title: "Be specific",
+                      detail: "Mention the screen, file, invoice, or project item involved.",
+                      icon: "edit",
+                    },
+                    {
+                      title: "Set the right priority",
+                      detail: "Use high only when delivery or access is blocked.",
+                      icon: "flag",
+                    },
+                    {
+                      title: "Expect follow-up",
+                      detail: "The team may reply in Messages if clarification is needed.",
+                      icon: "message",
+                    },
+                  ].map((item) => (
+                    <div key={item.title} className={cx("cardS1v2", "p12x14")}>
+                      <div className={cx("flexRow", "flexCenter", "gap6", "mb6")}>
+                        <Ic n={item.icon as "edit"} sz={12} c="var(--cyan)" />
+                        <span className={cx("fw700", "text11")}>{item.title}</span>
+                      </div>
+                      <div className={cx("text11", "colorMuted", "lineH16")}>{item.detail}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {supDone ? (
+                  <div className={cx("cardS1v2", "p20", "textCenter")}>
+                    <div className={cx("pmSuccessCircle")}>
+                      <Ic n="check" sz={22} c="var(--lime)" />
+                    </div>
+                    <div className={cx("text14", "fw700", "mb4")}>Ticket submitted</div>
+                    <div className={cx("text12", "colorMuted", "lineH16", "mb16")}>
+                      We&apos;ve received your request and will be in touch shortly.
+                    </div>
+                    <div className={cx("flexRow", "gap8", "justifyCenter")}>
+                      <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setSupDone(false)}>
+                        Submit another
+                      </button>
+                      <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setShowSupportPanel(false)}>
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <form className={cx("msguSupportForm")} onSubmit={(e) => void handleSupportSubmit(e)}>
+                    <div className={cx("cardS1v2", "p16x20", "mb12")}>
+                      <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01", "mb10")}>Issue Summary</div>
+                      <div className={cx("msguFieldGroup")}>
+                        <label className={cx("msguFieldLabel")} htmlFor="sup-title">Subject</label>
+                        <input
+                          id="sup-title"
+                          className={cx("msguFieldInput")}
+                          placeholder="Brief description of the issue"
+                          value={supTitle}
+                          onChange={(e) => setSupTitle(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className={cx("msguFieldGroup")}>
+                        <label className={cx("msguFieldLabel")} htmlFor="sup-desc">Description</label>
+                        <textarea
+                          id="sup-desc"
+                          className={cx("msguFieldTextarea")}
+                          placeholder="Describe the issue in detail, including what you expected and what happened instead…"
+                          value={supDesc}
+                          onChange={(e) => setSupDesc(e.target.value)}
+                          rows={5}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className={cx("cardS1v2", "p16x20", "mb12")}>
+                      <div className={cx("fontMono", "text10", "colorMuted2", "uppercase", "ls01", "mb10")}>Routing</div>
+                      <div className={cx("msguFieldGroup", "mb12")}>
+                        <label className={cx("msguFieldLabel")} htmlFor="sup-cat">Category</label>
+                        <select id="sup-cat" className={cx("msguFieldInput")} value={supCategory} onChange={(e) => setSupCategory(e.target.value)}>
+                          <option value="GENERAL">General</option>
+                          <option value="BILLING">Billing</option>
+                          <option value="TECHNICAL">Technical</option>
+                          <option value="PROJECT">Project</option>
+                          <option value="OTHER">Other</option>
+                        </select>
+                      </div>
+                      <div className={cx("msguFieldGroup")}>
+                        <label className={cx("msguFieldLabel")}>Priority</label>
+                        <div className={cx("supportPriorityGrid")}>
+                          {([
+                            { level: "Low", hint: "Routine request" },
+                            { level: "Medium", hint: "Needs timely attention" },
+                            { level: "High", hint: "Work blocked or urgent" },
+                          ] as Array<{ level: Priority; hint: string }>).map((p) => (
+                            <button
+                              key={p.level}
+                              type="button"
+                              className={cx(
+                                "msguPriorityBtn",
+                                "supportPriorityBtn",
+                                p.level === "Low" ? "msguPriorityLow" : p.level === "Medium" ? "msguPriorityMed" : "msguPriorityHigh",
+                                supPriority === p.level ? "msguPriorityBtnActive" : "",
+                              )}
+                              onClick={() => setSupPriority(p.level)}
+                            >
+                              <span>{p.level}</span>
+                              <span className={cx("supportPriorityHint")}>{p.hint}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={cx("cardS1v2", "p16x20")}>
+                      <div className={cx("flexBetween", "gap12", "flexWrap")}>
+                        <div>
+                          <div className={cx("fw700", "text12", "mb4")}>Ready to submit</div>
+                          <div className={cx("text11", "colorMuted", "lineH16")}>
+                            Your ticket will be routed to the right team and tracked through your support workflow.
+                          </div>
+                        </div>
+                        <div className={cx("flexRow", "gap8", "noShrink")}>
+                          <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setShowSupportPanel(false)}>
+                            Cancel
+                          </button>
+                          <button type="submit" className={cx("btnSm", "btnAccent")} disabled={supSending || !supTitle.trim() || !supDesc.trim()}>
+                            {supSending ? "Submitting…" : "Submit ticket"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* ── New Thread Modal ─────────────────────────────────────────────── */}
       {showNewThread && (
@@ -893,7 +1200,7 @@ export function MessagesPage({ threads: apiThreads = [] }: { threads?: Workspace
                 onClick={() => setShowNewThread(false)}
                 title="Close"
               >
-                <Ic n="x" sz={15} c="var(--text)" />
+                <Ic n="x" sz={17} sw={2.5} c="var(--text)" />
               </button>
             </div>
             <div className={cx("modalBody")}>

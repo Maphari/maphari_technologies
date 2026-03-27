@@ -1,11 +1,89 @@
 import { BadRequestException, Body, Controller, Get, Headers, Param, Patch, Post, Query } from "@nestjs/common";
-import { createInvoiceSchema, createPaymentSchema, type ApiResponse, type Role } from "@maphari/contracts";
+import {
+  createInvoiceSchema,
+  createPaymentSchema,
+  sendInvoiceReminderSchema,
+  upsertInvoiceReminderPreferenceSchema,
+  type ApiResponse,
+  type Role
+} from "@maphari/contracts";
 import { Public } from "../auth/public.decorator.js";
 import { Roles } from "../auth/roles.decorator.js";
 import { proxyRequest } from "../utils/proxy-request.js";
 
 @Controller()
 export class BillingController {
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Get("invoice-reminders/preferences")
+  async getInvoiceReminderPreferences(
+    @Query("clientId") clientIdQuery?: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.BILLING_SERVICE_URL ?? "http://localhost:4006";
+    const query = clientIdQuery ? "?clientId=" + encodeURIComponent(clientIdQuery) : "";
+    return proxyRequest(`${baseUrl}/invoice-reminders/preferences${query}`, "GET", undefined, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Post("invoice-reminders/preferences")
+  async saveInvoiceReminderPreferences(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const parsedBody = upsertInvoiceReminderPreferenceSchema.safeParse(body);
+    if (!parsedBody.success) {
+      throw new BadRequestException("Invalid invoice reminder preference payload");
+    }
+
+    const baseUrl = process.env.BILLING_SERVICE_URL ?? "http://localhost:4006";
+    return proxyRequest(`${baseUrl}/invoice-reminders/preferences`, "POST", parsedBody.data, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
+  @Roles("ADMIN", "STAFF", "CLIENT")
+  @Post("invoice-reminders/send")
+  async sendInvoiceReminders(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const parsedBody = sendInvoiceReminderSchema.safeParse(body);
+    if (!parsedBody.success) {
+      throw new BadRequestException("Invalid invoice reminder payload");
+    }
+
+    const baseUrl = process.env.BILLING_SERVICE_URL ?? "http://localhost:4006";
+    return proxyRequest(`${baseUrl}/invoice-reminders/send`, "POST", parsedBody.data, {
+      "x-user-id": userId ?? "",
+      "x-user-role": role ?? "CLIENT",
+      "x-client-id": clientId ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id": traceId ?? requestId ?? ""
+    });
+  }
+
   @Roles("ADMIN", "STAFF", "CLIENT")
   @Get("invoices")
   async listInvoices(

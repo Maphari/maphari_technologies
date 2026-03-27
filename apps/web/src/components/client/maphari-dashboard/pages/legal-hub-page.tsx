@@ -72,6 +72,55 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+function csvCell(value: string | number): string {
+  return "\"" + String(value).replace(/"/g, "\"\"") + "\"";
+}
+
+function triggerLegalExportDownload(proposals: PortalProposal[], contracts: PortalContract[]): void {
+  const proposalRows = [
+    "Proposals",
+    ["Title", "Status", "Amount", "Currency", "Valid Until", "Prepared By"].map(csvCell).join(","),
+    ...proposals.map((proposal) =>
+      [
+        proposal.title,
+        proposal.status,
+        proposal.amountCents / 100,
+        proposal.currency,
+        proposal.validUntil ?? "—",
+        proposal.preparedBy ?? "—",
+      ].map(csvCell).join(",")
+    ),
+  ];
+
+  const contractRows = [
+    "",
+    "Contracts",
+    ["Title", "Type", "Status", "Signed", "Signed By", "Signed At", "Reference"].map(csvCell).join(","),
+    ...contracts.map((contract) =>
+      [
+        contract.title,
+        contract.type,
+        contract.status,
+        contract.signed ? "Yes" : "No",
+        contract.signedByName ?? "—",
+        contract.signedAt ?? "—",
+        contract.ref ?? contract.id,
+      ].map(csvCell).join(",")
+    ),
+  ];
+
+  const csv = [...proposalRows, ...contractRows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = "maphari-legal-agreements.csv";
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
 function formatContractMeta(c: PortalContract): string {
   if (c.signed && c.signedAt) {
     return `Signed ${fmtDate(c.signedAt)} · Both parties`;
@@ -80,47 +129,18 @@ function formatContractMeta(c: PortalContract): string {
   return "Requires your signature";
 }
 
-function buildFallbackHtml(title: string): string {
-  return `<h2 style="font-family:sans-serif;margin-bottom:12px">${title}</h2>
-<p style="font-family:sans-serif;line-height:1.75;color:#333">
-  This document sets out the terms and conditions agreed upon between Maphari (Pty) Ltd and the Client.
-  Please read the full agreement carefully before signing.
-</p>
-<h3 style="font-family:sans-serif;margin-top:24px">1. Confidentiality</h3>
-<p style="font-family:sans-serif;line-height:1.75;color:#333">
-  Each party agrees to treat as confidential all information received from the other party that is designated
-  as confidential or that should reasonably be understood to be confidential given the nature of the information
-  and circumstances of disclosure.
-</p>
-<h3 style="font-family:sans-serif;margin-top:24px">2. Obligations</h3>
-<p style="font-family:sans-serif;line-height:1.75;color:#333">
-  Each party shall protect confidential information with at least the same degree of care it uses for its own
-  confidential information, and shall not disclose confidential information to any third parties without prior
-  written consent.
-</p>
-<h3 style="font-family:sans-serif;margin-top:24px">3. Term</h3>
-<p style="font-family:sans-serif;line-height:1.75;color:#333">
-  This agreement remains in effect for two (2) years from the signing date, unless terminated earlier by
-  mutual written agreement.
-</p>
-<h3 style="font-family:sans-serif;margin-top:24px">4. Governing Law</h3>
-<p style="font-family:sans-serif;line-height:1.75;color:#333">
-  This agreement is governed by the laws of the Republic of South Africa. Any dispute shall be resolved in
-  the courts of Johannesburg, Gauteng.
-</p>`;
-}
-
 // ── ContractViewer ─────────────────────────────────────────────────────────────
 
 interface ContractViewerProps {
   doc:      DisplayDoc;
   html:     string;
   loading:  boolean;
+  previewNote: string | null;
   onClose:  () => void;
   onSigned: (name: string, signatureDataUrl: string) => void;
 }
 
-function ContractViewer({ doc, html, loading, onClose, onSigned }: ContractViewerProps) {
+function ContractViewer({ doc, html, loading, previewNote, onClose, onSigned }: ContractViewerProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
   const [scrollPct,        setScrollPct]        = useState(0);
@@ -151,10 +171,16 @@ function ContractViewer({ doc, html, loading, onClose, onSigned }: ContractViewe
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;
-    if (el.scrollHeight <= el.clientHeight + 5) { setScrollPct(100); setHasReadFull(true); }
+    if (el.scrollHeight <= el.clientHeight + 5) {
+      const timer = window.setTimeout(() => {
+        setScrollPct(100);
+        setHasReadFull(true);
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
   }, [html, loading]);
 
-  const canSign = signatureName.trim().length > 0 && signatureDataUrl !== null && agreed && !signing;
+  const canSign = signatureName.trim().length > 0 && signatureDataUrl !== null && agreed && !signing && !previewNote && !loading && html.trim().length > 0;
   const now = useMemo(() => new Date(), []);
 
   async function handleSign(): Promise<void> {
@@ -211,6 +237,12 @@ function ContractViewer({ doc, html, loading, onClose, onSigned }: ContractViewe
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60, color: "#999" }}>
                 Loading document…
               </div>
+            ) : previewNote ? (
+              <div className={cx("emptyState")} style={{ minHeight: 320 }}>
+                <div className={cx("emptyStateIcon")}>📄</div>
+                <div className={cx("emptyStateTitle")}>Preview unavailable</div>
+                <div className={cx("emptyStateSub")}>{previewNote}</div>
+              </div>
             ) : (
               <div className={cx("ctViewerContent")} dangerouslySetInnerHTML={{ __html: html }} />
             )}
@@ -218,7 +250,16 @@ function ContractViewer({ doc, html, loading, onClose, onSigned }: ContractViewe
 
           {/* Sticky footer */}
           <div className={cx("ctSignFooter")}>
-            {!hasReadFull ? (
+            {previewNote ? (
+              <div className={cx("ctSigSection")}>
+                <p className={cx("ctReadPrompt")} style={{ textAlign: "left" }}>
+                  Signing is disabled until a rendered contract preview is available.
+                </p>
+                <button type="button" className={cx("btnSm", "btnGhost")} onClick={onClose} style={{ alignSelf: "flex-start" }}>
+                  Close
+                </button>
+              </div>
+            ) : !hasReadFull ? (
               <p className={cx("ctReadPrompt")}>
                 Scroll to continue reading…
                 <span style={{ marginLeft: 8, fontFamily: "var(--font-dm-mono), monospace", fontSize: 11 }}>
@@ -335,12 +376,13 @@ function Pipeline({ currentStage }: PipelineProps) {
 // ── LegalHubPage ───────────────────────────────────────────────────────────────
 
 export function LegalHubPage() {
-  const { session } = useProjectLayer();
+  const { session, projectId } = useProjectLayer();
   const notify = usePageToast();
 
   const [proposals,     setProposals]     = useState<PortalProposal[] | null>(null);
   const [contracts,     setContracts]     = useState<PortalContract[] | null>(null);
   const [loading,       setLoading]       = useState(true);
+  const [refreshing,    setRefreshing]    = useState(false);
   const [error,         setError]         = useState<string | null>(null);
 
   const [expandedIds,   setExpandedIds]   = useState<Set<string>>(new Set());
@@ -354,22 +396,35 @@ export function LegalHubPage() {
   const [activeDoc,     setActiveDoc]     = useState<DisplayDoc | null>(null);
   const [contractHtml,  setContractHtml]  = useState<string>("");
   const [loadingHtml,   setLoadingHtml]   = useState(false);
+  const [previewNote,   setPreviewNote]   = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!session) { setLoading(false); return; }
-    setLoading(true);
+  const loadLegalData = useCallback(async (showLoading = true): Promise<boolean> => {
+    if (!session) {
+      setLoading(false);
+      return false;
+    }
+    if (showLoading) setLoading(true);
     setError(null);
 
-    Promise.all([
-      loadPortalProposalsWithRefresh(session),
-      loadPortalContractsWithRefresh(session),
-    ]).then(([pRes, cRes]) => {
+    try {
+      const [pRes, cRes] = await Promise.all([
+      loadPortalProposalsWithRefresh(session, projectId ?? undefined),
+      loadPortalContractsWithRefresh(session, projectId ?? undefined),
+      ]);
       if (pRes.nextSession) saveSession(pRes.nextSession);
       if (cRes.nextSession) saveSession(cRes.nextSession);
 
-      if (pRes.error) { setError(pRes.error.message ?? "Failed to load proposals."); setLoading(false); return; }
-      if (cRes.error) { setError(cRes.error.message ?? "Failed to load contracts."); setLoading(false); return; }
+      if (pRes.error) {
+        setError(pRes.error.message ?? "Failed to load proposals.");
+        setLoading(false);
+        return false;
+      }
+      if (cRes.error) {
+        setError(cRes.error.message ?? "Failed to load contracts.");
+        setLoading(false);
+        return false;
+      }
 
       setProposals(pRes.data ?? []);
       const cData = cRes.data ?? [];
@@ -378,12 +433,20 @@ export function LegalHubPage() {
       for (const c of cData) { if (c.signed) ids.add(c.id); }
       setSignedIds(ids);
       setLoading(false);
-    }).catch(() => {
+      return true;
+    } catch {
       setError("Failed to load legal documents. Please try again.");
       setLoading(false);
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.accessToken]);
+      return false;
+    }
+  }, [projectId, session]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadLegalData(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadLegalData]);
 
   const currentStage = useMemo(() => {
     if (!proposals || !contracts) return 1;
@@ -400,7 +463,7 @@ export function LegalHubPage() {
       signed:       signedIds.has(c.id),
       ref:          c.ref ?? c.id.slice(0, 12).toUpperCase(),
       fileId:       c.fileId ?? null,
-      signedByName: null,
+      signedByName: c.signedByName ?? null,
       signedAt:     c.signedAt ?? null,
       type:         c.type,
       status:       c.status,
@@ -410,13 +473,33 @@ export function LegalHubPage() {
 
   const pendingProposals  = proposals?.filter((p) => p.status === "PENDING")  ?? [];
   const acceptedProposals = proposals?.filter((p) => p.status === "ACCEPTED") ?? [];
+  const pendingContracts  = displayDocs.filter((doc) => !doc.signed && doc.status !== "VOID");
+  const signedContracts   = displayDocs.filter((doc) => doc.signed);
   const pendingValue  = pendingProposals.reduce( (s, p) => s + (p.amountCents ?? 0), 0);
   const acceptedValue = acceptedProposals.reduce((s, p) => s + (p.amountCents ?? 0), 0);
+
+  async function handleRefresh(): Promise<void> {
+    setRefreshing(true);
+    const ok = await loadLegalData(false);
+    setRefreshing(false);
+    if (ok) {
+      notify("success", "Legal hub refreshed", "Latest proposal and agreement activity has been loaded.");
+    }
+  }
+
+  function handleExport(): void {
+    triggerLegalExportDownload(proposals ?? [], contracts ?? []);
+    notify("success", "Downloading", "Legal agreements CSV is downloading.");
+  }
 
   function toggleExpand(id: string) {
     setExpandedIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   }
@@ -424,19 +507,17 @@ export function LegalHubPage() {
   async function handleAccept(proposalId: string): Promise<void> {
     if (!session) return;
     setActingId(proposalId);
-    setProposals((prev) => prev?.map((p) => p.id === proposalId ? { ...p, status: "ACCEPTED" as const } : p) ?? null);
     setConfirmId(null);
     try {
       const r = await acceptPortalProposalWithRefresh(session, proposalId);
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error) {
-        setProposals((prev) => prev?.map((p) => p.id === proposalId ? { ...p, status: "PENDING" as const } : p) ?? null);
         notify("error", "Accept failed", r.error.message ?? "Please try again.");
       } else {
+        await loadLegalData(false);
         notify("success", "Proposal accepted", "Your team has been notified.");
       }
     } catch {
-      setProposals((prev) => prev?.map((p) => p.id === proposalId ? { ...p, status: "PENDING" as const } : p) ?? null);
       notify("error", "Accept failed", "Please try again.");
     } finally {
       setActingId(null);
@@ -447,20 +528,18 @@ export function LegalHubPage() {
     if (!session) return;
     setActingId(proposalId);
     const reason = declineReason.trim() || undefined;
-    setProposals((prev) => prev?.map((p) => p.id === proposalId ? { ...p, status: "DECLINED" as const } : p) ?? null);
     setDecliningId(null);
     setDeclineReason("");
     try {
       const r = await declinePortalProposalWithRefresh(session, proposalId, reason);
       if (r.nextSession) saveSession(r.nextSession);
       if (r.error) {
-        setProposals((prev) => prev?.map((p) => p.id === proposalId ? { ...p, status: "PENDING" as const } : p) ?? null);
         notify("error", "Decline failed", r.error.message ?? "Please try again.");
       } else {
+        await loadLegalData(false);
         notify("info", "Proposal declined", "Your team has been notified.");
       }
     } catch {
-      setProposals((prev) => prev?.map((p) => p.id === proposalId ? { ...p, status: "PENDING" as const } : p) ?? null);
       notify("error", "Decline failed", "Please try again.");
     } finally {
       setActingId(null);
@@ -470,7 +549,11 @@ export function LegalHubPage() {
   async function openViewer(doc: DisplayDoc): Promise<void> {
     setActiveDoc(doc);
     setContractHtml("");
-    if (!session) { setContractHtml(buildFallbackHtml(doc.title)); return; }
+    setPreviewNote(null);
+    if (!session) {
+      setPreviewNote("Sign in again to review this agreement.");
+      return;
+    }
 
     let templateId: string | null = null;
     let variables: Record<string, string> = {};
@@ -480,15 +563,26 @@ export function LegalHubPage() {
       if (parsed.variables && typeof parsed.variables === "object") variables = parsed.variables as Record<string, string>;
     } catch { /* no template info */ }
 
-    if (!templateId) { setContractHtml(buildFallbackHtml(doc.title)); return; }
+    if (!templateId) {
+      setPreviewNote(doc.fileId
+        ? "This agreement does not have a rendered web preview yet. Download the attached document to review the final copy."
+        : "This agreement does not have a rendered preview yet. Ask your team to attach the final document before signing.");
+      return;
+    }
 
     setLoadingHtml(true);
     try {
       const r = await loadContractTemplateWithRefresh(session, templateId, variables);
       if (r.nextSession) saveSession(r.nextSession);
-      setContractHtml(r.data?.renderedHtml ?? buildFallbackHtml(doc.title));
+      if (r.error || !r.data?.renderedHtml) {
+        setContractHtml("");
+        setPreviewNote("The document preview could not be rendered right now. Please try again later or download the attached file.");
+      } else {
+        setContractHtml(r.data.renderedHtml);
+      }
     } catch {
-      setContractHtml(buildFallbackHtml(doc.title));
+      setContractHtml("");
+      setPreviewNote("The document preview could not be rendered right now. Please try again later or download the attached file.");
     } finally {
       setLoadingHtml(false);
     }
@@ -504,7 +598,10 @@ export function LegalHubPage() {
       try {
         const sr = await signContractWithSignatureWithRefresh(session, id, name, signatureDataUrl);
         if (sr.nextSession) saveSession(sr.nextSession);
-        if (sr.data?.signed) setSignedIds((prev) => new Set([...prev, id]));
+        if (sr.data?.signed) {
+          setSignedIds((prev) => new Set([...prev, id]));
+          await loadLegalData(false);
+        }
       } catch { /* optimistic update already applied */ }
     }
     setContracts((prev) => prev?.map((c) => c.id === id ? { ...c, signed: true } : c) ?? null);
@@ -563,6 +660,7 @@ export function LegalHubPage() {
           doc={activeDoc}
           html={contractHtml}
           loading={loadingHtml}
+          previewNote={previewNote}
           onClose={() => setActiveDoc(null)}
           onSigned={(name, sigDataUrl) => void handleSigned(activeDoc, name, sigDataUrl)}
         />
@@ -573,7 +671,25 @@ export function LegalHubPage() {
           <div>
             <div className={cx("pageEyebrow")}>Finance · Legal</div>
             <h1 className={cx("pageTitle")}>Legal & Agreements</h1>
-            <p className={cx("pageSub")}>Proposals, contracts, and e-signatures — your complete legal journey in one place.</p>
+            <p className={cx("pageSub")}>Track live proposals, review pending agreements, and download signed documents from one place.</p>
+          </div>
+          <div className={cx("pageActions", "flexRow", "gap8", "flexWrap")}>
+            <button
+              type="button"
+              className={cx("btnSm", "btnGhost")}
+              onClick={() => void handleRefresh()}
+              disabled={refreshing}
+            >
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
+            <button
+              type="button"
+              className={cx("btnSm", "btnGhost")}
+              onClick={handleExport}
+              disabled={!hasProposals && !hasContracts}
+            >
+              Export CSV
+            </button>
           </div>
         </div>
 
@@ -599,11 +715,25 @@ export function LegalHubPage() {
                 <div className={cx("statValue")}>{pendingValue > 0 ? formatCents(pendingValue) : "—"}</div>
               </div>
               <div className={cx("statCard")}>
+                <div className={cx("statLabel")}>Awaiting Signature</div>
+                <div className={cx("statValue")}>{pendingContracts.length}</div>
+              </div>
+              <div className={cx("statCard")}>
+                <div className={cx("statLabel")}>Signed Agreements</div>
+                <div className={cx("statValue")}>{signedContracts.length}</div>
+              </div>
+              <div className={cx("statCard")}>
                 <div className={cx("statLabel")}>Accepted Value</div>
                 <div className={cx("statValue")}>{acceptedValue > 0 ? formatCents(acceptedValue) : "—"}</div>
               </div>
             </div>
 
+            <div className={cx("pageHeader", "mb0")} style={{ marginTop: 20 }}>
+              <div>
+                <div className={cx("pageEyebrow")}>Proposals</div>
+                <h2 className={cx("pageTitle")} style={{ fontSize: "1.1rem" }}>Open Commercial Decisions</h2>
+              </div>
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {proposals!.map((proposal) => {
                 const isExpanded   = expandedIds.has(proposal.id);
@@ -735,11 +865,18 @@ export function LegalHubPage() {
             <div className={cx("pageHeader", "mb0")} style={{ marginTop: 24 }}>
               <div>
                 <div className={cx("pageEyebrow")}>Contracts</div>
-                <h2 className={cx("pageTitle")} style={{ fontSize: "1.1rem" }}>Legal Documents</h2>
+                <h2 className={cx("pageTitle")} style={{ fontSize: "1.1rem" }}>Awaiting Signature</h2>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {displayDocs.map((doc) => {
+              {pendingContracts.length === 0 && (
+                <div className={cx("emptyState")}>
+                  <div className={cx("emptyStateIcon")}>✓</div>
+                  <div className={cx("emptyStateTitle")}>No pending signatures</div>
+                  <div className={cx("emptyStateSub")}>All available agreements have already been completed.</div>
+                </div>
+              )}
+              {pendingContracts.map((doc) => {
                 const isSigned   = doc.signed || signedIds.has(doc.id ?? "");
                 const signerName = doc.signedByName ?? (doc.id ? signedNames.get(doc.id) : undefined);
                 const signedDate = doc.signedAt ? fmtDate(doc.signedAt) : null;
@@ -759,17 +896,18 @@ export function LegalHubPage() {
                       <span className={cx("badge", isSigned ? "badgeGreen" : "badgeAmber")}>
                         {isSigned ? "Signed" : "Pending"}
                       </span>
-                      {isSigned ? (
+                      {doc.fileId && (
                         <button
                           type="button"
                           className={cx("btnSm", "btnGhost")}
-                          disabled={!doc.fileId || downloadingId === doc.id}
-                          title={doc.fileId ? "Download this contract" : "No file attached yet"}
+                          disabled={downloadingId === doc.id}
+                          title="Download this contract"
                           onClick={() => void downloadContract(doc)}
                         >
                           {downloadingId === doc.id ? "…" : "Download"}
                         </button>
-                      ) : (
+                      )}
+                      {!isSigned && (
                         <button
                           type="button"
                           className={cx("btnSm", "btnAccent")}
@@ -778,6 +916,52 @@ export function LegalHubPage() {
                           View &amp; Sign →
                         </button>
                       )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className={cx("pageHeader", "mb0")} style={{ marginTop: 24 }}>
+              <div>
+                <div className={cx("pageEyebrow")}>Archive</div>
+                <h2 className={cx("pageTitle")} style={{ fontSize: "1.1rem" }}>Signed Agreements</h2>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {signedContracts.length === 0 && (
+                <div className={cx("emptyState")}>
+                  <div className={cx("emptyStateIcon")}>📁</div>
+                  <div className={cx("emptyStateTitle")}>No signed agreements yet</div>
+                  <div className={cx("emptyStateSub")}>Completed contracts will appear here once both parties have signed.</div>
+                </div>
+              )}
+              {signedContracts.map((doc) => {
+                const signerName = doc.signedByName ?? (doc.id ? signedNames.get(doc.id) : undefined);
+                const signedDate = doc.signedAt ? fmtDate(doc.signedAt) : null;
+
+                return (
+                  <div key={doc.ref} className={cx("ctCard")}>
+                    <div className={cx("ctCardIcon")}>{doc.icon}</div>
+                    <div className={cx("ctCardBody")}>
+                      <div className={cx("ctCardTitle")}>{doc.title}</div>
+                      <div className={cx("ctCardMeta")}>
+                        {signedDate
+                          ? "Signed " + signedDate + (signerName ? " by " + signerName : "")
+                          : "Signed agreement"}
+                      </div>
+                    </div>
+                    <div className={cx("ctCardActions")}>
+                      <span className={cx("badge", "badgeGreen")}>Signed</span>
+                      <button
+                        type="button"
+                        className={cx("btnSm", "btnGhost")}
+                        disabled={!doc.fileId || downloadingId === doc.id}
+                        title={doc.fileId ? "Download this contract" : "No file attached yet"}
+                        onClick={() => void downloadContract(doc)}
+                      >
+                        {downloadingId === doc.id ? "…" : "Download"}
+                      </button>
                     </div>
                   </div>
                 );
