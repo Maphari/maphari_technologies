@@ -3305,6 +3305,8 @@
 /* Status dots */
 .staffDot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted2); flex-shrink: 0; }
 .staffDotGreen { background: var(--green); }
+.staffDotRed   { background: var(--red);   }
+.staffDotAmber { background: var(--amber); }
 
 /* Client card */
 .staffClientCard { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 16px; cursor: pointer; transition: border-color 0.12s, background 0.12s; }

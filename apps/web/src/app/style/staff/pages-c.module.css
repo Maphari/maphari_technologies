@@ -1033,6 +1033,8 @@
   text-transform: uppercase;
 }
 
+.dsvExpandProgress .staffBarFill { width: var(--fill-pct, 0%); }
+
 .dsvExpandStats { display: flex; gap: 20px; }
 .dsvExpandStat  { display: flex; flex-direction: column; gap: 2px; }
 .dsvExpandStatLabel {

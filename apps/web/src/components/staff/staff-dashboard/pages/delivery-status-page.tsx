@@ -309,7 +309,7 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks, onG
                     <span className={cx("staffDot", statusDotCls(d.status))} />
                     <div className={cx("dsvProjectMain")}>
                       <div className={cx("dsvProjectName")}>{d.project}</div>
-                      <div className={cx("dsvProjectMeta")}>{d.client}<span className={cx("dsvPhaseSep")}> · </span>{d.phase}</div>
+                      <div className={cx("dsvProjectMeta")}>{d.client} · {d.phase}</div>
                     </div>
                     <div className={cx("dsvExpandMeta")}>
                       <span className={cx("staffChip", statusChipCls(d.status))}>{d.status}</span>
