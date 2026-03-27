@@ -257,12 +257,14 @@ git commit -m "style(staff): add comms filter bar, ghost btn, event row css"
 }
 ```
 
-- [ ] **Step 2: Verify**
+- [ ] **Step 2: Verify all swimlane classes are present**
 
 ```bash
-grep -c "commsSwimGrid\|commsClientLane\|commsLaneHeader\|commsLaneAvatar\|commsLaneName\|commsLaneMeta\|commsLaneBody" apps/web/src/app/style/staff/pages-b.module.css
+for cls in commsSwimGrid commsClientLane commsLaneHeader commsLaneAvatar commsLaneName commsLaneMeta commsLaneBody; do
+  grep -q "$cls" apps/web/src/app/style/staff/pages-b.module.css && echo "✓ $cls" || echo "✗ MISSING: $cls"
+done
 ```
-Expected: `7` or more.
+Expected: all lines show `✓`.
 
 - [ ] **Step 3: TypeScript check**
 
