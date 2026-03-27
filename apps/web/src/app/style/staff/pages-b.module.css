@@ -2746,6 +2746,9 @@
   flex-wrap: wrap;
 }
 .commsRowLast { border-bottom: none !important; }
+.commsEventRowOpen {
+  border-left: 2px solid var(--accent);
+}
 
 /* ── Communication History redesign: swimlane ───────────────────── */
 .commsSwimGrid {
@@ -2795,6 +2798,11 @@
   color: var(--muted2);
   font-family: var(--font-dm-mono), monospace;
   white-space: nowrap;
+}
+.commsLaneChevron {
+  color: var(--muted2);
+  font-size: 11px;
+  flex-shrink: 0;
 }
 .commsLaneBody {
   border-top: 1px solid var(--b1);

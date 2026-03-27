@@ -292,7 +292,7 @@ export function CommunicationHistoryPage({
     return (
       <div
         key={event.id}
-        className={cx("staffListRow", "commsEventRow", isLast && "commsRowLast")}
+        className={cx("staffListRow", "commsEventRow", isOpen && "commsEventRowOpen", isLast && "commsRowLast")}
         role="button"
         tabIndex={0}
         onClick={() => toggleExpanded(event.id)}
@@ -496,7 +496,7 @@ export function CommunicationHistoryPage({
                     <span className={cx("commsLaneMeta")}>
                       {events.length} event{events.length !== 1 ? "s" : ""} · last {lastEvent?.dateLabel ?? ""}
                     </span>
-                    <span style={{ color: "var(--muted2)", fontSize: 11 }}>
+                    <span className={cx("commsLaneChevron")}>
                       {isCollapsed ? "▼" : "▲"}
                     </span>
                   </div>
