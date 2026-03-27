@@ -446,8 +446,11 @@ export function DeliverablesPage({
                                     disabled={loadingOp === `status-${item.milestoneId}`}
                                     onClick={async () => {
                                       setLoadingOp(`status-${item.milestoneId}`);
-                                      await onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "PENDING");
-                                      setLoadingOp(null);
+                                      try {
+                                        await onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "PENDING");
+                                      } finally {
+                                        setLoadingOp(null);
+                                      }
                                     }}
                                   >
                                     {loadingOp === `status-${item.milestoneId}` ? "…" : "Reopen"}
@@ -460,8 +463,11 @@ export function DeliverablesPage({
                                     disabled={loadingOp === `status-${item.milestoneId}`}
                                     onClick={async () => {
                                       setLoadingOp(`status-${item.milestoneId}`);
-                                      await onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "IN_PROGRESS");
-                                      setLoadingOp(null);
+                                      try {
+                                        await onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "IN_PROGRESS");
+                                      } finally {
+                                        setLoadingOp(null);
+                                      }
                                     }}
                                   >
                                     {loadingOp === `status-${item.milestoneId}` ? "…" : "Start"}
@@ -474,8 +480,11 @@ export function DeliverablesPage({
                                     disabled={loadingOp === `status-${item.milestoneId}`}
                                     onClick={async () => {
                                       setLoadingOp(`status-${item.milestoneId}`);
-                                      await onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "COMPLETED");
-                                      setLoadingOp(null);
+                                      try {
+                                        await onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "COMPLETED");
+                                      } finally {
+                                        setLoadingOp(null);
+                                      }
                                     }}
                                   >
                                     {loadingOp === `status-${item.milestoneId}` ? "…" : "Complete"}
