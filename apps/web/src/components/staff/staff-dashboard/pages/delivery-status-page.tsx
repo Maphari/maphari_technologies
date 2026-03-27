@@ -286,44 +286,86 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks, onG
               <div className={cx("staffEmptyNote")}>Completed or archived projects are not shown here.</div>
             </div>
           ) : (
-            sorted.map((d) => (
-              <div key={d.projectId} className={cx("staffListRow", "dsvProjectRow")}>
-                <span className={cx("staffDot", statusDotCls(d.status))} />
-                <div className={cx("dsvProjectMain")}>
-                  <div className={cx("dsvProjectName")}>{d.project}</div>
-                  <div className={cx("dsvProjectMeta")}>
-                    {d.client}
-                    <span className={cx("dsvPhaseSep")}> · </span>
-                    {d.phase}
-                  </div>
-                  <div className={cx("dsvReadinessWrap")}>
-                    <div className={cx("staffBar")}>
-                      <div
-                        className={cx("staffBarFill", readinessFillCls(d.readiness))}
-                        style={{ "--fill-pct": `${d.readiness}%` } as React.CSSProperties}
-                      />
+            sorted.map((d) => {
+              const isOpen = expandedId === d.projectId;
+              return (
+                <div
+                  key={d.projectId}
+                  className={cx("dsvExpandRow", accentCls(d.status), isOpen && "dsvExpandRowOpen")}
+                >
+                  {/* ── Collapsed header ── */}
+                  <div
+                    className={cx("dsvExpandHeader")}
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={isOpen}
+                    onClick={() => toggleExpand(d.projectId)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpand(d.projectId); }
+                    }}
+                  >
+                    <span className={cx("staffDot", statusDotCls(d.status))} />
+                    <div className={cx("dsvProjectMain")}>
+                      <div className={cx("dsvProjectName")}>{d.project}</div>
+                      <div className={cx("dsvProjectMeta")}>{d.client}<span className={cx("dsvPhaseSep")}> · </span>{d.phase}</div>
                     </div>
-                    <span className={cx("dsvReadinessPct", readinessPctCls(d.readiness))}>{d.readiness}%</span>
+                    <div className={cx("dsvExpandMeta")}>
+                      <span className={cx("staffChip", statusChipCls(d.status))}>{d.status}</span>
+                      <span className={cx("dsvReadinessPct", readinessPctCls(d.readiness))}>{d.readiness}%</span>
+                      <svg className={cx("dsvChevron", isOpen && "dsvChevronOpen")} width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
+                        <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
                   </div>
-                </div>
-                <div className={cx("dsvProjectRight")}>
-                  <span className={cx("staffChip", statusChipCls(d.status))}>{d.status}</span>
-                  <span className={cx("staffChip", d.blockers > 0 ? "staffChipRed" : "staffChipGreen")}>
-                    {d.blockers} in review
-                  </span>
-                  <span className={cx("dsvDueDate")}>{d.launchDate}</span>
-                  {onGoTasks && (
-                    <button
-                      type="button"
-                      className={cx("dsvViewTasksBtn")}
-                      onClick={() => onGoTasks(d.projectId)}
-                    >
-                      Tasks →
-                    </button>
+
+                  {/* ── Expanded detail ── */}
+                  {isOpen && (
+                    <div className={cx("dsvExpandDetail")}>
+                      <div className={cx("dsvExpandLeft")}>
+                        <div className={cx("dsvExpandProgress")}>
+                          <div className={cx("dsvExpandProgressLabel")}>
+                            <span>Readiness</span>
+                            <span>{d.deliverablesDone} / {d.deliverablesTotal} deliverables done</span>
+                          </div>
+                          <div className={cx("staffBar")}>
+                            <div
+                              className={cx("staffBarFill", readinessFillCls(d.readiness))}
+                              style={{ "--fill-pct": `${d.readiness}%` } as React.CSSProperties}
+                            />
+                          </div>
+                        </div>
+                        <div className={cx("dsvExpandStats")}>
+                          <div className={cx("dsvExpandStat")}>
+                            <div className={cx("dsvExpandStatLabel")}>Phase</div>
+                            <div className={cx("dsvExpandStatValue")}>{d.phase}</div>
+                          </div>
+                          <div className={cx("dsvExpandStat")}>
+                            <div className={cx("dsvExpandStatLabel")}>Due Date</div>
+                            <div className={cx("dsvExpandStatValue")}>{d.launchDate}</div>
+                          </div>
+                          <div className={cx("dsvExpandStat")}>
+                            <div className={cx("dsvExpandStatLabel")}>In Review</div>
+                            <div className={cx("dsvExpandStatValue", d.blockers > 0 ? "colorAmber" : "")}>{d.blockers}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className={cx("dsvExpandRight")}>
+                        {onGoTasks && (
+                          <button type="button" className={cx("dsvExpandActionBtn")} onClick={() => onGoTasks(d.projectId)}>
+                            Tasks →
+                          </button>
+                        )}
+                        {onGoDeliverables && (
+                          <button type="button" className={cx("dsvExpandActionBtn")} onClick={() => onGoDeliverables()}>
+                            Deliverables →
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
