@@ -773,6 +773,7 @@
 
 .colorRed    { color: var(--red);    }
 .colorAmber  { color: var(--amber);  }
+.colorGreen  { color: var(--green);  }
 .colorMuted  { color: var(--muted);  }
 .colorAccent { color: var(--accent); }
 .colorPurple { color: var(--purple); }

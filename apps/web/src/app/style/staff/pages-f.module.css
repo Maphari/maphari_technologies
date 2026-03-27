@@ -2177,6 +2177,8 @@
 .rbFillAmber { background: var(--amber); }
 .rbFillRed   { background: var(--red); }
 
+.rbClientPanel .staffListRow { cursor: pointer; }
+
 /* ══════════════════════════════════════════════════════════════════════════════
    SETTINGS — Security / 2FA
    ══════════════════════════════════════════════════════════════════════════════ */
