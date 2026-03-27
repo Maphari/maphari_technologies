@@ -283,6 +283,236 @@ export function CommunicationHistoryPage({
     );
   }
 
-  // ── Render will be added in Task 5 ────────────────────────────────
-  return null as unknown as React.ReactElement;
+  // ── Shared sub-renders ────────────────────────────────────────────
+  function renderEventRow(event: TimelineEvent, isLast: boolean) {
+    const cfg       = typeConfig[event.type];
+    const isOpen    = expandedId === event.id;
+    const dirChip   = directionChipClass(event.direction);
+
+    return (
+      <div
+        key={event.id}
+        className={cx("staffListRow", "commsEventRow", isLast && "commsRowLast")}
+        onClick={() => toggleExpanded(event.id)}
+      >
+        <div className={cx("commsEventHeadRow")}>
+          <div className={cx("commsTimelineIcon", cfg.iconClass)}>
+            {TYPE_ICONS[event.type]}
+          </div>
+          <span className={cx("staffCommsTitle", "flex1")}>{event.title}</span>
+          <div className={cx("commsEventMeta")}>
+            <span className={cx("staffChip", cfg.chipClass)}>{cfg.label}</span>
+            {dirChip ? (
+              <span className={cx("staffChip", dirChip)}>
+                {event.direction === "inbound" ? "Received" : "Joint"}
+              </span>
+            ) : null}
+            <span className={cx("staffCommsTimeCol")}>{event.timeLabel}</span>
+          </div>
+        </div>
+        {isOpen ? (
+          <div className={cx("commsExpandedBody")}>
+            <div className={cx("staffCommsExcerpt")}>{event.excerpt}</div>
+            <div className={cx("commsExpandedMeta")}>
+              <span className={cx("staffChip", cfg.chipClass)}>{cfg.label}</span>
+              <span className={cx("staffRoleLabel")}>{event.dateLabel} · {event.timeLabel}</span>
+              <button
+                type="button"
+                className={cx("commsGhostBtn")}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    await navigator.clipboard.writeText(
+                      `[${event.clientName}] ${event.title} · ${event.excerpt}`
+                    );
+                  } catch { /* noop */ }
+                }}
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  // ── Loading ───────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
+        <div className={cx("pageHeaderBar", "borderB", "commsHeaderBar")}>
+          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
+          <h1 className={cx("pageTitleText")}>Communication History</h1>
+        </div>
+        <div className={cx("commsContent", "mb20")}>
+          <div className={cx("skeletonBlock")} style={{ height: 40, marginBottom: 8 }} />
+          <div className={cx("skeletonBlock")} style={{ height: 52, marginBottom: 8 }} />
+          <div className={cx("skeletonBlock")} style={{ height: 52, marginBottom: 8 }} />
+          <div className={cx("skeletonBlock")} style={{ height: 52 }} />
+        </div>
+      </section>
+    );
+  }
+
+  // ── Error ─────────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
+        <div className={cx("pageHeaderBar", "borderB", "commsHeaderBar")}>
+          <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
+          <h1 className={cx("pageTitleText")}>Communication History</h1>
+        </div>
+        <div className={cx("commsContent")}>
+          <StaffEmptyState icon={EmptyIcons.notes} title="Failed to load" sub={error} />
+        </div>
+      </section>
+    );
+  }
+
+  // ── Main ──────────────────────────────────────────────────────────
+  return (
+    <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
+      {/* Header */}
+      <div className={cx("pageHeaderBar", "borderB", "commsHeaderBar")}>
+        <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
+        <h1 className={cx("pageTitleText")}>Communication History</h1>
+        <p className={cx("pageSubtitleText", "mb16")}>Interaction timeline across all clients</p>
+
+        {/* Filter bar */}
+        <div className={cx("commsFilterBar")}>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search events, clients…"
+            className={cx("staffFilterInput")}
+          />
+          {TYPE_PILLS.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              className={cx("commsTypePill", activeType === key && "commsTypePillActive")}
+              onClick={() => handleTypeClick(key)}
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={cx("commsTypePill", sortBy !== "recent" && "commsTypePillActive")}
+            onClick={cycleSortBy}
+          >
+            {SORT_LABELS[sortBy]}
+          </button>
+          <div className={cx("commsViewToggle")}>
+            <button
+              type="button"
+              className={cx("commsViewBtn", viewMode === "client" && "commsViewBtnActive")}
+              onClick={() => setViewMode("client")}
+            >
+              By Client
+            </button>
+            <button
+              type="button"
+              className={cx("commsViewBtn", viewMode === "date" && "commsViewBtnActive")}
+              onClick={() => setViewMode("date")}
+            >
+              By Date
+            </button>
+          </div>
+          <button
+            type="button"
+            className={cx("commsGhostBtn")}
+            onClick={() => void loadComms(true)}
+            disabled={refreshing}
+            aria-label="Refresh"
+          >
+            {refreshing ? "…" : "↻"}
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className={cx("commsContent")}>
+
+        {/* No events at all */}
+        {allEvents.length === 0 ? (
+          <StaffEmptyState
+            icon={EmptyIcons.notes}
+            title="No communication history yet"
+            sub="Events will appear here once client interactions are recorded."
+          />
+        ) : filteredEvents.length === 0 ? (
+          /* No match after filter/search */
+          <div>
+            <StaffEmptyState
+              icon={EmptyIcons.notes}
+              title="No events match"
+              sub="Try adjusting your filters or search query."
+            />
+            <div style={{ textAlign: "center", marginTop: 8 }}>
+              <button
+                type="button"
+                className={cx("commsGhostBtn")}
+                onClick={() => { setActiveType("all"); setSearch(""); }}
+              >
+                Clear filters
+              </button>
+            </div>
+          </div>
+        ) : viewMode === "client" ? (
+          /* ── By Client view ── */
+          <div className={cx("commsSwimGrid")}>
+            {clientGroups.map(({ clientId, clientName, events }) => {
+              const isCollapsed = collapsedClients.has(clientId);
+              const lastEvent   = events[0];
+              return (
+                <div key={clientId} className={cx("commsClientLane")}>
+                  <div
+                    className={cx("commsLaneHeader")}
+                    onClick={() => toggleCollapse(clientId)}
+                  >
+                    <div className={cx("commsLaneAvatar", laneAvatarTone(clientId))}>
+                      {clientInitials(clientName)}
+                    </div>
+                    <span className={cx("commsLaneName")}>{clientName}</span>
+                    <span className={cx("commsLaneMeta")}>
+                      {events.length} event{events.length !== 1 ? "s" : ""} · last {lastEvent?.dateLabel ?? ""}
+                    </span>
+                    <span style={{ color: "var(--muted2)", fontSize: 11 }}>
+                      {isCollapsed ? "▼" : "▲"}
+                    </span>
+                  </div>
+                  {!isCollapsed ? (
+                    <div className={cx("commsLaneBody")}>
+                      {events.map((event, i) =>
+                        renderEventRow(event, i === events.length - 1)
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* ── By Date view ── */
+          <>
+            {dateGroups.map(({ dateLabel, events }) => (
+              <div key={dateLabel} className={cx("mb20")}>
+                <div className={cx("staffCommsDateHd")}>
+                  <span className={cx("staffCommsDateLabel")}>{dateLabel}</span>
+                  <div className={cx("staffCommsDateLine")} />
+                </div>
+                <div className={cx("staffCard")}>
+                  {events.map((event, i) =>
+                    renderEventRow(event, i === events.length - 1)
+                  )}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </section>
+  );
 }
