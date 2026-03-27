@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cx } from "../style";
-import { Ic } from "../ui";
 import { getStaffAnalytics, type StaffAnalytics } from "@/lib/api/staff/profile";
 import type { AuthSession } from "@/lib/auth/session";
 
@@ -10,6 +9,29 @@ type MyAnalyticsPageProps = {
   isActive: boolean;
   session:  AuthSession | null;
 };
+
+// ── Dummy fallback (shown when no real activity exists) ───────────────────────
+
+const DUMMY_ANALYTICS: StaffAnalytics = {
+  hoursLogged:     34,
+  hoursLastMonth:  28,
+  hoursChange:     21,
+  tasksCompleted:  12,
+  tasksLastMonth:  9,
+  tasksChange:     33,
+  utilizationRate: 85,
+  weeklyBreakdown: [
+    { week: "Week 9",  hoursLogged: 28, tasksCompleted: 9,  utilization: 70 },
+    { week: "Week 10", hoursLogged: 32, tasksCompleted: 11, utilization: 80 },
+    { week: "Week 11", hoursLogged: 30, tasksCompleted: 10, utilization: 75 },
+    { week: "Week 12", hoursLogged: 36, tasksCompleted: 13, utilization: 90 },
+    { week: "Week 13", hoursLogged: 34, tasksCompleted: 12, utilization: 85 },
+  ],
+};
+
+function isDummy(data: StaffAnalytics): boolean {
+  return data.hoursLogged === 0 && data.tasksCompleted === 0 && data.weeklyBreakdown.length === 0;
+}
 
 type ChangeDir = "up" | "down";
 
@@ -115,12 +137,15 @@ export function MyAnalyticsPage({ isActive, session }: MyAnalyticsPageProps) {
     return () => { cancelled = true; };
   }, [session?.accessToken, isActive]);
 
+  const displayData     = data && isDummy(data) ? DUMMY_ANALYTICS : data;
+  const showingDummy    = data !== null && isDummy(data);
+
   const metrics = useMemo(
-    () => (data ? buildMetrics(data) : []),
-    [data]
+    () => (displayData ? buildMetrics(displayData) : []),
+    [displayData]
   );
 
-  const weeklyBreakdown = data?.weeklyBreakdown ?? [];
+  const weeklyBreakdown = displayData?.weeklyBreakdown ?? [];
   const maxHours  = Math.max(...weeklyBreakdown.map((w) => w.hoursLogged), 1);
 
   function hourPct(n: number): number {
@@ -156,7 +181,12 @@ export function MyAnalyticsPage({ isActive, session }: MyAnalyticsPageProps) {
       <div className={cx("pageHeaderBar")}>
         <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Analytics</div>
         <h1 className={cx("pageTitleText")}>My Analytics</h1>
-        <p className={cx("pageSubtitleText", "mb20")}>Personal performance analytics — derived from time entries &amp; task activity</p>
+        <p className={cx("pageSubtitleText", showingDummy ? "mb12" : "mb20")}>Personal performance analytics — derived from time entries &amp; task activity</p>
+        {showingDummy && (
+          <div className={cx("sampleDataBanner", "mb20")}>
+            Sample data — log time entries to see your real analytics
+          </div>
+        )}
       </div>
 
       {/* ── Metric strip ──────────────────────────────────────────────────── */}
@@ -220,14 +250,6 @@ export function MyAnalyticsPage({ isActive, session }: MyAnalyticsPageProps) {
         </div>
       )}
 
-      {/* ── Empty state — no time entries yet ──────────────────────────────── */}
-      {weeklyBreakdown.length === 0 && (
-        <div className={cx("emptyState")}>
-          <div className={cx("emptyStateIcon")}><Ic n="trending" sz={22} c="var(--muted2)" /></div>
-          <div className={cx("emptyStateTitle")}>No activity this period</div>
-          <div className={cx("emptyStateSub")}>Log time entries to see your weekly breakdown here.</div>
-        </div>
-      )}
     </section>
   );
 }
