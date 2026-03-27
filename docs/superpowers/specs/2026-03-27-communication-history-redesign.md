@@ -42,7 +42,7 @@ Single row containing:
 2. **Type pills** — mutually exclusive: All / Messages / Calls / Milestones / Invoices / Files. Active pill uses `commsTypePillActive` (orange tint). Default: All.
 3. **Sort pill** (rightmost before toggle) — cycles: Recent ↓ → Oldest ↑ → Client A–Z. Uses `commsTypePill` / `commsTypePillActive`.
 4. **View toggle** — two-segment button: "By Client" | "By Date". Active segment uses `commsViewBtnActive`. Default: By Client.
-5. **Refresh button** — icon-only (↻), ghost style, triggers background reload.
+5. **Refresh button** — icon-only (↻), ghost style (`commsGhostBtn`), triggers background reload.
 
 Removed from current design: client dropdown, direction dropdown, date range dropdown, text "Clear" button (type pill → All replaces Clear for type; search clears via input).
 
@@ -52,7 +52,7 @@ Removed from current design: client dropdown, direction dropdown, date range dro
 
 ### Client Swimlanes
 
-All filtered events are grouped by `clientId`. Clients are sorted by most recent event date (newest first). Each client gets a `commsClientLane` block:
+All filtered events are grouped by `clientId`. Clients are sorted by most recent event `occurredAt` date (newest first) — this sort is always by raw `occurredAt` regardless of the active `sortBy` value, which only affects event ordering within each lane. Each client gets a `commsClientLane` block:
 
 **Lane header** (`commsLaneHeader`) — always visible, clickable to collapse/expand:
 - Avatar circle (`commsLaneAvatar`) — initials (first letter of each word in `clientName`), background tinted by a stable colour derived from `clientId` (same palette as staff client avatar pattern)
@@ -85,16 +85,21 @@ Each event row (`staffListRow`) in both views:
   - Footer (`commsExpandedMeta`): type chip + full date/time label + Copy button (`commsGhostBtn`)
   - Copy writes `[clientName] — {title} · {excerpt}` to clipboard
 
-**Type → icon colour mapping:**
-| Type | Background |
-|------|-----------|
-| message | `#3b82f6` (blue) |
-| milestone | `#22c55e` (green) |
-| invoice | `#eab308` (amber) |
-| call | `#a855f7` (purple) |
-| file | `#6b7280` (muted grey) |
+**Type → icon colour** — use the existing retained CSS classes; do NOT hardcode hex values:
 
-**Direction chip:** shown only when `direction !== "outbound"` — green chip for inbound, purple for both. Outbound events show no direction chip (no empty chip).
+| Type | CSS class | Colour (for reference only) |
+|------|-----------|----------------------------|
+| message | `commsTypeMessage` | accent (orange) |
+| milestone | `commsTypeMilestone` | green |
+| invoice | `commsTypeInvoice` | blue |
+| call | `commsTypeCall` | purple |
+| file | `commsTypeFile` | amber |
+
+These classes are defined in `pages-b.module.css` and must not be changed. The component must apply them exactly as-is.
+
+**Direction chip:** shown only when `direction !== "outbound"` — `staffChipGreen` for inbound, `staffChipPurple` for both. Outbound events show no direction chip (no empty chip). Do not use `commsDirectionInbound` / `commsDirectionBoth` CSS classes — these are unused label-colour helpers in CSS that are not applied to chip elements.
+
+**Last row:** apply `commsRowLast` to the final row in each group to remove the bottom border. Do not use `staffCommsRowLast` (old name, remove from component).
 
 ---
 
@@ -112,6 +117,7 @@ The `collapsedClients` state is irrelevant in this view (not applied).
 type ViewMode   = "client" | "date";
 type EventType  = "message" | "milestone" | "invoice" | "call" | "file";
 type SortBy     = "recent" | "oldest" | "client";
+// Note: the current component uses "newest" for what is now "recent" — rename on rewrite.
 ```
 
 | State | Type | Default |
@@ -126,12 +132,12 @@ type SortBy     = "recent" | "oldest" | "client";
 | `refreshing` | `boolean` | `false` |
 | `error` | `string \| null` | `null` |
 
-**Removed state:** `clientFilter`, `directionFilter`, `dateRange` (all replaced by swimlane structure + type pills).
+**Removed state:** `clientFilter`, `directionFilter`, `dateRange` (all replaced by swimlane structure + type pills). The old `sortBy` value `"newest"` is renamed to `"recent"`.
 
 ### Derived values (useMemo)
 
 - `filteredEvents` — apply `activeType` + `search` filter + `sortBy` sort to `events`
-- `clientGroups` — group `filteredEvents` by `clientId`; sort groups by most recent event date; skip clients whose group is empty
+- `clientGroups` — group `filteredEvents` by `clientId`; for each group compute `maxOccurredAt = max(group[i].occurredAt)`; sort groups by `maxOccurredAt` descending (most recent client first). This sort is independent of `sortBy` which only affects event order within each group. Skip clients whose group is empty after filtering.
 - `dateGroups` — group `filteredEvents` by `dateLabel`; order newest first
 
 ---
@@ -150,12 +156,14 @@ type SortBy     = "recent" | "oldest" | "client";
 
 ## 9. Empty & Loading States
 
+Use the existing `<StaffEmptyState>` component for all empty/error states (do not render raw `emptyState` classes directly — the component wraps them).
+
 | Condition | UI |
 |-----------|----|
 | Loading | Skeleton blocks: filter bar + 3 placeholder lane headers (`skeletonBlock`) |
-| Error | `emptyState` block with error message |
-| No events at all | "No communication history yet" |
-| No events match filter/search | "No events match" + "clear filters" link (resets `activeType` to `"all"`, clears `search`) |
+| Error | `<StaffEmptyState>` with error message |
+| No events at all | `<StaffEmptyState>` "No communication history yet" |
+| No events match filter/search | `<StaffEmptyState>` "No events match" + "clear filters" link (resets `activeType` to `"all"`, clears `search`) |
 | Client has 0 visible events after filter | Lane hidden entirely (not rendered) |
 
 ---
@@ -170,20 +178,23 @@ type SortBy     = "recent" | "oldest" | "client";
 | Group | Classes |
 |-------|---------|
 | Filter bar | `commsFilterBar`, `commsTypePill`, `commsTypePillActive`, `commsViewToggle`, `commsViewBtn`, `commsViewBtnActive` |
-| Swimlane | `commsSwimGrid`, `commsClientLane`, `commsLaneHeader`, `commsLaneAvatar`, `commsLaneMeta`, `commsLaneBody` |
+| Swimlane | `commsSwimGrid`, `commsClientLane`, `commsLaneHeader`, `commsLaneAvatar`, `commsLaneName`, `commsLaneMeta`, `commsLaneBody` |
 | Event rows (fix missing) | `commsGhostBtn`, `commsEventHeadRow`, `commsEventMeta`, `commsExpandedBody`, `commsExpandedMeta`, `commsRowLast` |
 
 ### Classes to retain (dynamic — never rename)
 `commsTimelineIcon`, `commsTypeMessage`, `commsTypeMilestone`, `commsTypeInvoice`, `commsTypeCall`, `commsTypeFile`, `commsContent`, `commsEventRowUnread`, `commsTimelineIconUnread`
 
-### Classes to remove
-`commsFiltersWrap` (replaced by `commsFilterBar`), `commsClientFilterBtn` (client filter removed — swimlane handles it)
+### Classes to remove from component JSX (not from CSS — they have no CSS definition)
+`commsFiltersWrap` (replaced by `commsFilterBar`), `commsClientFilterBtn` (client filter removed — swimlane handles it), `staffCommsRowLast` (replaced by `commsRowLast`)
+
+### Unused CSS to remove from pages-b.module.css
+`commsDirectionLabel`, `commsDirectionOutbound`, `commsDirectionInbound`, `commsDirectionBoth` — defined in CSS but never applied to DOM elements in the component; safe to delete.
 
 ### Inline styles to remove
 All inline `style={{}}` on event rows — move `flexDirection`, `alignItems`, `gap` to `commsEventHeadRow`; move conditional `borderBottom` to `commsRowLast`.
 
 ### Available without CSS additions (via style spread)
-`staffListRow`, `staffCard`, `staffChip`, `staffChipAccent`, `staffChipGreen`, `staffChipAmber`, `staffChipPurple`, `staffCommsDateHd`, `staffCommsDateLabel`, `staffCommsDateLine`, `staffCommsTitle`, `staffCommsExcerpt`, `staffCommsTimeCol`, `staffRoleLabel`, `staffFilterInput`, `emptyState`, `emptyStateTitle`, `emptyStateSub`, `skeletonBlock`
+`staffListRow`, `staffCard`, `staffChip`, `staffChipAccent`, `staffChipGreen`, `staffChipAmber`, `staffChipPurple`, `staffCommsDateHd`, `staffCommsDateLabel`, `staffCommsDateLine`, `staffCommsTitle`, `staffCommsExcerpt`, `staffCommsTimeCol`, `staffRoleLabel`, `staffFilterInput`, `skeletonBlock`
 
 ---
 
@@ -191,8 +202,8 @@ All inline `style={{}}` on event rows — move `flexDirection`, `alignItems`, `g
 
 | File | Change |
 |------|--------|
-| `apps/web/src/components/staff/staff-dashboard/pages/communication-history-page.tsx` | Replace 3 dropdowns with `activeType` + `viewMode` state. Add `collapsedClients` Set. Add swimlane grouping logic in `useMemo`. Rewrite JSX. Remove all inline styles. |
-| `apps/web/src/app/style/staff/pages-b.module.css` | Add new `comms*` classes listed above. Fix 7 previously missing classes. Remove `commsFiltersWrap` and `commsClientFilterBtn`. |
+| `apps/web/src/components/staff/staff-dashboard/pages/communication-history-page.tsx` | Replace 3 dropdowns with `activeType` + `viewMode` state. Rename `"newest"` → `"recent"`. Add `collapsedClients` Set. Add swimlane grouping logic in `useMemo`. Rewrite JSX. Remove all inline styles. Remove `commsFiltersWrap`, `commsClientFilterBtn`, `staffCommsRowLast` class references. Delete `filterDir`, `filterClient`, `dateRange` `useState` declarations. Delete the `directionConfig` lookup object and the `Direction` type entirely — direction is no longer a filter axis and the direction chip reads `event.direction` directly using `staffChipGreen`/`staffChipPurple`. |
+| `apps/web/src/app/style/staff/pages-b.module.css` | Add new `comms*` classes listed above. Fix 7 previously missing classes. Remove unused direction label classes. |
 
 No changes to: `clients.ts`, `staff-analytics.ts`, gateway controller, topbar, shared CSS files, or any other page.
 
