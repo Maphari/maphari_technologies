@@ -382,14 +382,15 @@ export function DeliverablesPage({
       </div>
 
       {/* Deliverable groups grid */}
+      {visibleGroups.length === 0 ? (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="check-square" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>No deliverables found</div>
+          <div className={cx("emptyStateSub")}>No deliverables match the current filter. Try clearing your search or changing the filter.</div>
+        </div>
+      ) : null}
       <div className={cx("grid2")}>
-        {visibleGroups.length === 0 ? (
-          <div className={cx("emptyState")}>
-            <div className={cx("emptyStateIcon")}><Ic n="check-square" sz={22} c="var(--muted2)" /></div>
-            <div className={cx("emptyStateTitle")}>No deliverables found</div>
-            <div className={cx("emptyStateSub")}>No deliverables match the current filter. Try clearing your search or changing the filter.</div>
-          </div>
-        ) : visibleGroups.map((group) => {
+        {visibleGroups.map((group) => {
           const availableFiles = files.filter((file) => file.clientId === group.clientId);
           return (
             <div key={group.title} className={cx("card")}>
@@ -536,7 +537,10 @@ export function DeliverablesPage({
         </div>
         <div className={cx("cardBody")}>
           {pendingRequests.length === 0 ? (
-            <div className={cx("emptyState")}>No pending change requests.</div>
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}><Ic n="check-circle" sz={18} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateTitle")}>No pending change requests</div>
+            </div>
           ) : (
             <div className={cx("deliverableList")}>
               {pendingRequests.map((request) => {
