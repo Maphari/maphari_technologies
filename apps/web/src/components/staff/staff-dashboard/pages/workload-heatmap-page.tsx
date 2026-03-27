@@ -45,6 +45,7 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
     let cancelled = false;
 
     setLoading(true);
+    setLoadError(null);
     setLastUpdated(null);
     setRows([]);
     void getWorkloadHeatmap(session, weeks).then((result) => {
