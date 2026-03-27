@@ -211,6 +211,8 @@ export function DeliverablesPage({
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   const [deliverableFilter, setDeliverableFilter] = useState<"all" | "overdue" | "due_week" | "completed" | "needs_attachment">("all");
   const [deliverableSort, setDeliverableSort] = useState<"due_asc" | "due_desc" | "status" | "title">("due_asc");
+  const [loadingOp, setLoadingOp]           = useState<string | null>(null);
+  const [attachFeedback, setAttachFeedback] = useState<{ id: string; fileName: string } | null>(null);
 
   const visibleGroups = useMemo(() => {
     const weekAhead = nowTs + 1000 * 60 * 60 * 24 * 7;
@@ -441,27 +443,42 @@ export function DeliverablesPage({
                                   <button
                                     type="button"
                                     className={cx("btnXxs", "buttonGhost")}
-                                    onClick={() => onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "PENDING")}
+                                    disabled={loadingOp === `status-${item.milestoneId}`}
+                                    onClick={async () => {
+                                      setLoadingOp(`status-${item.milestoneId}`);
+                                      await onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "PENDING");
+                                      setLoadingOp(null);
+                                    }}
                                   >
-                                    Reopen
+                                    {loadingOp === `status-${item.milestoneId}` ? "…" : "Reopen"}
                                   </button>
                                 ) : null}
                                 {item.milestoneStatus === "PENDING" ? (
                                   <button
                                     type="button"
                                     className={cx("btnXxs", "buttonGhost")}
-                                    onClick={() => onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "IN_PROGRESS")}
+                                    disabled={loadingOp === `status-${item.milestoneId}`}
+                                    onClick={async () => {
+                                      setLoadingOp(`status-${item.milestoneId}`);
+                                      await onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "IN_PROGRESS");
+                                      setLoadingOp(null);
+                                    }}
                                   >
-                                    Start
+                                    {loadingOp === `status-${item.milestoneId}` ? "…" : "Start"}
                                   </button>
                                 ) : null}
                                 {item.milestoneStatus !== "COMPLETED" ? (
                                   <button
                                     type="button"
                                     className={cx("btnXxs", "buttonBlue")}
-                                    onClick={() => onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "COMPLETED")}
+                                    disabled={loadingOp === `status-${item.milestoneId}`}
+                                    onClick={async () => {
+                                      setLoadingOp(`status-${item.milestoneId}`);
+                                      await onMilestoneStatusUpdate(item.projectId!, item.milestoneId!, "COMPLETED");
+                                      setLoadingOp(null);
+                                    }}
                                   >
-                                    Complete
+                                    {loadingOp === `status-${item.milestoneId}` ? "…" : "Complete"}
                                   </button>
                                 ) : null}
                               </div>
