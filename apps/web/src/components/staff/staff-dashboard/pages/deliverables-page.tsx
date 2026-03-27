@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cx } from "../style";
 import { Ic } from "../ui";
 import type { DeliverableGroup } from "../types";
@@ -213,6 +213,13 @@ export function DeliverablesPage({
   const [deliverableSort, setDeliverableSort] = useState<"due_asc" | "due_desc" | "status" | "title">("due_asc");
   const [loadingOp, setLoadingOp]           = useState<string | null>(null);
   const [attachFeedback, setAttachFeedback] = useState<{ id: string; fileName: string } | null>(null);
+  const attachTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (attachTimerRef.current) clearTimeout(attachTimerRef.current);
+    };
+  }, []);
 
   const visibleGroups = useMemo(() => {
     const weekAhead = nowTs + 1000 * 60 * 60 * 24 * 7;
@@ -435,8 +442,9 @@ export function DeliverablesPage({
                                 try {
                                   await onMilestoneAttachment(item.projectId ?? "", item.milestoneId ?? "", fileId);
                                   if (fileId && fileName && item.milestoneId) {
+                                    if (attachTimerRef.current) clearTimeout(attachTimerRef.current);
                                     setAttachFeedback({ id: item.milestoneId, fileName });
-                                    setTimeout(() => setAttachFeedback(null), 3000);
+                                    attachTimerRef.current = setTimeout(() => setAttachFeedback(null), 3000);
                                   }
                                 } finally {
                                   setLoadingOp(null);
