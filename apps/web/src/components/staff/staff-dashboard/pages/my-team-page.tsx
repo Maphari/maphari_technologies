@@ -242,8 +242,14 @@ export function MyTeamPage({ isActive, session }: MyTeamPageProps) {
 
         <div className={cx("mteMemberList")}>
           {team.length === 0 ? (
-            <div className={cx("mteMemberRow", "justifyCenter", "opacity55", "py32_0")} >
-              No team members found
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM6 8a2 2 0 11-4 0 2 2 0 014 0zM1 16a7 7 0 0114 0H1zM16 14a5 5 0 00-8.37-3.7A7.02 7.02 0 0116 14zM4 14a5 5 0 018.37-3.7A7.02 7.02 0 004 14z" fill="currentColor"/>
+                </svg>
+              </div>
+              <div className={cx("emptyStateTitle")}>No team members</div>
+              <div className={cx("emptyStateSub")}>Team members will appear here once they're added to your organisation.</div>
             </div>
           ) : (
             team.map((m, idx) => (
@@ -294,8 +300,14 @@ export function MyTeamPage({ isActive, session }: MyTeamPageProps) {
 
         <div className={cx("mteEscalationList")}>
           {escalation.length === 0 ? (
-            <div className={cx("mteEscalationRow", "justifyCenter", "opacity55", "py32_0")} >
-              No escalation path available
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M10 2a2 2 0 100 4 2 2 0 000-4zM4 14a2 2 0 100 4 2 2 0 000-4zM16 14a2 2 0 100 4 2 2 0 000-4zM10 8v2m0 0l-4 3m4-3l4 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className={cx("emptyStateTitle")}>No escalation path</div>
+              <div className={cx("emptyStateSub")}>Escalation levels are built automatically from your team's roles. Add team members to generate a path.</div>
             </div>
           ) : (
             escalation.map((e, idx) => (
