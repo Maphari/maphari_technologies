@@ -384,7 +384,7 @@ export function DeliverablesPage({
       {/* Deliverable groups grid */}
       {visibleGroups.length === 0 ? (
         <div className={cx("emptyState")}>
-          <div className={cx("emptyStateIcon")}><Ic n="check-square" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateIcon")}><Ic n="layers" sz={20} c="var(--muted2)" /></div>
           <div className={cx("emptyStateTitle")}>No deliverables found</div>
           <div className={cx("emptyStateSub")}>No deliverables match the current filter. Try clearing your search or changing the filter.</div>
         </div>
@@ -538,7 +538,7 @@ export function DeliverablesPage({
         <div className={cx("cardBody")}>
           {pendingRequests.length === 0 ? (
             <div className={cx("emptyState")}>
-              <div className={cx("emptyStateIcon")}><Ic n="check-circle" sz={18} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateIcon")}><Ic n="inbox" sz={18} c="var(--muted2)" /></div>
               <div className={cx("emptyStateTitle")}>No pending change requests</div>
             </div>
           ) : (
@@ -629,7 +629,11 @@ export function DeliverablesPage({
         </div>
         <div className={cx("cardBody")}>
           {handoffExports.length === 0 ? (
-            <div className={cx("emptyState")}>No handoff exports yet. Generate one above.</div>
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}><Ic n="file" sz={18} c="var(--muted2)" /></div>
+              <div className={cx("emptyStateTitle")}>No handoff exports yet</div>
+              <div className={cx("emptyStateSub")}>Generate a Markdown or JSON export using the buttons above.</div>
+            </div>
           ) : (
             <div className={cx("tableWrap")}>
               <table className={cx("table")}>
