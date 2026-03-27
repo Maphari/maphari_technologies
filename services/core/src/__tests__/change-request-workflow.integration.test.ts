@@ -88,6 +88,7 @@ describe("change request workflow integration", () => {
       storyPoints: null,
       sprintId: null,
       blockedAt: null,
+      completedAt: null,
       dueAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date()

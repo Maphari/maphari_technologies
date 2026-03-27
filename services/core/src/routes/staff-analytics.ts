@@ -697,11 +697,11 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
           else { weekMap.set(label, { minutes: entry.minutes, weekStart: ws }); }
         }
         // Real task counts: query tasks completed on projects this staff member worked on
-        const staffProjectIds = [...new Set(entries.map((e) => e.projectId))];
-        const completedTasks = staffProjectIds.length > 0
+        const projectIds = [...new Set(entries.map((e) => e.projectId))];
+        const completedTasks = projectIds.length > 0
           ? await prisma.projectTask.findMany({
               where: {
-                projectId: { in: staffProjectIds },
+                projectId: { in: projectIds },
                 completedAt: { gte: eightWeeksAgo, not: null },
               },
               select: { completedAt: true },
@@ -722,7 +722,6 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
             return { week, hoursLogged: hours, tasksCompleted: weekTaskCounts.get(week) ?? 0 };
           });
         // Client breakdown
-        const projectIds = [...new Set(entries.map((e) => e.projectId))];
         const projects = projectIds.length > 0
           ? await prisma.project.findMany({ where: { id: { in: projectIds } }, select: { id: true, clientId: true } })
           : [];
