@@ -296,9 +296,15 @@ export function IncidentAlertsPage({ isActive, session }: IncidentAlertsPageProp
           {loading ? (
             [1, 2, 3].map((n) => <SkeletonCard key={n} />)
           ) : sorted.length === 0 ? (
-            <div className={cx("incCard", "textCenter", "opacity60", "p32x16")} >
-              <div className={cx("incTitle")}>No active incidents</div>
-              <div className={cx("incMetaValue", "mt6")}>All systems are operating normally.</div>
+            <div className={cx("emptyState")}>
+              <div className={cx("emptyStateIcon")}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M10 2a1 1 0 011 1v7a1 1 0 01-2 0V3a1 1 0 011-1zM10 14a1 1 0 100 2 1 1 0 000-2z" fill="currentColor"/>
+                  <circle cx="10" cy="10" r="8.5" stroke="currentColor" strokeWidth="1.5"/>
+                </svg>
+              </div>
+              <div className={cx("emptyStateTitle")}>No active incidents</div>
+              <div className={cx("emptyStateSub")}>All systems are operating normally.</div>
             </div>
           ) : (
             sorted.map((i, idx) => (
