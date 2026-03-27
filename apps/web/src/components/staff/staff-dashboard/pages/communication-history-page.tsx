@@ -6,6 +6,7 @@ import { StaffEmptyState, EmptyIcons } from "../empty-state";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { getStaffAllComms } from "../../../../lib/api/staff/clients";
 
+// ── SVG icons ─────────────────────────────────────────────────────
 function IcoMessage() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -45,79 +46,120 @@ function IcoFile() {
   );
 }
 
+// ── Types ──────────────────────────────────────────────────────────
+type ViewMode  = "client" | "date";
 type EventType = "message" | "milestone" | "invoice" | "call" | "file";
-type Direction = "outbound" | "inbound" | "both";
-
-type ClientRow = {
-  id: string;
-  name: string;
-  avatar: string;
-};
+type SortBy    = "recent" | "oldest" | "client";
 
 type TimelineEvent = {
-  id: string;
-  clientId: string;
-  clientName: string;
-  type: EventType;
-  direction: Direction;
-  title: string;
-  excerpt: string;
-  occurredAt: string;
-  dateLabel: string;
-  timeLabel: string;
+  id:           string;
+  clientId:     string;
+  clientName:   string;
+  type:         EventType;
+  direction:    string; // kept as raw string — only used for direction chip logic
+  title:        string;
+  excerpt:      string;
+  occurredAt:   string;
+  occurredAtMs: number;   // pre-parsed timestamp for sorting/grouping
+  dateLabel:    string;
+  timeLabel:    string;
 };
 
+// ── Config ─────────────────────────────────────────────────────────
 const TYPE_ICONS: Record<EventType, React.ReactNode> = {
-  message: <IcoMessage />,
+  message:   <IcoMessage />,
   milestone: <IcoMilestone />,
-  invoice: <IcoInvoice />,
-  call: <IcoCall />,
-  file: <IcoFile />
+  invoice:   <IcoInvoice />,
+  call:      <IcoCall />,
+  file:      <IcoFile />,
 };
 
-const typeConfig: Record<EventType, { label: string; iconClass: string }> = {
-  message: { label: "Message", iconClass: "commsTypeMessage" },
-  milestone: { label: "Milestone", iconClass: "commsTypeMilestone" },
-  invoice: { label: "Invoice", iconClass: "commsTypeInvoice" },
-  call: { label: "Call", iconClass: "commsTypeCall" },
-  file: { label: "File", iconClass: "commsTypeFile" }
+const typeConfig: Record<EventType, { label: string; iconClass: string; chipClass: string }> = {
+  message:   { label: "Message",   iconClass: "commsTypeMessage",   chipClass: "staffChipAccent" },
+  milestone: { label: "Milestone", iconClass: "commsTypeMilestone", chipClass: "staffChipGreen" },
+  invoice:   { label: "Invoice",   iconClass: "commsTypeInvoice",   chipClass: "staffChipAmber" },
+  call:      { label: "Call",      iconClass: "commsTypeCall",      chipClass: "staffChipPurple" },
+  file:      { label: "File",      iconClass: "commsTypeFile",      chipClass: "staffChip" },
 };
 
-const directionConfig: Record<Direction, { label: string; toneClass: string }> = {
-  outbound: { label: "Sent", toneClass: "commsDirectionOutbound" },
-  inbound: { label: "Received", toneClass: "commsDirectionInbound" },
-  both: { label: "Joint", toneClass: "commsDirectionBoth" }
+const TYPE_PILLS: { key: EventType | "all"; label: string }[] = [
+  { key: "all",       label: "All" },
+  { key: "message",   label: "Messages" },
+  { key: "call",      label: "Calls" },
+  { key: "milestone", label: "Milestones" },
+  { key: "invoice",   label: "Invoices" },
+  { key: "file",      label: "Files" },
+];
+
+const SORT_LABELS: Record<SortBy, string> = {
+  recent: "Recent ↓",
+  oldest: "Oldest ↑",
+  client: "Client A–Z",
 };
 
+const AVATAR_TONES = [
+  "clientAvatarToneAccent",
+  "clientAvatarToneAmber",
+  "clientAvatarTonePurple",
+  "clientAvatarToneGreen",
+] as const;
+
+// ── Helpers ────────────────────────────────────────────────────────
 function normalizeType(value: string): EventType {
-  if (value === "message" || value === "milestone" || value === "invoice" || value === "call" || value === "file") return value;
+  if (
+    value === "message" || value === "milestone" || value === "invoice" ||
+    value === "call"    || value === "file"
+  ) return value;
   return "message";
 }
 
-function normalizeDirection(value: string): Direction {
+function normalizeDirection(value: string): string {
   if (value === "inbound" || value === "outbound" || value === "both") return value;
   return "outbound";
 }
 
-export function CommunicationHistoryPage({ isActive, session }: { isActive: boolean; session: AuthSession | null }) {
-  const [allEvents, setAllEvents] = useState<TimelineEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function laneAvatarTone(clientId: string): string {
+  let h = 0;
+  for (let i = 0; i < clientId.length; i++) h = (h * 31 + clientId.charCodeAt(i)) >>> 0;
+  return AVATAR_TONES[h % AVATAR_TONES.length];
+}
 
-  const [selectedClient, setSelectedClient] = useState<"all" | string>("all");
-  const [filterType, setFilterType] = useState<"all" | EventType>("all");
-  const [filterDir, setFilterDir] = useState<"all" | Direction>("all");
-  const [range, setRange] = useState<"all" | "7d" | "30d">("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
-  const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
+function clientInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function directionChipClass(direction: string): string {
+  if (direction === "inbound") return "staffChipGreen";
+  if (direction === "both")    return "staffChipPurple";
+  return ""; // outbound: no chip — cx("") is a safe no-op
+}
+
+// ── Component ──────────────────────────────────────────────────────
+export function CommunicationHistoryPage({
+  isActive,
+  session,
+}: {
+  isActive: boolean;
+  session: AuthSession | null;
+}) {
+  const [allEvents, setAllEvents]           = useState<TimelineEvent[]>([]);
+  const [loading, setLoading]               = useState(true);
+  const [refreshing, setRefreshing]         = useState(false);
+  const [error, setError]                   = useState<string | null>(null);
+  const [viewMode, setViewMode]             = useState<ViewMode>("client");
+  const [activeType, setActiveType]         = useState<EventType | "all">("all");
+  const [search, setSearch]                 = useState("");
+  const [sortBy, setSortBy]                 = useState<SortBy>("recent");
+  const [collapsedClients, setCollapsedClients] = useState<Set<string>>(new Set());
+  const [expandedId, setExpandedId]         = useState<string | null>(null);
 
   const loadComms = useCallback(async (background: boolean) => {
-    if (!session) {
-      setLoading(false);
-      return;
-    }
+    if (!session) { setLoading(false); return; }
     if (background) setRefreshing(true);
     else setLoading(true);
     setError(null);
@@ -129,22 +171,22 @@ export function CommunicationHistoryPage({ isActive, session }: { isActive: bool
         return;
       }
       const mapped = (r.data ?? []).map((log): TimelineEvent => {
-        const type = normalizeType(log.type);
+        const type      = normalizeType(log.type);
         const direction = normalizeDirection(log.direction);
-        const occurredAt = new Date(log.occurredAt);
-        const title = (log.subject ?? "").trim() || `${typeConfig[type].label} event`;
-        const excerpt = (log.actionLabel ?? "").trim() || `${directionConfig[direction].label} ${typeConfig[type].label.toLowerCase()}${log.fromName ? ` from ${log.fromName}` : ""}`;
+        const dt        = new Date(log.occurredAt);
+        const fallbackExcerpt = `${direction === "inbound" ? "Received" : direction === "both" ? "Joint" : "Sent"} ${typeConfig[type].label.toLowerCase()}${log.fromName ? ` from ${log.fromName}` : ""}`;
         return {
-          id: log.id,
-          clientId: log.clientId,
-          clientName: log.clientName,
+          id:           log.id,
+          clientId:     log.clientId,
+          clientName:   log.clientName,
           type,
           direction,
-          title,
-          excerpt,
-          occurredAt: occurredAt.toISOString(),
-          dateLabel: occurredAt.toLocaleDateString(undefined, { year: "numeric", day: "numeric", month: "short" }),
-          timeLabel: occurredAt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+          title:        (log.subject ?? "").trim()    || `${typeConfig[type].label} event`,
+          excerpt:      (log.actionLabel ?? "").trim() || fallbackExcerpt,
+          occurredAt:   dt.toISOString(),
+          occurredAtMs: dt.getTime(),                 // pre-parsed timestamp for sorting/grouping
+          dateLabel:    dt.toLocaleDateString(undefined, { year: "numeric", day: "numeric", month: "short" }),
+          timeLabel:    dt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
         };
       });
       setAllEvents(mapped);
@@ -162,49 +204,148 @@ export function CommunicationHistoryPage({ isActive, session }: { isActive: bool
     void loadComms(false);
   }, [isActive, loadComms]);
 
-  const clients = useMemo((): ClientRow[] => {
-    const seen = new Map<string, ClientRow>();
-    allEvents.forEach((event) => {
-      if (seen.has(event.clientId)) return;
-      const initials = event.clientName.split(" ").map((word) => word[0]).join("").slice(0, 2).toUpperCase();
-      seen.set(event.clientId, { id: event.clientId, name: event.clientName, avatar: initials });
-    });
-    return Array.from(seen.values());
-  }, [allEvents]);
-
-  const events = useMemo(() => {
+  // ── Derived data ──────────────────────────────────────────────────
+  const filteredEvents = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return allEvents
-      .filter((event) => selectedClient === "all" || event.clientId === selectedClient)
-      .filter((event) => filterType === "all" || event.type === filterType)
-      .filter((event) => filterDir === "all" || event.direction === filterDir)
-      .filter((event) => {
-        if (range === "all") return true;
-        const ageDays = (Date.now() - new Date(event.occurredAt).getTime()) / (1000 * 60 * 60 * 24);
-        return range === "7d" ? ageDays <= 7 : ageDays <= 30;
-      })
-      .filter((event) => {
-        if (!search.trim()) return true;
-        const q = search.toLowerCase();
+      .filter((e) => activeType === "all" || e.type === activeType)
+      .filter((e) => {
+        if (!q) return true;
         return (
-          event.title.toLowerCase().includes(q)
-          || event.excerpt.toLowerCase().includes(q)
-          || event.clientName.toLowerCase().includes(q)
+          e.title.toLowerCase().includes(q) ||
+          e.excerpt.toLowerCase().includes(q) ||
+          e.clientName.toLowerCase().includes(q)
         );
       })
       .sort((a, b) => {
-        const delta = new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime();
-        return sortBy === "newest" ? -delta : delta;
+        if (sortBy === "client") return a.clientName.localeCompare(b.clientName);
+        const delta = a.occurredAtMs - b.occurredAtMs;
+        return sortBy === "recent" ? -delta : delta;
       });
-  }, [allEvents, selectedClient, filterType, filterDir, range, search, sortBy]);
+  }, [allEvents, activeType, search, sortBy]);
 
-  const groupedByDate = useMemo(() => {
-    return events.reduce<Record<string, TimelineEvent[]>>((acc, event) => {
-      if (!acc[event.dateLabel]) acc[event.dateLabel] = [];
-      acc[event.dateLabel].push(event);
-      return acc;
-    }, {});
-  }, [events]);
+  const clientGroups = useMemo(() => {
+    const groups = new Map<string, { clientName: string; maxOccurredAt: number; events: TimelineEvent[] }>();
+    filteredEvents.forEach((e) => {
+      const existing = groups.get(e.clientId);
+      const ts = e.occurredAtMs;
+      if (existing) {
+        existing.events.push(e);
+        if (ts > existing.maxOccurredAt) existing.maxOccurredAt = ts;
+      } else {
+        groups.set(e.clientId, { clientName: e.clientName, maxOccurredAt: ts, events: [e] });
+      }
+    });
+    return Array.from(groups.entries())
+      .sort(([, a], [, b]) => b.maxOccurredAt - a.maxOccurredAt)
+      .map(([clientId, { clientName, events }]) => ({ clientId, clientName, events }));
+  }, [filteredEvents]);
 
+  const dateGroups = useMemo(() => {
+    const groups = new Map<string, { maxOccurredAt: number; events: TimelineEvent[] }>();
+    filteredEvents.forEach((e) => {
+      const ts = e.occurredAtMs;
+      const existing = groups.get(e.dateLabel);
+      if (existing) {
+        existing.events.push(e);
+        if (ts > existing.maxOccurredAt) existing.maxOccurredAt = ts;
+      } else {
+        groups.set(e.dateLabel, { maxOccurredAt: ts, events: [e] });
+      }
+    });
+    // Always newest date group first, regardless of sortBy
+    return Array.from(groups.entries())
+      .sort(([, a], [, b]) => b.maxOccurredAt - a.maxOccurredAt)
+      .map(([dateLabel, { events }]) => ({ dateLabel, events }));
+  }, [filteredEvents]);
+
+  // Handlers
+  function toggleCollapse(clientId: string) {
+    setCollapsedClients((prev) => {
+      const next = new Set(prev);
+      if (next.has(clientId)) next.delete(clientId);
+      else next.add(clientId);
+      return next;
+    });
+  }
+
+  function toggleExpanded(id: string) {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }
+
+  function handleTypeClick(key: EventType | "all") {
+    setActiveType((prev) => (prev === key && key !== "all" ? "all" : key));
+  }
+
+  function cycleSortBy() {
+    setSortBy((prev) =>
+      prev === "recent" ? "oldest" : prev === "oldest" ? "client" : "recent"
+    );
+  }
+
+  // ── Shared sub-renders ────────────────────────────────────────────
+  function renderEventRow(event: TimelineEvent, isLast: boolean) {
+    const cfg       = typeConfig[event.type];
+    const isOpen    = expandedId === event.id;
+    const dirChip   = directionChipClass(event.direction);
+
+    return (
+      <div
+        key={event.id}
+        className={cx("staffListRow", "commsEventRow", isOpen && "commsEventRowOpen", isLast && "commsRowLast")}
+        role="button"
+        tabIndex={0}
+        onClick={() => toggleExpanded(event.id)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggleExpanded(event.id);
+          }
+        }}
+      >
+        <div className={cx("commsEventHeadRow")}>
+          <div className={cx("commsTimelineIcon", cfg.iconClass)}>
+            {TYPE_ICONS[event.type]}
+          </div>
+          <span className={cx("staffCommsTitle", "flex1")}>{event.title}</span>
+          <div className={cx("commsEventMeta")}>
+            <span className={cx("staffChip", cfg.chipClass)}>{cfg.label}</span>
+            {dirChip ? (
+              <span className={cx("staffChip", dirChip)}>
+                {event.direction === "inbound" ? "Received" : "Joint"}
+              </span>
+            ) : null}
+            <span className={cx("staffCommsTimeCol")}>{event.timeLabel}</span>
+          </div>
+        </div>
+        {isOpen ? (
+          <div className={cx("commsExpandedBody")}>
+            <div className={cx("staffCommsExcerpt")}>{event.excerpt}</div>
+            <div className={cx("commsExpandedMeta")}>
+              <span className={cx("staffChip", cfg.chipClass)}>{cfg.label}</span>
+              <span className={cx("staffRoleLabel")}>{event.dateLabel} · {event.timeLabel}</span>
+              <button
+                type="button"
+                className={cx("commsGhostBtn")}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    await navigator.clipboard.writeText(
+                      `[${event.clientName}] ${event.title} · ${event.excerpt}`
+                    );
+                  } catch { /* noop */ }
+                }}
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  // ── Loading ───────────────────────────────────────────────────────
   if (loading) {
     return (
       <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
@@ -212,13 +353,17 @@ export function CommunicationHistoryPage({ isActive, session }: { isActive: bool
           <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
           <h1 className={cx("pageTitleText")}>Communication History</h1>
         </div>
-        <div className={cx("commsContent")}>
-          <StaffEmptyState icon={EmptyIcons.notes} title="Loading…" sub="Fetching communication history." />
+        <div className={cx("commsContent", "mb20")}>
+          <div className={cx("skeletonBlock")} style={{ height: 40, marginBottom: 8 }} />
+          <div className={cx("skeletonBlock")} style={{ height: 52, marginBottom: 8 }} />
+          <div className={cx("skeletonBlock")} style={{ height: 52, marginBottom: 8 }} />
+          <div className={cx("skeletonBlock")} style={{ height: 52 }} />
         </div>
       </section>
     );
   }
 
+  // ── Error ─────────────────────────────────────────────────────────
   if (error) {
     return (
       <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
@@ -233,163 +378,157 @@ export function CommunicationHistoryPage({ isActive, session }: { isActive: bool
     );
   }
 
+  // ── Main ──────────────────────────────────────────────────────────
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-communication-history">
+      {/* Header */}
       <div className={cx("pageHeaderBar", "borderB", "commsHeaderBar")}>
         <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Client Intelligence</div>
         <h1 className={cx("pageTitleText")}>Communication History</h1>
         <p className={cx("pageSubtitleText", "mb16")}>Interaction timeline across all clients</p>
 
-        <div className={cx("staffKpiStrip", "mb16")}>
-          <div className={cx("staffKpiCell")}>
-            <div className={cx("staffKpiLabel")}>Total events</div>
-            <div className={cx("staffKpiValue")}>{allEvents.length}</div>
+        {/* Filter bar */}
+        <div className={cx("commsFilterBar")}>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search events, clients…"
+            aria-label="Search events and clients"
+            className={cx("staffFilterInput")}
+          />
+          {TYPE_PILLS.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              className={cx("commsTypePill", activeType === key && "commsTypePillActive")}
+              onClick={() => handleTypeClick(key)}
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={cx("commsTypePill", sortBy !== "recent" && "commsTypePillActive")}
+            onClick={cycleSortBy}
+          >
+            {SORT_LABELS[sortBy]}
+          </button>
+          <div className={cx("commsViewToggle")}>
+            <button
+              type="button"
+              className={cx("commsViewBtn", viewMode === "client" && "commsViewBtnActive")}
+              onClick={() => setViewMode("client")}
+            >
+              By Client
+            </button>
+            <button
+              type="button"
+              className={cx("commsViewBtn", viewMode === "date" && "commsViewBtnActive")}
+              onClick={() => setViewMode("date")}
+            >
+              By Date
+            </button>
           </div>
-          <div className={cx("staffKpiCell")}>
-            <div className={cx("staffKpiLabel")}>Clients</div>
-            <div className={cx("staffKpiValue")}>{clients.length}</div>
-          </div>
-          <div className={cx("staffKpiCell")}>
-            <div className={cx("staffKpiLabel")}>Visible</div>
-            <div className={cx("staffKpiValue")}>{events.length}</div>
-          </div>
-        </div>
-
-        <div className={cx("staffSectionHdFilter", "commsFiltersWrap")}>
-          <select className={cx("staffFilterInput")} aria-label="Filter by client" value={selectedClient} onChange={(e) => setSelectedClient(e.target.value === "all" ? "all" : e.target.value)}>
-            <option value="all">All clients</option>
-            {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
-          </select>
-
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search events…" className={cx("staffFilterInput")} />
-
-          <select className={cx("staffFilterInput")} aria-label="Filter by type" value={filterType} onChange={(e) => setFilterType(e.target.value as "all" | EventType)}>
-            <option value="all">All types</option>
-            <option value="message">Message</option>
-            <option value="milestone">Milestone</option>
-            <option value="invoice">Invoice</option>
-            <option value="call">Call</option>
-            <option value="file">File</option>
-          </select>
-
-          <select className={cx("staffFilterInput")} aria-label="Filter by direction" value={filterDir} onChange={(e) => setFilterDir(e.target.value as "all" | Direction)}>
-            <option value="all">All directions</option>
-            <option value="inbound">Inbound</option>
-            <option value="outbound">Outbound</option>
-            <option value="both">Joint</option>
-          </select>
-
-          <select className={cx("staffFilterInput")} aria-label="Date range" value={range} onChange={(e) => setRange(e.target.value as "all" | "7d" | "30d")}>
-            <option value="all">All time</option>
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-          </select>
-
-          <select className={cx("staffFilterInput")} aria-label="Sort order" value={sortBy} onChange={(e) => setSortBy(e.target.value as "newest" | "oldest")}>
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-          </select>
-
           <button
             type="button"
             className={cx("commsGhostBtn")}
-            onClick={() => {
-              setSelectedClient("all");
-              setFilterType("all");
-              setFilterDir("all");
-              setRange("all");
-              setSortBy("newest");
-              setSearch("");
-            }}
+            onClick={() => void loadComms(true)}
+            disabled={refreshing}
+            aria-label="Refresh"
           >
-            Clear
+            {refreshing ? "…" : "↻"}
           </button>
-          <button type="button" className={cx("commsGhostBtn")} onClick={() => void loadComms(true)} disabled={refreshing}>
-            {refreshing ? "Refreshing…" : "Refresh"}
-          </button>
-          <span className={cx("staffRoleLabel")}>{events.length} events</span>
         </div>
       </div>
 
+      {/* Content */}
       <div className={cx("commsContent")}>
-        {Object.entries(groupedByDate).length === 0 ? (
-          <StaffEmptyState icon={EmptyIcons.notes} title="No events found" sub="No communication events match your filters." />
-        ) : null}
 
-        {Object.entries(groupedByDate).map(([date, dateEvents]) => (
-          <div key={date} className={cx("mb20")}>
-            <div className={cx("staffCommsDateHd")}>
-              <span className={cx("staffCommsDateLabel")}>{date}</span>
-              <div className={cx("staffCommsDateLine")} />
-            </div>
-
-            <div className={cx("staffCard")}>
-              {dateEvents.map((event, index) => {
-                const tCfg = typeConfig[event.type];
-                const dCfg = directionConfig[event.direction];
-                const isExpanded = expanded === event.id;
-                const isLast = index === dateEvents.length - 1;
-                const chipCls = event.type === "message" ? "staffChipAccent" : event.type === "milestone" ? "staffChipGreen" : event.type === "invoice" ? "staffChipAmber" : event.type === "call" ? "staffChipPurple" : "staffChip";
-                const directionChipCls = dCfg.toneClass === "commsDirectionInbound" ? "staffChipGreen" : dCfg.toneClass === "commsDirectionBoth" ? "staffChipPurple" : "";
-
-                return (
-                  <div
-                    key={event.id}
-                    className={cx("staffListRow", isLast && "staffCommsRowLast")}
-                    style={{ cursor: "pointer", borderBottom: isLast ? "none" : "1px solid var(--border)", flexDirection: "column", alignItems: "stretch", gap: 0 }}
-                    onClick={() => setExpanded(isExpanded ? null : event.id)}
-                  >
-                    <div className={cx("commsEventHeadRow")}>
-                      <div className={cx("commsTimelineIcon", tCfg.iconClass)}>{TYPE_ICONS[event.type]}</div>
-                      <span className={cx("staffCommsTitle", "flex1")}>{event.title}</span>
-                      <div className={cx("commsEventMeta")}>
-                        {selectedClient === "all" ? (
-                          <button
-                            type="button"
-                            className={cx("commsClientFilterBtn")}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedClient(event.clientId);
-                            }}
-                          >
-                            {event.clientName}
-                          </button>
-                        ) : null}
-                        <span className={cx("staffChip", chipCls)}>{tCfg.label}</span>
-                        <span className={cx("staffChip", directionChipCls)}>{dCfg.label}</span>
-                        <span className={cx("staffCommsTimeCol")}>{event.timeLabel}</span>
-                      </div>
-                    </div>
-
-                    {isExpanded ? (
-                      <div className={cx("commsExpandedBody")}>
-                        <div className={cx("staffCommsExcerpt")}>{event.excerpt}</div>
-                        <div className={cx("commsExpandedMeta")}>
-                          <span className={cx("staffChip", chipCls)}>{tCfg.label}</span>
-                          <span className={cx("staffRoleLabel")}>{date} · {event.timeLabel}</span>
-                          <button
-                            type="button"
-                            className={cx("commsGhostBtn")}
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              try {
-                                await navigator.clipboard.writeText(`[${event.clientName}] ${event.title} · ${event.excerpt}`);
-                              } catch {
-                                // noop
-                              }
-                            }}
-                          >
-                            Copy
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
+        {/* No events at all */}
+        {allEvents.length === 0 ? (
+          <StaffEmptyState
+            icon={EmptyIcons.notes}
+            title="No communication history yet"
+            sub="Events will appear here once client interactions are recorded."
+          />
+        ) : filteredEvents.length === 0 ? (
+          /* No match after filter/search */
+          <div>
+            <StaffEmptyState
+              icon={EmptyIcons.notes}
+              title="No events match"
+              sub="Try adjusting your filters or search query."
+            />
+            <div style={{ textAlign: "center", marginTop: 8 }}>
+              <button
+                type="button"
+                className={cx("commsGhostBtn")}
+                onClick={() => { setActiveType("all"); setSearch(""); }}
+              >
+                Clear filters
+              </button>
             </div>
           </div>
-        ))}
+        ) : viewMode === "client" ? (
+          /* ── By Client view ── */
+          <div className={cx("commsSwimGrid")}>
+            {clientGroups.map(({ clientId, clientName, events }) => {
+              const isCollapsed = collapsedClients.has(clientId);
+              const lastEvent   = events[0];
+              return (
+                <div key={clientId} className={cx("commsClientLane")}>
+                  <div
+                    className={cx("commsLaneHeader")}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleCollapse(clientId)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleCollapse(clientId);
+                      }
+                    }}
+                  >
+                    <div className={cx("commsLaneAvatar", laneAvatarTone(clientId))}>
+                      {clientInitials(clientName)}
+                    </div>
+                    <span className={cx("commsLaneName")}>{clientName}</span>
+                    <span className={cx("commsLaneMeta")}>
+                      {events.length} event{events.length !== 1 ? "s" : ""} · last {lastEvent?.dateLabel ?? ""}
+                    </span>
+                    <span className={cx("commsLaneChevron")}>
+                      {isCollapsed ? "▼" : "▲"}
+                    </span>
+                  </div>
+                  {!isCollapsed ? (
+                    <div className={cx("commsLaneBody")}>
+                      {events.map((event, i) =>
+                        renderEventRow(event, i === events.length - 1)
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* ── By Date view ── */
+          <>
+            {dateGroups.map(({ dateLabel, events }) => (
+              <div key={dateLabel} className={cx("mb20")}>
+                <div className={cx("staffCommsDateHd")}>
+                  <span className={cx("staffCommsDateLabel")}>{dateLabel}</span>
+                  <div className={cx("staffCommsDateLine")} />
+                </div>
+                <div className={cx("staffCard")}>
+                  {events.map((event, i) =>
+                    renderEventRow(event, i === events.length - 1)
+                  )}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </section>
   );
