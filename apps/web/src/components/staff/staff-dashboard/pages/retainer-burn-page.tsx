@@ -59,11 +59,17 @@ function donutColor(s: BurnStatus): string {
   return "var(--green)";
 }
 
-function burnFillCls(pct: number): string {
-  if (pct >= 100) return "progressFillRed";
-  if (pct >= 85)  return "progressFillRed";
-  if (pct >= 70)  return "progressFillAmber";
-  return "progressFillGreen";
+function fmtDate(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    return new Intl.DateTimeFormat("en-ZA", { day: "numeric", month: "short" }).format(new Date(iso));
+  } catch { return "—"; }
+}
+
+function rbFillCls(pct: number): string {
+  if (pct >= 85) return "rbFillRed";
+  if (pct >= 70) return "rbFillAmber";
+  return "rbFillGreen";
 }
 
 function initials(name: string): string {
@@ -157,16 +163,15 @@ export function RetainerBurnPage({ isActive, session }: RetainerBurnPageProps) {
     void getStaffRetainerBurn(session).then((result) => {
       if (cancelled) return;
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.data) {
-        setClients(result.data);
-        if (result.data.length > 0) setActiveId(result.data[0].clientId);
+      if (result.error || !result.data) {
+        setError(result.error?.message ?? "Failed to load retainer data.");
+        return;
       }
+      setClients(result.data);
+      if (result.data.length > 0) setActiveId(result.data[0].clientId);
     }).catch((err) => {
-      const msg = (err as Error)?.message ?? "Failed to load";
-      setError(msg);
-    }).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
+      if (!cancelled) setError((err as Error)?.message ?? "Failed to load retainer data.");
+    }).finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
   }, [session?.accessToken, isActive]);
@@ -253,9 +258,13 @@ export function RetainerBurnPage({ isActive, session }: RetainerBurnPageProps) {
               return (
                 <div
                   key={c.clientId}
+                  role="button"
+                  tabIndex={0}
                   className={cx("staffListRow", isAct && "staffClientToneAccent")}
                   onClick={() => setActiveId(c.clientId)}
-                  style={{ cursor: "pointer" }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActiveId(c.clientId); }
+                  }}
                 >
                   <MiniDonut pct={c.retainerBurnPct} color={color} />
                   <div className={cx("rbClientInfo")}>
@@ -288,6 +297,13 @@ export function RetainerBurnPage({ isActive, session }: RetainerBurnPageProps) {
                   </span>
                 </div>
 
+                {activeClient.retainerBurnPct > 100 && activeClient.alert && (
+                  <div className={cx("rbAlertBanner")}>
+                    <Ic n="alert-triangle" sz={14} c="var(--red)" />
+                    <span>{activeClient.alert}</span>
+                  </div>
+                )}
+
                 {/* Donut + burn % metric */}
                 <div className={cx("rbDonutRow")}>
                   <DonutChart pct={activeClient.retainerBurnPct} status={st} />
@@ -295,6 +311,31 @@ export function RetainerBurnPage({ isActive, session }: RetainerBurnPageProps) {
                     <div className={cx("rbBurnPct")}>{activeClient.retainerBurnPct}%</div>
                     <div className={cx("rbBurnLabel")}>retainer used</div>
                   </div>
+                </div>
+
+                <div className={cx("rbContextRow")}>
+                  <div className={cx("rbContextCell")}>
+                    <span className={cx("rbContextLabel")}>Cycle</span>
+                    <span className={cx("rbContextValue")}>
+                      {fmtDate(activeClient.cycleStart)} — {fmtDate(activeClient.cycleEnd)}
+                    </span>
+                  </div>
+                  <div className={cx("rbContextCell")}>
+                    <span className={cx("rbContextLabel")}>Days left</span>
+                    <span className={cx("rbContextValue", activeClient.daysLeft <= 5 ? "colorAmber" : "")}>
+                      {activeClient.daysLeft}d
+                    </span>
+                  </div>
+                  <div className={cx("rbContextCell")}>
+                    <span className={cx("rbContextLabel")}>Allocated</span>
+                    <span className={cx("rbContextValue")}>{activeClient.retainerHours}h</span>
+                  </div>
+                  {activeClient.overage > 0 && (
+                    <div className={cx("rbContextCell")}>
+                      <span className={cx("rbContextLabel")}>Overage</span>
+                      <span className={cx("rbContextValue", "colorRed")}>{activeClient.overage}h</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Progress bar */}
@@ -307,7 +348,7 @@ export function RetainerBurnPage({ isActive, session }: RetainerBurnPageProps) {
                   </div>
                   <div className={cx("staffBar")}>
                     <div
-                      className={cx("staffBarFill", burnMetricCls(activeClient.retainerBurnPct) === "colorRed" ? "rbFillRed" : burnMetricCls(activeClient.retainerBurnPct) === "colorAmber" ? "rbFillAmber" : "rbFillGreen")}
+                      className={cx("staffBarFill", rbFillCls(activeClient.retainerBurnPct))}
                       style={{ "--fill-pct": `${Math.min(activeClient.retainerBurnPct, 100)}%` } as React.CSSProperties}
                     />
                   </div>
@@ -325,7 +366,7 @@ export function RetainerBurnPage({ isActive, session }: RetainerBurnPageProps) {
                         <span className={cx("rbHistoryMonth")}>{h.month}</span>
                         <div className={cx("staffBar", "rbHistoryBar")}>
                           <div
-                            className={cx("staffBarFill", h.burnPct > 90 ? "rbFillRed" : h.burnPct > 70 ? "rbFillAmber" : "rbFillGreen")}
+                            className={cx("staffBarFill", rbFillCls(h.burnPct))}
                             style={{ "--fill-pct": `${Math.min(h.burnPct, 100)}%` } as React.CSSProperties}
                           />
                         </div>
