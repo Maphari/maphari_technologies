@@ -205,6 +205,24 @@ export class StaffController {
     );
   }
 
+  // ── GET /staff/me/portfolio ────────────────────────────────────────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("staff/me/portfolio")
+  async getMyPortfolio(
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/staff/me/portfolio`,
+      "GET",
+      undefined,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
   // ── GET /admin/staff/performance — full metrics per staff member (ADMIN only) ─
   @Roles("ADMIN")
   @Get("admin/staff/performance")
