@@ -560,6 +560,7 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
         }
       });
       await cache.delete(`staff:approvals:all`);
+      await cache.delete(`staff:milestone-signoffs:all`);
       return { success: true, data: updated } as ApiResponse<typeof updated>;
     } catch (error) {
       request.log.error(error);
@@ -1177,17 +1178,32 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
           const histEntries = projectIds.length > 0
             ? await prisma.projectTimeEntry.findMany({
                 where: { projectId: { in: projectIds }, createdAt: { gte: sixMonthsAgo } },
-                select: { minutes: true, createdAt: true }
+                select: { minutes: true, createdAt: true },
+                orderBy: { createdAt: "asc" },
               })
             : [];
           const monthHistMap = new Map<string, number>();
           for (const e of histEntries) {
             const d = new Date(e.createdAt);
-            const key = `${d.getFullYear()}-${d.getMonth()}`;
+            // Zero-pad month so keys sort lexicographically in calendar order
+            // d.getMonth() is 0-indexed (0 = Jan, 11 = Dec)
+            const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
             monthHistMap.set(key, (monthHistMap.get(key) ?? 0) + e.minutes);
           }
-          const burnHistory = [...monthHistMap.values()].slice(-6)
-            .map((mins) => Math.min(Math.round(pct(mins / 60, retainerHours)), 120));
+          const burnHistory = [...monthHistMap.entries()]
+            .sort(([a], [b]) => a.localeCompare(b))   // zero-padded keys sort correctly
+            .slice(-6)
+            .map(([key, mins]) => {
+              const [yr, mo] = key.split("-").map(Number);
+              // mo is 0-indexed — matches Date constructor (e.g. mo=0 → January)
+              const label = new Date(yr, mo, 1).toLocaleDateString("en-ZA", { month: "short", year: "2-digit" });
+              const hoursThisMonth = Math.round(mins / 60 * 10) / 10;
+              return {
+                month:     label,
+                hoursUsed: hoursThisMonth,
+                burnPct:   Math.min(Math.round(pct(hoursThisMonth, retainerHours)), 120),
+              };
+            });
           const tasks = monthEntries.slice(0, 5).map((e) => ({
             name: e.taskLabel?.slice(0, 50) ?? "Time entry",
             hours: Math.round(e.minutes / 60 * 10) / 10,
@@ -1196,18 +1212,21 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
           const daysLeft = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
           const initials = client.name.split(" ").map((w) => w[0] ?? "").slice(0, 2).join("").toUpperCase();
           return {
-            id: client.id, client: client.name, avatar: initials,
-            project: projects[0]?.name ?? "No active project",
-            status, retainerHours, hoursUsed, retainerValue: retainerHours * 350,
-            billingCycle: "Monthly",
-            cycleStart: monthStart.toLocaleDateString("en-ZA", { day: "numeric", month: "short" }),
-            cycleEnd:   new Date(now.getFullYear(), now.getMonth() + 1, 0).toLocaleDateString("en-ZA", { day: "numeric", month: "short" }),
-            daysLeft, hourlyRate: 350, overage, tasks, burnHistory,
+            clientId:        client.id,
+            clientName:      client.name,
+            hoursUsed,
+            retainerBurnPct: burnPct,
+            retainerHours,
+            cycleStart:      monthStart.toISOString(),
+            cycleEnd:        new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
+            daysLeft,
+            overage,
             alert: status === "exceeded"
               ? `Retainer exceeded by ${overage}h — R${(overage * 350).toLocaleString()} in unbilled work. Raise with admin.`
               : status === "critical"
               ? `${burnPct}% burned — very little remaining. Flag for scope review.`
-              : null
+              : null,
+            burnHistory,
           };
         }));
         return results;
@@ -1232,31 +1251,25 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
         const approvals = await prisma.milestoneApproval.findMany({
           where: { status: { in: ["PENDING", "APPROVED", "REJECTED"] } },
           include: {
-            milestone: { select: { title: true, dueAt: true, deliverables: { select: { name: true } } } },
+            milestone: { select: { title: true, dueAt: true, deliverables: { select: { id: true, name: true, status: true } } } },
             project:   { select: { name: true } },
             client:    { select: { name: true } }
           },
           orderBy: { createdAt: "desc" }, take: 20
         });
-        return approvals.map((ma) => {
-          const status: "awaiting_approval" | "overdue" | "in_revision" | "approved" =
-            ma.status === "APPROVED" ? "approved"
-            : ma.status === "REJECTED" ? "in_revision"
-            : ma.milestone.dueAt && ma.milestone.dueAt < new Date() ? "overdue"
-            : "awaiting_approval";
-          return {
-            id: ma.id, project: ma.project.name, client: ma.client.name,
-            title: ma.milestone.title,
-            deliverables: ma.milestone.deliverables.map((d) => d.name),
-            status,
-            submittedAt: new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(
-              Math.round((ma.createdAt.getTime() - Date.now()) / 86400000), "day"),
-            dueDate: ma.milestone.dueAt?.toLocaleDateString("en-ZA", { day: "numeric", month: "short" }) ?? "No due date",
-            notes: ma.comment ?? "",
-            priority: status === "overdue" ? "critical" : "high",
-            clientRead: ma.status !== "PENDING"
-          };
-        });
+        return approvals.map((ma) => ({
+          id:             ma.id,
+          milestoneId:    ma.milestoneId,
+          milestoneTitle: ma.milestone.title,
+          projectName:    ma.project.name,
+          clientName:     ma.client.name,
+          deliverables:   ma.milestone.deliverables.map((d) => ({ id: d.id, title: d.name, status: d.status })),
+          status:         ma.status,
+          requestedAt:    ma.createdAt.toISOString(),
+          approvedAt:     ma.decidedAt?.toISOString() ?? null,
+          dueDate:        ma.milestone.dueAt?.toISOString() ?? null,
+          comment:        ma.comment ?? null,
+        }));
       });
       return { success: true, data } as ApiResponse<typeof data>;
     } catch (error) {
