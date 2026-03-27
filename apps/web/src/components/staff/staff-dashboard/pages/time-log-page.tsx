@@ -52,6 +52,7 @@ const FILTER_OPTS = [
 ] as const;
 
 const BREAKDOWN_TONES = ["tlv2ToneAccent", "tlv2ToneBlue", "tlv2ToneAmber", "tlv2TonePurple", "tlv2ToneGreen"];
+const ENTRY_TONES = ["var(--accent)", "var(--blue)", "var(--amber)", "var(--purple)", "var(--green)"];
 
 /* ── Icons ── */
 function IcoPlay() {
@@ -147,6 +148,8 @@ export function TimeLogPage({
   const todayPct  = Math.min(100, Math.round((todayMinutes / dailyTargetMinutes) * 100));
   const weekPct   = weeklyTargetMinutes > 0 ? Math.min(100, Math.round((weekMinutes / weeklyTargetMinutes) * 100)) : 0;
   const chartMax  = Math.max(1, weekMax);
+  const today    = new Date();
+  const todayIdx = today.getDay() === 0 ? 6 : today.getDay() - 1;
 
   const filteredEntries = useMemo(() => {
     const now = new Date();
@@ -177,7 +180,7 @@ export function TimeLogPage({
             <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Tracking</div>
             <h1 className={cx("pageTitleText")}>Time Log</h1>
             <p className={cx("pageSubtitleText")}>
-              {formatDuration(weekMinutes)} logged this week · {projects.length} active project{projects.length !== 1 ? "s" : ""}
+              {currentWeek ?? `Week of ${weekData.days[0] ? new Date(weekData.days[0].date).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : ""}`}
             </p>
           </div>
           <div className={cx("pageActions")}>
@@ -202,7 +205,7 @@ export function TimeLogPage({
         </div>
       </div>
 
-      {/* ── Automation: quick-log 8h if no time logged today ─────────── */}
+      {/* ── Automation banner (scrolls away normally — outside sticky shell) ── */}
       <AutomationBanner
         show={todayMinutes === 0 && !timerRunning && !!onQuickLog8h}
         variant="info"
@@ -221,226 +224,262 @@ export function TimeLogPage({
         onSecondary={onTimerToggle}
       />
 
-      {/* ── Timer command strip ── */}
-      <div className={cx("tlv2Strip", timerRunning ? "tlv2StripActive" : "tlv2StripIdle")}>
-        {/* Left: pulse + time + badge */}
-        <div className={cx("tlv2StripLeft")}>
-          <span className={cx("tlv2Pulse", timerRunning ? "tlv2PulseOn" : "tlv2PulseOff")} />
-          <div className={cx("tlv2TimeDisplay")}>{timerDisplay}</div>
-          <span className={cx("tlv2RunBadge", timerRunning ? "tlv2RunBadgeOn" : "tlv2RunBadgeOff")}>
-            {timerRunning ? "RUNNING" : "IDLE"}
-          </span>
-          {timerRunning && timerProjectName && (
-            <span className={cx("tlv2ActiveProject")}>{timerProjectName}{timerTaskName ? ` · ${timerTaskName}` : ""}</span>
-          )}
-        </div>
+      {/* ── Sticky timer shell ── */}
+      <div className={cx("tlv2StickyShell")}>
+        <div className={cx("tlv2Strip", timerRunning ? "tlv2StripActive" : "tlv2StripIdle")}>
 
-        {/* Center: project + workstream inputs */}
-        <div className={cx("tlv2StripCenter")}>
-          <select
-            className={cx("tlv2Select")}
-            value={selectedTimerProjectId}
-            onChange={(e) => onTimerProjectChange(e.target.value)}
-            aria-label="Project"
-          >
-            <option value="">Select project…</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-          <input
-            className={cx("tlv2Input")}
-            placeholder="What are you working on?"
-            value={timerTaskLabel}
-            onChange={(e) => onTimerTaskLabelChange(e.target.value)}
-            aria-label="Workstream"
+          {/* Col 1: Pulse dot */}
+          <span
+            className={cx("tlv2Pulse", timerRunning ? "tlv2PulseOn" : "tlv2PulseOff")}
+            aria-hidden="true"
           />
-        </div>
 
-        {/* Right: play/pause + stop */}
-        <div className={cx("tlv2StripRight")}>
-          <button
-            type="button"
-            className={cx("tlv2PlayBtn", timerRunning ? "tlv2PlayBtnRunning" : "tlv2PlayBtnIdle")}
-            onClick={onTimerToggle}
-          >
-            <span className={cx("tlv2BtnIco")}>{timerRunning ? <IcoPause /> : <IcoPlay />}</span>
-            {timerRunning ? "Pause" : "Start"}
-          </button>
-          <button type="button" className={cx("tlv2StopBtn")} onClick={onTimerStop}>
-            <IcoStop />
-          </button>
+          {/* Col 2: Meta (running) or Inputs (idle) */}
+          {timerRunning ? (
+            <div className={cx("tlv2StripMeta")}>
+              <div className={cx("tlv2StripMetaLabel")}>
+                {timerProjectName ? `Running · ${timerProjectName}` : "Running"}
+              </div>
+              <div className={cx("tlv2StripMetaTask")}>
+                {timerTaskName || "No task label"}
+              </div>
+            </div>
+          ) : (
+            <div className={cx("tlv2StripInputs")}>
+              <select
+                className={cx("tlv2ProjectSelect")}
+                value={selectedTimerProjectId}
+                onChange={(e) => onTimerProjectChange(e.target.value)}
+                aria-label="Project"
+              >
+                <option value="">Select project…</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <input
+                className={cx("tlv2TaskInput")}
+                placeholder="What are you working on?"
+                value={timerTaskLabel}
+                onChange={(e) => onTimerTaskLabelChange(e.target.value)}
+                aria-label="Workstream"
+              />
+            </div>
+          )}
+
+          {/* Col 3: Clock */}
+          <div className={cx("tlv2TimeDisplay", timerRunning ? "tlv2TimeDisplayOn" : "tlv2TimeDisplayOff")}>
+            {timerDisplay}
+          </div>
+
+          {/* Col 4: Buttons */}
+          <div className={cx("tlv2TimerBtns")}>
+            <button
+              type="button"
+              className={cx("tlv2PlayBtn", timerRunning ? "tlv2PlayBtnRunning" : "tlv2PlayBtnIdle")}
+              onClick={onTimerToggle}
+            >
+              <span className={cx("tlv2BtnIco")}>{timerRunning ? <IcoPause /> : <IcoPlay />}</span>
+              {timerRunning ? "Pause" : "Start"}
+            </button>
+            <button type="button" className={cx("tlv2StopBtn")} onClick={onTimerStop} aria-label="Stop timer">
+              <IcoStop />
+            </button>
+          </div>
+
         </div>
       </div>
 
-      {/* ── 4-stat grid ── */}
-      <div className={cx("tlv2StatGrid")}>
-        <div className={cx("stat")}>
-          <div className={cx("statAccent", "statAccentAccent")} />
-          <div className={cx("statLabel")}>Today</div>
-          <div className={cx("statValue")}>{formatDuration(todayMinutes)}</div>
-          <div className={cx("statSub")}>
-            <span className={cx("tlv2StatBar")}>
-              <span className={cx("tlv2StatFill", "tlv2StatFillAccent")} style={{ '--pct': `${todayPct}%` } as React.CSSProperties} />
-            </span>
-          </div>
-        </div>
-        <div className={cx("stat")}>
-          <div className={cx("statAccent", "statAccentBlue")} />
-          <div className={cx("statLabel")}>This Week</div>
-          <div className={cx("statValue")}>{formatDuration(weekMinutes)}</div>
-          <div className={cx("statSub")}>
-            <span className={cx("tlv2StatBar")}>
-              <span className={cx("tlv2StatFill", "tlv2StatFillBlue")} style={{ '--pct': `${weekPct}%` } as React.CSSProperties} />
-            </span>
-          </div>
-        </div>
-        <div className={cx("stat")}>
-          <div className={cx("statAccent", "statAccentGreen")} />
-          <div className={cx("statLabel")}>Daily Goal</div>
-          <div className={cx("statValue")}>{todayPct}<span className={cx("tlv2StatSuffix")}>%</span></div>
-          <div className={cx("statSub")}>
-            <span className={todayPct >= 100 ? cx("up") : cx("dn")}>
-              {todayPct >= 100 ? "Target hit" : `${formatDuration(dailyTargetMinutes)} target`}
-            </span>
-          </div>
-        </div>
-        <div className={cx("stat")}>
-          <div className={cx("statAccent", "statAccentAmber")} />
-          <div className={cx("statLabel")}>
-            <span className={cx("inlineFlex", "gap5")}>
-              <IcoTarget /> Weekly Goal
-            </span>
-          </div>
-          <div className={cx("statValue")}>{weekPct}<span className={cx("tlv2StatSuffix")}>%</span></div>
-          <div className={cx("statSub")}>
-            <span className={weekPct >= 100 ? cx("up") : cx("dn")}>
-              {weekPct >= 100 ? "Target hit" : `${formatDuration(weeklyTargetMinutes)} target`}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Main content: 2-col ── */}
+      {/* ── Main content grid ── */}
       <div className={cx("tlv2ContentGrid")}>
 
-        {/* LEFT — This Week chart + breakdown */}
-        <div className={cx("card")}>
-          <div className={cx("cardHeader")}>
-            <span className={cx("cardHeaderTitle")}>This Week</span>
-            <span className={cx("tlv2WeekTotal")}>{formatDuration(weekMinutes)}</span>
-          </div>
-          <div className={cx("cardBody")}>
+        {/* ── Main column: chart + entries ── */}
+        <div className={cx("tlv2MainCol")}>
 
-            {/* Bar chart */}
-            <div className={cx("tlv2ChartArea")}>
-              {weekData.days.map((day, i) => {
-                const mins    = weekData.dailyMinutes[i] ?? 0;
-                const pct     = Math.round((mins / chartMax) * 100);
-                const isToday = day.date.toDateString() === new Date().toDateString();
-                return (
-                  <div key={day.label} className={cx("tlv2BarCol")}>
-                    <div className={cx("tlv2BarValue", isToday ? "tlv2BarValToday" : "tlv2BarValBase")}>
-                      {mins > 0 ? formatDuration(mins) : "—"}
-                    </div>
-                    <div className={cx("tlv2BarTrack")}>
-                      <div
-                        className={cx("tlv2Bar", isToday ? "tlv2BarToday" : "tlv2BarBase")} style={{ '--pct': `${Math.max(2, pct)}%` } as React.CSSProperties}
-                      />
-                    </div>
-                    <div className={cx("tlv2BarLabel", isToday ? "tlv2BarLabelToday" : "tlv2BarLabelBase")}>
-                      {day.label}
-                    </div>
-                  </div>
-                );
-              })}
+          {/* This week bar chart */}
+          <div className={cx("card", "tlv2ChartCard")}>
+            <div className={cx("cardHeader", "tlv2ChartHead")}>
+              <span className={cx("cardHeaderTitle")}>This Week</span>
+              <span className={cx("tlv2WeekBadge")}>
+                {(weekMinutes / 60).toFixed(1)}h · {weekPct}% of target
+              </span>
             </div>
-
-            <div className={cx("divider")} />
-
-            {/* Project breakdown */}
-            <div className={cx("tlv2Breakdown")}>
-              <div className={cx("tlv2BrkHeading")}>By Project</div>
-              {projectTimeBreakdown.length === 0 ? (
-                <StaffEmptyState icon={EmptyIcons.clock} title="No time logged" sub="Start the timer or log an entry manually." />
-              ) : (
-                projectTimeBreakdown.map(([project, minutes], i) => {
-                  const pct  = Math.round((minutes / Math.max(1, weekMinutes)) * 100);
-                  const tone = BREAKDOWN_TONES[i % BREAKDOWN_TONES.length];
+            <div className={cx("cardBody")}>
+              <div className={cx("tlv2ChartArea")}>
+                {weekData.days.map((day, i) => {
+                  const mins    = weekData.dailyMinutes[i] ?? 0;
+                  const pct     = Math.round((mins / chartMax) * 100);
+                  const isToday = day.date.toDateString() === today.toDateString();
                   return (
-                    <div key={project} className={cx("tlv2BrkRow")}>
-                      <div className={cx("tlv2BrkTop")}>
-                        <div className={cx("tlv2BrkDot", tone)} />
-                        <span className={cx("tlv2BrkName")}>{project}</span>
-                        <span className={cx("tlv2BrkTime", tone)}>{formatDuration(minutes)}</span>
-                        <span className={cx("tlv2BrkPct")}>{pct}%</span>
+                    <div key={day.label} className={cx("tlv2BarCol")}>
+                      <div className={cx("tlv2BarValue", isToday ? "tlv2BarValToday" : "tlv2BarValBase")}>
+                        {mins > 0 ? formatDuration(mins) : "—"}
                       </div>
-                      <div className={cx("tlv2BrkTrack")}>
-                        <div className={cx("tlv2BrkFill", tone)} style={{ '--pct': `${pct}%` } as React.CSSProperties} />
+                      <div className={cx("tlv2BarTrack")}>
+                        <div
+                          className={cx("tlv2Bar", isToday ? "tlv2BarToday" : "tlv2BarBase")}
+                          style={{ "--pct": `${Math.max(2, pct)}%` } as React.CSSProperties}
+                        />
+                      </div>
+                      <div className={cx("tlv2BarLabel", isToday ? "tlv2BarLabelToday" : "tlv2BarLabelBase")}>
+                        {day.label}
                       </div>
                     </div>
                   );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT — Recent entries with filter + search */}
-        <div className={cx("card")}>
-          <div className={cx("cardHeader")}>
-            <span className={cx("cardHeaderTitle")}>Recent Entries</span>
-            <span className={cx("tlv2EntryCount")}>
-              {filteredEntries.length} entr{filteredEntries.length !== 1 ? "ies" : "y"}
-            </span>
-          </div>
-
-          {/* Filter + search bar */}
-          <div className={cx("tlv2EntriesBar")}>
-            <div className={cx("tlv2FilterPills")}>
-              {FILTER_OPTS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className={cx("tlv2FilterPill", entryFilter === opt.value ? "tlv2FilterPillActive" : "tlv2FilterPillIdle")}
-                  onClick={() => setEntryFilter(opt.value as "all" | "today" | "week")}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <div className={cx("tlv2SearchWrap")}>
-              <span className={cx("tlv2SearchIco")}><IcoSearch /></span>
-              <input
-                className={cx("tlv2SearchInput")}
-                placeholder="Search…"
-                value={entrySearch}
-                onChange={(e) => setEntrySearch(e.target.value)}
-              />
+                })}
+              </div>
             </div>
           </div>
 
-          <div className={cx("cardBody", "pt0", "pb8")}>
-            <div className={cx("timeEntries")}>
-              {filteredEntries.length === 0 ? (
-                <StaffEmptyState icon={EmptyIcons.clock} title="No entries" sub="No time entries match the current filter." />
-              ) : (
-                filteredEntries.map((entry) => (
-                  <TimeEntry
-                    key={entry.id}
-                    dot={entry.color}
-                    project={entry.project}
-                    task={entry.task}
-                    duration={formatDuration(entry.minutes)}
-                    date={formatDateShort(entry.loggedAt)}
-                  />
-                ))
-              )}
+          {/* Log entries */}
+          <div className={cx("card", "tlv2EntriesCard")}>
+            <div className={cx("cardHeader")}>
+              <span className={cx("cardHeaderTitle")}>Log Entries</span>
+              <span className={cx("tlv2EntryCount")}>
+                {filteredEntries.length} entr{filteredEntries.length !== 1 ? "ies" : "y"}
+              </span>
+            </div>
+            <div className={cx("tlv2EntriesBar")}>
+              <div className={cx("tlv2FilterPills")} role="tablist">
+                {FILTER_OPTS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    role="tab"
+                    aria-selected={entryFilter === opt.value}
+                    aria-controls="tlv2EntryList"
+                    className={cx("tlv2FilterPill", entryFilter === opt.value ? "tlv2FilterPillActive" : "tlv2FilterPillIdle")}
+                    onClick={() => setEntryFilter(opt.value as "all" | "today" | "week")}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <div className={cx("tlv2SearchWrap")}>
+                <span className={cx("tlv2SearchIco")}><IcoSearch /></span>
+                <input
+                  className={cx("tlv2SearchInput")}
+                  placeholder="Search…"
+                  aria-label="Search entries by project or task"
+                  value={entrySearch}
+                  onChange={(e) => setEntrySearch(e.target.value)}
+                />
+              </div>
+            </div>
+            <div id="tlv2EntryList" className={cx("cardBody", "pt0", "pb8")}>
+              <div className={cx("timeEntries")}>
+                {filteredEntries.length === 0 ? (
+                  <StaffEmptyState icon={EmptyIcons.clock} title="No entries" sub="No time entries match the current filter." />
+                ) : (
+                  filteredEntries.map((entry, index) => (
+                    <TimeEntry
+                      key={entry.id}
+                      dot={ENTRY_TONES[index % ENTRY_TONES.length]}
+                      project={entry.project}
+                      task={entry.task}
+                      duration={formatDuration(entry.minutes)}
+                      date={formatDateShort(entry.loggedAt)}
+                    />
+                  ))
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-      </div>
+        </div>{/* /tlv2MainCol */}
+
+        {/* ── Side column: week progress + breakdown ── */}
+        <div className={cx("tlv2SideCol")}>
+
+          {/* Week progress card */}
+          <div className={cx("card", "tlv2WeekCard")}>
+            <div className={cx("cardHeader", "tlv2WeekCardHead")}>
+              <span className={cx("cardHeaderTitle")}>Week Progress</span>
+            </div>
+            <div className={cx("tlv2WeekProgress")}>
+              <div className={cx("tlv2WeekNums")}>
+                <div className={cx("tlv2WeekLogged")}>
+                  {(weekMinutes / 60).toFixed(1)}h{" "}
+                  <span className={cx("tlv2WeekTarget")}>logged</span>
+                </div>
+                <div className={cx("tlv2WeekTarget")}>/ {weeklyTargetHours}h</div>
+              </div>
+              <div className={cx("tlv2WeekTrack")}>
+                <div
+                  className={cx("tlv2WeekFill")}
+                  style={{ "--pct": `${weekPct}%` } as React.CSSProperties}
+                />
+              </div>
+              <div className={cx("tlv2WeekDays")}>
+                {weekData.days.map((day, i) => {
+                  const isDone  = i < todayIdx;
+                  const isToday = i === todayIdx;
+                  return (
+                    <span
+                      key={day.label}
+                      className={cx("tlv2WeekDay", isDone ? "tlv2WeekDayDone" : isToday ? "tlv2WeekDayToday" : "")}
+                    >
+                      {day.label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+            <div className={cx("tlv2WeekStats")}>
+              <div className={cx("tlv2WeekStat")}>
+                <div className={cx("tlv2WeekStatVal", "tlv2WeekStatValAccent")}>
+                  {(todayMinutes / 60).toFixed(1)}h
+                </div>
+                <div className={cx("tlv2WeekStatLbl")}>Today</div>
+              </div>
+              <div className={cx("tlv2WeekStat")}>
+                <div className={cx("tlv2WeekStatVal")}>
+                  {Math.max(0, weeklyTargetHours - weekMinutes / 60).toFixed(1)}h
+                </div>
+                <div className={cx("tlv2WeekStatLbl")}>Remaining</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Project breakdown card */}
+          <div className={cx("card")}>
+            <div className={cx("cardHeader")}>
+              <span className={cx("cardHeaderTitle")}>By Project</span>
+            </div>
+            <div className={cx("cardBody")}>
+              <div className={cx("tlv2Breakdown")}>
+                {projectTimeBreakdown.length === 0 ? (
+                  <StaffEmptyState icon={EmptyIcons.clock} title="No time logged" sub="Start the timer or log an entry manually." />
+                ) : (
+                  projectTimeBreakdown.slice(0, 4).map(([project, minutes], i) => {
+                    const pct  = Math.round((minutes / Math.max(1, weekMinutes)) * 100);
+                    const tone = BREAKDOWN_TONES[i % BREAKDOWN_TONES.length];
+                    return (
+                      <div key={project} className={cx("tlv2BrkRow")}>
+                        <div className={cx("tlv2BrkTop")}>
+                          <div className={cx("tlv2BrkDot", tone)} />
+                          <span className={cx("tlv2BrkName")}>{project}</span>
+                          <span className={cx("tlv2BrkTime", tone)}>{formatDuration(minutes)}</span>
+                          <span className={cx("tlv2BrkPct")}>{pct}%</span>
+                        </div>
+                        <div className={cx("tlv2BrkTrack")}>
+                          <div
+                            className={cx("tlv2BrkFill", tone)}
+                            style={{ "--pct": `${pct}%` } as React.CSSProperties}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+
+        </div>{/* /tlv2SideCol */}
+
+      </div>{/* /tlv2ContentGrid */}
+
     </section>
   );
 }

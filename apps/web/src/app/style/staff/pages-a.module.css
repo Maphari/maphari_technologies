@@ -1585,7 +1585,7 @@
   white-space: nowrap;
 }
 
-.tlv2Select {
+.tlv2ProjectSelect {
   height: 28px;
   padding: 0 8px;
   background: var(--s2);
@@ -1598,7 +1598,7 @@
   min-width: 140px;
 }
 
-.tlv2Input {
+.tlv2TaskInput {
   flex: 1;
   height: 28px;
   background: transparent;
@@ -1609,7 +1609,7 @@
   padding: 0 4px;
 }
 
-.tlv2Input:focus { outline: none; border-bottom-color: var(--accent); }
+.tlv2TaskInput:focus { outline: none; border-bottom-color: var(--accent); }
 
 .tlv2PlayBtn {
   display: inline-flex;
