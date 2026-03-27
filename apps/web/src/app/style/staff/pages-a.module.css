@@ -1706,9 +1706,9 @@
   transition: all 120ms;
 }
 .tlv2SubmitWeekBtnIdle {
-  background: var(--accent);
+  background: var(--accent-d);
   border: 1px solid var(--accent);
-  color: #0d0d0d;
+  color: var(--accent);
 }
 .tlv2SubmitWeekBtnIdle:hover:not(:disabled) { opacity: 0.88; }
 .tlv2SubmitWeekBtnDone {
@@ -1722,9 +1722,13 @@
 /* Content grid */
 .tlv2ContentGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 280px;
   gap: 16px;
+  margin-top: 20px;
 }
+
+.tlv2MainCol { display: flex; flex-direction: column; gap: 16px; }
+.tlv2SideCol { display: flex; flex-direction: column; gap: 16px; }
 
 @media (max-width: 900px) {
   .tlv2ContentGrid { grid-template-columns: 1fr; }
@@ -1738,6 +1742,21 @@
   font-weight: 700;
   color: var(--accent);
 }
+
+.tlv2ChartCard { }  /* uses .card — no additional styles needed */
+.tlv2ChartHead { }  /* uses .cardHeader — no additional styles needed */
+
+.tlv2WeekBadge {
+  font-size: 11px;
+  font-family: var(--font-dm-mono), monospace;
+  color: var(--accent);
+  background: var(--accent-d);
+  border: 1px solid var(--accent-d);
+  border-radius: var(--r-xs);
+  padding: 2px 8px;
+}
+
+.tlv2EntriesCard { } /* uses .card */
 
 .tlv2ChartArea {
   display: flex;
@@ -1781,7 +1800,7 @@
 }
 
 .tlv2BarToday { background: var(--accent); }
-.tlv2BarBase  { background: var(--blue); }
+.tlv2BarBase  { background: rgba(255, 255, 255, 0.09); }
 
 .tlv2BarLabel { font-size: 9px; font-family: var(--font-dm-mono), monospace; }
 .tlv2BarLabelToday { color: var(--accent); font-weight: 700; }
@@ -1863,7 +1882,7 @@
   color: var(--muted);
 }
 
-.tlv2FilterPillActive { background: var(--s2); color: var(--text); border-color: var(--b2); }
+.tlv2FilterPillActive { background: var(--accent-d); color: var(--accent); border-color: rgba(249,115,22,0.28); }
 .tlv2FilterPillIdle:hover { background: var(--s2); }
 
 .tlv2SearchWrap {
