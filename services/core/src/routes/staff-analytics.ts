@@ -696,12 +696,30 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
           if (ex) { ex.minutes += entry.minutes; }
           else { weekMap.set(label, { minutes: entry.minutes, weekStart: ws }); }
         }
+        // Real task counts: query tasks completed on projects this staff member worked on
+        const staffProjectIds = [...new Set(entries.map((e) => e.projectId))];
+        const completedTasks = staffProjectIds.length > 0
+          ? await prisma.projectTask.findMany({
+              where: {
+                projectId: { in: staffProjectIds },
+                completedAt: { gte: eightWeeksAgo, not: null },
+              },
+              select: { completedAt: true },
+            })
+          : [];
+        const weekTaskCounts = new Map<string, number>();
+        for (const t of completedTasks) {
+          if (!t.completedAt) continue;
+          const ws = startOfWeek(new Date(t.completedAt));
+          const label = weekLabel(ws);
+          weekTaskCounts.set(label, (weekTaskCounts.get(label) ?? 0) + 1);
+        }
         const weeklyData = [...weekMap.entries()]
           .sort(([, a], [, b]) => a.weekStart.getTime() - b.weekStart.getTime())
           .slice(-8)
           .map(([week, { minutes }]) => {
             const hours = Math.round(minutes / 60 * 10) / 10;
-            return { week, hours, tasks: 0, responseTime: 2.0, score: Math.min(100, Math.round(pct(hours, 40) * 1.1)) };
+            return { week, hoursLogged: hours, tasksCompleted: weekTaskCounts.get(week) ?? 0 };
           });
         // Client breakdown
         const projectIds = [...new Set(entries.map((e) => e.projectId))];
@@ -720,14 +738,12 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
           if (!proj) continue;
           clientMins.set(proj.clientId, (clientMins.get(proj.clientId) ?? 0) + entry.minutes);
         }
-        const tones = ["accent", "purple", "blue", "amber", "muted"] as const;
         const clientBreakdown = [...clientMins.entries()]
           .sort(([, a], [, b]) => b - a).slice(0, 5)
-          .map(([cid, mins], idx) => ({
-            client: clientMap.get(cid) ?? "Unknown",
-            hours: Math.round(mins / 60 * 10) / 10,
-            tasks: 0,
-            tone: tones[idx % tones.length]
+          .map(([cid, mins]) => ({
+            clientId: cid,
+            clientName: clientMap.get(cid) ?? "Unknown",
+            hoursLogged: Math.round(mins / 60 * 10) / 10,
           }));
         // Milestone history
         const milestoneApprovals = projectIds.length > 0
@@ -745,7 +761,7 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
           dueDate: ma.milestone.dueAt?.toLocaleDateString("en-ZA", { day: "numeric", month: "short" }) ?? "—",
           onTime: ma.milestone.dueAt == null || ma.createdAt <= ma.milestone.dueAt
         }));
-        return { weeklyData, clientBreakdown, milestoneHistory, targets: { hours: 40, tasks: 16, responseTime: 2.0 }, tasksByType: [] };
+        return { weeklyData, clientBreakdown, milestoneHistory };
       });
       return { success: true, data } as ApiResponse<typeof data>;
     } catch (error) {
@@ -1080,8 +1096,12 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
     if (scope.role === "CLIENT") {
       return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
     }
+    const userId = scope.userId;
+    if (!userId) {
+      return reply.code(401).send({ success: false, error: { code: "UNAUTHORIZED", message: "User ID not found." } } as ApiResponse);
+    }
     try {
-      const cacheKey = `staff:response-times:all`;
+      const cacheKey = `staff:response-times:${userId}`;
       const data = await withCache(cacheKey, 120, async () => {
         const sixWeeksAgo = new Date(Date.now() - 42 * 24 * 60 * 60 * 1000);
         const slaRecords = await prisma.sLARecord.findMany({
