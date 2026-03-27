@@ -769,6 +769,97 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
     }
   });
 
+  // ── GET /staff/me/portfolio ──────────────────────────────────────────────
+  /** Projects the staff member has logged time on, with salary-derived spend */
+  app.get("/staff/me/portfolio", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
+    }
+    const userId = scope.userId;
+    if (!userId) {
+      return reply.code(401).send({ success: false, error: { code: "UNAUTHORIZED", message: "User ID not found." } } as ApiResponse);
+    }
+    try {
+      const cacheKey = `staff:portfolio:${userId}`;
+      const data = await withCache(cacheKey, 60, async () => {
+        // 1. Derive internal hourly rate from gross salary
+        const profile = await prisma.staffProfile.findUnique({
+          where: { userId },
+          select: { grossSalaryCents: true },
+        });
+        const grossSalaryCents = profile?.grossSalaryCents ?? 0;
+        const internalHourlyRateCents = grossSalaryCents > 0
+          ? Math.round(grossSalaryCents / (52 * 40))
+          : 0;
+
+        // 2. Get time entries to discover which projects this user has logged on
+        const timeEntries = await prisma.projectTimeEntry.findMany({
+          where:  { staffUserId: userId },
+          select: { projectId: true, minutes: true },
+        });
+
+        // 3. Aggregate minutes per project
+        const minutesByProject = new Map<string, number>();
+        for (const te of timeEntries) {
+          minutesByProject.set(te.projectId, (minutesByProject.get(te.projectId) ?? 0) + te.minutes);
+        }
+        const projectIds = [...minutesByProject.keys()];
+
+        // 4. Fetch projects with client + tasks
+        const projects = projectIds.length > 0
+          ? await prisma.project.findMany({
+              where: { id: { in: projectIds } },
+              select: {
+                id: true, name: true, status: true, priority: true,
+                progressPercent: true, dueAt: true, budgetCents: true,
+                client: { select: { id: true, name: true } },
+                tasks:  { select: { id: true, status: true } },
+              },
+            })
+          : [];
+
+        // 5. Compute spend and health per project
+        return projects.map((p) => {
+          const totalMinutes = minutesByProject.get(p.id) ?? 0;
+          const spentCents   = internalHourlyRateCents > 0
+            ? Math.round((totalMinutes / 60) * internalHourlyRateCents)
+            : 0;
+          const budgetCents  = p.budgetCents ?? 0;
+
+          let health: "healthy" | "moderate" | "critical" | "exceeded";
+          if (budgetCents > 0 && spentCents > budgetCents)             health = "exceeded";
+          else if (p.status === "AT_RISK" || p.status === "BLOCKED")   health = "critical";
+          else if (p.status === "ON_HOLD")                              health = "moderate";
+          else                                                           health = "healthy";
+
+          return {
+            id:              p.id,
+            name:            p.name,
+            clientId:        p.client.id,
+            clientName:      p.client.name,
+            status:          p.status,
+            priority:        p.priority,
+            progressPercent: p.progressPercent,
+            dueAt:           p.dueAt?.toISOString() ?? null,
+            budgetCents,
+            spentCents,
+            health,
+            tasks: {
+              total:      p.tasks.length,
+              done:       p.tasks.filter((t) => t.status === "DONE").length,
+              inProgress: p.tasks.filter((t) => t.status === "IN_PROGRESS").length,
+            },
+          };
+        });
+      });
+      return { success: true, data } as ApiResponse<typeof data>;
+    } catch (error) {
+      request.log.error(error);
+      return { success: false, error: { code: "PORTFOLIO_FETCH_FAILED", message: "Unable to load portfolio." } } as ApiResponse;
+    }
+  });
+
   // ── GET /staff/team-performance ──────────────────────────────────────────
   /** Team benchmarks from StaffProfile + time entries + peer reviews */
   app.get("/staff/team-performance", async (request, reply) => {
