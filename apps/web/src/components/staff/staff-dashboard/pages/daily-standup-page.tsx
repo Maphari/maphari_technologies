@@ -186,12 +186,13 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
     setSubmitError(null);
     try {
       if (session) {
+        const parsedHours = (() => { const h = parseFloat(hours); return hours.trim() && isFinite(h) && h >= 0 ? h : undefined; })();
         const r = await postStandupWithRefresh(session, {
           yesterday: fields.yesterday,
           today:     fields.today_plan,
           blockers:  fields.blockers   || undefined,
-          mood:      mood > 0          ? mood               : undefined,
-          hours:     hours.trim()      ? parseFloat(hours)  : undefined,
+          mood:      mood > 0          ? mood      : undefined,
+          hours:     parsedHours,
           flagAdmin: flagAdmin         || undefined,
         });
         if (r.nextSession) saveSession(r.nextSession);
@@ -201,6 +202,8 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
         } else {
           setSubmitError(r.error?.message ?? "Failed to submit standup. Please try again.");
         }
+      } else {
+        setSubmitError("Session expired. Please refresh the page.");
       }
     } catch {
       setSubmitError("Failed to submit standup. Please try again.");
