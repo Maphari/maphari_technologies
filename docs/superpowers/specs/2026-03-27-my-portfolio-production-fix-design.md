@@ -34,9 +34,24 @@ const userId = scope.userId;
 if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 ```
 
-**Cache key:** `staff:portfolio:${userId}`
+**Cache key:** `staff:portfolio:${userId}` — TTL 60 seconds, using `withCache`:
 
-**Data fetch:**
+```typescript
+const cacheKey = `staff:portfolio:${userId}`;
+const data = await withCache(cacheKey, 60, async () => {
+  // ... all data fetch and computation below
+});
+return { success: true, data } as ApiResponse<typeof data>;
+```
+
+On error:
+```typescript
+return { success: false, error: { code: "PORTFOLIO_FETCH_FAILED", message: "Unable to load portfolio." } } as ApiResponse;
+```
+
+See `/staff/me/performance` handler (line ~682) for the exact pattern.
+
+**Data fetch (inside `withCache` callback):**
 
 1. Get `StaffProfile.grossSalaryCents` for the user:
 ```typescript
@@ -166,6 +181,8 @@ import {
   withAuthorizedSession,
   type AuthorizedResult,
 } from "./internal";
+// Note: `isUnauthorized` and `toGatewayError` are intentionally omitted —
+// this function uses `withAuthorizedSession` which handles auth errors internally.
 
 export interface StaffPortfolioProjectTasks {
   total:      number;
@@ -274,7 +291,7 @@ All fields are now available directly on `StaffPortfolioProject`. Update referen
 - `project.progress` → `project.progressPercent`
 - `project.budget.total` → `project.budgetCents / 100`
 - `project.budget.spent` → `project.spentCents / 100`
-- `project.dueAt` is already an ISO string — pass directly to `formatDate()`
+- `project.dueAt` — this is `string | null` (intentionally nullable, mirrors the DB field). Pass directly to `formatDate()` which already accepts `string | null` and returns `"No date"` for null.
 - `project.tasks.total`, `.done`, `.inProgress` — same keys, no change
 
 Remove the intermediate `budget` and `tasks` destructuring (they match directly).
@@ -283,30 +300,49 @@ Remove the intermediate `budget` and `tasks` destructuring (they match directly)
 
 Remove `deriveHealth`. Keep `normalizePriority`, `healthCfg`, `priorityCfg`, `fmt`, `formatDate`.
 
+**4h. Confirm filter logic for `"exceeded"` health**
+
+The existing filter code already maps `"exceeded"` to the `"risk"` bucket:
+```typescript
+if (filter === "risk") return project.health === "critical" || project.health === "exceeded";
+```
+No change needed — this is correct and will work as-is once `health` values are returned from the server.
+
 ---
 
 ### 5. Frontend — Add missing CSS classes
 
 **File:** `apps/web/src/app/style/staff/pages-e.module.css`
 
-Append after the `.pfPriorityChip` block (after line ~539):
+**First**, add `border: 1px solid transparent` to the existing `.pfHealthChip` rule (lines ~541–552) so that the colour variant `border-color` overrides below will render. Without a `border` in the base rule the `border-color` has nothing to act on:
 
 ```css
-/* Health chip colour variants */
+.pfHealthChip {
+  /* ... existing properties ... */
+  border: 1px solid transparent;  /* ADD THIS LINE */
+}
+```
+
+**Then**, append after the `.pfPriorityChip` block (after line ~539):
+
+```css
+/* Health chip colour variants (applied alongside pfHealthChip) */
 .pfChipGreen { background: rgba(52,217,139,0.10); border-color: rgba(52,217,139,0.20); color: var(--green); }
 .pfChipAmber { background: rgba(245,166,35,0.08); border-color: rgba(245,166,35,0.18); color: var(--amber); }
 .pfChipRed   { background: rgba(239,68,68,0.08);  border-color: rgba(239,68,68,0.18);  color: var(--red);   }
 
-/* Health dot colour variants */
+/* Health dot colour variants (applied alongside pfHealthDot) */
 .pfDotGreen { background: var(--green); }
 .pfDotAmber { background: var(--amber); }
 .pfDotRed   { background: var(--red);   }
 
-/* Priority chip colour variants */
+/* Priority chip colour variants (applied alongside pfPriorityChip which provides the border/shape base) */
 .pfPriorityHigh { background: rgba(239,68,68,0.08);   border-color: rgba(239,68,68,0.18);  color: var(--red);   }
 .pfPriorityMed  { background: rgba(245,166,35,0.08);  border-color: rgba(245,166,35,0.18); color: var(--amber); }
 .pfPriorityLow  { background: rgba(255,255,255,0.04); border-color: var(--b2);             color: var(--muted); }
 ```
+
+Note: `pfFillGreen`, `pfFillAmber`, `pfFillRed` are already defined in `apps/web/src/app/style/staff/pages-h.module.css` (lines 2935–2937) and do not need to be added.
 
 ---
 
