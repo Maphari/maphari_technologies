@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -114,9 +114,9 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks, onG
   const [error, setError]   = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  function toggleExpand(id: string) {
+  const toggleExpand = useCallback((id: string) => {
     setExpandedId(prev => (prev === id ? null : id));
-  }
+  }, []);
 
   useEffect(() => {
     if (!isActive || !session) { setLoading(false); return; }
@@ -158,7 +158,10 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks, onG
           if (dlResult?.nextSession) saveSession(dlResult.nextSession);
           const deliverables = dlResult?.data ?? [];
 
-          const readiness = computeReadiness(deliverables);
+          const doneCount = deliverables.filter((d) => DONE_STATUSES.has(d.status.toUpperCase())).length;
+          const readiness = deliverables.length === 0
+            ? 0
+            : Math.round((doneCount / deliverables.length) * 100);
           const status    = deriveStatus(p, readiness);
           const phase     = derivePhase(p, deliverables);
           const inReview  = deliverables.filter(
@@ -178,7 +181,7 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks, onG
                 })
               : "TBD",
             status,
-            deliverablesDone:  deliverables.filter((d) => DONE_STATUSES.has(d.status.toUpperCase())).length,
+            deliverablesDone:  doneCount,
             deliverablesTotal: deliverables.length,
           };
         });
