@@ -46,6 +46,7 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
 
     setLoading(true);
     setLastUpdated(null);
+    setRows([]);
     void getWorkloadHeatmap(session, weeks).then((result) => {
       if (cancelled) return;
       if (result.error || !result.data) {
@@ -83,7 +84,7 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
       <div className={cx("pageHeaderBar")}>
         <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Analytics</div>
         <h1 className={cx("pageTitleText")}>Workload Capacity Heatmap</h1>
-        <p className={cx("pageSubtitleText", "mb20")}>Allocated vs. available hours per team member — next 4 weeks</p>
+        <p className={cx("pageSubtitleText", "mb20")}>Allocated vs. available hours per team member — next {weeks} weeks</p>
       </div>
 
       {loadError && (
