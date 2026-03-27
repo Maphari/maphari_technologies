@@ -1753,6 +1753,11 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
                 ? new Date(parsed.data.dueAt)
                 : null
               : task.dueAt,
+          ...(parsed.data.status === "DONE" && task.status !== "DONE"
+            ? { completedAt: new Date() }
+            : parsed.data.status !== undefined && parsed.data.status !== "DONE" && task.status === "DONE"
+            ? { completedAt: null }
+            : {}),
           ...(parsed.data.externalLinks !== undefined
             ? { externalLinks: normalizeTaskExternalLinks(parsed.data.externalLinks as ProjectTaskExternalLink[]) }
             : {})
