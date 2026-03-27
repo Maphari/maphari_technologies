@@ -314,8 +314,6 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
     }
   }
 
-  // ── Render placeholder (full JSX in Task 5) ───────────────────────────────
-
   if (!isActive) return null;
 
   if (loading) {
@@ -330,11 +328,174 @@ export function ClientHealthPage({ isActive, session }: ClientHealthPageProps) {
     );
   }
 
+  if (healthData.length === 0 && !error) {
+    return (
+      <section className={cx("page", "pageBody", "pageActive")} id="page-health">
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateIcon")}><Ic n="bar-chart-2" sz={22} c="var(--muted2)" /></div>
+          <div className={cx("emptyStateTitle")}>No health data yet</div>
+          <div className={cx("emptyStateSub")}>Health scores are computed from client activity. Add clients and record health signals to see data here.</div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className={cx("page", "pageBody", "pageActive")} id="page-health">
-      <div className={cx("emptyState")}>
-        <div className={cx("emptyStateTitle")}>Redesign in progress</div>
+
+      {/* ── Error ──────────────────────────────────────────────────────── */}
+      {error && (
+        <div className={cx("emptyState")}>
+          <div className={cx("emptyStateTitle")}>Something went wrong</div>
+          <div className={cx("emptyStateSub")}>{error}</div>
+        </div>
+      )}
+
+      {/* ── Page header ────────────────────────────────────────────────── */}
+      <header className={cx("pageHeaderBar")}>
+        <div className={cx("pageEyebrowText", "text11", "colorMuted2")}>
+          Staff Dashboard / Client Work
+        </div>
+        <h1 className={cx("pageTitleText", "mb4")}>Client Health Score</h1>
+        <p className={cx("text12", "colorMuted2", "mb0")}>
+          Signals, scores, and interventions for every client — one living dashboard.
+        </p>
+      </header>
+
+      {/* ── KPI Strip ──────────────────────────────────────────────────── */}
+      <div className={cx("chKpiStrip")}>
+        <div className={cx("chKpiCard", "chKpiCardAccent")}>
+          <div className={cx("chKpiLabel")}>Portfolio Avg</div>
+          <div className={cx("chKpiVal")} style={{ color: "var(--accent)" }}>{avg}</div>
+          <div className={cx("chKpiMeta")}>{healthData.length} clients tracked</div>
+        </div>
+        <div className={cx("chKpiCard", "chKpiCardRed")}>
+          <div className={cx("chKpiLabel")}>At Risk</div>
+          <div className={cx("chKpiVal")} style={{ color: "var(--red)" }}>{atRiskCount}</div>
+          <div className={cx("chKpiMeta")}>score below 50</div>
+        </div>
+        <div className={cx("chKpiCard", "chKpiCardGreen")}>
+          <div className={cx("chKpiLabel")}>Improving</div>
+          <div className={cx("chKpiVal")} style={{ color: "var(--green)" }}>{improvingCount}</div>
+          <div className={cx("chKpiMeta")}>↑ trend upward</div>
+        </div>
+        <div className={cx("chKpiCard", "chKpiCardPurple")}>
+          <div className={cx("chKpiLabel")}>Total Signals</div>
+          <div className={cx("chKpiVal")} style={{ color: "var(--purple)" }}>{totalSignals}</div>
+          <div className={cx("chKpiMeta")}>
+            {healthData.length > 0 ? Math.round(totalSignals / healthData.length) : 0} per client avg
+          </div>
+        </div>
       </div>
+
+      {/* ── Tab bar ────────────────────────────────────────────────────── */}
+      <div className={cx("chTabBarRow")}>
+        {(["overview", "atRisk", "positive", "all"] as TabKey[]).map((tab) => {
+          const labels: Record<TabKey, string> = {
+            overview: "Overview",
+            atRisk:   "At Risk",
+            positive: "Positive",
+            all:      "All Clients",
+          };
+          const badges: Record<TabKey, { count: number; cls: string } | null> = {
+            overview: null,
+            atRisk:   { count: atRiskCount,                                          cls: "chTabBadgeRed"   },
+            positive: { count: healthData.filter((c) => c.sentiment === "positive").length, cls: "chTabBadgeGreen" },
+            all:      { count: healthData.length,                                    cls: "chTabBadgeMuted" },
+          };
+          const badge = badges[tab];
+          return (
+            <button
+              key={tab}
+              type="button"
+              className={cx("chTab", activeTab === tab && "chTabActive")}
+              onClick={() => setActiveTab(tab)}
+              aria-selected={activeTab === tab}
+            >
+              {labels[tab]}
+              {badge && (
+                <span className={cx(badge.cls)}>{badge.count}</span>
+              )}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          className={cx("chTabClearBtn")}
+          onClick={() => setSelected(null)}
+          disabled={!selected || refreshing}
+        >
+          Clear selection
+        </button>
+        <button
+          type="button"
+          className={cx("chTabClearBtn")}
+          style={{ marginLeft: 4 }}
+          onClick={() => void loadHealthData(true)}
+          disabled={refreshing}
+        >
+          {refreshing ? "Refreshing…" : "↺ Refresh"}
+        </button>
+      </div>
+
+      {/* ── Tab body (content + detail panel) ─────────────────────────── */}
+      <div className={cx("chTabBody")}>
+        <div className={cx("chTabContent")}>
+          {/* Tab content rendered in Task 6 */}
+          <div className={cx("emptyStateSub")}>Tab: {activeTab}</div>
+        </div>
+        <div className={cx("chTabDetail")}>
+          {/* Detail panel rendered in Task 7 */}
+          <div className={cx("chDpEmpty")}>
+            <div className={cx("chDpEmptyText")}>Select a client to view details</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Toast ──────────────────────────────────────────────────────── */}
+      {msgToast && (
+        <div className={cx("staffToast", msgToast.tone === "success" ? "staffToastSuccess" : "staffToastError")}>
+          {msgToast.text}
+        </div>
+      )}
+
+      {/* ── Message modal ──────────────────────────────────────────────── */}
+      {showMsgModal && selectedClient && (
+        <div className={cx("modalBackdrop")} onClick={(e) => { if (e.target === e.currentTarget) setShowMsgModal(false); }}>
+          <div className={cx("modal")}>
+            <div className={cx("modalHeader")}>
+              <span className={cx("modalTitle")}>Message {selectedClient.name}</span>
+              <button type="button" className={cx("modalClose")} onClick={() => setShowMsgModal(false)}>
+                <Ic n="x" sz={15} c="var(--text)" />
+              </button>
+            </div>
+            <div className={cx("modalBody")}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: 11, color: "var(--muted2)", display: "block", marginBottom: 4 }}>Subject</label>
+                  <input className={cx("staffFilterInput")} placeholder="Message subject" value={msgSubject}
+                    onChange={(e) => setMsgSubject(e.target.value)} autoFocus />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: "var(--muted2)", display: "block", marginBottom: 4 }}>Message</label>
+                  <textarea className={cx("staffFilterInput")} placeholder="Type your message…" value={msgBody}
+                    onChange={(e) => setMsgBody(e.target.value)} rows={5}
+                    style={{ resize: "vertical", height: "auto" }} />
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "10px 16px", borderTop: "1px solid var(--b1)" }}>
+              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setShowMsgModal(false)}>Cancel</button>
+              <button type="button" className={cx("btnSm", "btnAccent")}
+                disabled={msgSending || !msgSubject.trim() || !msgBody.trim()}
+                onClick={() => void handleSendMessage()}>
+                {msgSending ? "Sending…" : "Send Message"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </section>
   );
 }
