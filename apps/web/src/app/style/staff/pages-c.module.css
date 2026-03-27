@@ -963,7 +963,7 @@
 .dsvViewTasksBtn:hover { color: var(--accent); border-color: rgba(249,115,22,0.3); }
 
 /* ── Expandable row ──────────────────────────────────────────── */
-.dsvExpandList { display: flex; flex-direction: column; gap: 4px; }
+.dsvExpandList { display: flex; flex-direction: column; gap: 8px; }
 
 .dsvExpandRow {
   border-radius: var(--r-sm);
