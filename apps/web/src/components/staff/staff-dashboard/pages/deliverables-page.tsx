@@ -427,16 +427,30 @@ export function DeliverablesPage({
                               className={cx("fieldInput", "dlAttachSelect")}
                               aria-label="Attach file to deliverable"
                               value={item.fileId ?? ""}
-                              onChange={(event) =>
-                                onMilestoneAttachment(item.projectId ?? "", item.milestoneId ?? "", event.target.value || null)
-                              }
-                              disabled={!item.projectId || !item.milestoneId}
+                              disabled={!item.projectId || !item.milestoneId || loadingOp === `attach-${item.milestoneId}`}
+                              onChange={async (event) => {
+                                const fileId = event.target.value || null;
+                                const fileName = availableFiles.find((f) => f.id === fileId)?.fileName ?? null;
+                                setLoadingOp(`attach-${item.milestoneId}`);
+                                try {
+                                  await onMilestoneAttachment(item.projectId ?? "", item.milestoneId ?? "", fileId);
+                                  if (fileId && fileName && item.milestoneId) {
+                                    setAttachFeedback({ id: item.milestoneId, fileName });
+                                    setTimeout(() => setAttachFeedback(null), 3000);
+                                  }
+                                } finally {
+                                  setLoadingOp(null);
+                                }
+                              }}
                             >
                               <option value="">— attach a file —</option>
                               {availableFiles.map((file) => (
                                 <option key={file.id} value={file.id}>{file.fileName}</option>
                               ))}
                             </select>
+                            {attachFeedback !== null && attachFeedback.id === item.milestoneId && (
+                              <span className={cx("dlAttachFeedback")}>Attached: {attachFeedback.fileName}</span>
+                            )}
                             {item.projectId && item.milestoneId ? (
                               <div className={cx("dlActionRow")}>
                                 {item.milestoneStatus !== "PENDING" ? (
