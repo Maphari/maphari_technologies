@@ -26,19 +26,22 @@ type PageProps = {
   session: AuthSession | null;
   onNotify?: (tone: "success" | "error" | "info" | "warning", msg: string) => void;
   onGoTasks?: (projectId: string) => void;
+  onGoDeliverables?: () => void;
 };
 
 type DeliveryStatus = "On Track" | "At Risk" | "Minor Delay";
 
 type DeliveryItem = {
-  projectId: string;
-  project: string;
-  client: string;
-  phase: string;
-  readiness: number;
-  blockers: number;
-  launchDate: string;
-  status: DeliveryStatus;
+  projectId:        string;
+  project:          string;
+  client:           string;
+  phase:            string;
+  readiness:        number;
+  blockers:         number;
+  launchDate:       string;
+  status:           DeliveryStatus;
+  deliverablesDone:  number;
+  deliverablesTotal: number;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -97,12 +100,23 @@ const STATUS_ORDER: Record<string, number> = {
   "On Track": 2,
 };
 
+function accentCls(s: DeliveryStatus): string {
+  if (s === "On Track") return "dsvAccentGreen";
+  if (s === "At Risk")  return "dsvAccentRed";
+  return "dsvAccentAmber";
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks }: PageProps) {
+export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks, onGoDeliverables }: PageProps) {
   const [items, setItems]   = useState<DeliveryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  function toggleExpand(id: string) {
+    setExpandedId(prev => (prev === id ? null : id));
+  }
 
   useEffect(() => {
     if (!isActive || !session) { setLoading(false); return; }
@@ -152,18 +166,20 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks }: P
           ).length;
 
           return {
-            projectId: p.id,
-            project:   p.name,
-            client:    clientMap.get(p.clientId)?.name ?? p.clientId,
+            projectId:        p.id,
+            project:          p.name,
+            client:           clientMap.get(p.clientId)?.name ?? p.clientId,
             phase,
             readiness,
-            blockers:  inReview,
-            launchDate: p.dueAt
+            blockers:         inReview,
+            launchDate:       p.dueAt
               ? new Date(p.dueAt).toLocaleDateString("en-GB", {
                   day: "numeric", month: "short", year: "numeric",
                 })
               : "TBD",
             status,
+            deliverablesDone:  deliverables.filter((d) => DONE_STATUSES.has(d.status.toUpperCase())).length,
+            deliverablesTotal: deliverables.length,
           };
         });
 
