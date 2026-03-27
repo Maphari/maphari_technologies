@@ -1503,24 +1503,40 @@
 
 /* ── Time Log ────────────────────────────────────────────────────── */
 
-/* Timer command strip */
+/* ── Sticky timer shell ── */
+.tlv2StickyShell {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  padding: 14px 0;
+  border-bottom: 1px solid var(--b1);
+}
+
+/* Timer command strip — 4-col grid */
 .tlv2Strip {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--b2);
-  background: var(--s1);
+  gap: 20px;
+  padding: 16px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
 }
 
 .tlv2StripActive { border-color: var(--accent-d); background: var(--accent-g); }
-.tlv2StripIdle   { }
+.tlv2StripIdle   { border-color: var(--b2); background: var(--s1); }
 
-.tlv2StripLeft  { display: flex; align-items: center; gap: 10px; }
-.tlv2StripCenter { display: flex; align-items: center; gap: 8px; }
-.tlv2StripRight { display: flex; align-items: center; gap: 6px; }
+/* Col 2 — running meta */
+.tlv2StripMeta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tlv2StripMetaLabel { font-size: 11px; color: var(--muted); font-weight: 500; }
+.tlv2StripMetaTask  { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Col 2 — idle inputs */
+.tlv2StripInputs { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+/* Col 4 — button group */
+.tlv2TimerBtns { display: flex; align-items: center; gap: 8px; }
 
 .tlv2Pulse {
   width: 8px;
@@ -1544,6 +1560,9 @@
   color: var(--text);
   letter-spacing: -0.02em;
 }
+
+.tlv2TimeDisplayOn  { font-size: 26px; font-variant-numeric: tabular-nums; color: var(--accent); min-width: 110px; text-align: right; }
+.tlv2TimeDisplayOff { font-size: 20px; font-variant-numeric: tabular-nums; color: var(--muted2); min-width: 110px; text-align: right; }
 
 .tlv2RunBadge {
   font-size: 9px;
@@ -1606,7 +1625,7 @@
   transition: opacity 150ms;
 }
 
-.tlv2PlayBtnRunning { background: var(--s3); color: var(--text); border: 1px solid var(--b2); }
+.tlv2PlayBtnRunning { background: var(--accent-d); color: var(--accent); border: 1px solid var(--accent-d); }
 .tlv2PlayBtnIdle    { background: var(--accent); color: #fff; }
 .tlv2PlayBtn:hover  { opacity: 0.88; }
 
@@ -1708,10 +1727,8 @@
 }
 
 @media (max-width: 900px) {
-  .tlv2ContentGrid  { grid-template-columns: 1fr; }
-  .tlv2StatGrid     { grid-template-columns: repeat(2, 1fr); }
-  .tlv2Strip        { grid-template-columns: 1fr; }
-  .tlv2StripCenter  { display: none; }
+  .tlv2ContentGrid { grid-template-columns: 1fr; }
+  .tlv2Strip       { grid-template-columns: auto 1fr auto; gap: 12px; }
 }
 
 /* Week chart */
