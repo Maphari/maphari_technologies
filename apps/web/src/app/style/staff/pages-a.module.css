@@ -1912,6 +1912,82 @@
 
 .tlv2SearchInput:focus { outline: none; border-color: var(--accent); }
 
+/* ── Week Progress Card ── */
+.tlv2WeekCard  { }  /* uses .card */
+.tlv2WeekCardHead { }  /* uses .cardHeader */
+
+.tlv2WeekProgress {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tlv2WeekNums {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.tlv2WeekLogged {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.tlv2WeekTarget {
+  font-size: 12px;
+  color: var(--muted2);
+}
+
+.tlv2WeekTrack {
+  height: 5px;
+  background: var(--s3);
+  border-radius: var(--r-xs);
+  overflow: hidden;
+}
+
+.tlv2WeekFill {
+  height: 100%;
+  width: var(--pct, 0%);
+  background: var(--accent);
+  border-radius: var(--r-xs);
+  transition: width 400ms ease;
+}
+
+.tlv2WeekDays {
+  display: flex;
+  justify-content: space-between;
+}
+
+.tlv2WeekDay      { font-size: 10px; color: var(--muted2); }
+.tlv2WeekDayDone  { color: rgba(249, 115, 22, 0.55); }
+.tlv2WeekDayToday { color: var(--accent); font-weight: 600; }
+
+.tlv2WeekStats {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 16px 14px;
+}
+
+.tlv2WeekStat { text-align: center; }
+
+.tlv2WeekStatVal {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.tlv2WeekStatValAccent { color: var(--accent); }
+
+.tlv2WeekStatLbl {
+  font-size: 10px;
+  color: var(--muted2);
+  margin-top: 3px;
+}
+
 /* ── Recurring Tasks ─────────────────────────────────────────────── */
 
 .rtHeaderBar  { }
