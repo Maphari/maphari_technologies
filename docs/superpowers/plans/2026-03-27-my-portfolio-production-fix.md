@@ -512,15 +512,22 @@ useEffect(() => {
 }, [session?.accessToken, isActive]);
 ```
 
-- [ ] **Step 5: Fix the aggregate stats (lines ~233–236)**
+- [ ] **Step 5: Fix the aggregate stats and filter logic**
 
-Change:
+Change `avgProgress` (line ~235):
 ```typescript
+// OLD
 const avgProgress = projects.length > 0 ? Math.round(projects.reduce((s, p) => s + p.progress, 0) / projects.length) : 0;
-```
-To:
-```typescript
+// NEW
 const avgProgress = projects.length > 0 ? Math.round(projects.reduce((s, p) => s + p.progressPercent, 0) / projects.length) : 0;
+```
+
+Also fix the `"done"` filter branch (line ~229) — `StaffPortfolioProject` has `progressPercent`, not `progress`:
+```typescript
+// OLD
+if (filter === "done")  return project.progress === 100;
+// NEW
+if (filter === "done")  return project.progressPercent === 100;
 ```
 
 - [ ] **Step 6: Fix card-level field references in the `filtered.map` block (lines ~323–420)**
@@ -579,9 +586,13 @@ git commit -m "feat(staff): wire my-portfolio-page to dedicated portfolio API en
 **Files:**
 - Modify: `apps/web/src/app/style/staff/pages-e.module.css`
 
-The base classes `pfHealthChip` (line ~541), `pfHealthDot` (line ~554), and `pfPriorityChip` (line ~527) exist. The colour variant classes they're paired with in JSX do not. The `pfHealthChip` base class also has no `border` property, so `border-color` overrides won't render without adding one.
+The base classes `pfHealthChip` (line ~541), `pfHealthDot` (line ~554), and `pfPriorityChip` (line ~527) exist. The colour variant classes they're paired with in JSX do not.
 
-- [ ] **Step 1: Add `border: 1px solid transparent` to `.pfHealthChip`**
+Important border notes:
+- `.pfHealthChip` has **no `border` property** in its base rule → `border-color` overrides have no effect. Fix: add `border: 1px solid transparent` to the base class.
+- `.pfPriorityChip` **already has** `border: 1px solid var(--b2)` → do NOT add another `border` line to it. Its colour variants only need to override `border-color` and are fine as-is.
+
+- [ ] **Step 1: Add `border: 1px solid transparent` to `.pfHealthChip` only**
 
 In `apps/web/src/app/style/staff/pages-e.module.css`, find the `.pfHealthChip` rule (line ~541). It currently ends at `text-transform: uppercase;`. Add one line before the closing `}`:
 
@@ -597,13 +608,13 @@ In `apps/web/src/app/style/staff/pages-e.module.css`, find the `.pfHealthChip` r
   font-family: var(--font-dm-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  border: 1px solid transparent;   /* ADD THIS LINE */
+  border: 1px solid transparent;   /* ADD THIS LINE — pfPriorityChip does NOT need this, it already has border: 1px solid */
 }
 ```
 
-- [ ] **Step 2: Append colour variant classes after the `.pfPriorityChip` block**
+- [ ] **Step 2: Append colour variant classes after `.pfHealthDot` (line ~554)**
 
-After the closing `}` of `.pfPriorityChip` (line ~539), append:
+Insert after the closing `}` of `.pfHealthDot` (line ~554), keeping all base classes together before the variants:
 
 ```css
 /* Health chip colour variants (applied alongside pfHealthChip) */
@@ -616,7 +627,7 @@ After the closing `}` of `.pfPriorityChip` (line ~539), append:
 .pfDotAmber { background: var(--amber); }
 .pfDotRed   { background: var(--red);   }
 
-/* Priority chip colour variants (applied alongside pfPriorityChip) */
+/* Priority chip colour variants (applied alongside pfPriorityChip which already has border: 1px solid) */
 .pfPriorityHigh { background: rgba(239,68,68,0.08);   border-color: rgba(239,68,68,0.18);  color: var(--red);   }
 .pfPriorityMed  { background: rgba(245,166,35,0.08);  border-color: rgba(245,166,35,0.18); color: var(--amber); }
 .pfPriorityLow  { background: rgba(255,255,255,0.04); border-color: var(--b2);             color: var(--muted); }
