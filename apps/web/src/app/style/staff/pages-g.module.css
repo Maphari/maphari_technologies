@@ -1100,7 +1100,6 @@
   padding: 8px 6px;
   border-bottom: 1px solid var(--b1);
   border-right: 1px solid var(--b1);
-  text-align: center;
   position: relative;
   transition: background 0.1s;
   display: flex;
