@@ -98,6 +98,8 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
   const [topTaskLoading, setTopTaskLoading] = useState(true);
   const [flagAdmin,      setFlagAdmin]      = useState(false);
   const [view,       setView]       = useState<"log" | "history">("log");
+  const [submitting,   setSubmitting]   = useState(false);
+  const [submitError,  setSubmitError]  = useState<string | null>(null);
 
   const submittingRef = useRef(false);
 
@@ -146,29 +148,67 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
     return s.date.slice(0, 10) === todayIso;
   });
 
-  const streakSummary = useMemo(
-    () => ({ days: standups.length, hours: 0 }),
-    [standups.length]
+  const todayEntry = standups.find((s) => s.date.slice(0, 10) === todayIso) ?? null;
+
+  // 1. Real week days (Mon–Fri) for the current calendar week — MUST come first
+  const weekDays = useMemo(() => {
+    const now = new Date();
+    const dow = now.getDay(); // 0 = Sun, 1 = Mon … 6 = Sat
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+    monday.setHours(0, 0, 0, 0);
+    return [0, 1, 2, 3, 4].map((offset) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + offset);
+      return d.toISOString().slice(0, 10);
+    });
+  }, []);
+
+  // 2. Set of ISO date strings (YYYY-MM-DD) where user has submitted
+  const submittedDates = useMemo(
+    () => new Set(standups.map((s) => s.date.slice(0, 10))),
+    [standups]
   );
+
+  // 3. streakSummary — references weekDays (must follow its declaration)
+  const streakSummary = useMemo(() => {
+    const weekSet = new Set(weekDays);
+    const weekHours = standups
+      .filter((s) => weekSet.has(s.date.slice(0, 10)) && s.hours != null)
+      .reduce((sum, s) => sum + (s.hours ?? 0), 0);
+    return { days: standups.length, hours: weekHours };
+  }, [standups, weekDays]);
 
   const handleSubmit = useCallback(async () => {
     if (submittingRef.current) return;
     submittingRef.current = true;
+    setSubmitting(true);
+    setSubmitError(null);
     try {
       if (session) {
         const r = await postStandupWithRefresh(session, {
           yesterday: fields.yesterday,
           today:     fields.today_plan,
-          blockers:  fields.blockers || undefined,
+          blockers:  fields.blockers   || undefined,
+          mood:      mood > 0          ? mood               : undefined,
+          hours:     hours.trim()      ? parseFloat(hours)  : undefined,
+          flagAdmin: flagAdmin         || undefined,
         });
         if (r.nextSession) saveSession(r.nextSession);
-        if (!r.error && r.data) setStandups((prev) => [r.data!, ...prev]);
+        if (!r.error && r.data) {
+          setStandups((prev) => [r.data!, ...prev]);
+          setSubmitted(true);
+        } else {
+          setSubmitError(r.error?.message ?? "Failed to submit standup. Please try again.");
+        }
       }
-      setSubmitted(true);
+    } catch {
+      setSubmitError("Failed to submit standup. Please try again.");
     } finally {
       submittingRef.current = false;
+      setSubmitting(false);
     }
-  }, [session?.accessToken, fields.yesterday, fields.today_plan, fields.blockers]);
+  }, [session?.accessToken, fields.yesterday, fields.today_plan, fields.blockers, mood, hours, flagAdmin]);
 
   return (
     <section className={cx("page", "pageBody", "rdStudioPage", isActive && "pageActive")} id="page-standup">
@@ -184,7 +224,7 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
             {hasSubmittedToday ? (
               <div className={cx("dsSubmittedBadge")}>
                 <span className={cx("colorAccent", "text12")}>
-                  <IcoCheck /> Submitted {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  <IcoCheck /> Submitted {formatStandupTime(todayEntry?.createdAt ?? new Date().toISOString())}
                 </span>
               </div>
             ) : null}
@@ -335,13 +375,16 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
                   </div>
                 </div>
 
+                {submitError ? (
+                  <div className={cx("text12", "dsToneRed", "mb8")}>{submitError}</div>
+                ) : null}
                 <button
                   type="button"
                   className={cx("staffBtnPrimary")}
-                  disabled={!canSubmit}
+                  disabled={!canSubmit || submitting}
                   onClick={() => void handleSubmit()}
                 >
-                  Submit Standup
+                  {submitting ? "Submitting…" : "Submit Standup"}
                 </button>
               </div>
             )}
@@ -381,12 +424,13 @@ export function DailyStandupPage({ isActive, session }: { isActive: boolean; ses
             <div className={cx("mb24")}>
               <div className={cx("dsSectionLabel", "mb12", "rdStudioSection")}>This Week</div>
               <div className={cx("flexRow", "gap6")}>
-                {["M", "T", "W", "T", "F"].map((label, index) => {
-                  const done    = index < 4;
-                  const isToday = index === 0;
+                {(["M", "T", "W", "T", "F"] as string[]).map((label, index) => {
+                  const dateStr = weekDays[index] ?? "";
+                  const done    = submittedDates.has(dateStr);
+                  const isToday = dateStr === todayIso;
                   return (
                     <div
-                      key={index}
+                      key={dateStr || index}
                       className={cx(
                         "dsWeekDay",
                         isToday ? "dsWeekDayToday" : done ? "dsWeekDayDone" : "dsWeekDayIdle"
