@@ -894,7 +894,6 @@
 .dsvStatusMinorDelay { background: rgba(234,179,8,0.06); border-color: rgba(234,179,8,0.2); color: rgba(234,179,8,0.7); }
 
 .dsvClientPhase { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
-.dsvPhaseSep { width: 1px; height: 10px; background: var(--b2); margin: 0 6px; }
 .dsvDueDate { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); }
 
 .dsvReadinessWrap { display: flex; flex-direction: column; gap: 4px; padding: 10px 16px; }
@@ -910,7 +909,7 @@
   justify-content: space-between;
 }
 
-.dsvReadinessPct { font-size: 11px; font-weight: 700; font-family: var(--font-syne); color: var(--text); }
+.dsvReadinessPct { font-size: 11px; font-weight: 700; font-family: var(--font-syne); }
 
 .dsvReadinessTrack {
   width: 100%;
@@ -964,6 +963,8 @@
 .dsvViewTasksBtn:hover { color: var(--accent); border-color: rgba(249,115,22,0.3); }
 
 /* ── Expandable row ──────────────────────────────────────────── */
+.dsvExpandList { display: flex; flex-direction: column; gap: 4px; }
+
 .dsvExpandRow {
   border-radius: var(--r-sm);
   border: 1px solid var(--b1);
@@ -1034,6 +1035,7 @@
 }
 
 .dsvExpandProgress .staffBarFill { width: var(--fill-pct, 0%); }
+.dsvExpandProgress .staffBar { height: 4px; }
 
 .dsvExpandStats { display: flex; gap: 20px; }
 .dsvExpandStat  { display: flex; flex-direction: column; gap: 2px; }

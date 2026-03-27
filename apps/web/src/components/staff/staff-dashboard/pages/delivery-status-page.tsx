@@ -49,12 +49,6 @@ type DeliveryItem = {
 const DONE_STATUSES = new Set(["APPROVED", "COMPLETE", "COMPLETED", "DONE"]);
 const WIP_STATUSES  = new Set(["IN_REVIEW", "IN_PROGRESS"]);
 
-function computeReadiness(deliverables: StaffDeliverable[]): number {
-  if (deliverables.length === 0) return 0;
-  const done = deliverables.filter((d) => DONE_STATUSES.has(d.status.toUpperCase())).length;
-  return Math.round((done / deliverables.length) * 100);
-}
-
 function deriveStatus(project: StaffProject, readiness: number): DeliveryStatus {
   const s = project.status.toUpperCase();
   if (s === "ON_HOLD" || s === "BLOCKED") return "At Risk";
@@ -286,7 +280,7 @@ export function DeliveryStatusPage({ isActive, session, onNotify, onGoTasks, onG
               <div className={cx("staffEmptyNote")}>Completed or archived projects are not shown here.</div>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <div className={cx("dsvExpandList")}>
               {sorted.map((d) => {
                 const isOpen = expandedId === d.projectId;
                 return (
