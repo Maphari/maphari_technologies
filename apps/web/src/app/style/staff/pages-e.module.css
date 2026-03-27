@@ -549,9 +549,25 @@
   font-family: var(--font-dm-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  border: 1px solid transparent;
 }
 
 .pfHealthDot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+/* Health chip colour variants (applied alongside pfHealthChip) */
+.pfChipGreen { background: rgba(52,217,139,0.10); border-color: rgba(52,217,139,0.20); color: var(--green); }
+.pfChipAmber { background: rgba(245,166,35,0.08); border-color: rgba(245,166,35,0.18); color: var(--amber); }
+.pfChipRed   { background: rgba(239,68,68,0.08);  border-color: rgba(239,68,68,0.18);  color: var(--red);   }
+
+/* Health dot colour variants (applied alongside pfHealthDot) */
+.pfDotGreen { background: var(--green); }
+.pfDotAmber { background: var(--amber); }
+.pfDotRed   { background: var(--red);   }
+
+/* Priority chip colour variants (applied alongside pfPriorityChip which already has border: 1px solid) */
+.pfPriorityHigh { background: rgba(239,68,68,0.08);   border-color: rgba(239,68,68,0.18);  color: var(--red);   }
+.pfPriorityMed  { background: rgba(245,166,35,0.08);  border-color: rgba(245,166,35,0.18); color: var(--amber); }
+.pfPriorityLow  { background: rgba(255,255,255,0.04); border-color: var(--b2);             color: var(--muted); }
 
 .pfTaskPills { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 
