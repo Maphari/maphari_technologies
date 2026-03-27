@@ -68,13 +68,16 @@ export interface StaffTrainingRecord {
 }
 
 export interface StaffStandupEntry {
-  id: string;
-  staffId: string;
-  date: string;
+  id:        string;
+  staffId:   string;
+  date:      string;
   yesterday: string;
-  today: string;
-  blockers: string | null;
+  today:     string;
+  blockers:  string | null;
   projectId: string | null;
+  mood:      number | null;   // 1-5; null = not provided
+  hours:     number | null;   // hours logged; null = not provided
+  flagAdmin: boolean;
   createdAt: string;
   updatedAt: string;
   staff?: { name: string; avatarInitials: string | null; avatarColor: string | null; role: string };
@@ -171,7 +174,7 @@ export async function loadMyStandupsWithRefresh(
   session: AuthSession
 ): Promise<AuthorizedResult<StaffStandupEntry[]>> {
   return withAuthorizedSession(session, async (accessToken) => {
-    const response = await callGateway<StaffStandupEntry[]>("/standup", accessToken);
+    const response = await callGateway<StaffStandupEntry[]>("/standup/me", accessToken);
     if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
     if (!response.payload.success) {
       return { unauthorized: false, data: [], error: toGatewayError(response.payload.error?.code ?? "STANDUP_FETCH_FAILED", response.payload.error?.message ?? "Unable to load standups.") };
@@ -182,7 +185,16 @@ export async function loadMyStandupsWithRefresh(
 
 export async function postStandupWithRefresh(
   session: AuthSession,
-  body: { yesterday: string; today: string; blockers?: string; projectId?: string; date?: string }
+  body: {
+    yesterday:  string;
+    today:      string;
+    blockers?:  string;
+    projectId?: string;
+    date?:      string;
+    mood?:      number;
+    hours?:     number;
+    flagAdmin?: boolean;
+  }
 ): Promise<AuthorizedResult<StaffStandupEntry>> {
   return withAuthorizedSession(session, async (accessToken) => {
     const response = await callGateway<StaffStandupEntry>("/standup", accessToken, { method: "POST", body });
