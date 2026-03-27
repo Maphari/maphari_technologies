@@ -90,7 +90,7 @@ Current (broken):
 
 Replace with:
 ```typescript
-{ clientName: clientMap.get(cid) ?? "Unknown", hoursLogged: Math.round(mins / 60 * 10) / 10 }
+{ clientId: cid, clientName: clientMap.get(cid) ?? "Unknown", hoursLogged: Math.round(mins / 60 * 10) / 10 }
 ```
 
 Drop `tasks` and `tone` — not used by the frontend type.
