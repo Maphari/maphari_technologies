@@ -225,7 +225,7 @@ export function TeamPerformancePage({ isActive, session }: TeamPerformancePagePr
           {/* Section header + sort pills */}
           <div className={cx("tpmSectionHeader")}>
             <div className={cx("tpmSectionTitle")}>Team Members</div>
-            <div style={{ display: "flex", gap: 4 }}>
+            <div className={cx("tpmSortPills")}>
               {(["util", "name", "tasks", "csat"] as SortKey[]).map((key) => {
                 const active = sortKey === key;
                 const arrow  = active ? (sortDir === "desc" ? " ↓" : " ↑") : "";
