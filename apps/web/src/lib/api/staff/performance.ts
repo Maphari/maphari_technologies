@@ -64,6 +64,8 @@ export interface StaffTeamMember {
   tasksCompleted: number;
   utilizationPct: number;
   peerRating:     number | null;
+  avatarInitials: string;       // ADD THIS
+  isSelf:         boolean;      // ADD THIS
 }
 
 export interface StaffResponseTimeWeek {
