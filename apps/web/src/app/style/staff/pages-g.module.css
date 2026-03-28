@@ -1048,6 +1048,85 @@
 
 .tpmMetricSep { width: 1px; height: 20px; background: var(--b1); }
 
+/* ── Team Performance — self-row, util bar, sort pills ────────────────────── */
+
+.tpmSelfRow {
+  background: rgba(249, 115, 22, 0.05);
+  border-top: 1px solid rgba(249, 115, 22, 0.1);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.1);
+}
+
+.tpmSelfBadge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  background: var(--accent-d);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: 3px;
+  font-size: 8px;
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.tpmUtilCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.tpmUtilTrack {
+  width: 60px;
+  height: 4px;
+  background: var(--b1);
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.tpmUtilFill {
+  height: 100%;
+  border-radius: 2px;
+  /* width set inline as a % — capped to 100 in component */
+  /* background color applied via bgGreen / bgAmber / bgRed from core.module.css */
+}
+
+.tpmSortPill {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 9px;
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, color 120ms;
+}
+
+.tpmSortPill:hover {
+  background: var(--s3);
+  border-color: var(--b3);
+  color: var(--text);
+}
+
+.tpmSortPillActive {
+  background: var(--accent-d);
+  border-color: rgba(249, 115, 22, 0.25);
+  color: var(--accent);
+}
+
+.tpmSortPillActive:hover {
+  background: var(--accent-d);
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    WORKLOAD HEATMAP  (wlh*)
    ══════════════════════════════════════════════════════════════════════════════ */
