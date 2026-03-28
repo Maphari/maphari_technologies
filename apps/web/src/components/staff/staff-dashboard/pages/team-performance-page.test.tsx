@@ -40,7 +40,7 @@ describe("TeamPerformancePage — loading state", () => {
   it("shows skeleton blocks while fetching", () => {
     vi.mocked(getStaffTeamPerformance).mockImplementation(() => new Promise(() => {}));
     render(<TeamPerformancePage isActive session={mockSession} />);
-    expect(document.querySelector(".skeletonBlock")).toBeTruthy();
+    expect(screen.getByTestId("loading-skeleton")).toBeInTheDocument();
   });
 });
 
@@ -172,5 +172,74 @@ describe("TeamPerformancePage — empty state", () => {
     await waitFor(() =>
       expect(screen.getByText(/no team data available/i)).toBeInTheDocument()
     );
+  });
+});
+
+// ── CSAT sort with null-rated members ─────────────────────────────────────────
+
+describe("TeamPerformancePage — CSAT sort with null-rated members", () => {
+  const mixedMembers = [
+    {
+      id: "1", name: "Alice", role: "Developer", department: "Eng",
+      avatarInitials: "A", hoursThisWeek: 40, tasksCompleted: 5,
+      utilizationPct: 80, peerRating: 4.5, isSelf: false,
+    },
+    {
+      id: "2", name: "Bob", role: "Designer", department: "Design",
+      avatarInitials: "B", hoursThisWeek: 28, tasksCompleted: 3,
+      utilizationPct: 70, peerRating: null, isSelf: false,
+    },
+    {
+      id: "3", name: "Carol", role: "PM", department: "Ops",
+      avatarInitials: "C", hoursThisWeek: 30, tasksCompleted: 2,
+      utilizationPct: 60, peerRating: 3.8, isSelf: false,
+    },
+  ];
+
+  beforeEach(() => {
+    vi.mocked(getStaffTeamPerformance).mockResolvedValue({
+      data: mixedMembers, error: null, nextSession: null,
+    } as any);
+  });
+
+  it("CSAT descending: null-rated members appear last", async () => {
+    render(<TeamPerformancePage isActive session={mockSession} />);
+    await screen.findByText("Alice");
+
+    // Click CSAT pill to sort by CSAT desc
+    fireEvent.click(screen.getByText(/csat/i));
+
+    const rows = screen.getAllByRole("row");
+    const dataRows = rows.slice(1); // skip header
+    const names = dataRows.map((r) => r.textContent);
+
+    const aliceIdx = names.findIndex((t) => t?.includes("Alice"));
+    const carolIdx = names.findIndex((t) => t?.includes("Carol"));
+    const bobIdx   = names.findIndex((t) => t?.includes("Bob"));
+
+    // Alice (4.5) and Carol (3.8) should both come before Bob (null)
+    expect(aliceIdx).toBeLessThan(bobIdx);
+    expect(carolIdx).toBeLessThan(bobIdx);
+  });
+
+  it("CSAT ascending: null-rated members still appear last", async () => {
+    render(<TeamPerformancePage isActive session={mockSession} />);
+    await screen.findByText("Alice");
+
+    // Click CSAT twice: first click sets CSAT desc, second click sets CSAT asc
+    fireEvent.click(screen.getByText(/csat/i));
+    fireEvent.click(screen.getByText(/csat/i));
+
+    const rows = screen.getAllByRole("row");
+    const dataRows = rows.slice(1);
+    const names = dataRows.map((r) => r.textContent);
+
+    const aliceIdx = names.findIndex((t) => t?.includes("Alice"));
+    const carolIdx = names.findIndex((t) => t?.includes("Carol"));
+    const bobIdx   = names.findIndex((t) => t?.includes("Bob"));
+
+    // Bob (null) must appear after both Alice (4.5) and Carol (3.8)
+    expect(aliceIdx).toBeLessThan(bobIdx);
+    expect(carolIdx).toBeLessThan(bobIdx);
   });
 });

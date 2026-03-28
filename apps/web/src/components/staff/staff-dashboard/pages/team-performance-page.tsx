@@ -91,7 +91,13 @@ function sortMembers(
       case "util":  cmp = a.utilizationPct - b.utilizationPct; break;
       case "name":  cmp = a.name.localeCompare(b.name);        break;
       case "tasks": cmp = a.tasksCompleted - b.tasksCompleted; break;
-      case "csat":  cmp = (a.peerRating ?? -1) - (b.peerRating ?? -1); break;
+      case "csat": {
+        if (a.peerRating === null && b.peerRating === null) return 0;
+        if (a.peerRating === null) return 1;   // null always last
+        if (b.peerRating === null) return -1;  // null always last
+        cmp = a.peerRating - b.peerRating;
+        break;
+      }
     }
     return dir === "asc" ? cmp : -cmp;
   });
@@ -156,7 +162,7 @@ export function TeamPerformancePage({ isActive, session }: TeamPerformancePagePr
   if (loading) {
     return (
       <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-team-performance">
-        <div className={cx("flexCol", "gap12")}>
+        <div className={cx("flexCol", "gap12")} data-testid="loading-skeleton">
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
