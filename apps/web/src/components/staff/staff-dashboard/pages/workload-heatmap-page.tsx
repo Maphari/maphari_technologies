@@ -64,7 +64,7 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
     });
 
     return () => { cancelled = true; };
-  }, [session, isActive, weeks, retryCount]);
+  }, [session?.accessToken, isActive, weeks, retryCount]);
 
   const weekLabels = rows[0]?.weeks.map((w) => w.weekLabel) ?? ["Week 1", "Week 2", "Week 3", "Week 4"];
 
