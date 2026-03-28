@@ -128,7 +128,7 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
           <div className={cx("staffKpiStripFour")}>
             <div className={cx("staffKpiCell")}>
               <div className={cx("staffKpiLabel")}>Team Members</div>
-              <div className={cx("staffKpiValue", "colorAccent")}>{totalStaff}</div>
+              <div className={cx("staffKpiValue", "colorAccent")} data-testid="kpi-team-size-value">{totalStaff}</div>
               <div className={cx("staffKpiSub")}>tracked</div>
             </div>
             <div className={cx("staffKpiCell")}>
@@ -138,12 +138,12 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
             </div>
             <div className={cx("staffKpiCell")}>
               <div className={cx("staffKpiLabel")}>Overloaded</div>
-              <div className={cx("staffKpiValue", overloaded > 0 ? "colorRed" : "colorGreen")}>{overloaded}</div>
+              <div className={cx("staffKpiValue", overloaded > 0 ? "colorRed" : "colorGreen")} data-testid="kpi-overloaded-value">{overloaded}</div>
               <div className={cx("staffKpiSub")}>{overloaded > 0 ? "above 90%" : "none above 90%"}</div>
             </div>
             <div className={cx("staffKpiCell")}>
               <div className={cx("staffKpiLabel")}>Available</div>
-              <div className={cx("staffKpiValue", available > 0 ? "colorGreen" : "colorAmber")}>{available}</div>
+              <div className={cx("staffKpiValue", available > 0 ? "colorGreen" : "colorAmber")} data-testid="kpi-available-value">{available}</div>
               <div className={cx("staffKpiSub")}>under 70% all weeks</div>
             </div>
           </div>

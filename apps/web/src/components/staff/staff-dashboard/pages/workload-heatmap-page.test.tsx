@@ -53,6 +53,7 @@ describe("WorkloadHeatmapPage — loading state", () => {
     vi.mocked(getWorkloadHeatmap).mockImplementation(() => new Promise(() => {}));
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
     expect(screen.queryByText("Alice Smith")).not.toBeInTheDocument();
+    expect(document.getElementById("page-workload-heatmap")).toBeInTheDocument();
   });
 });
 
@@ -64,7 +65,7 @@ describe("WorkloadHeatmapPage — error state", () => {
       data: null, error: { message: "DB timeout", code: "ERR" }, unauthorized: false,
     } as any);
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => expect(screen.getByText("DB timeout")).toBeInTheDocument());
+    await screen.findByText("DB timeout");
   });
 
   it("retry: error → click 'Try again' → second call succeeds → data shown", async () => {
@@ -73,9 +74,9 @@ describe("WorkloadHeatmapPage — error state", () => {
       .mockResolvedValueOnce({ data: mockHeatmap, error: null, unauthorized: false } as any);
 
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument());
+    await screen.findByRole("button", { name: /try again/i });
     fireEvent.click(screen.getByRole("button", { name: /try again/i }));
-    await waitFor(() => expect(screen.getByText("Alice Smith")).toBeInTheDocument());
+    await screen.findByText("Alice Smith");
     expect(getWorkloadHeatmap).toHaveBeenCalledTimes(2);
   });
 });
@@ -85,7 +86,7 @@ describe("WorkloadHeatmapPage — error state", () => {
 describe("WorkloadHeatmapPage — week selector toolbar", () => {
   it("renders buttons '4 weeks', '8 weeks', '12 weeks'", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     expect(screen.getByRole("button", { name: "4 weeks" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "8 weeks" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "12 weeks" })).toBeInTheDocument();
@@ -93,20 +94,20 @@ describe("WorkloadHeatmapPage — week selector toolbar", () => {
 
   it("default: getWorkloadHeatmap called with (mockSession, 4)", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     expect(getWorkloadHeatmap).toHaveBeenCalledWith(mockSession, 4);
   });
 
   it("clicking '8 weeks': getWorkloadHeatmap called with (mockSession, 8)", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     fireEvent.click(screen.getByRole("button", { name: "8 weeks" }));
     await waitFor(() => expect(getWorkloadHeatmap).toHaveBeenCalledWith(mockSession, 8));
   });
 
   it("clicking '12 weeks': getWorkloadHeatmap called with (mockSession, 12)", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     fireEvent.click(screen.getByRole("button", { name: "12 weeks" }));
     await waitFor(() => expect(getWorkloadHeatmap).toHaveBeenCalledWith(mockSession, 12));
   });
@@ -117,35 +118,30 @@ describe("WorkloadHeatmapPage — week selector toolbar", () => {
 describe("WorkloadHeatmapPage — KPI strip", () => {
   it("shows 'Team Members' label and value '2'", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     expect(screen.getByText("Team Members")).toBeInTheDocument();
-    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByTestId("kpi-team-size-value")).toHaveTextContent("2");
   });
 
   it("shows 'Avg Utilization' label and value '71%'", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     expect(screen.getByText("Avg Utilization")).toBeInTheDocument();
     expect(screen.getByText("71%")).toBeInTheDocument();
   });
 
   it("shows 'Overloaded' label and value '1'", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     expect(screen.getByText("Overloaded")).toBeInTheDocument();
-    // The overloaded KPI value is 1 — rendered as the staffKpiValue div sibling of 'Overloaded'
-    const overloadedLabel = screen.getByText("Overloaded");
-    const kpiCell = overloadedLabel.closest("div[class]")?.parentElement;
-    expect(kpiCell?.textContent).toContain("1");
+    expect(screen.getByTestId("kpi-overloaded-value")).toHaveTextContent("1");
   });
 
   it("shows 'Available' label and value '1'", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     expect(screen.getByText("Available")).toBeInTheDocument();
-    const availableLabel = screen.getByText("Available");
-    const kpiCell = availableLabel.closest("div[class]")?.parentElement;
-    expect(kpiCell?.textContent).toContain("1");
+    expect(screen.getByTestId("kpi-available-value")).toHaveTextContent("1");
   });
 });
 
@@ -154,14 +150,14 @@ describe("WorkloadHeatmapPage — KPI strip", () => {
 describe("WorkloadHeatmapPage — heatmap table", () => {
   it("shows column headers with week labels from API", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     expect(screen.getByText("Mar 3–Mar 9")).toBeInTheDocument();
     expect(screen.getByText("Mar 10–Mar 16")).toBeInTheDocument();
   });
 
   it("renders staff names and roles", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     expect(screen.getByText("Developer")).toBeInTheDocument();
     expect(screen.getByText("Bob Jones")).toBeInTheDocument();
     expect(screen.getByText("Designer")).toBeInTheDocument();
@@ -169,7 +165,7 @@ describe("WorkloadHeatmapPage — heatmap table", () => {
 
   it("shows cell hours and percentage for Alice's first week and Bob's first week", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     expect(screen.getByText("38h / 40h")).toBeInTheDocument();
     expect(screen.getByText("95%")).toBeInTheDocument();
     expect(screen.getByText("20h / 40h")).toBeInTheDocument();
@@ -178,7 +174,7 @@ describe("WorkloadHeatmapPage — heatmap table", () => {
 
   it("shows lastUpdated timestamp", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     expect(screen.getByText(/last updated/i)).toBeInTheDocument();
   });
 });
@@ -188,7 +184,7 @@ describe("WorkloadHeatmapPage — heatmap table", () => {
 describe("WorkloadHeatmapPage — legend", () => {
   it("shows legend labels when data is present", async () => {
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Alice Smith"));
+    await screen.findByText("Alice Smith");
     expect(screen.getByText("≤ 70% utilised")).toBeInTheDocument();
     expect(screen.getByText("71 – 90%")).toBeInTheDocument();
     expect(screen.getByText("> 90%")).toBeInTheDocument();
@@ -199,7 +195,7 @@ describe("WorkloadHeatmapPage — legend", () => {
       data: { staff: [] }, error: null, unauthorized: false,
     } as any);
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText(/no team data available/i));
+    await screen.findByText(/no team data available/i);
     expect(screen.queryByText("≤ 70% utilised")).not.toBeInTheDocument();
     expect(screen.queryByText("71 – 90%")).not.toBeInTheDocument();
     expect(screen.queryByText("> 90%")).not.toBeInTheDocument();
@@ -214,7 +210,7 @@ describe("WorkloadHeatmapPage — empty state", () => {
       data: { staff: [] }, error: null, unauthorized: false,
     } as any);
     render(<WorkloadHeatmapPage isActive session={mockSession} />);
-    await waitFor(() => expect(screen.getByText("No team data available")).toBeInTheDocument());
+    await screen.findByText("No team data available");
     expect(screen.getByText(/Workload heatmap will appear/i)).toBeInTheDocument();
   });
 });
