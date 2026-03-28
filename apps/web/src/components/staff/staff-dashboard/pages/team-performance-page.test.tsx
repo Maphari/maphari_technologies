@@ -207,7 +207,7 @@ describe("TeamPerformancePage — CSAT sort with null-rated members", () => {
     await screen.findByText("Alice");
 
     // Click CSAT pill to sort by CSAT desc
-    fireEvent.click(screen.getByText(/csat/i));
+    fireEvent.click(screen.getByRole("button", { name: /^csat$/i }));
 
     const rows = screen.getAllByRole("row");
     const dataRows = rows.slice(1); // skip header
@@ -227,8 +227,8 @@ describe("TeamPerformancePage — CSAT sort with null-rated members", () => {
     await screen.findByText("Alice");
 
     // Click CSAT twice: first click sets CSAT desc, second click sets CSAT asc
-    fireEvent.click(screen.getByText(/csat/i));
-    fireEvent.click(screen.getByText(/csat/i));
+    fireEvent.click(screen.getByRole("button", { name: /^csat$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^csat$/i }));
 
     const rows = screen.getAllByRole("row");
     const dataRows = rows.slice(1);
