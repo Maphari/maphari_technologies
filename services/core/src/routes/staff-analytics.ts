@@ -861,36 +861,57 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
   });
 
   // ── GET /staff/team-performance ──────────────────────────────────────────
-  /** Team benchmarks from StaffProfile + time entries + peer reviews */
+  /** Team benchmarks from StaffProfile + time entries + completed tasks + peer reviews */
   app.get("/staff/team-performance", async (request, reply) => {
     const scope = readScopeHeaders(request);
     if (scope.role === "CLIENT") {
       return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
     }
     try {
-      const cacheKey = `staff:team-performance:all`;
-      const data = await withCache(cacheKey, 120, async () => {
-        const now = new Date();
-        const monthStart = startOfMonth(now);
+      const now       = new Date();
+      const weekStart = startOfWeek(now);
+      // stable yyyy-MM-dd cache key — avoids toISOString() timezone drift
+      const weekKey   = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
+      const cacheKey  = `staff:team-performance:week:${weekKey}`;
+
+      const data = await withCache(cacheKey, 300, async () => {
+        // 1. Active staff profiles (add department)
         const staffList = await prisma.staffProfile.findMany({
-          where: { isActive: true },
-          select: { id: true, name: true, role: true, userId: true, avatarInitials: true }
+          where:  { isActive: true },
+          select: { id: true, name: true, role: true, department: true, userId: true, avatarInitials: true },
         });
         const userIds = staffList.map((s) => s.userId).filter(Boolean) as string[];
-        const monthEntries = userIds.length > 0
+
+        // 2. Hours logged this week per user
+        const weekEntries = userIds.length > 0
           ? await prisma.projectTimeEntry.findMany({
-              where: { staffUserId: { in: userIds }, createdAt: { gte: monthStart } },
-              select: { staffUserId: true, minutes: true }
+              where:  { staffUserId: { in: userIds }, createdAt: { gte: weekStart } },
+              select: { staffUserId: true, minutes: true },
             })
           : [];
         const userHoursMap = new Map<string, number>();
-        for (const entry of monthEntries) {
+        for (const entry of weekEntries) {
           if (!entry.staffUserId) continue;
           userHoursMap.set(entry.staffUserId, (userHoursMap.get(entry.staffUserId) ?? 0) + entry.minutes);
         }
+
+        // 3. Real tasks completed this week per user (via ProjectTaskCollaborator → ProjectTask.completedAt)
+        const collaborators = userIds.length > 0
+          ? await prisma.projectTaskCollaborator.findMany({
+              where:  { staffUserId: { in: userIds }, task: { completedAt: { gte: weekStart } } },
+              select: { staffUserId: true },
+            })
+          : [];
+        const taskCountMap = new Map<string, number>();
+        for (const c of collaborators) {
+          if (!c.staffUserId) continue;
+          taskCountMap.set(c.staffUserId, (taskCountMap.get(c.staffUserId) ?? 0) + 1);
+        }
+
+        // 4. Peer reviews (all-time submitted, not week-scoped)
         const reviews = await prisma.peerReview.findMany({
-          where: { revieweeId: { in: staffList.map((s) => s.id) }, status: "SUBMITTED" },
-          select: { revieweeId: true, score: true }
+          where:  { revieweeId: { in: staffList.map((s) => s.id) }, status: "SUBMITTED" },
+          select: { revieweeId: true, score: true },
         });
         const reviewMap = new Map<string, number[]>();
         for (const r of reviews) {
@@ -898,24 +919,39 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
           if (r.score != null) ex.push(r.score);
           reviewMap.set(r.revieweeId, ex);
         }
-        const workingHours = Math.max(1, now.getDate()) * 8;
+
+        // 5. Working-hours denominator: days elapsed in current week × 8h
+        const dayOfWeek    = now.getDay(); // 0=Sun, 1=Mon … 6=Sat
+        const daysElapsed  = dayOfWeek === 0 ? 5 : Math.min(5, dayOfWeek);
+        const workingHours = Math.max(1, daysElapsed) * 8;
+
         const currentUserId = scope.userId;
+
         return staffList.map((staff) => {
-          const mins = userHoursMap.get(staff.userId ?? "") ?? 0;
-          const hours = Math.round(mins / 60 * 10) / 10;
-          const utilization = pct(hours, workingHours);
-          const ratingsArr = reviewMap.get(staff.id) ?? [];
-          const satisfaction = ratingsArr.length > 0
+          const mins          = userHoursMap.get(staff.userId ?? "") ?? 0;
+          const hoursThisWeek = Math.round(mins / 60 * 10) / 10;
+          const utilizationPct = pct(hoursThisWeek, workingHours);
+          const tasksCompleted = taskCountMap.get(staff.userId ?? "") ?? 0;
+          const ratingsArr     = reviewMap.get(staff.id) ?? [];
+          const peerRating     = ratingsArr.length > 0
             ? Math.round(ratingsArr.reduce((s, r) => s + r, 0) / ratingsArr.length * 10) / 10
-            : 0;
+            : null;
+
           return {
-            id: staff.id, name: staff.name, role: staff.role,
+            id:             staff.id,
+            name:           staff.name,
+            role:           staff.role,
+            department:     staff.department ?? null,
             avatarInitials: staff.avatarInitials ?? staff.name.slice(0, 2).toUpperCase(),
-            tasksCompleted: 0, avgTaskTime: "—", utilization, onTimeRate: 100,
-            satisfaction, isSelf: staff.userId === currentUserId
+            hoursThisWeek,
+            tasksCompleted,
+            utilizationPct,
+            peerRating,
+            isSelf: staff.userId === currentUserId,
           };
         });
       });
+
       return { success: true, data } as ApiResponse<typeof data>;
     } catch (error) {
       request.log.error(error);
