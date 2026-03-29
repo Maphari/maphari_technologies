@@ -759,7 +759,7 @@ export function ClientsAndProjectsPage({
               {selected && !editMode && (
                 <button type="button" className={cx("btnSm", "btnGhost")} onClick={openEdit}>Edit</button>
               )}
-              <span className={styles.clmDetailId}>{selected?.id.slice(0, 8) ?? "—"}</span>
+              <span className={styles.clmDetailId}>{selected?.name ?? "—"}</span>
             </div>
           </div>
           <div className={styles.clmDetailBody}>

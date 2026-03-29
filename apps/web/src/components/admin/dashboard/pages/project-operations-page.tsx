@@ -431,7 +431,7 @@ export function ProjectOperationsPage({
           <div className={styles.projOpsDetailCard}>
             <div className={styles.projOpsDetailHead}>
               <div className={cx("text12", "fw700")}>Execution Detail</div>
-              <span className={styles.projOpsIdTag}>{selected?.id.slice(0, 8) ?? "No project"}</span>
+              <span className={styles.projOpsIdTag}>{selected?.name ?? "No project"}</span>
             </div>
             {selected ? (
               <>
