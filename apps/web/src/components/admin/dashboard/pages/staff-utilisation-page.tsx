@@ -14,6 +14,7 @@ import {
   type UtilisationSummary,
 } from "../../../../lib/api/admin/utilisation";
 import { Tooltip } from "@/components/shared/ui/tooltip";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Period = "30d" | "90d" | "month";
@@ -115,16 +116,24 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
     );
   }
 
+  const utilisationChartData = sorted.map(r => ({ label: r.name.split(" ")[0] ?? r.name, count: r.utilisationRate }));
+
+  const tableRows = sorted.map(r => ({
+    name:     r.name,
+    role:     r.role,
+    billable: `${r.billableHours}h`,
+    util:     `${r.utilisationRate}%`,
+    vsTarget: vsDelta(r.utilisationRate, r.target),
+  }));
+
   return (
     <div className={styles.pageBody}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>GOVERNANCE / STAFF UTILISATION RATE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / STAFF UTILISATION</div>
           <h1 className={styles.pageTitle}>Staff Utilisation Rate</h1>
-          <div className={styles.pageSub}>
-            Billable hours vs. available hours per staff member. Target: 75% utilisation.
-          </div>
+          <div className={styles.pageSub}>Billable hours · Availability · Target tracking</div>
         </div>
         <div className={styles.pageActions}>
           <select
@@ -141,48 +150,54 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
         </div>
       </div>
 
-      {/* ── Summary KPI bar ─────────────────────────────────────────────── */}
-      <div className={cx("topCardsStack", "mb24")}>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Avg Billable Rate</div>
-          <div className={cx(styles.statValue, summary && summary.avgBillableRate >= 75 ? "colorAccent" : summary && summary.avgBillableRate >= 60 ? "colorAmber" : "colorRed")}>
-            {`${summary?.avgBillableRate ?? 0}%`}
-          </div>
-          <div className={cx("text11", "colorMuted")}>Team average · Target: 75%</div>
-        </div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Avg Billable Rate" value={`${summary?.avgBillableRate ?? 0}%`} sub="Target: 75%" tone={(summary?.avgBillableRate ?? 0) >= 75 ? "green" : (summary?.avgBillableRate ?? 0) >= 60 ? "amber" : "red"} />
+        <StatWidget label="Total Billable Hours" value={`${summary?.totalBillableHours ?? 0}h`} sub={PERIOD_LABELS[period]} tone="default" />
+        <StatWidget label="At or Above Target" value={`${atTarget}/${staff.length}`} sub="≥ 75% utilisation" tone={atTarget === staff.length && staff.length > 0 ? "green" : "amber"} />
+        <StatWidget label="Watchlist" value={watchlist} sub="Below 60% utilisation" tone={watchlist > 0 ? "red" : "default"} />
+      </WidgetGrid>
 
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Total Billable Hours</div>
-          <div className={cx(styles.statValue, "colorBlue")}>
-            {`${summary?.totalBillableHours ?? 0}h`}
-          </div>
-          <div className={cx("text11", "colorMuted")}>{PERIOD_LABELS[period]}</div>
-        </div>
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Utilisation by Staff"
+          data={utilisationChartData.length > 0 ? utilisationChartData : [{ label: "No data", count: 0 }]}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Utilisation Bands"
+          stages={[
+            { label: "On target (≥75%)", count: atTarget,                                             total: Math.max(staff.length, 1), color: "#34d98b" },
+            { label: "Below target",     count: staff.filter(r => r.utilisationRate >= 60 && r.utilisationRate < 75).length, total: Math.max(staff.length, 1), color: "#f5a623" },
+            { label: "Watchlist (<60%)", count: watchlist,                                            total: Math.max(staff.length, 1), color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
 
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Team Size</div>
-          <div className={cx(styles.statValue, "colorAccent")}>
-            {`${summary?.teamSize ?? 0}`}
-          </div>
-          <div className={cx("text11", "colorMuted")}>Active staff</div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>At or Above Target</div>
-          <div className={cx(styles.statValue, atTarget === staff.length && staff.length > 0 ? "colorAccent" : "colorAmber")}>
-            {`${atTarget} / ${staff.length}`}
-          </div>
-          <div className={cx("text11", "colorMuted")}>≥ 75% utilisation</div>
-        </div>
-
-        {watchlist > 0 && (
-          <div className={styles.statCard}>
-            <div className={styles.statLabel}>Watchlist</div>
-            <div className={cx(styles.statValue, "colorRed")}>{watchlist}</div>
-            <div className={cx("text11", "colorMuted")}>Below 60% utilisation</div>
-          </div>
-        )}
-      </div>
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Staff Utilisation"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "name",     header: "Name" },
+            { key: "role",     header: "Role" },
+            { key: "billable", header: "Billable", align: "right" },
+            { key: "util",     header: "Util %",   align: "right", render: (v) => {
+              const val = v as string;
+              const num = parseInt(val);
+              const cls = num >= 75 ? cx("badge", "badgeGreen") : num >= 60 ? cx("badge", "badgeAmber") : cx("badge", "badgeRed");
+              return <span className={cls}>{val}</span>;
+            }},
+            { key: "vsTarget", header: "vs Target", align: "right" },
+          ]}
+          emptyMessage="No utilisation data yet"
+        />
+      </WidgetGrid>
 
       {/* ── Table ───────────────────────────────────────────────────────── */}
       <div className={cx("card", "overflowHidden")}>
