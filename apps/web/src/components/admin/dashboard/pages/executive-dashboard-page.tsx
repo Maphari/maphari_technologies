@@ -16,11 +16,12 @@ import type { AdminClient, AdminProject, AdminInvoice } from "../../../../lib/ap
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
 import { loadAllStaffWithRefresh } from "../../../../lib/api/admin/hr";
 import { loadAdminContractsWithRefresh, type LegalContract } from "../../../../lib/api/admin/contracts";
+import { loadMrrHistoryWithRefresh, type MrrHistoryPoint } from "../../../../lib/api/admin/billing";
 import type { PageId } from "../config";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const months = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb"];
+const MONTH_ABBREVS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function centsToK(cents: number): string {
   return `R${(cents / 100_000).toFixed(0)}k`;
@@ -96,6 +97,7 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
   const [invoices, setInvoices] = useState<AdminInvoice[]>([]);
   const [staffCount, setStaffCount] = useState(0);
   const [contracts, setContracts] = useState<LegalContract[]>([]);
+  const [mrrData, setMrrData] = useState<MrrHistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -103,10 +105,11 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
     let cancelled = false;
     void (async () => {
       try {
-        const [snap, staff, contractsResult] = await Promise.all([
+        const [snap, staff, contractsResult, mrrResult] = await Promise.all([
           loadAdminSnapshotWithRefresh(session),
           loadAllStaffWithRefresh(session),
-          loadAdminContractsWithRefresh(session)
+          loadAdminContractsWithRefresh(session),
+          loadMrrHistoryWithRefresh(session, 6)
         ]);
         if (cancelled) return;
         if (snap.nextSession) saveSession(snap.nextSession);
@@ -117,6 +120,7 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
         setInvoices(snap.data?.invoices ?? []);
         setStaffCount((staff.data ?? []).filter((s) => s.isActive).length);
         setContracts(contractsResult.data ?? []);
+        setMrrData(mrrResult.data ?? []);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -168,11 +172,33 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
     { label: "Avg Progress",     value: projects.length ? Math.round(projects.reduce((s, p) => s + p.progressPercent, 0) / projects.length) + "%" : "—", prev: "—", change: "—", color: "var(--accent)", up: null },
   ], [monthlyRevenue, activeProjects, activeClients, staffCount, outstanding, overdueInvoices, atRiskClients, projects]);
 
-  // MRR placeholder sparkline data (real data would need historical invoices)
+  // MRR sparkline from real invoice history
   const mrrHistory = useMemo(() => {
-    const base = monthlyRevenue > 0 ? Math.round(monthlyRevenue / 100) : 0;
-    return [base * 0.64, base * 0.69, base * 0.74, base * 0.78, base * 0.90, base || 1];
-  }, [monthlyRevenue]);
+    if (mrrData.length > 0) {
+      // total is in cents — convert to whole rand units for the sparkline
+      return mrrData.map((p) => Math.round(p.total / 100));
+    }
+    // Fall back to zeros while loading or if no data
+    return [0, 0, 0, 0, 0, 0];
+  }, [mrrData]);
+
+  const mrrMonthLabels = useMemo(() => {
+    if (mrrData.length > 0) {
+      return mrrData.map((p) => {
+        const monthNum = parseInt(p.month.slice(5, 7), 10) - 1;
+        return MONTH_ABBREVS[monthNum] ?? p.month.slice(5, 7);
+      });
+    }
+    // Fall-back labels matching the 6-slot zeroed array
+    const labels: string[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(1);
+      d.setMonth(d.getMonth() - i);
+      labels.push(MONTH_ABBREVS[d.getMonth()]!);
+    }
+    return labels;
+  }, [mrrData]);
 
   const totalMRR = useMemo(() => clients.reduce((s) => s + 1, 0), [clients]);
   const _ = totalMRR; // suppress unused
@@ -318,7 +344,7 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
         <div className={cx("grid2", "gap20")}>
           <div className={cx("card", "p24")}>
             <div className={cx(styles.exdCardHd, "rdStudioSection")}>
-              <div className={styles.exdSecTitle}>Revenue Trend (6mo estimate)</div>
+              <div className={styles.exdSecTitle}>Revenue Trend (6mo)</div>
               <div className={cx(styles.exdHeadValueAccent, "rdStudioMetric", "rdStudioMetricPos")}>{centsToK(monthlyRevenue)}</div>
             </div>
             <div className={styles.exdMiniBars}>
@@ -330,7 +356,7 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
                     <svg className={styles.exdMiniBar} viewBox="0 0 10 80" preserveAspectRatio="none" aria-hidden="true">
                       <rect x="0" y={80 - h} width="10" height={h} fill={isLast ? "var(--accent)" : "var(--accent-d)"} />
                     </svg>
-                    <span className={styles.exdMiniMonth}>{months[i]}</span>
+                    <span className={styles.exdMiniMonth}>{mrrMonthLabels[i]}</span>
                   </div>
                 );
               })}

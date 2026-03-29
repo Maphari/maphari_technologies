@@ -328,3 +328,34 @@ export async function fetchCashFlowEvents(
     return { unauthorized: false, data: response.payload.data ?? [], error: null };
   });
 }
+
+// ── MRR History ────────────────────────────────────────────────────────────────
+
+export interface MrrHistoryPoint {
+  month: string;   // "YYYY-MM"
+  total: number;   // sum of amountCents for paid invoices in that month
+}
+
+export async function loadMrrHistoryWithRefresh(
+  session: AuthSession,
+  months = 6
+): Promise<AuthorizedResult<MrrHistoryPoint[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<MrrHistoryPoint[]>(
+      `/analytics/mrr-history?months=${months}`,
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "MRR_HISTORY_FAILED",
+          response.payload.error?.message ?? "Unable to load MRR history."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
