@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { colorClass } from "./admin-page-utils";
 
 type Segment = "Champion" | "Growth" | "At Risk" | "New";
@@ -114,20 +115,60 @@ export function StrategicClientIntelligencePage() {
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "gap16", "mb28")}>
-        {[
-          { label: "Total Portfolio LTV", value: `R${(totalLTV / 1000).toFixed(0)}k`, color: "var(--accent)", sub: `Across ${clients.length} clients` },
-          { label: "Avg CAC", value: `R${(avgCAC / 1000).toFixed(1)}k`, color: "var(--blue)", sub: "Cost per acquisition" },
-          { label: "At-Risk Clients", value: atRisk.toString(), color: "var(--red)", sub: "Churn risk > 50%" },
-          { label: "Upsell Ready", value: upsellReady.toString(), color: "var(--purple)", sub: "Score > 60" }
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Total Portfolio LTV" value={`R${(totalLTV / 1000).toFixed(0)}k`} tone="accent" sub={`Across ${clients.length} clients`} />
+        <StatWidget label="Avg CAC" value={`R${(avgCAC / 1000).toFixed(1)}k`} sub="Cost per acquisition" />
+        <StatWidget label="At-Risk Clients" value={atRisk.toString()} tone="red" sub="Churn risk > 50%" />
+        <StatWidget label="Upsell Ready" value={upsellReady.toString()} tone="accent" sub="Score > 60" />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Clients by Segment"
+          data={[
+            { segment: "Champion", count: clients.filter((c) => c.segment === "Champion").length },
+            { segment: "Growth", count: clients.filter((c) => c.segment === "Growth").length },
+            { segment: "At Risk", count: clients.filter((c) => c.segment === "At Risk").length },
+            { segment: "New", count: clients.filter((c) => c.segment === "New").length },
+          ]}
+          dataKey="count"
+          xKey="segment"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Portfolio Health"
+          stages={[
+            { label: "Champion", count: clients.filter((c) => c.segment === "Champion").length, total: Math.max(clients.length, 1), color: "#34d98b" },
+            { label: "Growth", count: clients.filter((c) => c.segment === "Growth").length, total: Math.max(clients.length, 1), color: "#8b6fff" },
+            { label: "At Risk", count: atRisk, total: Math.max(clients.length, 1), color: "#ff5f5f" },
+            { label: "New", count: clients.filter((c) => c.segment === "New").length, total: Math.max(clients.length, 1), color: "#f5a623" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Clients Table ────────────────────────────────────────────────── */}
+      <TableWidget
+        label="Client Intelligence"
+        rows={clients}
+        rowKey="id"
+        emptyMessage="No client data available."
+        columns={[
+          { key: "name", header: "Client", render: (_, row) => <span className={cx("fw600")}>{row.name}</span> },
+          { key: "segment", header: "Segment", render: (_, row) => <SegmentBadge segment={row.segment} /> },
+          { key: "ltv", header: "LTV", align: "right", render: (_, row) => `R${(row.ltv / 1000).toFixed(0)}k` },
+          { key: "mrr", header: "MRR", align: "right", render: (_, row) => `R${(row.mrr / 1000).toFixed(0)}k` },
+          { key: "health", header: "Health", align: "right", render: (_, row) => (
+            <span className={cx(row.health >= 80 ? "colorAccent" : row.health >= 60 ? "colorAmber" : "colorRed")}>{row.health}</span>
+          )},
+          { key: "churn", header: "Churn Risk", align: "right", render: (_, row) => (
+            <span className={cx(row.churnRisk > 50 ? "colorRed" : row.churnRisk > 25 ? "colorAmber" : "colorAccent")}>{row.churnRisk}%</span>
+          )},
+          { key: "upsell", header: "Upsell Score", align: "right", render: (_, row) => `${row.upsellScore}/100` },
+        ]}
+      />
 
       <div className={styles.filterRow}>
         <select title="View" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
