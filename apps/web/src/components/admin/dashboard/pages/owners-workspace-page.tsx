@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import { formatMoneyCents } from "../../../../lib/i18n/currency";
+import type { AdminSnapshot } from "../../../../lib/api/admin";
 
 type Priority = "critical" | "high" | "medium" | "low";
 
@@ -31,9 +33,44 @@ const priorityBadge: Record<Priority, string> = {
 const tabs = ["owner dashboard", "personal okrs", "decision journal", "private notes"] as const;
 type Tab = (typeof tabs)[number];
 
-export function OwnersWorkspacePage() {
+export function OwnersWorkspacePage({ snapshot }: { snapshot?: AdminSnapshot }) {
   const [activeTab, setActiveTab] = useState<Tab>("owner dashboard");
   const [todos, setTodos] = useState(focusItems);
+
+  // Dynamic today label: "SUN 29 MAR"
+  const todayLabel = useMemo(() => {
+    const d = new Date();
+    return d.toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" }).toUpperCase();
+  }, []);
+
+  // Business Pulse metrics derived from snapshot
+  const pulse = useMemo(() => {
+    if (!snapshot) return null;
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // MRR: sum of COMPLETED payments in the current calendar month
+    const mrrCents = snapshot.payments
+      .filter((p) => p.status === "COMPLETED" && p.paidAt && new Date(p.paidAt) >= monthStart)
+      .reduce((sum, p) => sum + p.amountCents, 0);
+
+    // Client Health: % of clients with ACTIVE status
+    const totalClients = snapshot.clients.length;
+    const activeClients = snapshot.clients.filter((c) => c.status === "ACTIVE").length;
+    const clientHealth = totalClients > 0 ? Math.round((activeClients / totalClients) * 100) : null;
+
+    // Pipeline: count of non-closed leads
+    const openLeads = snapshot.leads.filter((l) => l.status !== "WON" && l.status !== "LOST").length;
+
+    // Overdue Invoices
+    const overdueInv = snapshot.invoices.filter((inv) => {
+      if (inv.status === "OVERDUE") return true;
+      if (inv.status === "ISSUED" && inv.dueAt && new Date(inv.dueAt) < now) return true;
+      return false;
+    }).length;
+
+    return { mrrCents, clientHealth, openLeads, overdueInv };
+  }, [snapshot]);
 
   const toggleTodo = (idx: number) => {
     setTodos((prev) => prev.map((t, i) => (i === idx ? { ...t, done: !t.done } : t)));
@@ -63,7 +100,7 @@ export function OwnersWorkspacePage() {
         <div className={styles.ownerDashSplit}>
           <div className={cx("flexCol", "gap16")}>
             <div className={cx(styles.card, styles.ownerCard24)}>
-              <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>Today&apos;s Focus - Mon 23 Feb</div>
+              <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>Today&apos;s Focus &mdash; {todayLabel}</div>
               <div className={cx("flexCol", "gap10")}>
                 {todos.map((item, i) => (
                   <div
@@ -96,11 +133,11 @@ export function OwnersWorkspacePage() {
               <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>Business Pulse</div>
               <div className={cx("grid3", "gap12")}>
                 {[
-                  { label: "MRR", value: "—", sub: "Live from billing", color: "var(--accent)" },
+                  { label: "MRR", value: pulse ? formatMoneyCents(pulse.mrrCents, { currency: "ZAR", maximumFractionDigits: 0 }) : "—", sub: "This month (payments)", color: "var(--accent)" },
                   { label: "Team Util.", value: "—", sub: "Target: 85%", color: "var(--amber)" },
-                  { label: "Client Health", value: "—", sub: "Live from health", color: "var(--amber)" },
-                  { label: "Pipeline", value: "—", sub: "Live from CRM", color: "var(--blue)" },
-                  { label: "Overdue Inv.", value: "—", sub: "Live from invoices", color: "var(--red)" },
+                  { label: "Client Health", value: pulse?.clientHealth != null ? `${pulse.clientHealth}%` : "—", sub: `Active vs total clients`, color: pulse?.clientHealth != null && pulse.clientHealth >= 80 ? "var(--accent)" : "var(--amber)" },
+                  { label: "Pipeline", value: pulse ? `${pulse.openLeads}` : "—", sub: "Open leads", color: "var(--blue)" },
+                  { label: "Overdue Inv.", value: pulse ? `${pulse.overdueInv}` : "—", sub: "Past due invoices", color: pulse?.overdueInv ? "var(--red)" : "var(--accent)" },
                   { label: "Runway", value: "—", sub: "Cash reserves", color: "var(--purple)" },
                 ].map((s) => (
                   <div key={s.label} className={cx("bgBg", "p16", styles.ownerRounded8)}>

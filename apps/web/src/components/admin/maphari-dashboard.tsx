@@ -564,7 +564,7 @@ export function MaphariDashboard() {
             {page === "vendors" ? <VendorCostControlPage session={session} /> : null}
             {page === "platform" ? <PlatformInfrastructurePage session={session} onNotify={pushToast} /> : null}
             {page === "brand" ? <BrandControlPage /> : null}
-            {page === "owner" ? <OwnersWorkspacePage /> : null}
+            {page === "owner" ? <OwnersWorkspacePage snapshot={snapshot} /> : null}
             {page === "market" ? <CompetitorMarketIntelPage session={session} /> : null}
             {page === "portfolio" ? <ProjectPortfolioPage /> : null}
             {page === "resources" ? <ResourceAllocationPage session={session} onNotify={pushToast} /> : null}
