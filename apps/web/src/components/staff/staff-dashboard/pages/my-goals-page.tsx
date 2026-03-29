@@ -480,12 +480,12 @@ export function MyGoalsPage({ isActive, session }: MyGoalsPageProps) {
       <div className={cx("staffKpiStrip")}>
         <div className={cx("staffKpiCell")}>
           <div className={cx("staffKpiLabel")}>Active Goals</div>
-          <div className={cx("staffKpiValue", "colorAccent")}>{kpis.active}</div>
+          <div className={cx("staffKpiValue", "colorAccent")} data-testid="kpi-active-value">{kpis.active}</div>
           <div className={cx("staffKpiSub")}>in {quarter}</div>
         </div>
         <div className={cx("staffKpiCell")}>
           <div className={cx("staffKpiLabel")}>Achieved</div>
-          <div className={cx("staffKpiValue", "colorGreen")}>{kpis.achieved}</div>
+          <div className={cx("staffKpiValue", "colorGreen")} data-testid="kpi-achieved-value">{kpis.achieved}</div>
           <div className={cx("staffKpiSub")}>completed goals</div>
         </div>
         <div className={cx("staffKpiCell")}>

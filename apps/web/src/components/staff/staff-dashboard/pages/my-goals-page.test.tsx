@@ -107,7 +107,7 @@ describe("MyGoalsPage — error state", () => {
 describe("MyGoalsPage — quarter tabs", () => {
   it("renders 4 quarter tabs for the current year", async () => {
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
+    await screen.findByText("Learn TypeScript");
     const year = new Date().getFullYear();
     expect(screen.getByRole("button", { name: `Q1-${year}` })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: `Q2-${year}` })).toBeInTheDocument();
@@ -117,7 +117,7 @@ describe("MyGoalsPage — quarter tabs", () => {
 
   it("clicking a tab re-fetches with the new quarter", async () => {
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
+    await screen.findByText("Learn TypeScript");
     const year = new Date().getFullYear();
     fireEvent.click(screen.getByRole("button", { name: `Q3-${year}` }));
     await waitFor(() =>
@@ -134,26 +134,19 @@ describe("MyGoalsPage — quarter tabs", () => {
 describe("MyGoalsPage — KPI strip", () => {
   it("shows Active Goals = 1", async () => {
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
-    // "Active Goals" label is unique — find the staffKpiStrip container and check it contains "1"
-    const activeGoalsLabel = screen.getByText("Active Goals");
-    // The value sibling div follows the label; walk up to the kpi cell and check its content
-    const kpiCell = activeGoalsLabel.parentElement!;
-    expect(kpiCell.textContent).toContain("1");
+    await screen.findByText("Learn TypeScript");
+    expect(screen.getByTestId("kpi-active-value")).toHaveTextContent("1");
   });
 
   it("shows Achieved = 1", async () => {
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
-    // The KPI label "Achieved" is in the staffKpiStrip — get it via "completed goals" sub-text sibling
-    const completedSub = screen.getByText("completed goals");
-    const kpiCell = completedSub.parentElement!;
-    expect(kpiCell.textContent).toContain("1");
+    await screen.findByText("Learn TypeScript");
+    expect(screen.getByTestId("kpi-achieved-value")).toHaveTextContent("1");
   });
 
   it("shows Avg. Progress = 70%", async () => {
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
+    await screen.findByText("Learn TypeScript");
     // 70% should appear in the KPI strip (unique — no other KPI uses %)
     expect(screen.getByText("70%")).toBeInTheDocument();
   });
@@ -164,19 +157,19 @@ describe("MyGoalsPage — KPI strip", () => {
 describe("MyGoalsPage — goal cards", () => {
   it("renders goal titles", async () => {
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
+    await screen.findByText("Learn TypeScript");
     expect(screen.getByText("Deploy Project")).toBeInTheDocument();
   });
 
   it("shows Active badge on active goal", async () => {
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
+    await screen.findByText("Learn TypeScript");
     expect(screen.getByText("Active")).toBeInTheDocument();
   });
 
   it("shows Achieved badge on achieved goal", async () => {
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Deploy Project"));
+    await screen.findByText("Deploy Project");
     // Multiple "Achieved" texts exist (KPI label + badge) — getAllByText should find at least 2
     const achievedEls = screen.getAllByText("Achieved");
     expect(achievedEls.length).toBeGreaterThanOrEqual(2);
@@ -184,13 +177,13 @@ describe("MyGoalsPage — goal cards", () => {
 
   it("shows description when present", async () => {
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Study advanced patterns"));
+    await screen.findByText("Study advanced patterns");
     expect(screen.getByText("Study advanced patterns")).toBeInTheDocument();
   });
 
   it("shows progress percentage on the active goal card", async () => {
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
+    await screen.findByText("Learn TypeScript");
     // active goal progress = 40% — may appear multiple times (progress pct + slider val)
     const pctEls = screen.getAllByText("40%");
     expect(pctEls.length).toBeGreaterThanOrEqual(1);
@@ -210,7 +203,7 @@ describe("MyGoalsPage — mark achieved", () => {
     } as any);
 
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Mark Achieved"));
+    await screen.findByText("Mark Achieved");
     fireEvent.click(screen.getByText("Mark Achieved"));
 
     await waitFor(() =>
@@ -231,7 +224,7 @@ describe("MyGoalsPage — mark achieved", () => {
     } as any);
 
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Mark Achieved"));
+    await screen.findByText("Mark Achieved");
     fireEvent.click(screen.getByText("Mark Achieved"));
 
     await waitFor(() => expect(screen.getByText("Update failed")).toBeInTheDocument());
@@ -250,7 +243,7 @@ describe("MyGoalsPage — cancel goal", () => {
     } as any);
 
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
+    await screen.findByText("Learn TypeScript");
     fireEvent.click(screen.getByRole("button", { name: /cancel goal/i }));
 
     await waitFor(() =>
@@ -267,7 +260,7 @@ describe("MyGoalsPage — cancel goal", () => {
     } as any);
 
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
+    await screen.findByText("Learn TypeScript");
     fireEvent.click(screen.getByRole("button", { name: /cancel goal/i }));
 
     await waitFor(() => expect(screen.getByText("Cancel failed")).toBeInTheDocument());
@@ -280,7 +273,7 @@ describe("MyGoalsPage — cancel goal", () => {
 describe("MyGoalsPage — add goal modal", () => {
   it("opens modal when Add Goal header button is clicked", async () => {
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
+    await screen.findByText("Learn TypeScript");
 
     // Click the header "Add Goal" button
     const addGoalBtns = screen.getAllByRole("button", { name: /add goal/i });
@@ -310,7 +303,7 @@ describe("MyGoalsPage — add goal modal", () => {
     } as any);
 
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
+    await screen.findByText("Learn TypeScript");
 
     // Open modal
     const addGoalBtns = screen.getAllByRole("button", { name: /add goal/i });
@@ -359,7 +352,7 @@ describe("MyGoalsPage — add goal modal", () => {
     } as any);
 
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
+    await screen.findByText("Learn TypeScript");
 
     // Open modal
     const addGoalBtns = screen.getAllByRole("button", { name: /add goal/i });
@@ -390,7 +383,7 @@ describe("MyGoalsPage — add goal modal", () => {
     } as any);
 
     render(<MyGoalsPage isActive session={mockSession} />);
-    await waitFor(() => screen.getByText("Learn TypeScript"));
+    await screen.findByText("Learn TypeScript");
 
     // Open modal
     const addGoalBtns = screen.getAllByRole("button", { name: /add goal/i });
