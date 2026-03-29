@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { formatMoneyCents } from "@/lib/i18n/currency";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -189,6 +190,33 @@ export function PricingPage() {
   const quoteVAT      = quoteTotal * 0.15;
   const quoteFinal    = quoteTotal + quoteVAT;
 
+  // ── Widget data ─────────────────────────────────────────────────────────────
+  const activePackages = useMemo(() => packages.filter((p) => p.isActive), [packages]);
+  const avgPackagePrice = useMemo(
+    () => activePackages.length > 0 ? Math.round(activePackages.reduce((s, p) => s + p.priceMinCents, 0) / activePackages.length) : 0,
+    [activePackages]
+  );
+
+  const catalogChartData = packages.slice(0, 8).map((p) => ({
+    label: p.name.slice(0, 12),
+    value: Math.round(p.priceMinCents / 100),
+  }));
+
+  const pipelineStages = [
+    { label: "Active Packages",  count: packages.filter((p) => p.isActive).length,  total: Math.max(packages.length, 1), color: "#34d98b" },
+    { label: "Inactive",         count: packages.filter((p) => !p.isActive).length, total: Math.max(packages.length, 1), color: "#888888" },
+    { label: "Retainer Plans",   count: retainers.length,                            total: Math.max(retainers.length + packages.length, 1), color: "#8b6fff" },
+    { label: "Add-ons",          count: addons.length,                               total: Math.max(addons.length + packages.length, 1), color: "#f5a623" },
+  ].filter((s) => s.count > 0);
+
+  const tableRows = packages.slice(0, 20).map((p) => ({
+    name:    p.name,
+    price:   fmtPrice(p.priceMinCents, p.priceMaxCents, p.isCustomQuote),
+    billing: p.billingType,
+    status:  p.isActive ? "Active" : "Inactive",
+    active:  p.isActive,
+  })) as Record<string, unknown>[];
+
   if (loading) {
     return (
       <div className={cx("pageBody")}>
@@ -221,20 +249,67 @@ export function PricingPage() {
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Packages",         value: String(packages.length),  color: "var(--accent)", sub: "in catalog" },
-          { label: "Add-ons",          value: String(addons.length),    color: "var(--blue)",   sub: "available" },
-          { label: "Retainer Plans",   value: String(retainers.length), color: "var(--purple)", sub: "active tiers" },
-          { label: "Pending Discounts",value: String(pendingDiscounts.length),           color: "var(--amber)",  sub: "needs approval" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: KPI stats ── */}
+      <WidgetGrid>
+        <StatWidget
+          label="Service Packages"
+          value={packages.length}
+          sub={`${activePackages.length} active`}
+          tone="accent"
+        />
+        <StatWidget
+          label="Avg Package Price"
+          value={avgPackagePrice > 0 ? fmtPrice(avgPackagePrice, avgPackagePrice) : "—"}
+          sub="Min price, active packages"
+          tone="default"
+        />
+        <StatWidget
+          label="Retainer Plans"
+          value={retainers.length}
+          sub="Active tiers"
+          tone="default"
+        />
+        <StatWidget
+          label="Add-ons"
+          value={addons.length}
+          sub="Available extras"
+          tone="default"
+        />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Package Pricing (ZAR)"
+          data={catalogChartData.length > 0 ? catalogChartData : [{ label: "No data", value: 0 }]}
+          dataKey="value"
+          type="bar"
+          color="#8b6fff"
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Catalog Breakdown"
+          stages={pipelineStages.length > 0 ? pipelineStages : [{ label: "No packages", count: 0, total: 1 }]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Packages table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Service Packages"
+          rows={tableRows}
+          rowKey="name"
+          emptyMessage="No packages in catalog."
+          columns={[
+            { key: "name",    header: "Package",  align: "left" },
+            { key: "price",   header: "Price",    align: "right" },
+            { key: "billing", header: "Billing",  align: "left" },
+            { key: "status",  header: "Status",   align: "left", render: (val, row) => (
+              <span className={cx((row as { active: boolean }).active ? "badgeGreen" : "badgeMuted")}>{String(val)}</span>
+            )},
+          ]}
+        />
+      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select title="Select tab" value={activeTab} onChange={(e) => setActiveTab(e.target.value as (typeof tabs)[number])} className={styles.filterSelect}>
