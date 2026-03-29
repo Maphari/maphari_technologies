@@ -12,6 +12,7 @@ import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin";
 import type { AdminLead, AdminClient, LeadPipelineStatus } from "../../../../lib/api/admin";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -155,196 +156,116 @@ export function BusinessDevelopmentPage({
     );
   }
 
+  // ── Widget chart data ──────────────────────────────────────────────────────
+  const leadsByMonthData = stageOrder
+    .filter((s) => s !== "WON" && s !== "LOST")
+    .map((stage) => ({
+      label: stageLabel[stage],
+      count: leads.filter((l) => l.status === stage).length,
+    }));
+
+  const tableRows = leads.map((lead) => ({
+    name: lead.company ?? lead.title,
+    contact: lead.contactName ?? "—",
+    source: lead.source ?? "—",
+    value: lead.title,
+    status: stageLabel[lead.status],
+    _statusRaw: lead.status,
+  }));
+
   return (
-    <div className={cx(styles.pageBody, styles.bdevRoot, "rdStudioPage")}>
+    <div className={cx(styles.pageBody, styles.bdevRoot)}>
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>OPERATIONS / BUSINESS DEVELOPMENT</div>
           <h1 className={styles.pageTitle}>Business Development</h1>
-          <div className={styles.pageSub}>Lead pipeline · Conversion analytics</div>
+          <div className={styles.pageSub}>Pipeline health · Lead velocity · Revenue opportunity</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnGhost")}>Export Pipeline</button>
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Active Leads", value: activeLeads.length.toString(), color: "var(--accent)", sub: `${leads.length} total` },
-          { label: "Won", value: won.length.toString(), color: "var(--accent)", sub: "Converted to clients" },
-          { label: "Lost", value: lost.length.toString(), color: lost.length > 0 ? "var(--red)" : "var(--muted)", sub: "Not converted" },
-          { label: "Conversion Rate", value: `${conversionRate}%`, color: conversionRate >= 40 ? "var(--accent)" : "var(--amber)", sub: "Win rate" },
-        ].map((s) => (
-          <div key={s.label} className={cx(styles.statCard, "rdStudioCard")}>
-            <div className={cx(styles.statLabel, "rdStudioLabel")}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color), "rdStudioMetric", s.color === "var(--accent)" ? "rdStudioMetricPos" : s.color === "var(--red)" ? "rdStudioMetricNeg" : s.color === "var(--amber)" ? "rdStudioMetricWarn" : "")}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — 4 stat widgets */}
+      <WidgetGrid>
+        <StatWidget
+          label="Active Leads"
+          value={activeLeads.length}
+          sub={`${leads.length} total`}
+          tone="accent"
+        />
+        <StatWidget
+          label="Won (this month)"
+          value={won.length}
+          sub="Converted to clients"
+          tone={won.length > 0 ? "green" : "default"}
+        />
+        <StatWidget
+          label="Lost (this month)"
+          value={lost.length}
+          sub="Not converted"
+          tone={lost.length > 0 ? "red" : "default"}
+        />
+        <StatWidget
+          label="Conversion Rate"
+          value={`${conversionRate}%`}
+          sub="Win rate"
+          tone={conversionRate >= 40 ? "accent" : "amber"}
+          progressValue={conversionRate}
+        />
+      </WidgetGrid>
 
-      <div className={styles.filterRow}>
-        <select
-          title="Select tab"
-          value={activeTab}
-          onChange={(e) => setActiveTab(e.target.value as Tab)}
-          className={styles.filterSelect}
-        >
-          {tabs.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-        {activeTab === "pipeline" && (
-          <select
-            title="View mode"
-            value={viewMode}
-            onChange={(e) => setViewMode(e.target.value as ViewMode)}
-            className={styles.filterSelect}
-          >
-            <option value="list">list</option>
-            <option value="kanban">kanban</option>
-          </select>
-        )}
-      </div>
+      {/* Row 2 — bar chart + pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Leads by Stage"
+          data={leadsByMonthData}
+          dataKey="count"
+          type="bar"
+          color="#8b6fff"
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Pipeline Stages"
+          stages={[
+            { label: "Prospect", count: leads.filter((l) => l.status === "NEW").length || 0, total: leads.length || 1, color: "#8b6fff" },
+            { label: "Contacted", count: leads.filter((l) => l.status === "CONTACTED").length || 0, total: leads.length || 1, color: "#60a5fa" },
+            { label: "Qualified", count: leads.filter((l) => l.status === "QUALIFIED").length || 0, total: leads.length || 1, color: "#f5a623" },
+            { label: "Proposal", count: leads.filter((l) => l.status === "PROPOSAL").length || 0, total: leads.length || 1, color: "#34d98b" },
+            { label: "Negotiation", count: won.length || 0, total: leads.length || 1, color: "#c8f135" },
+          ]}
+        />
+      </WidgetGrid>
 
-      {activeTab === "pipeline" && (
-        leads.length === 0 ? (
-          <div className={cx("card", "p24", "text13", "colorMuted")}>No leads found.</div>
-        ) : (
-          <div>
-            {viewMode === "list" && (
-              <div className={styles.bdevTableCard}>
-                <div className={cx(styles.bdevTableHead, "fontMono", "text10", "colorMuted", "uppercase")}>
-                  {"Company|Contact|Stage|Source|Follow-up|Status|".split("|").map((h, idx) => (
-                    <span key={`${h}-${idx}`}>{h}</span>
-                  ))}
-                </div>
-                {leads.map((lead, i) => {
-                  const color = stageColors[lead.status];
-                  return (
-                    <div key={lead.id} className={cx(styles.bdevTableRow, i < leads.length - 1 && "borderB", "rdStudioRow")}>
-                      <div>
-                        <div className={cx("fw600")}>{lead.company ?? lead.title}</div>
-                        <div className={cx("text11", "colorMuted")}>{clientName(lead.clientId)}</div>
-                      </div>
-                      <span className={cx("text12", "colorMuted")}>{lead.contactName ?? "—"}</span>
-                      <span className={cx(styles.bdevStageTag, tagClass(color))}>{stageLabel[lead.status]}</span>
-                      <span className={cx("text11", "colorMuted")}>{lead.source ?? "—"}</span>
-                      <span className={cx("text12", "colorMuted")}>{fmtDate(lead.nextFollowUpAt)}</span>
-                      <span className={cx("fontMono", "text12", stageProbability(lead.status) >= 65 ? "colorAccent" : stageProbability(lead.status) >= 40 ? "colorAmber" : "colorMuted")}>
-                        {stageProbability(lead.status)}%
-                      </span>
-                      <button type="button" className={cx("btnSm", "btnGhost")}>Open</button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {viewMode === "kanban" && (
-              <div className={styles.bdevKanbanGrid}>
-                {stageOrder.map((stage) => {
-                  const stageLeads = leads.filter((l) => l.status === stage);
-                  const color = stageColors[stage];
-                  return (
-                    <div key={stage}>
-                      <div className={styles.bdevStageHead}>
-                        <span className={cx(styles.bdevStageName, colorClass(color))}>{stageLabel[stage]}</span>
-                        <span className={cx("fontMono", "text11", "colorMuted")}>{stageLeads.length}</span>
-                      </div>
-                      <div className={styles.bdevStageStack}>
-                        {stageLeads.map((lead) => (
-                          <div key={lead.id} className={styles.bdevDealCard}>
-                            <div className={styles.bdevDealName}>{lead.company ?? lead.title}</div>
-                            <div className={styles.bdevDealMeta}>{lead.contactName ?? "—"}</div>
-                            <div className={styles.bdevDealFoot}>
-                              <span className={cx("text12", "colorMuted")}>{lead.source ?? "—"}</span>
-                              <span className={cx("colorMuted")}>{stageProbability(lead.status)}% win</span>
-                            </div>
-                            <progress
-                              className={cx(styles.bdevMiniTrack, fillClass(color))}
-                              max={100}
-                              value={stageProbability(lead.status)}
-                              aria-label={`${lead.title} win probability ${stageProbability(lead.status)}%`}
-                            />
-                          </div>
-                        ))}
-                        {stageLeads.length === 0 && (
-                          <div className={styles.bdevEmptyLane}>No leads</div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )
-      )}
-
-      {activeTab === "analytics" && (
-        <div className={styles.bdevTargetsGrid}>
-            <div className={cx("card", "p24")}>
-              <div className={cx(styles.bdevSectionTitle, "rdStudioSection")}>Pipeline by Stage</div>
-              <div className={styles.bdevTargetStack}>
-                {stageOrder.map((stage) => {
-                  const count = leads.filter((l) => l.status === stage).length;
-                  const pct = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0;
-                  const color = stageColors[stage];
-                  return (
-                    <div key={stage}>
-                      <div className={styles.bdevTargetHead}>
-                        <span className={styles.text13}>{stageLabel[stage]}</span>
-                        <span className={cx("fontMono", "text12", colorClass(color))}>{count} leads</span>
-                      </div>
-                      <div className={styles.bdevTargetTrack}>
-                        <progress
-                          className={cx(styles.bdevTargetTrackFill, fillClass(color))}
-                          max={100}
-                          value={pct}
-                          aria-label={`${stageLabel[stage]} ${pct}%`}
-                        />
-                      </div>
-                      <div className={cx(styles.bdevTargetPct, "colorMuted")}>{pct}% of all leads</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className={styles.bdevTargetSide}>
-              <div className={cx("card", "p24")}>
-                <div className={styles.bdevSectionTitle}>Lead Sources</div>
-                {Object.entries(sourceBreakdown).map(([source, count]) => {
-                  const pct = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0;
-                  return (
-                    <div key={source} className={styles.bdevSourceRow}>
-                      <span className={styles.bdevSourceName}>{source}</span>
-                      <div className={styles.bdevSourceTrack}>
-                        <progress
-                          className={cx(styles.bdevSourceTrackFill, styles.bdevFillAccent)}
-                          max={100}
-                          value={pct}
-                          aria-label={`${source} ${pct}%`}
-                        />
-                      </div>
-                      <span className={cx(styles.bdevSourceCount, "colorAccent")}>{count}</span>
-                    </div>
-                  );
-                })}
-                {Object.keys(sourceBreakdown).length === 0 && (
-                  <div className={cx("text12", "colorMuted")}>No source data available.</div>
-                )}
-              </div>
-
-              <div className={cx(styles.bdevAnnualCard, "rdStudioCard")}>
-                <div className={cx(styles.bdevAnnualTitle, "rdStudioLabel")}>Conversion Summary</div>
-                <div className={cx(styles.bdevAnnualValue, "rdStudioMetric", conversionRate >= 40 ? "rdStudioMetricPos" : "rdStudioMetricWarn")}>{conversionRate}%</div>
-                <div className={cx("text12", "colorMuted")}>
-                  {won.length} won · {lost.length} lost · {activeLeads.length} in progress
-                </div>
-              </div>
-            </div>
-          </div>
-      )}
+      {/* Row 3 — leads table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Leads"
+          rows={tableRows as Record<string, unknown>[]}
+          rowKey="name"
+          emptyMessage="No leads found."
+          columns={[
+            { key: "name", header: "Name / Company", align: "left" },
+            { key: "contact", header: "Contact", align: "left" },
+            { key: "source", header: "Source", align: "left" },
+            { key: "value", header: "Title / Value", align: "left" },
+            {
+              key: "status",
+              header: "Status",
+              align: "right",
+              render: (_v, row) => {
+                const raw = (row as { _statusRaw: string })._statusRaw;
+                const badgeCls =
+                  raw === "WON" ? cx("badgeGreen")
+                  : raw === "LOST" ? cx("badgeRed")
+                  : raw === "PROPOSAL" ? cx("badgeAmber")
+                  : cx("badgeMuted");
+                return <span className={badgeCls}>{String(_v)}</span>;
+              },
+            },
+          ]}
+        />
+      </WidgetGrid>
     </div>
   );
 }
