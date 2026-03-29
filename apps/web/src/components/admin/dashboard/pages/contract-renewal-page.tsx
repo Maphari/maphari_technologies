@@ -8,7 +8,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { loadAdminContractsWithRefresh, type LegalContract } from "../../../../lib/api/admin/contracts";
+import { loadAdminContractsWithRefresh, createRenewalProposalWithRefresh, type LegalContract } from "../../../../lib/api/admin/contracts";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { formatStatus } from "@/lib/utils/format-status";
@@ -103,6 +103,7 @@ export function ContractRenewalPage() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
   const [sentIds,   setSentIds]   = useState<Set<string>>(new Set());
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const loadContracts = useCallback(async () => {
     if (!session) { setLoading(false); return; }
@@ -123,10 +124,20 @@ export function ContractRenewalPage() {
     void loadContracts();
   }, [loadContracts]);
 
-  function handleSendProposal(contract: LegalContract) {
-    // Proposal creation API does not yet exist — show placeholder alert
-    window.alert(`Renewal proposal sent for: ${contract.title}`);
-    setSentIds((prev) => new Set([...prev, contract.id]));
+  async function handleSendProposal(contract: LegalContract) {
+    if (!session) return;
+    try {
+      const result = await createRenewalProposalWithRefresh(session, contract.id);
+      if (result.error) {
+        setError(result.error.message ?? "Failed to send renewal proposal.");
+        return;
+      }
+      setSentIds((prev) => new Set([...prev, contract.id]));
+      setSuccessMsg(`Renewal proposal sent for: ${contract.title}`);
+      setTimeout(() => setSuccessMsg(null), 4000);
+    } catch (err) {
+      setError((err as Error)?.message ?? "Failed to send renewal proposal.");
+    }
   }
 
   // ── Derived data ─────────────────────────────────────────────────────────
@@ -161,6 +172,7 @@ export function ContractRenewalPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={cx(styles.pageBody, styles.lglRoot)}>
+      {successMsg ? <div className={cx(styles.card, "colorAccent", "text13")} style={{ padding: "8px 12px", marginBottom: 8 }}>{successMsg}</div> : null}
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className={styles.pageHeader}>
         <div>
@@ -263,7 +275,7 @@ export function ContractRenewalPage() {
                   <button
                     type="button"
                     className={cx("btnSm", alreadySent ? "btnGhost" : "btnAccent")}
-                    onClick={() => handleSendProposal(contract)}
+                    onClick={() => { void handleSendProposal(contract); }}
                     disabled={alreadySent}
                   >
                     {alreadySent ? "Sent" : "Send Renewal Proposal"}
