@@ -146,6 +146,9 @@ import { registerAutomationMetricRoutes } from "./routes/automation-metrics.js";
 // ── Cash Flow Scenarios ────────────────────────────────────────────────────
 import { registerCashFlowScenarioRoutes } from "./routes/cash-flow-scenarios.js";
 
+// ── Prospecting Campaign History ───────────────────────────────────────────
+import { registerProspectingCampaignRoutes } from "./routes/prospecting-campaigns.js";
+
 // ── Standup Crons ──────────────────────────────────────────────────────────
 import { scheduleStandupReminder, scheduleStandupDigest } from "./cron/standup-reminder.js";
 
@@ -341,6 +344,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Cash Flow Scenarios ────────────────────────────────────────────────────
   await registerCashFlowScenarioRoutes(app);
+
+  // ── Prospecting Campaign History ───────────────────────────────────────────
+  await registerProspectingCampaignRoutes(app);
 
   // ── Standup Crons ──────────────────────────────────────────────────────────
   scheduleStandupReminder();

@@ -134,3 +134,89 @@ export async function sendPitchWithRefresh(
     return { unauthorized: false, data: response.payload.data, error: null };
   });
 }
+
+// ── Prospecting Campaign Persistence ──────────────────────────────────────────
+
+export interface ProspectingCampaign {
+  id: string;
+  workspaceId: string;
+  filters: Record<string, unknown>;
+  resultsCount: number;
+  status: string;
+  createdByAdminId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function loadProspectingCampaignsWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<ProspectingCampaign[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<ProspectingCampaign[]>(
+      "/prospecting/campaigns",
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "CAMPAIGNS_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load campaign history."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+export async function createProspectingCampaignWithRefresh(
+  session: AuthSession,
+  input: { filters?: Record<string, unknown>; resultsCount?: number; status?: string }
+): Promise<AuthorizedResult<ProspectingCampaign>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<ProspectingCampaign>(
+      "/prospecting/campaigns",
+      accessToken,
+      { method: "POST", body: input }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "CAMPAIGN_CREATE_FAILED",
+          response.payload.error?.message ?? "Unable to save campaign."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function deleteProspectingCampaignWithRefresh(
+  session: AuthSession,
+  id: string
+): Promise<AuthorizedResult<void>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ id: string }>(
+      `/prospecting/campaigns/${id}`,
+      accessToken,
+      { method: "DELETE" }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "CAMPAIGN_DELETE_FAILED",
+          response.payload.error?.message ?? "Unable to delete campaign."
+        )
+      };
+    }
+    return { unauthorized: false, data: undefined, error: null };
+  });
+}

@@ -8,22 +8,13 @@ import {
   fetchLeadsForDedupWithRefresh,
   buildDuplicateSet,
   sendPitchWithRefresh,
+  loadProspectingCampaignsWithRefresh,
+  createProspectingCampaignWithRefresh,
   type ProspectResult,
-  type OpportunityFilter
+  type OpportunityFilter,
+  type ProspectingCampaign
 } from "../../../../lib/api/admin/prospecting";
 import { createLeadWithRefresh } from "../../../../lib/api/admin/clients";
-
-// ── Types ──────────────────────────────────────────────────────────────────────
-
-interface CampaignRecord {
-  id: string;
-  ts: string;
-  industry: string;
-  location: string;
-  count: number;
-  filters: OpportunityFilter[];
-  resultCount: number;
-}
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -42,8 +33,6 @@ const OPPORTUNITY_LABELS: Record<OpportunityFilter, string> = {
 };
 
 const COUNT_OPTIONS = [10, 20, 50] as const;
-const HISTORY_KEY = "prospecting_history";
-const MAX_HISTORY = 20;
 
 const SA_CITIES = [
   "Johannesburg", "Cape Town", "Durban", "Pretoria",
@@ -90,24 +79,6 @@ function buildLeadTitle(prospect: ProspectResult): string {
   return `${prospect.company} — ${OPPORTUNITY_LABELS[prospect.opportunityType]}`;
 }
 
-function loadHistory(): CampaignRecord[] {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? (JSON.parse(raw) as CampaignRecord[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveToHistory(record: CampaignRecord): void {
-  try {
-    const existing = loadHistory();
-    const updated = [record, ...existing].slice(0, MAX_HISTORY);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-  } catch {
-    // localStorage unavailable — ignore
-  }
-}
 
 function exportToCsv(prospects: ProspectResult[]): void {
   const headers = [
@@ -169,9 +140,13 @@ export function ProspectingPage() {
   const [sendingPitchFor, setSendingPitchFor] = useState<Set<number>>(new Set());
   const [sentPitches, setSentPitches] = useState<Set<number>>(new Set());
 
-  // ── Campaign history ───────────────────────────────────────────────────────
-  const [history, setHistory] = useState<CampaignRecord[]>([]);
+  // ── Campaign history (persisted to DB) ────────────────────────────────────
+  const [history, setHistory] = useState<ProspectingCampaign[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+
+  // ── Rotation indices for deterministic "randomize" (no Math.random) ────────
+  const cityIdxRef = useRef(0);
+  const industryIdxRef = useRef(0);
 
   // ── Location autocomplete ─────────────────────────────────────────────────
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
@@ -181,13 +156,18 @@ export function ProspectingPage() {
   const locationDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setHistory(loadHistory());
-  }, []);
+    if (!session) return;
+    void loadProspectingCampaignsWithRefresh(session).then((result) => {
+      if (result.data) setHistory(result.data);
+    });
+  }, [session]);
 
-  // ── Randomize fields ──────────────────────────────────────────────────────
+  // ── Rotate fields (no Math.random) ────────────────────────────────────────
   const randomizeFields = useCallback(() => {
-    const city = SA_CITIES[Math.floor(Math.random() * SA_CITIES.length)]!;
-    const industry = INDUSTRY_SUGGESTIONS[Math.floor(Math.random() * INDUSTRY_SUGGESTIONS.length)]!;
+    const city = SA_CITIES[cityIdxRef.current % SA_CITIES.length]!;
+    const industry = INDUSTRY_SUGGESTIONS[industryIdxRef.current % INDUSTRY_SUGGESTIONS.length]!;
+    cityIdxRef.current = (cityIdxRef.current + 1) % SA_CITIES.length;
+    industryIdxRef.current = (industryIdxRef.current + 1) % INDUSTRY_SUGGESTIONS.length;
     setLocation(city);
     setIndustry(industry);
   }, []);
@@ -304,18 +284,14 @@ export function ProspectingPage() {
     setProspects(found);
 
     if (found.length > 0) {
-      // Save to campaign history
-      const record: CampaignRecord = {
-        id: crypto.randomUUID(),
-        ts: new Date().toISOString(),
-        industry: industry.trim(),
-        location: location.trim(),
-        count,
-        filters: Array.from(selectedFilters),
-        resultCount: found.length
-      };
-      saveToHistory(record);
-      setHistory(loadHistory());
+      // Persist campaign to DB
+      void createProspectingCampaignWithRefresh(result.nextSession, {
+        filters: { industry: industry.trim(), location: location.trim(), count, filters: Array.from(selectedFilters) },
+        resultsCount: found.length,
+        status: "completed",
+      }).then((saved) => {
+        if (saved.data) setHistory((prev) => [saved.data!, ...prev]);
+      });
 
       // Dedup check against existing leads
       const dedupResult = await fetchLeadsForDedupWithRefresh(result.nextSession);
@@ -386,11 +362,12 @@ export function ProspectingPage() {
   }, [session, sendingPitchFor]);
 
   // ── Restore from history ──────────────────────────────────────────────────
-  const restoreFromHistory = useCallback((record: CampaignRecord) => {
-    setIndustry(record.industry);
-    setLocation(record.location);
-    setCount(record.count as 10 | 20 | 50);
-    setSelectedFilters(new Set(record.filters));
+  const restoreFromHistory = useCallback((record: ProspectingCampaign) => {
+    const f = record.filters as Record<string, unknown>;
+    if (typeof f.industry === "string") setIndustry(f.industry);
+    if (typeof f.location === "string") setLocation(f.location);
+    if (f.count === 10 || f.count === 20 || f.count === 50) setCount(f.count);
+    if (Array.isArray(f.filters)) setSelectedFilters(new Set(f.filters as OpportunityFilter[]));
     setShowHistory(false);
   }, []);
 
@@ -439,40 +416,46 @@ export function ProspectingPage() {
               {(() => {
                 const today = new Date().toDateString();
                 const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-                const groups: Record<string, CampaignRecord[]> = { Today: [], "This Week": [], Earlier: [] };
+                const groups: Record<string, ProspectingCampaign[]> = { Today: [], "This Week": [], Earlier: [] };
                 for (const rec of history) {
-                  const d = new Date(rec.ts);
+                  const d = new Date(rec.createdAt);
                   if (d.toDateString() === today) groups["Today"]!.push(rec);
                   else if (d.getTime() >= weekAgo) groups["This Week"]!.push(rec);
                   else groups["Earlier"]!.push(rec);
                 }
-                return (Object.entries(groups) as [string, CampaignRecord[]][])
+                return (Object.entries(groups) as [string, ProspectingCampaign[]][])
                   .filter(([, recs]) => recs.length > 0)
                   .map(([label, recs]) => (
                     <div key={label} className={cx("flexCol", "gap8")}>
                       <div className={cx("text10", "colorMuted", "uppercase")} style={{ letterSpacing: "0.08em", paddingBottom: 4, borderBottom: "1px solid var(--border)" }}>{label}</div>
-                      {recs.map((rec) => (
-                        <div key={rec.id} className={cx("flex", "gap12", "itemsCenter", "flexBetween")} style={{ paddingBottom: "8px", borderBottom: "1px solid var(--border)" }}>
-                          <div>
-                            <div className={cx("flex", "gap6", "itemsCenter", "mb4")} style={{ flexWrap: "wrap" }}>
-                              <span className={cx("text12")}>{rec.industry}</span>
-                              <span className={cx("text12", "colorMuted")}>in</span>
-                              <span className={cx("text12")}>{rec.location}</span>
-                              <span className={cx("text11", "colorMuted")}>— {rec.resultCount} result{rec.resultCount !== 1 ? "s" : ""}</span>
+                      {recs.map((rec) => {
+                        const f = rec.filters as Record<string, unknown>;
+                        const recIndustry = typeof f.industry === "string" ? f.industry : "—";
+                        const recLocation = typeof f.location === "string" ? f.location : "—";
+                        const recFilters = Array.isArray(f.filters) ? (f.filters as OpportunityFilter[]) : [];
+                        return (
+                          <div key={rec.id} className={cx("flex", "gap12", "itemsCenter", "flexBetween")} style={{ paddingBottom: "8px", borderBottom: "1px solid var(--border)" }}>
+                            <div>
+                              <div className={cx("flex", "gap6", "itemsCenter", "mb4")} style={{ flexWrap: "wrap" }}>
+                                <span className={cx("text12")}>{recIndustry}</span>
+                                <span className={cx("text12", "colorMuted")}>in</span>
+                                <span className={cx("text12")}>{recLocation}</span>
+                                <span className={cx("text11", "colorMuted")}>— {rec.resultsCount} result{rec.resultsCount !== 1 ? "s" : ""}</span>
+                              </div>
+                              <div className={cx("flex", "gap4")} style={{ flexWrap: "wrap" }}>
+                                {recFilters.slice(0, 2).map((filt) => (
+                                  <span key={filt} className={cx("badge", "badgeMuted")}>{OPPORTUNITY_LABELS[filt]}</span>
+                                ))}
+                                {recFilters.length > 2 && <span className={cx("badge", "badgeMuted")}>+{recFilters.length - 2}</span>}
+                              </div>
                             </div>
-                            <div className={cx("flex", "gap4")} style={{ flexWrap: "wrap" }}>
-                              {rec.filters.slice(0, 2).map((f) => (
-                                <span key={f} className={cx("badge", "badgeMuted")}>{OPPORTUNITY_LABELS[f]}</span>
-                              ))}
-                              {rec.filters.length > 2 && <span className={cx("badge", "badgeMuted")}>+{rec.filters.length - 2}</span>}
+                            <div className={cx("flexCol", "gap4", "itemsEnd")}>
+                              <span className={cx("text11", "colorMuted")}>{new Date(rec.createdAt).toLocaleDateString()}</span>
+                              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => restoreFromHistory(rec)}>Restore</button>
                             </div>
                           </div>
-                          <div className={cx("flexCol", "gap4", "itemsEnd")}>
-                            <span className={cx("text11", "colorMuted")}>{new Date(rec.ts).toLocaleDateString()}</span>
-                            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => restoreFromHistory(rec)}>Restore</button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ));
               })()}
@@ -553,7 +536,9 @@ export function ProspectingPage() {
                   onBlur={() => {
                     setTimeout(() => setLocationDropdownOpen(false), 150);
                     if (!industry.trim()) {
-                      setIndustry(INDUSTRY_SUGGESTIONS[Math.floor(Math.random() * INDUSTRY_SUGGESTIONS.length)]!);
+                      const idx = industryIdxRef.current % INDUSTRY_SUGGESTIONS.length;
+                      industryIdxRef.current = (industryIdxRef.current + 1) % INDUSTRY_SUGGESTIONS.length;
+                      setIndustry(INDUSTRY_SUGGESTIONS[idx]!);
                     }
                   }}
                   autoComplete="off"
@@ -710,18 +695,20 @@ export function ProspectingPage() {
               type="button"
               className={cx("btnSm", "btnGhost")}
               onClick={() => {
-                const alt = INDUSTRY_SUGGESTIONS[Math.floor(Math.random() * INDUSTRY_SUGGESTIONS.length)]!;
-                setIndustry(alt);
+                const idx = industryIdxRef.current % INDUSTRY_SUGGESTIONS.length;
+                industryIdxRef.current = (industryIdxRef.current + 1) % INDUSTRY_SUGGESTIONS.length;
+                setIndustry(INDUSTRY_SUGGESTIONS[idx]!);
               }}
             >
-              Try random industry
+              Try different industry
             </button>
             <button
               type="button"
               className={cx("btnSm", "btnGhost")}
               onClick={() => {
-                const alt = SA_CITIES[Math.floor(Math.random() * SA_CITIES.length)]!;
-                setLocation(alt);
+                const idx = cityIdxRef.current % SA_CITIES.length;
+                cityIdxRef.current = (cityIdxRef.current + 1) % SA_CITIES.length;
+                setLocation(SA_CITIES[idx]!);
               }}
             >
               Try different city
