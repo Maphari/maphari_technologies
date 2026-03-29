@@ -16,6 +16,7 @@ import {
   loadContentSubmissionsWithRefresh,
   approveContentSubmissionWithRefresh
 } from "../../../../lib/api/admin/governance";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -130,82 +131,96 @@ export function UpdateQueueManagerPage({ session, onNotify }: Props) {
     );
   }
 
+  // ── Derived data ──────────────────────────────────────────────────────────
+  const rejected   = submissions.filter((d) => d.status === "REJECTED");
+  const typeCounts = submissions.reduce<Record<string, number>>((acc, d) => {
+    acc[d.type] = (acc[d.type] ?? 0) + 1;
+    return acc;
+  }, {});
+  const chartData = Object.entries(typeCounts).map(([name, value]) => ({ name, value }));
+
+  const tableRows = submissions.map((d) => ({
+    id: d.id,
+    title: d.title,
+    submittedByName: d.submittedByName ?? "Unknown",
+    type: d.type,
+    createdAt: d.createdAt,
+    status: d.status,
+  })) as unknown as Record<string, unknown>[];
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>AI/ML / UPDATE QUEUE MANAGER</div>
+          <div className={styles.pageEyebrow}>LIFECYCLE / UPDATES</div>
           <h1 className={styles.pageTitle}>Update Queue Manager</h1>
-          <div className={styles.pageSub}>Review and approve AI-drafted client updates before sending</div>
+          <div className={styles.pageSub}>Client updates · Queue health · Delivery status</div>
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Pending Review",  value: String(pending.length),  color: "var(--amber)" },
-          { label: "Approved Today",  value: String(approved.length), color: "var(--accent)" },
-          { label: "Avg Confidence",  value: `${avgConf}%`,           color: "var(--accent)" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Queue Depth" value={submissions.length} tone="accent" sparkData={[3, 4, 5, 6, 5, 7, 6, submissions.length]} />
+        <StatWidget label="Sent Today" value={approved.length} tone="green" progressValue={submissions.length > 0 ? Math.round((approved.length / submissions.length) * 100) : 0} />
+        <StatWidget label="Pending" value={pending.length} tone="amber" progressValue={submissions.length > 0 ? Math.round((pending.length / submissions.length) * 100) : 0} />
+        <StatWidget label="Overdue" value={rejected.length} tone="red" progressValue={submissions.length > 0 ? Math.round((rejected.length / submissions.length) * 100) : 0} />
+      </WidgetGrid>
 
-      {submissions.length === 0 && (
-        <div className={cx("card", "p24", "text13", "colorMuted")}>No content submissions found.</div>
-      )}
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Updates by Type"
+          type="bar"
+          data={chartData.length > 0 ? chartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Update Status"
+          stages={[
+            { label: "Pending Review", count: pending.length, total: submissions.length, color: "#f5a623" },
+            { label: "Approved", count: approved.length, total: submissions.length, color: "#34d98b" },
+            { label: "Rejected", count: rejected.length, total: submissions.length, color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
 
-      <div className={cx("flexCol", "gap16")}>
-        {submissions.map((d) => {
-          const conf = confidenceBadge(d.status);
-          const isPending = d.status === "PENDING";
-          const isProcessing = processing === d.id;
-          return (
-            <article key={d.id} className={styles.card}>
-              <div className={styles.cardHd}>
-                <span className={styles.cardHdTitle}>{d.submittedByName ?? "Unknown"} — {d.title}</span>
-                <span className={cx("badge", d.status === "APPROVED" ? "badgeGreen" : d.status === "REJECTED" ? "badgeRed" : "badgeAmber")}>{d.status}</span>
-              </div>
-              <div className={styles.cardInner}>
-                {d.notes && (
-                  <div className={cx("text12", "mb12", "p12", "bgBg", "rXs", "italic")}>
-                    {d.notes}
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Update Queue"
+          rows={tableRows}
+          rowKey="id"
+          emptyMessage="No content submissions found."
+          columns={[
+            { key: "title", header: "Update", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.title ?? "")}</span> },
+            { key: "submittedByName", header: "By", render: (_v, row) => <span className={cx("colorMuted")}>{String(row.submittedByName ?? "—")}</span> },
+            { key: "type", header: "Type", render: (_v, row) => <span className={cx("badge")}>{String(row.type ?? "—")}</span> },
+            { key: "createdAt", header: "Scheduled", align: "right", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{formatDate(String(row.createdAt ?? ""))}</span> },
+            { key: "status", header: "Status", align: "right", render: (_v, row) => {
+              const s = String(row.status ?? "");
+              return <span className={cx("badge", s === "APPROVED" ? "badgeGreen" : s === "REJECTED" ? "badgeRed" : "badgeAmber")}>{s}</span>;
+            }},
+            { key: "id", header: "Actions", align: "right", render: (_v, row) => {
+              if (String(row.status ?? "") === "PENDING") {
+                const isProcessing = processing === String(row.id);
+                return (
+                  <div className={cx("flexRow", "gap4")} style={{ justifyContent: "flex-end" }}>
+                    <button type="button" className={cx("btnSm", "btnAccent")} disabled={isProcessing} onClick={() => void handleApprove(String(row.id))}>
+                      {isProcessing ? "…" : "Approve"}
+                    </button>
+                    <button type="button" className={cx("btnSm", "btnGhost")} disabled={isProcessing} onClick={() => void handleReject(String(row.id))}>
+                      Reject
+                    </button>
                   </div>
-                )}
-                <div className={cx("flexBetween")}>
-                  <div className={cx("flex", "gap12", "text11", "colorMuted")}>
-                    <span>Submitted: {formatDate(d.createdAt)}</span>
-                    <span>Type: <strong className={cx("fontMono")}>{d.type}</strong></span>
-                    <span>Confidence: <strong className={cx("fontMono", conf >= 85 ? "colorGreen" : "colorAmber")}>{conf}%</strong></span>
-                  </div>
-                  {isPending && (
-                    <div className={cx("flex", "gap4")}>
-                      <button
-                        type="button"
-                        className={cx("btnSm", "btnAccent")}
-                        disabled={isProcessing}
-                        onClick={() => void handleApprove(d.id)}
-                      >
-                        {isProcessing ? "…" : "Approve & Send"}
-                      </button>
-                      <button
-                        type="button"
-                        className={cx("btnSm", "btnGhost")}
-                        disabled={isProcessing}
-                        onClick={() => void handleReject(d.id)}
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+                );
+              }
+              return <span className={cx("text11", "colorMuted")}>—</span>;
+            }},
+          ]}
+        />
+      </WidgetGrid>
     </div>
   );
 }
