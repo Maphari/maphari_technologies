@@ -9,6 +9,7 @@ import { cx, styles } from "../style";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { loadAdminPeerReviewsWithRefresh, type AdminPeerReview } from "../../../../lib/api/admin";
 import { saveSession } from "../../../../lib/auth/session";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function priorityBadge(dueAt: string | null): string {
@@ -81,39 +82,86 @@ export function PeerReviewQueuePage({ session }: { session: AuthSession | null }
     );
   }
 
+  const pending   = reviews.filter((r) => r.status === "PENDING").length;
+  const completed = reviews.filter((r) => r.status === "SUBMITTED").length;
+  const overdue   = reviews.filter((r) => {
+    if (r.status === "SUBMITTED") return false;
+    if (!r.dueAt) return false;
+    return new Date(r.dueAt).getTime() < Date.now();
+  }).length;
+  const avgScore = 0; // no score in current model
+
+  const weekCounts = reviews.reduce<Record<string, number>>((acc, r) => {
+    if (!r.dueAt) return acc;
+    const week = new Date(r.dueAt).toLocaleDateString("en-ZA", { month: "short", day: "numeric" });
+    acc[week] = (acc[week] ?? 0) + 1;
+    return acc;
+  }, {});
+  const chartData = Object.entries(weekCounts).slice(-6).map(([name, value]) => ({ name, value }));
+
+  const tableRows = reviews.map((r) => ({
+    id: r.id,
+    reviewerId: r.reviewerId.slice(0, 8),
+    revieweeId: r.revieweeId.slice(0, 8),
+    projectId: r.projectId ? r.projectId.slice(0, 8) : "—",
+    status: r.status,
+    dueAt: r.dueAt,
+  })) as unknown as Record<string, unknown>[];
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>GOVERNANCE / PEER REVIEW QUEUE</div>
+          <div className={styles.pageEyebrow}>LIFECYCLE / PEER REVIEW</div>
           <h1 className={styles.pageTitle}>Peer Review Queue</h1>
-          <div className={styles.pageSub}>Manage and distribute peer review assignments across the team</div>
+          <div className={styles.pageSub}>Review pipeline · Quality scores · Turnaround time</div>
         </div>
       </div>
-      <article className={styles.card}>
-        <div className={styles.cardHd}><span className={styles.cardHdTitle}>Review Requests ({reviews.length})</span></div>
-        <div className={styles.cardInner}>
-          {reviews.length === 0 ? (
-            <div className={cx("colorMuted", "text13", "py24", "textCenter")}>No peer reviews found.</div>
-          ) : (
-            <table className={styles.table}>
-              <thead><tr><th scope="col">ID</th><th scope="col">Reviewer</th><th scope="col">Reviewee</th><th scope="col">Project</th><th scope="col">Priority</th><th scope="col">Status</th></tr></thead>
-              <tbody>
-                {reviews.map((r) => (
-                  <tr key={r.id}>
-                    <td className={cx("fontMono", "text12")}>{r.id.slice(0, 8).toUpperCase()}</td>
-                    <td className={cx("fw600", "text12")}>{r.reviewerId.slice(0, 8)}…</td>
-                    <td className={cx("text12")}>{r.revieweeId.slice(0, 8)}…</td>
-                    <td className={cx("colorMuted", "text12")}>{r.projectId ? r.projectId.slice(0, 8) + "…" : "—"}</td>
-                    <td><span className={cx("badge", priorityBadge(r.dueAt))}>{priorityLabel(r.dueAt)}</span></td>
-                    <td><span className={cx("badge", statusBadge(r.status))}>{statusLabel(r.status)}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </article>
+
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Reviews Pending" value={pending} tone="amber" sparkData={[2, 3, 4, 3, 5, 4, 6, pending]} />
+        <StatWidget label="Completed This Week" value={completed} tone="green" progressValue={reviews.length > 0 ? Math.round((completed / reviews.length) * 100) : 0} />
+        <StatWidget label="Avg Score" value={avgScore > 0 ? `${avgScore}%` : "—"} sub="no score data" />
+        <StatWidget label="Overdue" value={overdue} tone={overdue > 0 ? "red" : "default"} progressValue={reviews.length > 0 ? Math.round((overdue / reviews.length) * 100) : 0} />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Reviews by Week"
+          type="bar"
+          data={chartData.length > 0 ? chartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Review Stages"
+          stages={[
+            { label: "Requested", count: pending, total: reviews.length, color: "#f5a623" },
+            { label: "In Review", count: Math.max(0, reviews.length - pending - completed), total: reviews.length, color: "#8b6fff" },
+            { label: "Completed", count: completed, total: reviews.length, color: "#34d98b" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Review Queue"
+          rows={tableRows}
+          rowKey="id"
+          emptyMessage="No peer reviews found."
+          columns={[
+            { key: "reviewerId", header: "Reviewer", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.reviewerId ?? "")}…</span> },
+            { key: "revieweeId", header: "Reviewee", render: (_v, row) => <span className={cx("colorMuted")}>{String(row.revieweeId ?? "")}…</span> },
+            { key: "projectId", header: "Project", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{String(row.projectId ?? "—")}{row.projectId !== "—" ? "…" : ""}</span> },
+            { key: "status", header: "Status", align: "right", render: (_v, row) => <span className={cx("badge", statusBadge(String(row.status ?? "")))}>{statusLabel(String(row.status ?? ""))}</span> },
+            { key: "dueAt", header: "Priority", align: "right", render: (_v, row) => <span className={cx("badge", priorityBadge(row.dueAt as string | null))}>{priorityLabel(row.dueAt as string | null)}</span> },
+          ]}
+        />
+      </WidgetGrid>
     </div>
   );
 }
