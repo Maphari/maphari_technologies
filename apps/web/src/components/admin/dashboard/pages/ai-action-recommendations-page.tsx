@@ -1,17 +1,97 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchAiRecommendations, type AiRecommendation } from "../../../../lib/api/admin/ai";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 
-export function AIActionRecommendationsPage() {
-  const { session } = useAdminWorkspaceContext();
+/** Derive operational signal recommendations from the admin snapshot. */
+function deriveSignalRecommendations(snapshot: {
+  clients: { id: string; name: string; priority: string }[];
+  invoices: { id: string; status: string; daysOverdue?: number }[];
+  projects: { id: string; name: string; status: string; riskLevel: string }[];
+}): AiRecommendation[] {
+  const recs: AiRecommendation[] = [];
 
-  const [recommendations, setRecommendations] = useState<AiRecommendation[]>([]);
+  const overdueInvoices = snapshot.invoices.filter((i) => i.status === "OVERDUE");
+  if (overdueInvoices.length > 0) {
+    recs.push({
+      id: "signal-overdue-invoices",
+      type: "Risk",
+      title: `${overdueInvoices.length} overdue invoice${overdueInvoices.length > 1 ? "s" : ""} require attention`,
+      confidence: 95,
+      estimatedValue: "—",
+      reasoning: "Overdue invoices directly impact cash flow. Chase and escalate each outstanding invoice to avoid further delay.",
+      action: "View Invoices",
+    });
+  }
+
+  const highPriorityClients = snapshot.clients.filter((c) => c.priority === "HIGH");
+  if (highPriorityClients.length > 0) {
+    recs.push({
+      id: "signal-high-priority-clients",
+      type: "Risk",
+      title: `${highPriorityClients.length} high-priority client${highPriorityClients.length > 1 ? "s" : ""} flagged`,
+      confidence: 88,
+      estimatedValue: "—",
+      reasoning: `Clients marked HIGH priority: ${highPriorityClients.slice(0, 3).map((c) => c.name).join(", ")}${highPriorityClients.length > 3 ? " and others" : ""}. Review their account health and ensure adequate support.`,
+      action: "Review Clients",
+    });
+  }
+
+  const blockedProjects = snapshot.projects.filter(
+    (p) => ["BLOCKED", "DELAYED", "ON_HOLD"].includes(p.status.toUpperCase())
+  );
+  if (blockedProjects.length > 0) {
+    recs.push({
+      id: "signal-blocked-projects",
+      type: "Efficiency",
+      title: `${blockedProjects.length} project${blockedProjects.length > 1 ? "s" : ""} blocked or stalled`,
+      confidence: 90,
+      estimatedValue: "—",
+      reasoning: `Projects currently blocked/stalled: ${blockedProjects.slice(0, 3).map((p) => p.name).join(", ")}${blockedProjects.length > 3 ? " and others" : ""}. Unblock these to restore delivery momentum.`,
+      action: "View Projects",
+    });
+  }
+
+  const highRiskProjects = snapshot.projects.filter((p) => p.riskLevel === "HIGH");
+  if (highRiskProjects.length > 0) {
+    recs.push({
+      id: "signal-high-risk-projects",
+      type: "Risk",
+      title: `${highRiskProjects.length} project${highRiskProjects.length > 1 ? "s" : ""} at high delivery risk`,
+      confidence: 85,
+      estimatedValue: "—",
+      reasoning: `High-risk projects: ${highRiskProjects.slice(0, 3).map((p) => p.name).join(", ")}${highRiskProjects.length > 3 ? " and others" : ""}. Consider resource reallocation or scope adjustment.`,
+      action: "View Projects",
+    });
+  }
+
+  return recs;
+}
+
+export function AIActionRecommendationsPage() {
+  const { session, snapshot } = useAdminWorkspaceContext();
+
+  const [apiRecommendations, setApiRecommendations] = useState<AiRecommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Derive signal-based recommendations from the snapshot
+  const signalRecommendations = useMemo(
+    () => deriveSignalRecommendations(snapshot),
+    [snapshot]
+  );
+
+  // Merge API recs + local signal recs, deduplicating by id
+  const recommendations = useMemo<AiRecommendation[]>(() => {
+    const merged = [...apiRecommendations];
+    for (const sig of signalRecommendations) {
+      if (!merged.some((r) => r.id === sig.id)) merged.push(sig);
+    }
+    return merged;
+  }, [apiRecommendations, signalRecommendations]);
 
   const load = useCallback(
     async (isRefresh = false) => {
@@ -26,7 +106,7 @@ export function AIActionRecommendationsPage() {
         if (result.error) {
           setError(result.error.message);
         } else {
-          setRecommendations(result.data ?? []);
+          setApiRecommendations(result.data ?? []);
         }
       } finally {
         setLoading(false);
