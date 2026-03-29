@@ -5,8 +5,10 @@ import {
   getProjectPreferenceWithRefresh,
   setProjectPreferenceWithRefresh,
   simulateAutomationWithRefresh,
+  loadWorkflowMetricsWithRefresh,
   type AutomationSimulateResult,
-  type NotificationJob
+  type NotificationJob,
+  type WorkflowMetric
 } from "../../../../lib/api/admin";
 import type { DashboardToast } from "../../../shared/dashboard-core";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
@@ -85,6 +87,18 @@ export function AdminAutomationPageClient({
   const [simulationRunning, setSimulationRunning] = useState(false);
   const [simulationError, setSimulationError] = useState<string | null>(null);
   const [lastSavedPhase2, setLastSavedPhase2] = useState<string | null>(null);
+  const [workflowMetrics, setWorkflowMetrics] = useState<WorkflowMetric[]>([]);
+
+  useEffect(() => {
+    if (!session) return;
+    void loadWorkflowMetricsWithRefresh(session).then((result) => {
+      if (result.data) setWorkflowMetrics(result.data);
+    });
+  }, [session]);
+
+  function getWorkflowRate(id: string): number {
+    return workflowMetrics.find((m) => m.workflowId === id)?.successRate ?? 0;
+  }
 
   const failureByChannel = [
     { channel: "EMAIL", failed: jobs.filter((j) => j.channel === "EMAIL" && j.status === "FAILED").length, total: jobs.filter((j) => j.channel === "EMAIL").length, color: "var(--blue)" },
@@ -93,10 +107,10 @@ export function AdminAutomationPageClient({
   ];
 
   const workflowStatus = [
-    { id: "billing-core", workflow: "Billing Core", domain: "billing", trigger: "Invoice due/paid", state: snapshot.invoices.length > 0 ? "ACTIVE" : "DRAFT", lastRun: latestJobAt, successRate: snapshot.invoices.length > 0 ? Math.max(70, successRate) : 0 },
-    { id: "lead-followups", workflow: "Lead Follow-ups", domain: "sales", trigger: "Lead inactivity/status", state: snapshot.leads.length > 0 ? "ACTIVE" : "DRAFT", lastRun: snapshot.leads[0]?.updatedAt ?? null, successRate: snapshot.leads.length > 0 ? 92 : 0 },
-    { id: "project-alerts", workflow: "Project Alerts", domain: "delivery", trigger: "Task/milestone overdue", state: snapshot.projects.length > 0 ? "ACTIVE" : "DRAFT", lastRun: snapshot.projects[0]?.updatedAt ?? null, successRate: snapshot.projects.length > 0 ? 88 : 0 },
-    { id: "notification-delivery", workflow: "Notification Delivery", domain: "comms", trigger: "Queue + callbacks", state: failed > 0 ? "AT_RISK" : queued > 0 || sent > 0 ? "ACTIVE" : "DRAFT", lastRun: latestJobAt, successRate }
+    { id: "billing-core", workflow: "Billing Core", domain: "billing", trigger: "Invoice due/paid", state: snapshot.invoices.length > 0 ? "ACTIVE" : "DRAFT", lastRun: latestJobAt, successRate: snapshot.invoices.length > 0 ? (getWorkflowRate("billing-core") || Math.max(70, successRate)) : 0 },
+    { id: "lead-followups", workflow: "Lead Follow-ups", domain: "sales", trigger: "Lead inactivity/status", state: snapshot.leads.length > 0 ? "ACTIVE" : "DRAFT", lastRun: snapshot.leads[0]?.updatedAt ?? null, successRate: snapshot.leads.length > 0 ? getWorkflowRate("lead-followups") : 0 },
+    { id: "project-alerts", workflow: "Project Alerts", domain: "delivery", trigger: "Task/milestone overdue", state: snapshot.projects.length > 0 ? "ACTIVE" : "DRAFT", lastRun: snapshot.projects[0]?.updatedAt ?? null, successRate: snapshot.projects.length > 0 ? getWorkflowRate("project-alerts") : 0 },
+    { id: "notification-delivery", workflow: "Notification Delivery", domain: "comms", trigger: "Queue + callbacks", state: failed > 0 ? "AT_RISK" : queued > 0 || sent > 0 ? "ACTIVE" : "DRAFT", lastRun: latestJobAt, successRate: getWorkflowRate("notification-delivery") || successRate }
   ] as const;
 
   const filteredWorkflows = workflowStatus

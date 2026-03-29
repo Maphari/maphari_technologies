@@ -140,6 +140,9 @@ import { registerHrRoutes } from "./routes/hr.js";
 // ── Brand Control: Email Templates & Custom Domains ───────────────────────
 import { registerBrandRoutes } from "./routes/brand.js";
 
+// ── Automation Job Metrics ─────────────────────────────────────────────────
+import { registerAutomationMetricRoutes } from "./routes/automation-metrics.js";
+
 // ── Standup Crons ──────────────────────────────────────────────────────────
 import { scheduleStandupReminder, scheduleStandupDigest } from "./cron/standup-reminder.js";
 
@@ -329,6 +332,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Brand Control: Email Templates & Custom Domains ───────────────────────
   await registerBrandRoutes(app);
+
+  // ── Automation Job Metrics ─────────────────────────────────────────────────
+  await registerAutomationMetricRoutes(app);
 
   // ── Standup Crons ──────────────────────────────────────────────────────────
   scheduleStandupReminder();
