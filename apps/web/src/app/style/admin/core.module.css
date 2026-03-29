@@ -1207,6 +1207,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 .statCard {
@@ -1258,6 +1260,8 @@
   color: var(--text);
   line-height: 1;
   margin-bottom: 4px;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 .statCardLabel {
@@ -1302,6 +1306,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 /* Fallback KPI color hierarchy for top stat containers across pages.

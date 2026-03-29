@@ -391,6 +391,8 @@
   font-size: 2rem;
   color: var(--accent);
   margin-bottom: 4px;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 .pricTierGrid {
@@ -447,6 +449,8 @@
   font-weight: 800;
   font-size: 1.8rem;
   color: var(--text);
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 .pricTierSub {

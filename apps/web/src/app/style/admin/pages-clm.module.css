@@ -42,6 +42,8 @@
   line-height: 1;
   letter-spacing: -0.02em;
   margin-bottom: 6px;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 .clmKpiValue.toneAccent { color: var(--accent); }
 .clmKpiValue.toneBlue   { color: var(--blue);   }
@@ -89,6 +91,8 @@
   font-weight: 800;
   line-height: 1;
   margin-bottom: 4px;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 .clmStatusTilePct {
   font-family: var(--font-dm-mono), monospace;

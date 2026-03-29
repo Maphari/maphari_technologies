@@ -127,6 +127,8 @@
 
 .healthIntvMetricVal {
   font-size: 1.25rem;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 .healthIntvFlex1 {
@@ -475,6 +477,8 @@
   font-weight: 800;
   color: var(--amber);
   margin-bottom: 8px;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 .lglScoreFill {
@@ -646,6 +650,8 @@
 
 .msgValue24 {
   font-size: 1.5rem;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 /* ── KPI grid (redesigned) ── */
@@ -684,6 +690,8 @@
   letter-spacing: -0.02em;
   line-height: 1;
   margin-bottom: 6px;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 .msgKpiValue.toneAccent { color: var(--accent); }
 .msgKpiValue.toneBlue   { color: var(--blue);   }
