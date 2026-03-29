@@ -76,7 +76,7 @@ export function resolveCurrency(options: {
     currencyFromCountry(options.countryCode ?? inferCountryFromLocale(options.locale));
   if (countryCurrency) return countryCurrency;
 
-  return normalizeCurrencyCode(options.fallback) ?? "USD";
+  return normalizeCurrencyCode(options.fallback) ?? "ZAR";
 }
 
 export function formatMoneyCents(
