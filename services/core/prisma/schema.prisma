@@ -532,9 +532,9 @@ model IntegrationProvider {
   label                String
   description          String
   category             String
-  kind                 String
+  kind                 String   @default("assisted")
   availabilityStatus   String   @default("active")
-  iconKey              String
+  iconKey              String   @default("")
   isClientVisible      Boolean  @default(true)
   isRequestEnabled     Boolean  @default(false)
   supportsDisconnect   Boolean  @default(false)
