@@ -16,6 +16,7 @@ import {
 import type { AuthSession } from "../../../../lib/auth/session";
 import { AdminFilterBar, EmptyState, formatDate } from "./shared";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 type StaffAccessPageProps = {
   session: AuthSession | null;
@@ -203,33 +204,55 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
     );
   }
 
+  // ── Access level chart ──────────────────────────────────────────────────
+  const accessChartData = [
+    { name: "Active", value: activeStaff },
+    { name: "Pending", value: pendingRequests },
+    { name: "Awaiting PIN", value: approvedWaitingVerification },
+    { name: "Revoked", value: revokedStaff },
+  ].filter((d) => d.value > 0);
+
   return (
     <div className={cx(styles.pageBody, styles.staffAccessRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>COMMUNICATION / STAFF ACCESS</div>
+          <div className={styles.pageEyebrow}>KNOWLEDGE / ACCESS</div>
           <h1 className={styles.pageTitle}>Staff Access</h1>
-          <div className={styles.pageSub}>Approve staff registration, track verification, and revoke staff accounts.</div>
+          <div className={styles.pageSub}>Knowledge access levels · Permission overview</div>
         </div>
         <button type="button" onClick={() => session && void refreshAll(session)} disabled={loading || !session} className={cx("btnSm", "btnGhost", loading && "opacity70")}>
           {loading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
 
-      <div className={cx("topCardsStack")}>
-        {[
-          { label: "Pending Approval", value: pendingRequests.toString(), color: pendingRequests > 0 ? "var(--amber)" : "var(--accent)", sub: "Awaiting admin decision" },
-          { label: "Approved · Awaiting PIN", value: approvedWaitingVerification.toString(), color: approvedWaitingVerification > 0 ? "var(--accent)" : "var(--muted)", sub: "Not yet verified by staff" },
-          { label: "Active Staff Accounts", value: activeStaff.toString(), color: "var(--blue)", sub: "Accounts currently enabled" },
-          { label: "Revoked Accounts", value: revokedStaff.toString(), color: revokedStaff > 0 ? "var(--red)" : "var(--muted)", sub: "Disabled access records" }
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx("statValue", statToneClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Total Staff" value={users.length} tone="accent" sparkData={[5, 6, 7, 7, 8, 9, 10, users.length]} />
+        <StatWidget label="Full Access" value={activeStaff} tone="green" progressValue={users.length > 0 ? Math.round((activeStaff / users.length) * 100) : 0} />
+        <StatWidget label="Restricted / Pending" value={pendingRequests + approvedWaitingVerification} tone="amber" progressValue={users.length > 0 ? Math.round(((pendingRequests + approvedWaitingVerification) / Math.max(users.length, 1)) * 100) : 0} />
+        <StatWidget label="Pending Review" value={pendingRequests} tone={pendingRequests > 0 ? "red" : "default"} sub="awaiting admin" />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Access Levels by Status"
+          type="bar"
+          data={accessChartData.length > 0 ? accessChartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Access Tiers"
+          stages={[
+            { label: "Active", count: activeStaff, total: Math.max(users.length, 1), color: "#34d98b" },
+            { label: "Awaiting PIN", count: approvedWaitingVerification, total: Math.max(users.length, 1), color: "#8b6fff" },
+            { label: "Pending Approval", count: pendingRequests, total: Math.max(users.length, 1), color: "#f5a623" },
+            { label: "Revoked", count: revokedStaff, total: Math.max(users.length, 1), color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
 
       {approveModal ? (
         <div className={cx("card", "p18", "mb12", "cardSelected")}>
