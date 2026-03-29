@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { AdminFilterBar } from "./shared";
 import { colorClass } from "./admin-page-utils";
+import type { AdminProject, AdminClient } from "../../../../lib/api/admin/types";
 
 type ProjectStatus = "on-track" | "at-risk" | "off-track" | "complete";
 type Tab = "board" | "list" | "health map";
 type StatusFilter = "All" | "on-track" | "at-risk" | "off-track";
 
-const projects: Array<{
+interface PortfolioProject {
   id: string;
   client: string;
   clientColor: string;
@@ -33,7 +35,93 @@ const projects: Array<{
   tasksOverdue: number;
   health: number;
   lastUpdate: string;
-}> = [];
+}
+
+function clientColorForId(id: string): string {
+  const palette = [
+    "var(--accent)", "var(--blue)", "var(--purple)",
+    "var(--amber)", "var(--muted)", "var(--red)"
+  ];
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return palette[h % palette.length];
+}
+
+function deriveStatus(project: AdminProject): ProjectStatus {
+  const s = project.status.toUpperCase();
+  if (["COMPLETED", "DONE"].includes(s)) return "complete";
+  if (["BLOCKED", "DELAYED", "CANCELLED", "ON_HOLD"].includes(s)) return "off-track";
+  if (project.riskLevel === "HIGH" || s === "REVIEW") return "at-risk";
+  return "on-track";
+}
+
+function deriveDaysLeft(dueAt: string | null): number {
+  if (!dueAt) return 99;
+  return Math.ceil((new Date(dueAt).getTime() - Date.now()) / 86400000);
+}
+
+function deriveHealth(project: AdminProject): number {
+  const daysLeft = deriveDaysLeft(project.dueAt);
+  let score = 70 + Math.min(20, Math.round(project.progressPercent / 5));
+  if (project.riskLevel === "HIGH") score -= 24;
+  else if (project.riskLevel === "MEDIUM") score -= 10;
+  if (daysLeft < 0) score -= 15;
+  else if (daysLeft < 7) score -= 8;
+  return Math.max(0, Math.min(100, score));
+}
+
+function derivePhase(progressPercent: number): string {
+  if (progressPercent < 15) return "Discovery";
+  if (progressPercent < 30) return "Strategy";
+  if (progressPercent < 50) return "Design";
+  if (progressPercent < 70) return "Execution";
+  if (progressPercent < 85) return "Review";
+  if (progressPercent < 100) return "Final Review";
+  return "Complete";
+}
+
+function mapToPortfolio(project: AdminProject, client: AdminClient | undefined): PortfolioProject {
+  const status = deriveStatus(project);
+  const daysLeft = deriveDaysLeft(project.dueAt);
+  const budgetCents = project.budgetCents;
+  // Estimate spend from progress (no spend field in AdminProject)
+  const spentCents = Math.round(budgetCents * project.progressPercent / 100);
+  const spentPct = budgetCents > 0 ? Math.round((spentCents / budgetCents) * 100) : 0;
+  const clientColor = clientColorForId(client?.id ?? project.clientId);
+  const clientName = client?.name ?? "Unknown";
+  const initials = clientName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+  const ownerName = project.ownerName ?? "Unassigned";
+  const ownerInitials = ownerName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+  const fmtDate = (v: string | null) => {
+    if (!v) return "—";
+    return new Intl.DateTimeFormat("en-ZA", { month: "short", day: "2-digit" }).format(new Date(v));
+  };
+  return {
+    id: project.id,
+    client: clientName,
+    clientColor,
+    clientAvatar: initials,
+    name: project.name,
+    type: project.description ? project.description.split(" ").slice(0, 3).join(" ") : "Project",
+    status,
+    phase: derivePhase(project.progressPercent),
+    completion: project.progressPercent,
+    owner: ownerName,
+    ownerAvatar: ownerInitials,
+    startDate: fmtDate(project.startAt),
+    dueDate: fmtDate(project.dueAt),
+    daysLeft,
+    budget: Math.round(budgetCents / 100),
+    spent: Math.round(spentCents / 100),
+    spentPct,
+    blockers: project.riskLevel === "HIGH" ? ["High risk flag"] : [],
+    tasksTotal: 0,
+    tasksDone: Math.round(project.progressPercent / 10),
+    tasksOverdue: 0,
+    health: deriveHealth(project),
+    lastUpdate: fmtDate(project.updatedAt),
+  };
+}
 
 const statusConfig: Record<ProjectStatus, { color: string; label: string }> = {
   "on-track": { color: "var(--accent)", label: "On Track" },
@@ -123,9 +211,17 @@ function Avatar({ initials, color, size = 30 }: { initials: string; color: strin
 const tabs: Tab[] = ["board", "list", "health map"];
 
 export function ProjectPortfolioPage() {
+  const { snapshot } = useAdminWorkspaceContext();
   const [activeTab, setActiveTab] = useState<Tab>("board");
   const [filterStatus, setFilterStatus] = useState<StatusFilter>("All");
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  const projects = useMemo<PortfolioProject[]>(() => {
+    return snapshot.projects.map((p) => {
+      const client = snapshot.clients.find((c) => c.id === p.clientId);
+      return mapToPortfolio(p, client);
+    });
+  }, [snapshot.projects, snapshot.clients]);
 
   const filtered = filterStatus === "All" ? projects : projects.filter((p) => p.status === filterStatus);
   const atRisk = projects.filter((p) => p.status === "at-risk" || p.status === "off-track").length;
