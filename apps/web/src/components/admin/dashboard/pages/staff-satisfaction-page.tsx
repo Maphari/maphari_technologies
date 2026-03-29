@@ -4,6 +4,7 @@ import { useState } from "react";
 import { cx, styles } from "../style";
 import { AdminTabs } from "./shared";
 import { colorClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 type Sentiment = "positive" | "neutral" | "negative";
 
@@ -51,50 +52,39 @@ function sentimentCardClass(sentiment: Sentiment): string {
 export function StaffSatisfactionPage() {
   const [activeTab, setActiveTab] = useState<Tab>("latest pulse");
 
-  if (pulseResults.length === 0) {
-    return (
-      <div className={cx(styles.pageBody, styles.sstRoot)}>
-        <div className={styles.pageHeader}>
-          <div>
-            <div className={styles.pageEyebrow}>COMMUNICATION / STAFF SATISFACTION</div>
-            <h1 className={styles.pageTitle}>Staff Satisfaction</h1>
-            <div className={styles.pageSub}>Monthly pulse surveys, eNPS, trends, and anonymous feedback</div>
-          </div>
-          <div className={styles.sstHeadActions}>
-            <button type="button" className={cx("btnSm", "btnAccent")}>Send Pulse Survey</button>
-          </div>
-        </div>
-        <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <rect x="3" y="12" width="4" height="9" rx="1" />
-              <rect x="10" y="7" width="4" height="14" rx="1" />
-              <rect x="17" y="3" width="4" height="18" rx="1" />
-            </svg>
-          </div>
-          <div className={styles.emptyStateHeading}>No pulse survey results yet</div>
-          <div className={styles.emptyStateSub}>Send your first pulse survey to start collecting staff satisfaction data.</div>
-        </div>
-      </div>
-    );
-  }
+  const latest = pulseResults[0] ?? null;
+  const prev   = pulseResults[1] ?? null;
+  const categories = latest ? Object.keys(latest.scores) : [];
 
-  const latest = pulseResults[0];
-  const prev = pulseResults[1];
-  const categories = Object.keys(latest.scores);
+  const responseRate  = latest ? Math.round((latest.responses / latest.total) * 100) : 0;
+  const avgScore      = latest && categories.length > 0
+    ? (Object.values(latest.scores).reduce((s, v) => s + v, 0) / categories.length).toFixed(1)
+    : "0";
+  const lowestCategory  = latest && categories.length > 0 ? categories.reduce((a, b) => (latest.scores[a] < latest.scores[b] ? a : b)) : "—";
+  const highestCategory = latest && categories.length > 0 ? categories.reduce((a, b) => (latest.scores[a] > latest.scores[b] ? a : b)) : "—";
 
-  const responseRate = Math.round((latest.responses / latest.total) * 100);
-  const avgScore = (Object.values(latest.scores).reduce((s, v) => s + v, 0) / categories.length).toFixed(1);
-  const lowestCategory = categories.reduce((a, b) => (latest.scores[a] < latest.scores[b] ? a : b));
-  const highestCategory = categories.reduce((a, b) => (latest.scores[a] > latest.scores[b] ? a : b));
+  const scoreChartData = categories.map(cat => ({ label: cat.split(" ")[0] ?? cat, count: latest?.scores[cat] ?? 0 }));
+
+  const sentimentCounts = {
+    positive: latest?.openFeedback.filter(f => f.sentiment === "positive").length ?? 0,
+    neutral:  latest?.openFeedback.filter(f => f.sentiment === "neutral").length  ?? 0,
+    negative: latest?.openFeedback.filter(f => f.sentiment === "negative").length ?? 0,
+  };
+
+  const tableRows = pulseResults.map(r => ({
+    month:        r.month,
+    enps:         r.enps,
+    responses:    `${r.responses}/${r.total}`,
+    avgScore:     (Object.values(r.scores).reduce((s, v) => s + v, 0) / Math.max(Object.keys(r.scores).length, 1)).toFixed(1),
+  }));
 
   return (
     <div className={cx(styles.pageBody, styles.sstRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>COMMUNICATION / STAFF SATISFACTION</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / STAFF SATISFACTION</div>
           <h1 className={styles.pageTitle}>Staff Satisfaction</h1>
-          <div className={styles.pageSub}>Monthly pulse surveys, eNPS, trends, and anonymous feedback</div>
+          <div className={styles.pageSub}>Monthly pulse surveys · eNPS · Trends · Anonymous feedback</div>
         </div>
         <div className={styles.sstHeadActions}>
           <button type="button" className={cx("btnSm", "btnGhost")}>View Results</button>
@@ -102,20 +92,48 @@ export function StaffSatisfactionPage() {
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16") }>
-        {[
-          { label: "eNPS (Feb 2026)", value: latest.enps.toString(), color: eNPSColor(latest.enps), sub: `${latest.enps > prev.enps ? "▲" : "▼"} ${Math.abs(latest.enps - prev.enps)} vs Jan` },
-          { label: "Response Rate", value: `${responseRate}%`, color: responseRate >= 80 ? "var(--accent)" : "var(--amber)", sub: `${latest.responses}/${latest.total} staff responded` },
-          { label: "Avg Score (Feb)", value: `${avgScore}/10`, color: parseFloat(avgScore) >= 7.5 ? "var(--accent)" : "var(--amber)", sub: "Across all categories" },
-          { label: "Lowest Category", value: lowestCategory.split(" ")[0], color: "var(--red)", sub: `${latest.scores[lowestCategory]}/10 - needs attention` }
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="eNPS Score" value={latest?.enps ?? "—"} sub={latest && prev ? `${latest.enps > prev.enps ? "▲" : "▼"} vs last month` : "No data yet"} tone={latest && latest.enps >= 50 ? "green" : latest && latest.enps >= 30 ? "default" : "amber"} />
+        <StatWidget label="Response Rate" value={latest ? `${responseRate}%` : "—"} sub={latest ? `${latest.responses}/${latest.total} staff` : "No surveys sent"} tone={responseRate >= 80 ? "green" : responseRate > 0 ? "amber" : "default"} />
+        <StatWidget label="Avg Score" value={latest ? `${avgScore}/10` : "—"} sub="Across all categories" tone={parseFloat(avgScore) >= 7.5 ? "green" : parseFloat(avgScore) > 0 ? "amber" : "default"} />
+        <StatWidget label="Surveys Completed" value={pulseResults.length} sub="Historical results" tone="default" />
+      </WidgetGrid>
+
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Category Scores"
+          data={scoreChartData.length > 0 ? scoreChartData : [{ label: "No data", count: 0 }]}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Feedback Sentiment"
+          stages={[
+            { label: "Positive", count: sentimentCounts.positive, total: Math.max(latest?.openFeedback.length ?? 0, 1), color: "#34d98b" },
+            { label: "Neutral",  count: sentimentCounts.neutral,  total: Math.max(latest?.openFeedback.length ?? 0, 1), color: "#8b6fff" },
+            { label: "Negative", count: sentimentCounts.negative, total: Math.max(latest?.openFeedback.length ?? 0, 1), color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Survey History"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "month",     header: "Month" },
+            { key: "enps",      header: "eNPS",      align: "right" },
+            { key: "responses", header: "Responses", align: "right" },
+            { key: "avgScore",  header: "Avg Score", align: "right" },
+          ]}
+          emptyMessage="No pulse survey results yet"
+        />
+      </WidgetGrid>
 
       <AdminTabs
         tabs={tabs}
@@ -128,14 +146,14 @@ export function StaffSatisfactionPage() {
       />
 
       <div className={cx("overflowAuto", "minH0")}>
-        {activeTab === "latest pulse" ? (
+        {activeTab === "latest pulse" && latest ? (
           <div className={styles.sstLatestSplit}>
             <div>
-              <div className={styles.sstSectionTitle}>February 2026 - Category Scores</div>
+              <div className={styles.sstSectionTitle}>{latest.month} - Category Scores</div>
               <div className={styles.sstScoreList}>
                 {categories.map((cat) => {
-                  const score = latest.scores[cat];
-                  const prevScore = prev.scores[cat];
+                  const score = latest.scores[cat] ?? 0;
+                  const prevScore = prev?.scores[cat] ?? score;
                   const delta = Number((score - prevScore).toFixed(1));
                   const color = scoreColor(score);
                   return (
@@ -187,22 +205,22 @@ export function StaffSatisfactionPage() {
                 <div className={styles.sstStrongBlock}>
                   <div className={styles.sstStrongLabel}>Strongest</div>
                   <div className={styles.sstStrongName}>{highestCategory}</div>
-                  <div className={styles.sstStrongVal}>{latest.scores[highestCategory]}/10</div>
+                  <div className={styles.sstStrongVal}>{latest.scores[highestCategory] ?? "—"}/10</div>
                 </div>
                 <div className={styles.sstWeakBlock}>
                   <div className={styles.sstWeakLabel}>Weakest</div>
                   <div className={styles.sstStrongName}>{lowestCategory}</div>
-                  <div className={styles.sstWeakVal}>{latest.scores[lowestCategory]}/10</div>
+                  <div className={styles.sstWeakVal}>{latest.scores[lowestCategory] ?? "—"}/10</div>
                 </div>
               </div>
             </div>
           </div>
         ) : null}
 
-        {activeTab === "trends" ? (
+        {activeTab === "trends" && latest ? (
           <div className={styles.sstTrendStack}>
             {categories.map((cat) => {
-              const dataPoints = pulseResults.map((r) => ({ month: r.month.slice(0, 3), score: r.scores[cat] })).reverse();
+              const dataPoints = pulseResults.map((r) => ({ month: r.month.slice(0, 3), score: r.scores[cat] ?? 0 })).reverse();
               return (
                 <div key={cat} className={styles.sstTrendCard}>
                   <span className={styles.sstCatName}>{cat}</span>
@@ -221,7 +239,7 @@ export function StaffSatisfactionPage() {
                     })}
                   </div>
                   <div className={styles.sstTrendValueWrap}>
-                    <div className={cx(styles.sstTrendValue, colorClass(scoreColor(latest.scores[cat])))}>{latest.scores[cat]}</div>
+                    <div className={cx(styles.sstTrendValue, colorClass(scoreColor(latest.scores[cat] ?? 0)))}>{latest.scores[cat] ?? 0}</div>
                     <div className={styles.sstMonth}>Feb</div>
                   </div>
                 </div>
@@ -230,7 +248,7 @@ export function StaffSatisfactionPage() {
           </div>
         ) : null}
 
-        {activeTab === "feedback themes" ? (
+        {activeTab === "feedback themes" && latest ? (
           <div>
             <div className={styles.sstAnonNotice}>
               All responses are anonymous. Themes are synthesized by category. Individual responses cannot be attributed.
