@@ -2227,28 +2227,6 @@
    SETTINGS — Security / 2FA
    ══════════════════════════════════════════════════════════════════════════════ */
 
-.stgv2SecurityRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
-}
-
-.stgv2SecurityRowInfo { display: flex; flex-direction: column; gap: 3px; }
-
-.stgv2SecurityRowLabel {
-  font-family: var(--font-syne), sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.stgv2SecurityRowSub {
-  font-size: 11px;
-  color: var(--muted);
-}
-
 .stgv2BtnDanger {
   padding: 7px 14px;
   background: transparent;
