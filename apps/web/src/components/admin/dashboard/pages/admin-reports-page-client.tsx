@@ -193,7 +193,7 @@ export function AdminReportsPageClient({
 
       <WidgetGrid columns={2}>
         <PipelineWidget
-          title="Pack Types Available"
+          label="Pack Types Available"
           stages={[
             { label: "Finance",    count: reportPacks.filter((p) => p.type === "finance").length,    total: reportPacks.length || 1, color: "#8b6fff" },
             { label: "Delivery",   count: reportPacks.filter((p) => p.type === "delivery").length,   total: reportPacks.length || 1, color: "#34d98b" },
@@ -201,7 +201,7 @@ export function AdminReportsPageClient({
           ]}
         />
         <PipelineWidget
-          title="Data Availability"
+          label="Data Availability"
           stages={[
             { label: "Invoices",  count: snapshot.invoices.length,  total: Math.max(snapshot.invoices.length, snapshot.projects.length) || 1, color: "#8b6fff" },
             { label: "Projects",  count: snapshot.projects.length,  total: Math.max(snapshot.invoices.length, snapshot.projects.length) || 1, color: "#34d98b" },

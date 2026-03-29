@@ -200,7 +200,7 @@ export function ContractRenewalPage() {
 
       <WidgetGrid columns={2}>
         <PipelineWidget
-          title="Contract Status Breakdown"
+          label="Contract Status Breakdown"
           stages={[
             { label: "Healthy (>60d)", count: kpis.activeHealthy,      total: kpis.total || 1, color: "#34d98b" },
             { label: "Due This Month", count: kpis.expiringThisMonth,  total: kpis.total || 1, color: "#f5a623" },
@@ -208,12 +208,12 @@ export function ContractRenewalPage() {
           ]}
         />
         <TableWidget
-          title="Soonest Expiring Contracts"
+          label="Soonest Expiring Contracts"
           columns={[
-            { key: "type",   label: "Type",   width: 60 },
-            { key: "client", label: "Client" },
-            { key: "expiry", label: "Expiry" },
-            { key: "status", label: "Status" },
+            { key: "type",   header: "Type" },
+            { key: "client", header: "Client" },
+            { key: "expiry", header: "Expiry" },
+            { key: "status", header: "Status" },
           ]}
           rows={sortByExpiry(contracts).slice(0, 10).filter((c) => c.expiresAt).map((c) => ({
             type:   c.type,

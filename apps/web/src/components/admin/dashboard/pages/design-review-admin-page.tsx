@@ -129,16 +129,14 @@ export function DesignReviewAdminPage({ session }: { session: AuthSession | null
         <StatWidget label="Total"          value={reviews.length} sub="All submissions"  tone="default" />
       </WidgetGrid>
 
-      <WidgetGrid columns={1}>
-        <PipelineWidget
-          title="Review Stage Breakdown"
+      <PipelineWidget
+          label="Review Stage Breakdown"
           stages={[
             { label: "Pending",   count: pendingCount,   total: reviews.length || 1, color: "#f5a623" },
             { label: "In Review", count: inReviewCount,  total: reviews.length || 1, color: "#8b6fff" },
             { label: "Resolved",  count: resolvedCount,  total: reviews.length || 1, color: "#34d98b" },
           ]}
         />
-      </WidgetGrid>
 
       {/* ── Tab bar ── */}
       <div className={styles.teamFilters}>

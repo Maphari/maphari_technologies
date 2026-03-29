@@ -194,9 +194,8 @@ export function InvoiceChasingPage({
         <StatWidget label="Stage 14d"         value={invoices.filter((i) => i.chaseStage === "CHASE_14D").length} sub="Escalated invoices" tone={invoices.filter((i) => i.chaseStage === "CHASE_14D").length > 0 ? "red" : "green"} />
       </WidgetGrid>
 
-      <WidgetGrid columns={1}>
-        <PipelineWidget
-          title="Chase Stage Distribution"
+      <PipelineWidget
+          label="Chase Stage Distribution"
           stages={[
             { label: "None",    count: invoices.filter((i) => i.chaseStage === "NONE").length,     total: invoices.length || 1, color: "#8b6fff" },
             { label: "3-day",   count: invoices.filter((i) => i.chaseStage === "CHASE_3D").length,  total: invoices.length || 1, color: "#f5a623" },
@@ -205,7 +204,6 @@ export function InvoiceChasingPage({
             { label: "Paused",  count: invoices.filter((i) => i.chaseStage === "PAUSED").length,    total: invoices.length || 1, color: "#8b6fff" },
           ]}
         />
-      </WidgetGrid>
 
       {/* ── Summary row ────────────────────────────────────────────────────── */}
       <div className={styles.icSummaryRow}>

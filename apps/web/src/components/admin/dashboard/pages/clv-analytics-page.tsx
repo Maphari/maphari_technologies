@@ -166,8 +166,9 @@ export function CLVAnalyticsPage({ session, onNotify }: Props) {
 
       <WidgetGrid columns={2}>
         <ChartWidget
-          title="CLV by Client (Top 10)"
+          label="CLV by Client (Top 10)"
           type="bar"
+          dataKey="value"
           data={[...rows].sort((a, b) => b.clv - a.clv).slice(0, 10).map((r) => ({
             label: clientNameMap.get(r.clientId)?.slice(0, 12) ?? r.clientId.slice(0, 8),
             value: Math.round(r.clv / 100),
@@ -175,7 +176,7 @@ export function CLVAnalyticsPage({ session, onNotify }: Props) {
           color="#8b6fff"
         />
         <PipelineWidget
-          title="Churn Risk Distribution"
+          label="Churn Risk Distribution"
           stages={[
             { label: "Low (<30%)",    count: rows.filter((r) => r.churnRisk < 0.3).length,                              total: rows.length || 1, color: "#34d98b" },
             { label: "Medium (30-60%)", count: rows.filter((r) => r.churnRisk >= 0.3 && r.churnRisk < 0.6).length,    total: rows.length || 1, color: "#f5a623" },
@@ -185,12 +186,12 @@ export function CLVAnalyticsPage({ session, onNotify }: Props) {
       </WidgetGrid>
 
       <TableWidget
-        title="CLV by Client"
+        label="CLV by Client"
         columns={[
-          { key: "client",    label: "Client" },
-          { key: "clv",       label: "CLV" },
-          { key: "tenure",    label: "Tenure (mo)" },
-          { key: "churnRisk", label: "Churn Risk" },
+          { key: "client",    header: "Client" },
+          { key: "clv",       header: "CLV" },
+          { key: "tenure",    header: "Tenure (mo)" },
+          { key: "churnRisk", header: "Churn Risk" },
         ]}
         rows={[...rows].sort((a, b) => b.clv - a.clv).slice(0, 20).map((r) => ({
           client:    clientNameMap.get(r.clientId) ?? r.clientId.slice(0, 8),

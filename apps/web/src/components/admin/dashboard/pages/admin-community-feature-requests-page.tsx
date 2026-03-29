@@ -227,8 +227,8 @@ export function AdminCommunityFeatureRequestsPage({ session }: { session: AuthSe
       </WidgetGrid>
 
       <WidgetGrid columns={2}>
-        <ChartWidget title="Requests by Month" type="bar" data={byMonthChart} color="#8b6fff" />
-        <PipelineWidget title="Status Breakdown" stages={statusPipeline} />
+        <ChartWidget label="Requests by Month" type="bar" dataKey="value" data={byMonthChart} color="#8b6fff" />
+        <PipelineWidget label="Status Breakdown" stages={statusPipeline} />
       </WidgetGrid>
 
       {/* Action error banner */}

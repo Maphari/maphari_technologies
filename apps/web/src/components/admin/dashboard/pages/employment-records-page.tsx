@@ -151,9 +151,8 @@ export function EmploymentRecordsPage({ session }: { session: AuthSession | null
         <StatWidget label="Work Permits"      value={workPermits.length}      sub="Foreign nationals on staff"     tone="accent" />
       </WidgetGrid>
 
-      <WidgetGrid columns={1}>
-        <PipelineWidget
-          title="Contract Type Breakdown"
+      <PipelineWidget
+          label="Contract Type Breakdown"
           stages={[
             { label: "Permanent",  count: employees.filter((e) => e.contractType === "Permanent").length,  total: employees.length || 1, color: "#34d98b" },
             { label: "Contract",   count: employees.filter((e) => e.contractType === "Contract").length,   total: employees.length || 1, color: "#8b6fff" },
@@ -161,7 +160,6 @@ export function EmploymentRecordsPage({ session }: { session: AuthSession | null
             { label: "Other",      count: employees.filter((e) => !["Permanent","Contract","Part-time"].includes(e.contractType)).length, total: employees.length || 1, color: "#8b6fff" },
           ]}
         />
-      </WidgetGrid>
 
       <AdminTabs
         tabs={tabs}

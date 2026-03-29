@@ -150,7 +150,7 @@ export function ChangeRequestManagerPage({
 
       <WidgetGrid columns={2}>
         <PipelineWidget
-          title="Change Request Pipeline"
+          label="Change Request Pipeline"
           stages={[
             { label: "Draft",     count: draftCount,    total: items.length || 1, color: "#8b6fff" },
             { label: "Pending",   count: pendingCount,  total: items.length || 1, color: "#f5a623" },
@@ -159,12 +159,12 @@ export function ChangeRequestManagerPage({
           ]}
         />
         <TableWidget
-          title="Recent Change Requests"
+          label="Recent Change Requests"
           columns={[
-            { key: "id",     label: "ID",     width: 80 },
-            { key: "title",  label: "Title" },
-            { key: "cost",   label: "Cost" },
-            { key: "status", label: "Status" },
+            { key: "id",     header: "ID" },
+            { key: "title",  header: "Title" },
+            { key: "cost",   header: "Cost" },
+            { key: "status", header: "Status" },
           ]}
           rows={tableRows}
           emptyMessage="No change requests yet"

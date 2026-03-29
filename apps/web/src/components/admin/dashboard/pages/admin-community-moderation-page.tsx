@@ -203,8 +203,8 @@ export function AdminCommunityModerationPage({ session }: { session: AuthSession
       </WidgetGrid>
 
       <WidgetGrid columns={2}>
-        <ChartWidget    title="Queue by Type"       type="bar" data={typeChart}    color="#8b6fff" />
-        <PipelineWidget title="Content Type Split"  stages={typePipeline} />
+        <ChartWidget    label="Queue by Type"       type="bar" dataKey="value" data={typeChart}    color="#8b6fff" />
+        <PipelineWidget label="Content Type Split"  stages={typePipeline} />
       </WidgetGrid>
 
       {/* Action error banner */}

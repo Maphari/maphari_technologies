@@ -177,13 +177,14 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
 
       <WidgetGrid columns={2}>
         <ChartWidget
-          title="Capacity vs Demand by Period"
+          label="Capacity vs Demand by Period"
           type="bar"
+          dataKey="value"
           data={forecast.periods.map((p: ForecastPeriod) => ({ label: p.label, value: p.utilizationRate }))}
           color="#8b6fff"
         />
         <PipelineWidget
-          title="Staff Load Distribution"
+          label="Staff Load Distribution"
           stages={[
             { label: "Balanced (≤75%)",    count: forecast.staffForecast.filter((s: StaffForecast) => s.availableHours30d > 0 && Math.round((s.allocatedHours30d / s.availableHours30d) * 100) <= 75).length,  total: forecast.staffForecast.length || 1, color: "#34d98b" },
             { label: "Near Capacity (>75%)", count: forecast.staffForecast.filter((s: StaffForecast) => s.availableHours30d > 0 && Math.round((s.allocatedHours30d / s.availableHours30d) * 100) > 75 && Math.round((s.allocatedHours30d / s.availableHours30d) * 100) <= 100).length, total: forecast.staffForecast.length || 1, color: "#f5a623" },

@@ -251,8 +251,8 @@ export function AdminAuditPageClient() {
       </WidgetGrid>
 
       <WidgetGrid columns={2}>
-        <ChartWidget title="Events by Day (Last 7d)" type="bar" data={eventsByDayChart} color="#8b6fff" />
-        <PipelineWidget title="Events by Domain" stages={domainPipeline} />
+        <ChartWidget label="Events by Day (Last 7d)" type="bar" dataKey="value" data={eventsByDayChart} color="#8b6fff" />
+        <PipelineWidget label="Events by Domain" stages={domainPipeline} />
       </WidgetGrid>
 
       <div className={styles.filterRow}>

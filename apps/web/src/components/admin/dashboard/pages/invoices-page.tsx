@@ -523,9 +523,8 @@ export function InvoicesPage({
         <StatWidget label="Overdue"        value={overdue.length} sub={overdue.length > 0 ? `${formatMoneyCents(overdue.reduce((s, i) => s + i.amountCents, 0), { currency: overdue[0]?.currency, maximumFractionDigits: 0 })} at risk` : "All current"} tone={overdue.length > 0 ? "red" : "green"} />
       </WidgetGrid>
 
-      <WidgetGrid columns={1}>
-        <PipelineWidget
-          title="Invoice Status Breakdown"
+      <PipelineWidget
+          label="Invoice Status Breakdown"
           stages={[
             { label: "Paid",      count: paid.length,    total: invoices.length || 1, color: "#34d98b" },
             { label: "Issued",    count: issued.length,  total: invoices.length || 1, color: "#8b6fff" },
@@ -533,7 +532,6 @@ export function InvoicesPage({
             { label: "Draft",     count: invoices.filter((i) => i.status === "DRAFT").length, total: invoices.length || 1, color: "#f5a623" },
           ]}
         />
-      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select

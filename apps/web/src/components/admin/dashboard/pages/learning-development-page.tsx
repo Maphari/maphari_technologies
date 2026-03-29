@@ -265,16 +265,14 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
         <StatWidget label="Zero L&D Spend"      value={staff.filter((m) => m.ldSpent === 0).length} sub="Budget not yet used" tone={staff.filter((m) => m.ldSpent === 0).length > 0 ? "amber" : "green"} />
       </WidgetGrid>
 
-      <WidgetGrid columns={1}>
-        <PipelineWidget
-          title="Course Status Breakdown"
+      <PipelineWidget
+          label="Course Status Breakdown"
           stages={[
             { label: "Completed",   count: completed,  total: allCourses.length || 1, color: "#34d98b" },
             { label: "In Progress", count: inProgress, total: allCourses.length || 1, color: "#8b6fff" },
             { label: "Planned",     count: allCourses.filter((c) => c.status === "planned").length, total: allCourses.length || 1, color: "#f5a623" },
           ]}
         />
-      </WidgetGrid>
 
       <AdminTabs
         tabs={tabs}

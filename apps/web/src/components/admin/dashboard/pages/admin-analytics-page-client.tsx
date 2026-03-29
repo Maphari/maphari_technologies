@@ -384,29 +384,30 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
 
       <WidgetGrid columns={2}>
         <ChartWidget
-          title="Revenue by Month"
+          label="Revenue by Month"
           type="bar"
+          dataKey="value"
           data={revenueChartData}
           color="#8b6fff"
         />
         <PipelineWidget
-          title="Lead Conversion Funnel"
+          label="Lead Conversion Funnel"
           stages={leadFunnelStages}
         />
       </WidgetGrid>
 
       <WidgetGrid columns={2}>
         <PipelineWidget
-          title="Project Status Breakdown"
+          label="Project Status Breakdown"
           stages={projectStagesPipeline}
         />
         <TableWidget
-          title="Top Clients by Revenue"
+          label="Top Clients by Revenue"
           columns={[
-            { key: "rank", label: "#", width: 40 },
-            { key: "client", label: "Client" },
-            { key: "revenue", label: "Revenue" },
-            { key: "share", label: "Share" },
+            { key: "rank", header: "#" },
+            { key: "client", header: "Client" },
+            { key: "revenue", header: "Revenue" },
+            { key: "share", header: "Share" },
           ]}
           rows={topClientsRows}
           emptyMessage="No paid invoices yet"

@@ -93,7 +93,7 @@ export function AdminIntegrationsPageClient({
 
       <WidgetGrid columns={2}>
         <PipelineWidget
-          title="Key Risk Distribution"
+          label="Key Risk Distribution"
           stages={[
             { label: "Low Risk",    count: enrichedKeys.filter((k) => k.risk === "low").length,    total: enrichedKeys.length || 1, color: "#34d98b" },
             { label: "Medium Risk", count: enrichedKeys.filter((k) => k.risk === "medium").length, total: enrichedKeys.length || 1, color: "#f5a623" },
@@ -101,7 +101,7 @@ export function AdminIntegrationsPageClient({
           ]}
         />
         <PipelineWidget
-          title="Key Scope Breakdown"
+          label="Key Scope Breakdown"
           stages={[
             { label: "Client-Bound", count: clientBoundKeys, total: enrichedKeys.length || 1, color: "#8b6fff" },
             { label: "Global",       count: globalKeys,      total: enrichedKeys.length || 1, color: "#f5a623" },

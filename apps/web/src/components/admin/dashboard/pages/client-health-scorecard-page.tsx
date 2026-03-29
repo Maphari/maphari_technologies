@@ -276,16 +276,14 @@ export function ClientHealthScorecardPage({ session }: { session: AuthSession | 
         />
       </WidgetGrid>
 
-      <WidgetGrid columns={1}>
-        <PipelineWidget
-          title="Health Tier Distribution"
+      <PipelineWidget
+          label="Health Tier Distribution"
           stages={[
             { label: "Healthy (70+)",   count: scorecardData.filter((c) => calcHealthScore(c.dimensions) >= 70).length, total: scorecardData.length || 1, color: "#34d98b" },
             { label: "Moderate (40-69)", count: scorecardData.filter((c) => { const h = calcHealthScore(c.dimensions); return h >= 40 && h < 70; }).length, total: scorecardData.length || 1, color: "#f5a623" },
             { label: "At Risk (<40)",    count: scorecardData.filter((c) => calcHealthScore(c.dimensions) < 40).length,  total: scorecardData.length || 1, color: "#ff5f5f" },
           ]}
         />
-      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select
