@@ -121,6 +121,7 @@
   pointer-events: none;
   z-index: 9999;
   mix-blend-mode: difference;
+  opacity: 0;
 }
 
 .cursorRing {
@@ -131,6 +132,7 @@
   position: fixed;
   pointer-events: none;
   z-index: 9998;
+  opacity: 0;
 }
 
 .shell {
