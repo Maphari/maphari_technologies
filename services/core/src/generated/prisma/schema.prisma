@@ -987,30 +987,32 @@ model SupportTicket {
 }
 
 model StaffProfile {
-  id                String                  @id @default(uuid())
-  userId            String?
-  name              String
-  role              String
-  department        String?
-  avatarInitials    String?
-  avatarColor       String?
-  hireDate          DateTime?
-  contractType      String                  @default("PERMANENT")
-  grossSalaryCents  BigInt                  @default(0)
-  taxRatePct        Float                   @default(0)
-  uifRatePct        Float                   @default(0)
-  bankLast4         String?
-  isActive          Boolean                 @default(true)
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
-  leaveRequests     LeaveRequest[]
-  receivedReviews   PeerReview[]            @relation("reviewee")
-  givenReviews      PeerReview[]            @relation("reviewer")
-  recurringTasks    RecurringTask[]
-  onboardingRecords StaffOnboardingRecord[]
-  payslips          StaffPayslip[]
-  standupEntries    StandupEntry[]
-  trainingRecords   TrainingRecord[]
+  id                 String                  @id @default(uuid())
+  userId             String?
+  name               String
+  role               String
+  department         String?
+  avatarInitials     String?
+  avatarColor        String?
+  hireDate           DateTime?
+  contractType       String                  @default("PERMANENT")
+  grossSalaryCents   BigInt                  @default(0)
+  taxRatePct         Float                   @default(0)
+  uifRatePct         Float                   @default(0)
+  bankLast4          String?
+  isActive           Boolean                 @default(true)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  leaveRequests      LeaveRequest[]
+  receivedReviews    PeerReview[]            @relation("reviewee")
+  givenReviews       PeerReview[]            @relation("reviewer")
+  recurringTasks     RecurringTask[]
+  onboardingRecords  StaffOnboardingRecord[]
+  payslips           StaffPayslip[]
+  standupEntries     StandupEntry[]
+  trainingRecords    TrainingRecord[]
+  learningBudgets    StaffLearningBudget[]
+  skillProficiencies StaffSkillProficiency[]
 
   @@index([isActive])
   @@index([department])
@@ -1487,27 +1489,28 @@ model BrandAsset {
 }
 
 model ClientContract {
-  id           String    @id @default(uuid())
-  clientId     String
-  projectId    String?
-  title        String
-  type         String    @default("CONTRACT")
-  ref          String?
-  status       String    @default("PENDING")
-  signed       Boolean   @default(false)
-  signedAt     DateTime?
-  fileId       String?
-  storageKey   String?
-  mimeType     String?
-  sizeBytes    Int?
-  notes        String?
-  sortOrder    Int       @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  signedByName String?
-  expiresAt    DateTime?
-  client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  project      Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  id               String                    @id @default(uuid())
+  clientId         String
+  projectId        String?
+  title            String
+  type             String                    @default("CONTRACT")
+  ref              String?
+  status           String                    @default("PENDING")
+  signed           Boolean                   @default(false)
+  signedAt         DateTime?
+  fileId           String?
+  storageKey       String?
+  mimeType         String?
+  sizeBytes        Int?
+  notes            String?
+  sortOrder        Int                       @default(0)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  signedByName     String?
+  expiresAt        DateTime?
+  client           Client                    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project          Project?                  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  renewalProposals ContractRenewalProposal[]
 
   @@index([clientId, type])
   @@index([clientId, status])
@@ -1954,4 +1957,162 @@ enum EftVerificationStatus {
   PENDING
   VERIFIED
   REJECTED
+}
+
+// ── Webhook Endpoints ─────────────────────────────────────────────────────────
+
+model WebhookEndpoint {
+  id          String    @id @default(uuid())
+  name        String
+  url         String
+  events      String // comma-separated topic values
+  secret      String?
+  active      Boolean   @default(true)
+  lastFiredAt DateTime?
+  failCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("webhook_endpoints")
+}
+
+// ── Admin Proposed Actions (two-admin approval workflow) ──────────────────────
+
+model AdminProposedAction {
+  id             String    @id @default(uuid())
+  proposedBy     String
+  proposedByName String?
+  action         String
+  resourceType   String
+  resourceId     String?
+  payload        String? // JSON string
+  reason         String?
+  status         String    @default("PENDING") // PENDING | APPROVED | REJECTED | EXECUTED
+  reviewedBy     String?
+  reviewedByName String?
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@map("admin_proposed_actions")
+}
+
+// ── Task 26: L&D Budget & Skill Proficiency ───────────────────────────────────
+
+model StaffLearningBudget {
+  id         String       @id @default(cuid())
+  staffId    String
+  fiscalYear Int
+  budgetZAR  Float        @default(0)
+  spentZAR   Float        @default(0)
+  staff      StaffProfile @relation(fields: [staffId], references: [id])
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@unique([staffId, fiscalYear])
+  @@map("staff_learning_budgets")
+}
+
+model StaffSkillProficiency {
+  id          String       @id @default(cuid())
+  staffId     String
+  skill       String
+  level       Int          @default(0)
+  certifiedAt DateTime?
+  staff       StaffProfile @relation(fields: [staffId], references: [id])
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([staffId, skill])
+  @@map("staff_skill_proficiencies")
+}
+
+// ── Task 27: Contract Renewal Proposals ──────────────────────────────────────
+
+model ContractRenewalProposal {
+  id            String         @id @default(cuid())
+  contractId    String
+  sentAt        DateTime       @default(now())
+  sentByAdminId String?
+  proposedTerms Json?
+  status        String         @default("SENT")
+  clientNotes   String?
+  contract      ClientContract @relation(fields: [contractId], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("contract_renewal_proposals")
+}
+
+// ── Task 28: Brand Control ────────────────────────────────────────────────────
+
+model EmailTemplate {
+  id           String   @id @default(cuid())
+  workspaceId  String   @default("default")
+  templateKey  String
+  name         String
+  subject      String   @default("")
+  bodyHtml     String   @default("")
+  status       String   @default("active")
+  sentCount    Int      @default(0)
+  lastEditedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([workspaceId, templateKey])
+  @@map("email_templates")
+}
+
+model CustomDomain {
+  id          String    @id @default(cuid())
+  workspaceId String    @default("default")
+  domain      String    @unique
+  domainType  String    @default("Client Portal")
+  status      String    @default("pending")
+  sslActive   Boolean   @default(false)
+  verified    Boolean   @default(false)
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("custom_domains")
+}
+
+// ── Task 29: Crisis Playbooks ─────────────────────────────────────────────────
+
+model CrisisEscalationLevel {
+  id          String   @id @default(cuid())
+  workspaceId String   @default("default")
+  level       Int
+  role        String
+  personLabel String
+  triggerDesc String
+  colorToken  String   @default("var(--accent)")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, level])
+  @@map("crisis_escalation_levels")
+}
+
+model CrisisPlaybook {
+  id          String         @id @default(cuid())
+  workspaceId String         @default("default")
+  name        String
+  steps       PlaybookStep[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("crisis_playbooks")
+}
+
+model PlaybookStep {
+  id         String         @id @default(cuid())
+  playbookId String
+  order      Int
+  action     String
+  playbook   CrisisPlaybook @relation(fields: [playbookId], references: [id], onDelete: Cascade)
+
+  @@map("playbook_steps")
 }
