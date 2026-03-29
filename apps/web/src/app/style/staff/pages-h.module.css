@@ -3156,6 +3156,13 @@
 
 .okrModalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 
+.formErrorMsg {
+  font-size: 0.8125rem;
+  color: var(--red);
+  font-family: var(--font-dm-mono);
+  margin-bottom: 8px;
+}
+
 @media (max-width: 900px) {
   .okrGrid { grid-template-columns: 1fr; }
 }
