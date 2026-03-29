@@ -7,8 +7,8 @@
 
 import { useEffect, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { AutomationBanner } from "../../../shared/automation-banner";
-import { colorClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -174,60 +174,60 @@ export function SupportQueuePage({
         dismissKey={`admin:sq-assign-banner:${unassignedCritical.map((t) => t.id).sort().join(",")}`}
       />
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Open Tickets",  value: String(open),       color: "var(--red)"    },
-          { label: "In Progress",   value: String(inProgress), color: "var(--amber)"  },
-          { label: "Total Tickets", value: String(tickets.length), color: "var(--accent)" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Open Tickets" value={String(open)} tone="red" sub="Needs resolution" />
+        <StatWidget label="In Progress" value={String(inProgress)} tone="amber" sub="Being worked on" />
+        <StatWidget label="Resolved" value={String(tickets.filter((t) => t.status === "RESOLVED").length)} tone="accent" sub="Closed successfully" />
+        <StatWidget label="Total Tickets" value={String(tickets.length)} sub="All time" />
+      </WidgetGrid>
 
-      <article className={styles.card}>
-        <div className={styles.cardHd}><span className={styles.cardHdTitle}>Active Tickets</span></div>
-        <div className={styles.cardInner}>
-          {tickets.length === 0 ? (
-            <div className={styles.emptyState}>
-                <div className={styles.emptyIcon}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                </div>
-                <div className={styles.emptyTitle}>No support tickets yet</div>
-                <div className={styles.emptySub}>Create a new ticket to track client issues with SLA monitoring and team assignment.</div>
-                <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setShowModal(true)}>+ New Ticket</button>
-              </div>
-          ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th scope="col">ID</th><th scope="col">Issue</th><th scope="col">Client</th><th scope="col">Priority</th>
-                  <th scope="col">SLA</th><th scope="col">Assigned</th><th scope="col">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tickets.map((t) => (
-                  <tr key={t.id}>
-                    <td className={cx("fontMono", "text12")}>{t.id.slice(0, 8).toUpperCase()}</td>
-                    <td className={cx("fw600")}>{t.title}</td>
-                    <td className={cx("colorMuted")}>{t.clientId ? t.clientId.slice(0, 8).toUpperCase() : "—"}</td>
-                    <td><span className={cx("badge", priorityBadge(t.priority))}>{fmtPriority(t.priority)}</span></td>
-                    <td className={cx("fontMono", "text12")}>{fmtSla(t.slaHours)}</td>
-                    <td className={cx("text12")}>{t.assignedTo ?? "—"}</td>
-                    <td><span className={cx("badge", statusBadge(t.status))}>{fmtStatus(t.status)}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </article>
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Tickets by Priority"
+          data={[
+            { priority: "Critical", count: tickets.filter((t) => t.priority === "CRITICAL").length },
+            { priority: "High", count: tickets.filter((t) => t.priority === "HIGH").length },
+            { priority: "Medium", count: tickets.filter((t) => t.priority === "MEDIUM").length },
+            { priority: "Low", count: tickets.filter((t) => t.priority === "LOW").length },
+          ]}
+          dataKey="count"
+          xKey="priority"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Ticket Resolution"
+          stages={[
+            { label: "Open", count: open, total: Math.max(tickets.length, 1), color: "#ff5f5f" },
+            { label: "In Progress", count: inProgress, total: Math.max(tickets.length, 1), color: "#f5a623" },
+            { label: "Resolved", count: tickets.filter((t) => t.status === "RESOLVED").length, total: Math.max(tickets.length, 1), color: "#34d98b" },
+            { label: "Closed", count: tickets.filter((t) => t.status === "CLOSED").length, total: Math.max(tickets.length, 1), color: "#8b6fff" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Tickets Table ────────────────────────────────────────────────── */}
+      <TableWidget
+        label="Active Tickets"
+        rows={tickets}
+        rowKey="id"
+        emptyMessage="No support tickets yet."
+        columns={[
+          { key: "id", header: "ID", render: (_, row) => <span className={cx("fontMono", "text12")}>{row.id.slice(0, 8).toUpperCase()}</span> },
+          { key: "title", header: "Issue", render: (_, row) => <span className={cx("fw600")}>{row.title}</span> },
+          { key: "client", header: "Client", render: (_, row) => row.clientId ? row.clientId.slice(0, 8).toUpperCase() : "—" },
+          { key: "priority", header: "Priority", render: (_, row) => (
+            <span className={cx("badge", priorityBadge(row.priority))}>{fmtPriority(row.priority)}</span>
+          )},
+          { key: "sla", header: "SLA", render: (_, row) => <span className={cx("fontMono", "text12")}>{fmtSla(row.slaHours)}</span> },
+          { key: "assigned", header: "Assigned", render: (_, row) => row.assignedTo ?? "—" },
+          { key: "status", header: "Status", render: (_, row) => (
+            <span className={cx("badge", statusBadge(row.status))}>{fmtStatus(row.status)}</span>
+          )},
+        ]}
+      />
 
       {showModal ? (
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
