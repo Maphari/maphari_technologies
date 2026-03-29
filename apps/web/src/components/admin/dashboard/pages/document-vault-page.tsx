@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import {
   loadDocumentsWithRefresh,
   createDocumentWithRefresh,
@@ -324,13 +325,26 @@ export function DocumentVaultPage({
     );
   }
 
+  const catChartData = (["CONTRACT", "BRIEF", "DELIVERABLE", "INVOICE", "ASSET", "TEMPLATE", "MISC"] as const).map(cat => ({
+    label: cat.charAt(0) + cat.slice(1).toLowerCase(),
+    count: stats.byCategory[cat] ?? 0,
+  }));
+
+  const tableRows = visibleDocs.slice(0, 50).map(doc => ({
+    name: doc.title,
+    type: doc.category,
+    client: doc.clientId ?? "—",
+    uploaded: fmtDate(doc.createdAt),
+    access: doc.status,
+  }));
+
   return (
     <div className={cx(styles.pageBody, styles.dvtRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>EXPERIENCE / DOCUMENT VAULT</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / VAULT</div>
           <h1 className={styles.pageTitle}>Document Vault</h1>
-          <div className={styles.pageSub}>Contracts · Briefs · Deliverables · Assets · Version control</div>
+          <div className={styles.pageSub}>Document inventory · Access control · Storage usage</div>
         </div>
         <div className={styles.dvtHeadActions}>
           <button
@@ -352,172 +366,54 @@ export function DocumentVaultPage({
         </div>
       </div>
 
-      {/* ── KPI cards ─────────────────────────────────────────────────── */}
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Total Documents",   value: String(total),         color: "var(--accent)", sub: total === 1 ? "1 document" : `${total} documents` },
-          { label: "Active Contracts",  value: String(contractCount), color: "var(--blue)",   sub: "All clients" },
-          { label: "In Review / Draft", value: String(reviewCount),   color: "var(--amber)",  sub: "Pending publish" },
-          { label: "Published",         value: String(activeCount),   color: isConnected ? "var(--accent)" : "var(--red)", sub: isConnected ? "Available" : "No session" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Total Documents" value={total} sub={`${total} documents`} tone="accent" />
+        <StatWidget label="Shared with Clients" value={documents.filter(d => d.clientId).length} sub="Client-linked" tone="default" />
+        <StatWidget label="Pending Review" value={reviewCount} sub="Draft status" tone={reviewCount > 0 ? "amber" : "default"} />
+        <StatWidget label="Published" value={activeCount} sub="Available" tone={activeCount > 0 ? "green" : "default"} />
+      </WidgetGrid>
 
-      {/* ── Tabs + category filter ─────────────────────────────────────── */}
-      <div className={styles.filterRow}>
-        <select
-          title="Filter by tab"
-          value={activeTab}
-          onChange={(e) => setActiveTab(e.target.value as Tab)}
-          className={styles.filterSelect}
-        >
-          {tabs.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-        {activeTab === "all documents" && (
-          <select
-            title="Filter by category"
-            value={filterCat}
-            onChange={(e) => setFilterCat(e.target.value as DocCategoryFilter)}
-            className={styles.filterSelect}
-          >
-            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        )}
-        {loading && (
-          <span className={cx("text11", "colorMuted", "mlAuto")}>
-            Loading…
-          </span>
-        )}
-      </div>
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Documents by Type"
+          data={catChartData}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Document Status"
+          stages={[
+            { label: "Published", count: activeCount, total: Math.max(total, 1), color: "#34d98b" },
+            { label: "Draft", count: reviewCount, total: Math.max(total, 1), color: "#f5a623" },
+            { label: "Archived", count: stats.byStatus["ARCHIVED"] ?? 0, total: Math.max(total, 1), color: "#8b6fff" },
+          ]}
+        />
+      </WidgetGrid>
 
-      {/* ── Document list ─────────────────────────────────────────────── */}
-      {activeTab !== "analytics" ? (
-        visibleDocs.length === 0 ? (
-          <div className={cx("card", "p32")}>
-            <div className={cx("flexCol", "gap12", styles.dvtEmptyState)}>
-              <div className={cx("text14", "fw700")}>
-                {loading ? "Loading documents…" : "No Documents"}
-              </div>
-              {!loading && (
-                <div className={cx("text13", "colorMuted")}>
-                  {!isConnected
-                    ? "Sign in to view documents."
-                    : activeTab === "contracts"
-                    ? "No contracts uploaded yet."
-                    : activeTab === "by client"
-                    ? "No client-linked documents yet."
-                    : "Upload your first document using the button above."}
-                </div>
-              )}
-              {!loading && isConnected && (
-                <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setShowUpload(true)}>
-                  + Upload Document
-                </button>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className={cx("card")}>
-            {/* Table header */}
-            <div className={styles.dvtTableHead}>
-              {["Document", "Category", "Status", "Size", "Uploaded", ""].map((h) => (
-                <span key={h} className={cx("text10", "colorMuted", "fw700", "uppercase")}>
-                  {h}
-                </span>
-              ))}
-            </div>
-
-            {/* Rows */}
-            {visibleDocs.map((doc) => (
-              <div
-                key={doc.id}
-                className={styles.dvtTableRow}
-              >
-                {/* Title + filename */}
-                <div>
-                  <div className={cx("fw600", "text12", "mb3")}>{doc.title}</div>
-                  <div className={cx("text10", "colorMuted")}>{doc.fileName}</div>
-                </div>
-
-                {/* Category badge */}
-                <span
-                  className={cx("badge", "badgeMuted", styles.dvtCatBadge, CATEGORY_CLASS_MAP[doc.category] ?? "dvtCatMuted")}
-                >
-                  {doc.category}
-                </span>
-
-                {/* Status badge */}
-                <span className={cx(
-                  "badge",
-                  doc.status === "PUBLISHED" ? "badgeGreen" :
-                  doc.status === "DRAFT"     ? "badgeAmber" : "badgeMuted"
-                )}>
-                  {doc.status.charAt(0) + doc.status.slice(1).toLowerCase()}
-                </span>
-
-                {/* Size */}
-                <span className={cx("fontMono", "text11", "colorMuted")}>{fmtBytes(doc.sizeBytes)}</span>
-
-                {/* Date */}
-                <span className={cx("text11", "colorMuted")}>{fmtDate(doc.createdAt)}</span>
-
-                {/* Archive button */}
-                <button
-                  type="button"
-                  className={cx("btnSm", "btnGhost", archivingId === doc.id && styles.dvtArchiveBusy)}
-                  disabled={archivingId === doc.id}
-                  onClick={() => { void handleArchive(doc.id); }}
-                >
-                  {archivingId === doc.id ? "…" : "Archive"}
-                </button>
-              </div>
-            ))}
-          </div>
-        )
-      ) : (
-        /* ── Analytics tab ──────────────────────────────────────── */
-        <div className={styles.dvtAnalyticsSplit}>
-          <div className={cx("card", "p24")}>
-            <div className={styles.dvtSectionTitle}>Documents by Category</div>
-            {(["CONTRACT", "BRIEF", "DELIVERABLE", "INVOICE", "ASSET", "TEMPLATE", "MISC"] as const).map((cat) => {
-              const count = stats.byCategory[cat] ?? 0;
-              const pct   = total > 0 ? Math.round((count / total) * 100) : 0;
-              return (
-                <div key={cat} className={styles.dvtBarRow}>
-                  <span className={styles.text12}>{cat.charAt(0) + cat.slice(1).toLowerCase()}</span>
-                  <div className={styles.dvtTrack120}>
-                    <progress
-                      className={cx(styles.dvtBarFillAccent, "uiProgress")}
-                      max={100}
-                      value={pct}
-                      aria-label={`${cat} ${count} documents`}
-                    />
-                  </div>
-                  <span className={cx(styles.dvtBarCount, "colorAccent")}>{count}</span>
-                </div>
-              );
-            })}
-          </div>
-          <div className={cx("card", "p24")}>
-            <div className={styles.dvtSectionTitle}>Status Distribution</div>
-            {Object.keys(stats.byStatus).length === 0 ? (
-              <div className={cx("text13", "colorMuted")}>No documents to analyse yet.</div>
-            ) : (
-              Object.entries(stats.byStatus).map(([status, count]) => (
-                <div key={status} className={styles.dvtStatusRow}>
-                  <span className={cx("text12")}>{status.charAt(0) + status.slice(1).toLowerCase()}</span>
-                  <span className={cx("fw700", "text12", "colorAccent")}>{count}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Documents"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "name", header: "Name" },
+            { key: "type", header: "Type" },
+            { key: "client", header: "Client" },
+            { key: "uploaded", header: "Uploaded", align: "right" },
+            { key: "access", header: "Access", align: "right", render: (v) => {
+              const val = v as string;
+              const cls = val === "PUBLISHED" ? cx("badge", "badgeGreen") : val === "DRAFT" ? cx("badge", "badgeAmber") : cx("badge", "badgeMuted");
+              return <span className={cls}>{val.charAt(0) + val.slice(1).toLowerCase()}</span>;
+            }},
+          ]}
+          emptyMessage="No documents found"
+          rowCount={total}
+        />
+      </WidgetGrid>
 
       {/* ── Upload Modal ─────────────────────────────────────────────── */}
       {showUpload && session && (
