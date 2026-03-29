@@ -205,6 +205,8 @@
 .lglStatusBadge {
   display: inline-flex;
   align-items: center;
+  width: fit-content;
+  justify-self: start;
   padding: 2px 10px;
   border-radius: var(--r-xs);
   font-size: 0.625rem;
@@ -1560,6 +1562,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: fit-content;
+  justify-self: start;
   padding: 2px 10px;
   border-radius: var(--r-xs);
   font-size: 0.625rem;

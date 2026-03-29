@@ -149,6 +149,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   width: fit-content;
+  justify-self: start;
   border: 1px solid transparent;
 }
 

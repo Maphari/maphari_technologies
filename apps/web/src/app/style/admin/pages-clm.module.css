@@ -199,6 +199,7 @@
 /* Status chips */
 .clmStatusChip {
   display: inline-flex; align-items: center;
+  width: fit-content; justify-self: start;
   padding: 2px 8px; border-radius: 4px;
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem; font-weight: 600;
