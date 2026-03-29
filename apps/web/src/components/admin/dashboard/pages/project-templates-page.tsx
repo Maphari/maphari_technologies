@@ -254,21 +254,21 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
       {/* Templates table */}
       <TableWidget
         label="Templates"
-        rows={templates}
+        rows={templates as unknown as Record<string, unknown>[]}
         rowKey="id"
         emptyMessage="No templates yet. Create your first project template above."
         columns={[
-          { key: "name", header: "Name", render: (_, row) => row.name },
+          { key: "name", header: "Name", render: (_, r) => { const row = r as unknown as ProjectTemplateSummary; return row.name; } },
           { key: "type", header: "Type", render: () => "Standard" },
           { key: "uses", header: "Uses", align: "right", render: () => "—" },
-          { key: "updated", header: "Created", render: (_, row) => fmtDate(row.createdAt) },
+          { key: "updated", header: "Created", render: (_, r) => { const row = r as unknown as ProjectTemplateSummary; return fmtDate(row.createdAt); } },
           { key: "status", header: "Status", render: () => <span className={cx("badge", "badgeGreen")}>Active</span> },
-          { key: "actions", header: "", render: (_, row) => (
+          { key: "actions", header: "", render: (_, r) => { const row = r as unknown as ProjectTemplateSummary; return (
             <div className={cx("flexRow", "gap6")}>
               <button type="button" className={cx("btnXs", "btnAccent")} onClick={() => { setApplyTemplateId(row.id); setApplyProjectId(""); }}>Apply</button>
               <button type="button" className={cx("btnXs", "btnGhost")} onClick={() => { setDeleteError(null); setDeleteId(row.id); }}>Delete</button>
             </div>
-          )},
+          ); } },
         ]}
       />
 

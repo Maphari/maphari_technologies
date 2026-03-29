@@ -226,7 +226,7 @@ export function LeaveAbsencePage({ session }: { session: AuthSession | null }) {
         <StatWidget label="Requests Pending" value={String(pending.length)} tone={pending.length > 0 ? "amber" : "accent"} sub="Awaiting approval" />
         <StatWidget label="Approved This Month" value={String(leaveRequests.filter((r) => r.status === "approved").length)} tone="green" sub="Currently approved" />
         <StatWidget label="Days Taken" value={String(totalDaysOut)} sub="Approved this FY" />
-        <StatWidget label="Coverage Gaps" value={String(lowBalance)} tone={lowBalance > 0 ? "red" : "accent"} sub="Low balances" subTone={lowBalance > 0 ? "red" : undefined} />
+        <StatWidget label="Coverage Gaps" value={String(lowBalance)} tone={lowBalance > 0 ? "red" : "accent"} sub="Low balances" subTone={lowBalance > 0 ? "warn" : "neutral"} />
       </WidgetGrid>
 
       {/* ── Charts & Pipeline ───────────────────────────────────────────── */}

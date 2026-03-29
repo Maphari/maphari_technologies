@@ -253,7 +253,7 @@ export function PortfolioRiskRegisterPage({ session }: { session: AuthSession | 
       {/* ── KPI Row ─────────────────────────────────────────────────────── */}
       <WidgetGrid columns={4}>
         <StatWidget label="Total Risks" value={String(risks.length)} sub="All risk items" />
-        <StatWidget label="High" value={String(highRisks.length + critical.length)} tone="red" sub={`${critical.length} critical`} subTone={critical.length > 0 ? "red" : undefined} />
+        <StatWidget label="High" value={String(highRisks.length + critical.length)} tone="red" sub={`${critical.length} critical`} subTone={critical.length > 0 ? "warn" : "neutral"} />
         <StatWidget label="Medium" value={String(risks.filter((r) => { const s = r.likelihood * r.impact; return s >= 4 && s < 9; }).length)} tone="amber" />
         <StatWidget label="Mitigated" value={String(risks.filter((r) => r.status === "resolved").length)} tone="green" sub="Resolved FY2026" />
       </WidgetGrid>

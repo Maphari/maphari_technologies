@@ -247,9 +247,9 @@ export function LegalPage() {
       {/* ── KPI Row ─────────────────────────────────────────────────────── */}
       <WidgetGrid columns={4}>
         <StatWidget label="Active Contracts" value={String(activeCount)} tone="accent" sub="Total active" />
-        <StatWidget label="Expiring Soon" value={String(expiringCount)} tone={expiringCount > 0 ? "amber" : "accent"} sub="< 60 days" subTone={expiringCount > 0 ? "amber" : undefined} />
+        <StatWidget label="Expiring Soon" value={String(expiringCount)} tone={expiringCount > 0 ? "amber" : "accent"} sub="< 60 days" subTone={expiringCount > 0 ? "warn" : "neutral"} />
         <StatWidget label="NDAs" value={String(contracts.filter((c) => c.type === "NDA").length)} />
-        <StatWidget label="Disputes" value={String(highRisk)} tone={highRisk > 0 ? "red" : "accent"} sub={highRisk > 0 ? "High-risk compliance" : "All clear"} subTone={highRisk > 0 ? "red" : undefined} />
+        <StatWidget label="Disputes" value={String(highRisk)} tone={highRisk > 0 ? "red" : "accent"} sub={highRisk > 0 ? "High-risk compliance" : "All clear"} subTone={highRisk > 0 ? "warn" : "neutral"} />
       </WidgetGrid>
 
       {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
@@ -276,19 +276,19 @@ export function LegalPage() {
       {/* ── Contracts Table ──────────────────────────────────────────────── */}
       <TableWidget
         label="Contracts"
-        rows={contracts}
+        rows={contracts as unknown as Record<string, unknown>[]}
         rowKey="id"
         emptyMessage="No contracts found."
         columns={[
-          { key: "name", header: "Name / Type", render: (_, row) => (
+          { key: "name", header: "Name / Type", render: (_, r) => { const row = r as unknown as LegalContract; return (
             <span><span style={{ fontWeight: 600 }}>{row.title}</span> <span style={{ opacity: 0.6, fontSize: "11px" }}>{row.type}</span></span>
-          )},
-          { key: "party", header: "Client / Party", render: (_, row) => row.clientId.slice(0, 8) + "…" },
+          ); } },
+          { key: "party", header: "Client / Party", render: (_, r) => { const row = r as unknown as LegalContract; return row.clientId.slice(0, 8) + "…"; } },
           { key: "value", header: "Value", render: () => "—" },
-          { key: "expiry", header: "Signed", render: (_, row) => contractSignedDate(row) },
-          { key: "status", header: "Status", render: (_, row) => (
+          { key: "expiry", header: "Signed", render: (_, r) => { const row = r as unknown as LegalContract; return contractSignedDate(row); } },
+          { key: "status", header: "Status", render: (_, r) => { const row = r as unknown as LegalContract; return (
             <StatusBadge status={contractDisplayStatus(row)} />
-          )},
+          ); } },
         ]}
       />
 

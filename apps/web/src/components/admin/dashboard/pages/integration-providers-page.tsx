@@ -327,7 +327,7 @@ export function IntegrationProvidersPage({
         <StatWidget label="Total Providers" value={String(providers.length)} tone="accent" />
         <StatWidget label="Active" value={String((grouped["active"] ?? []).length)} tone="green" />
         <StatWidget label="Enabled" value={String(enabledCount)} sub="Active + Beta" />
-        <StatWidget label="Disabled" value={String(disabledCount)} tone="red" sub="Hidden / Deprecated" subTone={disabledCount > 0 ? "red" : undefined} />
+        <StatWidget label="Disabled" value={String(disabledCount)} tone="red" sub="Hidden / Deprecated" subTone={disabledCount > 0 ? "warn" : "neutral"} />
       </WidgetGrid>
 
       {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
@@ -354,22 +354,22 @@ export function IntegrationProvidersPage({
       {/* ── Providers Table ─────────────────────────────────────────────── */}
       <TableWidget
         label="Integration Providers"
-        rows={providers}
+        rows={providers as unknown as Record<string, unknown>[]}
         rowKey="id"
         emptyMessage="Integration providers will appear here once configured."
         columns={[
-          { key: "name", header: "Name", render: (_, row) => row.label },
-          { key: "category", header: "Category", render: (_, row) => row.category },
-          { key: "status", header: "Status", render: (_, row) => (
+          { key: "name", header: "Name", render: (_, r) => { const row = r as unknown as AdminIntegrationProvider; return row.label; } },
+          { key: "category", header: "Category", render: (_, r) => { const row = r as unknown as AdminIntegrationProvider; return row.category; } },
+          { key: "status", header: "Status", render: (_, r) => { const row = r as unknown as AdminIntegrationProvider; return (
             <span className={cx("badge", row.availabilityStatus === "active" ? "badgeGreen" : row.availabilityStatus === "beta" ? "badgeAmber" : "badgeMuted")}>
               {availabilityLabel(row.availabilityStatus)}
             </span>
-          )},
-          { key: "connections", header: "Connections", align: "right", render: (_, row) => String(row.sortOrder) },
-          { key: "updated", header: "Last Updated", render: (_, row) => row.updatedAt ? new Date(row.updatedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }) : "—" },
-          { key: "actions", header: "", render: (_, row) => (
+          ); } },
+          { key: "connections", header: "Connections", align: "right", render: (_, r) => { const row = r as unknown as AdminIntegrationProvider; return String(row.sortOrder); } },
+          { key: "updated", header: "Last Updated", render: (_, r) => { const row = r as unknown as AdminIntegrationProvider; return row.updatedAt ? new Date(row.updatedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }) : "—"; } },
+          { key: "actions", header: "", render: (_, r) => { const row = r as unknown as AdminIntegrationProvider; return (
             <button type="button" className={cx("btnXs", "btnGhost")} onClick={() => setEditing(row)}>Edit</button>
-          )},
+          ); } },
         ]}
       />
 

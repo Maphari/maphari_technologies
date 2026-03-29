@@ -91,7 +91,7 @@ export function MeetingArchivePage({ session: _session }: { session?: import("..
         <StatWidget label="Total Meetings" value={String(totalArchived)} sub="All time" />
         <StatWidget label="This Month" value={String(thisMonth)} tone="accent" sub="Recent meetings" />
         <StatWidget label="Avg Duration" value="—" sub="Minutes per meeting" />
-        <StatWidget label="Follow-ups Pending" value={String(openActionItems)} tone={openActionItems > 0 ? "amber" : "accent"} sub="Action items open" subTone={openActionItems > 0 ? "amber" : undefined} />
+        <StatWidget label="Follow-ups Pending" value={String(openActionItems)} tone={openActionItems > 0 ? "amber" : "accent"} sub="Action items open" subTone={openActionItems > 0 ? "warn" : "neutral"} />
       </WidgetGrid>
 
       {/* ── Charts & Pipeline ───────────────────────────────────────────── */}

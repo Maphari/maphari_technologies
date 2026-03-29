@@ -274,18 +274,18 @@ export function RecruitmentPipelinePage({ session }: { session: AuthSession | nu
       {/* ── Candidates Table ─────────────────────────────────────────────── */}
       <TableWidget
         label="Candidates"
-        rows={candidatesFlat}
-        rowKey={(row, i) => `${row.roleId}-${i}`}
+        rows={candidatesFlat as unknown as Record<string, unknown>[]}
+        rowKey="name"
         emptyMessage="No candidates found."
         columns={[
-          { key: "name", header: "Name", render: (_, row) => row.name },
-          { key: "role", header: "Role", render: (_, row) => row.roleName },
-          { key: "source", header: "Source", render: (_, row) => row.source },
-          { key: "stage", header: "Stage", render: (_, row) => (
+          { key: "name", header: "Name", render: (_, r) => { const row = r as typeof candidatesFlat[number]; return row.name; } },
+          { key: "role", header: "Role", render: (_, r) => { const row = r as typeof candidatesFlat[number]; return row.roleName; } },
+          { key: "source", header: "Source", render: (_, r) => { const row = r as typeof candidatesFlat[number]; return row.source; } },
+          { key: "stage", header: "Stage", render: (_, r) => { const row = r as typeof candidatesFlat[number]; return (
             <span className={cx("badge", row.stage === "Offer Accepted" ? "badgeGreen" : row.stage === "Offer Declined" ? "badgeRed" : row.stage === "Offer" ? "badgeAmber" : "badgeMuted")}>
               {row.stage}
             </span>
-          )},
+          ); } },
           { key: "applied", header: "Applied", render: () => "—" },
         ]}
       />

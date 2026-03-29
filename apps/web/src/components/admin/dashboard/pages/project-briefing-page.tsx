@@ -150,19 +150,19 @@ export function ProjectBriefingPage({ session }: { session: AuthSession | null }
       {/* ── Briefs Table ─────────────────────────────────────────────────── */}
       <TableWidget
         label="Project Briefs"
-        rows={projects}
+        rows={projects as unknown as Record<string, unknown>[]}
         rowKey="id"
         emptyMessage="No active projects found."
         columns={[
-          { key: "project", header: "Project", render: (_, row) => row.name },
-          { key: "client", header: "Client", render: (_, row) => clientNames[row.clientId] ?? "Unknown client" },
-          { key: "status", header: "Status", render: (_, row) => (
+          { key: "project", header: "Project", render: (_, r) => { const row = r as unknown as AdminProject; return row.name; } },
+          { key: "client", header: "Client", render: (_, r) => { const row = r as unknown as AdminProject; return clientNames[row.clientId] ?? "Unknown client"; } },
+          { key: "status", header: "Status", render: (_, r) => { const row = r as unknown as AdminProject; return (
             <span className={cx("badge", row.status === "ACTIVE" || row.status === "IN_PROGRESS" ? "badgeGreen" : row.status === "REVIEW" ? "badgeAmber" : "badgeMuted")}>
               {formatPhase(row.status)}
             </span>
-          )},
-          { key: "version", header: "Progress", align: "right", render: (_, row) => `${row.progressPercent}%` },
-          { key: "updated", header: "Due Date", render: (_, row) => formatDate(row.dueAt) },
+          ); } },
+          { key: "version", header: "Progress", align: "right", render: (_, r) => { const row = r as unknown as AdminProject; return `${row.progressPercent}%`; } },
+          { key: "updated", header: "Due Date", render: (_, r) => { const row = r as unknown as AdminProject; return formatDate(row.dueAt); } },
         ]}
       />
     </div>

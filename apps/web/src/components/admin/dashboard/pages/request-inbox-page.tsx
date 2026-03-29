@@ -375,10 +375,10 @@ export function RequestInboxPage({
         <PipelineWidget
           label="Request Stages"
           stages={[
-            { label: "Pending", count: items.filter((r) => r.status === "PENDING").length, total: Math.max(items.length, 1), color: "#f5a623" },
-            { label: "In Review", count: items.filter((r) => r.status === "IN_REVIEW").length, total: Math.max(items.length, 1), color: "#8b6fff" },
-            { label: "Approved", count: items.filter((r) => r.status === "APPROVED").length, total: Math.max(items.length, 1), color: "#34d98b" },
-            { label: "Rejected", count: items.filter((r) => r.status === "REJECTED").length, total: Math.max(items.length, 1), color: "#ff5f5f" },
+            { label: "Pending Triage", count: items.length, total: Math.max(items.length, 1), color: "#f5a623" },
+            { label: "High Priority", count: high, total: Math.max(items.length, 1), color: "#ff5f5f" },
+            { label: "Medium Priority", count: medium, total: Math.max(items.length, 1), color: "#8b6fff" },
+            { label: "Low Priority", count: items.filter((r) => r.priority === "LOW").length, total: Math.max(items.length, 1), color: "#34d98b" },
           ]}
         />
       </WidgetGrid>
@@ -386,26 +386,26 @@ export function RequestInboxPage({
       {/* ── Requests Table ───────────────────────────────────────────────── */}
       <TableWidget
         label="Incoming Requests"
-        rows={items}
+        rows={items as unknown as Record<string, unknown>[]}
         rowKey="projectId"
         emptyMessage="No pending requests found."
         columns={[
-          { key: "id", header: "ID", render: (_, row) => <span className={cx("fontMono", "text12")}>{shortId(row.projectId)}</span> },
-          { key: "name", header: "Request", render: (_, row) => <span className={cx("fw600")}>{row.name}</span> },
-          { key: "client", header: "Client", render: (_, row) => clientNames[row.clientId] ?? shortId(row.clientId) },
-          { key: "type", header: "Type", render: (_, row) => <span className={cx("badge")}>{row.requestDetails?.serviceType ?? "—"}</span> },
-          { key: "value", header: "Value", align: "right", render: (_, row) => <span className={cx("fontMono", "fw600")}>{formatBudget(row.estimatedBudgetCents)}</span> },
-          { key: "priority", header: "Priority", render: (_, row) => (
+          { key: "id", header: "ID", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return <span className={cx("fontMono", "text12")}>{shortId(row.projectId)}</span>; } },
+          { key: "name", header: "Request", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return <span className={cx("fw600")}>{row.name}</span>; } },
+          { key: "client", header: "Client", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return clientNames[row.clientId] ?? shortId(row.clientId); } },
+          { key: "type", header: "Type", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return <span className={cx("badge")}>{row.requestDetails?.serviceType ?? "—"}</span>; } },
+          { key: "value", header: "Value", align: "right", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return <span className={cx("fontMono", "fw600")}>{formatBudget(row.estimatedBudgetCents)}</span>; } },
+          { key: "priority", header: "Priority", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return (
             <span className={cx("badge", row.priority === "HIGH" ? "badgeRed" : row.priority === "MEDIUM" ? "badgeAmber" : "badgeMuted")}>
               {row.priority.charAt(0) + row.priority.slice(1).toLowerCase()}
             </span>
-          )},
-          { key: "received", header: "Received", render: (_, row) => <span className={cx("fontMono", "text11", "colorMuted")}>{formatDate(row.requestedAt)}</span> },
-          { key: "action", header: "Action", render: (_, row) => (
+          ); } },
+          { key: "received", header: "Received", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return <span className={cx("fontMono", "text11", "colorMuted")}>{formatDate(row.requestedAt)}</span>; } },
+          { key: "action", header: "Action", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return (
             <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setSelectedRequest(row)}>
               Triage
             </button>
-          )},
+          ); } },
         ]}
       />
 

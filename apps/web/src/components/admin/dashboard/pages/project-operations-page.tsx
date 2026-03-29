@@ -319,8 +319,8 @@ export function ProjectOperationsPage({
       {/* ── KPI Row ─────────────────────────────────────────────────────── */}
       <WidgetGrid columns={4}>
         <StatWidget label="Active Projects" value={String(active)} tone="accent" sub={`${filtered.length} total`} />
-        <StatWidget label="Milestones Due" value={String(overdue)} tone={overdue > 0 ? "red" : "accent"} sub="Past checkpoint" subTone={overdue > 0 ? "red" : undefined} />
-        <StatWidget label="Blockers" value={String(blocked)} tone={blocked > 0 ? "red" : "accent"} sub="High risk / blocked" subTone={blocked > 0 ? "red" : undefined} />
+        <StatWidget label="Milestones Due" value={String(overdue)} tone={overdue > 0 ? "red" : "accent"} sub="Past checkpoint" subTone={overdue > 0 ? "warn" : "neutral"} />
+        <StatWidget label="Blockers" value={String(blocked)} tone={blocked > 0 ? "red" : "accent"} sub="High risk / blocked" subTone={blocked > 0 ? "warn" : "neutral"} />
         <StatWidget label="On-Time Rate" value={`${filtered.length > 0 ? Math.round(((filtered.length - overdue) / filtered.length) * 100) : 100}%`} tone="green" />
       </WidgetGrid>
 

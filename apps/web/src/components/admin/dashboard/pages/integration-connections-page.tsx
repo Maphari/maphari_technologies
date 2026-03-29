@@ -200,7 +200,7 @@ export function IntegrationConnectionsPage({
       <WidgetGrid columns={4}>
         <StatWidget label="Total Connections" value={String(total)} tone="accent" />
         <StatWidget label="Active" value={String(healthy)} tone="green" />
-        <StatWidget label="Failing" value={String(failed)} tone="red" sub={failed > 0 ? "Needs attention" : undefined} subTone={failed > 0 ? "red" : undefined} />
+        <StatWidget label="Failing" value={String(failed)} tone="red" sub={failed > 0 ? "Needs attention" : undefined} subTone={failed > 0 ? "warn" : "neutral"} />
         <StatWidget label="Pending" value={String(actionNeeded)} tone="amber" />
       </WidgetGrid>
 
@@ -264,27 +264,27 @@ export function IntegrationConnectionsPage({
       {/* ── Connections Table ───────────────────────────────────────────── */}
       <TableWidget
         label="Connections"
-        rows={filtered}
+        rows={filtered as unknown as Record<string, unknown>[]}
         rowKey="id"
         emptyMessage="No integration connections match the current filters."
         columns={[
-          { key: "client", header: "Client", render: (_, row) => row.clientName },
-          { key: "provider", header: "Provider", render: (_, row) => providerLabel(row.providerKey) },
-          { key: "type", header: "Type", render: (_, row) => (
+          { key: "client", header: "Client", render: (_, r) => { const row = r as unknown as AdminIntegrationConnection; return row.clientName; } },
+          { key: "provider", header: "Provider", render: (_, r) => { const row = r as unknown as AdminIntegrationConnection; return providerLabel(row.providerKey); } },
+          { key: "type", header: "Type", render: (_, r) => { const row = r as unknown as AdminIntegrationConnection; return (
             <span className={cx("badge", connectionTypeBadge(row.connectionType))}>
               {row.connectionType === "oauth" ? "OAuth" : row.connectionType === "assisted" ? "Assisted" : row.connectionType}
             </span>
-          )},
-          { key: "status", header: "Status", render: (_, row) => (
+          ); } },
+          { key: "status", header: "Status", render: (_, r) => { const row = r as unknown as AdminIntegrationConnection; return (
             <span className={cx("badge", statusBadgeClass(row.status))}>{statusLabel(row.status)}</span>
-          )},
-          { key: "health", header: "Health", render: (_, row) => (
+          ); } },
+          { key: "health", header: "Health", render: (_, r) => { const row = r as unknown as AdminIntegrationConnection; return (
             <span className={cx("badge", healthBadgeClass(row.healthStatus))}>{healthLabel(row.healthStatus)}</span>
-          )},
-          { key: "lastSynced", header: "Last Synced", render: (_, row) => fmtDate(row.lastSyncedAt) },
-          { key: "events", header: "Events", render: (_, row) => (
+          ); } },
+          { key: "lastSynced", header: "Last Synced", render: (_, r) => { const row = r as unknown as AdminIntegrationConnection; return fmtDate(row.lastSyncedAt); } },
+          { key: "events", header: "Events", render: (_, r) => { const row = r as unknown as AdminIntegrationConnection; return (
             <span className={cx("text12", "colorMuted")} style={{ cursor: "pointer" }} onClick={() => void openSyncPanel(row)}>View</span>
-          )},
+          ); } },
         ]}
       />
 

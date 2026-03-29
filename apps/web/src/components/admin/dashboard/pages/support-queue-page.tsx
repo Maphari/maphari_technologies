@@ -211,21 +211,21 @@ export function SupportQueuePage({
       {/* ── Tickets Table ────────────────────────────────────────────────── */}
       <TableWidget
         label="Active Tickets"
-        rows={tickets}
+        rows={tickets as unknown as Record<string, unknown>[]}
         rowKey="id"
         emptyMessage="No support tickets yet."
         columns={[
-          { key: "id", header: "ID", render: (_, row) => <span className={cx("fontMono", "text12")}>{row.id.slice(0, 8).toUpperCase()}</span> },
-          { key: "title", header: "Issue", render: (_, row) => <span className={cx("fw600")}>{row.title}</span> },
-          { key: "client", header: "Client", render: (_, row) => row.clientId ? row.clientId.slice(0, 8).toUpperCase() : "—" },
-          { key: "priority", header: "Priority", render: (_, row) => (
+          { key: "id", header: "ID", render: (_, r) => { const row = r as unknown as AdminSupportTicket; return <span className={cx("fontMono", "text12")}>{row.id.slice(0, 8).toUpperCase()}</span>; } },
+          { key: "title", header: "Issue", render: (_, r) => { const row = r as unknown as AdminSupportTicket; return <span className={cx("fw600")}>{row.title}</span>; } },
+          { key: "client", header: "Client", render: (_, r) => { const row = r as unknown as AdminSupportTicket; return row.clientId ? row.clientId.slice(0, 8).toUpperCase() : "—"; } },
+          { key: "priority", header: "Priority", render: (_, r) => { const row = r as unknown as AdminSupportTicket; return (
             <span className={cx("badge", priorityBadge(row.priority))}>{fmtPriority(row.priority)}</span>
-          )},
-          { key: "sla", header: "SLA", render: (_, row) => <span className={cx("fontMono", "text12")}>{fmtSla(row.slaHours)}</span> },
-          { key: "assigned", header: "Assigned", render: (_, row) => row.assignedTo ?? "—" },
-          { key: "status", header: "Status", render: (_, row) => (
+          ); } },
+          { key: "sla", header: "SLA", render: (_, r) => { const row = r as unknown as AdminSupportTicket; return <span className={cx("fontMono", "text12")}>{fmtSla(row.slaHours)}</span>; } },
+          { key: "assigned", header: "Assigned", render: (_, r) => { const row = r as unknown as AdminSupportTicket; return row.assignedTo ?? "—"; } },
+          { key: "status", header: "Status", render: (_, r) => { const row = r as unknown as AdminSupportTicket; return (
             <span className={cx("badge", statusBadge(row.status))}>{fmtStatus(row.status)}</span>
-          )},
+          ); } },
         ]}
       />
 

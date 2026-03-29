@@ -258,22 +258,22 @@ export function IntegrationRequestsPage({
       {/* ── Requests Table ─────────────────────────────────────────────── */}
       <TableWidget
         label={tab === "ALL" ? "All Requests" : `${formatStatus(tab)} Requests`}
-        rows={filtered}
+        rows={filtered as unknown as Record<string, unknown>[]}
         rowKey="id"
         emptyMessage="No integration requests match this filter."
         columns={[
-          { key: "requester", header: "Requester", render: (_, row) => row.requestedByName ?? "—" },
-          { key: "integration", header: "Integration", render: (_, row) => (
+          { key: "requester", header: "Requester", render: (_, r) => { const row = r as unknown as AdminIntegrationRequestItem; return row.requestedByName ?? "—"; } },
+          { key: "integration", header: "Integration", render: (_, r) => { const row = r as unknown as AdminIntegrationRequestItem; return (
             <span>{providerIcon(row.providerKey)} {row.providerLabel || row.providerKey}</span>
-          )},
-          { key: "reason", header: "Client", render: (_, row) => row.clientName },
-          { key: "status", header: "Status", render: (_, row) => (
+          ); } },
+          { key: "reason", header: "Client", render: (_, r) => { const row = r as unknown as AdminIntegrationRequestItem; return row.clientName; } },
+          { key: "status", header: "Status", render: (_, r) => { const row = r as unknown as AdminIntegrationRequestItem; return (
             <span className={cx("badge", statusBadgeClass(row.status))}>{formatStatus(row.status)}</span>
-          )},
-          { key: "submitted", header: "Submitted", render: (_, row) => fmtDate(row.requestedAt) },
-          { key: "actions", header: "", render: (_, row) => (
+          ); } },
+          { key: "submitted", header: "Submitted", render: (_, r) => { const row = r as unknown as AdminIntegrationRequestItem; return fmtDate(row.requestedAt); } },
+          { key: "actions", header: "", render: (_, r) => { const row = r as unknown as AdminIntegrationRequestItem; return (
             <button type="button" className={cx("btnXs", "btnGhost")} onClick={() => openPanel(row)}>Review</button>
-          )},
+          ); } },
         ]}
       />
 
