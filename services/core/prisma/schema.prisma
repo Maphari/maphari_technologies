@@ -1955,3 +1955,43 @@ enum EftVerificationStatus {
   VERIFIED
   REJECTED
 }
+
+// ── Webhook Endpoints ─────────────────────────────────────────────────────────
+
+model WebhookEndpoint {
+  id          String    @id @default(uuid())
+  name        String
+  url         String
+  events      String    // comma-separated topic values
+  secret      String?
+  active      Boolean   @default(true)
+  lastFiredAt DateTime?
+  failCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("webhook_endpoints")
+}
+
+// ── Admin Proposed Actions (two-admin approval workflow) ──────────────────────
+
+model AdminProposedAction {
+  id             String    @id @default(uuid())
+  proposedBy     String
+  proposedByName String?
+  action         String
+  resourceType   String
+  resourceId     String?
+  payload        String?   // JSON string
+  reason         String?
+  status         String    @default("PENDING") // PENDING | APPROVED | REJECTED | EXECUTED
+  reviewedBy     String?
+  reviewedByName String?
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@map("admin_proposed_actions")
+}

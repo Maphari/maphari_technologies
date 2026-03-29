@@ -1876,26 +1876,26 @@ export async function registerStaffAnalyticsRoutes(app: FastifyInstance): Promis
           .filter((id): id is string => id !== null && id !== undefined);
 
         // Fetch all time entries in the period for active staff on client projects
-        const entries = await prisma.timeEntry.findMany({
+        const entries = await prisma.projectTimeEntry.findMany({
           where: {
-            userId:    { in: staffUserIds },
-            createdAt: { gte: periodStart, lte: now },
+            staffUserId: { in: staffUserIds },
+            createdAt:   { gte: periodStart, lte: now },
             project: {
-              clientId: { not: null },
-              status:   { not: "ARCHIVED" }
+              status: { not: "ARCHIVED" }
             }
           },
           select: {
-            userId:  true,
-            minutes: true,
+            staffUserId: true,
+            minutes:     true,
           }
         });
 
-        // Group billable minutes by userId
+        // Group billable minutes by staffUserId
         const billableMap = new Map<string, number>();
         for (const entry of entries) {
-          const prev = billableMap.get(entry.userId) ?? 0;
-          billableMap.set(entry.userId, prev + entry.minutes);
+          const uid  = entry.staffUserId ?? "";
+          const prev = billableMap.get(uid) ?? 0;
+          billableMap.set(uid, prev + entry.minutes);
         }
 
         // Build rows

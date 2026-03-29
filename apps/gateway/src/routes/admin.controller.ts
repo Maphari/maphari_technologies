@@ -1109,4 +1109,92 @@ export class AdminController {
       adminHeaders(userId, role, clientId, requestId, traceId)
     );
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SLA RECORDS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /sla — list all SLA records (admin/staff view) ───────────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("sla")
+  async listAllSlaRecords(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/sla`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // COMMUNICATION LOGS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /comms — list all communication logs (admin/staff view) ───────────
+  @Roles("ADMIN", "STAFF")
+  @Get("comms")
+  async listAllCommLogs(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/comms`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CLIENT HEALTH SCORES
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /health-scores — list all client health scores ───────────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("health-scores")
+  async listAllHealthScores(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/health-scores`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PORTFOLIO RISKS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /risks — list all portfolio risks across all projects ─────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("risks")
+  async listAllPortfolioRisks(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/risks`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
 }
