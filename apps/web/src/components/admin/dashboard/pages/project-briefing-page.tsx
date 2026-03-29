@@ -146,13 +146,13 @@ export function ProjectBriefingPage({ session }: { session: AuthSession | null }
                     <div className={cx("text12")}>{p.priority.charAt(0) + p.priority.slice(1).toLowerCase()}</div>
                   </div>
                   <div>
-                    {(p.riskLevel === "HIGH" || p.riskLevel === "CRITICAL") && (
+                    {p.riskLevel === "HIGH" && (
                       <div className={cx("text10", "uppercase", "tracking", "colorRed", "fw700", "mb4")}>Key Risk</div>
                     )}
                     {p.riskLevel === "MEDIUM" && (
                       <div className={cx("text10", "uppercase", "tracking", "colorAmber", "fw700", "mb4")}>Risk</div>
                     )}
-                    {(p.riskLevel !== "HIGH" && p.riskLevel !== "CRITICAL" && p.riskLevel !== "MEDIUM") && (
+                    {p.riskLevel === "LOW" && (
                       <div className={cx("text10", "uppercase", "tracking", "colorMuted", "fw700", "mb4")}>Risk Level</div>
                     )}
                     <div className={cx("text12")}>{riskLabel(p.riskLevel)}</div>
