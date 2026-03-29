@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { saveSession } from "../../../../lib/auth/session";
 import {
   loadContentSubmissionsWithRefresh,
@@ -109,35 +110,82 @@ export function ContentApprovalPage({ session }: { session: AuthSession | null }
     );
   }
 
+  // ── Chart data ────────────────────────────────────────────────────────────
+  const typeCounts = items.reduce<Record<string, number>>((acc, c) => {
+    acc[c.type] = (acc[c.type] ?? 0) + 1;
+    return acc;
+  }, {});
+  const capChartData = Object.entries(typeCounts).map(([name, value]) => ({ name, value }));
+  const weekApproved = approvedCount; // proxy for "this week"
+
+  const capTableRows = filtered.map((c) => ({
+    id: c.id,
+    title: c.title,
+    type: c.type,
+    submittedByName: c.submittedByName ?? "—",
+    createdAt: c.createdAt,
+    status: c.status,
+  })) as unknown as Record<string, unknown>[];
+
   return (
     <div className={cx(styles.pageBody)}>
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>COMMUNICATION / CONTENT APPROVAL</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / CONTENT</div>
           <h1 className={styles.pageTitle}>Content Approval</h1>
-          <div className={styles.pageSub}>Review and approve content submissions before they are published</div>
+          <div className={styles.pageSub}>Content pipeline · Review queue · Approval rate</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnGhost")}>Export</button>
         </div>
       </div>
 
-      {/* ── KPI Grid ── */}
-      <div className={styles.cjKpiGrid}>
-        {[
-          { label: "Awaiting Approval",  value: String(awaitingCount), sub: "Needs review",         color: "var(--amber)"  },
-          { label: "Approved",           value: String(approvedCount), sub: "Published",             color: "var(--accent)" },
-          { label: "Rejected",           value: String(rejectedCount), sub: "Returned for rework",   color: "var(--red)"    },
-          { label: "Drafts",             value: String(draftCount),    sub: "Not yet submitted",      color: "var(--muted)"  },
-        ].map((k) => (
-          <div key={k.label} className={cx(styles.cjKpiCard, toneClass(k.color))}>
-            <div className={styles.cjKpiLabel}>{k.label}</div>
-            <div className={cx(styles.cjKpiValue, toneClass(k.color))}>{k.value}</div>
-            <div className={styles.cjKpiMeta}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Pending Approval" value={awaitingCount} tone="amber" progressValue={items.length > 0 ? Math.round((awaitingCount / items.length) * 100) : 0} />
+        <StatWidget label="Approved This Week" value={weekApproved} tone="green" progressValue={items.length > 0 ? Math.round((weekApproved / items.length) * 100) : 0} />
+        <StatWidget label="Rejected" value={rejectedCount} tone="red" progressValue={items.length > 0 ? Math.round((rejectedCount / items.length) * 100) : 0} />
+        <StatWidget label="Avg Review Time" value="—" sub="no timing data" />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Content by Type"
+          type="bar"
+          data={capChartData.length > 0 ? capChartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Approval Stages"
+          stages={[
+            { label: "Draft", count: draftCount, total: items.length, color: "#6b7280" },
+            { label: "Awaiting", count: awaitingCount, total: items.length, color: "#f5a623" },
+            { label: "Approved", count: approvedCount, total: items.length, color: "#34d98b" },
+            { label: "Rejected", count: rejectedCount, total: items.length, color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Content Submissions"
+          rows={capTableRows}
+          rowKey="id"
+          emptyMessage="No content in this view."
+          columns={[
+            { key: "title", header: "Title", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.title ?? "")}</span> },
+            { key: "type", header: "Type", render: (_v, row) => <span className={cx("badge")}>{String(row.type ?? "")}</span> },
+            { key: "submittedByName", header: "Author", render: (_v, row) => <span className={cx("colorMuted")}>{String(row.submittedByName ?? "—")}</span> },
+            { key: "createdAt", header: "Submitted", align: "right", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{formatDate(String(row.createdAt ?? ""))}</span> },
+            { key: "status", header: "Status", align: "right", render: (_v, row) => <span className={cx("badge", statusBadge(String(row.status ?? "")))}>{String(row.status ?? "")}</span> },
+          ]}
+        />
+      </WidgetGrid>
 
       {/* ── Tab bar ── */}
       <div className={styles.teamFilters}>
