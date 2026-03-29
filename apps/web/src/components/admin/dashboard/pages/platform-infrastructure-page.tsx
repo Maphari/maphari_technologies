@@ -49,7 +49,7 @@ const DEFAULT_FLAGS: Array<{ key: string; name: string; description: string; ena
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const statusConfig: Record<ServiceStatus, { color: string; label: string }> = {
-  healthy: { color: "var(--accent)", label: "Healthy" },
+  healthy: { color: "var(--accent)", label: "Session Healthy" },
   unknown: { color: "var(--amber)", label: "Unknown" },
   down: { color: "var(--red)", label: "Down" },
 };
@@ -151,7 +151,16 @@ export function PlatformInfrastructurePage({
   const unknownCount = services.filter((s) => s.status === "unknown").length;
   const downCount = services.filter((s) => s.status === "down").length;
 
-  const overallHealth: ServiceStatus = downCount > 0 ? "down" : unknownCount > 0 ? "unknown" : "healthy";
+  // Overall health: if any session-checked service is down → down.
+  // If all session-verified services pass → healthy (green), even when some
+  // services lack a health endpoint (those remain "unknown" individually but
+  // should not degrade the overall status to amber "Unknown").
+  // Only show "Unknown" when there is zero health data at all (no session).
+  const sessionCheckedCount = services.filter((s) => s.status !== "unknown").length;
+  const overallHealth: ServiceStatus =
+    downCount > 0 ? "down" :
+    sessionCheckedCount > 0 ? "healthy" :
+    "unknown";
   const cfg = statusConfig[overallHealth];
 
   if (loading) {
