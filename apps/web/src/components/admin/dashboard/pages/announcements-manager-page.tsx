@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { saveSession } from "../../../../lib/auth/session";
 import {
   loadAnnouncementsWithRefresh,
@@ -129,14 +130,34 @@ export function AnnouncementsManagerPage({ session }: { session: AuthSession | n
     );
   }
 
+  // ── Derived chart data ────────────────────────────────────────────────────
+  const monthCounts = mapped.reduce<Record<string, number>>((acc, a) => {
+    const pub = a.publishedAt ?? a.scheduledAt;
+    if (!pub) return acc;
+    const month = new Date(pub).toLocaleDateString("en-ZA", { month: "short", year: "2-digit" });
+    acc[month] = (acc[month] ?? 0) + 1;
+    return acc;
+  }, {});
+  const annChartData = Object.entries(monthCounts).slice(-6).map(([name, value]) => ({ name, value }));
+  const archived = mapped.filter((a) => a._status === "archived").length;
+
+  const annTableRows = mapped.map((a) => ({
+    id: a.id,
+    title: a.title,
+    target: a.target,
+    publishedAt: a.publishedAt ?? a.scheduledAt,
+    reach: a.reach,
+    _status: a._status,
+  })) as unknown as Record<string, unknown>[];
+
   return (
     <div className={cx(styles.pageBody)}>
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>COMMUNICATION / ANNOUNCEMENTS MANAGER</div>
-          <h1 className={styles.pageTitle}>Announcements Manager</h1>
-          <div className={styles.pageSub}>Create and manage announcements for clients and staff</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / ANNOUNCEMENTS</div>
+          <h1 className={styles.pageTitle}>Announcements</h1>
+          <div className={styles.pageSub}>Published announcements · Audience reach · Engagement</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnGhost")}>Export</button>
@@ -144,21 +165,54 @@ export function AnnouncementsManagerPage({ session }: { session: AuthSession | n
         </div>
       </div>
 
-      {/* ── KPI Grid ── */}
-      <div className={styles.cjKpiGrid}>
-        {[
-          { label: "Active",      value: String(activeCount),    sub: "Live right now",   color: "var(--accent)" },
-          { label: "Drafts",      value: String(draftCount),     sub: "Unpublished",      color: "var(--muted)"  },
-          { label: "Scheduled",   value: String(scheduledCount), sub: "Upcoming",         color: "var(--blue)"   },
-          { label: "Total Reach", value: String(totalReach),     sub: "Cumulative reach", color: "var(--amber)"  },
-        ].map((k) => (
-          <div key={k.label} className={cx(styles.cjKpiCard, toneClass(k.color))}>
-            <div className={styles.cjKpiLabel}>{k.label}</div>
-            <div className={cx(styles.cjKpiValue, toneClass(k.color))}>{k.value}</div>
-            <div className={styles.cjKpiMeta}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Total Announcements" value={mapped.length} tone="accent" sparkData={[2, 3, 4, 5, 6, 7, 8, mapped.length]} />
+        <StatWidget label="Published" value={activeCount} tone="green" progressValue={mapped.length > 0 ? Math.round((activeCount / mapped.length) * 100) : 0} />
+        <StatWidget label="Draft" value={draftCount} tone="amber" progressValue={mapped.length > 0 ? Math.round((draftCount / mapped.length) * 100) : 0} />
+        <StatWidget label="Avg Reach" value={mapped.length > 0 ? Math.round(totalReach / mapped.length) : 0} sub="per announcement" />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Announcements by Month"
+          type="bar"
+          data={annChartData.length > 0 ? annChartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Announcement Status"
+          stages={[
+            { label: "Draft", count: draftCount, total: mapped.length, color: "#f5a623" },
+            { label: "Published", count: activeCount, total: mapped.length, color: "#34d98b" },
+            { label: "Scheduled", count: scheduledCount, total: mapped.length, color: "#8b6fff" },
+            { label: "Archived", count: archived, total: mapped.length, color: "#6b7280" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="All Announcements"
+          rows={annTableRows}
+          rowKey="id"
+          emptyMessage="No announcements in this category."
+          columns={[
+            { key: "title", header: "Title", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.title ?? "")}</span> },
+            { key: "target", header: "Audience", render: (_v, row) => <span className={cx("badge")}>{String(row.target ?? "")}</span> },
+            { key: "publishedAt", header: "Published", align: "right", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{formatDate(row.publishedAt as string | null)}</span> },
+            { key: "reach", header: "Reach", align: "right", render: (_v, row) => <span className={cx("fontMono")}>{Number(row.reach ?? 0) > 0 ? Number(row.reach).toLocaleString() : "—"}</span> },
+            { key: "_status", header: "Status", align: "right", render: (_v, row) => {
+              const s = String(row._status ?? "");
+              return <span className={cx("badge", s === "live" ? "badgeGreen" : s === "scheduled" ? "badgePurple" : "badgeMuted")}>{s}</span>;
+            }},
+          ]}
+        />
+      </WidgetGrid>
 
       {/* ── Tab bar ── */}
       <div className={styles.teamFilters}>
