@@ -454,6 +454,8 @@ export function MaphariDashboard() {
   const email = session?.user.email ?? "";
   const isAdmin = session?.user.role === "ADMIN";
   const unreadNotificationsCount = notificationJobs.filter((job) => !job.readAt).length;
+  // Prefer displayName from settings; fall back to the email prefix (before @)
+  const adminDisplayName = email.split("@")[0] ?? "Admin";
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -500,6 +502,7 @@ export function MaphariDashboard() {
             title={title}
             unreadNotificationsCount={unreadNotificationsCount}
             email={email}
+            displayName={adminDisplayName}
             loggingOut={loggingOut}
             onOpenNotifications={() => setPage("notifications")}
             onOpenMessages={() => setPage("messages")}

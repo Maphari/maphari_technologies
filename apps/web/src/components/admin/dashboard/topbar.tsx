@@ -8,6 +8,7 @@ export function AdminTopbar({
   title,
   unreadNotificationsCount,
   email,
+  displayName,
   loggingOut,
   onOpenNotifications,
   onOpenMessages,
@@ -19,6 +20,8 @@ export function AdminTopbar({
   title: [string, string];
   unreadNotificationsCount: number;
   email: string;
+  /** Display name shown in the topbar account button. Falls back to the email prefix. */
+  displayName?: string;
   loggingOut: boolean;
   onOpenNotifications: () => void;
   onOpenMessages: () => void;
@@ -149,7 +152,7 @@ export function AdminTopbar({
             <span className={styles.topbarUserAvatar}>
               {email[0]?.toUpperCase() ?? "A"}
             </span>
-            <span className={styles.topbarUserLabel}>Account</span>
+            <span className={styles.topbarUserLabel}>{displayName ?? email.split("@")[0] ?? "Account"}</span>
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true" style={{ opacity: 0.5, transition: "transform 150ms", transform: profileMenuOpen ? "rotate(180deg)" : "none" }}>
               <path d="M1 3l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
