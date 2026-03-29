@@ -129,7 +129,7 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
         </div>
         <div className={styles.pageActions}>
           <span className={cx("badge", signal.cls)}>{signal.label}</span>
-          {hiresNeeded > 0 && (
+          {(forecast.hiringSignal === "CRITICAL" || forecast.hiringSignal === "UNDER_CAPACITY") && hiresNeeded > 0 && (
             <span className={cx("badge", "badgeAmber")}>
               Consider {hiresNeeded} hire{hiresNeeded !== 1 ? "s" : ""}
             </span>
