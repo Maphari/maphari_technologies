@@ -7,6 +7,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { colorClass } from "./admin-page-utils";
 import { AdminFilterBar } from "./shared";
 import type { AuthSession } from "../../../../lib/auth/session";
@@ -201,6 +202,14 @@ export function LeaveAbsencePage({ session }: { session: AuthSession | null }) {
     );
   }
 
+  // Build chart data: leave by type
+  const leaveByType = [
+    { type: "Annual", count: leaveRequests.filter((r) => r.type === "Annual Leave").length },
+    { type: "Sick", count: leaveRequests.filter((r) => r.type === "Sick Leave").length },
+    { type: "Family", count: leaveRequests.filter((r) => r.type === "Family Leave").length },
+    { type: "Unpaid", count: leaveRequests.filter((r) => r.type === "Unpaid Leave").length },
+  ];
+
   return (
     <div className={cx(styles.pageBody, styles.lvaRoot)}>
       <div className={styles.pageHeader}>
@@ -212,20 +221,52 @@ export function LeaveAbsencePage({ session }: { session: AuthSession | null }) {
         <button type="button" className={cx("btnSm", "btnAccent")}>+ Log Leave</button>
       </div>
 
-      <div className={cx("topCardsStack", "mb16") }>
-        {[
-          { label: "Pending Requests", value: pending.length.toString(), color: pending.length > 0 ? "var(--amber)" : "var(--accent)", sub: "Awaiting approval" },
-          { label: "Staff on Leave", value: leaveRequests.filter((r) => r.status === "approved").length.toString(), color: "var(--blue)", sub: "Currently approved leave" },
-          { label: "Low Leave Balances", value: lowBalance.toString(), color: lowBalance > 0 ? "var(--red)" : "var(--accent)", sub: "≤ 3 days remaining" },
-          { label: "Leave Days Used (YTD)", value: totalDaysOut.toString(), color: "var(--muted)", sub: "Approved this FY" }
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Requests Pending" value={String(pending.length)} tone={pending.length > 0 ? "amber" : "accent"} sub="Awaiting approval" />
+        <StatWidget label="Approved This Month" value={String(leaveRequests.filter((r) => r.status === "approved").length)} tone="green" sub="Currently approved" />
+        <StatWidget label="Days Taken" value={String(totalDaysOut)} sub="Approved this FY" />
+        <StatWidget label="Coverage Gaps" value={String(lowBalance)} tone={lowBalance > 0 ? "red" : "accent"} sub="Low balances" subTone={lowBalance > 0 ? "red" : undefined} />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Leave by Type"
+          data={leaveByType}
+          dataKey="count"
+          xKey="type"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Leave Types"
+          stages={[
+            { label: "Annual Leave", count: leaveRequests.filter((r) => r.type === "Annual Leave").length, total: Math.max(leaveRequests.length, 1), color: "#8b6fff" },
+            { label: "Sick Leave", count: leaveRequests.filter((r) => r.type === "Sick Leave").length, total: Math.max(leaveRequests.length, 1), color: "#ff5f5f" },
+            { label: "Unpaid Leave", count: leaveRequests.filter((r) => r.type === "Unpaid Leave").length, total: Math.max(leaveRequests.length, 1), color: "#f5a623" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Leave Requests Table ─────────────────────────────────────────── */}
+      <TableWidget
+        label="Leave Requests"
+        rows={leaveRequests}
+        rowKey="id"
+        emptyMessage="No leave requests found."
+        columns={[
+          { key: "staff", header: "Staff", render: (_, row) => row.employee },
+          { key: "type", header: "Type", render: (_, row) => row.type },
+          { key: "dates", header: "Dates", render: (_, row) => `${row.from} – ${row.to}` },
+          { key: "days", header: "Days", align: "right", render: (_, row) => String(row.days) },
+          { key: "status", header: "Status", render: (_, row) => (
+            <span className={cx("badge", row.status === "approved" ? "badgeGreen" : row.status === "pending" ? "badgeAmber" : "badgeRed")}>
+              {statusConfig[row.status].label}
+            </span>
+          )},
+        ]}
+      />
 
       <div className={cx("overflowAuto", "minH0") }>
         <AdminFilterBar panelColor={"var(--surface)"} borderColor={"var(--border)"}>
