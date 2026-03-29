@@ -369,7 +369,7 @@ export function MyIntegrationsPage({ isActive, session, onNotify }: PageProps) {
   if (loading) {
     return (
       <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-integrations">
-        <div className={cx("flexCol", "gap12")}>
+        <div data-testid="loading-skeleton" className={cx("flexCol", "gap12")}>
           <div className={cx("skeletonBlock", "skeleH68")} />
           <div className={cx("skeletonBlock", "skeleH80")} />
           <div className={cx("skeletonBlock", "skeleH68")} />
@@ -397,19 +397,19 @@ export function MyIntegrationsPage({ isActive, session, onNotify }: PageProps) {
       <div className={cx("itgStatsGrid")}>
         <div className={cx("itgStatCard")}>
           <div className={cx("itgStatLabel")}>Providers</div>
-          <div className={cx("itgStatValue")}>{providers.length}</div>
+          <div data-testid="stat-providers" className={cx("itgStatValue")}>{providers.length}</div>
         </div>
         <div className={cx("itgStatCard")}>
           <div className={cx("itgStatLabel")}>Open Requests</div>
-          <div className={cx("itgStatValue", openRequests.length > 0 && "itgStatToneAccent")}>{openRequests.length}</div>
+          <div data-testid="stat-open" className={cx("itgStatValue", openRequests.length > 0 && "itgStatToneAccent")}>{openRequests.length}</div>
         </div>
         <div className={cx("itgStatCard")}>
           <div className={cx("itgStatLabel")}>In Progress</div>
-          <div className={cx("itgStatValue", inProgressCount > 0 && "itgStatToneBlue")}>{inProgressCount}</div>
+          <div data-testid="stat-in-progress" className={cx("itgStatValue", inProgressCount > 0 && "itgStatToneBlue")}>{inProgressCount}</div>
         </div>
         <div className={cx("itgStatCard")}>
           <div className={cx("itgStatLabel")}>Completed</div>
-          <div className={cx("itgStatValue", completedCount > 0 && "itgStatToneGreen")}>{completedCount}</div>
+          <div data-testid="stat-completed" className={cx("itgStatValue", completedCount > 0 && "itgStatToneGreen")}>{completedCount}</div>
         </div>
       </div>
 
