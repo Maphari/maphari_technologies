@@ -5,6 +5,7 @@ import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { loadClientBrandingWithRefresh, updateClientBrandingWithRefresh, type ClientBranding } from "../../../../lib/api/admin/clients";
+import { loadEmailTemplatesWithRefresh, loadCustomDomainsWithRefresh, type AdminEmailTemplate, type AdminCustomDomain } from "../../../../lib/api/admin/brand";
 import { saveSession } from "../../../../lib/auth/session";
 
 const brandTokens = {
@@ -16,20 +17,7 @@ const brandTokens = {
   logoUrl: "MAPHARI",
 };
 
-const emailTemplates = [
-  { id: "welcome", name: "Client Welcome Email", lastEdited: "Jan 2026", status: "active", sentCount: 12 },
-  { id: "invoice", name: "Invoice Notification", lastEdited: "Feb 2026", status: "active", sentCount: 147 },
-  { id: "milestone", name: "Milestone Approved", lastEdited: "Dec 2025", status: "active", sentCount: 34 },
-  { id: "overdue", name: "Invoice Overdue Reminder", lastEdited: "Feb 2026", status: "active", sentCount: 18 },
-  { id: "report", name: "Monthly Report Delivery", lastEdited: "Jan 2026", status: "active", sentCount: 45 },
-  { id: "churn", name: "Renewal Reminder", lastEdited: "Nov 2025", status: "draft", sentCount: 0 },
-];
-
-const customDomains = [
-  { domain: "portal.maphari.co.za", type: "Client Portal", status: "active", ssl: true, verified: true },
-  { domain: "reports.maphari.co.za", type: "Report Delivery", status: "active", ssl: true, verified: true },
-  { domain: "app.maphari.co.za", type: "Staff Dashboard", status: "pending", ssl: false, verified: false },
-];
+// emailTemplates and customDomains are loaded dynamically from the API in BrandControlPage
 
 const whitelabelClients: { client: string; domain: string; logoApplied: boolean; colorOverride: boolean; status: string }[] = [];
 
@@ -299,12 +287,25 @@ export function BrandControlPage() {
   const [primary, setPrimary] = useState(brandTokens.primary);
   const [accent, setAccent] = useState(brandTokens.accent);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const [emailTemplates, setEmailTemplates] = useState<AdminEmailTemplate[]>([]);
+  const [customDomains, setCustomDomains] = useState<AdminCustomDomain[]>([]);
 
   useEffect(() => {
     if (!rootRef.current) return;
     rootRef.current.style.setProperty("--brand-primary", primary);
     rootRef.current.style.setProperty("--brand-accent", accent);
   }, [primary, accent]);
+
+  useEffect(() => {
+    if (!session) return;
+    void loadEmailTemplatesWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setEmailTemplates(r.data);
+    });
+    void loadCustomDomainsWithRefresh(session).then((r) => {
+      if (!r.error && r.data) setCustomDomains(r.data);
+    });
+  }, [session]);
 
   return (
     <div ref={rootRef} className={styles.pageBody}>
@@ -323,7 +324,7 @@ export function BrandControlPage() {
       <div className={cx("topCardsStack", "mb28")}>
         {[
           { label: "Active Email Templates", value: emailTemplates.filter((t) => t.status === "active").length.toString(), color: "var(--accent)", sub: `${emailTemplates.filter((t) => t.status === "draft").length} drafts` },
-          { label: "Custom Domains", value: customDomains.length.toString(), color: "var(--blue)", sub: `${customDomains.filter((d) => d.ssl).length} SSL secured` },
+          { label: "Custom Domains", value: customDomains.length.toString(), color: "var(--blue)", sub: `${customDomains.filter((d) => d.sslActive).length} SSL secured` },
           { label: "White-Label Clients", value: whitelabelClients.length.toString(), color: "var(--purple)", sub: `${whitelabelClients.filter((c) => c.status === "custom").length} custom branded` },
           { label: "Brand Version", value: "v2.4", color: "var(--amber)", sub: "Last updated Feb 2026" },
         ].map((stat) => (
@@ -418,7 +419,7 @@ export function BrandControlPage() {
               <div key={template.id} className={styles.brandTemplateCard}>
                 <div>
                   <div className={cx("fw600", "mb4")}>{template.name}</div>
-                  <div className={cx("text12", "colorMuted")}>Last edited: {template.lastEdited}</div>
+                  <div className={cx("text12", "colorMuted")}>Last edited: {new Date(template.lastEditedAt).toLocaleDateString("en-ZA", { month: "short", year: "numeric" })}</div>
                 </div>
                 <div>
                   <div className={cx("text10", "colorMuted", "mb2")}>Times Sent</div>
@@ -456,10 +457,10 @@ export function BrandControlPage() {
             <div key={domain.domain} className={styles.brandDomainCard}>
               <div>
                 <div className={cx("fontMono", "fw700", "text14", "colorBlue")}>{domain.domain}</div>
-                <div className={cx("text12", "colorMuted", "mt4")}>{domain.type}</div>
+                <div className={cx("text12", "colorMuted", "mt4")}>{domain.domainType}</div>
               </div>
               <div className={cx("flexCol", "gap4")}>
-                <div className={cx("text11", "colorMuted")}>{domain.ssl ? "✓" : "✗"} SSL Active</div>
+                <div className={cx("text11", "colorMuted")}>{domain.sslActive ? "✓" : "✗"} SSL Active</div>
                 <div className={cx("text11", "colorMuted")}>{domain.verified ? "✓" : "⏳"} DNS Verified</div>
               </div>
               <span className={cx("badge", domain.status === "active" ? "badgeGreen" : "badgeAmber")}>{domain.status}</span>
