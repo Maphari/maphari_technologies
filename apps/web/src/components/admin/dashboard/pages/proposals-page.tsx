@@ -367,13 +367,17 @@ export function ProposalsPage({ session }: { session: AuthSession | null }) {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className={cx("propPage")}>
+    <div className={styles.pageBody}>
 
       {/* Header */}
-      <div className={cx("propHeader")}>
-        <span className={cx("propTitle")}>Proposals</span>
+      <div className={styles.pageHeader}>
+        <div>
+          <div className={styles.pageEyebrow}>BUSINESS DEVELOPMENT / PROPOSALS</div>
+          <h1 className={styles.pageTitle}>Proposals</h1>
+          <div className={styles.pageSub}>Active proposals, status tracking, and client sign-off</div>
+        </div>
         <button
-          className={cx("btnSm")}
+          className={cx("btnSm", "btnAccent")}
           onClick={openCreate}
           type="button"
         >
