@@ -14,6 +14,7 @@ import {
   updateHandoverWithRefresh,
   type AdminHandover,
 } from "../../../../lib/api/admin";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function statusBadge(status: string) {
@@ -60,6 +61,11 @@ export function HandoverManagementPage({ session }: { session: AuthSession | nul
   const active   = handovers.filter((h) => h.status.toUpperCase() === "IN_PROGRESS").length;
   const complete = handovers.filter((h) => ["COMPLETE", "COMPLETED"].includes(h.status.toUpperCase())).length;
   const pending  = handovers.filter((h) => h.status.toUpperCase() === "PENDING").length;
+  const overdue  = handovers.filter((h) => {
+    if (["COMPLETE", "COMPLETED"].includes(h.status.toUpperCase())) return false;
+    if (!h.transferDate) return false;
+    return new Date(h.transferDate).getTime() < Date.now();
+  }).length;
 
   async function handleComplete(id: string) {
     if (!session || updating) return;
@@ -97,72 +103,94 @@ export function HandoverManagementPage({ session }: { session: AuthSession | nul
     );
   }
 
+  // ── Derived chart data ────────────────────────────────────────────────────
+  const monthCounts = handovers.reduce<Record<string, number>>((acc, h) => {
+    if (!h.transferDate) return acc;
+    const month = new Date(h.transferDate).toLocaleDateString("en-ZA", { month: "short", year: "2-digit" });
+    acc[month] = (acc[month] ?? 0) + 1;
+    return acc;
+  }, {});
+  const chartData = Object.entries(monthCounts).slice(-6).map(([name, value]) => ({ name, value }));
+
+  const tableRows = handovers.map((h) => ({
+    id: h.id,
+    from: h.fromStaffName ?? "—",
+    to: h.toStaffName ?? "—",
+    project: h.projectId ?? h.clientId ?? "—",
+    status: h.status,
+    transferDate: h.transferDate ?? null,
+  })) as unknown as Record<string, unknown>[];
+
   return (
     <div className={styles.pageBody}>
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>KNOWLEDGE / HANDOVER MANAGEMENT</div>
+          <div className={styles.pageEyebrow}>KNOWLEDGE / HANDOVERS</div>
           <h1 className={styles.pageTitle}>Handover Management</h1>
-          <div className={styles.pageSub}>Create and monitor project handover records</div>
+          <div className={styles.pageSub}>Active handovers · Completion rate · Knowledge transfer</div>
         </div>
         <button type="button" className={cx("btnSm", "btnAccent")}>+ New Handover</button>
       </div>
 
-      {/* ── KPI Cards ── */}
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Active",   value: String(active),   cls: "colorAmber"  },
-          { label: "Complete", value: String(complete), cls: "colorAccent" },
-          { label: "Pending",  value: String(pending),  cls: "colorRed"    },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, s.cls)}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Active Handovers" value={active} tone="amber" sparkData={[2, 3, 2, 4, 3, 5, 4, active]} />
+        <StatWidget label="Completed" value={complete} tone="green" progressValue={handovers.length > 0 ? Math.round((complete / handovers.length) * 100) : 0} />
+        <StatWidget label="Overdue" value={overdue} tone="red" progressValue={handovers.length > 0 ? Math.round((overdue / handovers.length) * 100) : 0} />
+        <StatWidget label="Avg Completion Time" value="—" sub="days (no data)" />
+      </WidgetGrid>
 
-      {/* ── Handover cards ── */}
-      {handovers.length === 0 ? (
-        <div className={cx("colorMuted", "text12", "textCenter", "py24")}>
-          No handovers recorded yet.
-        </div>
-      ) : (
-        <div className={cx("flexCol", "gap16")}>
-          {handovers.map((h) => (
-            <article key={h.id} className={styles.card}>
-              <div className={cx(styles.cardHd)}>
-                <span className={styles.cardHdTitle}>
-                  {h.fromStaffName ?? "Unknown"} → {h.toStaffName ?? "TBD"}
-                </span>
-                <span className={cx("badge", statusBadge(h.status))}>{statusLabel(h.status)}</span>
-              </div>
-              <div className={styles.cardInner}>
-                <div className={cx("flexBetween", "mb8")}>
-                  <span className={cx("text12", "colorMuted")}>
-                    {h.projectId ? `Project: ${h.projectId}` : h.clientId ? `Client: ${h.clientId}` : "No project/client linked"}
-                  </span>
-                  <span className={cx("text12", "colorMuted")}>Transfer: {formatDate(h.transferDate)}</span>
-                </div>
-                {h.notes && (
-                  <div className={cx("text12", "colorMuted", "mb12")}>{h.notes}</div>
-                )}
-                {(h.status.toUpperCase() === "PENDING" || h.status.toUpperCase() === "IN_PROGRESS") && (
-                  <button
-                    type="button"
-                    className={cx("btnSm", "btnAccent")}
-                    disabled={updating === h.id}
-                    onClick={() => void handleComplete(h.id)}
-                  >
-                    {updating === h.id ? "…" : "Mark Complete"}
-                  </button>
-                )}
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Handovers by Month"
+          type="bar"
+          data={chartData.length > 0 ? chartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Handover Stages"
+          stages={[
+            { label: "Initiated", count: pending, total: handovers.length, color: "#f5a623" },
+            { label: "In Progress", count: active, total: handovers.length, color: "#8b6fff" },
+            { label: "Review", count: Math.max(0, handovers.length - pending - active - complete), total: handovers.length, color: "#60a5fa" },
+            { label: "Completed", count: complete, total: handovers.length, color: "#34d98b" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="All Handovers"
+          rows={tableRows}
+          rowKey="id"
+          columns={[
+            { key: "from", header: "From", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.from ?? "—")}</span> },
+            { key: "to", header: "To", render: (_v, row) => <span className={cx("colorMuted")}>{String(row.to ?? "—")}</span> },
+            { key: "project", header: "Project / Client", render: (_v, row) => <span className={cx("text12")}>{String(row.project ?? "—")}</span> },
+            { key: "status", header: "Status", align: "right", render: (_v, row) => <span className={cx("badge", statusBadge(String(row.status ?? "")))}>{statusLabel(String(row.status ?? ""))}</span> },
+            { key: "transferDate", header: "Due Date", align: "right", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{formatDate(row.transferDate as string | null)}</span> },
+            {
+              key: "id", header: "Actions", align: "right",
+              render: (_v, row) => {
+                const s = String(row.status ?? "").toUpperCase();
+                if (s === "PENDING" || s === "IN_PROGRESS") {
+                  return (
+                    <button type="button" className={cx("btnSm", "btnAccent")} disabled={updating === String(row.id)} onClick={() => void handleComplete(String(row.id))}>
+                      {updating === String(row.id) ? "…" : "Complete"}
+                    </button>
+                  );
+                }
+                return <span className={cx("text11", "colorMuted")}>—</span>;
+              },
+            },
+          ]}
+        />
+      </WidgetGrid>
     </div>
   );
 }
