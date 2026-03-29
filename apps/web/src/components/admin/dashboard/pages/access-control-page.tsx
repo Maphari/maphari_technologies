@@ -12,6 +12,7 @@ import { loadStaffUsersWithRefresh, loadAuditEventsWithRefresh, lockdownSessions
 import type { StaffAccessUser, AdminAuditEvent } from "../../../../lib/api/admin";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -141,6 +142,8 @@ export function AccessControlPage({
   }, [activeTab, auditEvents.length, loadAudit]);
 
   const active = users.filter((u) => u.isActive);
+  const inactive = users.length - active.length;
+  const adminRoles = users.filter((u) => u.role === "ADMIN").length;
 
   if (loading) {
     return (
@@ -165,13 +168,26 @@ export function AccessControlPage({
     );
   }
 
+  const usersByRole = users.reduce<Record<string, number>>((acc, u) => {
+    acc[u.role] = (acc[u.role] ?? 0) + 1;
+    return acc;
+  }, {});
+  const roleChartData = Object.entries(usersByRole).map(([label, count]) => ({ label, count }));
+
+  const tableRows = users.map((u) => ({
+    email:     u.email,
+    role:      u.role,
+    lastSeen:  fmtDate(u.updatedAt),
+    status:    u.isActive ? "active" : "inactive",
+  }));
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>GOVERNANCE / ACCESS CONTROL</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / ACCESS</div>
           <h1 className={styles.pageTitle}>Access Control</h1>
-          <div className={styles.pageSub}>Staff accounts · Roles · Access audit</div>
+          <div className={styles.pageSub}>Roles · Permissions · Audit log</div>
         </div>
         <div className={styles.pageActions}>
           <button
@@ -186,20 +202,56 @@ export function AccessControlPage({
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Active Users", value: active.length.toString(), color: "var(--accent)", sub: `${users.length} total accounts`, word: false },
-          { label: "Inactive Users", value: (users.length - active.length).toString(), color: users.length - active.length > 0 ? "var(--amber)" : "var(--accent)", sub: "Revoked or disabled", word: false },
-          { label: "Total Accounts", value: users.length.toString(), color: "var(--blue)", sub: "All staff", word: false },
-          { label: "Session Status", value: session ? "Connected" : "No session", color: session ? "var(--accent)" : "var(--red)", sub: "Gateway auth", word: true },
-        ].map((stat) => (
-          <div key={stat.label} className={cx(styles.statCard, toneClass(stat.color))}>
-            <div className={styles.statLabel}>{stat.label}</div>
-            <div className={cx(styles.statValue, stat.word && styles.statValueWord, styles.accessToneText)}>{stat.value}</div>
-            <div className={cx("text11", "colorMuted")}>{stat.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Total Users" value={users.length} sub={`${active.length} active`} tone="default" />
+        <StatWidget label="Admin Roles" value={adminRoles} sub="Full access accounts" tone={adminRoles > 3 ? "amber" : "default"} />
+        <StatWidget label="Inactive Accounts" value={inactive} sub="Revoked or disabled" tone={inactive > 0 ? "amber" : "default"} />
+        <StatWidget label="Audit Events" value={auditEvents.length} sub="Logged actions" tone="default" />
+      </WidgetGrid>
+
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Users by Role"
+          data={roleChartData}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Account Status"
+          stages={[
+            { label: "Active",   count: active.length,   total: Math.max(users.length, 1), color: "#34d98b" },
+            { label: "Inactive", count: inactive,         total: Math.max(users.length, 1), color: "#ff5f5f" },
+            { label: "Admin",    count: adminRoles,       total: Math.max(users.length, 1), color: "#8b6fff" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Users"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "email",    header: "Email" },
+            { key: "role",     header: "Role",   render: (v) => {
+              const val = v as string;
+              const cls = val === "ADMIN" ? cx("badge", "badgeAccent") : cx("badge", "badgeBlue");
+              return <span className={cls}>{val}</span>;
+            }},
+            { key: "lastSeen", header: "Last Seen", align: "right" },
+            { key: "status",   header: "Status",    align: "right", render: (v) => {
+              const val = v as string;
+              const cls = val === "active" ? cx("badge", "badgeGreen") : cx("badge", "badgeMuted");
+              return <span className={cls}>{val}</span>;
+            }},
+          ]}
+          emptyMessage="No staff users found"
+        />
+      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select
