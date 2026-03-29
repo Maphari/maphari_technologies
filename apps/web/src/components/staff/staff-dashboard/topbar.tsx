@@ -16,6 +16,9 @@ interface TopbarProps {
   userEmail?: string;
   onLogout?: () => void;
   isLoggingOut?: boolean;
+  onNotifClick?: () => void;
+  onNavigateSettings?: () => void;
+  onNavigateProfile?: () => void;
 }
 
 export function Topbar({
@@ -30,6 +33,9 @@ export function Topbar({
   userEmail,
   onLogout,
   isLoggingOut,
+  onNotifClick,
+  onNavigateSettings,
+  onNavigateProfile,
 }: TopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -95,6 +101,7 @@ export function Topbar({
         <button
           type="button"
           className={cx("topbarIconBtn")}
+          onClick={onNotifClick}
           aria-label={notifCount > 0 ? `Notifications (${notifCount} unread)` : "Notifications"}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -138,6 +145,30 @@ export function Topbar({
                     {userName && <div className={cx("topbarUserName")}>{userName}</div>}
                     {userEmail && <div className={cx("topbarUserEmail")}>{userEmail}</div>}
                   </div>
+                )}
+                {(onNavigateProfile || onNavigateSettings) && (
+                  <div className={cx("topbarUserDivider")} />
+                )}
+                {onNavigateProfile && (
+                  <button
+                    type="button"
+                    className={cx("topbarUserItem")}
+                    onClick={() => { setMenuOpen(false); onNavigateProfile(); }}
+                  >
+                    My Employment
+                  </button>
+                )}
+                {onNavigateSettings && (
+                  <button
+                    type="button"
+                    className={cx("topbarUserItem")}
+                    onClick={() => { setMenuOpen(false); onNavigateSettings(); }}
+                  >
+                    Settings
+                  </button>
+                )}
+                {(onNavigateProfile || onNavigateSettings) && (
+                  <div className={cx("topbarUserDivider")} />
                 )}
                 <button
                   type="button"
@@ -193,6 +224,9 @@ export function StaffTopbar({
   staffEmail,
   onLogout,
   isLoggingOut,
+  onNewTask,
+  onNavigateSettings,
+  onNavigateProfile,
 }: StaffTopbarProps) {
   return (
     <Topbar
@@ -202,15 +236,16 @@ export function StaffTopbar({
       onSearch={() => {
         window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }));
       }}
-      onAdd={() => {
-        window.dispatchEvent(new CustomEvent("staff:quick-add"));
-      }}
+      onAdd={onNewTask ?? (() => {})}
+      onNotifClick={onOpenNotifications}
       onHamburger={onMenuToggle ?? (() => {})}
       userInitials={staffInitials}
       userName={staffName}
       userEmail={staffEmail}
       onLogout={onLogout}
       isLoggingOut={isLoggingOut}
+      onNavigateSettings={onNavigateSettings}
+      onNavigateProfile={onNavigateProfile}
     />
   );
 }

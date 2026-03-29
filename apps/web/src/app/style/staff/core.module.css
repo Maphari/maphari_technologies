@@ -1472,6 +1472,8 @@
   background: var(--s2);
 }
 
+.topbarUserDivider { height: 1px; background: var(--b1); margin: 4px 0; }
+
 .topbarSignOut {
   color: #f87171;
   margin-top: 4px;
