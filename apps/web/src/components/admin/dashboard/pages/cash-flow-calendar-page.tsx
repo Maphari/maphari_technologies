@@ -13,6 +13,7 @@ import {
   type CashFlowScenario
 } from "../../../../lib/api/admin/billing";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 const statusConfig = {
   received: { color: "var(--accent)", label: "Received" },
@@ -129,6 +130,30 @@ export function CashFlowCalendarPage() {
     [cashEvents]
   );
 
+  const netThisMonth = useMemo(() => (monthData[0]?.net ?? 0), [monthData]);
+
+  // ── Widget data ────────────────────────────────────────────────────────────
+  const chartData = monthData.map((m) => ({
+    label: m.month,
+    inflow: Math.round(m.totalIn / 1000),
+    outflow: Math.round(m.totalOut / 1000),
+  }));
+
+  const statusCounts = Object.entries(statusConfig).map(([status, cfg]) => ({
+    label: cfg.label,
+    count: cashEvents.filter((e) => e.status === status).length,
+    total: cashEvents.length || 1,
+    color: cfg.color === "var(--accent)" ? "#34d98b" : cfg.color === "var(--red)" ? "#ff5f5f" : cfg.color === "var(--amber)" ? "#f5a623" : cfg.color === "var(--blue)" ? "#5fb3ff" : "#888",
+  }));
+
+  const tableRows = cashEvents.slice(0, 50).map((e) => ({
+    date: e.date.slice(5),
+    description: e.description,
+    type: e.type,
+    amount: `${e.type === "inflow" ? "+" : "-"}R${(Math.abs(e.amount) / 1000).toFixed(1)}k`,
+    status: e.status,
+  })) as Record<string, unknown>[];
+
   if (loadingEvents) {
     return (
       <div className={cx("pageBody")}>
@@ -143,6 +168,7 @@ export function CashFlowCalendarPage() {
 
   return (
     <div className={cx(styles.pageBody, styles.reportsRoot, "rdStudioPage")}>
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>FINANCE / CASH FLOW CALENDAR</div>
@@ -154,21 +180,78 @@ export function CashFlowCalendarPage() {
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Opening Balance", value: `R${(openingBalance / 1000).toFixed(0)}k`, color: "var(--blue)", sub: `Received invoices` },
-          { label: "Expected Inflows (90d)", value: `R${(totalExpected / 1000).toFixed(0)}k`, color: "var(--accent)", sub: "Retainers and invoices" },
-          { label: "Planned Outflows (90d)", value: `R${(totalOut / 1000).toFixed(0)}k`, color: "var(--red)", sub: "Payroll, tools, rent" },
-          { label: "Overdue Receivables", value: `R${(overdue / 1000).toFixed(0)}k`, color: "var(--red)", sub: "Needs immediate chase" }
-        ].map((s) => (
-          <div key={s.label} className={cx(styles.statCard, "rdStudioCard")}>
-            <div className={cx(styles.statLabel, "rdStudioLabel")}>{s.label}</div>
-            <div className={cx(styles.statValue, "cashFlowToneText", toneClass(s.color), "rdStudioMetric", s.color === "var(--accent)" ? "rdStudioMetricPos" : s.color === "var(--red)" ? "rdStudioMetricNeg" : "")}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: KPI stats ── */}
+      <WidgetGrid>
+        <StatWidget
+          label="Current Balance"
+          value={`R${(openingBalance / 1000).toFixed(0)}k`}
+          sub="Received inflows"
+          tone="accent"
+        />
+        <StatWidget
+          label="Expected Inflows (90d)"
+          value={`R${(totalExpected / 1000).toFixed(0)}k`}
+          sub="Retainers and invoices"
+          tone="green"
+        />
+        <StatWidget
+          label="Planned Outflows (90d)"
+          value={`R${(totalOut / 1000).toFixed(0)}k`}
+          sub="Payroll, tools, rent"
+          tone="red"
+        />
+        <StatWidget
+          label="Net This Month"
+          value={`${netThisMonth >= 0 ? "+" : ""}R${(netThisMonth / 1000).toFixed(0)}k`}
+          sub={overdue > 0 ? `R${(overdue / 1000).toFixed(0)}k overdue` : "On track"}
+          tone={netThisMonth >= 0 ? "green" : "red"}
+        />
+      </WidgetGrid>
 
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Inflow vs Outflow (3 months)"
+          data={chartData.length > 0 ? chartData : [{ label: "No data", inflow: 0, outflow: 0 }]}
+          dataKey={["inflow", "outflow"]}
+          type="bar"
+          color={["#34d98b", "#ff5f5f"]}
+          legend={[
+            { key: "inflow", label: "Inflow (Rk)" },
+            { key: "outflow", label: "Outflow (Rk)" },
+          ]}
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Events by Status"
+          stages={statusCounts.filter((s) => s.count > 0)}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Transactions table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Cash Flow Events"
+          rows={tableRows}
+          rowKey="description"
+          emptyMessage="No cash flow events found."
+          columns={[
+            { key: "date",        header: "Date",        align: "left" },
+            { key: "description", header: "Description", align: "left" },
+            { key: "type",        header: "Type",        align: "left", render: (val) => (
+              <span className={cx(String(val) === "inflow" ? "badgeGreen" : "badgeRed")}>{String(val)}</span>
+            )},
+            { key: "amount",      header: "Amount",      align: "right" },
+            { key: "status",      header: "Status",      align: "left", render: (val) => {
+              const cfg = statusConfig[val as keyof typeof statusConfig];
+              const badgeClass = val === "received" ? "badgeGreen" : val === "overdue" ? "badgeRed" : val === "scheduled" ? "badgeAmber" : "badgeMuted";
+              return <span className={cx(badgeClass)}>{cfg?.label ?? String(val)}</span>;
+            }},
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Tab views below widgets ── */}
       <AdminTabs
         tabs={tabs}
         activeTab={activeTab}
