@@ -8,6 +8,7 @@ import { queueAutomationJobWithRefresh } from "../../../../lib/api/admin/automat
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 type JourneyTab = "journey map" | "handoff health" | "stage aging" | "moments";
 type JourneyStage = "Acquisition" | "Onboarding" | "Adoption" | "Value" | "Renewal" | "Advocacy";
@@ -293,295 +294,85 @@ export function ClientJourneyPage({
     }
   ];
 
+  const stageChartData = allStages.map(s => ({
+    label: s.label,
+    count: rows.filter(r => r.stage === s.label).length,
+  }));
+
+  const avgTouchpoints = rows.length > 0
+    ? Math.round(rows.reduce((s, r) => s + r.wonLeads + r.projectsCount, 0) / rows.length)
+    : 0;
+
+  const tableRows = filtered.map(row => ({
+    name: row.name,
+    stage: row.stage,
+    daysInStage: `${row.journeyAgeDays}d`,
+    lastTouchpoint: row.staleDays > 0 ? `${row.staleDays}d ago` : "Today",
+    healthScore: row.risk,
+  }));
+
   return (
     <div className={styles.pageBody}>
-
-      {/* ── Page header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>EXPERIENCE / CLIENT JOURNEY</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / JOURNEY</div>
           <h1 className={styles.pageTitle}>Client Journey</h1>
-          <div className={styles.pageSub}>Lifecycle orchestration &middot; Stage flow &middot; Handoff reliability</div>
+          <div className={styles.pageSub}>Journey stage overview · Touchpoints · Lifecycle health</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnAccent")}>Export Journey</button>
         </div>
       </div>
 
-      {/* ── 4 KPI cards ── */}
-      <div className={styles.cjKpiGrid}>
-        {([
-          { label: "Tracked Accounts",    value: filtered.length.toString(),   sub: `${riskHigh} high risk`,           color: "var(--accent)" },
-          { label: "Handoff Gaps",         value: handoffGaps.length.toString(), sub: "Won leads without project",       color: handoffGaps.length > 0 ? "var(--red)" : "var(--accent)" },
-          { label: "Renewal Window (60d)", value: renewalWindow.toString(),      sub: "Needs retention plan",            color: renewalWindow > 0 ? "var(--amber)" : "var(--accent)" },
-          { label: "Advocacy Ready",       value: advocacyReady.toString(),      sub: "Low risk + post-value",           color: "var(--blue)" },
-        ] as const).map((kpi) => (
-          <div key={kpi.label} className={cx(styles.cjKpiCard, toneClass(kpi.color))}>
-            <div className={styles.cjKpiLabel}>{kpi.label}</div>
-            <div className={cx(styles.cjKpiValue, toneClass(kpi.color))}>{kpi.value}</div>
-            <div className={styles.cjKpiMeta}>{kpi.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Total Clients Mapped" value={rows.length} sub="All accounts" tone="accent" />
+        <StatWidget label="Active Journey Stages" value={filtered.length} sub="With filters applied" tone="default" />
+        <StatWidget label="Avg Touchpoints" value={avgTouchpoints} sub="Per client" tone="default" />
+        <StatWidget label="At-Risk Stage Count" value={riskHigh} sub="High risk" tone={riskHigh > 0 ? "red" : "default"} />
+      </WidgetGrid>
 
-      {/* ── Stage distribution rail ── */}
-      <div className={styles.cjStageRail}>
-        {allStages.map((s) => {
-          const count = rows.filter((r) => r.stage === s.label).length;
-          return (
-            <div key={s.label} className={`${styles.cjStageTile} ${s.strip}`}>
-              <div className={styles.cjStageTileLabel}>{s.label}</div>
-              <div className={styles.cjStageTileCount}>{count}</div>
-              <div className={styles.cjStageTilePct}>{Math.round((count / total) * 100)}% of accounts</div>
-            </div>
-          );
-        })}
-      </div>
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Clients by Journey Stage"
+          data={stageChartData}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Journey Phases"
+          stages={[
+            { label: "Onboarding", count: rows.filter(r => r.stage === "Onboarding").length, total: Math.max(rows.length, 1), color: "#f5a623" },
+            { label: "Active", count: rows.filter(r => r.stage === "Adoption" || r.stage === "Value").length, total: Math.max(rows.length, 1), color: "#8b6fff" },
+            { label: "Expansion", count: rows.filter(r => r.stage === "Advocacy").length, total: Math.max(rows.length, 1), color: "#34d98b" },
+            { label: "At-Risk", count: riskHigh, total: Math.max(rows.length, 1), color: "#ff5f5f" },
+            { label: "Churned", count: 0, total: Math.max(rows.length, 1), color: "#888" },
+          ]}
+        />
+      </WidgetGrid>
 
-      {/* ── Filter bar ── */}
-      <div className={styles.cjFilters}>
-        <select title="Filter by stage" value={stageFilter} onChange={(e) => setStageFilter(e.target.value as typeof stageFilter)} className={styles.filterSelect}>
-          <option value="ALL">All stages</option>
-          {(["Acquisition", "Onboarding", "Adoption", "Value", "Renewal", "Advocacy"] as JourneyStage[]).map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-        <select title="Filter by risk" value={riskFilter} onChange={(e) => setRiskFilter(e.target.value as typeof riskFilter)} className={styles.filterSelect}>
-          <option value="ALL">All risk</option>
-          <option value="Low">Low</option>
-          <option value="Medium">Medium</option>
-          <option value="High">High</option>
-        </select>
-        <select title="Filter by owner" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} className={styles.filterSelect}>
-          {owners.map((owner) => (
-            <option key={owner} value={owner}>{owner === "ALL" ? "All owners" : owner}</option>
-          ))}
-        </select>
-        <select title="Select tab" value={activeTab} onChange={(e) => setActiveTab(e.target.value as JourneyTab)} className={cx(styles.filterSelect, "mlAuto")}>
-          <option value="journey map">Journey Map</option>
-          <option value="handoff health">Handoff Health</option>
-          <option value="stage aging">Stage Aging</option>
-          <option value="moments">Moments</option>
-        </select>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════
-          JOURNEY MAP TAB
-          ══════════════════════════════════════════════════════════ */}
-      {activeTab === "journey map" && (
-        <div className={styles.cjSection}>
-          <div className={styles.cjSectionHeader}>
-            <span className={styles.cjSectionTitle}>Journey Map</span>
-            <span className={styles.cjSectionMeta}>{filtered.length} ACCOUNTS</span>
-          </div>
-          <div className={styles.cjMapHead}>
-            <span>Client</span>
-            <span>Stage</span>
-            <span>Risk</span>
-            <span>Journey Age</span>
-            <span>Renewal</span>
-            <span>Outstanding</span>
-            <span>Next Milestone</span>
-          </div>
-          {filtered.map((row) => (
-            <div key={row.id} className={`${styles.cjMapRow} ${riskStripCls(row.risk)}`}>
-              <div>
-                <div className={styles.cjClientName}>{row.name}</div>
-                <div className={styles.cjClientSub}>{row.owner}</div>
-              </div>
-              <span className={cx("journeyStageTag", toneClass(stageColor(row.stage)))}>{row.stage}</span>
-              <span className={cx("fontMono", "text11", "journeyToneText", toneClass(riskColor(row.risk)))}>{row.risk}</span>
-              <div className={styles.cjAgeCell}>
-                <span className={cx("fontMono", "text11", "journeyToneText", ageBarTone(row.journeyAgeDays))}>{row.journeyAgeDays}d</span>
-                <div className={styles.cjAgeTrack}>
-                  <div
-                    className={`${styles.cjAgeFill} ${ageBarFillCls(row.journeyAgeDays)}`}
-                    style={{ "--pct": `${Math.min(100, (row.journeyAgeDays / 90) * 100)}%` } as CSSProperties}
-                  />
-                </div>
-              </div>
-              <span className={cx("fontMono", "text11", "journeyToneText", row.renewalDays !== null && row.renewalDays <= 30 ? "toneAmber" : "toneMuted")}>
-                {row.renewalDays === null ? "Not set" : `${row.renewalDays}d`}
-              </span>
-              <span className={cx("fontMono", "text11", "journeyToneText", row.outstandingCents > 0 ? "toneRed" : "toneMuted")}>
-                {money(row.outstandingCents, currency)}
-              </span>
-              <span className={cx("text11", "colorMuted")}>{row.nextMilestone}</span>
-            </div>
-          ))}
-          {filtered.length === 0 && <div className={styles.cjEmptyState}>No accounts match your filters.</div>}
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════
-          HANDOFF HEALTH TAB
-          ══════════════════════════════════════════════════════════ */}
-      {activeTab === "handoff health" && (
-        <div className={cx("grid2", "gap16")}>
-
-          {/* Lead to Delivery Handoffs */}
-          <div className={cx("card", "p0", "overflowHidden")}>
-            <div className={styles.cjCardHead}>
-              <span className={styles.cjCardTitle}>Lead to Delivery Handoffs</span>
-              <span className={cx("fontMono", "fw700", "text13", "journeyToneText", handoffGaps.length > 0 ? "toneRed" : "toneAccent")}>
-                {handoffGaps.length}
-              </span>
-            </div>
-            <div className={styles.cjCardBody}>
-              {handoffGaps.length > 0 ? handoffGaps.map((row) => (
-                <div key={row.id} className={styles.cjHandoffRow}>
-                  <div>
-                    <div className={styles.cjHandoffClient}>{row.name}</div>
-                    <div className={cx("text11", "colorMuted")}>Won lead but no project kickoff yet.</div>
-                  </div>
-                  <div className={styles.cjHandoffLag}>
-                    <span className={cx("fontMono", "fw700", "journeyToneText", row.handoffGapDays >= 10 ? "toneRed" : "toneAmber")}>
-                      {row.handoffGapDays}d
-                    </span>
-                    <span className={cx("text10", "colorMuted")}>lag</span>
-                  </div>
-                </div>
-              )) : (
-                <div className={styles.cjEmptyState}>No active lead-to-project handoff gaps.</div>
-              )}
-            </div>
-          </div>
-
-          {/* Lifecycle Handoff Checks */}
-          <div className={cx("card", "p0", "overflowHidden")}>
-            <div className={styles.cjCardHead}>
-              <span className={styles.cjCardTitle}>Lifecycle Handoff Checks</span>
-            </div>
-            <div className={styles.cjCardBody}>
-              {lifecycleChecks.map((item) => (
-                <div key={item.label} className={styles.cjCheckRow}>
-                  <div>
-                    <div className={styles.cjCheckLabel}>{item.label}</div>
-                    <div className={cx("text11", "colorMuted")}>{item.note}</div>
-                  </div>
-                  <div className={cx(styles.cjCheckBadge, item.value > 0 ? "toneRed" : "toneAccent")}>
-                    {item.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════
-          STAGE AGING TAB
-          ══════════════════════════════════════════════════════════ */}
-      {activeTab === "stage aging" && (
-        <div className={styles.cjSection}>
-          <div className={styles.cjSectionHeader}>
-            <span className={styles.cjSectionTitle}>Stage Aging</span>
-            <span className={styles.cjSectionMeta}>SORTED BY AGE</span>
-          </div>
-          <div className={styles.cjAgingHead}>
-            <span>Client</span>
-            <span>Stage</span>
-            <span>Age in Stage</span>
-            <span>Risk</span>
-            <span>Primary Friction</span>
-          </div>
-          {[...filtered].sort((a, b) => b.journeyAgeDays - a.journeyAgeDays).map((row) => (
-            <div key={row.id} className={`${styles.cjAgingRow} ${riskStripCls(row.risk)}`}>
-              <span className={cx("text12", "fw600")}>{row.name}</span>
-              <span className={cx("journeyStageTag", toneClass(stageColor(row.stage)))}>{row.stage}</span>
-              <div className={styles.cjAgeCell}>
-                <span className={cx("fontMono", "text11", "journeyToneText", ageBarTone(row.journeyAgeDays))}>
-                  {row.journeyAgeDays}d
-                </span>
-                <div className={styles.cjAgeTrack}>
-                  <div
-                    className={`${styles.cjAgeFill} ${ageBarFillCls(row.journeyAgeDays)}`}
-                    style={{ "--pct": `${Math.min(100, (row.journeyAgeDays / 90) * 100)}%` } as CSSProperties}
-                  />
-                </div>
-              </div>
-              <span className={cx("fontMono", "text11", "journeyToneText", toneClass(riskColor(row.risk)))}>{row.risk}</span>
-              <span className={cx("text11", "colorMuted")}>
-                {row.handoffGapDays > 0
-                  ? "Lead handoff lag"
-                  : row.overdueInvoices > 0
-                    ? "Unresolved billing"
-                    : row.blockedProjects > 0
-                      ? "Blocked delivery work"
-                      : row.renewalDays !== null && row.renewalDays <= 45
-                        ? "Renewal prep"
-                        : "Execution cadence"}
-              </span>
-            </div>
-          ))}
-          {filtered.length === 0 && <div className={styles.cjEmptyState}>No accounts available.</div>}
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════
-          MOMENTS TAB
-          ══════════════════════════════════════════════════════════ */}
-      {activeTab === "moments" && (
-        <div className={styles.cjMomentsSplit}>
-
-          {/* Upcoming Journey Moments */}
-          <div className={cx("card", "p0", "overflowHidden")}>
-            <div className={styles.cjCardHead}>
-              <span className={styles.cjCardTitle}>Upcoming Journey Moments</span>
-            </div>
-            <div className={styles.cjCardBody}>
-              {moments.length > 0 ? moments.map((moment, i) => (
-                <div
-                  key={`${moment.client}-${i}`}
-                  className={`${styles.cjMomentRow}${moment.severity === "high" ? ` ${styles.cjMomentHigh}` : ""}`}
-                >
-                  <div>
-                    <div className={styles.cjMomentClient}>{moment.client}</div>
-                    <div className={cx("text11", "colorMuted")}>{moment.label} &middot; Owner: {moment.owner}</div>
-                  </div>
-                  <div className={cx(styles.cjMomentWhen, moment.severity === "high" ? "toneRed" : "toneAmber")}>
-                    <span className={cx("fontMono", "fw800")}>{moment.when}d</span>
-                    <span className={cx("text10", "colorMuted")}>away</span>
-                  </div>
-                </div>
-              )) : (
-                <div className={styles.cjEmptyState}>No lifecycle moments in the current window.</div>
-              )}
-            </div>
-          </div>
-
-          {/* Lifecycle Actions */}
-          <div className={cx("card", "p0", "overflowHidden")}>
-            <div className={styles.cjCardHead}>
-              <span className={styles.cjCardTitle}>Lifecycle Actions</span>
-            </div>
-            <div className={cx(styles.cjCardBody, "p20")}>
-              <div className={cx("text11", "colorMuted", "mb16", "lineH6")}>
-                This page tracks transition quality across lifecycle stages. Onboarding task detail, offboarding processes, satisfaction surveys, and communication logs stay in their dedicated pages.
-              </div>
-              <button
-                type="button"
-                onClick={() => void handleQueueIntervention()}
-                disabled={!canAct}
-                className={cx("btnSm", "btnAccent", "wFull", "mb8", !canAct && "opacity50")}
-              >
-                Queue Intervention Digest
-              </button>
-              <button
-                type="button"
-                onClick={() => onNotify("success", "Lifecycle handoff summary generated.")}
-                disabled={!canAct}
-                className={cx("btnSm", "btnGhost", "wFull", !canAct && "opacity50")}
-              >
-                Generate Handoff Summary
-              </button>
-            </div>
-          </div>
-
-        </div>
-      )}
-
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Client Journey Map"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "name", header: "Client" },
+            { key: "stage", header: "Current Stage" },
+            { key: "daysInStage", header: "Days in Stage", align: "right" },
+            { key: "lastTouchpoint", header: "Last Touchpoint", align: "right" },
+            { key: "healthScore", header: "Health", align: "right", render: (v) => {
+              const val = v as string;
+              const cls = val === "Low" ? cx("badge", "badgeGreen") : val === "High" ? cx("badge", "badgeRed") : cx("badge", "badgeAmber");
+              return <span className={cls}>{val}</span>;
+            }},
+          ]}
+          emptyMessage="No clients mapped"
+        />
+      </WidgetGrid>
     </div>
   );
 }
