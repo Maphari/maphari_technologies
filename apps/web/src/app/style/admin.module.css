@@ -820,6 +820,51 @@
   width: 100%;
   display: grid;
   gap: 8px;
+  border-collapse: collapse;
+}
+
+.table thead tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.table thead th {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(240, 237, 232, 0.5);
+  font-weight: 500;
+  padding: 6px 12px 6px 0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table thead th:first-child {
+  padding-left: 0;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 120ms ease;
+}
+
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.table tbody td {
+  padding: 8px 12px 8px 0;
+  font-size: 0.82rem;
+  vertical-align: middle;
+}
+
+.table tbody td:first-child {
+  padding-left: 0;
 }
 
 .tableRowHead,

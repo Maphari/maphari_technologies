@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { AdminClient, AdminProject } from "../../lib/api/admin";
 import styles from "../../app/style/admin.module.css";
+import { formatStatus } from "../../lib/utils/format-status";
 
 type SortDirection = "asc" | "desc";
 
@@ -80,7 +81,7 @@ export function AdminEntityTables({ clients, projects }: AdminEntityTablesProps)
               <div key={client.id} className={styles.tableRow}>
                 <span>{client.name}</span>
                 <span>
-                  <i className={`${styles.statusBadge} ${statusClass(client.status)}`}>{client.status}</i>
+                  <i className={`${styles.statusBadge} ${statusClass(client.status)}`}>{formatStatus(client.status)}</i>
                 </span>
                 <span className={styles.mono}>{client.id.slice(0, 8)}</span>
                 <span>{formatDate(client.updatedAt)}</span>
@@ -112,7 +113,7 @@ export function AdminEntityTables({ clients, projects }: AdminEntityTablesProps)
               <div key={project.id} className={styles.tableRow}>
                 <span>{project.name}</span>
                 <span>
-                  <i className={`${styles.statusBadge} ${statusClass(project.status)}`}>{project.status}</i>
+                  <i className={`${styles.statusBadge} ${statusClass(project.status)}`}>{formatStatus(project.status)}</i>
                 </span>
                 <span className={styles.mono}>{project.clientId.slice(0, 8)}</span>
                 <span>{formatDate(project.updatedAt)}</span>
