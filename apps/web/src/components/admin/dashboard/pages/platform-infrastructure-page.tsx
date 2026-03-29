@@ -14,6 +14,7 @@ import { saveSession } from "../../../../lib/auth/session";
 import { loadFeatureFlagsWithRefresh, toggleFeatureFlagWithRefresh, type FeatureFlag } from "../../../../lib/api/admin/settings";
 import { cx, styles } from "../style";
 import { colorClass, toneClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -187,11 +188,27 @@ export function PlatformInfrastructurePage({
     );
   }
 
+  const serviceStatusData = [
+    { label: "Healthy",  count: healthyCount },
+    { label: "Unknown",  count: unknownCount },
+    { label: "Down",     count: downCount    },
+  ];
+
+  const flagsEnabled  = flags.filter(f => f.enabled).length;
+  const flagsDisabled = flags.filter(f => !f.enabled).length;
+
+  const tableRows = services.map(svc => ({
+    name:        svc.name,
+    description: svc.description,
+    source:      svc.requiresSession ? "Session check" : "No check yet",
+    status:      svc.status,
+  }));
+
   return (
-    <div className={cx(styles.pageBody, styles.pifRoot)}>
+    <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>GOVERNANCE / PLATFORM & INFRASTRUCTURE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / INFRASTRUCTURE</div>
           <h1 className={styles.pageTitle}>Platform &amp; Infrastructure</h1>
           <div className={styles.pageSub}>Service health · Feature flags · Session status</div>
         </div>
@@ -202,26 +219,98 @@ export function PlatformInfrastructurePage({
               System {cfg.label}
             </span>
           </div>
-          <div className={cx("text11", "colorMuted")}>
-            Last checked {lastRefresh.toLocaleTimeString()}
-          </div>
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Healthy Services", value: healthyCount.toString(), color: healthyCount > 0 ? "var(--accent)" : "var(--muted)", sub: "Session-verified" },
-          { label: "Unknown Services", value: unknownCount.toString(), color: unknownCount > 0 ? "var(--amber)" : "var(--accent)", sub: "No health endpoint yet" },
-          { label: "Down Services", value: downCount.toString(), color: downCount > 0 ? "var(--red)" : "var(--accent)", sub: downCount > 0 ? "Session unavailable" : "All reachable" },
-          { label: "Session", value: sessionOk ? "Active" : "No session", color: sessionOk ? "var(--accent)" : "var(--red)", sub: sessionOk ? `User: ${session.user.role}` : "Sign in required" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Healthy Services" value={healthyCount} sub="Session-verified" tone={healthyCount > 0 ? "green" : "default"} />
+        <StatWidget label="Unknown Services" value={unknownCount} sub="No health endpoint" tone={unknownCount > 0 ? "amber" : "default"} />
+        <StatWidget label="Down Services" value={downCount} sub={downCount > 0 ? "Session unavailable" : "All reachable"} tone={downCount > 0 ? "red" : "default"} />
+        <StatWidget label="Feature Flags" value={flags.length} sub={`${flagsEnabled} enabled`} tone="accent" />
+      </WidgetGrid>
+
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Service Health Breakdown"
+          data={serviceStatusData}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Feature Flag Status"
+          stages={[
+            { label: "Enabled",  count: flagsEnabled,  total: Math.max(flags.length, 1), color: "#34d98b" },
+            { label: "Disabled", count: flagsDisabled, total: Math.max(flags.length, 1), color: "#888"    },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Services"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "name",        header: "Service" },
+            { key: "description", header: "Description" },
+            { key: "source",      header: "Source",  align: "right" },
+            { key: "status",      header: "Status",  align: "right", render: (v) => {
+              const val = v as ServiceStatus;
+              const sc  = statusConfig[val];
+              const cls = val === "healthy" ? cx("badge", "badgeGreen") : val === "down" ? cx("badge", "badgeRed") : cx("badge", "badgeAmber");
+              return <span className={cls}>{sc.label}</span>;
+            }},
+          ]}
+          emptyMessage="No services configured"
+        />
+      </WidgetGrid>
+
+      {/* Feature flags section */}
+      {activeTab === "feature flags" && (
+        <WidgetGrid>
+          <div className={cx("flexCol", "gap12")}>
+            {flagsLoading ? (
+              <div className={cx("text12", "colorMuted", "py20")}>Loading feature flags…</div>
+            ) : flags.map((flag) => (
+              <div key={flag.key} className={styles.pifFlagRow}>
+                <div>
+                  <div className={cx("fw700", "mb4")}>{flag.name}</div>
+                  <div className={cx("text12", "colorMuted")}>{flag.description ?? ""}</div>
+                </div>
+                <div>
+                  <div className={styles.pifLabel}>Scope</div>
+                  <div className={cx("text12", flag.enabled ? "colorBlue" : "colorMuted")}>{flag.scope}</div>
+                </div>
+                <button
+                  type="button"
+                  disabled={togglingKey === flag.key}
+                  onClick={() => void handleToggle(flag.key)}
+                  className={cx(styles.pifToggleWrap, "noBorder", "bgTransp", "p0", togglingKey === flag.key ? "notAllowed" : "pointer")}
+                >
+                  <div className={cx(styles.pifToggle, flag.enabled && styles.pifToggleOn)}>
+                    <div className={cx(styles.pifToggleKnob, flag.enabled && styles.pifToggleKnobOn)} />
+                  </div>
+                  <span className={cx(styles.pifToggleText, flag.enabled ? "colorAccent" : "colorMuted")}>
+                    {togglingKey === flag.key ? "…" : flag.enabled ? "On" : "Off"}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnGhost")}
+                  onClick={() => void handleToggle(flag.key)}
+                  disabled={togglingKey === flag.key}
+                >
+                  {flag.enabled ? "Disable" : "Enable"}
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </WidgetGrid>
+      )}
 
       <div className={styles.filterRow}>
         <select
@@ -233,87 +322,6 @@ export function PlatformInfrastructurePage({
           {tabs.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
-
-      {activeTab === "services" && (
-        <div className={cx("flexCol", "gap12")}>
-          <div className={cx("text12", "colorMuted", "mb4")}>
-            Service status is derived from gateway session health. Real-time metrics will be available once an infra monitoring API is connected.
-          </div>
-          {services.map((svc) => {
-            const scfg = statusConfig[svc.status];
-            return (
-              <div
-                key={svc.name}
-                className={cx(styles.pifServiceRow, svc.status !== "healthy" && styles.pifServiceRowAlert, toneClass(scfg.color))}
-              >
-                <div className={styles.pifServiceNameCell}>
-                  <div className={cx(styles.pifServiceDot, styles.pifServiceDotTone, svc.status !== "healthy" && styles.pifServiceDotAlert, toneClass(scfg.color))} />
-                  <div>
-                    <span className={styles.pifServiceName}>{svc.name}</span>
-                    <div className={cx("text11", "colorMuted")}>{svc.description}</div>
-                  </div>
-                </div>
-                <div>
-                  <div className={styles.pifLabel}>Source</div>
-                  <div className={cx("text12", "colorMuted")}>{svc.requiresSession ? "Session check" : "No check yet"}</div>
-                </div>
-                <div>
-                  <div className={styles.pifLabel}>Checked</div>
-                  <div className={cx(styles.pifMono)}>{lastRefresh.toLocaleTimeString()}</div>
-                </div>
-                <span className={cx(styles.pifStatusPill, styles.pifStatusPillTone, toneClass(scfg.color))}>
-                  {scfg.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {activeTab === "feature flags" && (
-        <div className={cx("flexCol", "gap12")}>
-          <div className={styles.pifInfoCard}>
-            Feature flags allow you to enable or disable platform features without deploying new code. Changes take effect immediately for all users in the specified scope.
-          </div>
-          {flagsLoading ? (
-            <div className={cx("text12", "colorMuted", "py20")}>Loading feature flags…</div>
-          ) : flags.length === 0 ? (
-            <div className={cx("text12", "colorMuted", "py20")}>No feature flags configured.</div>
-          ) : flags.map((flag) => (
-            <div key={flag.key} className={styles.pifFlagRow}>
-              <div>
-                <div className={cx("fw700", "mb4")}>{flag.name}</div>
-                <div className={cx("text12", "colorMuted")}>{flag.description ?? ""}</div>
-              </div>
-              <div>
-                <div className={styles.pifLabel}>Scope</div>
-                <div className={cx("text12", flag.enabled ? "colorBlue" : "colorMuted")}>{flag.scope}</div>
-              </div>
-              <button
-                type="button"
-                disabled={togglingKey === flag.key}
-                onClick={() => void handleToggle(flag.key)}
-                className={cx(styles.pifToggleWrap, "noBorder", "bgTransp", "p0", togglingKey === flag.key ? "notAllowed" : "pointer")}
-              >
-                <div className={cx(styles.pifToggle, flag.enabled && styles.pifToggleOn)}>
-                  <div className={cx(styles.pifToggleKnob, flag.enabled && styles.pifToggleKnobOn)} />
-                </div>
-                <span className={cx(styles.pifToggleText, flag.enabled ? "colorAccent" : "colorMuted")}>
-                  {togglingKey === flag.key ? "…" : flag.enabled ? "On" : "Off"}
-                </span>
-              </button>
-              <button
-                type="button"
-                className={cx("btnSm", "btnGhost")}
-                onClick={() => void handleToggle(flag.key)}
-                disabled={togglingKey === flag.key}
-              >
-                {flag.enabled ? "Disable" : "Enable"}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
