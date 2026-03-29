@@ -137,7 +137,7 @@ export function ProjectPortfolioPage() {
     <div className={cx(styles.pageBody, styles.pportRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / PROJECT PORTFOLIO</div>
           <h1 className={styles.pageTitle}>Project Portfolio</h1>
           <div className={styles.pageSub}>All active projects - Status - Budget - Blockers</div>
         </div>

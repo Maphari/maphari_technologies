@@ -144,7 +144,7 @@ export function ServiceCatalogManagerPage() {
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / KNOWLEDGE</div>
+          <div className={styles.pageEyebrow}>KNOWLEDGE / SERVICE CATALOG MANAGER</div>
           <h1 className={styles.pageTitle}>Service Catalog Manager</h1>
           <div className={styles.pageSub}>Manage client-facing service offerings, pricing, and timelines</div>
         </div>

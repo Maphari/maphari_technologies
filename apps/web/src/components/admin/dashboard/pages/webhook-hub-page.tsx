@@ -290,7 +290,7 @@ export function WebhookHubPage({
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / AUTOMATION</div>
+          <div className={styles.pageEyebrow}>AUTOMATION / WEBHOOK & INTEGRATION HUB</div>
           <h1 className={styles.pageTitle}>Webhook &amp; Integration Hub</h1>
           <div className={styles.pageSub}>Send real-time events to Zapier, Make, or your own systems</div>
         </div>

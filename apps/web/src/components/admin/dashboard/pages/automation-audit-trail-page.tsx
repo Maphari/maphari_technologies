@@ -255,7 +255,7 @@ export function AutomationAuditTrailPage({ session }: { session: AuthSession | n
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / AUTOMATION AUDIT TRAIL</div>
           <h1 className={styles.pageTitle}>Automation Audit Trail</h1>
           <div className={styles.pageSub}>Complete log of system actions and automated executions</div>
         </div>

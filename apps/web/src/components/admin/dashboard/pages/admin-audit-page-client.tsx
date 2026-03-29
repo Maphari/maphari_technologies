@@ -177,7 +177,7 @@ export function AdminAuditPageClient() {
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / AUDIT LOG</div>
           <h1 className={styles.pageTitle}>Audit Log</h1>
           <div className={styles.pageSub}>Cross-domain operational events from clients, projects, leads, invoices, and payments.</div>
         </div>

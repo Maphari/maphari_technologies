@@ -342,7 +342,7 @@ export function RequestInboxPage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / LIFECYCLE</div>
+          <div className={styles.pageEyebrow}>LIFECYCLE / REQUEST INBOX</div>
           <h1 className={styles.pageTitle}>Request Inbox</h1>
           <div className={styles.pageSub}>Triage incoming project requests — assign, estimate, and approve</div>
         </div>

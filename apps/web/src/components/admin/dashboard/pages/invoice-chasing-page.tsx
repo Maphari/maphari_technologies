@@ -163,7 +163,7 @@ export function InvoiceChasingPage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCE</div>
+          <div className={styles.pageEyebrow}>FINANCE / INVOICE CHASING</div>
           <h1 className={styles.pageTitle}>Invoice Chasing</h1>
           <div className={styles.pageSub}>Automated payment reminders for overdue invoices</div>
         </div>

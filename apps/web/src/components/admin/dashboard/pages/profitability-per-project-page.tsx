@@ -256,7 +256,7 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCIAL</div>
+          <div className={styles.pageEyebrow}>FINANCE / PROFITABILITY PER PROJECT</div>
           <h1 className={styles.pageTitle}>Profitability per Project</h1>
           <div className={styles.pageSub}>Budget vs cost, hours variance, collection rate, and true margin</div>
         </div>

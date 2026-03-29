@@ -114,7 +114,7 @@ export function ContentApprovalPage({ session }: { session: AuthSession | null }
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / COMMUNICATION</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / CONTENT APPROVAL</div>
           <h1 className={styles.pageTitle}>Content Approval</h1>
           <div className={styles.pageSub}>Review and approve content submissions before they are published</div>
         </div>

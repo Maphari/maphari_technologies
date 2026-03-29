@@ -258,7 +258,7 @@ export function ClientSatisfactionPage({ session }: { session: AuthSession | nul
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / CLIENT MANAGEMENT</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / CLIENT SATISFACTION</div>
           <h1 className={styles.pageTitle}>Client Satisfaction</h1>
           <div className={styles.pageSub}>NPS · CSAT · Trends · Survey scheduling</div>
         </div>

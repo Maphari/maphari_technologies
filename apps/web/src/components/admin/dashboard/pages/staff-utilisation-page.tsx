@@ -120,7 +120,7 @@ export function StaffUtilisationPage({ session }: { session: AuthSession | null 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>GOVERNANCE / PERFORMANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / STAFF UTILISATION RATE</div>
           <h1 className={styles.pageTitle}>Staff Utilisation Rate</h1>
           <div className={styles.pageSub}>
             Billable hours vs. available hours per staff member. Target: 75% utilisation.

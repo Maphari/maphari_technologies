@@ -205,7 +205,7 @@ export function PricingPage() {
     <div className={cx(styles.pageBody, styles.pricRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / PRICING &amp; QUOTE ENGINE</div>
+          <div className={styles.pageEyebrow}>FINANCE / PRICING CONTROL</div>
           <h1 className={styles.pageTitle}>Pricing Control</h1>
           <div className={styles.pageSub}>Service catalog · Retainer tiers · Quote builder · Discount approvals</div>
         </div>

@@ -60,7 +60,7 @@ export function MeetingArchivePage({ session: _session }: { session?: import("..
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / COMMUNICATION</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / MEETING ARCHIVE</div>
           <h1 className={styles.pageTitle}>Meeting Archive</h1>
           <div className={styles.pageSub}>Browse past meetings, recordings, and outstanding action items</div>
         </div>

@@ -194,7 +194,7 @@ export function StaffOnboardingPage({ session, onNotify }: StaffOnboardingPagePr
     <div className={cx(styles.pageBody, styles.onboardRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / STAFF ONBOARDING</div>
           <h1 className={styles.pageTitle}>Staff Onboarding</h1>
           <div className={styles.pageSub}>New hire checklists, pre-start tasks, week 1 welcome, and 30-day check-ins</div>
         </div>

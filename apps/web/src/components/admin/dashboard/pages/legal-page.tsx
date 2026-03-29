@@ -225,7 +225,7 @@ export function LegalPage() {
     <div className={cx(styles.pageBody, styles.lglRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / COMPLIANCE & LEGAL</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / LEGAL CONTROL CENTER</div>
           <h1 className={styles.pageTitle}>Legal Control Center</h1>
           <div className={styles.pageSub}>Contracts · Compliance · Data retention · Legal incidents</div>
         </div>

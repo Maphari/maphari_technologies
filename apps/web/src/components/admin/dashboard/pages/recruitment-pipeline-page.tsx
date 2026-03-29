@@ -228,7 +228,7 @@ export function RecruitmentPipelinePage({ session }: { session: AuthSession | nu
     <div className={cx(styles.pageBody, styles.rcpRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / RECRUITMENT PIPELINE</div>
           <h1 className={styles.pageTitle}>Recruitment Pipeline</h1>
           <div className={styles.pageSub}>Open roles, candidates, interview stages, and offer tracking</div>
         </div>

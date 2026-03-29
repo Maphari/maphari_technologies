@@ -185,7 +185,7 @@ export function ResourceAllocationPage({ session, onNotify }: Props) {
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / RESOURCE ALLOCATION</div>
           <h1 className={styles.pageTitle}>Resource Allocation</h1>
           <div className={styles.pageSub}>Staff capacity - Project assignments - Overallocation alerts</div>
         </div>

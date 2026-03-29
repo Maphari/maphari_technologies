@@ -299,7 +299,7 @@ export function ClientJourneyPage({
       {/* ── Page header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / CLIENT MANAGEMENT</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / CLIENT JOURNEY</div>
           <h1 className={styles.pageTitle}>Client Journey</h1>
           <div className={styles.pageSub}>Lifecycle orchestration &middot; Stage flow &middot; Handoff reliability</div>
         </div>

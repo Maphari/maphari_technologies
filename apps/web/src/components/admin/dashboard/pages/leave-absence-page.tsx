@@ -205,7 +205,7 @@ export function LeaveAbsencePage({ session }: { session: AuthSession | null }) {
     <div className={cx(styles.pageBody, styles.lvaRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / LEAVE & ABSENCE</div>
           <h1 className={styles.pageTitle}>Leave &amp; Absence</h1>
           <div className={styles.pageSub}>Leave requests, balances, calendar, and BCEA compliance</div>
         </div>

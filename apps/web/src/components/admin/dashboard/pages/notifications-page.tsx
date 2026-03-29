@@ -139,7 +139,7 @@ export function NotificationsPage({
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / COMMUNICATION</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / NOTIFICATIONS</div>
           <div className={styles.pageTitle}>Notifications</div>
           <div className={styles.pageSub}>Queue triage · Delivery status · Channel health</div>
         </div>

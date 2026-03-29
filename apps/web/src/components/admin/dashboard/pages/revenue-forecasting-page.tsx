@@ -154,7 +154,7 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / REPORTING &amp; INTELLIGENCE</div>
+          <div className={styles.pageEyebrow}>FINANCE / REVENUE FORECASTING</div>
           <h1 className={styles.pageTitle}>Revenue Forecasting</h1>
           <div className={styles.pageSub}>6-month MRR projection - Invoice pipeline - Collected vs outstanding</div>
         </div>

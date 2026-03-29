@@ -310,7 +310,7 @@ export function BrandControlPage() {
     <div ref={rootRef} className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / BRAND & WHITE-LABEL</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / BRAND CONTROL</div>
           <h1 className={styles.pageTitle}>Brand Control</h1>
           <div className={styles.pageSub}>Global brand tokens · Email templates · Domains · White-label</div>
         </div>

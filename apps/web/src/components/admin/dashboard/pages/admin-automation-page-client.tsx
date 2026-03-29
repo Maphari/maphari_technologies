@@ -194,7 +194,7 @@ export function AdminAutomationPageClient({
     <div className={cx(styles.pageBody, styles.autoRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>AUTOMATION / ORCHESTRATION</div>
+          <div className={styles.pageEyebrow}>AUTOMATION / WORKFLOWS</div>
           <h1 className={styles.pageTitle}>Workflows</h1>
           <div className={styles.pageSub}>Orchestration health, trigger controls, and safe simulation for core automations.</div>
         </div>

@@ -50,7 +50,7 @@ export function EODDigestPage({ session }: { session: AuthSession | null }) {
 
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / EOD DIGEST</div>
           <h1 className={styles.pageTitle}>EOD Digest</h1>
           <div className={styles.pageSub}>Daily wrap-up summaries from all staff — {today}</div>
         </div>

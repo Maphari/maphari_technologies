@@ -174,7 +174,7 @@ export function BookingAppointmentsPage({ session }: { session: AuthSession | nu
     <div className={cx(styles.pageBody)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / BOOKING & APPOINTMENTS</div>
           <h1 className={styles.pageTitle}>Booking &amp; Appointments</h1>
           <div className={styles.pageSub}>Manage client meetings, consultations, and scheduled calls</div>
         </div>

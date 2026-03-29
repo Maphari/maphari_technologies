@@ -46,7 +46,7 @@ export function DecisionRegistryPage({ session }: { session: AuthSession | null 
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / KNOWLEDGE</div>
+          <div className={styles.pageEyebrow}>KNOWLEDGE / DECISION REGISTRY</div>
           <h1 className={styles.pageTitle}>Decision Registry</h1>
           <div className={styles.pageSub}>Company-wide decision log with rationale and impact tracking</div>
         </div>

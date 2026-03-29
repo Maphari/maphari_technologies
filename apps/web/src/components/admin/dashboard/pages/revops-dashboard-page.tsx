@@ -259,7 +259,7 @@ export function RevOpsPage() {
     <div className={cx(styles.pageBody, "rdStudioPage")}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / REVENUE OPERATIONS</div>
+          <div className={styles.pageEyebrow}>FINANCE / REVOPS DASHBOARD</div>
           <h1 className={styles.pageTitle}>RevOps Dashboard</h1>
           <div className={styles.pageSub}>MRR · ARR · Pipeline velocity · Revenue concentration · Forecasting</div>
         </div>

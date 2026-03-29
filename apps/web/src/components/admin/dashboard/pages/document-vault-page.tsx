@@ -328,7 +328,7 @@ export function DocumentVaultPage({
     <div className={cx(styles.pageBody, styles.dvtRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / CLIENT MANAGEMENT</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / DOCUMENT VAULT</div>
           <h1 className={styles.pageTitle}>Document Vault</h1>
           <div className={styles.pageSub}>Contracts · Briefs · Deliverables · Assets · Version control</div>
         </div>

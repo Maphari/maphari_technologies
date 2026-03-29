@@ -463,7 +463,7 @@ export function InvoicesPage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCIAL GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>FINANCE / BILLING</div>
           <h1 className={styles.pageTitle}>Invoices</h1>
           <div className={styles.pageSub}>Invoice register · Tax configuration</div>
         </div>

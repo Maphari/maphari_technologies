@@ -119,7 +119,7 @@ export function ChangeRequestManagerPage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / LIFECYCLE</div>
+          <div className={styles.pageEyebrow}>LIFECYCLE / CHANGE REQUEST MANAGER</div>
           <h1 className={styles.pageTitle}>Change Request Manager</h1>
           <div className={styles.pageSub}>Review and approve project scope change requests</div>
         </div>

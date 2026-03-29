@@ -237,7 +237,7 @@ export function AdminSettingsPageClient({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>Admin / Governance</div>
+          <div className={styles.pageEyebrow}>ACCOUNT / SETTINGS</div>
           <h1 className={styles.pageTitle}>Settings</h1>
           <div className={styles.pageSub}>
             Configuration controls only. Detailed access changes remain in Staff

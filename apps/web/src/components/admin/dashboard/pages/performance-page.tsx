@@ -146,7 +146,7 @@ export function PerformancePage({ session }: { session: AuthSession | null }) {
     <div className={cx(styles.pageBody, styles.perfRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>GOVERNANCE / STAFF PERFORMANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / PERFORMANCE OVERVIEW</div>
           <h1 className={styles.pageTitle}>Performance Overview</h1>
           <div className={styles.pageSub}>Delivery, quality, utilization, and incentive readiness across the team.</div>
         </div>

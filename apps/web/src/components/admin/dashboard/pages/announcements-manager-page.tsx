@@ -134,7 +134,7 @@ export function AnnouncementsManagerPage({ session }: { session: AuthSession | n
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / COMMUNICATION</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / ANNOUNCEMENTS MANAGER</div>
           <h1 className={styles.pageTitle}>Announcements Manager</h1>
           <div className={styles.pageSub}>Create and manage announcements for clients and staff</div>
         </div>

@@ -166,7 +166,7 @@ export function AdminCommunityModerationPage({ session }: { session: AuthSession
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / COMMUNITY</div>
+          <div className={styles.pageEyebrow}>COMMUNITY / COMMUNITY MODERATION</div>
           <h1 className={styles.pageTitle}>Moderation Queue</h1>
           <div className={styles.pageSub}>
             Review and approve or reject pending forum threads, replies, and feature requests

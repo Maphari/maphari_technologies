@@ -214,7 +214,7 @@ export function LeadsPage({
       {/* ── Page header ───────────────────────────────────────────────── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / LEADS</div>
           <h1 className={styles.pageTitle}>Leads Pipeline</h1>
           <div className={styles.pageSub}>Stage tracking · Next actions · Conversion control</div>
         </div>

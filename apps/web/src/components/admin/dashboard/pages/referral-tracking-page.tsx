@@ -199,7 +199,7 @@ export function ReferralTrackingPage({ session }: { session: AuthSession | null 
     <div className={styles.pageBody}>
       <div className={cx("flexBetween", "mb32")}>
         <div>
-          <div className={cx("pageEyebrow")}>ADMIN / CLIENT MANAGEMENT</div>
+          <div className={cx("pageEyebrow")}>EXPERIENCE / REFERRAL TRACKING</div>
           <h1 className={cx("pageTitle")}>Referral Tracking</h1>
           <div className={cx("pageSub")}>Client referrals - Rewards - Conversion - Attribution</div>
         </div>

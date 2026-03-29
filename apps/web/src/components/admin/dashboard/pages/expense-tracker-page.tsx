@@ -130,7 +130,7 @@ export function ExpenseTrackerPage({ session }: { session: AuthSession | null })
     <div className={cx(styles.pageBody, styles.expenseRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCIAL</div>
+          <div className={styles.pageEyebrow}>FINANCE / EXPENSE TRACKER</div>
           <h1 className={styles.pageTitle}>Expense Tracker</h1>
           <div className={styles.pageSub}>Ad hoc expenses, receipts, budget tracking, and SARS categorisation</div>
         </div>

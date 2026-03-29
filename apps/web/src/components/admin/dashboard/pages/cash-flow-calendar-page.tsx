@@ -106,7 +106,7 @@ export function CashFlowCalendarPage() {
     <div className={cx(styles.pageBody, styles.reportsRoot, "rdStudioPage")}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCIAL</div>
+          <div className={styles.pageEyebrow}>FINANCE / CASH FLOW CALENDAR</div>
           <h1 className={styles.pageTitle}>Cash Flow Calendar</h1>
           <div className={styles.pageSub}>Expected inflows, outflows, and 90-day projection</div>
         </div>

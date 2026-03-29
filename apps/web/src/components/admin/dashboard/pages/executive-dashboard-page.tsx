@@ -224,7 +224,7 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
     <div className={cx(styles.pageBody, "rdStudioPage")}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / REPORTING & INTELLIGENCE</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / EXECUTIVE DASHBOARD</div>
           <h1 className={styles.pageTitle}>Executive Dashboard</h1>
           <div className={styles.pageSub}>Single pane of glass · Maphari Creative Studio</div>
         </div>

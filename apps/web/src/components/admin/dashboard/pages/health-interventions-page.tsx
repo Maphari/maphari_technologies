@@ -159,7 +159,7 @@ export function HealthInterventionsPage({ session }: { session: AuthSession | nu
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={cx(styles.pageEyebrow, "colorRed")}>ADMIN / CLIENT MANAGEMENT</div>
+          <div className={cx(styles.pageEyebrow, "colorRed")}>EXPERIENCE / HEALTH INTERVENTIONS</div>
           <h1 className={styles.pageTitle}>Health Interventions</h1>
           <div className={styles.pageSub}>Every time admin stepped in - Why - What happened - Outcome</div>
         </div>

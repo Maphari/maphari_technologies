@@ -177,7 +177,7 @@ export function AdminCommunityFeatureRequestsPage({ session }: { session: AuthSe
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / COMMUNITY</div>
+          <div className={styles.pageEyebrow}>COMMUNITY / COMMUNITY FEATURE REQUESTS</div>
           <h1 className={styles.pageTitle}>Feature Requests</h1>
           <div className={styles.pageSub}>
             Manage all client feature requests — approve, reject, and update status

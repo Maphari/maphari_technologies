@@ -56,7 +56,7 @@ export function StaffSatisfactionPage() {
       <div className={cx(styles.pageBody, styles.sstRoot)}>
         <div className={styles.pageHeader}>
           <div>
-            <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+            <div className={styles.pageEyebrow}>COMMUNICATION / STAFF SATISFACTION</div>
             <h1 className={styles.pageTitle}>Staff Satisfaction</h1>
             <div className={styles.pageSub}>Monthly pulse surveys, eNPS, trends, and anonymous feedback</div>
           </div>
@@ -92,7 +92,7 @@ export function StaffSatisfactionPage() {
     <div className={cx(styles.pageBody, styles.sstRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / STAFF SATISFACTION</div>
           <h1 className={styles.pageTitle}>Staff Satisfaction</h1>
           <div className={styles.pageSub}>Monthly pulse surveys, eNPS, trends, and anonymous feedback</div>
         </div>

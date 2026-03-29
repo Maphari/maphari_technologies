@@ -120,7 +120,7 @@ export function ActiveHealthMonitorPage({ session }: { session: AuthSession | nu
 
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / ACTIVE HEALTH MONITOR</div>
           <h1 className={styles.pageTitle}>Active Health Monitor</h1>
           <div className={styles.pageSub}>Real-time health alerts — proactive vs. static scorecard</div>
         </div>

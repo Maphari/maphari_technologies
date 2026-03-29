@@ -136,7 +136,7 @@ export function SupportQueuePage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / LIFECYCLE</div>
+          <div className={styles.pageEyebrow}>LIFECYCLE / SUPPORT QUEUE</div>
           <h1 className={styles.pageTitle}>Support Queue</h1>
           <div className={styles.pageSub}>Manage support tickets with SLA tracking and assignment</div>
         </div>

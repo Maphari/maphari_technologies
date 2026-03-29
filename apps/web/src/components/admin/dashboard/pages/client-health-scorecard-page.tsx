@@ -239,7 +239,7 @@ export function ClientHealthScorecardPage({ session }: { session: AuthSession | 
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / REPORTING &amp; INTELLIGENCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / CLIENT HEALTH SCORECARD</div>
           <h1 className={styles.pageTitle}>Client Health Scorecard</h1>
           <div className={styles.pageSub}>Multi-dimension weighted health model · Churn risk · Renewal probability</div>
         </div>

@@ -105,7 +105,7 @@ export function StrategicClientIntelligencePage() {
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / CLIENT SEGMENTATION</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / STRATEGIC CLIENT INTELLIGENCE</div>
           <h1 className={styles.pageTitle}>Strategic Client Intelligence</h1>
           <div className={styles.pageSub}>LTV · CAC · Churn risk · Cohort analysis · Upsell scoring</div>
         </div>

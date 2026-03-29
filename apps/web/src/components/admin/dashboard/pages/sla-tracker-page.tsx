@@ -220,7 +220,7 @@ export function SlaTrackerPage({ session }: { session: AuthSession | null }) {
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / SLA TRACKER</div>
           <h1 className={styles.pageTitle}>SLA Tracker</h1>
           <div className={styles.pageSub}>Response times - Breach alerts - Client service level compliance</div>
         </div>

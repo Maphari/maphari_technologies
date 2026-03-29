@@ -99,7 +99,7 @@ export function ProjectBriefingPage({ session }: { session: AuthSession | null }
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / PROJECT BRIEFING</div>
           <h1 className={styles.pageTitle}>Project Briefing</h1>
           <div className={styles.pageSub}>One-page context view per project for quick executive review</div>
         </div>

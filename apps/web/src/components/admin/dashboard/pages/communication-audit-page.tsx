@@ -169,7 +169,7 @@ export function CommunicationAuditPage({ session }: { session: AuthSession | nul
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / CLIENT MANAGEMENT</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / COMMUNICATION AUDIT</div>
           <h1 className={styles.pageTitle}>Communication Audit</h1>
           <div className={styles.pageSub}>Cross-portfolio comms log — Flagged items — Sentiment analysis</div>
         </div>

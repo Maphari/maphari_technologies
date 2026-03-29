@@ -163,7 +163,7 @@ export function ContractRenewalPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / CONTRACT RENEWAL TRACKER</div>
           <h1 className={styles.pageTitle}>Contract Renewal Tracker</h1>
           <div className={styles.pageSub}>
             Traffic-light expiry status · Renewal proposals · Sorted by earliest expiry

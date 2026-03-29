@@ -381,7 +381,7 @@ export function ClientsAndProjectsPage({
       {/* ── Page header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / CLIENT MANAGEMENT</div>
           <h1 className={styles.pageTitle}>Client Management</h1>
           <div className={styles.pageSub}>Account health &middot; Renewal readiness &middot; Billing exposure</div>
         </div>

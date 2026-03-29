@@ -85,7 +85,7 @@ export function PeerReviewQueuePage({ session }: { session: AuthSession | null }
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / PEER REVIEW QUEUE</div>
           <h1 className={styles.pageTitle}>Peer Review Queue</h1>
           <div className={styles.pageSub}>Manage and distribute peer review assignments across the team</div>
         </div>

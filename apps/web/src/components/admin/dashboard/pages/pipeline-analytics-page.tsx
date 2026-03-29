@@ -105,7 +105,7 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCE</div>
+          <div className={styles.pageEyebrow}>FINANCE / PIPELINE ANALYTICS</div>
           <h1 className={styles.pageTitle}>Pipeline Analytics</h1>
           <div className={styles.pageSub}>Lead-to-revenue conversion funnel</div>
         </div>

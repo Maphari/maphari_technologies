@@ -111,7 +111,7 @@ export function DesignReviewAdminPage({ session }: { session: AuthSession | null
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / EXPERIENCE</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / DESIGN REVIEW</div>
           <h1 className={styles.pageTitle}>Design Review</h1>
           <div className={styles.pageSub}>Review and resolve design submissions from clients</div>
         </div>

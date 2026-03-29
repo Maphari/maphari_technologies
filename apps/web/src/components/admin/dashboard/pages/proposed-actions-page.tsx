@@ -106,7 +106,7 @@ export function ProposedActionsPage({ session }: { session: AuthSession | null }
       {error && <p className={styles.errorStateSub}>{error}</p>}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / PENDING APPROVALS</div>
           <h1 className={styles.pageTitle}>Pending Approvals</h1>
           <div className={styles.pageSub}>
             High-stakes actions proposed by admins that require a second sign-off before execution.

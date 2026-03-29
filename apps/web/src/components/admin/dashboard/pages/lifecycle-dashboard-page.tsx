@@ -116,7 +116,7 @@ export function LifecycleDashboardPage({ session }: { session: AuthSession | nul
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / LIFECYCLE</div>
+          <div className={styles.pageEyebrow}>LIFECYCLE / LIFECYCLE DASHBOARD</div>
           <h1 className={styles.pageTitle}>Lifecycle Dashboard</h1>
           <div className={styles.pageSub}>Unified client onboarding, active, and offboarding status</div>
         </div>

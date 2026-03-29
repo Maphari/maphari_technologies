@@ -218,7 +218,7 @@ export function ClientOnboardingPage({ session, onNotify }: ClientOnboardingPage
     <div className={cx(styles.pageBody, styles.onboardRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / CLIENT MANAGEMENT</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / CLIENT ONBOARDING</div>
           <h1 className={styles.pageTitle}>Client Onboarding</h1>
           <div className={styles.pageSub}>New client setup - Steps - Blockers - Completion tracking</div>
         </div>

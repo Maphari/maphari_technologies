@@ -134,7 +134,7 @@ export function UpdateQueueManagerPage({ session, onNotify }: Props) {
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / AI &amp; ML</div>
+          <div className={styles.pageEyebrow}>AI / ML / UPDATE QUEUE MANAGER</div>
           <h1 className={styles.pageTitle}>Update Queue Manager</h1>
           <div className={styles.pageSub}>Review and approve AI-drafted client updates before sending</div>
         </div>

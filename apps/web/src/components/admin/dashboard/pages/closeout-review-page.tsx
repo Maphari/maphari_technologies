@@ -61,7 +61,7 @@ export function CloseoutReviewPage() {
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / KNOWLEDGE</div>
+          <div className={styles.pageEyebrow}>KNOWLEDGE / CLOSE-OUT REVIEW</div>
           <h1 className={styles.pageTitle}>Close-out Review</h1>
           <div className={styles.pageSub}>Approve project close-out reports and capture lessons learned</div>
         </div>

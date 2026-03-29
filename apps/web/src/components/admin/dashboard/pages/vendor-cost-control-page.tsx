@@ -108,7 +108,7 @@ export function VendorCostControlPage({ session }: { session: AuthSession | null
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / VENDOR & COST MANAGEMENT</div>
+          <div className={styles.pageEyebrow}>FINANCE / VENDOR & COST CONTROL</div>
           <h1 className={styles.pageTitle}>Vendor & Cost Control</h1>
           <div className={styles.pageSub}>Vendors · Software spend · Freelancers · Cost per project</div>
         </div>

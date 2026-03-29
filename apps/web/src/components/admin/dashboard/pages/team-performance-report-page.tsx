@@ -199,7 +199,7 @@ export function TeamPerformanceReportPage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / REPORTING & INTELLIGENCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / TEAM PERFORMANCE REPORT</div>
           <h1 className={styles.pageTitle}>Team Performance Report</h1>
           <div className={styles.pageSub}>Active Staff · Departments · Peer Reviews · Standup Activity</div>
         </div>

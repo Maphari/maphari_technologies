@@ -182,7 +182,7 @@ export function PlatformInfrastructurePage({
     <div className={cx(styles.pageBody, styles.pifRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / PLATFORM HEALTH</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / PLATFORM & INFRASTRUCTURE</div>
           <h1 className={styles.pageTitle}>Platform &amp; Infrastructure</h1>
           <div className={styles.pageSub}>Service health · Feature flags · Session status</div>
         </div>

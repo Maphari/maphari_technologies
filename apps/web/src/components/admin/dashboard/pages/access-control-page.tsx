@@ -169,7 +169,7 @@ export function AccessControlPage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / ACCESS & DELEGATION</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / ACCESS CONTROL</div>
           <h1 className={styles.pageTitle}>Access Control</h1>
           <div className={styles.pageSub}>Staff accounts · Roles · Access audit</div>
         </div>

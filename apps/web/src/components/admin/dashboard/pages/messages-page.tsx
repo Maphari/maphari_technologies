@@ -377,7 +377,7 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
     <div className={cx(styles.pageBody, styles.msgRoot)}>
       <div className={cx("flexBetween", "mb28")}>
         <div>
-          <div className={cx("pageEyebrow")}>ADMIN / CLIENT MANAGEMENT</div>
+          <div className={cx("pageEyebrow")}>COMMUNICATION / MESSAGES</div>
           <h1 className={cx("pageTitle")}>Messages</h1>
           <div className={cx("pageSub")}>Thread ownership &middot; Reply execution &middot; Escalation control</div>
         </div>

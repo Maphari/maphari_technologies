@@ -408,7 +408,7 @@ export function ProspectingPage() {
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / BUSINESS DEVELOPMENT</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / AI PROSPECTING</div>
           <h1 className={styles.pageTitle}>AI Prospecting</h1>
           <div className={styles.pageSub}>
             Find local businesses with digital gaps. Enriched with PageSpeed health scores,

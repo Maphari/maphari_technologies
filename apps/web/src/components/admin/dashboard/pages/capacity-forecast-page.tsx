@@ -101,7 +101,7 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
       <div className={styles.pageBody}>
         <div className={styles.pageHeader}>
           <div>
-            <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+            <div className={styles.pageEyebrow}>GOVERNANCE / CAPACITY PLANNING FORECAST</div>
             <h1 className={styles.pageTitle}>Capacity Forecast</h1>
           </div>
         </div>
@@ -123,7 +123,7 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / CAPACITY PLANNING FORECAST</div>
           <h1 className={styles.pageTitle}>Capacity Forecast</h1>
           <div className={styles.pageSub}>30 / 60 / 90-day staffing projection based on active projects and pipeline</div>
         </div>

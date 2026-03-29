@@ -213,7 +213,7 @@ export function TimelineGanttPage() {
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / TIMELINE & GANTT</div>
           <h1 className={styles.pageTitle}>Timeline &amp; Gantt</h1>
           <div className={styles.pageSub}>Cross-portfolio project timelines · 90-day view</div>
         </div>

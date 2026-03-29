@@ -244,7 +244,7 @@ export function FinancialYearCloseoutPage({
     <div className={cx(styles.pageBody, styles.fyRoot)}>
       <div className={cx("flexBetween", "mb28")}>
         <div>
-          <div className={cx("pageEyebrow")}>ADMIN / FINANCIAL</div>
+          <div className={cx("pageEyebrow")}>FINANCE / FINANCIAL YEAR CLOSEOUT</div>
           <h1 className={cx("pageTitle")}>Financial Year Closeout</h1>
           <div className={cx("pageSub")}>{fy.label} — SA Financial Year (April – March)</div>
         </div>

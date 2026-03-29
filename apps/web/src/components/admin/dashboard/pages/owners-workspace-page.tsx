@@ -43,7 +43,7 @@ export function OwnersWorkspacePage() {
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / PERSONAL WORKSPACE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / OWNER'S WORKSPACE</div>
           <h1 className={styles.pageTitle}>Owner&apos;s Workspace</h1>
           <div className={styles.pageSub}>Private - Only visible to you</div>
         </div>

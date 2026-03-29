@@ -139,7 +139,7 @@ export function TeamStructurePage({ session, onNotify, onNavigate }: Props) {
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / ORGANIZATIONAL STRUCTURE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / TEAM STRUCTURE</div>
           <h1 className={styles.pageTitle}>Team Structure</h1>
           <div className={styles.pageSub}>Org chart &middot; Departments &middot; Roles</div>
         </div>

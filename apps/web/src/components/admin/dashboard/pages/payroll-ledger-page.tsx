@@ -79,7 +79,7 @@ export function PayrollLedgerPage({ session }: { session: AuthSession | null }) 
     <div className={cx(styles.pageBody, styles.payRoot)}>
       <div className={cx("flexBetween", "mb28")}>
         <div>
-          <div className={cx("pageEyebrow")}>ADMIN / FINANCIAL</div>
+          <div className={cx("pageEyebrow")}>FINANCE / PAYROLL LEDGER</div>
           <h1 className={cx("pageTitle")}>Payroll Ledger</h1>
           <div className={cx("pageSub")}>Monthly payroll, payslips, PAYE, UIF, and SARS compliance</div>
         </div>

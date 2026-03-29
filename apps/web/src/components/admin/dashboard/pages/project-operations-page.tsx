@@ -308,7 +308,7 @@ export function ProjectOperationsPage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>PROJECTS / PROJECT OPERATIONS</div>
           <h1 className={styles.pageTitle}>Project Operations</h1>
           <div className={styles.pageSub}>Execution control · Blocker queue · Checkpoint discipline</div>
         </div>

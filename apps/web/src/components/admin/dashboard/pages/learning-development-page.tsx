@@ -228,7 +228,7 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
     <div className={cx(styles.pageBody, styles.lndRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / LEARNING & DEVELOPMENT</div>
           <h1 className={styles.pageTitle}>Learning & Development</h1>
           <div className={styles.pageSub}>Courses, budget, skills matrix, and progress tracking</div>
         </div>

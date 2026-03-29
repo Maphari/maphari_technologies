@@ -65,7 +65,7 @@ export function StandupFeedPage({ session }: { session: AuthSession | null }) {
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / STANDUP FEED</div>
           <h1 className={styles.pageTitle}>Standup Feed</h1>
           <div className={styles.pageSub}>Aggregated daily stand-ups from all staff — {today}</div>
         </div>

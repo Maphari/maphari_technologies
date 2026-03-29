@@ -159,7 +159,7 @@ export function BusinessDevelopmentPage({
     <div className={cx(styles.pageBody, styles.bdevRoot, "rdStudioPage")}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / BUSINESS DEVELOPMENT</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / BUSINESS DEVELOPMENT</div>
           <h1 className={styles.pageTitle}>Business Development</h1>
           <div className={styles.pageSub}>Lead pipeline · Conversion analytics</div>
         </div>

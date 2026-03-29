@@ -169,7 +169,7 @@ export function AdminReportsPageClient({
     <div className={cx(styles.pageBody, styles.reportsRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>GOVERNANCE / REPORTING</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / REPORTS</div>
           <h1 className={styles.pageTitle}>Reports</h1>
           <div className={styles.pageSub}>Operational export center for handoff packs and audited CSV extracts.</div>
         </div>

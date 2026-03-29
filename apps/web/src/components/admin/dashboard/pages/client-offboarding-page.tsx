@@ -194,7 +194,7 @@ export function ClientOffboardingPage({ onNotify }: Props) {
     <div className={cx(styles.pageBody, styles.cobRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / CLIENT OFFBOARDING</div>
           <h1 className={styles.pageTitle}>Client Offboarding</h1>
           <div className={styles.pageSub}>Structured exits, file handover, IP transfer, and post-mortems</div>
         </div>

@@ -233,7 +233,7 @@ export function PortfolioRiskRegisterPage({ session }: { session: AuthSession | 
     <div className={cx(styles.pageBody, styles.prrRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / REPORTING &amp; INTELLIGENCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / PORTFOLIO RISK REGISTER</div>
           <h1 className={styles.pageTitle}>Portfolio Risk Register</h1>
           <div className={styles.pageSub}>Live risk log — Likelihood × Impact — Mitigations — Residual exposure</div>
         </div>

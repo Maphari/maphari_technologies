@@ -199,7 +199,7 @@ export function SprintBoardAdminPage({ session, onNotify }: Props) {
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / SPRINT BOARD</div>
           <h1 className={styles.pageTitle}>Sprint Board</h1>
           <div className={styles.pageSub}>Track active sprints, task progress, and delivery risk across all clients</div>
         </div>

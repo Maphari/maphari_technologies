@@ -207,7 +207,7 @@ export function StaffAccessPage({ session, onNotify }: StaffAccessPageProps) {
     <div className={cx(styles.pageBody, styles.staffAccessRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / IDENTITY</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / STAFF ACCESS</div>
           <h1 className={styles.pageTitle}>Staff Access</h1>
           <div className={styles.pageSub}>Approve staff registration, track verification, and revoke staff accounts.</div>
         </div>

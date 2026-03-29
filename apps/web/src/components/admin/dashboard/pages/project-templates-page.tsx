@@ -201,7 +201,7 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / PROJECT TEMPLATES</div>
           <h1 className={styles.pageTitle}>Project Templates</h1>
           <div className={styles.pageSub}>Define reusable phase structures and apply them to new projects</div>
         </div>

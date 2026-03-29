@@ -107,7 +107,7 @@ export function LoyaltyCreditsPage({ session }: { session: AuthSession | null })
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCE</div>
+          <div className={styles.pageEyebrow}>FINANCE / LOYALTY & CREDITS</div>
           <h1 className={styles.pageTitle}>Loyalty & Credits</h1>
           <div className={styles.pageSub}>Manage client credit balances, tiers, and redemptions</div>
         </div>

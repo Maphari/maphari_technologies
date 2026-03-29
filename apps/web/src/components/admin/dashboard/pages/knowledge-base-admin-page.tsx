@@ -95,7 +95,7 @@ export function KnowledgeBaseAdminPage({ session }: { session: AuthSession | nul
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / KNOWLEDGE</div>
+          <div className={styles.pageEyebrow}>KNOWLEDGE / KNOWLEDGE BASE ADMIN</div>
           <h1 className={styles.pageTitle}>Knowledge Base Admin</h1>
           <div className={styles.pageSub}>Curate, organize, and moderate knowledge base articles</div>
         </div>

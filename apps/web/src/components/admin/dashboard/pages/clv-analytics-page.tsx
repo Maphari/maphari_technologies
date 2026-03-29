@@ -137,7 +137,7 @@ export function CLVAnalyticsPage({ session, onNotify }: Props) {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCE</div>
+          <div className={styles.pageEyebrow}>FINANCE / CLV & CHURN RISK ANALYTICS</div>
           <h1 className={styles.pageTitle}>Client Lifetime Value &amp; Churn Risk</h1>
           <div className={styles.pageSub}>Projected CLV and churn risk score per client</div>
         </div>

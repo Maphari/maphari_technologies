@@ -130,7 +130,7 @@ export function CompetitorMarketIntelPage({ session }: { session: AuthSession | 
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / MARKET INTELLIGENCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / COMPETITOR & MARKET INTEL</div>
           <h1 className={styles.pageTitle}>Competitor &amp; Market Intel</h1>
           <div className={styles.pageSub}>Competitor tracking - Win/loss - Market rates - Positioning</div>
         </div>

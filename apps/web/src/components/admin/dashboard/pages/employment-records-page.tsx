@@ -134,7 +134,7 @@ export function EmploymentRecordsPage({ session }: { session: AuthSession | null
     <div className={cx(styles.pageBody, styles.emprRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / EMPLOYMENT RECORDS</div>
           <h1 className={styles.pageTitle}>Employment Records</h1>
           <div className={styles.pageSub}>Contracts, personal details, performance, and documents</div>
         </div>

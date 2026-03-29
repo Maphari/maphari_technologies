@@ -102,7 +102,7 @@ export function HandoverManagementPage({ session }: { session: AuthSession | nul
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / KNOWLEDGE</div>
+          <div className={styles.pageEyebrow}>KNOWLEDGE / HANDOVER MANAGEMENT</div>
           <h1 className={styles.pageTitle}>Handover Management</h1>
           <div className={styles.pageSub}>Create and monitor project handover records</div>
         </div>

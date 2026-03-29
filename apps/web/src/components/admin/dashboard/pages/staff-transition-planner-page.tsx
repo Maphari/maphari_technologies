@@ -9,7 +9,7 @@ export function StaffTransitionPlannerPage() {
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / KNOWLEDGE</div>
+          <div className={styles.pageEyebrow}>KNOWLEDGE / STAFF TRANSITION PLANNER</div>
           <h1 className={styles.pageTitle}>Staff Transition Planner</h1>
           <div className={styles.pageSub}>Plan staff transitions and knowledge transfer workflows</div>
         </div>

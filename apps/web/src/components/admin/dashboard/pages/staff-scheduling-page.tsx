@@ -157,7 +157,7 @@ export function StaffSchedulingPage({ session }: StaffSchedulingPageProps) {
   return (
     <section className={cx("page", "pageBody", "pageActive")} id="page-staff-scheduling">
       <div className={cx("pageHeaderBar")}>
-        <div className={cx("pageEyebrowText", "mb8")}>Communication / Staff</div>
+        <div className={cx("pageEyebrowText", "mb8")}>COMMUNICATION / STAFF SCHEDULING</div>
         <h1 className={cx("pageTitleText")}>Staff Schedule</h1>
         <p className={cx("pageSubtitleText", "mb20")}>8-week scheduling timeline — availability, leave, and project assignments</p>
       </div>

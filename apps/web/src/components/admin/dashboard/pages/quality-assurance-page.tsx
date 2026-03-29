@@ -194,7 +194,7 @@ export function QualityAssurancePage({ session, onNotify }: Props) {
     <div className={styles.pageBody}>
       <div className={cx("flexBetween", "mb32")}>
         <div>
-          <div className={cx("pageEyebrow")}>ADMIN / OPERATIONS</div>
+          <div className={cx("pageEyebrow")}>OPERATIONS / QUALITY ASSURANCE</div>
           <h1 className={cx("pageTitle")}>Quality Assurance</h1>
           <div className={cx("pageSub")}>Deliverable review - Revision rounds - Approval gates</div>
         </div>

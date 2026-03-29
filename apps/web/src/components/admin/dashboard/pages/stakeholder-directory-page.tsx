@@ -113,7 +113,7 @@ export function StakeholderDirectoryPage({ session }: { session: AuthSession | n
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / LIFECYCLE</div>
+          <div className={styles.pageEyebrow}>LIFECYCLE / STAKEHOLDER DIRECTORY</div>
           <h1 className={styles.pageTitle}>Stakeholder Directory</h1>
           <div className={styles.pageSub}>Client-side contacts, roles, and decision authority</div>
         </div>
