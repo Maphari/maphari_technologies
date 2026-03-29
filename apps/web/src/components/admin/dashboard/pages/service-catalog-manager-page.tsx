@@ -13,6 +13,7 @@ import {
   type ServicePackage,
   type ServiceAddon,
 } from "../../../../lib/api/admin/service-catalog";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -139,14 +140,37 @@ export function ServiceCatalogManagerPage() {
     );
   }
 
+  // ── Derived data ──────────────────────────────────────────────────────────
+  const activePackages  = packages.filter((p) => p.isActive).length;
+  const activeAddons    = addons.filter((a) => a.isActive).length;
+  const billingCounts   = packages.reduce<Record<string, number>>((acc, p) => {
+    acc[p.billingType] = (acc[p.billingType] ?? 0) + 1;
+    return acc;
+  }, {});
+  const chartData = Object.entries(billingCounts).map(([name, value]) => ({ name: name.replace("_", " "), value }));
+  const avgPriceCents = packages.length > 0
+    ? Math.round(packages.reduce((s, p) => s + (p.isCustomQuote ? 0 : p.priceMinCents), 0) / packages.length)
+    : 0;
+  const avgPriceDisplay = avgPriceCents > 0
+    ? formatMoneyCents(avgPriceCents, { currency: process.env.NEXT_PUBLIC_BILLING_CURRENCY ?? "ZAR", maximumFractionDigits: 0 })
+    : "Custom";
+
+  const tableRows = packages.map((p) => ({
+    id: p.id,
+    name: p.name,
+    billingType: p.billingType,
+    price: fmtPrice(p.priceMinCents, p.priceMaxCents, p.isCustomQuote),
+    status: p.isActive ? "Active" : "Inactive",
+  })) as unknown as Record<string, unknown>[];
+
   return (
     <div className={styles.pageBody}>
-      {/* Header */}
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>KNOWLEDGE / SERVICE CATALOG MANAGER</div>
-          <h1 className={styles.pageTitle}>Service Catalog Manager</h1>
-          <div className={styles.pageSub}>Manage client-facing service offerings, pricing, and timelines</div>
+          <div className={styles.pageEyebrow}>KNOWLEDGE / CATALOG</div>
+          <h1 className={styles.pageTitle}>Service Catalog</h1>
+          <div className={styles.pageSub}>Active services · Pricing health · Package performance</div>
         </div>
         <div className={styles.pageActions}>
           {view === "packages" && (
@@ -160,6 +184,51 @@ export function ServiceCatalogManagerPage() {
           )}
         </div>
       </div>
+
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Active Packages" value={activePackages} tone="accent" sparkData={[2, 3, 3, 4, 5, 5, 6, activePackages]} />
+        <StatWidget label="Total Add-ons" value={addons.length} sub={`${activeAddons} active`} />
+        <StatWidget label="Retainer Plans" value={packages.filter((p) => p.billingType === "MONTHLY" || p.billingType === "QUARTERLY").length} tone="green" />
+        <StatWidget label="Avg Package Price" value={avgPriceDisplay} sub="min price" />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Packages by Billing Type"
+          type="bar"
+          data={chartData.length > 0 ? chartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Package Types"
+          stages={[
+            { label: "Once-off", count: billingCounts["ONCE_OFF"] ?? 0, total: packages.length, color: "#8b6fff" },
+            { label: "Monthly", count: billingCounts["MONTHLY"] ?? 0, total: packages.length, color: "#34d98b" },
+            { label: "Quarterly", count: billingCounts["QUARTERLY"] ?? 0, total: packages.length, color: "#f5a623" },
+            { label: "Annual", count: billingCounts["ANNUAL"] ?? 0, total: packages.length, color: "#60a5fa" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Services"
+          rows={tableRows}
+          rowKey="id"
+          emptyMessage="No packages yet."
+          columns={[
+            { key: "name", header: "Name", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.name ?? "")}</span> },
+            { key: "billingType", header: "Type", render: (_v, row) => <span className={cx("badge")}>{String(row.billingType ?? "").replace("_", " ")}</span> },
+            { key: "price", header: "Price", align: "right", render: (_v, row) => <span className={cx("fontMono", "colorAccent")}>{String(row.price ?? "—")}</span> },
+            { key: "status", header: "Status", align: "right", render: (_v, row) => <span className={cx("badge", String(row.status) === "Active" ? "badgeGreen" : "badgeMuted")}>{String(row.status ?? "")}</span> },
+          ]}
+        />
+      </WidgetGrid>
 
       {/* Error */}
       {error && (
