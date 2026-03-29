@@ -646,6 +646,98 @@ export async function updateDataRetentionStatusWithRefresh(
   });
 }
 
+// ── Crisis Escalation Chain ───────────────────────────────────────────────────
+
+export interface AdminEscalationLevel {
+  id: string;
+  workspaceId: string;
+  level: number;
+  role: string;
+  personLabel: string;
+  triggerDesc: string;
+  colorToken: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function loadEscalationChainWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<AdminEscalationLevel[]>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<AdminEscalationLevel[]>("/crises/escalation-chain", token);
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success) return { unauthorized: false, data: [], error: toGatewayError(res.payload.error?.code ?? "ESCALATION_CHAIN_FETCH_FAILED", res.payload.error?.message ?? "Unable to load escalation chain.") };
+    return { unauthorized: false, data: res.payload.data ?? [], error: null };
+  });
+}
+
+export async function upsertEscalationLevelWithRefresh(
+  session: AuthSession,
+  level: number,
+  data: Partial<{ role: string; personLabel: string; triggerDesc: string; colorToken: string }>
+): Promise<AuthorizedResult<AdminEscalationLevel>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<AdminEscalationLevel>(`/crises/escalation-chain/${level}`, token, { method: "PUT", body: data });
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success || !res.payload.data) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "ESCALATION_LEVEL_UPDATE_FAILED", res.payload.error?.message ?? "Unable to update escalation level.") };
+    return { unauthorized: false, data: res.payload.data, error: null };
+  });
+}
+
+// ── Crisis Playbooks ──────────────────────────────────────────────────────────
+
+export interface AdminPlaybookStep {
+  id: string;
+  playbookId: string;
+  order: number;
+  action: string;
+}
+
+export interface AdminPlaybook {
+  id: string;
+  workspaceId: string;
+  name: string;
+  steps: AdminPlaybookStep[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function loadPlaybooksWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<AdminPlaybook[]>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<AdminPlaybook[]>("/crises/playbooks", token);
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success) return { unauthorized: false, data: [], error: toGatewayError(res.payload.error?.code ?? "PLAYBOOKS_FETCH_FAILED", res.payload.error?.message ?? "Unable to load playbooks.") };
+    return { unauthorized: false, data: res.payload.data ?? [], error: null };
+  });
+}
+
+export async function createPlaybookWithRefresh(
+  session: AuthSession,
+  data: { name: string; steps?: string[] }
+): Promise<AuthorizedResult<AdminPlaybook>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<AdminPlaybook>("/crises/playbooks", token, { method: "POST", body: data });
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success || !res.payload.data) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "PLAYBOOK_CREATE_FAILED", res.payload.error?.message ?? "Unable to create playbook.") };
+    return { unauthorized: false, data: res.payload.data, error: null };
+  });
+}
+
+export async function updatePlaybookWithRefresh(
+  session: AuthSession,
+  id: string,
+  data: Partial<{ name: string; steps: string[] }>
+): Promise<AuthorizedResult<AdminPlaybook>> {
+  return withAuthorizedSession(session, async (token) => {
+    const res = await callGateway<AdminPlaybook>(`/crises/playbooks/${id}`, token, { method: "PATCH", body: data });
+    if (isUnauthorized(res)) return { unauthorized: true, data: null, error: null };
+    if (!res.payload.success || !res.payload.data) return { unauthorized: false, data: null, error: toGatewayError(res.payload.error?.code ?? "PLAYBOOK_UPDATE_FAILED", res.payload.error?.message ?? "Unable to update playbook.") };
+    return { unauthorized: false, data: res.payload.data, error: null };
+  });
+}
+
 // ── Portfolio Risk Register ───────────────────────────────────────────────────
 
 export async function loadAllPortfolioRisksWithRefresh(

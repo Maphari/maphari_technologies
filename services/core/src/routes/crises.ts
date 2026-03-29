@@ -165,4 +165,161 @@ export async function registerCrisisRoutes(app: FastifyInstance): Promise<void> 
       return { success: false, error: { code: "CRISIS_UPDATE_FAILED", message: "Unable to update crisis." } } as ApiResponse;
     }
   });
+
+  // ── GET /crises/escalation-chain ────────────────────────────────────────────
+  app.get("/crises/escalation-chain", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      return reply.status(403).send({ success: false, error: { code: "FORBIDDEN", message: "Only admins can view the escalation chain." } } as ApiResponse);
+    }
+
+    await seedEscalationAndPlaybooks();
+
+    const levels = await prisma.crisisEscalationLevel.findMany({
+      where: { workspaceId: "default" },
+      orderBy: { level: "asc" }
+    });
+
+    return { success: true, data: levels, meta: { requestId: scope.requestId } } as ApiResponse<typeof levels>;
+  });
+
+  // ── PUT /crises/escalation-chain/:level ────────────────────────────────────
+  app.put("/crises/escalation-chain/:level", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      return reply.status(403).send({ success: false, error: { code: "FORBIDDEN", message: "Only admins can update escalation chain." } } as ApiResponse);
+    }
+
+    const levelNum = parseInt((request.params as { level: string }).level, 10);
+    const body = request.body as { role?: string; personLabel?: string; triggerDesc?: string; colorToken?: string };
+
+    const record = await prisma.crisisEscalationLevel.upsert({
+      where: { workspaceId_level: { workspaceId: "default", level: levelNum } },
+      update: {
+        ...(body.role !== undefined ? { role: body.role } : {}),
+        ...(body.personLabel !== undefined ? { personLabel: body.personLabel } : {}),
+        ...(body.triggerDesc !== undefined ? { triggerDesc: body.triggerDesc } : {}),
+        ...(body.colorToken !== undefined ? { colorToken: body.colorToken } : {}),
+      },
+      create: {
+        workspaceId: "default",
+        level: levelNum,
+        role: body.role ?? "",
+        personLabel: body.personLabel ?? "",
+        triggerDesc: body.triggerDesc ?? "",
+        colorToken: body.colorToken ?? "var(--accent)",
+      }
+    });
+
+    return { success: true, data: record, meta: { requestId: scope.requestId } } as ApiResponse<typeof record>;
+  });
+
+  // ── GET /crises/playbooks ───────────────────────────────────────────────────
+  app.get("/crises/playbooks", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      return reply.status(403).send({ success: false, error: { code: "FORBIDDEN", message: "Only admins can view playbooks." } } as ApiResponse);
+    }
+
+    await seedEscalationAndPlaybooks();
+
+    const playbooks = await prisma.crisisPlaybook.findMany({
+      where: { workspaceId: "default" },
+      include: { steps: { orderBy: { order: "asc" } } },
+      orderBy: { name: "asc" }
+    });
+
+    return { success: true, data: playbooks, meta: { requestId: scope.requestId } } as ApiResponse<typeof playbooks>;
+  });
+
+  // ── POST /crises/playbooks ──────────────────────────────────────────────────
+  app.post("/crises/playbooks", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      return reply.status(403).send({ success: false, error: { code: "FORBIDDEN", message: "Only admins can create playbooks." } } as ApiResponse);
+    }
+
+    const body = request.body as { name: string; steps?: string[] };
+    if (!body.name) {
+      return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "name is required." } } as ApiResponse);
+    }
+
+    const playbook = await prisma.crisisPlaybook.create({
+      data: {
+        workspaceId: "default",
+        name: body.name,
+        steps: {
+          create: (body.steps ?? []).map((action, i) => ({ order: i, action }))
+        }
+      },
+      include: { steps: { orderBy: { order: "asc" } } }
+    });
+
+    return { success: true, data: playbook, meta: { requestId: scope.requestId } } as ApiResponse<typeof playbook>;
+  });
+
+  // ── PATCH /crises/playbooks/:id ─────────────────────────────────────────────
+  app.patch("/crises/playbooks/:id", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      return reply.status(403).send({ success: false, error: { code: "FORBIDDEN", message: "Only admins can update playbooks." } } as ApiResponse);
+    }
+
+    const { id } = request.params as { id: string };
+    const body = request.body as { name?: string; steps?: string[] };
+
+    try {
+      // Replace steps if provided
+      if (body.steps !== undefined) {
+        await prisma.playbookStep.deleteMany({ where: { playbookId: id } });
+        await prisma.playbookStep.createMany({
+          data: body.steps.map((action, i) => ({ playbookId: id, order: i, action }))
+        });
+      }
+
+      const playbook = await prisma.crisisPlaybook.update({
+        where: { id },
+        data: { ...(body.name !== undefined ? { name: body.name } : {}) },
+        include: { steps: { orderBy: { order: "asc" } } }
+      });
+
+      return { success: true, data: playbook, meta: { requestId: scope.requestId } } as ApiResponse<typeof playbook>;
+    } catch {
+      return reply.status(404).send({ success: false, error: { code: "NOT_FOUND", message: "Playbook not found." } } as ApiResponse);
+    }
+  });
+}
+
+// ── Seed default escalation chain and playbooks if tables are empty ───────────
+async function seedEscalationAndPlaybooks(): Promise<void> {
+  const existingLevels = await prisma.crisisEscalationLevel.count({ where: { workspaceId: "default" } });
+  if (existingLevels === 0) {
+    const defaults = [
+      { level: 1, role: "Account Manager", personLabel: "Assigned AM", triggerDesc: "Client unresponsive 3+ days", colorToken: "var(--accent)" },
+      { level: 2, role: "Operations Admin", personLabel: "Operations Admin", triggerDesc: "AM escalation or invoice 7+ days overdue", colorToken: "var(--blue)" },
+      { level: 3, role: "Super Admin / Owner", personLabel: "Owner / Founder", triggerDesc: "Churn risk confirmed or legal threat", colorToken: "var(--red)" },
+    ];
+    for (const d of defaults) {
+      await prisma.crisisEscalationLevel.create({ data: { workspaceId: "default", ...d } });
+    }
+  }
+
+  const existingPlaybooks = await prisma.crisisPlaybook.count({ where: { workspaceId: "default" } });
+  if (existingPlaybooks === 0) {
+    const defaults = [
+      { name: "Silent Client", steps: ["Send personal message from AM", "Follow-up with value recap", "Offer check-in call", "Escalate if 5 days silent"] },
+      { name: "Invoice Dispute", steps: ["Send itemised breakdown", "Offer to schedule review call", "Offer flexible payment plan", "Escalate to admin if unresolved in 7 days"] },
+      { name: "Scope Conflict", steps: ["Acknowledge the issue directly", "Share original scope document", "Propose change order", "Offer project reset session"] },
+      { name: "Quality Complaint", steps: ["Apologise without admitting full fault", "Schedule quality review", "Offer revision at no cost", "Send satisfaction check 72h later"] },
+    ];
+    for (const pb of defaults) {
+      await prisma.crisisPlaybook.create({
+        data: {
+          workspaceId: "default",
+          name: pb.name,
+          steps: { create: pb.steps.map((action, i) => ({ order: i, action })) }
+        }
+      });
+    }
+  }
 }

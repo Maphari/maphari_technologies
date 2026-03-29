@@ -16,6 +16,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
 } from "@nestjs/common";
 import { type ApiResponse, type Role } from "@maphari/contracts";
@@ -1194,6 +1195,105 @@ export class AdminController {
       `${CORE()}/risks`,
       "GET",
       undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CRISIS ESCALATION CHAIN & PLAYBOOKS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /crises/escalation-chain ──────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("crises/escalation-chain")
+  async listEscalationChain(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/crises/escalation-chain`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PUT /crises/escalation-chain/:level ───────────────────────────────────
+  @Roles("ADMIN")
+  @Put("crises/escalation-chain/:level")
+  async upsertEscalationLevel(
+    @Param("level")          level: string,
+    @Body()                  body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/crises/escalation-chain/${level}`,
+      "PUT",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── GET /crises/playbooks ──────────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("crises/playbooks")
+  async listPlaybooks(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/crises/playbooks`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── POST /crises/playbooks ─────────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Post("crises/playbooks")
+  async createPlaybook(
+    @Body()                  body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/crises/playbooks`,
+      "POST",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PATCH /crises/playbooks/:id ────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Patch("crises/playbooks/:id")
+  async updatePlaybook(
+    @Param("id")             id: string,
+    @Body()                  body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/crises/playbooks/${id}`,
+      "PATCH",
+      body,
       adminHeaders(userId, role, clientId, requestId, traceId)
     );
   }

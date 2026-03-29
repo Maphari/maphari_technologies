@@ -9,7 +9,11 @@ import {
   loadAdminCrisesWithRefresh,
   createCrisisWithRefresh,
   updateCrisisWithRefresh,
+  loadEscalationChainWithRefresh,
+  loadPlaybooksWithRefresh,
   type AdminCrisis,
+  type AdminEscalationLevel,
+  type AdminPlaybook,
 } from "../../../../lib/api/admin";
 
 type Severity = "critical" | "high" | "medium" | "low";
@@ -78,18 +82,7 @@ function mapApiResolved(c: AdminCrisis): ResolvedCrisis {
   };
 }
 
-const escalationChain = [
-  { level: 1, role: "Account Manager", person: "Assigned AM", trigger: "Client unresponsive 3+ days", color: "var(--accent)" },
-  { level: 2, role: "Operations Admin", person: "Operations Admin", trigger: "AM escalation or invoice 7+ days overdue", color: "var(--blue)" },
-  { level: 3, role: "Super Admin / Owner", person: "Owner / Founder", trigger: "Churn risk confirmed or legal threat", color: "var(--red)" }
-] as const;
-
-const recoveryPlaybooks = [
-  { name: "Silent Client", steps: ["Send personal message from AM", "Follow-up with value recap", "Offer check-in call", "Escalate if 5 days silent"] },
-  { name: "Invoice Dispute", steps: ["Send itemised breakdown", "Offer to schedule review call", "Offer flexible payment plan", "Escalate to admin if unresolved in 7 days"] },
-  { name: "Scope Conflict", steps: ["Acknowledge the issue directly", "Share original scope document", "Propose change order", "Offer project reset session"] },
-  { name: "Quality Complaint", steps: ["Apologise without admitting full fault", "Schedule quality review", "Offer revision at no cost", "Send satisfaction check 72h later"] }
-] as const;
+// escalationChain and recoveryPlaybooks are loaded from the API on mount
 
 const tabs = ["active crises", "escalation chain", "recovery playbooks", "resolved"] as const;
 
@@ -133,15 +126,23 @@ export function CrisisCommandPage({ session }: { session: AuthSession | null }) 
   const [allCrises, setAllCrises] = useState<AdminCrisis[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
+  const [escalationChain, setEscalationChain] = useState<AdminEscalationLevel[]>([]);
+  const [recoveryPlaybooks, setRecoveryPlaybooks] = useState<AdminPlaybook[]>([]);
 
   useEffect(() => {
     if (!session) { setLoading(false); return; }
     setLoading(true);
     setError(null);
-    void loadAdminCrisesWithRefresh(session).then((r) => {
-      if (r.nextSession) saveSession(r.nextSession);
-      if (r.error) setError(r.error.message ?? "Failed to load crises.");
-      else if (r.data) setAllCrises(r.data);
+    void Promise.all([
+      loadAdminCrisesWithRefresh(session),
+      loadEscalationChainWithRefresh(session),
+      loadPlaybooksWithRefresh(session),
+    ]).then(([cr, er, pbr]) => {
+      if (cr.nextSession) saveSession(cr.nextSession);
+      if (cr.error) setError(cr.error.message ?? "Failed to load crises.");
+      else if (cr.data) setAllCrises(cr.data);
+      if (!er.error && er.data) setEscalationChain(er.data);
+      if (!pbr.error && pbr.data) setRecoveryPlaybooks(pbr.data);
       setLoading(false);
     }).catch((err: unknown) => {
       setError(err instanceof Error ? err.message : "Failed to load crises.");
@@ -319,8 +320,8 @@ export function CrisisCommandPage({ session }: { session: AuthSession | null }) 
                       <div className={cx(styles.crisLevelBubble, levelToneClass(level.level))}>{level.level}</div>
                       <div className={styles.onboardGrow}>
                         <div className={styles.crisRole}>{level.role}</div>
-                        <div className={cx(styles.crisPerson, levelToneClass(level.level))}>{level.person}</div>
-                        <div className={styles.text12 + " " + styles.colorMuted}>Trigger: {level.trigger}</div>
+                        <div className={cx(styles.crisPerson, levelToneClass(level.level))}>{level.personLabel}</div>
+                        <div className={styles.text12 + " " + styles.colorMuted}>Trigger: {level.triggerDesc}</div>
                       </div>
                       <button type="button" className={cx("btnSm", "btnGhost")}>Contact Now</button>
                     </div>
@@ -360,9 +361,9 @@ export function CrisisCommandPage({ session }: { session: AuthSession | null }) 
               <div className={styles.crisPlaySub}>Recovery Protocol</div>
               <div className={styles.crisPlaySteps}>
                 {pb.steps.map((step, i) => (
-                  <div key={i} className={styles.crisPlayStepRow}>
+                  <div key={step.id} className={styles.crisPlayStepRow}>
                     <div className={styles.crisPlayStepNum}>{i + 1}</div>
-                    <div className={styles.crisPlayStepText}>{step}</div>
+                    <div className={styles.crisPlayStepText}>{step.action}</div>
                   </div>
                 ))}
               </div>
