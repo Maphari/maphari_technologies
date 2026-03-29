@@ -5,6 +5,7 @@ import { formatMoneyCents } from "@/lib/i18n/currency";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { EmptyState, colorClass as toneClass, formatDateTime } from "./admin-page-utils";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { loadAuditEventsWithRefresh, type AdminAuditEvent } from "../../../../lib/api/admin/governance";
 import { saveSession } from "../../../../lib/auth/session";
 
@@ -177,6 +178,42 @@ export function AdminAuditPageClient() {
     return { total: entries.length, last24h, highPriority, domainsActive };
   }, [entries]);
 
+  // ── Widget data ────────────────────────────────────────────────────────────
+  const domainCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const e of entries) {
+      map[e.domain] = (map[e.domain] ?? 0) + 1;
+    }
+    return map;
+  }, [entries]);
+
+  const eventsByDayChart = useMemo(() => {
+    const map: Record<string, number> = {};
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const key = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      map[key] = 0;
+    }
+    for (const e of entries) {
+      const d = new Date(e.when);
+      const key = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      if (key in map) map[key] = (map[key] ?? 0) + 1;
+    }
+    return Object.entries(map).map(([label, value]) => ({ label, value }));
+  }, [entries]);
+
+  const domainPipeline = useMemo(() => {
+    const total = entries.length || 1;
+    const colors: Record<string, string> = { Client: "#8b6fff", Project: "#34d98b", Lead: "#f5a623", Invoice: "#f5a623", Payment: "#34d98b" };
+    return Object.entries(domainCounts).map(([label, count]) => ({
+      label,
+      count,
+      total,
+      color: colors[label] ?? "#8b6fff",
+    }));
+  }, [domainCounts, entries.length]);
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -206,20 +243,17 @@ export function AdminAuditPageClient() {
         </button>
       </div>
 
-      <div className={cx("topCardsStack")}>
-        {[
-          { label: "Total Events", value: stats.total.toString(), sub: "Tracked domains", color: "var(--accent)" },
-          { label: "Last 24 Hours", value: stats.last24h.toString(), sub: "Recent updates", color: "var(--blue)" },
-          { label: "High Priority", value: stats.highPriority.toString(), sub: "Needs review", color: stats.highPriority > 0 ? "var(--red)" : "var(--accent)" },
-          { label: "Domains Active", value: stats.domainsActive.toString(), sub: "Cross-domain coverage", color: "var(--purple)" }
-        ].map((stat) => (
-          <div key={stat.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{stat.label}</div>
-            <div className={cx(styles.statValue, toneClass(stat.color))}>{stat.value}</div>
-            <div className={cx("text11", "colorMuted")}>{stat.sub}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid>
+        <StatWidget label="Total Events" value={stats.total} sub="All tracked domains" tone="accent" />
+        <StatWidget label="Last 24 Hours" value={stats.last24h} sub="Recent updates" tone="default" />
+        <StatWidget label="High Priority" value={stats.highPriority} sub="Needs review" tone={stats.highPriority > 0 ? "red" : "green"} />
+        <StatWidget label="Domains Active" value={stats.domainsActive} sub="Cross-domain coverage" tone="accent" />
+      </WidgetGrid>
+
+      <WidgetGrid columns={2}>
+        <ChartWidget title="Events by Day (Last 7d)" type="bar" data={eventsByDayChart} color="#8b6fff" />
+        <PipelineWidget title="Events by Domain" stages={domainPipeline} />
+      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select title="Filter by domain" value={domainFilter} onChange={(e) => setDomainFilter(e.target.value as "all" | AuditDomain)} className={styles.filterSelect}>
