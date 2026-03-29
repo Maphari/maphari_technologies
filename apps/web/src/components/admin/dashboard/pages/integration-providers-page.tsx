@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -302,6 +303,15 @@ export function IntegrationProvidersPage({
     ])
   ) as Record<string, AdminIntegrationProvider[]>;
 
+  // Build chart data: connections per provider
+  const providerChartData = providers.map((p) => ({
+    name: p.label,
+    connections: p.sortOrder,
+  }));
+
+  const enabledCount = providers.filter((p) => p.availabilityStatus === "active" || p.availabilityStatus === "beta").length;
+  const disabledCount = providers.filter((p) => p.availabilityStatus === "hidden" || p.availabilityStatus === "deprecated" || p.availabilityStatus === "coming_soon").length;
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -313,57 +323,55 @@ export function IntegrationProvidersPage({
       </div>
 
       {/* ── KPI Row ────────────────────────────────────────────────────── */}
-      <div className={cx("topCardsStack", "mb24")}>
-        {[
-          { label: "Total Providers", value: providers.length,                                  color: "var(--accent)" },
-          { label: "Active",          value: (grouped["active"] ?? []).length,                  color: "var(--green)"  },
-          { label: "Beta",            value: (grouped["beta"] ?? []).length,                    color: "var(--amber)"  },
-          { label: "Requestable",     value: providers.filter((p) => p.isRequestEnabled).length, color: "var(--accent)" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={styles.statValue} style={{ color: s.color }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid columns={4}>
+        <StatWidget label="Total Providers" value={String(providers.length)} tone="accent" />
+        <StatWidget label="Active" value={String((grouped["active"] ?? []).length)} tone="green" />
+        <StatWidget label="Enabled" value={String(enabledCount)} sub="Active + Beta" />
+        <StatWidget label="Disabled" value={String(disabledCount)} tone="red" sub="Hidden / Deprecated" subTone={disabledCount > 0 ? "red" : undefined} />
+      </WidgetGrid>
 
-      {/* ── Sections ───────────────────────────────────────────────────── */}
-      {AVAILABILITY_SECTIONS.map(({ key, label }) => {
-        const section = grouped[key] ?? [];
-        if (key !== "hidden" && section.length === 0) return null;
-        return (
-          <div key={key} className={cx("ipSection")}>
-            <div className={cx("ipSectionHd")}>
-              <h2 className={cx("ipSectionTitle")}>{label}</h2>
-              <span className={cx("ipSectionCount", "badge", "badgeMuted")}>{section.length}</span>
-              <span className={cx("ipSectionAvail", "text11", "colorMuted")}>
-                ({availabilityLabel(key)})
-              </span>
-            </div>
-            {section.length === 0 ? (
-              <div className={cx("ipSectionEmpty")}>No providers in this category.</div>
-            ) : (
-              <div className={cx("ipCardGrid")}>
-                {section.map((p) => (
-                  <ProviderCard key={p.id} provider={p} onEdit={setEditing} />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Connections per Provider"
+          data={providerChartData}
+          dataKey="connections"
+          xKey="name"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Provider Status"
+          stages={[
+            { label: "Active", count: (grouped["active"] ?? []).length, total: Math.max(providers.length, 1), color: "#34d98b" },
+            { label: "Beta", count: (grouped["beta"] ?? []).length, total: Math.max(providers.length, 1), color: "#f5a623" },
+            { label: "Coming Soon", count: (grouped["coming_soon"] ?? []).length, total: Math.max(providers.length, 1), color: "#8b6fff" },
+            { label: "Hidden / Deprecated", count: (grouped["hidden"] ?? []).length, total: Math.max(providers.length, 1), color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
 
-      {providers.length === 0 && (
-        <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <div className={styles.emptyTitle}>No providers found</div>
-          <div className={styles.emptySub}>Integration providers will appear here once configured.</div>
-        </div>
-      )}
+      {/* ── Providers Table ─────────────────────────────────────────────── */}
+      <TableWidget
+        label="Integration Providers"
+        rows={providers}
+        rowKey="id"
+        emptyMessage="Integration providers will appear here once configured."
+        columns={[
+          { key: "name", header: "Name", render: (_, row) => row.label },
+          { key: "category", header: "Category", render: (_, row) => row.category },
+          { key: "status", header: "Status", render: (_, row) => (
+            <span className={cx("badge", row.availabilityStatus === "active" ? "badgeGreen" : row.availabilityStatus === "beta" ? "badgeAmber" : "badgeMuted")}>
+              {availabilityLabel(row.availabilityStatus)}
+            </span>
+          )},
+          { key: "connections", header: "Connections", align: "right", render: (_, row) => String(row.sortOrder) },
+          { key: "updated", header: "Last Updated", render: (_, row) => row.updatedAt ? new Date(row.updatedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" }) : "—" },
+          { key: "actions", header: "", render: (_, row) => (
+            <button type="button" className={cx("btnXs", "btnGhost")} onClick={() => setEditing(row)}>Edit</button>
+          )},
+        ]}
+      />
 
       {/* ── Edit modal ──────────────────────────────────────────────────── */}
       {editingProvider && (
