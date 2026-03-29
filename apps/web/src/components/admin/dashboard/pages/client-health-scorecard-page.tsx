@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import { StatWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { loadAllHealthScoresWithRefresh, type AdminHealthScore } from "../../../../lib/api/admin/client-ops";
@@ -248,20 +249,43 @@ export function ClientHealthScorecardPage({ session }: { session: AuthSession | 
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Portfolio Avg Health",  value: avgHealth.toString(),                    color: healthColor(avgHealth),              sub: "Weighted score" },
-          { label: "Clients at Risk",       value: atRisk.toString(),                        color: atRisk > 0 ? "var(--red)" : "var(--green)", sub: "Churn risk \u2265 50%" },
-          { label: "MRR at Risk",           value: `R${(totalMRRAtRisk / 1000).toFixed(0)}k`, color: "var(--red)",                        sub: "From at-risk clients" },
-          { label: "Renewal Probability",   value: `${scorecardData.length > 0 ? Math.round(scorecardData.reduce((s, c) => s + c.renewalProbability, 0) / scorecardData.length) : 0}%`, color: "var(--blue)", sub: "Portfolio average" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx("statValue", styles.healthToneText, toneClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid>
+        <StatWidget
+          label="Portfolio Avg Health"
+          value={avgHealth}
+          sub="Weighted score"
+          tone={avgHealth >= 70 ? "green" : avgHealth >= 40 ? "amber" : "red"}
+        />
+        <StatWidget
+          label="Clients at Risk"
+          value={atRisk}
+          sub="Churn risk ≥ 50%"
+          tone={atRisk > 0 ? "red" : "green"}
+        />
+        <StatWidget
+          label="MRR at Risk"
+          value={`R${(totalMRRAtRisk / 1000).toFixed(0)}k`}
+          sub="From at-risk clients"
+          tone={totalMRRAtRisk > 0 ? "red" : "green"}
+        />
+        <StatWidget
+          label="Renewal Probability"
+          value={`${scorecardData.length > 0 ? Math.round(scorecardData.reduce((s, c) => s + c.renewalProbability, 0) / scorecardData.length) : 0}%`}
+          sub="Portfolio average"
+          tone="accent"
+        />
+      </WidgetGrid>
+
+      <WidgetGrid columns={1}>
+        <PipelineWidget
+          title="Health Tier Distribution"
+          stages={[
+            { label: "Healthy (70+)",   count: scorecardData.filter((c) => calcHealthScore(c.dimensions) >= 70).length, total: scorecardData.length || 1, color: "#34d98b" },
+            { label: "Moderate (40-69)", count: scorecardData.filter((c) => { const h = calcHealthScore(c.dimensions); return h >= 40 && h < 70; }).length, total: scorecardData.length || 1, color: "#f5a623" },
+            { label: "At Risk (<40)",    count: scorecardData.filter((c) => calcHealthScore(c.dimensions) < 40).length,  total: scorecardData.length || 1, color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select
