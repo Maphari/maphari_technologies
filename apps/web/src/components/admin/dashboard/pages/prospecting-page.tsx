@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import {
   runProspectingWithRefresh,
   fetchLeadsForDedupWithRefresh,
@@ -404,6 +405,41 @@ export function ProspectingPage() {
           </div>
         )}
       </div>
+
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Prospects" value={String(prospects.length)} sub="Current results" />
+        <StatWidget label="Contacted" value={String(sentPitches.size)} tone="accent" sub="Pitches sent" />
+        <StatWidget label="Meetings Booked" value="—" sub="Not tracked yet" />
+        <StatWidget label="Conversion Rate" value={prospects.length > 0 ? `${Math.round((sentPitches.size / prospects.length) * 100)}%` : "—"} tone="green" />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      {hasRun && prospects.length > 0 && (
+        <WidgetGrid columns={2}>
+          <ChartWidget
+            label="Prospects by Source"
+            data={[
+              { source: "No Website", count: prospects.filter((p) => p.opportunityType === "no_website").length },
+              { source: "Needs Redesign", count: prospects.filter((p) => p.opportunityType === "needs_redesign").length },
+              { source: "Needs Automation", count: prospects.filter((p) => p.opportunityType === "needs_automation").length },
+              { source: "Needs SEO", count: prospects.filter((p) => p.opportunityType === "needs_seo").length },
+            ]}
+            dataKey="count"
+            xKey="source"
+            type="bar"
+            color="#8b6fff"
+          />
+          <PipelineWidget
+            label="Prospecting Stages"
+            stages={[
+              { label: "Found", count: prospects.length, total: Math.max(prospects.length, 1), color: "#8b6fff" },
+              { label: "Selected", count: selectedIds.size, total: Math.max(prospects.length, 1), color: "#f5a623" },
+              { label: "Contacted", count: sentPitches.size, total: Math.max(prospects.length, 1), color: "#34d98b" },
+            ]}
+          />
+        </WidgetGrid>
+      )}
 
       {/* ── Campaign history panel ───────────────────────────────────────── */}
       {showHistory && history.length > 0 && (
