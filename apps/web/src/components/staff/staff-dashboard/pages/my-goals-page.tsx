@@ -22,16 +22,18 @@ type MyGoalsPageProps = {
   session:  AuthSession | null;
 };
 
-type Quarter = "Q1-2026" | "Q2-2026" | "Q3-2026" | "Q4-2026";
+type Quarter = string;
 
-const QUARTERS: Quarter[] = ["Q1-2026", "Q2-2026", "Q3-2026", "Q4-2026"];
+function buildQuarters(year: number): Quarter[] {
+  return ["Q1", "Q2", "Q3", "Q4"].map((q) => `${q}-${year}`);
+}
+
+const QUARTERS: Quarter[] = buildQuarters(new Date().getFullYear());
 
 function currentQuarter(): Quarter {
   const month = new Date().getMonth(); // 0-indexed
   const year  = new Date().getFullYear();
-  const q = Math.floor(month / 3) + 1;
-  const key = `Q${q}-${year}` as Quarter;
-  return QUARTERS.includes(key) ? key : "Q1-2026";
+  return `Q${Math.floor(month / 3) + 1}-${year}`;
 }
 
 // ── Empty form defaults ───────────────────────────────────────────────────────
@@ -136,7 +138,7 @@ function AddGoalModal({ draft, saving, saveError, onChange, onSave, onClose }: A
 
           {/* Quarter + Target Date row */}
           <div className={cx("flexRow", "gap12")}>
-            <div className={cx("okrFormField")} style={{ flex: 1 }}>
+            <div className={cx("okrFormField", "okrFormFlexItem")}>
               <label className={cx("okrFormLabel")}>Quarter *</label>
               <select
                 className={cx("input")}
@@ -150,7 +152,7 @@ function AddGoalModal({ draft, saving, saveError, onChange, onSave, onClose }: A
               </select>
             </div>
 
-            <div className={cx("okrFormField")} style={{ flex: 1 }}>
+            <div className={cx("okrFormField", "okrFormFlexItem")}>
               <label className={cx("okrFormLabel")}>Target Date *</label>
               <input
                 className={cx("input")}

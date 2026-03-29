@@ -3163,6 +3163,8 @@
   margin-bottom: 8px;
 }
 
+.okrFormFlexItem { flex: 1; min-width: 0; }
+
 @media (max-width: 900px) {
   .okrGrid { grid-template-columns: 1fr; }
 }
