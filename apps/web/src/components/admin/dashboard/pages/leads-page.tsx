@@ -441,7 +441,7 @@ export function LeadsPage({
         <div className={styles.ldrDetailPanel}>
           <div className={styles.ldrDetailHeader}>
             <span className={styles.ldrDetailTitle}>Lead Detail</span>
-            <span className={styles.ldrDetailId}>{selected?.id.slice(0, 8) ?? "—"}</span>
+            <span className={styles.ldrDetailId}>{selected ? (selected.company ?? `#LEAD-${selected.id.slice(0, 6).toUpperCase()}`) : "—"}</span>
           </div>
           <div className={styles.ldrDetailBody}>
             {selected ? (

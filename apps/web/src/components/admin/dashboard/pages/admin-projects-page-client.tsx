@@ -8,6 +8,7 @@ import { formatStatus } from "@/lib/utils/format-status";
 
 export function AdminProjectsPageClient() {
   const { snapshot, loading } = useAdminWorkspaceContext();
+  const clientsById = new Map(snapshot.clients.map((c) => [c.id, c.name]));
 
   return (
     <div className={dashboardStyles.pageBody}>
@@ -21,13 +22,13 @@ export function AdminProjectsPageClient() {
               <div className={styles.tableRowHead}>
                 <span>Project</span>
                 <span>Status</span>
-                <span>Client ID</span>
+                <span>Client</span>
               </div>
               {snapshot.projects.map((project) => (
                 <div key={project.id} className={styles.tableRow}>
                   <span>{project.name}</span>
                   <span>{formatStatus(project.status)}</span>
-                  <span className={styles.mono}>{project.clientId.slice(0, 8)}</span>
+                  <span>{clientsById.get(project.clientId) ?? project.clientId.slice(0, 8).toUpperCase()}</span>
                 </div>
               ))}
             </div>

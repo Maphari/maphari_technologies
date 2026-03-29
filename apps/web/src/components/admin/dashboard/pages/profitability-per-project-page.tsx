@@ -19,7 +19,7 @@ import { AdminFilterBar } from "./shared";
 import { colorClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
-import type { AdminProject, AdminInvoice, ProjectTimeEntry } from "../../../../lib/api/admin/types";
+import type { AdminProject, AdminInvoice, AdminClient, ProjectTimeEntry } from "../../../../lib/api/admin/types";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
 import { loadTimeEntriesWithRefresh } from "../../../../lib/api/admin/tasks";
 
@@ -89,6 +89,7 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
   const [projects, setProjects] = useState<AdminProject[]>([]);
   const [invoices, setInvoices] = useState<AdminInvoice[]>([]);
+  const [clients, setClients] = useState<AdminClient[]>([]);
   const [timeEntries, setTimeEntries] = useState<ProjectTimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,6 +111,7 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
         if (timeResult.error) onNotify("error", timeResult.error.message);
         setProjects(snapshotResult.data?.projects ?? []);
         setInvoices(snapshotResult.data?.invoices ?? []);
+        setClients(snapshotResult.data?.clients ?? []);
         setTimeEntries(timeResult.data ?? []);
       } catch (err: unknown) {
         if (!cancelled) setError((err as Error)?.message ?? "Failed to load.");
@@ -122,6 +124,7 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
 
   // ── Compute per-project profitability ─────────────────────────────────────
   const withCalc = useMemo(() => {
+    const clientsById = new Map(clients.map((c) => [c.id, c.name]));
     return projects.map((p, idx) => {
       const color = projectColor(idx);
 
@@ -184,7 +187,7 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
       return {
         id: p.id,
         name: p.name,
-        client: p.clientId,
+        client: clientsById.get(p.clientId) ?? p.clientId.slice(0, 8).toUpperCase(),
         clientColor: color,
         type: "Project" as const,
         status: (p.riskLevel === "HIGH" ? "at-risk" : "active") as "active" | "at-risk",
@@ -211,7 +214,7 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
         staffBreakdown
       };
     });
-  }, [projects, invoices, timeEntries]);
+  }, [projects, invoices, clients, timeEntries]);
 
   const sorted = useMemo(() => {
     return [...withCalc].sort((a, b) =>

@@ -45,7 +45,11 @@ function mapApiEventToEntry(event: AdminAuditEvent): AuditEntry {
     when: event.createdAt,
     domain,
     action: event.action,
-    subject: event.resourceId ? `${resourceType} #${event.resourceId.slice(0, 8)}` : resourceType,
+    subject: event.resourceId
+      ? (event.resourceId.startsWith("DEP-") || event.resourceId.startsWith("EFT-")
+          ? `${resourceType} · ${event.resourceId}`
+          : `${resourceType} · ${event.resourceId.slice(0, 8).toUpperCase()}`)
+      : resourceType,
     detail: [event.actorName, event.details].filter(Boolean).join(" · ") || "System event",
     tone,
   };

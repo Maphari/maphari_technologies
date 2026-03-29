@@ -216,7 +216,7 @@ export function SupportQueuePage({
                   <tr key={t.id}>
                     <td className={cx("fontMono", "text12")}>{t.id.slice(0, 8).toUpperCase()}</td>
                     <td className={cx("fw600")}>{t.title}</td>
-                    <td className={cx("colorMuted")}>{t.clientId ?? "—"}</td>
+                    <td className={cx("colorMuted")}>{t.clientId ? t.clientId.slice(0, 8).toUpperCase() : "—"}</td>
                     <td><span className={cx("badge", priorityBadge(t.priority))}>{fmtPriority(t.priority)}</span></td>
                     <td className={cx("fontMono", "text12")}>{fmtSla(t.slaHours)}</td>
                     <td className={cx("text12")}>{t.assignedTo ?? "—"}</td>
