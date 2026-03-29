@@ -438,21 +438,6 @@ export function SettingsPage({
 
           <div className={cx("stgv2RailDivider", "stgv2RailDividerPush")} />
 
-          {/* Quick stats */}
-          <div className={cx("stgv2RailStats")}>
-            <div className={cx("stgv2RailStat")}>
-              <span className={cx("stgv2RailStatLabel")}>Notifications</span>
-              <span className={cx("stgv2RailStatVal")}>{enabledCount}/{totalCount} on</span>
-            </div>
-            <div className={cx("stgv2RailStat")}>
-              <span className={cx("stgv2RailStatLabel")}>Weekly target</span>
-              <span className={cx("stgv2RailStatVal")}>{weeklyTargetHours}h</span>
-            </div>
-            <div className={cx("stgv2RailStat")}>
-              <span className={cx("stgv2RailStatLabel")}>Status</span>
-              <span className={cx("stgv2RailStatVal", "stgv2RailStatOnline")}>Online</span>
-            </div>
-          </div>
         </div>
 
         {/* RIGHT — content panel */}
@@ -965,32 +950,42 @@ export function SettingsPage({
               </div>
 
               {twoFaLoading ? (
-                <div className={cx("stgv2SecurityRow")}>
-                  <span className={cx("colorMuted")}>Loading...</span>
-                </div>
-              ) : twoFaEnabled ? (
-                <div className={cx("stgv2SecurityRow")}>
-                  <div className={cx("stgv2SecurityRowInfo")}>
-                    <div className={cx("stgv2SecurityRowLabel")}>Status</div>
-                    <div className={cx("stgv2SecurityRowSub")}>Two-factor authentication is active on this account.</div>
-                  </div>
-                  <button type="button" className={cx("stgv2BtnDanger")} onClick={() => setTwoFaDisableOpen(true)}>
-                    Disable 2FA
-                  </button>
-                </div>
+                <div className={cx("stgv2SecCardSkeleton")} aria-busy="true" />
               ) : (
-                <>
-                  <div className={cx("stgv2SecurityRow")}>
-                    <div className={cx("stgv2SecurityRowInfo")}>
-                      <div className={cx("stgv2SecurityRowLabel")}>Status</div>
-                      <div className={cx("stgv2SecurityRowSub")}>Two-factor authentication is not enabled.</div>
-                    </div>
-                    <button type="button" className={cx("stgv2BtnPrimary")} onClick={() => void handleSetup2fa()}>
-                      Enable 2FA
-                    </button>
+                <div className={cx("stgv2SecCard", twoFaEnabled ? "stgv2SecCardOn" : "stgv2SecCardOff")}>
+                  <div className={cx("stgv2SecIconWrap", twoFaEnabled ? "stgv2SecIcoGreen" : "stgv2SecIcoAmber")}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M12 2L4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5L12 2z" />
+                      {twoFaEnabled && (
+                        <path d="M9 12l2 2 4-4" strokeLinecap="round" />
+                      )}
+                    </svg>
                   </div>
-                  {twoFaSetupError ? <p className={cx("stgv2ErrMsg")}>{twoFaSetupError}</p> : null}
-                </>
+                  <div className={cx("stgv2SecBody")}>
+                    <span className={cx("stgv2SecStatusPill", twoFaEnabled ? "stgv2SecPillGreen" : "stgv2SecPillAmber")}>
+                      {twoFaEnabled ? "Enabled" : "Not set up"}
+                    </span>
+                    <div className={cx("stgv2SecTitle")}>Two-Factor Authentication</div>
+                    <div className={cx("stgv2SecDesc")}>
+                      {twoFaEnabled
+                        ? "Your account has an extra layer of protection. You will need your authenticator app each time you sign in."
+                        : "Protect your account with a second factor. You will need an authenticator app such as Google Authenticator or Authy."}
+                    </div>
+                    {twoFaSetupError && <p className={cx("stgv2ErrMsg")}>{twoFaSetupError}</p>}
+                  </div>
+                  <div className={cx("stgv2SecAction")}>
+                    {twoFaEnabled ? (
+                      <button type="button" className={cx("stgv2BtnDanger")} onClick={() => setTwoFaDisableOpen(true)}>
+                        Disable 2FA
+                      </button>
+                    ) : (
+                      <button type="button" className={cx("stgv2BtnPrimary")} onClick={() => void handleSetup2fa()}>
+                        Enable 2FA
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
 
               {/* Setup modal */}

@@ -951,6 +951,13 @@
 .stgv2TagAccent { background: var(--accent-d); border: 1px solid rgba(249,115,22,0.3); color: var(--accent); border-radius: var(--r-xs); padding: 2px 7px; font-size: 10px; font-family: var(--font-dm-mono); font-weight: 700; }
 .stgv2TagAmber { background: var(--amber-d); border: 1px solid rgba(234,179,8,0.3); color: var(--amber); border-radius: var(--r-xs); padding: 2px 7px; font-size: 10px; font-family: var(--font-dm-mono); font-weight: 700; }
 
+/* Notification icon tone variants (used by stgv2NotifIcoWrap in settings-page.tsx) */
+.stgv2NotifToneAccent { background: var(--accent-d);  color: var(--accent);  }
+.stgv2NotifToneBlue   { background: var(--blue-d);    color: var(--blue);    }
+.stgv2NotifToneAmber  { background: var(--amber-d);   color: var(--amber);   }
+.stgv2NotifToneGreen  { background: var(--green-d);   color: var(--green);   }
+.stgv2NotifTonePurple { background: var(--purple-d);  color: var(--purple);  }
+
 /* ══════════════════════════════════════════════════════════════════════════════
    TEAM PERFORMANCE  (tpm*)
    ══════════════════════════════════════════════════════════════════════════════ */
