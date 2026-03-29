@@ -1643,6 +1643,40 @@ exports.Prisma.PlaybookStepScalarFieldEnum = {
   action: 'action'
 };
 
+exports.Prisma.AutomationJobMetricScalarFieldEnum = {
+  id: 'id',
+  workflowId: 'workflowId',
+  workspaceId: 'workspaceId',
+  runAt: 'runAt',
+  success: 'success',
+  durationMs: 'durationMs',
+  errorMessage: 'errorMessage',
+  triggeredBy: 'triggeredBy'
+};
+
+exports.Prisma.CashFlowScenarioScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  name: 'name',
+  description: 'description',
+  adjustments: 'adjustments',
+  isBaseline: 'isBaseline',
+  createdByAdminId: 'createdByAdminId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProspectingCampaignScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  filters: 'filters',
+  resultsCount: 'resultsCount',
+  status: 'status',
+  createdByAdminId: 'createdByAdminId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1786,7 +1820,10 @@ exports.Prisma.ModelName = {
   CustomDomain: 'CustomDomain',
   CrisisEscalationLevel: 'CrisisEscalationLevel',
   CrisisPlaybook: 'CrisisPlaybook',
-  PlaybookStep: 'PlaybookStep'
+  PlaybookStep: 'PlaybookStep',
+  AutomationJobMetric: 'AutomationJobMetric',
+  CashFlowScenario: 'CashFlowScenario',
+  ProspectingCampaign: 'ProspectingCampaign'
 };
 
 /**

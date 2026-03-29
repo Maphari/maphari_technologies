@@ -2116,3 +2116,50 @@ model PlaybookStep {
 
   @@map("playbook_steps")
 }
+
+// ── Task 30: Automation Workflow Execution Metrics ────────────────────────────
+
+model AutomationJobMetric {
+  id           String   @id @default(cuid())
+  workflowId   String
+  workspaceId  String   @default("default")
+  runAt        DateTime @default(now())
+  success      Boolean
+  durationMs   Int?
+  errorMessage String?
+  triggeredBy  String?
+
+  @@index([workflowId, runAt])
+  @@map("automation_job_metrics")
+}
+
+// ── Task 31: Cash Flow Scenario Persistence ───────────────────────────────────
+
+model CashFlowScenario {
+  id               String   @id @default(cuid())
+  workspaceId      String   @default("default")
+  name             String
+  description      String?
+  adjustments      Json     @default("[]")
+  isBaseline       Boolean  @default(false)
+  createdByAdminId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("cash_flow_scenarios")
+}
+
+// ── Task 32: Prospecting Campaign Persistence ─────────────────────────────────
+
+model ProspectingCampaign {
+  id               String   @id @default(cuid())
+  workspaceId      String   @default("default")
+  filters          Json     @default("{}")
+  resultsCount     Int      @default(0)
+  status           String   @default("completed")
+  createdByAdminId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("prospecting_campaigns")
+}
