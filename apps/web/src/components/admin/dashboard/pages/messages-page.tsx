@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import {
   createConversationEscalationWithRefresh,
@@ -47,6 +47,30 @@ function formatDate(value: string): string {
 
 function clientName(clients: AdminClient[], clientId: string): string {
   return clients.find((client) => client.id === clientId)?.name ?? "Unknown client";
+}
+
+/**
+ * Renders a message body safely.
+ * Messages that start with CALL_ROOM:: contain a LiveKit call URL with an
+ * embedded JWT token — render these as a "Join Call" button instead of
+ * exposing the raw token string.
+ */
+function renderMessageBody(content: string, joinCallClass: string): React.ReactNode {
+  if (content.startsWith("CALL_ROOM::")) {
+    const url = content.replace("CALL_ROOM::", "");
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={joinCallClass}
+        onClick={(e) => e.stopPropagation()}
+      >
+        Join Call
+      </a>
+    );
+  }
+  return <span>{content}</span>;
 }
 
 function toneForEscalationStatus(status: string): string {
@@ -506,7 +530,9 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
                               {sentiment === "POSITIVE" && <span className={cx(styles.sentimentPill, styles.sentimentPositive)}>Positive</span>}
                               {sentiment === "NEGATIVE" && <span className={cx(styles.sentimentPill, styles.sentimentNegative)}>Negative</span>}
                             </div>
-                            <div className={cx("text12", styles.msgLine15)}>{message.content}</div>
+                            <div className={cx("text12", styles.msgLine15)}>
+                              {renderMessageBody(message.content, cx(styles.joinCallBtn))}
+                            </div>
                           </div>
                         </div>
                       );
