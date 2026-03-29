@@ -10,6 +10,7 @@ import {
 } from "../../../../lib/api/admin/governance";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { AdminTabs } from "./shared";
 import { colorClass } from "./admin-page-utils";
 
@@ -221,6 +222,14 @@ export function LegalPage() {
     );
   }
 
+  // Build chart data: contracts by type
+  const contractTypeCounts: Record<string, number> = {};
+  for (const c of contracts) {
+    const t = c.type ?? "Other";
+    contractTypeCounts[t] = (contractTypeCounts[t] ?? 0) + 1;
+  }
+  const contractsByType = Object.entries(contractTypeCounts).map(([type, count]) => ({ type, count }));
+
   return (
     <div className={cx(styles.pageBody, styles.lglRoot)}>
       <div className={styles.pageHeader}>
@@ -235,20 +244,53 @@ export function LegalPage() {
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Active Contracts", value: String(activeCount), color: "var(--accent)", sub: "Total active contracts", alert: false },
-          { label: "Expiring < 60 days", value: String(expiringCount), color: "var(--amber)", sub: "Renew immediately", alert: expiringCount > 0 },
-          { label: "Expired (no renewal)", value: String(expiredCount), color: "var(--red)", sub: "Action required", alert: expiredCount > 0 },
-          { label: "Compliance Issues", value: String(highRisk), color: highRisk > 0 ? "var(--red)" : "var(--accent)", sub: highRisk > 0 ? "High-risk items" : "All clear", alert: highRisk > 0 }
-        ].map((s) => (
-          <div key={s.label} className={cx(styles.statCard, s.alert && (s.color === "var(--red)" ? styles.lglStatAlertRed : styles.lglStatAlertAmber))}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Active Contracts" value={String(activeCount)} tone="accent" sub="Total active" />
+        <StatWidget label="Expiring Soon" value={String(expiringCount)} tone={expiringCount > 0 ? "amber" : "accent"} sub="< 60 days" subTone={expiringCount > 0 ? "amber" : undefined} />
+        <StatWidget label="NDAs" value={String(contracts.filter((c) => c.type === "NDA").length)} />
+        <StatWidget label="Disputes" value={String(highRisk)} tone={highRisk > 0 ? "red" : "accent"} sub={highRisk > 0 ? "High-risk compliance" : "All clear"} subTone={highRisk > 0 ? "red" : undefined} />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Contracts by Type"
+          data={contractsByType}
+          dataKey="count"
+          xKey="type"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Contract Status"
+          stages={[
+            { label: "Active", count: activeCount, total: Math.max(contracts.length, 1), color: "#34d98b" },
+            { label: "Expiring Soon", count: expiringCount, total: Math.max(contracts.length, 1), color: "#f5a623" },
+            { label: "Expired", count: expiredCount, total: Math.max(contracts.length, 1), color: "#ff5f5f" },
+            { label: "Pending", count: contracts.filter((c) => contractDisplayStatus(c) === "pending").length, total: Math.max(contracts.length, 1), color: "#8b6fff" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Contracts Table ──────────────────────────────────────────────── */}
+      <TableWidget
+        label="Contracts"
+        rows={contracts}
+        rowKey="id"
+        emptyMessage="No contracts found."
+        columns={[
+          { key: "name", header: "Name / Type", render: (_, row) => (
+            <span><span style={{ fontWeight: 600 }}>{row.title}</span> <span style={{ opacity: 0.6, fontSize: "11px" }}>{row.type}</span></span>
+          )},
+          { key: "party", header: "Client / Party", render: (_, row) => row.clientId.slice(0, 8) + "…" },
+          { key: "value", header: "Value", render: () => "—" },
+          { key: "expiry", header: "Signed", render: (_, row) => contractSignedDate(row) },
+          { key: "status", header: "Status", render: (_, row) => (
+            <StatusBadge status={contractDisplayStatus(row)} />
+          )},
+        ]}
+      />
 
       <AdminTabs
         tabs={tabs}
