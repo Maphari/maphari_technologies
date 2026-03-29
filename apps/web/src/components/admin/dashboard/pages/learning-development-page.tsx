@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import { StatWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { AdminTabs } from "./shared";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { loadAllTrainingWithRefresh, loadAllStaffWithRefresh, type AdminTrainingRecord, type AdminStaffProfile } from "../../../../lib/api/admin";
@@ -257,20 +258,23 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "gap16", "mb16")}>
-        {[
-          { label: "L&D Budget (FY2026)", value: `R${(totalBudget / 1000).toFixed(0)}k`, color: "var(--accent)", sub: `R${(totalSpent / 1000).toFixed(1)}k spent` },
-          { label: "Budget Utilisation", value: `${Math.round((totalSpent / Math.max(totalBudget, 1)) * 100)}%`, color: "var(--blue)", sub: `R${((totalBudget - totalSpent) / 1000).toFixed(1)}k remaining` },
-          { label: "Courses In Progress", value: inProgress.toString(), color: "var(--blue)", sub: `${completed} completed FY2026` },
-          { label: "Staff with 0 L&D Spend", value: staff.filter((m) => m.ldSpent === 0).length.toString(), color: "var(--amber)", sub: "Budget not yet used" }
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid>
+        <StatWidget label="L&D Budget (FY2026)" value={`R${(totalBudget / 1000).toFixed(0)}k`} sub={`R${(totalSpent / 1000).toFixed(1)}k spent`} tone="accent" />
+        <StatWidget label="Budget Utilisation"  value={`${Math.round((totalSpent / Math.max(totalBudget, 1)) * 100)}%`} sub={`R${((totalBudget - totalSpent) / 1000).toFixed(1)}k remaining`} tone="accent" />
+        <StatWidget label="Courses In Progress" value={inProgress} sub={`${completed} completed`} tone="accent" />
+        <StatWidget label="Zero L&D Spend"      value={staff.filter((m) => m.ldSpent === 0).length} sub="Budget not yet used" tone={staff.filter((m) => m.ldSpent === 0).length > 0 ? "amber" : "green"} />
+      </WidgetGrid>
+
+      <WidgetGrid columns={1}>
+        <PipelineWidget
+          title="Course Status Breakdown"
+          stages={[
+            { label: "Completed",   count: completed,  total: allCourses.length || 1, color: "#34d98b" },
+            { label: "In Progress", count: inProgress, total: allCourses.length || 1, color: "#8b6fff" },
+            { label: "Planned",     count: allCourses.filter((c) => c.status === "planned").length, total: allCourses.length || 1, color: "#f5a623" },
+          ]}
+        />
+      </WidgetGrid>
 
       <AdminTabs
         tabs={tabs}
