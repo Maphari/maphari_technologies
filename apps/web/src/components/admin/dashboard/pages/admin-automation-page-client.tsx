@@ -107,7 +107,7 @@ export function AdminAutomationPageClient({
   ];
 
   const workflowStatus = [
-    { id: "billing-core", workflow: "Billing Core", domain: "billing", trigger: "Invoice due/paid", state: snapshot.invoices.length > 0 ? "ACTIVE" : "DRAFT", lastRun: latestJobAt, successRate: snapshot.invoices.length > 0 ? (getWorkflowRate("billing-core") || Math.max(70, successRate)) : 0 },
+    { id: "billing-core", workflow: "Billing Core", domain: "billing", trigger: "Invoice due/paid", state: snapshot.invoices.length > 0 ? "ACTIVE" : "DRAFT", lastRun: latestJobAt, successRate: snapshot.invoices.length > 0 ? (getWorkflowRate("billing-core") || successRate) : 0 },
     { id: "lead-followups", workflow: "Lead Follow-ups", domain: "sales", trigger: "Lead inactivity/status", state: snapshot.leads.length > 0 ? "ACTIVE" : "DRAFT", lastRun: snapshot.leads[0]?.updatedAt ?? null, successRate: snapshot.leads.length > 0 ? getWorkflowRate("lead-followups") : 0 },
     { id: "project-alerts", workflow: "Project Alerts", domain: "delivery", trigger: "Task/milestone overdue", state: snapshot.projects.length > 0 ? "ACTIVE" : "DRAFT", lastRun: snapshot.projects[0]?.updatedAt ?? null, successRate: snapshot.projects.length > 0 ? getWorkflowRate("project-alerts") : 0 },
     { id: "notification-delivery", workflow: "Notification Delivery", domain: "comms", trigger: "Queue + callbacks", state: failed > 0 ? "AT_RISK" : queued > 0 || sent > 0 ? "ACTIVE" : "DRAFT", lastRun: latestJobAt, successRate: getWorkflowRate("notification-delivery") || successRate }
