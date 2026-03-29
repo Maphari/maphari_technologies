@@ -10,6 +10,7 @@ import { toneClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { loadVendorsWithRefresh, type AdminVendor } from "../../../../lib/api/admin";
 import { saveSession } from "../../../../lib/auth/session";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type VendorCategory = "Software" | "Freelancer" | "Supplier" | "Infrastructure" | string;
@@ -104,6 +105,30 @@ export function VendorCostControlPage({ session }: { session: AuthSession | null
     );
   }
 
+  // ── Widget data ─────────────────────────────────────────────────────────────
+  const freelancerMonthly = vendors.filter((v) => v.category === "Freelancer").reduce((s, v) => s + v.monthlyCost, 0);
+
+  const categoryChartData = [...new Set(vendors.map((v) => v.category))].map((cat) => ({
+    label: cat,
+    value: vendors.filter((v) => v.category === cat).reduce((s, v) => s + v.monthlyCost, 0),
+  })).filter((d) => d.value > 0);
+
+  const pipelineStages = [...new Set(vendors.map((v) => v.category))].map((cat) => {
+    const catVendors = vendors.filter((v) => v.category === cat);
+    const color = categoryColors[cat] ?? "var(--muted)";
+    const hexColor = color === "var(--blue)" ? "#5fb3ff" : color === "var(--purple)" ? "#8b6fff" : color === "var(--amber)" ? "#f5a623" : color === "var(--accent)" ? "#34d98b" : "#888";
+    return { label: cat, count: catVendors.length, total: Math.max(vendors.length, 1), color: hexColor };
+  }).filter((s) => s.count > 0);
+
+  const tableRows = filtered.map((v) => ({
+    name:     v.name,
+    category: v.category,
+    monthly:  v.monthlyCost > 0 ? `R${v.monthlyCost.toLocaleString()}` : "—",
+    annual:   v.annualCost > 0 ? `R${(v.annualCost / 1000).toFixed(0)}k` : "—",
+    renewal:  v.renewalDate,
+    status:   v.status,
+  })) as Record<string, unknown>[];
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -117,20 +142,69 @@ export function VendorCostControlPage({ session }: { session: AuthSession | null
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "gap16", "mb28")}>
-        {[
-          { label: "Total Monthly Vendor Cost", value: `R${(totalMonthly / 1000).toFixed(1)}k`,    color: "var(--red)",   sub: "All active vendors" },
-          { label: "Software Spend",            value: `R${(softwareMonthly / 1000).toFixed(1)}k`, color: "var(--blue)",  sub: `${vendors.filter((v) => v.category === "Software").length} tools` },
-          { label: "Freelancer Spend",          value: `R${(vendors.filter((v) => v.category === "Freelancer").reduce((s, v) => s + v.monthlyCost, 0) / 1000).toFixed(1)}k`, color: "var(--purple)", sub: "Monthly freelancers" },
-          { label: "Renewals Due (60d)",        value: upcomingRenewals.toString(),                 color: "var(--amber)", sub: "Require review" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, "vendorToneText", toneClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: KPI stats ── */}
+      <WidgetGrid>
+        <StatWidget
+          label="Total Monthly Vendor Cost"
+          value={`R${(totalMonthly / 1000).toFixed(1)}k`}
+          sub="All active vendors"
+          tone="red"
+        />
+        <StatWidget
+          label="Software Spend"
+          value={`R${(softwareMonthly / 1000).toFixed(1)}k`}
+          sub={`${vendors.filter((v) => v.category === "Software").length} tools`}
+          tone="default"
+        />
+        <StatWidget
+          label="Freelancer Spend"
+          value={`R${(freelancerMonthly / 1000).toFixed(1)}k`}
+          sub="Monthly freelancers"
+          tone="default"
+        />
+        <StatWidget
+          label="Renewals Due (60d)"
+          value={upcomingRenewals}
+          sub="Require review"
+          tone={upcomingRenewals > 0 ? "amber" : "default"}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Monthly Spend by Category"
+          data={categoryChartData.length > 0 ? categoryChartData : [{ label: "No data", value: 0 }]}
+          dataKey="value"
+          type="bar"
+          color="#ff5f5f"
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Vendor Distribution"
+          stages={pipelineStages.length > 0 ? pipelineStages : [{ label: "No vendors", count: 0, total: 1 }]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Vendors table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Vendor Registry"
+          rows={tableRows}
+          rowKey="name"
+          emptyMessage="No vendors found."
+          columns={[
+            { key: "name",     header: "Vendor",   align: "left" },
+            { key: "category", header: "Category", align: "left" },
+            { key: "monthly",  header: "Monthly",  align: "right" },
+            { key: "annual",   header: "Annual",   align: "right" },
+            { key: "renewal",  header: "Renewal",  align: "right" },
+            { key: "status",   header: "Status",   align: "left", render: (val) => (
+              <span className={cx(String(val) === "active" ? "badgeGreen" : "badgeAmber")}>{String(val)}</span>
+            )},
+          ]}
+        />
+      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select title="View" value={activeTab} onChange={(e) => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
