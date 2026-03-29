@@ -95,6 +95,9 @@ export type PageId =
   | "communityModeration"
   | "communityFeatureRequests"
   | "proposedActions"
+  | "integrationRequests"
+  | "integrationConnections"
+  | "integrationProviders"
   | "settings";
 
 // ─── Re-exports for backward compatibility ───
@@ -162,6 +165,9 @@ export const navItems: NavItem[] = [
   { id: "employmentRecords", label: "Employment", section: "Communication" },
   { id: "automation", label: "Workflows", section: "Automation" },
   { id: "integrations", label: "Integrations", section: "Automation" },
+  { id: "integrationRequests", label: "Integ. Requests", section: "Automation" },
+  { id: "integrationConnections", label: "Integ. Health", section: "Automation" },
+  { id: "integrationProviders", label: "Providers", section: "Automation" },
   { id: "webhookHub", label: "Webhooks", section: "Automation" },
   { id: "owner", label: "Owner", section: "Governance" },
   { id: "team", label: "Team", section: "Governance" },

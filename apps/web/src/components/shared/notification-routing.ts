@@ -254,5 +254,8 @@ export const ADMIN_PAGE_TO_NOTIFICATION_TAB: Record<AdminPageId, DashboardNotifi
   proposals: "invoices",
   communityModeration: "operations",
   communityFeatureRequests: "operations",
-  proposedActions: "operations"
+  proposedActions: "operations",
+  integrationRequests: "operations",
+  integrationConnections: "operations",
+  integrationProviders: "settings"
 };

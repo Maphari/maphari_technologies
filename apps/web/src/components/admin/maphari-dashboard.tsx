@@ -65,6 +65,9 @@ import { AdminAnalyticsPageClient } from "./dashboard/pages/admin-analytics-page
 import { AdminAuditPageClient } from "./dashboard/pages/admin-audit-page-client";
 import { AdminAutomationPageClient } from "./dashboard/pages/admin-automation-page-client";
 import { AdminIntegrationsPageClient } from "./dashboard/pages/admin-integrations-page-client";
+import { IntegrationRequestsPage } from "./dashboard/pages/integration-requests-page";
+import { IntegrationConnectionsPage } from "./dashboard/pages/integration-connections-page";
+import { IntegrationProvidersPage } from "./dashboard/pages/integration-providers-page";
 import { AdminReportsPageClient } from "./dashboard/pages/admin-reports-page-client";
 import { AdminSettingsPageClient } from "./dashboard/pages/admin-settings-page-client";
 import { AdminStubPage } from "./dashboard/pages/admin-stub-page";
@@ -732,6 +735,9 @@ export function MaphariDashboard() {
             {page === "communityModeration" ? <AdminCommunityModerationPage session={session} /> : null}
             {page === "communityFeatureRequests" ? <AdminCommunityFeatureRequestsPage session={session} /> : null}
             {page === "proposedActions" ? <ProposedActionsPage session={session} /> : null}
+            {page === "integrationRequests" ? <IntegrationRequestsPage session={session} onNotify={pushToast} /> : null}
+            {page === "integrationConnections" ? <IntegrationConnectionsPage session={session} onNotify={pushToast} /> : null}
+            {page === "integrationProviders" ? <IntegrationProvidersPage session={session} onNotify={pushToast} /> : null}
             </DashboardErrorBoundary>
           </section>
         </main>
