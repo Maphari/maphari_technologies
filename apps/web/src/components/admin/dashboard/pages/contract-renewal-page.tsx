@@ -12,6 +12,7 @@ import { loadAdminContractsWithRefresh, createRenewalProposalWithRefresh, type L
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { formatStatus } from "@/lib/utils/format-status";
+import { StatWidget, PipelineWidget, TableWidget, WidgetGrid } from "../widgets";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -189,38 +190,40 @@ export function ContractRenewalPage() {
         </div>
       </div>
 
-      {/* ── KPI strip ─────────────────────────────────────────────────────── */}
-      <div className={cx("topCardsStack", "mb28")}>
-        <div className={cx(styles.statCard, kpis.expiringThisMonth > 0 ? styles.lglStatAlertAmber : "")}>
-          <div className={styles.statLabel}>Expiring This Month</div>
-          <div className={cx(styles.statValue, kpis.expiringThisMonth > 0 ? "colorAmber" : "colorAccent")}>
-            {kpis.expiringThisMonth}
-          </div>
-          <div className={cx("text11", "colorMuted")}>Action required soon</div>
-        </div>
+      {/* ── Widget stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Expiring This Month" value={kpis.expiringThisMonth} sub="Action required soon"                         tone={kpis.expiringThisMonth > 0 ? "amber" : "default"} />
+        <StatWidget label="Expired / Critical"  value={kpis.criticalOrExpired} sub={kpis.criticalOrExpired > 0 ? "Renew immediately" : "No critical contracts"} tone={kpis.criticalOrExpired > 0 ? "red" : "green"} />
+        <StatWidget label="Active & Healthy"    value={kpis.activeHealthy}     sub=">60 days or no expiry"                         tone="green" />
+        <StatWidget label="Total Contracts"     value={kpis.total}             sub="All clients"                                   tone="accent" />
+      </WidgetGrid>
 
-        <div className={cx(styles.statCard, kpis.criticalOrExpired > 0 ? styles.lglStatAlertRed : "")}>
-          <div className={styles.statLabel}>Expired / Critical</div>
-          <div className={cx(styles.statValue, kpis.criticalOrExpired > 0 ? "colorRed" : "colorAccent")}>
-            {kpis.criticalOrExpired}
-          </div>
-          <div className={cx("text11", "colorMuted")}>
-            {kpis.criticalOrExpired > 0 ? "Renew immediately" : "No critical contracts"}
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Active &amp; Healthy</div>
-          <div className={cx(styles.statValue, "colorAccent")}>{kpis.activeHealthy}</div>
-          <div className={cx("text11", "colorMuted")}>&gt;60 days or no expiry</div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Total Contracts</div>
-          <div className={cx(styles.statValue, "colorText")}>{kpis.total}</div>
-          <div className={cx("text11", "colorMuted")}>All clients</div>
-        </div>
-      </div>
+      <WidgetGrid columns={2}>
+        <PipelineWidget
+          title="Contract Status Breakdown"
+          stages={[
+            { label: "Healthy (>60d)", count: kpis.activeHealthy,      total: kpis.total || 1, color: "#34d98b" },
+            { label: "Due This Month", count: kpis.expiringThisMonth,  total: kpis.total || 1, color: "#f5a623" },
+            { label: "Critical/Expired", count: kpis.criticalOrExpired, total: kpis.total || 1, color: "#ff5f5f" },
+          ]}
+        />
+        <TableWidget
+          title="Soonest Expiring Contracts"
+          columns={[
+            { key: "type",   label: "Type",   width: 60 },
+            { key: "client", label: "Client" },
+            { key: "expiry", label: "Expiry" },
+            { key: "status", label: "Status" },
+          ]}
+          rows={sortByExpiry(contracts).slice(0, 10).filter((c) => c.expiresAt).map((c) => ({
+            type:   c.type,
+            client: c.clientId.slice(0, 8).toUpperCase(),
+            expiry: c.expiresAt ? formatExpiry(c.expiresAt) : "—",
+            status: badgeLabelForLight(trafficLight(c.expiresAt ?? null), c.expiresAt ?? null),
+          }) as Record<string, unknown>)}
+          emptyMessage="No contracts with expiry dates"
+        />
+      </WidgetGrid>
 
       {/* ── Contract list ─────────────────────────────────────────────────── */}
       <div className={styles.lglTableCard}>
