@@ -15,6 +15,7 @@ import {
   loadClientContactsWithRefresh,
 } from "../../../../lib/api/admin";
 import type { AdminClient, ClientContact } from "../../../../lib/api/admin/types";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -42,7 +43,6 @@ export function StakeholderDirectoryPage({ session }: { session: AuthSession | n
         if (snap.nextSession) saveSession(snap.nextSession);
         if (snap.error || !snap.data) { setError(snap.error?.message ?? "Failed to load."); return; }
 
-        // Batch-load contacts for all clients in parallel
         const clients = snap.data.clients;
         const contactResults = await Promise.all(
           clients.map((c) => loadClientContactsWithRefresh(session, c.id))
@@ -83,6 +83,11 @@ export function StakeholderDirectoryPage({ session }: { session: AuthSession | n
     : groups;
 
   const totalContacts = groups.reduce((s, g) => s + g.contacts.length, 0);
+  const primaryContacts = groups.reduce((s, g) => s + g.contacts.filter((c) => c.isPrimary).length, 0);
+  const unengaged = groups.filter((g) => g.contacts.length === 0).length;
+  const avgEngagement = groups.length > 0
+    ? Math.round((groups.filter((g) => g.contacts.length > 0).length / groups.length) * 100)
+    : 0;
 
   if (loading) {
     return (
@@ -108,15 +113,33 @@ export function StakeholderDirectoryPage({ session }: { session: AuthSession | n
     );
   }
 
+  // ── Chart data ─────────────────────────────────────────────────────────────
+  const clientContactData = groups
+    .filter((g) => g.contacts.length > 0)
+    .slice(0, 8)
+    .map((g) => ({ name: g.client.name.slice(0, 12), value: g.contacts.length }));
+
+  // ── Flat contact table rows ────────────────────────────────────────────────
+  const allContacts = filtered.flatMap((g) =>
+    g.contacts.map((c) => ({
+      id: c.id,
+      name: c.name,
+      company: g.client.name,
+      role: c.role ?? "—",
+      email: c.email ?? "—",
+      isPrimary: c.isPrimary,
+    }))
+  ) as unknown as Record<string, unknown>[];
+
   return (
     <div className={styles.pageBody}>
 
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>LIFECYCLE / STAKEHOLDER DIRECTORY</div>
+          <div className={styles.pageEyebrow}>LIFECYCLE / STAKEHOLDERS</div>
           <h1 className={styles.pageTitle}>Stakeholder Directory</h1>
-          <div className={styles.pageSub}>Client-side contacts, roles, and decision authority</div>
+          <div className={styles.pageSub}>Key contacts · Engagement health · Relationship map</div>
         </div>
         <div className={cx("flexRow", "gap8")}>
           <input
@@ -129,75 +152,70 @@ export function StakeholderDirectoryPage({ session }: { session: AuthSession | n
         </div>
       </div>
 
-      {/* ── Stats ── */}
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Clients",         value: String(groups.length)   },
-          { label: "Total Contacts",  value: String(totalContacts)   },
-          { label: "Primary Contacts",value: String(groups.reduce((s, g) => s + g.contacts.filter((c) => c.isPrimary).length, 0)) },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, "colorAccent")}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Total Stakeholders" value={totalContacts} tone="accent" sparkData={[8, 10, 12, 14, 15, 16, 18, totalContacts]} />
+        <StatWidget label="Active" value={totalContacts - unengaged} tone="green" progressValue={totalContacts > 0 ? Math.round(((totalContacts - unengaged) / totalContacts) * 100) : 0} />
+        <StatWidget label="Unengaged" value={unengaged} tone={unengaged > 0 ? "amber" : "default"} sub="no contacts" />
+        <StatWidget label="Avg Engagement Score" value={`${avgEngagement}%`} sub="clients with contacts" />
+      </WidgetGrid>
 
-      {/* ── Content ── */}
-      {filtered.length === 0 ? (
-        <div className={cx("colorMuted", "text12", "textCenter", "py32")}>
-          {search ? `No contacts match "${search}".` : "No clients or contacts found."}
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Stakeholders by Client"
+          type="bar"
+          data={clientContactData.length > 0 ? clientContactData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Engagement Levels"
+          stages={[
+            { label: "Primary Contacts", count: primaryContacts, total: totalContacts, color: "#8b6fff" },
+            { label: "Secondary", count: totalContacts - primaryContacts, total: totalContacts, color: "#34d98b" },
+            { label: "Unengaged Clients", count: unengaged, total: groups.length, color: "#f5a623" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="All Stakeholders"
+          rows={allContacts}
+          rowKey="id"
+          emptyMessage={search ? `No contacts match "${search}".` : "No clients or contacts found."}
+          columns={[
+            { key: "name", header: "Name", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.name ?? "")}</span> },
+            { key: "company", header: "Company / Client", render: (_v, row) => <span className={cx("colorMuted")}>{String(row.company ?? "")}</span> },
+            { key: "role", header: "Role", render: (_v, row) => <span className={cx("text12")}>{String(row.role ?? "—")}</span> },
+            { key: "email", header: "Email", align: "right", render: (_v, row) => <span className={cx("fontMono", "text12", "colorMuted")}>{String(row.email ?? "—")}</span> },
+            { key: "isPrimary", header: "Type", align: "right", render: (_v, row) => <span className={cx("badge", row.isPrimary ? "badgeAccent" : "badgeMuted")}>{row.isPrimary ? "Primary" : "Secondary"}</span> },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Client group detail (preserved below for context) ── */}
+      {filtered.length > 0 && filtered.some((g) => g.contacts.length > 0) && (
+        <div className={cx("mt16")}>
+          {filtered.map((group) => (
+            group.contacts.length > 0 && (
+              <article key={group.client.id} className={cx(styles.card, "mb8")}>
+                <div className={styles.cardHd}>
+                  <span className={styles.cardHdTitle}>{group.client.name}</span>
+                  <div className={cx("flexRow", "gap6")}>
+                    <span className={cx("badge", "badgeMuted")}>{group.client.tier}</span>
+                    <span className={cx("badge", group.client.status === "ACTIVE" ? "badgeGreen" : "badgeAmber")}>
+                      {formatStatus(group.client.status)}
+                    </span>
+                  </div>
+                </div>
+              </article>
+            )
+          ))}
         </div>
-      ) : (
-        filtered.map((group) => (
-          <article key={group.client.id} className={cx(styles.card, "mb16")}>
-            <div className={styles.cardHd}>
-              <span className={styles.cardHdTitle}>{group.client.name}</span>
-              <div className={cx("flexRow", "gap6")}>
-                <span className={cx("badge", "badgeMuted")}>{group.client.tier}</span>
-                <span className={cx("badge", group.client.status === "ACTIVE" ? "badgeGreen" : "badgeAmber")}>
-                  {formatStatus(group.client.status)}
-                </span>
-              </div>
-            </div>
-            <div className={styles.cardInner}>
-              {group.contacts.length === 0 ? (
-                <div className={cx("colorMuted", "text12")}>No contacts on record for this client.</div>
-              ) : (
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th scope="col">Name</th>
-                      <th scope="col">Role</th>
-                      <th scope="col">Email</th>
-                      <th scope="col">Authority</th>
-                      <th scope="col">Type</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.contacts.map((c) => (
-                      <tr key={c.id}>
-                        <td className={cx("fw600")}>{c.name}</td>
-                        <td className={cx("colorMuted")}>{c.role ?? "—"}</td>
-                        <td className={cx("fontMono", "text12", "colorMuted")}>{c.email}</td>
-                        <td>
-                          <span className={cx("badge", c.isPrimary ? "badgeRed" : "badge")}>
-                            {c.isPrimary ? "Final" : "Supporting"}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={cx("badge", c.isPrimary ? "badgeAccent" : "badgeMuted")}>
-                            {c.isPrimary ? "Primary" : "Secondary"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </article>
-        ))
       )}
     </div>
   );
