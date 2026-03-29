@@ -22,6 +22,7 @@ import { saveSession } from "../../../../lib/auth/session";
 import type { AdminProject, AdminInvoice, AdminClient, ProjectTimeEntry } from "../../../../lib/api/admin/types";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
 import { loadTimeEntriesWithRefresh } from "../../../../lib/api/admin/tasks";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const HOURLY_RATE_CENTS = 85000; // R850 per hour in cents (aligns with per-client page)
@@ -229,6 +230,31 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
   const totalProfit = totalBudget - totalCost;
   const totalCollected = withCalc.reduce((s, p) => s + p.collected, 0);
   const avgMargin = totalBudget > 0 ? Math.round((totalProfit / totalBudget) * 100) : 0;
+  const atRiskCount = withCalc.filter((p) => p.margin < 10 || p.isOverBudget).length;
+
+  // ── Chart: margin by project ───────────────────────────────────────────────
+  const chartData = withCalc.slice(0, 10).map((p) => ({
+    label: p.name.length > 12 ? `${p.name.slice(0, 12)}…` : p.name,
+    margin: p.margin,
+  }));
+
+  // ── Pipeline: project margin tiers ─────────────────────────────────────────
+  const totalProjects = withCalc.length || 1;
+  const tierStages = [
+    { label: ">50% margin",  count: withCalc.filter((p) => p.margin >= 50).length, total: totalProjects, color: "#34d98b" },
+    { label: "20-50% margin", count: withCalc.filter((p) => p.margin >= 20 && p.margin < 50).length, total: totalProjects, color: "#f5a623" },
+    { label: "<20% margin",  count: withCalc.filter((p) => p.margin < 20).length, total: totalProjects, color: "#ff5f5f" },
+  ];
+
+  // ── Table rows ─────────────────────────────────────────────────────────────
+  const tableRows = sorted.map((p) => ({
+    name:    p.name,
+    client:  p.client,
+    billed:  centsToK(p.plannedRevenue),
+    cost:    centsToK(p.totalCost),
+    margin:  `${p.margin}%`,
+    marginNum: p.margin,
+  })) as Record<string, unknown>[];
 
   if (loading) {
     return (
@@ -259,9 +285,9 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>FINANCE / PROFITABILITY PER PROJECT</div>
+          <div className={styles.pageEyebrow}>FINANCE / PROFITABILITY</div>
           <h1 className={styles.pageTitle}>Profitability per Project</h1>
-          <div className={styles.pageSub}>Budget vs cost, hours variance, collection rate, and true margin</div>
+          <div className={styles.pageSub}>Project margin · Delivery cost · Billing efficiency</div>
         </div>
         <div className={styles.pageActions}>
           <button
@@ -299,261 +325,317 @@ export function ProfitabilityPerProjectPage({ session, onNotify }: Props) {
         </div>
       </div>
 
-      {/* ── KPI cards ── */}
-      <div className={cx("topCardsStack", "gap16", "mb16")}>
-        {[
-          { label: "Total Project Revenue", value: centsToK(totalBudget), color: "var(--accent)", sub: "All active projects" },
-          { label: "Total Project Cost", value: centsToK(totalCost), color: "var(--red)", sub: "Staff + tools + overhead" },
-          { label: "Avg Project Margin", value: `${avgMargin}%`, color: avgMargin >= 50 ? "var(--accent)" : "var(--amber)", sub: "Gross profit margin" },
-          { label: "Cash Collected", value: centsToK(totalCollected), color: "var(--blue)", sub: `of ${centsToK(totalBudget)} invoiced` }
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
+      {/* ── Row 1: KPI stats ── */}
+      <WidgetGrid>
+        <StatWidget
+          label="Avg Project Margin"
+          value={`${avgMargin}%`}
+          sub="Gross profit margin"
+          tone={avgMargin >= 50 ? "green" : avgMargin >= 30 ? "amber" : "red"}
+          progressValue={Math.max(0, avgMargin)}
+        />
+        <StatWidget
+          label="Total Billed"
+          value={centsToK(totalBudget)}
+          sub="All active projects"
+          tone="accent"
+        />
+        <StatWidget
+          label="Total Cost"
+          value={centsToK(totalCost)}
+          sub="Staff + tools + overhead"
+          tone="red"
+        />
+        <StatWidget
+          label="At-Risk Projects"
+          value={atRiskCount}
+          sub="Low margin or over budget"
+          tone={atRiskCount > 0 ? "red" : "default"}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Margin by Project"
+          data={chartData.length > 0 ? chartData : [{ label: "No data", margin: 0 }]}
+          dataKey="margin"
+          type="bar"
+          color="#8b6fff"
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Project Margin Tiers"
+          stages={tierStages}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table + filter ── */}
+      <div className={cx("overflowAuto", "minH0")}>
+        <AdminFilterBar panelColor={"var(--surface)"} borderColor={"var(--border)"}>
+          <select title="Select tab" value={activeTab} onChange={(e) => setActiveTab(e.target.value as Tab)} className={styles.formInput}>
+            {tabs.map((tab) => <option key={tab} value={tab}>{tab}</option>)}
+          </select>
+          {activeTab === "project margins" ? (
+            <select title="Sort projects" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)} className={styles.formInput}>
+              <option value="margin">Margin</option>
+              <option value="profit">Profit</option>
+              <option value="budget">Budget</option>
+            </select>
+          ) : null}
+        </AdminFilterBar>
       </div>
 
-      <div className={cx("overflowAuto", "minH0")}>
-          <AdminFilterBar panelColor={"var(--surface)"} borderColor={"var(--border)"}>
-            <select title="Select tab" value={activeTab} onChange={(e) => setActiveTab(e.target.value as Tab)} className={styles.formInput}>
-              {tabs.map((tab) => <option key={tab} value={tab}>{tab}</option>)}
-            </select>
-            {activeTab === "project margins" ? (
-              <select title="Sort projects" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)} className={styles.formInput}>
-                <option value="margin">Margin</option>
-                <option value="profit">Profit</option>
-                <option value="budget">Budget</option>
-              </select>
-            ) : null}
-          </AdminFilterBar>
+      <WidgetGrid>
+        <TableWidget
+          label="Project Profitability"
+          rows={tableRows}
+          rowKey="name"
+          emptyMessage="No project data available."
+          columns={[
+            { key: "name",   header: "Project", align: "left" },
+            { key: "client", header: "Client",  align: "left" },
+            { key: "billed", header: "Billed",  align: "right" },
+            { key: "cost",   header: "Cost",    align: "right" },
+            {
+              key: "margin",
+              header: "Margin %",
+              align: "right",
+              render: (val, row) => {
+                const m = (row as { marginNum: number }).marginNum;
+                const cls = m >= 50 ? cx("badgeGreen") : m >= 20 ? cx("badgeAmber") : cx("badgeRed");
+                return <span className={cls}>{String(val)}</span>;
+              },
+            },
+          ]}
+        />
+      </WidgetGrid>
 
-          {activeTab === "project margins" ? (
-            <div className={styles.pppList14}>
-              {sorted.length === 0 && (
-                <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No project data available.</div>
-              )}
-              {sorted.map((p) => {
-                const marginColor = p.margin >= 55 ? "var(--accent)" : p.margin >= 35 ? "var(--amber)" : "var(--red)";
-                const isExpanded = expandedProjectId === p.id;
-                return (
-                  <div key={p.id} className={cx(styles.pppCard, toneBorderClass(p.margin < 30), "tableRow", "tableRowClickable")}>
-                    {/* ── Clickable header row ── */}
-                    <button
-                      type="button"
-                      className={styles.pppCardToggle}
-                      aria-expanded={isExpanded}
-                      onClick={() => setExpandedProjectId(isExpanded ? null : p.id)}
-                    >
-                      <div className={styles.pppMainGrid}>
-                        <div className={styles.pppNameCell}>
-                          <span className={cx("expandChevron", isExpanded ? "expandChevronOpen" : "")}>
-                            <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true">
-                              <path d="M2 1l4 3-4 3V1z"/>
-                            </svg>
-                          </span>
-                          <span className={cx(styles.plRag, ragFillClass(p.margin))} title={p.margin >= 30 ? "Healthy" : p.margin >= 10 ? "Watch" : "At risk"} />
-                          <div>
-                            <div className={styles.pppProjName}>{p.name}</div>
-                            <div className={cx(styles.pppClientMeta, colorClass(p.clientColor))}>{p.client} · {p.type}</div>
-                          </div>
-                        </div>
-                        {/* P&L Margin bar */}
-                        <div>
-                          <div className={styles.pppTopRow}>
-                            <span className={styles.pppMiniLabel}>Actual vs Planned Revenue</span>
-                            <span className={cx(styles.pppMiniMono, colorClass(marginColor))}>{p.margin}% margin</span>
-                          </div>
-                          <div className={styles.pppStackBar}>
-                            <svg className={styles.pppStackSvg} viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true">
-                              <rect className={styles.pppCostBar} x="0" y="0" width={p.plannedRevenue > 0 ? Math.min((p.totalCost / p.plannedRevenue) * 100, 100) : 0} height="8" />
-                              <rect className={cx(styles.pppMarginBar, marginClass(marginColor))} x={p.plannedRevenue > 0 ? Math.min((p.totalCost / p.plannedRevenue) * 100, 100) : 0} y="0" width={p.plannedRevenue > 0 ? 100 - Math.min((p.totalCost / p.plannedRevenue) * 100, 100) : 0} height="8" />
-                            </svg>
-                          </div>
-                        </div>
-                        {/* P&L columns */}
-                        <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Planned Rev</div><div className={styles.pppValueAccent}>{centsToK(p.plannedRevenue)}</div></div>
-                        <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Actual Rev</div><div className={cx(styles.pppValueStrong, p.actualRevenue >= p.plannedRevenue ? "colorAccent" : "colorAmber")}>{centsToK(p.actualRevenue)}</div></div>
-                        <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Planned Cost</div><div className={styles.pppValueMono}>{centsToK(p.plannedCost)}</div></div>
-                        <div className={styles.pppCenterCol}>
-                          <div className={styles.pppMiniLabel}>Actual Cost</div>
-                          <div className={styles.pppValueRed}>{centsToK(p.totalCost)}</div>
-                          {p.isOverBudget && (
-                            <div className={styles.plOverBudget}>Over by {centsToK(p.budgetVarianceCents)}</div>
-                          )}
-                        </div>
-                        <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Gross Margin</div><div className={cx(styles.pppValueStrong, p.grossProfit >= 0 ? "colorAccent" : "colorRed")}>{centsToK(p.grossProfit)}</div></div>
-                        <div className={styles.pppCenterCol}>
-                          <div className={styles.pppMiniLabel}>Margin %</div>
-                          <div className={cx(styles.pppMarginBig, colorClass(marginColor))}>{p.margin}%</div>
-                          <div className={cx(styles.plMarginBar, styles.ppcMarginBarWrap)}>
-                            <div
-                              className={cx(styles.plMarginFill, ragFillClass(p.margin), styles.ppcBarFill)}
-                              style={{ "--bar-w": `${Math.min(Math.max(p.margin, 0), 100)}%` } as React.CSSProperties}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* ── Drill-down: cost breakdown by staff member ── */}
-                    {isExpanded && (
-                      <div className={cx(styles.plDrillRow, styles.ppcDrillRow)}>
-                        <div className={styles.pppDrillHeader}>
-                          <span className={cx(styles.pppMiniLabel, "fw700")}>Cost Breakdown by Staff Member</span>
-                          <span className={cx("text11", "colorMuted")}>{p.hoursSpent}h total · R{Math.round(HOURLY_RATE_CENTS / 100)}/h rate</span>
-                        </div>
-                        {p.staffBreakdown.length === 0 ? (
-                          <div className={cx("text11", "colorMuted", "p12")}>No time entries recorded for this project.</div>
-                        ) : (
-                          p.staffBreakdown.map((s) => (
-                            <div key={s.name} className={styles.pppDrillRow}>
-                              <span className={styles.pppDrillName}>{s.name}</span>
-                              <span className={cx("text11", "colorMuted")}>{s.hours}h</span>
-                              <progress
-                                className={cx(styles.pppLineTrack, styles.pppFillAccent)}
-                                max={100}
-                                value={p.costs.staffTime > 0 ? Math.round((s.costCents / p.costs.staffTime) * 100) : 0}
-                                aria-label={`${s.name} cost share`}
-                              />
-                              <span className={cx(styles.pppLineValue, "colorAccent")}>{centsToK(s.costCents)}</span>
-                            </div>
-                          ))
-                        )}
-                        {/* Summary tiles */}
-                        <div className={styles.pppCostGrid}>
-                          {[
-                            { label: "Staff Time", value: p.costs.staffTime, color: "var(--accent)" },
-                            { label: "Freelancers", value: p.costs.freelancers, color: "var(--amber)" },
-                            { label: "Tools", value: p.costs.tools, color: "var(--blue)" },
-                            { label: "Overhead", value: p.costs.overhead, color: "var(--muted)" }
-                          ].map((c) => (
-                            <div key={c.label} className={styles.pppCostBox}>
-                              <div className={cx(styles.pppCostValue, colorClass(c.color))}>{centsToK(c.value)}</div>
-                              <div className={styles.pppCostLabel}>{c.label}</div>
-                            </div>
-                          ))}
-                        </div>
-                        {p.collected === 0 ? (
-                          <div className={styles.pppWarnRow}>
-                            {centsToK(p.invoiced)} invoiced — R0 collected. Realized margin is negative until paid.
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-
-          {activeTab === "hours analysis" ? (
-            <div className={styles.pppList14}>
-              {withCalc.length === 0 && (
-                <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No data available.</div>
-              )}
-              {withCalc.map((p) => {
-                const pct = p.hoursEstimated > 0 ? Math.round((p.hoursSpent / p.hoursEstimated) * 100) : 0;
-                const color = pct <= 100 ? "var(--accent)" : pct <= 115 ? "var(--amber)" : "var(--red)";
-                return (
-                  <div key={p.id} className={cx(styles.pppHoursCard, toneBorderClass(pct > 115))}>
-                    <div className={styles.pppHoursGrid}>
+      {/* ── Detail views ─────────────────────────────────────────────────────── */}
+      {activeTab === "project margins" ? (
+        <div className={styles.pppList14}>
+          {sorted.length === 0 && (
+            <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No project data available.</div>
+          )}
+          {sorted.map((p) => {
+            const marginColor = p.margin >= 55 ? "var(--accent)" : p.margin >= 35 ? "var(--amber)" : "var(--red)";
+            const isExpanded = expandedProjectId === p.id;
+            return (
+              <div key={p.id} className={cx(styles.pppCard, toneBorderClass(p.margin < 30), "tableRow", "tableRowClickable")}>
+                {/* ── Clickable header row ── */}
+                <button
+                  type="button"
+                  className={styles.pppCardToggle}
+                  aria-expanded={isExpanded}
+                  onClick={() => setExpandedProjectId(isExpanded ? null : p.id)}
+                >
+                  <div className={styles.pppMainGrid}>
+                    <div className={styles.pppNameCell}>
+                      <span className={cx("expandChevron", isExpanded ? "expandChevronOpen" : "")}>
+                        <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true">
+                          <path d="M2 1l4 3-4 3V1z"/>
+                        </svg>
+                      </span>
+                      <span className={cx(styles.plRag, ragFillClass(p.margin))} title={p.margin >= 30 ? "Healthy" : p.margin >= 10 ? "Watch" : "At risk"} />
                       <div>
                         <div className={styles.pppProjName}>{p.name}</div>
-                        <div className={cx(styles.pppClientMeta, colorClass(p.clientColor))}>{p.client}</div>
+                        <div className={cx(styles.pppClientMeta, colorClass(p.clientColor))}>{p.client} · {p.type}</div>
                       </div>
-                      <div>
-                        <div className={styles.pppTopRow}>
-                          <span className={styles.pppMiniLabel}>{p.hoursSpent.toFixed(1)}h spent of {p.hoursEstimated.toFixed(1)}h estimated</span>
-                          <span className={cx(styles.pppMiniMono, colorClass(color))}>{pct}%</span>
-                        </div>
-                        <progress className={cx(styles.pppTrack8, toneFillClass(color))} max={100} value={Math.min(pct, 100)} aria-label={`${p.name} hours usage ${pct}%`} />
-                      </div>
-                      <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Variance</div><div className={cx(styles.pppValueStrong, p.hoursVariance <= 0 ? "colorAccent" : "colorRed")}>{p.hoursVariance > 0 ? "+" : ""}{p.hoursVariance}h</div></div>
-                      <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Effective Rate</div><div className={styles.pppValueMonoBlue}>{p.effectiveRate > 0 ? `R${Math.round(p.effectiveRate / 100)}/h` : "—"}</div></div>
-                      <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Actual Rate</div><div className={cx(styles.pppValueMono, p.actualRate >= p.effectiveRate ? "colorAccent" : "colorRed")}>{p.actualRate > 0 ? `R${Math.round(p.actualRate / 100)}/h` : "—"}</div></div>
-                      {pct > 115 ? <span className={styles.pppOverHours}>Over-hours</span> : <span />}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-
-          {activeTab === "collected vs invoiced" ? (
-            <div className={styles.pppList12}>
-              {withCalc.length === 0 && (
-                <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No data available.</div>
-              )}
-              {withCalc.map((p) => (
-                <div key={p.id} className={styles.pppCollectCard}>
-                  <div className={styles.pppCollectGrid}>
-                    <div>
-                      <div className={styles.pppProjName}>{p.name}</div>
-                      <div className={cx(styles.pppClientMeta, colorClass(p.clientColor))}>{p.client}</div>
-                    </div>
+                    {/* P&L Margin bar */}
                     <div>
                       <div className={styles.pppTopRow}>
-                        <span className={styles.pppMiniLabel}>{centsToK(p.collected)} collected of {centsToK(p.invoiced)} invoiced</span>
-                        <span className={cx(styles.pppMiniMono, p.collectionRate === 100 ? "colorAccent" : "colorRed")}>{p.collectionRate}%</span>
+                        <span className={styles.pppMiniLabel}>Actual vs Planned Revenue</span>
+                        <span className={cx(styles.pppMiniMono, colorClass(marginColor))}>{p.margin}% margin</span>
                       </div>
-                      <progress className={cx(styles.pppTrack8, p.collectionRate === 100 ? styles.pppFillAccent : styles.pppFillAmber)} max={100} value={p.collectionRate} aria-label={`${p.name} collection rate ${p.collectionRate}%`} />
+                      <div className={styles.pppStackBar}>
+                        <svg className={styles.pppStackSvg} viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true">
+                          <rect className={styles.pppCostBar} x="0" y="0" width={p.plannedRevenue > 0 ? Math.min((p.totalCost / p.plannedRevenue) * 100, 100) : 0} height="8" />
+                          <rect className={cx(styles.pppMarginBar, marginClass(marginColor))} x={p.plannedRevenue > 0 ? Math.min((p.totalCost / p.plannedRevenue) * 100, 100) : 0} y="0" width={p.plannedRevenue > 0 ? 100 - Math.min((p.totalCost / p.plannedRevenue) * 100, 100) : 0} height="8" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Outstanding</div><div className={cx(styles.pppValueStrong, p.invoiced - p.collected > 0 ? "colorRed" : "colorAccent")}>{centsToK(p.invoiced - p.collected)}</div></div>
-                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Realized Profit</div><div className={cx(styles.pppValueStrong, p.realizedProfit >= 0 ? "colorAccent" : "colorRed")}>{centsToK(p.realizedProfit)}</div></div>
-                    {p.collectionRate < 100 ? <button type="button" className={styles.pppChaseBtn}>Chase</button> : <span />}
+                    {/* P&L columns */}
+                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Planned Rev</div><div className={styles.pppValueAccent}>{centsToK(p.plannedRevenue)}</div></div>
+                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Actual Rev</div><div className={cx(styles.pppValueStrong, p.actualRevenue >= p.plannedRevenue ? "colorAccent" : "colorAmber")}>{centsToK(p.actualRevenue)}</div></div>
+                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Planned Cost</div><div className={styles.pppValueMono}>{centsToK(p.plannedCost)}</div></div>
+                    <div className={styles.pppCenterCol}>
+                      <div className={styles.pppMiniLabel}>Actual Cost</div>
+                      <div className={styles.pppValueRed}>{centsToK(p.totalCost)}</div>
+                      {p.isOverBudget && (
+                        <div className={styles.plOverBudget}>Over by {centsToK(p.budgetVarianceCents)}</div>
+                      )}
+                    </div>
+                    <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Gross Margin</div><div className={cx(styles.pppValueStrong, p.grossProfit >= 0 ? "colorAccent" : "colorRed")}>{centsToK(p.grossProfit)}</div></div>
+                    <div className={styles.pppCenterCol}>
+                      <div className={styles.pppMiniLabel}>Margin %</div>
+                      <div className={cx(styles.pppMarginBig, colorClass(marginColor))}>{p.margin}%</div>
+                      <div className={cx(styles.plMarginBar, styles.ppcMarginBarWrap)}>
+                        <div
+                          className={cx(styles.plMarginFill, ragFillClass(p.margin), styles.ppcBarFill)}
+                          style={{ "--bar-w": `${Math.min(Math.max(p.margin, 0), 100)}%` } as React.CSSProperties}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
-              <div className={styles.pppPortfolioCard}>
-                <div className={styles.pppPortfolioRow}>
-                  <span className={cx("fw700")}>Portfolio Total</span>
-                  <div className={styles.pppPortfolioStats}>
-                    <div className={styles.pppPortfolioItem}><div className={styles.pppMiniLabel}>Invoiced</div><div className={styles.pppValueStrongAccent}>{centsToK(totalBudget)}</div></div>
-                    <div className={styles.pppPortfolioItem}><div className={styles.pppMiniLabel}>Collected</div><div className={styles.pppValueStrongBlue}>{centsToK(totalCollected)}</div></div>
-                    <div className={styles.pppPortfolioItem}><div className={styles.pppMiniLabel}>Outstanding</div><div className={styles.pppValueStrongRed}>{centsToK(totalBudget - totalCollected)}</div></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
+                </button>
 
-          {activeTab === "cost breakdown" ? (
-            <div className={cx("grid2", "gap20")}>
-              <div className={cx("card", "p24")}>
-                <div className={styles.sciSecTitle}>Cost Type vs Total</div>
-                {(["staffTime", "freelancers", "tools", "overhead"] as const).map((key, i) => {
-                  const total = withCalc.reduce((s, p) => s + p.costs[key], 0);
-                  const labels = { staffTime: "Staff Time", freelancers: "Freelancers", tools: "Tools", overhead: "Overhead" } as const;
-                  const colors = ["var(--accent)", "var(--amber)", "var(--blue)", "var(--muted)"] as const;
-                  return (
-                    <div key={key} className={styles.pppCostLine}>
-                      <div className={cx(styles.pppDot, dotClass(colors[i]))} />
-                      <span className={styles.pppLineLabel}>{labels[key]}</span>
-                      <progress className={cx(styles.pppLineTrack, toneFillClass(colors[i]))} max={100} value={totalCost > 0 ? (total / totalCost) * 100 : 0} aria-label={`${labels[key]} share`} />
-                      <span className={cx(styles.pppLineValue, colorClass(colors[i]))}>{centsToK(total)}</span>
+                {/* ── Drill-down: cost breakdown by staff member ── */}
+                {isExpanded && (
+                  <div className={cx(styles.plDrillRow, styles.ppcDrillRow)}>
+                    <div className={styles.pppDrillHeader}>
+                      <span className={cx(styles.pppMiniLabel, "fw700")}>Cost Breakdown by Staff Member</span>
+                      <span className={cx("text11", "colorMuted")}>{p.hoursSpent}h total · R{Math.round(HOURLY_RATE_CENTS / 100)}/h rate</span>
                     </div>
-                  );
-                })}
+                    {p.staffBreakdown.length === 0 ? (
+                      <div className={cx("text11", "colorMuted", "p12")}>No time entries recorded for this project.</div>
+                    ) : (
+                      p.staffBreakdown.map((s) => (
+                        <div key={s.name} className={styles.pppDrillRow}>
+                          <span className={styles.pppDrillName}>{s.name}</span>
+                          <span className={cx("text11", "colorMuted")}>{s.hours}h</span>
+                          <progress
+                            className={cx(styles.pppLineTrack, styles.pppFillAccent)}
+                            max={100}
+                            value={p.costs.staffTime > 0 ? Math.round((s.costCents / p.costs.staffTime) * 100) : 0}
+                            aria-label={`${s.name} cost share`}
+                          />
+                          <span className={cx(styles.pppLineValue, "colorAccent")}>{centsToK(s.costCents)}</span>
+                        </div>
+                      ))
+                    )}
+                    {/* Summary tiles */}
+                    <div className={styles.pppCostGrid}>
+                      {[
+                        { label: "Staff Time", value: p.costs.staffTime, color: "var(--accent)" },
+                        { label: "Freelancers", value: p.costs.freelancers, color: "var(--amber)" },
+                        { label: "Tools", value: p.costs.tools, color: "var(--blue)" },
+                        { label: "Overhead", value: p.costs.overhead, color: "var(--muted)" }
+                      ].map((c) => (
+                        <div key={c.label} className={styles.pppCostBox}>
+                          <div className={cx(styles.pppCostValue, colorClass(c.color))}>{centsToK(c.value)}</div>
+                          <div className={styles.pppCostLabel}>{c.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {p.collected === 0 ? (
+                      <div className={styles.pppWarnRow}>
+                        {centsToK(p.invoiced)} invoiced — R0 collected. Realized margin is negative until paid.
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               </div>
-              <div className={cx("card", "p24")}>
-                <div className={styles.sciSecTitle}>Most Costly Projects</div>
-                {[...withCalc].sort((a, b) => b.totalCost - a.totalCost).map((p) => {
-                  const maxCost = Math.max(...withCalc.map((r) => r.totalCost), 1);
-                  return (
-                    <div key={p.id} className={styles.pppCostLine}>
-                      <div className={cx(styles.pppDot, dotClass(p.clientColor))} />
-                      <span className={cx(styles.pppLineLabel, colorClass(p.clientColor))}>{p.name.length > 22 ? `${p.name.slice(0, 22)}...` : p.name}</span>
-                      <progress className={cx(styles.pppLineTrack, toneFillClass(p.clientColor))} max={100} value={(p.totalCost / maxCost) * 100} aria-label={`${p.name} cost relative ${Math.round((p.totalCost / maxCost) * 100)}%`} />
-                      <span className={cx(styles.pppLineValue, colorClass(p.clientColor))}>{centsToK(p.totalCost)}</span>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {activeTab === "hours analysis" ? (
+        <div className={styles.pppList14}>
+          {withCalc.length === 0 && (
+            <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No data available.</div>
+          )}
+          {withCalc.map((p) => {
+            const pct = p.hoursEstimated > 0 ? Math.round((p.hoursSpent / p.hoursEstimated) * 100) : 0;
+            const color = pct <= 100 ? "var(--accent)" : pct <= 115 ? "var(--amber)" : "var(--red)";
+            return (
+              <div key={p.id} className={cx(styles.pppHoursCard, toneBorderClass(pct > 115))}>
+                <div className={styles.pppHoursGrid}>
+                  <div>
+                    <div className={styles.pppProjName}>{p.name}</div>
+                    <div className={cx(styles.pppClientMeta, colorClass(p.clientColor))}>{p.client}</div>
+                  </div>
+                  <div>
+                    <div className={styles.pppTopRow}>
+                      <span className={styles.pppMiniLabel}>{p.hoursSpent.toFixed(1)}h spent of {p.hoursEstimated.toFixed(1)}h estimated</span>
+                      <span className={cx(styles.pppMiniMono, colorClass(color))}>{pct}%</span>
                     </div>
-                  );
-                })}
+                    <progress className={cx(styles.pppTrack8, toneFillClass(color))} max={100} value={Math.min(pct, 100)} aria-label={`${p.name} hours usage ${pct}%`} />
+                  </div>
+                  <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Variance</div><div className={cx(styles.pppValueStrong, p.hoursVariance <= 0 ? "colorAccent" : "colorRed")}>{p.hoursVariance > 0 ? "+" : ""}{p.hoursVariance}h</div></div>
+                  <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Effective Rate</div><div className={styles.pppValueMonoBlue}>{p.effectiveRate > 0 ? `R${Math.round(p.effectiveRate / 100)}/h` : "—"}</div></div>
+                  <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Actual Rate</div><div className={cx(styles.pppValueMono, p.actualRate >= p.effectiveRate ? "colorAccent" : "colorRed")}>{p.actualRate > 0 ? `R${Math.round(p.actualRate / 100)}/h` : "—"}</div></div>
+                  {pct > 115 ? <span className={styles.pppOverHours}>Over-hours</span> : <span />}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {activeTab === "collected vs invoiced" ? (
+        <div className={styles.pppList12}>
+          {withCalc.length === 0 && (
+            <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No data available.</div>
+          )}
+          {withCalc.map((p) => (
+            <div key={p.id} className={styles.pppCollectCard}>
+              <div className={styles.pppCollectGrid}>
+                <div>
+                  <div className={styles.pppProjName}>{p.name}</div>
+                  <div className={cx(styles.pppClientMeta, colorClass(p.clientColor))}>{p.client}</div>
+                </div>
+                <div>
+                  <div className={styles.pppTopRow}>
+                    <span className={styles.pppMiniLabel}>{centsToK(p.collected)} collected of {centsToK(p.invoiced)} invoiced</span>
+                    <span className={cx(styles.pppMiniMono, p.collectionRate === 100 ? "colorAccent" : "colorRed")}>{p.collectionRate}%</span>
+                  </div>
+                  <progress className={cx(styles.pppTrack8, p.collectionRate === 100 ? styles.pppFillAccent : styles.pppFillAmber)} max={100} value={p.collectionRate} aria-label={`${p.name} collection rate ${p.collectionRate}%`} />
+                </div>
+                <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Outstanding</div><div className={cx(styles.pppValueStrong, p.invoiced - p.collected > 0 ? "colorRed" : "colorAccent")}>{centsToK(p.invoiced - p.collected)}</div></div>
+                <div className={styles.pppCenterCol}><div className={styles.pppMiniLabel}>Realized Profit</div><div className={cx(styles.pppValueStrong, p.realizedProfit >= 0 ? "colorAccent" : "colorRed")}>{centsToK(p.realizedProfit)}</div></div>
+                {p.collectionRate < 100 ? <button type="button" className={styles.pppChaseBtn}>Chase</button> : <span />}
               </div>
             </div>
-          ) : null}
+          ))}
+          <div className={styles.pppPortfolioCard}>
+            <div className={styles.pppPortfolioRow}>
+              <span className={cx("fw700")}>Portfolio Total</span>
+              <div className={styles.pppPortfolioStats}>
+                <div className={styles.pppPortfolioItem}><div className={styles.pppMiniLabel}>Invoiced</div><div className={styles.pppValueStrongAccent}>{centsToK(totalBudget)}</div></div>
+                <div className={styles.pppPortfolioItem}><div className={styles.pppMiniLabel}>Collected</div><div className={styles.pppValueStrongBlue}>{centsToK(totalCollected)}</div></div>
+                <div className={styles.pppPortfolioItem}><div className={styles.pppMiniLabel}>Outstanding</div><div className={styles.pppValueStrongRed}>{centsToK(totalBudget - totalCollected)}</div></div>
+              </div>
+            </div>
+          </div>
         </div>
+      ) : null}
+
+      {activeTab === "cost breakdown" ? (
+        <div className={cx("grid2", "gap20")}>
+          <div className={cx("card", "p24")}>
+            <div className={styles.sciSecTitle}>Cost Type vs Total</div>
+            {(["staffTime", "freelancers", "tools", "overhead"] as const).map((key, i) => {
+              const total = withCalc.reduce((s, p) => s + p.costs[key], 0);
+              const labels = { staffTime: "Staff Time", freelancers: "Freelancers", tools: "Tools", overhead: "Overhead" } as const;
+              const colors = ["var(--accent)", "var(--amber)", "var(--blue)", "var(--muted)"] as const;
+              return (
+                <div key={key} className={styles.pppCostLine}>
+                  <div className={cx(styles.pppDot, dotClass(colors[i]))} />
+                  <span className={styles.pppLineLabel}>{labels[key]}</span>
+                  <progress className={cx(styles.pppLineTrack, toneFillClass(colors[i]))} max={100} value={totalCost > 0 ? (total / totalCost) * 100 : 0} aria-label={`${labels[key]} share`} />
+                  <span className={cx(styles.pppLineValue, colorClass(colors[i]))}>{centsToK(total)}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className={cx("card", "p24")}>
+            <div className={styles.sciSecTitle}>Most Costly Projects</div>
+            {[...withCalc].sort((a, b) => b.totalCost - a.totalCost).map((p) => {
+              const maxCost = Math.max(...withCalc.map((r) => r.totalCost), 1);
+              return (
+                <div key={p.id} className={styles.pppCostLine}>
+                  <div className={cx(styles.pppDot, dotClass(p.clientColor))} />
+                  <span className={cx(styles.pppLineLabel, colorClass(p.clientColor))}>{p.name.length > 22 ? `${p.name.slice(0, 22)}...` : p.name}</span>
+                  <progress className={cx(styles.pppLineTrack, toneFillClass(p.clientColor))} max={100} value={(p.totalCost / maxCost) * 100} aria-label={`${p.name} cost relative ${Math.round((p.totalCost / maxCost) * 100)}%`} />
+                  <span className={cx(styles.pppLineValue, colorClass(p.clientColor))}>{centsToK(p.totalCost)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
