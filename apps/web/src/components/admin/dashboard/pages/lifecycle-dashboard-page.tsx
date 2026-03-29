@@ -10,6 +10,7 @@ import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { loadClientDirectoryWithRefresh } from "../../../../lib/api/admin/clients";
 import type { AdminClient } from "../../../../lib/api/admin/types";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -33,7 +34,7 @@ function stageBadge(stage: string): string {
 function inferHealth(status: string, priority: string): number {
   if (status === "CHURNED") return 15;
   if (status === "PAUSED")  return 35;
-  const base = status === "ACTIVE" ? 70 : 65; // ONBOARDING baseline
+  const base = status === "ACTIVE" ? 70 : 65;
   if (priority === "HIGH")   return Math.min(base + 20, 100);
   if (priority === "MEDIUM") return base;
   return Math.max(base - 15, 0);
@@ -112,74 +113,85 @@ export function LifecycleDashboardPage({ session }: { session: AuthSession | nul
     );
   }
 
+  const stageChartData = [
+    { name: "Onboarding", value: onboarding },
+    { name: "Active", value: active },
+    { name: "At Risk", value: atRisk },
+    { name: "Offboarding", value: offboarding },
+  ].filter((d) => d.value > 0);
+
+  const tableRows = clients.map((c) => {
+    const stage  = inferStage(c.status);
+    const health = inferHealth(c.status, c.priority);
+    return {
+      id: c.id,
+      name: c.name,
+      stage,
+      health,
+      contractStartAt: c.contractStartAt,
+      contractRenewalAt: c.contractRenewalAt,
+    };
+  }) as unknown as Record<string, unknown>[];
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>LIFECYCLE / LIFECYCLE DASHBOARD</div>
+          <div className={styles.pageEyebrow}>LIFECYCLE / DASHBOARD</div>
           <h1 className={styles.pageTitle}>Lifecycle Dashboard</h1>
-          <div className={styles.pageSub}>Unified client onboarding, active, and offboarding status</div>
+          <div className={styles.pageSub}>Client lifecycle overview · Stage distribution · Health</div>
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Onboarding",  value: String(onboarding),  cls: "colorAccent" },
-          { label: "Active",      value: String(active),      cls: "colorGreen"  },
-          { label: "At Risk",     value: String(atRisk),      cls: "colorRed"    },
-          { label: "Offboarding", value: String(offboarding), cls: "colorAmber"  },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, s.cls)}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Total Clients" value={clients.length} tone="accent" sparkData={[10, 12, 14, 15, 16, 17, 18, clients.length]} />
+        <StatWidget label="Onboarding" value={onboarding} tone="default" progressValue={clients.length > 0 ? Math.round((onboarding / clients.length) * 100) : 0} />
+        <StatWidget label="Active / Engaged" value={active} tone="green" progressValue={clients.length > 0 ? Math.round((active / clients.length) * 100) : 0} />
+        <StatWidget label="At Risk" value={atRisk} tone="red" progressValue={clients.length > 0 ? Math.round((atRisk / clients.length) * 100) : 0} />
+      </WidgetGrid>
 
-      <article className={styles.card}>
-        <div className={styles.cardHd}>
-          <span className={styles.cardHdTitle}>All Clients</span>
-          <span className={cx("colorMuted", "text12")}>{clients.length} total</span>
-        </div>
-        <div className={styles.cardInner}>
-          {clients.length === 0 ? (
-            <div className={cx("colorMuted2", "text13", "mt16")}>No clients found.</div>
-          ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th scope="col">Client</th>
-                  <th scope="col">Stage</th>
-                  <th scope="col">Contract Start</th>
-                  <th scope="col">Tenure</th>
-                  <th scope="col">Health</th>
-                  <th scope="col">Renewal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clients.map((c) => {
-                  const stage  = inferStage(c.status);
-                  const health = inferHealth(c.status, c.priority);
-                  return (
-                    <tr key={c.id}>
-                      <td className={cx("fw600")}>{c.name}</td>
-                      <td>
-                        <span className={cx("badge", stageBadge(stage))}>{stage}</span>
-                      </td>
-                      <td className={cx("text12")}>{formatDate(c.contractStartAt)}</td>
-                      <td className={cx("text12", "colorMuted")}>{computeTenure(c.contractStartAt)}</td>
-                      <td className={cx("fontMono", "fw600", health >= 70 ? "colorGreen" : health >= 50 ? "colorAmber" : "colorRed")}>
-                        {health}%
-                      </td>
-                      <td className={cx("text12", "colorMuted")}>{formatDate(c.contractRenewalAt)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </article>
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Lifecycle Stage Distribution"
+          type="bar"
+          data={stageChartData.length > 0 ? stageChartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Lifecycle Stages"
+          stages={[
+            { label: "Onboarding", count: onboarding, total: clients.length, color: "#60a5fa" },
+            { label: "Active", count: active, total: clients.length, color: "#34d98b" },
+            { label: "At Risk", count: atRisk, total: clients.length, color: "#ff5f5f" },
+            { label: "Offboarding", count: offboarding, total: clients.length, color: "#f5a623" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="All Clients"
+          rows={tableRows}
+          rowKey="id"
+          emptyMessage="No clients found."
+          columns={[
+            { key: "name", header: "Client", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.name ?? "")}</span> },
+            { key: "stage", header: "Stage", render: (_v, row) => <span className={cx("badge", stageBadge(String(row.stage ?? "")))}>{String(row.stage ?? "")}</span> },
+            { key: "health", header: "Health", align: "right", render: (_v, row) => {
+              const h = Number(row.health ?? 0);
+              return <span className={cx("fontMono", "fw600", h >= 70 ? "colorGreen" : h >= 50 ? "colorAmber" : "colorRed")}>{h}%</span>;
+            }},
+            { key: "contractStartAt", header: "Start", align: "right", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{formatDate(row.contractStartAt as string | null)}</span> },
+            { key: "contractStartAt", header: "Tenure", align: "right", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{computeTenure(row.contractStartAt as string | null)}</span> },
+            { key: "contractRenewalAt", header: "Renewal", align: "right", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{formatDate(row.contractRenewalAt as string | null)}</span> },
+          ]}
+        />
+      </WidgetGrid>
     </div>
   );
 }
