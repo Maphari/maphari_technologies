@@ -400,7 +400,7 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
 
   // ── Channel + chart data ──────────────────────────────────────────────────
   const channelCounts = conversations.reduce<Record<string, number>>((acc, c) => {
-    const ch = (c.channel ?? "Portal").toUpperCase();
+    const ch = (((c as unknown as Record<string, string>).channel) ?? "Portal").toUpperCase();
     acc[ch] = (acc[ch] ?? 0) + 1;
     return acc;
   }, {});
