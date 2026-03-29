@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cx, styles } from "../style";
 import { colorClass, formatDate } from "./admin-page-utils";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { AutomationBanner } from "../../../shared/automation-banner";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
@@ -214,13 +215,32 @@ export function ClientOnboardingPage({ session, onNotify }: ClientOnboardingPage
     );
   }
 
+  const onboardingChartData = [
+    { label: "Kickoff", count: onboardings.filter(o => o.checklist.some(t => t.category === "Kick-off" && t.done)).length },
+    { label: "Setup", count: onboardings.filter(o => o.checklist.some(t => t.category === "Setup" && t.done)).length },
+    { label: "Discovery", count: onboardings.filter(o => o.checklist.some(t => t.category === "Discovery" && t.done)).length },
+    { label: "Admin", count: onboardings.filter(o => o.checklist.some(t => t.category === "Admin" && t.done)).length },
+  ];
+
+  const totalTasks = onboardings.reduce((s, o) => s + o.checklist.length, 0);
+  const doneTasks = onboardings.reduce((s, o) => s + o.checklist.filter(t => t.done).length, 0);
+  const completionPct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+
+  const tableRows = onboardings.map(o => ({
+    client: o.client,
+    stage: o.status === "complete" ? "Live" : o.status === "overdue" ? "Overdue" : "In Progress",
+    progress: `${Math.round((o.checklist.filter(t => t.done).length / Math.max(o.checklist.length, 1)) * 100)}%`,
+    started: o.startedDate,
+    status: o.status,
+  }));
+
   return (
     <div className={cx(styles.pageBody, styles.onboardRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>EXPERIENCE / CLIENT ONBOARDING</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / ONBOARDING</div>
           <h1 className={styles.pageTitle}>Client Onboarding</h1>
-          <div className={styles.pageSub}>New client setup - Steps - Blockers - Completion tracking</div>
+          <div className={styles.pageSub}>Onboarding pipeline · Time to live · Checklist completion</div>
         </div>
         <div className={styles.pageActions}><button type="button" className={cx("btnSm", "btnAccent")} onClick={openModal}>+ Start Onboarding</button></div>
       </div>
@@ -246,192 +266,55 @@ export function ClientOnboardingPage({ session, onNotify }: ClientOnboardingPage
         onSecondary={() => {/* parent handles tab navigation */}}
       />
 
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Active Onboardings", value: active.length.toString(), color: "var(--blue)", sub: `${overdue.length} overdue` },
-          { label: "Completed (90d)", value: complete.length.toString(), color: "var(--accent)", sub: `Avg ${avgDays} days` },
-          { label: "Overdue", value: overdue.length.toString(), color: overdue.length > 0 ? "var(--red)" : "var(--accent)", sub: "Past target date" },
-          { label: "New MRR Onboarding", value: `R${(active.reduce((s, o) => s + o.mrr, 0) / 1000).toFixed(0)}k`, color: "var(--purple)", sub: "Monthly value in pipeline" }
-        ].map((s) => (
-          <div key={s.label} className={cx("statCard", s.label === "Overdue" && overdue.length > 0 && styles.conbOverdueStat)}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — Stat widgets */}
+      <WidgetGrid>
+        <StatWidget label="Active Onboardings" value={active.length} sub={`${overdue.length} overdue`} subTone={overdue.length > 0 ? "warn" : "neutral"} tone="accent" />
+        <StatWidget label="Completed This Month" value={complete.length} sub={`Avg ${avgDays} days`} subTone="up" tone="green" />
+        <StatWidget label="Avg Days to Complete" value={avgDays} sub="Target: 14 days" tone={avgDays > 14 ? "amber" : "default"} />
+        <StatWidget label="Stuck / Blocked" value={overdue.length} sub="Past target date" tone={overdue.length > 0 ? "red" : "default"} />
+      </WidgetGrid>
 
-      <div className={styles.filterRow}>
-        <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
-          {TABS.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Onboardings by Stage"
+          data={onboardingChartData}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Onboarding Pipeline"
+          stages={[
+            { label: "Kickoff", count: onboardings.filter(o => o.status !== "not-started").length, total: Math.max(onboardings.length, 1), color: "#8b6fff" },
+            { label: "Setup", count: onboardings.filter(o => o.checklist.some(t => t.category === "Setup" && t.done)).length, total: Math.max(onboardings.length, 1), color: "#34d98b" },
+            { label: "Training", count: onboardings.filter(o => o.checklist.some(t => t.category === "Discovery" && t.done)).length, total: Math.max(onboardings.length, 1), color: "#f5a623" },
+            { label: "Live", count: complete.length, total: Math.max(onboardings.length, 1), color: "#34d98b" },
+          ]}
+        />
+      </WidgetGrid>
 
-      {loading && <div className={cx("text12", "colorMuted", "fontMono")}>Loading onboarding data...</div>}
-
-      {!loading && activeTab === "active onboardings" && (
-        <div className={styles.conbList}>
-          {!onboardings.length && <div className={cx("text12", "colorMuted")}>No active onboardings found.</div>}
-          {onboardings.map((onb) => {
-            const done = onb.checklist.filter((t) => t.done).length;
-            const total = onb.checklist.length;
-            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-            const sc = statusConfig[onb.status];
-            const isExp = expanded === onb.id;
-            const blockers = onb.checklist.filter((t) => t.blocker);
-            return (
-              <div key={onb.id} className={cx(styles.conbCard, onb.status === "overdue" && styles.conbCardOverdue, onb.status === "complete" && styles.conbCardComplete)}>
-                <div role="button" tabIndex={0} className={styles.conbCardHead}
-                  onClick={() => setExpanded(isExp ? null : onb.id)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded(isExp ? null : onb.id); } }}>
-                  <div className={styles.onboardRow}>
-                    <div className={cx("flexRow", "gap12", "flexCenter")}>
-                      <Avatar initials={onb.avatar} color={onb.clientColor} />
-                      <div>
-                        <div className={cx("fw700", "text14")}>{onb.client}</div>
-                        <div className={cx("text11", "colorMuted")}>{onb.tier} - {onb.am}</div>
-                        <div className={cx("text10", "colorMuted")}>Started {onb.startedDate}</div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className={cx("flexBetween", "mb4")}>
-                        <span className={cx("text11", "colorMuted")}>{done}/{total} tasks</span>
-                        <span className={cx("fontMono", "fw700", pct === 100 ? "colorAccent" : pct >= 60 ? "colorBlue" : "colorAmber")}>{pct}%</span>
-                      </div>
-                      <div className={cx(styles.onboardProgTrack, "progressBar")}>
-                        <progress className={cx(styles.onboardProgFill, pct === 100 ? styles.conbFillAccent : pct >= 60 ? styles.conbFillBlue : styles.conbFillAmber)} max={100} value={pct} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className={cx("text10", "colorMuted", "mb3")}>Target Date</div>
-                      <div className={cx("fontMono", "text12", onb.status === "overdue" ? "colorRed" : "colorMuted")}>{onb.targetDate}</div>
-                      <div className={cx("text10", onb.status === "overdue" ? "colorRed" : "colorMuted")}>{onb.daysElapsed}d elapsed</div>
-                    </div>
-                    <div>
-                      <div className={cx("text10", "colorMuted", "mb3")}>MRR</div>
-                      <div className={cx("fontMono", "fw700", "colorAccent")}>{onb.mrr > 0 ? `R${(onb.mrr / 1000).toFixed(0)}k` : "—"}</div>
-                    </div>
-                    {blockers.length > 0 ? <div className={styles.conbBlockerChip}>! {blockers.length}</div> : <div className={styles.conbClearChip}>Clear</div>}
-                    <span className={cx(styles.conbStatusChip, statusClass(sc.color))}>{sc.label}</span>
-                  </div>
-                </div>
-                {isExp ? (
-                  <div className={styles.onboardExpanded}>
-                    <div className={cx(styles.onboardExpandedTop, styles.conbCategoryGrid)}>
-                      {categories.map((cat) => {
-                        const catTasks = onb.checklist.filter((t) => t.category === cat);
-                        const catDone = catTasks.filter((t) => t.done).length;
-                        const catColor = categoryColors[cat];
-                        return (
-                          <div key={cat} className={cx(styles.conbCategoryCard, catCardClass(catColor))}>
-                            <div className={cx("flexBetween", "mb12")}>
-                              <span className={cx(styles.conbCategoryTitle, colorClass(catColor))}>{cat}</span>
-                              <span className={cx("text10", "fontMono", catDone === catTasks.length ? "colorAccent" : "colorMuted")}>{catDone}/{catTasks.length}</span>
-                            </div>
-                            {catTasks.map((task, i) => (
-                              <div key={i} className={styles.conbTaskRow}>
-                                <div className={cx(styles.onboardTaskCheck, toneVarClass(task.done ? "var(--accent)" : task.blocker ? "var(--red)" : "var(--border)"), task.done && styles.onboardTaskCheckDone, "flexCenter")}>
-                                  {task.done ? <span className={styles.onboardCheckMark}>v</span> : task.blocker ? <span className={styles.conbTaskWarn}>!</span> : null}
-                                </div>
-                                <div className={styles.onboardGrow}>
-                                  <div className={cx("text11", task.done ? styles.onboardTaskDone : styles.onboardTaskText)}>{task.task}</div>
-                                  {task.blocker ? <div className={styles.conbBlockerText}>{task.blocker}</div> : null}
-                                  <div className={styles.conbTaskMeta}>{task.doneDate ? `${task.doneDate} - ` : ""}{task.owner}</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className={styles.conbExpandedFoot}>
-                      <div className={styles.conbContactCard}>
-                        <div className={cx("text10", "colorMuted", "mb3")}>Contact</div>
-                        <div className={cx("text13", "fw600")}>{onb.contactName}</div>
-                        <div className={cx("text11", "colorBlue")}>{onb.contactEmail}</div>
-                      </div>
-                      <button type="button" className={cx("btnSm", "btnAccent")}>{onb.status === "complete" ? "View Summary" : "Update Progress"}</button>
-                      {onb.status !== "complete" ? (
-                        <button type="button" className={cx("btnSm", "btnGhost", styles.conbMarkBtn)} disabled={marking === onb.id} onClick={() => handleMarkComplete(onb)}>
-                          {marking === onb.id ? "Saving..." : "Mark Complete"}
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {!loading && activeTab === "template" && (
-        <div className={cx("grid2", "gap16")}>
-          {categories.map((cat) => (
-            <div key={cat} className={cx(styles.onboardTemplateCard, styles.onboardToneBorder, toneVarClass(categoryColors[cat]))}>
-              <div className={cx(styles.conbTemplateTitle, colorClass(categoryColors[cat]))}>{cat}</div>
-              {templateSource.filter((t) => t.category === cat).map((task, i) => (
-                <div key={i} className={styles.conbTemplateRow}>
-                  <div className={styles.onboardTemplateChk} />
-                  <span className={styles.conbTemplateTask}>{task.task}</span>
-                  <span className={styles.conbTemplateOwner}>{task.owner}</span>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {!loading && activeTab === "analytics" && (
-        <div className={cx("grid2", "gap20")}>
-          <div className={styles.conbAnalyticsCard}>
-            <div className={styles.conbSectionTitle}>Onboarding Speed</div>
-            {complete.map((o) => (
-              <div key={o.client} className={styles.conbSpeedRow}>
-                <Avatar initials={o.avatar} color={o.clientColor} size={28} />
-                <div className={styles.onboardGrow}>
-                  <div className={cx("flexBetween", "mb4")}>
-                    <span className={styles.text12}>{o.client}</span>
-                    <span className={cx("fontMono", o.daysElapsed <= o.targetDays ? "colorAccent" : "colorAmber")}>{o.daysElapsed}d</span>
-                  </div>
-                  <div className={cx("progressBar", "h6")}>
-                    <progress className={cx("barFill", "uiProgress", o.daysElapsed <= o.targetDays ? styles.conbFillAccent : styles.conbFillAmber)} max={100} value={Math.min((o.daysElapsed / 30) * 100, 100)} />
-                  </div>
-                </div>
-              </div>
-            ))}
-            {!complete.length && <div className={cx("text12", "colorMuted")}>No completed onboardings yet.</div>}
-            <div className={styles.conbAvgBox}>
-              <div className={cx("text11", "colorMuted", "mb4")}>Average Onboarding Time</div>
-              <div className={styles.conbAvgValue}>{avgDays} days</div>
-              <div className={cx("text11", "colorMuted")}>Target: 14 days</div>
-            </div>
-          </div>
-          <div className={styles.conbSideStack}>
-            <div className={styles.conbAnalyticsCard}>
-              <div className={styles.conbSectionTitle}>Most Common Blockers</div>
-              {onboardings.flatMap((o) => o.checklist.filter((t) => t.blocker).map((t) => t.blocker as string)).slice(0, 3).map((b, i) => (
-                <div key={i} className={styles.conbBlockerRow}><span className={styles.conbTaskWarn}>!</span> {b}</div>
-              ))}
-              {!onboardings.flatMap((o) => o.checklist.filter((t) => t.blocker)).length && <div className={cx("text12", "colorMuted")}>No blockers recorded.</div>}
-            </div>
-            <div className={styles.conbAnalyticsCard}>
-              <div className={styles.conbSectionTitle}>Category Completion Rates</div>
-              {categories.map((cat) => {
-                const all = onboardings.flatMap((o) => o.checklist.filter((t) => t.category === cat));
-                const rate = all.length > 0 ? Math.round((all.filter((t) => t.done).length / all.length) * 100) : 0;
-                return (
-                  <div key={cat} className={styles.conbRateRow}>
-                    <span className={cx(styles.conbRateName, colorClass(categoryColors[cat]))}>{cat}</span>
-                    <div className={styles.conbRateTrack}><progress className={cx("barFill", "uiProgress", fillClass(categoryColors[cat]))} max={100} value={rate} /></div>
-                    <span className={cx(styles.conbRateVal, colorClass(categoryColors[cat]))}>{rate}%</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Active Onboardings"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "client", header: "Client" },
+            { key: "stage", header: "Stage" },
+            { key: "progress", header: "Progress", align: "right" },
+            { key: "started", header: "Started", align: "right" },
+            { key: "status", header: "Status", align: "right", render: (v) => {
+              const val = v as string;
+              const cls = val === "complete" ? cx("badge", "badgeGreen") : val === "overdue" ? cx("badge", "badgeRed") : cx("badge", "badgeAmber");
+              const label = val === "complete" ? "Complete" : val === "overdue" ? "Overdue" : "In Progress";
+              return <span className={cls}>{label}</span>;
+            }},
+          ]}
+          emptyMessage="No onboardings found"
+        />
+      </WidgetGrid>
 
       {/* ── Start Onboarding Modal ─────────────────────────────────────────── */}
       {showModal && (
