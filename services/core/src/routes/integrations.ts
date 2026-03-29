@@ -1274,6 +1274,369 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
     } as ApiResponse<typeof items>;
   });
 
+  // ── GET /admin/integrations/connections ──────────────────────────────────
+  app.get("/admin/integrations/connections", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN" && scope.role !== "STAFF") {
+      return reply.status(403).send({
+        success: false,
+        error: { code: "FORBIDDEN", message: "Only staff or admins can view integration connections." },
+      } as ApiResponse);
+    }
+
+    const query = request.query as {
+      clientId?: string;
+      providerKey?: string;
+      status?: string;
+      healthStatus?: string;
+    };
+
+    const where = {
+      ...(typeof query.clientId === "string" && query.clientId.trim().length > 0 ? { clientId: query.clientId.trim() } : {}),
+      ...(typeof query.providerKey === "string" && query.providerKey.trim().length > 0 ? { providerKey: query.providerKey.trim() } : {}),
+      ...(typeof query.status === "string" && query.status.trim().length > 0 ? { status: query.status.trim() } : {}),
+      ...(typeof query.healthStatus === "string" && query.healthStatus.trim().length > 0 ? { healthStatus: query.healthStatus.trim() } : {}),
+    };
+
+    const connections = await prisma.clientIntegrationConnection.findMany({
+      where,
+      include: {
+        client: { select: { id: true, name: true } },
+        provider: { select: { id: true, key: true, label: true, category: true } },
+      },
+      orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+      take: 200,
+    });
+
+    const items = connections.map((conn) => ({
+      id: conn.id,
+      clientId: conn.clientId,
+      clientName: conn.client.name,
+      providerId: conn.providerId,
+      providerKey: conn.providerKey,
+      providerLabel: conn.provider.label,
+      providerCategory: conn.provider.category,
+      status: conn.status,
+      connectionType: conn.connectionType,
+      connectedByUserId: conn.connectedByUserId ?? null,
+      connectedByContactEmail: conn.connectedByContactEmail ?? null,
+      assignedOwnerUserId: conn.assignedOwnerUserId ?? null,
+      connectedAt: conn.connectedAt?.toISOString() ?? null,
+      disconnectedAt: conn.disconnectedAt?.toISOString() ?? null,
+      lastCheckedAt: conn.lastCheckedAt?.toISOString() ?? null,
+      lastSyncedAt: conn.lastSyncedAt?.toISOString() ?? null,
+      lastSuccessfulSyncAt: conn.lastSuccessfulSyncAt?.toISOString() ?? null,
+      lastErrorCode: conn.lastErrorCode ?? null,
+      lastErrorMessage: conn.lastErrorMessage ?? null,
+      healthStatus: conn.healthStatus ?? null,
+      externalAccountId: conn.externalAccountId ?? null,
+      externalAccountLabel: conn.externalAccountLabel ?? null,
+      createdAt: conn.createdAt.toISOString(),
+      updatedAt: conn.updatedAt.toISOString(),
+    }));
+
+    return {
+      success: true,
+      data: items,
+      meta: { requestId: scope.requestId },
+    } as ApiResponse<typeof items>;
+  });
+
+  // ── GET /admin/integrations/connections/:connectionId/sync-events ─────────
+  app.get("/admin/integrations/connections/:connectionId/sync-events", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN" && scope.role !== "STAFF") {
+      return reply.status(403).send({
+        success: false,
+        error: { code: "FORBIDDEN", message: "Only staff or admins can view connection sync events." },
+      } as ApiResponse);
+    }
+
+    const params = request.params as { connectionId?: string };
+    const connectionId = typeof params.connectionId === "string" ? params.connectionId.trim() : "";
+    if (!connectionId) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "connectionId is required." },
+      } as ApiResponse);
+    }
+
+    const connection = await prisma.clientIntegrationConnection.findUnique({
+      where: { id: connectionId },
+      select: { id: true },
+    });
+    if (!connection) {
+      return reply.status(404).send({
+        success: false,
+        error: { code: "NOT_FOUND", message: "Connection not found." },
+      } as ApiResponse);
+    }
+
+    const records = await prisma.integrationSyncEvent.findMany({
+      where: { connectionId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
+    const items = records.map((entry) => ({
+      id: entry.id,
+      connectionId: entry.connectionId,
+      clientId: entry.clientId,
+      providerKey: entry.providerKey,
+      status: entry.status,
+      startedAt: entry.startedAt.toISOString(),
+      finishedAt: entry.finishedAt?.toISOString() ?? null,
+      durationMs: entry.durationMs ?? null,
+      summary: entry.summary ?? null,
+      errorCode: entry.errorCode ?? null,
+      errorMessage: entry.errorMessage ?? null,
+      details: entry.details ?? null,
+      createdAt: entry.createdAt.toISOString(),
+    }));
+
+    return {
+      success: true,
+      data: items,
+      meta: { requestId: scope.requestId },
+    } as ApiResponse<typeof items>;
+  });
+
+  // ── POST /admin/integrations/connections ─────────────────────────────────
+  app.post("/admin/integrations/connections", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN" && scope.role !== "STAFF") {
+      return reply.status(403).send({
+        success: false,
+        error: { code: "FORBIDDEN", message: "Only staff or admins can create integration connections." },
+      } as ApiResponse);
+    }
+
+    const body = (request.body ?? {}) as {
+      clientId?: string;
+      providerKey?: string;
+      status?: string;
+      connectionType?: string;
+      connectedByContactEmail?: string | null;
+      assignedOwnerUserId?: string | null;
+      externalAccountId?: string | null;
+      externalAccountLabel?: string | null;
+      configurationSummary?: unknown;
+      metadata?: unknown;
+    };
+
+    const clientId = typeof body.clientId === "string" ? body.clientId.trim() : "";
+    const providerKey = typeof body.providerKey === "string" ? body.providerKey.trim().toLowerCase() : "";
+    if (!clientId || !providerKey) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "clientId and providerKey are required." },
+      } as ApiResponse);
+    }
+
+    const provider = await prisma.integrationProvider.findUnique({ where: { key: providerKey } });
+    if (!provider) {
+      return reply.status(404).send({
+        success: false,
+        error: { code: "PROVIDER_NOT_FOUND", message: "Integration provider not found." },
+      } as ApiResponse);
+    }
+
+    const connection = await prisma.clientIntegrationConnection.upsert({
+      where: { clientId_providerKey: { clientId, providerKey } },
+      create: {
+        clientId,
+        providerId: provider.id,
+        providerKey,
+        status: typeof body.status === "string" && body.status.trim().length > 0 ? body.status.trim() : "CONNECTED",
+        connectionType: typeof body.connectionType === "string" && body.connectionType.trim().length > 0 ? body.connectionType.trim() : "assisted",
+        connectedByUserId: scope.userId ?? null,
+        connectedByContactEmail: typeof body.connectedByContactEmail === "string" ? body.connectedByContactEmail.trim() : null,
+        assignedOwnerUserId: typeof body.assignedOwnerUserId === "string" ? body.assignedOwnerUserId.trim() : null,
+        connectedAt: new Date(),
+        healthStatus: "UNKNOWN",
+        externalAccountId: typeof body.externalAccountId === "string" ? body.externalAccountId.trim() : null,
+        externalAccountLabel: typeof body.externalAccountLabel === "string" ? body.externalAccountLabel.trim() : null,
+        configurationSummary: body.configurationSummary ?? null,
+        metadata: body.metadata ?? null,
+      },
+      update: {
+        providerId: provider.id,
+        status: typeof body.status === "string" && body.status.trim().length > 0 ? body.status.trim() : "CONNECTED",
+        connectionType: typeof body.connectionType === "string" && body.connectionType.trim().length > 0 ? body.connectionType.trim() : "assisted",
+        connectedByUserId: scope.userId ?? null,
+        connectedByContactEmail: typeof body.connectedByContactEmail === "string" ? body.connectedByContactEmail.trim() : null,
+        assignedOwnerUserId: typeof body.assignedOwnerUserId === "string" ? body.assignedOwnerUserId.trim() : null,
+        connectedAt: new Date(),
+        disconnectedAt: null,
+        externalAccountId: typeof body.externalAccountId === "string" ? body.externalAccountId.trim() : null,
+        externalAccountLabel: typeof body.externalAccountLabel === "string" ? body.externalAccountLabel.trim() : null,
+        configurationSummary: body.configurationSummary ?? null,
+        metadata: body.metadata ?? null,
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        ...connection,
+        connectedAt: connection.connectedAt?.toISOString() ?? null,
+        disconnectedAt: connection.disconnectedAt?.toISOString() ?? null,
+        lastCheckedAt: connection.lastCheckedAt?.toISOString() ?? null,
+        lastSyncedAt: connection.lastSyncedAt?.toISOString() ?? null,
+        lastSuccessfulSyncAt: connection.lastSuccessfulSyncAt?.toISOString() ?? null,
+        createdAt: connection.createdAt.toISOString(),
+        updatedAt: connection.updatedAt.toISOString(),
+      },
+      meta: { requestId: scope.requestId },
+    } as ApiResponse<Record<string, unknown>>;
+  });
+
+  // ── PATCH /admin/integrations/connections/:connectionId ───────────────────
+  app.patch("/admin/integrations/connections/:connectionId", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN" && scope.role !== "STAFF") {
+      return reply.status(403).send({
+        success: false,
+        error: { code: "FORBIDDEN", message: "Only staff or admins can update integration connections." },
+      } as ApiResponse);
+    }
+
+    const params = request.params as { connectionId?: string };
+    const connectionId = typeof params.connectionId === "string" ? params.connectionId.trim() : "";
+    if (!connectionId) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "connectionId is required." },
+      } as ApiResponse);
+    }
+
+    const existing = await prisma.clientIntegrationConnection.findUnique({ where: { id: connectionId } });
+    if (!existing) {
+      return reply.status(404).send({
+        success: false,
+        error: { code: "NOT_FOUND", message: "Connection not found." },
+      } as ApiResponse);
+    }
+
+    const body = (request.body ?? {}) as Record<string, unknown>;
+    const data: Record<string, unknown> = {};
+
+    const setStr = (key: string) => {
+      if (body[key] !== undefined) data[key] = body[key] == null ? null : String(body[key]);
+    };
+    const setDateTime = (key: string) => {
+      if (body[key] === undefined) return;
+      if (body[key] == null) { data[key] = null; return; }
+      const parsed = new Date(String(body[key]));
+      if (!Number.isNaN(parsed.getTime())) data[key] = parsed;
+    };
+
+    setStr("status");
+    setStr("healthStatus");
+    setStr("assignedOwnerUserId");
+    setStr("lastErrorCode");
+    setStr("lastErrorMessage");
+    setStr("externalAccountId");
+    setStr("externalAccountLabel");
+    setDateTime("connectedAt");
+    setDateTime("disconnectedAt");
+    setDateTime("lastCheckedAt");
+    setDateTime("lastSyncedAt");
+    setDateTime("lastSuccessfulSyncAt");
+    if (body.configurationSummary !== undefined) data.configurationSummary = body.configurationSummary;
+    if (body.metadata !== undefined) data.metadata = body.metadata;
+
+    const updated = await prisma.clientIntegrationConnection.update({
+      where: { id: connectionId },
+      data,
+    });
+
+    return {
+      success: true,
+      data: {
+        ...updated,
+        connectedAt: updated.connectedAt?.toISOString() ?? null,
+        disconnectedAt: updated.disconnectedAt?.toISOString() ?? null,
+        lastCheckedAt: updated.lastCheckedAt?.toISOString() ?? null,
+        lastSyncedAt: updated.lastSyncedAt?.toISOString() ?? null,
+        lastSuccessfulSyncAt: updated.lastSuccessfulSyncAt?.toISOString() ?? null,
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
+      },
+      meta: { requestId: scope.requestId },
+    } as ApiResponse<Record<string, unknown>>;
+  });
+
+  // ── POST /admin/integrations/seed-providers ───────────────────────────────
+  // Idempotent seed — inserts the canonical 17 providers if not yet present.
+  // Safe to call repeatedly (upsert by key). Requires ADMIN role.
+  app.post("/admin/integrations/seed-providers", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      return reply.status(403).send({
+        success: false,
+        error: { code: "FORBIDDEN", message: "Only admins can seed integration providers." },
+      } as ApiResponse);
+    }
+
+    const PROVIDERS = [
+      { key: "gcal", label: "Google Calendar", description: "Sync calendar events and meeting scheduling", category: "Productivity", kind: "oauth", availabilityStatus: "active", isClientVisible: true, isRequestEnabled: true, supportsDisconnect: true, supportsReconnect: true, supportsHealthChecks: true, sortOrder: 1, iconKey: "" },
+      { key: "slack", label: "Slack", description: "Delivery alerts, approval reminders, and escalations", category: "Communication", kind: "assisted", availabilityStatus: "active", isRequestEnabled: true, sortOrder: 2, iconKey: "" },
+      { key: "msteams", label: "Microsoft Teams", description: "Milestone alerts and approval notifications", category: "Communication", kind: "assisted", availabilityStatus: "active", isRequestEnabled: true, sortOrder: 3, iconKey: "" },
+      { key: "gdrive", label: "Google Drive", description: "Export approved deliverables and handoff folders", category: "Documents", kind: "assisted", availabilityStatus: "active", isRequestEnabled: true, sortOrder: 4, iconKey: "" },
+      { key: "dropbox", label: "Dropbox", description: "File sync and asset sharing", category: "Documents", kind: "assisted", availabilityStatus: "coming_soon", sortOrder: 5, iconKey: "" },
+      { key: "quickbooks", label: "QuickBooks", description: "Invoice sync and accounting integration", category: "Finance", kind: "assisted", availabilityStatus: "active", isRequestEnabled: true, sortOrder: 6, iconKey: "" },
+      { key: "xero", label: "Xero", description: "Accounting and payment reconciliation", category: "Finance", kind: "assisted", availabilityStatus: "active", isRequestEnabled: true, sortOrder: 7, iconKey: "" },
+      { key: "zapier", label: "Zapier", description: "Connect to 5,000+ apps via automation", category: "Automation", kind: "assisted", availabilityStatus: "active", isRequestEnabled: true, sortOrder: 8, iconKey: "" },
+      { key: "hubspot", label: "HubSpot", description: "CRM integration for account visibility", category: "CRM", kind: "assisted", availabilityStatus: "beta", sortOrder: 9, iconKey: "" },
+      { key: "salesforce", label: "Salesforce", description: "Enterprise CRM integration", category: "CRM", kind: "assisted", availabilityStatus: "beta", sortOrder: 10, iconKey: "" },
+      { key: "notion", label: "Notion", description: "Knowledge base and doc sync", category: "Productivity", kind: "assisted", availabilityStatus: "coming_soon", sortOrder: 11, iconKey: "" },
+      { key: "jira", label: "Jira", description: "Issue tracking and project management bridge", category: "Project Management", kind: "assisted", availabilityStatus: "coming_soon", sortOrder: 12, iconKey: "" },
+      { key: "asana", label: "Asana", description: "Task management integration", category: "Project Management", kind: "assisted", availabilityStatus: "coming_soon", sortOrder: 13, iconKey: "" },
+      { key: "clickup", label: "ClickUp", description: "Project and task management", category: "Project Management", kind: "assisted", availabilityStatus: "coming_soon", sortOrder: 14, iconKey: "" },
+      { key: "docusign", label: "DocuSign", description: "Electronic signature for contracts and approvals", category: "Documents", kind: "assisted", availabilityStatus: "coming_soon", sortOrder: 15, iconKey: "" },
+      { key: "pandadoc", label: "PandaDoc", description: "Proposal and contract signing", category: "Documents", kind: "assisted", availabilityStatus: "coming_soon", sortOrder: 16, iconKey: "" },
+      { key: "sharepoint", label: "SharePoint / OneDrive", description: "Microsoft file storage and collaboration", category: "Documents", kind: "assisted", availabilityStatus: "coming_soon", sortOrder: 17, iconKey: "" },
+    ] as const;
+
+    const results: { key: string; action: "upserted" }[] = [];
+    for (const provider of PROVIDERS) {
+      await prisma.integrationProvider.upsert({
+        where: { key: provider.key },
+        create: {
+          key: provider.key,
+          label: provider.label,
+          description: provider.description,
+          category: provider.category,
+          kind: provider.kind,
+          availabilityStatus: provider.availabilityStatus,
+          iconKey: provider.iconKey,
+          isClientVisible: "isClientVisible" in provider ? provider.isClientVisible : true,
+          isRequestEnabled: "isRequestEnabled" in provider ? provider.isRequestEnabled : false,
+          supportsDisconnect: "supportsDisconnect" in provider ? provider.supportsDisconnect : false,
+          supportsReconnect: "supportsReconnect" in provider ? provider.supportsReconnect : false,
+          supportsHealthChecks: "supportsHealthChecks" in provider ? provider.supportsHealthChecks : false,
+          sortOrder: provider.sortOrder,
+        },
+        update: {
+          label: provider.label,
+          description: provider.description,
+          category: provider.category,
+          kind: provider.kind,
+          availabilityStatus: provider.availabilityStatus,
+          sortOrder: provider.sortOrder,
+        },
+      });
+      results.push({ key: provider.key, action: "upserted" });
+    }
+
+    return {
+      success: true,
+      data: { seeded: results.length, providers: results },
+      meta: { requestId: scope.requestId },
+    } as ApiResponse<{ seeded: number; providers: { key: string; action: string }[] }>;
+  });
+
   // ─────────────────────────────────────────────────────────────────────────
   // Google Calendar OAuth2
   // ─────────────────────────────────────────────────────────────────────────
