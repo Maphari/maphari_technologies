@@ -188,14 +188,14 @@ export function AccessControlPage({
 
       <div className={cx("topCardsStack", "mb28")}>
         {[
-          { label: "Active Users", value: active.length.toString(), color: "var(--accent)", sub: `${users.length} total accounts` },
-          { label: "Inactive Users", value: (users.length - active.length).toString(), color: users.length - active.length > 0 ? "var(--amber)" : "var(--accent)", sub: "Revoked or disabled" },
-          { label: "Total Accounts", value: users.length.toString(), color: "var(--blue)", sub: "All staff" },
-          { label: "Session Status", value: session ? "Connected" : "No session", color: session ? "var(--accent)" : "var(--red)", sub: "Gateway auth" },
+          { label: "Active Users", value: active.length.toString(), color: "var(--accent)", sub: `${users.length} total accounts`, word: false },
+          { label: "Inactive Users", value: (users.length - active.length).toString(), color: users.length - active.length > 0 ? "var(--amber)" : "var(--accent)", sub: "Revoked or disabled", word: false },
+          { label: "Total Accounts", value: users.length.toString(), color: "var(--blue)", sub: "All staff", word: false },
+          { label: "Session Status", value: session ? "Connected" : "No session", color: session ? "var(--accent)" : "var(--red)", sub: "Gateway auth", word: true },
         ].map((stat) => (
           <div key={stat.label} className={cx(styles.statCard, toneClass(stat.color))}>
             <div className={styles.statLabel}>{stat.label}</div>
-            <div className={cx(styles.statValue, styles.accessToneText)}>{stat.value}</div>
+            <div className={cx(styles.statValue, stat.word && styles.statValueWord, styles.accessToneText)}>{stat.value}</div>
             <div className={cx("text11", "colorMuted")}>{stat.sub}</div>
           </div>
         ))}

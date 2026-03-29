@@ -146,14 +146,14 @@ export function CompetitorMarketIntelPage({ session }: { session: AuthSession | 
 
       <div className={cx("topCardsStack", "gap16", "mb28")}>
         {[
-          { label: "Win Rate (6mo)", value: `${winRate}%`, color: winRate >= 50 ? "var(--accent)" : "var(--amber)", sub: `${totalWon} won - ${totalLost} lost` },
-          { label: "Tracked Competitors", value: competitors.length.toString(), color: "var(--blue)", sub: `${competitors.filter((c) => c.type === "Direct").length} direct` },
-          { label: "Most Common Rival", value: topRival ? topRival[0] : "—", color: "var(--red)", sub: topRival ? `Lost to ${topRival[1]}x in 90d` : "No data yet" },
-          { label: "Market Position", value: "Mid-Premium", color: "var(--purple)", sub: "Between Brandcraft & Collective" }
+          { label: "Win Rate (6mo)", value: `${winRate}%`, color: winRate >= 50 ? "var(--accent)" : "var(--amber)", sub: `${totalWon} won - ${totalLost} lost`, word: false },
+          { label: "Tracked Competitors", value: competitors.length.toString(), color: "var(--blue)", sub: `${competitors.filter((c) => c.type === "Direct").length} direct`, word: false },
+          { label: "Most Common Rival", value: topRival ? topRival[0] : "—", color: "var(--red)", sub: topRival ? `Lost to ${topRival[1]}x in 90d` : "No data yet", word: false },
+          { label: "Market Position", value: "Mid-Premium", color: "var(--purple)", sub: "Between Brandcraft & Collective", word: true }
         ].map((s) => (
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, s.label === "Most Common Rival" && styles.cmpiValue18, colorClass(s.color))}>{s.value}</div>
+            <div className={cx(styles.statValue, s.label === "Most Common Rival" && styles.cmpiValue18, s.word && styles.statValueWord, colorClass(s.color))}>{s.value}</div>
             <div className={cx("text11", "colorMuted")}>{s.sub}</div>
           </div>
         ))}

@@ -1059,6 +1059,9 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   line-height: 1;
+  white-space: nowrap;
+  min-width: fit-content;
+  flex-shrink: 0;
 }
 
 .btnAccent {
@@ -1288,13 +1291,16 @@
 .statLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .statValue {
@@ -1310,6 +1316,13 @@
   min-width: 0;
   font-variant-numeric: slashed-zero tabular-nums;
   font-feature-settings: "zero" 1, "tnum" 1;
+}
+
+/* Modifier for word-valued KPI cards (e.g. "Connected", "Mid-Premium") that
+   are too wide at 2rem — scale down to 1.25rem so they fit without clipping */
+.statValueWord {
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
 }
 
 /* Fallback KPI color hierarchy for top stat containers across pages.
