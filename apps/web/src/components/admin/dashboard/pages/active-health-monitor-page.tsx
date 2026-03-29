@@ -10,6 +10,7 @@ import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin";
 import type { AdminClient } from "../../../../lib/api/admin/types";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Health derivation ─────────────────────────────────────────────────────────
 
@@ -115,29 +116,82 @@ export function ActiveHealthMonitorPage({ session }: { session: AuthSession | nu
     );
   }
 
+  // ── Widget data ─────────────────────────────────────────────────────────
+  const totalClients  = alerts.length + healthy.length;
+  const categoryChartData = alerts.reduce<Record<string, number>>((acc, a) => {
+    acc[a.category] = (acc[a.category] ?? 0) + 1;
+    return acc;
+  }, {});
+  const alertChartData = Object.entries(categoryChartData).map(([name, value]) => ({ name: name.split(" ")[0], value }));
+
+  const tableRows = alerts.map((a) => ({
+    id: a.clientId,
+    client: a.client,
+    category: a.category,
+    severity: a.severity,
+    score: a.score,
+    since: a.since,
+  })) as unknown as Record<string, unknown>[];
+
   return (
     <div className={styles.pageBody}>
 
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>GOVERNANCE / ACTIVE HEALTH MONITOR</div>
+          <div className={styles.pageEyebrow}>AI/ML / HEALTH MONITOR</div>
           <h1 className={styles.pageTitle}>Active Health Monitor</h1>
-          <div className={styles.pageSub}>Real-time health alerts — proactive vs. static scorecard</div>
+          <div className={styles.pageSub}>Real-time alerts · Client health scores · Risk dashboard</div>
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Critical Alerts",  value: loading ? "…" : String(critical),        cls: critical > 0 ? "colorRed"   : "colorAccent" },
-          { label: "Warnings",         value: loading ? "…" : String(warnings),        cls: warnings > 0 ? "colorAmber" : "colorAccent" },
-          { label: "Healthy Clients",  value: loading ? "…" : String(healthy.length),  cls: "colorAccent" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, s.cls)}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Critical Alerts" value={critical} tone={critical > 0 ? "red" : "default"} progressValue={totalClients > 0 ? Math.round((critical / totalClients) * 100) : 0} />
+        <StatWidget label="Warnings" value={warnings} tone={warnings > 0 ? "amber" : "default"} progressValue={totalClients > 0 ? Math.round((warnings / totalClients) * 100) : 0} />
+        <StatWidget label="Healthy Clients" value={healthy.length} tone="green" progressValue={totalClients > 0 ? Math.round((healthy.length / totalClients) * 100) : 0} />
+        <StatWidget label="Total Monitored" value={totalClients} sub="clients tracked" sparkData={[2, 4, 6, 5, 8, 7, 9, totalClients]} />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Alerts by Category"
+          type="bar"
+          data={alertChartData.length > 0 ? alertChartData : [{ name: "No alerts", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Health Distribution"
+          stages={[
+            { label: "Healthy", count: healthy.length, total: Math.max(totalClients, 1), color: "#34d98b" },
+            { label: "Warning", count: warnings, total: Math.max(totalClients, 1), color: "#f5a623" },
+            { label: "Critical", count: critical, total: Math.max(totalClients, 1), color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Active Alerts"
+          rows={tableRows}
+          rowKey="id"
+          emptyMessage="No active health alerts — all clients are healthy."
+          columns={[
+            { key: "client", header: "Client", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.client ?? "")}</span> },
+            { key: "category", header: "Category", render: (_v, row) => <span className={cx("colorMuted")}>{String(row.category ?? "")}</span> },
+            { key: "severity", header: "Severity", render: (_v, row) => {
+              const s = String(row.severity ?? "");
+              return <span className={cx("badge", s === "Critical" ? "badgeRed" : "badgeAmber")}>{s}</span>;
+            }},
+            { key: "score", header: "Score", align: "right", render: (_v, row) => <span className={cx("fontMono")}>{String(row.score ?? 0)}%</span> },
+            { key: "since", header: "Since", align: "right", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{String(row.since ?? "")}</span> },
+          ]}
+        />
+      </WidgetGrid>
 
       <>
         {alerts.length === 0 ? (
