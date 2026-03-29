@@ -5,6 +5,7 @@ import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
 import { formatMoneyCents } from "../../../../lib/i18n/currency";
 import type { AdminSnapshot } from "../../../../lib/api/admin";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 type Priority = "critical" | "high" | "medium" | "low";
 
@@ -76,13 +77,30 @@ export function OwnersWorkspacePage({ snapshot }: { snapshot?: AdminSnapshot }) 
     setTodos((prev) => prev.map((t, i) => (i === idx ? { ...t, done: !t.done } : t)));
   };
 
+  const mrrDisplay   = pulse ? formatMoneyCents(pulse.mrrCents, { currency: "ZAR", maximumFractionDigits: 0 }) : "—";
+  const healthDisplay = pulse?.clientHealth != null ? `${pulse.clientHealth}%` : "—";
+
+  const focusDone    = todos.filter(t => t.done).length;
+  const focusPending = todos.filter(t => !t.done).length;
+
+  const focusData = [
+    { label: "Done",    count: focusDone    },
+    { label: "Pending", count: focusPending },
+  ];
+
+  const todoTableRows = todos.map(t => ({
+    text:     t.text,
+    priority: t.priority,
+    status:   t.done ? "done" : "pending",
+  }));
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>GOVERNANCE / OWNER'S WORKSPACE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / OWNER</div>
           <h1 className={styles.pageTitle}>Owner&apos;s Workspace</h1>
-          <div className={styles.pageSub}>Private - Only visible to you</div>
+          <div className={styles.pageSub}>Business pulse · OKRs · Focus items · Private notes</div>
         </div>
         <div className={cx("flexRow", "gap8", "p16", styles.ownerLockCard)}>
           <span className={cx("text14")}>&#128274;</span>
@@ -90,137 +108,60 @@ export function OwnersWorkspacePage({ snapshot }: { snapshot?: AdminSnapshot }) 
         </div>
       </div>
 
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="MRR" value={mrrDisplay} sub="This month (payments)" tone="accent" />
+        <StatWidget label="Client Health" value={healthDisplay} sub="Active vs total" tone={pulse?.clientHealth != null && pulse.clientHealth >= 80 ? "green" : "amber"} />
+        <StatWidget label="Open Pipeline" value={pulse?.openLeads ?? 0} sub="Active leads" tone="default" />
+        <StatWidget label="Overdue Invoices" value={pulse?.overdueInv ?? 0} sub="Past due" tone={pulse?.overdueInv ? "red" : "default"} />
+      </WidgetGrid>
+
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label={`Today's Focus — ${todayLabel}`}
+          data={focusData}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="OKR Progress"
+          stages={ownerOKRs.map(okr => {
+            const avg = okr.keyResults.length > 0 ? Math.round(okr.keyResults.reduce((s, kr) => s + kr.progress, 0) / okr.keyResults.length) : 0;
+            return { label: okr.objective.slice(0, 20), count: avg, total: 100, color: avg >= 75 ? "#34d98b" : avg >= 50 ? "#f5a623" : "#ff5f5f" };
+          })}
+        />
+      </WidgetGrid>
+
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Focus Items"
+          rows={todoTableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "text",     header: "Item" },
+            { key: "priority", header: "Priority", render: (v) => {
+              const val = v as Priority;
+              return <span className={cx("badge", priorityBadge[val])}>{val}</span>;
+            }},
+            { key: "status",   header: "Status", align: "right", render: (v) => {
+              const val = v as string;
+              const cls = val === "done" ? cx("badge", "badgeGreen") : cx("badge", "badgeMuted");
+              return <span className={cls}>{val}</span>;
+            }},
+          ]}
+          emptyMessage="No focus items added"
+        />
+      </WidgetGrid>
+
+      {/* Tab selector for detail views */}
       <div className={styles.filterRow}>
         <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
           {tabs.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
-
-      {activeTab === "owner dashboard" && (
-        <div className={styles.ownerDashSplit}>
-          <div className={cx("flexCol", "gap16")}>
-            <div className={cx(styles.card, styles.ownerCard24)}>
-              <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>Today&apos;s Focus &mdash; {todayLabel}</div>
-              <div className={cx("flexCol", "gap10")}>
-                {todos.map((item, i) => (
-                  <div
-                    key={item.text}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => toggleTodo(i)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        toggleTodo(i);
-                      }
-                    }}
-                    className={cx("flexRow", "gap12", "pointerCursor", toneClass(priorityColors[item.priority]), item.done && "opacity50")}
-                  >
-                    <div className={cx(styles.ownerTodoRow, item.done && styles.ownerTodoDone)}>
-                      <div className={cx("flexCenter", "noShrink", styles.ownerTodoCheck, item.done && styles.ownerTodoCheckDone)}>{item.done && <span className={cx("text10", "fw800", styles.ownerCheckMark)}>&#10003;</span>}</div>
-                      <div className={styles.ownerFlex1}>
-                        <div className={cx("text13", styles.ownerTodoText, item.done && styles.ownerTodoTextDone)}>{item.text}</div>
-                      </div>
-                    </div>
-                    <span className={cx("text10", "fontMono", "uppercase", "noShrink", styles.ownerToneText)}>{item.priority}</span>
-                  </div>
-                ))}
-                <button type="button" className={cx("btnSm", "btnGhost", "colorMuted", styles.ownerAddFocusBtn)}>+ Add focus item</button>
-              </div>
-            </div>
-
-            <div className={cx(styles.card, styles.ownerCard24)}>
-              <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>Business Pulse</div>
-              <div className={cx("grid3", "gap12")}>
-                {[
-                  { label: "MRR", value: pulse ? formatMoneyCents(pulse.mrrCents, { currency: "ZAR", maximumFractionDigits: 0 }) : "—", sub: "This month (payments)", color: "var(--accent)" },
-                  { label: "Team Util.", value: "—", sub: "Target: 85%", color: "var(--amber)" },
-                  { label: "Client Health", value: pulse?.clientHealth != null ? `${pulse.clientHealth}%` : "—", sub: `Active vs total clients`, color: pulse?.clientHealth != null && pulse.clientHealth >= 80 ? "var(--accent)" : "var(--amber)" },
-                  { label: "Pipeline", value: pulse ? `${pulse.openLeads}` : "—", sub: "Open leads", color: "var(--blue)" },
-                  { label: "Overdue Inv.", value: pulse ? `${pulse.overdueInv}` : "—", sub: "Past due invoices", color: pulse?.overdueInv ? "var(--red)" : "var(--accent)" },
-                  { label: "Runway", value: "—", sub: "Cash reserves", color: "var(--purple)" },
-                ].map((s) => (
-                  <div key={s.label} className={cx("bgBg", "p16", styles.ownerRounded8)}>
-                    <div className={cx("text10", "colorMuted", "uppercase", "tracking", "mb4")}>{s.label}</div>
-                    <div className={cx("fontMono", "fw800", "mb3", styles.ownerValue18, styles.ownerToneText, toneClass(s.color))}>{s.value}</div>
-                    <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className={cx("flexCol", "gap16")}>
-            <div className={cx(styles.card, styles.ownerCard24)}>
-              <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>OKR Snapshot</div>
-              {ownerOKRs.map((okr) => {
-                const avgProgress = Math.round(okr.keyResults.reduce((s, kr) => s + kr.progress, 0) / okr.keyResults.length);
-                return (
-                  <div key={okr.objective} className={cx("mb16")}>
-                    <div className={cx("flexBetween", "mb6")}>
-                      <span className={cx("text12", "fw600", styles.ownerLine14)}>{okr.objective}</span>
-                      <span className={cx("fontMono", "text13", "fw700", "noShrink", styles.ownerToneText, styles.ownerMl8, toneClass(avgProgress >= 75 ? "var(--accent)" : avgProgress >= 50 ? "var(--amber)" : "var(--red)"))}>{avgProgress}%</span>
-                    </div>
-                    <div className={cx(styles.progressBar, styles.ownerProgSm)}>
-                      <progress
-                        className={cx(styles.ownerProgFill, "uiProgress", toneClass(avgProgress >= 75 ? "var(--accent)" : avgProgress >= 50 ? "var(--amber)" : "var(--red)"))}
-                        max={100}
-                        value={avgProgress}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-              <button type="button" className={cx("btnSm", "btnGhost", "wFull", "mt4")}>View Full OKRs -&gt;</button>
-            </div>
-            <div className={cx(styles.card, styles.ownerCard24)}>
-              <div className={cx("text13", "fw700", "mb16", "uppercase", "tracking")}>Recent Decisions</div>
-              {decisions.slice(0, 2).map((d) => (
-                <div key={d.title} className={cx("bgBg", "mb10", styles.ownerDecisionMini)}>
-                  <div className={cx("text11", "colorMuted", "mb4", "fontMono")}>{d.date}</div>
-                  <div className={cx("text12", "fw600", styles.ownerLine14)}>{d.title}</div>
-                </div>
-              ))}
-              <button type="button" className={cx("btnSm", "btnGhost", "wFull", "mt4")}>View Decision Journal -&gt;</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === "personal okrs" && (
-        <div className={cx("flexCol", "gap24")}>
-          {ownerOKRs.map((okr) => (
-            <div key={okr.objective} className={cx(styles.card, styles.ownerCard24)}>
-              <div className={cx("fw800", "colorAccent", "mb20", styles.ownerTitle16)}>&#9678; {okr.objective}</div>
-              <div className={cx("flexCol", "gap16")}>
-                {okr.keyResults.map((kr, i) => (
-                  <div key={kr.kr} className={cx("bgBg", "p16", styles.ownerRounded8)}>
-                    <div className={cx("flexBetween", "mb8")}>
-                      <span className={cx("text13", "fw600")}>
-                        KR{i + 1}: {kr.kr}
-                      </span>
-                      <div className={cx("flexRow", "gap12")}>
-                        {"note" in kr && kr.note ? <span className={cx("text11", "colorAmber", "fontMono")}>{kr.note}</span> : null}
-                        <span className={cx("fontMono", "fw800", styles.ownerToneText, toneClass(kr.progress >= 75 ? "var(--accent)" : kr.progress >= 50 ? "var(--amber)" : "var(--red)"))}>{kr.progress}%</span>
-                      </div>
-                    </div>
-                    <div className={cx(styles.progressBar, styles.ownerProgMd)}>
-                      <progress
-                        className={cx(styles.ownerProgFillMd, "uiProgress", toneClass(kr.progress >= 75 ? "var(--accent)" : kr.progress >= 50 ? "var(--amber)" : "var(--red)"))}
-                        max={100}
-                        value={kr.progress}
-                      />
-                    </div>
-                    <div className={cx("text11", "colorMuted", "mt6", "fontMono")}>
-                      Current: {kr.current} / Target: {kr.target}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {activeTab === "decision journal" && (
         <div className={cx("flexCol", "gap16")}>
@@ -250,7 +191,7 @@ export function OwnersWorkspacePage({ snapshot }: { snapshot?: AdminSnapshot }) 
       {activeTab === "private notes" && (
         <div className={cx("flexCol", "gap16")}>
           <div className={cx(styles.card, styles.ownerPrivateAlert)}>
-            <span className={cx("text12", "colorMuted")}>&#128274; These notes are private and only visible to you. They are not logged in the audit trail and not accessible to other admins.</span>
+            <span className={cx("text12", "colorMuted")}>&#128274; These notes are private and only visible to you.</span>
           </div>
           {privateNotes.map((note) => (
             <div key={note.client + note.date} className={cx(styles.card, styles.ownerCard24)}>
