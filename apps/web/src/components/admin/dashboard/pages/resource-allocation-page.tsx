@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import type { AdminStaffProfile } from "../../../../lib/api/admin/hr";
@@ -75,16 +76,12 @@ interface Props {
   onNotify: (tone: "success" | "error" | "warning" | "info", msg: string) => void;
 }
 
-type Tab = "weekly grid" | "capacity overview" | "by project";
-const tabs: Tab[] = ["weekly grid", "capacity overview", "by project"];
-
 const WEEK_OFFSETS = [0, 1, 2, 3, 4];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ResourceAllocationPage({ session, onNotify }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>("weekly grid");
-  const [selectedWeek, setSelectedWeek] = useState(0);
+  const [selectedWeek] = useState(0);
   const [staff, setStaff] = useState<AdminStaffProfile[]>([]);
   const [timeEntries, setTimeEntries] = useState<ProjectTimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -181,13 +178,37 @@ export function ResourceAllocationPage({ session, onNotify }: Props) {
     );
   }
 
+  // ── Widget data ────────────────────────────────────────────────────────────
+  const utilChartData = staffRows.map((member) => ({
+    label: member.name.split(" ")[0],
+    hours: member.loggedHours,
+  }));
+
+  const optimal = staffRows.filter((m) => {
+    const pct = Math.round((m.loggedHours / CAPACITY) * 100);
+    return pct >= 70 && m.loggedHours <= CAPACITY;
+  }).length;
+
+  const tableRows = staffRows.map((member) => {
+    const hours = member.loggedHours;
+    const pct = Math.round((hours / CAPACITY) * 100);
+    return {
+      id: member.id,
+      name: member.name,
+      role: member.role,
+      allocation: `${pct}%`,
+      hours: `${hours}h`,
+      _pct: pct,
+    };
+  });
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>OPERATIONS / RESOURCE ALLOCATION</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / RESOURCES</div>
           <h1 className={styles.pageTitle}>Resource Allocation</h1>
-          <div className={styles.pageSub}>Staff capacity - Project assignments - Overallocation alerts</div>
+          <div className={styles.pageSub}>Staff utilisation · Capacity planning · Allocation health</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnGhost")}>Export Plan</button>
@@ -195,166 +216,81 @@ export function ResourceAllocationPage({ session, onNotify }: Props) {
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Team Utilisation",  value: `${weekStats.teamUtil}%`,    color: weekStats.teamUtil >= 80 ? "var(--accent)" : "var(--amber)", sub: `Week of ${weeks[selectedWeek]}` },
-          { label: "Overallocated",     value: String(weekStats.overallocated), color: weekStats.overallocated > 0 ? "var(--red)" : "var(--accent)", sub: `> ${CAPACITY}h capacity` },
-          { label: "Underutilised",     value: String(weekStats.underutilised), color: weekStats.underutilised > 0 ? "var(--amber)" : "var(--accent)", sub: `< ${Math.round(CAPACITY * 0.7)}h this week` },
-          { label: "Total Staff Hours", value: `${weekStats.totalLogged}h`, color: "var(--blue)",   sub: `Cap: ${staff.length * CAPACITY}h` },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, "resAllocToneText", toneClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — 4 stat widgets */}
+      <WidgetGrid>
+        <StatWidget
+          label="Total Staff"
+          value={staff.length}
+          sub={`${weekStats.teamUtil}% team utilisation`}
+          tone="accent"
+        />
+        <StatWidget
+          label="Fully Allocated"
+          value={optimal}
+          sub="70–100% capacity"
+          tone={optimal > 0 ? "green" : "default"}
+        />
+        <StatWidget
+          label="Under-utilized"
+          value={weekStats.underutilised}
+          sub={`< ${Math.round(CAPACITY * 0.7)}h this week`}
+          tone={weekStats.underutilised > 0 ? "amber" : "default"}
+        />
+        <StatWidget
+          label="Overloaded"
+          value={weekStats.overallocated}
+          sub={`> ${CAPACITY}h capacity`}
+          tone={weekStats.overallocated > 0 ? "red" : "default"}
+        />
+      </WidgetGrid>
 
-      <div className={styles.filterRow}>
-        <select title="View" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
-          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-        {activeTab === "weekly grid" ? (
-          <select title="Week" value={selectedWeek} onChange={e => setSelectedWeek(Number(e.target.value))} className={styles.filterSelect}>
-            {weeks.map((w, i) => <option key={w} value={i}>w/c {w}</option>)}
-          </select>
-        ) : null}
-      </div>
+      {/* Row 2 — bar chart + pipeline allocation tiers */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Utilisation by Staff Member"
+          data={utilChartData}
+          dataKey="hours"
+          type="bar"
+          color="#8b6fff"
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Allocation Tiers"
+          stages={[
+            { label: "Optimal (70–100%)", count: optimal || 0, total: staff.length || 1, color: "#34d98b" },
+            { label: "Under (<70%)", count: weekStats.underutilised || 0, total: staff.length || 1, color: "#f5a623" },
+            { label: "Over (>100%)", count: weekStats.overallocated || 0, total: staff.length || 1, color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
 
-      {activeTab === "weekly grid" && (
-        <div>
-          {staff.length === 0 && <div className={cx("text13", "colorMuted")}>No active staff members found.</div>}
-          <div className={cx("flexCol", "gap16")}>
-            {staffRows.map((member) => {
-              const hours = selectedWeek === 0 ? member.loggedHours : 0;
-              const isOver = hours > CAPACITY;
-              const util = Math.round((hours / CAPACITY) * 100);
-              const utilColor = isOver ? "var(--red)" : util >= 80 ? "var(--accent)" : "var(--amber)";
-              return (
-                <div key={member.id} className={cx("card", "p24", isOver && styles.resAllocOverCard)}>
-                  <div className={cx("flexRow", "gap16", "mb16")}>
-                    <Avatar initials={member.avatar} color={member.color} />
-                    <div className={styles.resAllocGrow}>
-                      <div className={cx("fw700")}>{member.name}</div>
-                      <div className={cx("text12", "colorMuted")}>{member.role}</div>
-                    </div>
-                    <div className={cx("textRight")}>
-                      <div className={cx("fontMono", "fw800", styles.resAllocHourTotal, toneClass(utilColor))}>{hours}h</div>
-                      <div className={cx("text11", "colorMuted")}>of {CAPACITY}h - {util}%</div>
-                    </div>
-                  </div>
-
-                  <div className={cx("flexRow", "overflowHidden", "mb12", styles.resAllocBar)}>
-                    {hours > 0 && (
-                      <div
-                        title={`${member.name}: ${hours}h`}
-                        className={cx("flexCenter", "fw700", styles.resAllocBarSeg, allocWidthClass(hours), toneClass(member.color))}
-                      >
-                        {hours >= 6 ? `${hours}h` : ""}
-                      </div>
-                    )}
-                    {isOver && <div className={cx("flexCenter", styles.resAllocBarOver, styles.resAllocWAuto)}>+{hours - CAPACITY}h</div>}
-                  </div>
-
-                  <div className={cx("flexRow", "flexWrap", "gap10")}>
-                    <div className={cx("flexRow", "gap6", "text11")}>
-                      <div className={cx(styles.resAllocLegendDot, toneClass(member.color))} />
-                      <span className={cx("colorMuted")}>{member.role}</span>
-                      <span className={cx("fontMono", styles.resAllocToneText, toneClass(member.color))}>{hours}h logged</span>
-                    </div>
-                  </div>
-
-                  {isOver ? <div className={styles.resAllocWarn}>&#x26A0; Overallocated by {hours - CAPACITY}h - review assignments</div> : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {activeTab === "capacity overview" && (
-        <div className={cx("card", "overflowHidden", "p0")}>
-          <div className={cx("resAllocCapGrid", "px20", "borderB", "text10", "colorMuted", "uppercase", "gap12", styles.resAllocCapHead)}>
-            <span>Staff Member</span>
-            {weeks.map((w) => (
-              <span key={w} className={cx("textCenter")}>w/c {w}</span>
-            ))}
-          </div>
-          {staffRows.map((member, ri) => (
-            <div key={member.id} className={cx("resAllocCapGrid", "gap12", styles.resAllocCapRow, ri < staffRows.length - 1 && "borderB")}>
-              <div className={cx("flexRow", "gap10")}>
-                <Avatar initials={member.avatar} color={member.color} size={28} />
-                <div>
-                  <div className={cx("text13", "fw600")}>{member.name.split(" ")[0]}</div>
-                  <div className={cx("text10", "colorMuted")}>{member.role}</div>
-                </div>
-              </div>
-              {weeks.map((w, wi) => {
-                const total = wi === 0 ? member.loggedHours : 0;
-                const pct = Math.round((total / CAPACITY) * 100);
-                const color = total > CAPACITY ? "var(--red)" : pct >= 80 ? "var(--accent)" : pct >= 60 ? "var(--amber)" : "var(--muted)";
-                return (
-                  <div key={w} className={cx("textCenter")}>
-                    <div className={cx("fontMono", "fw700", styles.resAllocCapValue, toneClass(color))}>{total}h</div>
-                    <div className={cx("progressBar", styles.resAllocCapBar)}>
-                      <progress className={cx("barFill", "uiProgress", toneClass(color))} max={100} value={Math.min(pct, 100)} />
-                    </div>
-                    <div className={cx(styles.resAllocPctText, "resAllocToneText", toneClass(color))}>{pct}%</div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-          {staffRows.length === 0 && (
-            <div className={cx("p20", "text13", "colorMuted")}>No active staff found.</div>
-          )}
-          <div className={cx("resAllocCapGrid", "gap12", "bgSurface", styles.resAllocCapFoot)}>
-            <span className={cx("text12", "fw700", "colorAccent")}>Team Total</span>
-            {weeks.map((w, wi) => {
-              const total = wi === 0 ? staffRows.reduce((s, m) => s + m.loggedHours, 0) : 0;
-              const cap = staff.length * CAPACITY;
-              const pct = cap > 0 ? Math.round((total / cap) * 100) : 0;
-              return (
-                <div key={w} className={cx("textCenter")}>
-                  <div className={cx("fontMono", "fw800", styles.resAllocCapValue, pct >= 80 ? "toneAccent" : "toneAmber")}>{total}h</div>
-                  <div className={cx("text10", "colorMuted")}>{pct}% of {cap}h cap</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {activeTab === "by project" && (
-        <div className={cx("flexCol", "gap16")}>
-          {staff.length === 0 && <div className={cx("text13", "colorMuted")}>No active staff found.</div>}
-          {staffRows.map((member, idx) => {
-            const color = staffColor(idx);
-            return (
-              <div key={member.id} className={cx("card", "p24", styles.resAllocProjectCard, toneClass(color))}>
-                <div className={cx("flexBetween", "mb16")}>
-                  <div>
-                    <div className={cx("fw700", styles.resAllocProjectName)}>{member.name}</div>
-                    <div className={cx("text12", styles.resAllocToneText, toneClass(color))}>{member.role}</div>
-                  </div>
-                  <Avatar initials={member.avatar} color={color} size={28} />
-                </div>
-                <div className={cx("resAllocWeekGrid", "gap8")}>
-                  {weeks.map((w, wi) => {
-                    const hrs = wi === 0 ? member.loggedHours : 0;
-                    return (
-                      <div key={w} className={cx("bgBg", "textCenter", "p12", styles.resAllocWeekCell)}>
-                        <div className={cx("fontMono", "fw700", styles.resAllocWeekHours, styles.resAllocToneText, toneClass(color))}>{hrs}h</div>
-                        <div className={cx("colorMuted", "mt4", styles.resAllocWeekLabel)}>w/c {w}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {/* Row 3 — staff allocation table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Staff Allocation"
+          rows={tableRows as Record<string, unknown>[]}
+          rowKey="id"
+          emptyMessage="No active staff found."
+          columns={[
+            { key: "name", header: "Staff Member", align: "left" },
+            { key: "role", header: "Role", align: "left" },
+            {
+              key: "allocation",
+              header: "Allocation",
+              align: "right",
+              render: (_v, row) => {
+                const pct = (row as { _pct: number })._pct;
+                const badgeCls =
+                  pct > 100 ? cx("badgeRed")
+                  : pct >= 70 ? cx("badgeGreen")
+                  : cx("badgeAmber");
+                return <span className={badgeCls}>{String(_v)}</span>;
+              },
+            },
+            { key: "hours", header: "Hours (this week)", align: "right" },
+          ]}
+        />
+      </WidgetGrid>
     </div>
   );
 }
