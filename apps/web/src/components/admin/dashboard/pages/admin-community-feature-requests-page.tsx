@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -171,6 +172,36 @@ export function AdminCommunityFeatureRequestsPage({ session }: { session: AuthSe
     );
   }
 
+  // ── Widget data ────────────────────────────────────────────────────────────
+  const openCount       = requests.filter((r) => r.status === "under_review").length;
+  const inProgressCount = requests.filter((r) => r.status === "in_progress").length;
+  const doneCount       = requests.filter((r) => r.status === "done").length;
+  const declinedCount   = requests.filter((r) => r.status === "declined").length;
+  const plannedCount    = requests.filter((r) => r.status === "planned").length;
+
+  const byMonthChart = (() => {
+    const map: Record<string, number> = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(new Date().getFullYear(), new Date().getMonth() - i, 1);
+      const key = d.toLocaleDateString("en-US", { month: "short" });
+      map[key] = 0;
+    }
+    for (const r of requests) {
+      const d = new Date(r.createdAt);
+      const key = d.toLocaleDateString("en-US", { month: "short" });
+      if (key in map) map[key] = (map[key] ?? 0) + 1;
+    }
+    return Object.entries(map).map(([label, value]) => ({ label, value }));
+  })();
+
+  const statusPipeline = [
+    { label: "Open / Review", count: openCount, total: requests.length || 1, color: "#8b6fff" },
+    { label: "Planned",       count: plannedCount, total: requests.length || 1, color: "#f5a623" },
+    { label: "In Progress",   count: inProgressCount, total: requests.length || 1, color: "#34d98b" },
+    { label: "Done",          count: doneCount, total: requests.length || 1, color: "#34d98b" },
+    { label: "Declined",      count: declinedCount, total: requests.length || 1, color: "#ff5f5f" },
+  ];
+
   // ── Main render ────────────────────────────────────────────────────────────
   return (
     <div className={styles.pageBody}>
@@ -187,6 +218,18 @@ export function AdminCommunityFeatureRequestsPage({ session }: { session: AuthSe
           <span className={cx("badge", "badgeMuted")}>{requests.length} total</span>
         </div>
       </div>
+
+      <WidgetGrid>
+        <StatWidget label="Total Requests" value={requests.length} sub="All time" tone="accent" />
+        <StatWidget label="Open / Review"  value={openCount}   sub="Pending review" tone={openCount > 0 ? "amber" : "default"} />
+        <StatWidget label="In Progress"    value={inProgressCount} sub="Being worked on" tone="green" />
+        <StatWidget label="Completed"      value={doneCount}   sub="Done this cycle" tone="green" />
+      </WidgetGrid>
+
+      <WidgetGrid columns={2}>
+        <ChartWidget title="Requests by Month" type="bar" data={byMonthChart} color="#8b6fff" />
+        <PipelineWidget title="Status Breakdown" stages={statusPipeline} />
+      </WidgetGrid>
 
       {/* Action error banner */}
       {actionError ? (
