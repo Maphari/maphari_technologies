@@ -19,6 +19,7 @@ import {
 import { saveSession } from "../../../../lib/auth/session";
 import { formatDate, formatDateTime } from "./admin-page-utils";
 import { ThemeToggle } from "@/components/shared/ui/theme-toggle";
+import { StatWidget, WidgetGrid } from "../widgets";
 
 export function AdminSettingsPageClient({
   jobs,
@@ -262,42 +263,12 @@ export function AdminSettingsPageClient({
         </div>
       </div>
 
-      <div className={cx("topCardsStack")}>
-        {[
-          {
-            label: "Active Clients",
-            value: activeClients.toString(),
-            color: "var(--accent)",
-            sub: "Current workspace footprint",
-          },
-          {
-            label: "Queued Jobs",
-            value: queuedJobs.toString(),
-            color: "var(--amber)",
-            sub: "Pending delivery pipeline",
-          },
-          {
-            label: "Failed Jobs",
-            value: failedJobs.toString(),
-            color: failedJobs > 0 ? "var(--red)" : "var(--accent)",
-            sub: "Retry and triage required",
-          },
-          {
-            label: "Needs Attention",
-            value: needsAttention.toString(),
-            color: needsAttention > 0 ? "var(--amber)" : "var(--accent)",
-            sub: "Policy and reliability flags",
-          },
-        ].map((item) => (
-          <div key={item.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{item.label}</div>
-            <div className={cx("statValue", statToneClass(item.color))}>
-              {item.value}
-            </div>
-            <div className={cx("text11", "colorMuted")}>{item.sub}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid>
+        <StatWidget label="Active Clients"   value={activeClients}   sub="Current workspace footprint"   tone="accent" />
+        <StatWidget label="Queued Jobs"      value={queuedJobs}      sub="Pending delivery pipeline"     tone={queuedJobs > 0 ? "amber" : "default"} />
+        <StatWidget label="Failed Jobs"      value={failedJobs}      sub="Retry and triage required"     tone={failedJobs > 0 ? "red" : "green"} />
+        <StatWidget label="Needs Attention"  value={needsAttention}  sub="Policy and reliability flags"  tone={needsAttention > 0 ? "amber" : "green"} />
+      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as typeof activeTab)} className={styles.filterSelect}>
