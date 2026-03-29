@@ -4,6 +4,7 @@ import { AdminPageHeader, AdminSectionCard, AdminEmptyState } from "../../admin-
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import styles from "@/app/style/admin.module.css";
 import { styles as dashboardStyles } from "../style";
+import { formatStatus } from "@/lib/utils/format-status";
 
 export function AdminProjectsPageClient() {
   const { snapshot, loading } = useAdminWorkspaceContext();
@@ -25,7 +26,7 @@ export function AdminProjectsPageClient() {
               {snapshot.projects.map((project) => (
                 <div key={project.id} className={styles.tableRow}>
                   <span>{project.name}</span>
-                  <span>{project.status}</span>
+                  <span>{formatStatus(project.status)}</span>
                   <span className={styles.mono}>{project.clientId.slice(0, 8)}</span>
                 </div>
               ))}

@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 import { loadAdminContractsWithRefresh, type LegalContract } from "../../../../lib/api/admin/contracts";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
+import { formatStatus } from "@/lib/utils/format-status";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -256,7 +257,7 @@ export function ContractRenewalPage() {
                 </span>
                 <span className={cx(styles.lglStatusBadge, badgeCls)}>{badgeLbl}</span>
                 <span className={cx(styles.lglStatusBadge, light === "green" ? styles.lglStatusAccent : light === "amber" ? styles.lglStatusAmber : styles.lglStatusRed)}>
-                  {contract.status}
+                  {formatStatus(contract.status)}
                 </span>
                 <div className={styles.lglActionRow}>
                   <button

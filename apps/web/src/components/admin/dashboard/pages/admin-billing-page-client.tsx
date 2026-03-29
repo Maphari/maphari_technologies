@@ -5,6 +5,7 @@ import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import styles from "@/app/style/admin.module.css";
 import { styles as dashboardStyles } from "../style";
 import { formatMoneyCents } from "@/lib/i18n/currency";
+import { formatStatus } from "@/lib/utils/format-status";
 
 export function AdminBillingPageClient() {
   const { snapshot, loading } = useAdminWorkspaceContext();
@@ -48,7 +49,7 @@ export function AdminBillingPageClient() {
                 {snapshot.payments.map((payment) => (
                   <div key={payment.id} className={styles.tableRow}>
                     <span className={styles.mono}>{payment.id.slice(0, 8)}</span>
-                    <span>{payment.status}</span>
+                    <span>{formatStatus(payment.status)}</span>
                     <span>{formatMoneyCents(payment.amountCents, { maximumFractionDigits: 0 })}</span>
                   </div>
                 ))}

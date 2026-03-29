@@ -12,6 +12,7 @@ import type { DashboardToast } from "../../../shared/dashboard-core";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { EmptyState, colorClass, formatDate, formatDateTime } from "./admin-page-utils";
+import { formatStatus } from "@/lib/utils/format-status";
 
 function readJsonObject(value: string | null | undefined): Record<string, unknown> | null {
   if (!value) return null;
@@ -260,7 +261,7 @@ export function AdminAutomationPageClient({
                     <div className={cx("text10", "colorMuted", "capitalize")}>{item.domain}</div>
                   </div>
                   <span className={cx("text11", "colorMuted")}>{item.trigger}</span>
-                  <span className={cx(styles.autoStatusChip, statusClass(item.state))}>{item.state === "AT_RISK" ? "AT RISK" : item.state}</span>
+                  <span className={cx(styles.autoStatusChip, statusClass(item.state))}>{formatStatus(item.state)}</span>
                   <span className={cx("fontMono", item.successRate >= 90 ? "colorAccent" : item.successRate >= 75 ? "colorAmber" : "colorRed")}>{item.successRate}%</span>
                   <span className={cx("text11", "colorMuted")}>{item.lastRun ? formatDate(item.lastRun) : "Not run yet"}</span>
                 </div>
@@ -439,7 +440,7 @@ export function AdminAutomationPageClient({
                   <span className={cx("text11", "colorMuted")}>
                     {item.id === "billing-core" ? `${snapshot.invoices.length} invoices` : item.id === "lead-followups" ? `${snapshot.leads.length} leads` : item.id === "project-alerts" ? `${snapshot.projects.length} projects` : `${jobs.length} runs`}
                   </span>
-                  <span className={cx(styles.autoStatusChip, statusClass(item.state))}>{item.state === "AT_RISK" ? "AT RISK" : item.state}</span>
+                  <span className={cx(styles.autoStatusChip, statusClass(item.state))}>{formatStatus(item.state)}</span>
                   <span className={cx("text11", "colorMuted", "capitalize")}>{item.domain}</span>
                 </div>
               ))}

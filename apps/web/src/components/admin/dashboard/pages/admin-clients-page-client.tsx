@@ -6,6 +6,7 @@ import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import styles from "@/app/style/admin.module.css";
 import { cx } from "../style";
 import { styles as dashboardStyles } from "../style";
+import { formatStatus } from "@/lib/utils/format-status";
 import type { AuthSession } from "../../../../lib/auth/session";
 
 // ── Churn risk response shape ─────────────────────────────────────────────
@@ -80,7 +81,7 @@ export function AdminClientsPageClient() {
               {snapshot.clients.map((client) => (
                 <div key={client.id} className={styles.tableRow}>
                   <span>{client.name}</span>
-                  <span>{client.status}</span>
+                  <span>{formatStatus(client.status)}</span>
                   <span>
                     <ChurnRiskBadge clientId={client.id} session={session} />
                   </span>

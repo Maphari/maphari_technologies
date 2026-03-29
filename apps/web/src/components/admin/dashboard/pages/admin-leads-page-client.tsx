@@ -4,6 +4,7 @@ import { AdminPageHeader, AdminSectionCard, AdminEmptyState } from "../../admin-
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import styles from "@/app/style/admin.module.css";
 import { styles as dashboardStyles } from "../style";
+import { formatStatus } from "@/lib/utils/format-status";
 
 export function AdminLeadsPageClient() {
   const { snapshot, loading, moveLead, transitioningLeadId } = useAdminWorkspaceContext();
@@ -28,7 +29,7 @@ export function AdminLeadsPageClient() {
               {snapshot.leads.map((lead) => (
                 <div key={lead.id} className={styles.tableRow}>
                   <span>{lead.title}</span>
-                  <span>{lead.status}</span>
+                  <span>{formatStatus(lead.status)}</span>
                   <span>
                     <button
                       type="button"

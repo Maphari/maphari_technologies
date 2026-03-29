@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { cx, styles } from "../style";
+import { formatStatus } from "@/lib/utils/format-status";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -155,7 +156,7 @@ export function StakeholderDirectoryPage({ session }: { session: AuthSession | n
               <div className={cx("flexRow", "gap6")}>
                 <span className={cx("badge", "badgeMuted")}>{group.client.tier}</span>
                 <span className={cx("badge", group.client.status === "ACTIVE" ? "badgeGreen" : "badgeAmber")}>
-                  {group.client.status}
+                  {formatStatus(group.client.status)}
                 </span>
               </div>
             </div>
