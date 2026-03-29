@@ -78,7 +78,6 @@ export function MyEnpsPage({
   onNotify?: (tone: "success" | "error" | "info" | "warning", msg: string) => void;
 }) {
   const [selectedScore, setSelectedScore] = useState<number | null>(null);
-  const [submittingScore, setSubmittingScore] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   // Derived from API data
@@ -254,18 +253,15 @@ export function MyEnpsPage({
               <button
                 type="button"
                 className={cx("btnPrimary")}
-                disabled={selectedScore === null || submittingScore}
-                onClick={async () => {
+                disabled={selectedScore === null}
+                onClick={() => {
                   if (selectedScore === null) return;
-                  setSubmittingScore(true);
-                  // TODO: wire to eNPS API when endpoint is available
-                  await new Promise<void>((r) => setTimeout(r, 400));
+                  // Note: eNPS API endpoint not yet available — acknowledging locally.
                   setSubmitted(true);
-                  setSubmittingScore(false);
                   onNotify?.("success", "Thank you for your response!");
                 }}
               >
-                {submittingScore ? "Submitting…" : "Submit Score"}
+                Submit Score
               </button>
             </div>
           )}
