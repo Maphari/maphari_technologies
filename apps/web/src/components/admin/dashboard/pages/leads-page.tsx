@@ -10,6 +10,8 @@ import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { AutomationBanner } from "../../../shared/automation-banner";
 import { toneClass } from "./admin-page-utils";
+import widgetStyles from "@/app/style/admin/widgets.module.css";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 const STAGES: LeadPipelineStatus[] = ["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL", "WON", "LOST"];
 
@@ -156,11 +158,47 @@ export function LeadsPage({
   const active = rows.filter((row) => row.status !== "WON" && row.status !== "LOST").length;
   const hot = rows.filter((row) => row.priority === "Hot").length;
   const followUps = rows.filter((row) => row.status !== "WON" && row.status !== "LOST" && row.staleDays >= 3).length;
+  const qualified = rows.filter((row) => row.status === "QUALIFIED" || row.status === "PROPOSAL" || row.status === "WON").length;
 
   const staleLeads = rows.filter(
     (row) => row.status !== "WON" && row.status !== "LOST" && (row.staleDays ?? 0) >= 7
   );
   const winRate = won + lost > 0 ? Math.round((won / (won + lost)) * 100) : 0;
+  const newThisMonth = rows.filter((row) => {
+    const created = new Date(row.createdAt ?? row.updatedAt);
+    const now = new Date(clock);
+    return created.getFullYear() === now.getFullYear() && created.getMonth() === now.getMonth();
+  }).length;
+
+  // Chart data: leads by source
+  const sourceChartData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const row of rows) {
+      const src = row.source ?? "Unknown";
+      counts[src] = (counts[src] ?? 0) + 1;
+    }
+    return Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 6)
+      .map(([label, count]) => ({ label, count }));
+  }, [rows]);
+
+  // Pipeline stages for widget
+  const pipelineStages = STAGES.map((stage) => ({
+    label: label(stage),
+    count: rows.filter((r) => r.status === stage).length,
+    total: rows.length,
+  }));
+
+  // Table rows for widget
+  const tableRows = useMemo(() => filtered.slice(0, 20).map((row) => ({
+    id: row.id,
+    name: row.title,
+    company: row.company ?? "—",
+    source: row.source ?? "Unknown",
+    score: row.score,
+    status: row.status,
+  })), [filtered]);
 
   async function qualifyLead(lead: typeof selected): Promise<void> {
     if (!lead || !session || isClient) return;
@@ -215,15 +253,14 @@ export function LeadsPage({
       <div className={styles.pageHeader}>
         <div>
           <div className={styles.pageEyebrow}>OPERATIONS / LEADS</div>
-          <h1 className={styles.pageTitle}>Leads Pipeline</h1>
-          <div className={styles.pageSub}>Stage tracking · Next actions · Conversion control</div>
+          <h1 className={styles.pageTitle}>Leads</h1>
+          <div className={styles.pageSub}>Lead pipeline · Qualification rate · Source breakdown</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnAccent")}>+ New Lead</button>
         </div>
       </div>
 
-      {/* ── 4 KPI stat cards ──────────────────────────────────────────── */}
       {/* ── Automation: stale leads (7d+ idle) ───────────────────────── */}
       <AutomationBanner
         show={staleLeads.length > 0}
@@ -257,35 +294,83 @@ export function LeadsPage({
         }}
       />
 
-      <div className={cx("topCardsStack", "mb4")}>
-        {[
-          { label: "Pipeline Leads", value: rows.length.toString(), sub: `${active} active`, color: "var(--accent)" },
-          { label: "Hot Leads", value: hot.toString(), sub: rows.length > 0 ? `${Math.round((hot / rows.length) * 100)}% high intent` : "0% high intent", color: "var(--red)" },
-          { label: "Follow-ups Due", value: followUps.toString(), sub: "Idle 3d+", color: followUps > 0 ? "var(--amber)" : "var(--accent)" },
-          { label: "Win Rate", value: `${winRate}%`, sub: `${won} won · ${lost} lost`, color: winRate >= 50 ? "var(--green)" : "var(--amber)" }
-        ].map((kpi) => (
-          <div key={kpi.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{kpi.label}</div>
-            <div className={cx(styles.statValue, "mb4", styles.leadsToneText, toneClass(kpi.color))}>{kpi.value}</div>
-            <div className={cx("text11", "colorMuted")}>{kpi.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: 4 stat widgets ─────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget
+          label="Total Leads"
+          value={rows.length}
+          sub={`${active} active`}
+          tone="accent"
+        />
+        <StatWidget
+          label="New This Month"
+          value={newThisMonth}
+          sub="Added this month"
+          tone="default"
+          subTone={newThisMonth > 0 ? "up" : "neutral"}
+        />
+        <StatWidget
+          label="Qualified"
+          value={qualified}
+          sub={rows.length > 0 ? `${Math.round((qualified / rows.length) * 100)}% of pipeline` : "0% of pipeline"}
+          tone="amber"
+        />
+        <StatWidget
+          label="Win Rate"
+          value={`${winRate}%`}
+          sub={`${won} won · ${lost} lost`}
+          tone={winRate >= 50 ? "green" : "amber"}
+          subTone={winRate >= 50 ? "up" : "warn"}
+          progressValue={winRate}
+        />
+      </WidgetGrid>
 
-      {/* ── Stage rail ────────────────────────────────────────────────── */}
-      <div className={styles.ldrRail}>
-        {STAGES.map((stage) => {
-          const count = filtered.filter((row) => row.status === stage).length;
-          const pct = rows.length > 0 ? Math.round((count / rows.length) * 100) : 0;
-          return (
-            <div key={stage} className={`${styles.ldrRailCard} ${stageStripCls(stage)}`}>
-              <div className={styles.ldrRailLabel}>{label(stage)}</div>
-              <div className={styles.ldrRailCount}>{count}</div>
-              <div className={styles.ldrRailPct}>{pct}% of pipeline</div>
-            </div>
-          );
-        })}
-      </div>
+      {/* ── Row 2: chart + pipeline ───────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <ChartWidget
+          label="Leads by Source"
+          data={sourceChartData}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          height={140}
+        />
+        <PipelineWidget
+          label="Pipeline Stages"
+          stages={pipelineStages}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: leads table ────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <TableWidget
+          label="Leads"
+          rows={tableRows}
+          rowKey="id"
+          rowCount={filtered.length}
+          columns={[
+            { key: "name", header: "Lead" },
+            { key: "company", header: "Company" },
+            { key: "source", header: "Source" },
+            { key: "score", header: "Score", align: "right" },
+            {
+              key: "status",
+              header: "Status",
+              align: "right",
+              render: (value) => {
+                const s = value as LeadPipelineStatus;
+                const badgeCls =
+                  s === "WON" ? cx("badgeGreen") :
+                  s === "LOST" ? cx("badgeRed") :
+                  s === "QUALIFIED" || s === "PROPOSAL" ? cx("badgeAmber") :
+                  cx("badgeMuted");
+                return <span className={badgeCls}>{label(s)}</span>;
+              },
+            },
+          ]}
+          emptyMessage="No leads match current filters."
+        />
+      </WidgetGrid>
 
       {/* ── Filter row ────────────────────────────────────────────────── */}
       <div className={styles.ldrFilters}>
