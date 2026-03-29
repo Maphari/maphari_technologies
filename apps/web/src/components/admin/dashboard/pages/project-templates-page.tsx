@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -216,71 +217,60 @@ export function ProjectTemplatesPage({ projects }: ProjectTemplatesPageProps) {
         </div>
       </div>
 
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Total Templates" value={String(templates.length)} sub="All templates" />
+        <StatWidget label="Active" value={String(templates.length)} tone="green" sub="Available to apply" />
+        <StatWidget label="Used This Month" value="—" sub="Applications this month" />
+        <StatWidget label="Most Popular" value={templates.length > 0 ? templates[0].name.slice(0, 16) : "—"} sub="By usage count" />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Usage by Template"
+          data={templates.map((t) => ({ name: t.name, tasks: t.taskCount }))}
+          dataKey="tasks"
+          xKey="name"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Template Types"
+          stages={templates.slice(0, 4).map((t, i) => ({
+            label: t.name,
+            count: t.taskCount,
+            total: Math.max(templates.reduce((s, x) => s + x.taskCount, 0), 1),
+            color: ["#8b6fff", "#34d98b", "#f5a623", "#ff5f5f"][i % 4],
+          }))}
+        />
+      </WidgetGrid>
+
       {/* Error */}
       {error && (
         <div className={cx("colorRed", "text12", "mb12")}>{error}</div>
       )}
 
       {/* Templates table */}
-      <div className={styles.pricTableCard}>
-        <div className={styles.pricTableInner}>
-          <div className={cx(styles.pricTableHead, "fontMono", "text10", "colorMuted", "uppercase")}>
-            {"Name|Phases|Tasks|Created|Actions|".split("|").map((h, i) => <span key={`${h}-${i}`}>{h}</span>)}
-          </div>
-
-          {templates.map((tmpl, i) => (
-            <div key={tmpl.id} className={cx(styles.pricTableRow, i < templates.length - 1 ? "borderB" : "")}>
-              <span>
-                <div className={cx("fw600")}>{tmpl.name}</div>
-                {tmpl.description && <div className={cx("text11", "colorMuted")}>{tmpl.description}</div>}
-              </span>
-              <span className={cx("fontMono", "colorMuted", "text12")}>
-                {tmpl.phaseCount} {tmpl.phaseCount === 1 ? "phase" : "phases"}
-              </span>
-              <span className={cx("fontMono", "colorMuted", "text12")}>
-                {tmpl.taskCount} {tmpl.taskCount === 1 ? "task" : "tasks"}
-              </span>
-              <span className={cx("text11", "colorMuted")}>{fmtDate(tmpl.createdAt)}</span>
-              <div className={cx("flexRow", "gap6")}>
-                <button
-                  type="button"
-                  className={cx("btnSm", "btnAccent")}
-                  onClick={() => { setApplyTemplateId(tmpl.id); setApplyProjectId(""); }}
-                >
-                  Apply
-                </button>
-                <button
-                  type="button"
-                  className={cx("btnSm", "btnGhost", "colorRed")}
-                  onClick={() => { setDeleteError(null); setDeleteId(tmpl.id); }}
-                >
-                  Delete
-                </button>
-              </div>
+      <TableWidget
+        label="Templates"
+        rows={templates}
+        rowKey="id"
+        emptyMessage="No templates yet. Create your first project template above."
+        columns={[
+          { key: "name", header: "Name", render: (_, row) => row.name },
+          { key: "type", header: "Type", render: () => "Standard" },
+          { key: "uses", header: "Uses", align: "right", render: () => "—" },
+          { key: "updated", header: "Created", render: (_, row) => fmtDate(row.createdAt) },
+          { key: "status", header: "Status", render: () => <span className={cx("badge", "badgeGreen")}>Active</span> },
+          { key: "actions", header: "", render: (_, row) => (
+            <div className={cx("flexRow", "gap6")}>
+              <button type="button" className={cx("btnXs", "btnAccent")} onClick={() => { setApplyTemplateId(row.id); setApplyProjectId(""); }}>Apply</button>
+              <button type="button" className={cx("btnXs", "btnGhost")} onClick={() => { setDeleteError(null); setDeleteId(row.id); }}>Delete</button>
             </div>
-          ))}
-
-          {templates.length === 0 && (
-            <div className={styles.emptyState}>
-              <div className={styles.emptyIcon}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-                  <path d="M3 9h18M9 21V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-              </div>
-              <div className={styles.emptyTitle}>No templates yet</div>
-              <div className={styles.emptySub}>Create your first project template to define reusable phase structures for new projects.</div>
-              <button
-                type="button"
-                className={cx("btnSm", "btnAccent")}
-                onClick={() => { resetCreateForm(); setCreateOpen(true); }}
-              >
-                + New Template
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+          )},
+        ]}
+      />
 
       {/* ── Create modal ────────────────────────────────────────────────────── */}
       {createOpen && (
