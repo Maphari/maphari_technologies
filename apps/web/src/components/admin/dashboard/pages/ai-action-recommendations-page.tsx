@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchAiRecommendations, type AiRecommendation } from "../../../../lib/api/admin/ai";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 /** Derive operational signal recommendations from the admin snapshot. */
 function deriveSignalRecommendations(snapshot: {
@@ -78,13 +79,11 @@ export function AIActionRecommendationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Derive signal-based recommendations from the snapshot
   const signalRecommendations = useMemo(
     () => deriveSignalRecommendations(snapshot),
     [snapshot]
   );
 
-  // Merge API recs + local signal recs, deduplicating by id
   const recommendations = useMemo<AiRecommendation[]>(() => {
     const merged = [...apiRecommendations];
     for (const sig of signalRecommendations) {
@@ -102,7 +101,6 @@ export function AIActionRecommendationsPage() {
 
       try {
         const result = await fetchAiRecommendations(session);
-
         if (result.error) {
           setError(result.error.message);
         } else {
@@ -132,15 +130,34 @@ export function AIActionRecommendationsPage() {
     );
   }
 
+  // ── Derived stats ──────────────────────────────────────────────────────────
+  const pending     = recommendations.filter((r) => !r.id.startsWith("signal-")).length;
+  const implemented = 0; // no implemented state in current model
+  const avgImpact   = recommendations.length > 0
+    ? Math.round(recommendations.reduce((s, r) => s + r.confidence, 0) / recommendations.length)
+    : 0;
+
+  const typeCounts = recommendations.reduce<Record<string, number>>((acc, r) => {
+    acc[r.type] = (acc[r.type] ?? 0) + 1;
+    return acc;
+  }, {});
+  const chartData = Object.entries(typeCounts).map(([name, value]) => ({ name, value }));
+
+  const tableRows = recommendations.map((r) => ({
+    id: r.id,
+    title: r.title,
+    type: r.type,
+    confidence: r.confidence,
+    action: r.action,
+  })) as unknown as Record<string, unknown>[];
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>AI/ML / AI ACTION RECOMMENDATIONS</div>
+          <div className={styles.pageEyebrow}>LIFECYCLE / AI ACTIONS</div>
           <h1 className={styles.pageTitle}>AI Action Recommendations</h1>
-          <div className={styles.pageSub}>
-            Organization-wide suggestions derived from health scores, overdue invoices, and delivery risk signals
-          </div>
+          <div className={styles.pageSub}>AI-generated insights · Pending actions · Impact score</div>
         </div>
         <div className={styles.pageActions}>
           <button
@@ -154,81 +171,64 @@ export function AIActionRecommendationsPage() {
         </div>
       </div>
 
-      {/* ── Loading skeleton ───────────────────────────────────────────── */}
-      {loading && (
-        <div className={cx("flexCol", "gap16")}>
-          {[1, 2, 3].map((n) => (
-            <div key={n} className={cx(styles.card, "minH96")} />
-          ))}
-        </div>
-      )}
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Total Recommendations" value={recommendations.length} tone="accent" sparkData={[1, 2, 3, 3, 4, 5, 5, recommendations.length]} />
+        <StatWidget label="Pending Review" value={pending} tone="amber" progressValue={recommendations.length > 0 ? Math.round((pending / recommendations.length) * 100) : 0} />
+        <StatWidget label="Implemented" value={implemented} tone="green" progressValue={0} />
+        <StatWidget label="Avg Impact Score" value={`${avgImpact}%`} sub="confidence avg" />
+      </WidgetGrid>
 
-      {/* ── Error state ────────────────────────────────────────────────── */}
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Recommendations by Category"
+          type="bar"
+          data={chartData.length > 0 ? chartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Action Status"
+          stages={[
+            { label: "Pending", count: recommendations.length, total: recommendations.length, color: "#f5a623" },
+            { label: "Approved", count: 0, total: recommendations.length, color: "#8b6fff" },
+            { label: "Implemented", count: implemented, total: recommendations.length, color: "#34d98b" },
+            { label: "Rejected", count: 0, total: recommendations.length, color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="All Recommendations"
+          rows={tableRows}
+          rowKey="id"
+          emptyMessage="No recommendations at this time."
+          columns={[
+            { key: "title", header: "Title", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.title ?? "")}</span> },
+            { key: "type", header: "Category", render: (_v, row) => {
+              const t = String(row.type ?? "");
+              return <span className={cx("badge", t === "Risk" ? "badgeRed" : t === "Revenue" ? "badgeGreen" : "badgeAmber")}>{t}</span>;
+            }},
+            { key: "confidence", header: "Impact Score", align: "right", render: (_v, row) => {
+              const c = Number(row.confidence ?? 0);
+              return <span className={cx("fontMono", "fw600", c >= 80 ? "colorGreen" : "colorAmber")}>{c}%</span>;
+            }},
+            { key: "action", header: "Status", align: "right", render: () => <span className={cx("badge", "badgeAmber")}>Pending</span> },
+            { key: "action", header: "Action", align: "right", render: (_v, row) => <button type="button" className={cx("btnSm", "btnAccent")}>{String(row.action ?? "Review")}</button> },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Error state ── */}
       {!loading && error && (
         <div className={cx(styles.card, styles.cardInner)}>
           <div className={cx("text13", "colorRed", "mb8")}>Failed to load recommendations</div>
           <div className={cx("text12", "colorMuted", "mb16")}>{error}</div>
-          <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => void load()}>
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* ── Empty state ────────────────────────────────────────────────── */}
-      {!loading && !error && recommendations.length === 0 && (
-        <div className={cx(styles.card, styles.cardInner, "textCenter")}>
-          <div className={cx("text13", "mb4")}>No recommendations at this time</div>
-          <div className={cx("text12", "colorMuted")}>
-            All client health scores, invoices, and delivery signals look healthy.
-          </div>
-        </div>
-      )}
-
-      {/* ── Recommendation cards ───────────────────────────────────────── */}
-      {!loading && !error && recommendations.length > 0 && (
-        <div className={cx("flexCol", "gap16")}>
-          {recommendations.map((r) => (
-            <article key={r.id} className={styles.card}>
-              <div className={cx(styles.cardHd)}>
-                <span className={styles.cardHdTitle}>{r.title}</span>
-                <span
-                  className={cx(
-                    "badge",
-                    r.type === "Risk"
-                      ? "badgeRed"
-                      : r.type === "Revenue"
-                        ? "badgeGreen"
-                        : "badgeAmber"
-                  )}
-                >
-                  {r.type}
-                </span>
-              </div>
-              <div className={styles.cardInner}>
-                <div className={cx("text12", "colorMuted", "mb12")}>{r.reasoning}</div>
-                <div className={cx("flexBetween")}>
-                  <div className={cx("flex", "gap16", "text11")}>
-                    <span>
-                      Confidence:{" "}
-                      <strong
-                        className={cx("fontMono", r.confidence >= 80 ? "colorGreen" : "colorAmber")}
-                      >
-                        {r.confidence}%
-                      </strong>
-                    </span>
-                    {r.estimatedValue !== "—" && (
-                      <span>
-                        Est. Value: <strong className={cx("fontMono")}>{r.estimatedValue}</strong>
-                      </span>
-                    )}
-                  </div>
-                  <button type="button" className={cx("btnSm", "btnAccent")}>
-                    {r.action}
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
+          <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => void load()}>Retry</button>
         </div>
       )}
     </div>
