@@ -58,14 +58,14 @@ export function useStaffSettings({
   setKanbanSwimlane
 }: Params): UseStaffSettingsReturn {
   const [settingsProfile, setSettingsProfile] = useState({
-    fullName: "Staff",
-    email: "",
+    fullName: staffName,
+    email: staffEmail,
     avatarUrl: "",
     weeklyTargetHours: 40
   });
   const [savedSettingsProfile, setSavedSettingsProfile] = useState({
-    fullName: "Staff",
-    email: "",
+    fullName: staffName,
+    email: staffEmail,
     avatarUrl: "",
     weeklyTargetHours: 40
   });
@@ -134,19 +134,14 @@ export function useStaffSettings({
         setSettingsProfile(nextProfile);
         setSavedSettingsProfile(nextProfile);
       } else {
-        const nextProfile = {
+        // No saved profile pref — keep the live state (already initialised with staffName/staffEmail),
+        // just sync savedSettingsProfile so hasProfileChanges starts false.
+        setSavedSettingsProfile({
           fullName: staffName,
           email: staffEmail,
           avatarUrl: "",
           weeklyTargetHours: 40
-        };
-        setSettingsProfile((previous) => ({
-          fullName: previous.fullName === "Staff" ? staffName : previous.fullName,
-          email: previous.email || staffEmail,
-          avatarUrl: previous.avatarUrl || "",
-          weeklyTargetHours: previous.weeklyTargetHours
-        }));
-        setSavedSettingsProfile(nextProfile);
+        });
       }
 
       const workspace = parse(workspacePref.data?.value);
