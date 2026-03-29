@@ -28,8 +28,8 @@ function fmtStatus(s: string): string {
   return m[s] ?? s;
 }
 
-function fmtSla(hours: number | null): string {
-  if (hours === null) return "—";
+function fmtSla(hours: number | null | undefined): string {
+  if (hours == null) return "—";
   return `${hours}h`;
 }
 
