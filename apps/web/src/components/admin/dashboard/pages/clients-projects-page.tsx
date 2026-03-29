@@ -11,6 +11,7 @@ import { loadAdminContractsWithRefresh, type LegalContract } from "../../../../l
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import { StatWidget, WidgetGrid } from "../widgets";
 
 type ViewMode = "list" | "portfolio";
 type PageTab = "clients" | "request-inbox";
@@ -479,20 +480,12 @@ export function ClientsAndProjectsPage({
       )}
 
       {/* ── 4 KPI cards ── */}
-      <div className={styles.clmKpiGrid}>
-        {([
-          { label: "Total Accounts", value: filtered.length.toString(),        meta: `${filtered.filter((c) => c.status === "ACTIVE").length} active`,  color: "var(--accent)" },
-          { label: "Avg Health",     value: avgHealth.toString(),               meta: `${atRisk} at risk (<60)`,                                         color: "var(--blue)"   },
-          { label: "Renewals (30d)", value: renewals30d.toString(),             meta: "Needs retention plan",                                            color: "var(--amber)"  },
-          { label: "Open Exposure",  value: formatMoneyCents(totalOutstanding, { maximumFractionDigits: 0 }),     meta: "Unpaid invoice exposure",                                         color: "var(--red)"    },
-        ] as const).map((kpi) => (
-          <div key={kpi.label} className={cx(styles.clmKpiCard, toneClass(kpi.color))}>
-            <div className={styles.clmKpiLabel}>{kpi.label}</div>
-            <div className={cx(styles.clmKpiValue, toneClass(kpi.color))}>{kpi.value}</div>
-            <div className={styles.clmKpiMeta}>{kpi.meta}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid>
+        <StatWidget label="Total Accounts" value={filtered.length}        sub={`${filtered.filter((c) => c.status === "ACTIVE").length} active`}    tone="accent" />
+        <StatWidget label="Avg Health"     value={avgHealth}               sub={`${atRisk} at risk (<60)`}                                            tone={avgHealth >= 70 ? "green" : avgHealth >= 50 ? "amber" : "red"} />
+        <StatWidget label="Renewals (30d)" value={renewals30d}             sub="Needs retention plan"                                                 tone={renewals30d > 0 ? "amber" : "default"} />
+        <StatWidget label="Open Exposure"  value={formatMoneyCents(totalOutstanding, { maximumFractionDigits: 0 })} sub="Unpaid invoice exposure"   tone={totalOutstanding > 0 ? "red" : "green"} />
+      </WidgetGrid>
 
       {/* ── Status rail ── */}
       <div className={styles.clmStatusRail}>
