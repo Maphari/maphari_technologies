@@ -5,6 +5,8 @@ import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { useCurrencyConverter } from "../../../../lib/i18n/exchange-rates";
 import { formatMoneyCents } from "../../../../lib/i18n/currency";
 import { styles, cx } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
+import widgetStyles from "@/app/style/admin/widgets.module.css";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -302,43 +304,71 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
     return { collectionRate, avgDaysToPay, overdueAmount };
   }, [snapshot.invoices, convertMoney]);
 
+  // ── Widget data ────────────────────────────────────────────────────────────
+  const revenueChartData = revenueSeries.labels.map((label, i) => ({
+    label,
+    value: Math.round(revenueSeries.values[i] / 100),
+  }));
+
+  const leadFunnelStages = LEAD_STAGES.map((stage) => ({
+    label: LEAD_STAGE_LABELS[stage],
+    count: leadFunnel.stageCounts[stage] ?? 0,
+    total: snapshot.leads.length || 1,
+    color: stage === "WON" ? "#34d98b" : stage === "QUALIFIED" ? "#8b6fff" : stage === "PROPOSAL" ? "#f5a623" : "#8b6fff",
+  }));
+
+  const projectStagesPipeline = [
+    { label: "Active", count: projectBreakdown.active, total: projectBreakdown.total || 1, color: "#8b6fff" },
+    { label: "Completed", count: projectBreakdown.completed, total: projectBreakdown.total || 1, color: "#34d98b" },
+    { label: "On Hold", count: projectBreakdown.onHold, total: projectBreakdown.total || 1, color: "#f5a623" },
+    { label: "Overdue", count: projectBreakdown.overdue, total: projectBreakdown.total || 1, color: "#ff5f5f" },
+  ];
+
+  const topClientsRows: Record<string, unknown>[] = topClients.map((c) => ({
+    rank: `#${c.rank}`,
+    client: c.name,
+    revenue: formatMoney(c.revenue, currency),
+    share: `${c.sharePct}%`,
+  }));
+
   return (
     <div className={styles.pageBody}>
-      <div className={styles.projHeader}>
+      <div className={styles.pageHeader}>
         <div>
-          <div className={styles.projEyebrow}>Admin · Analytics</div>
-          <div className={styles.projName}>Performance Overview</div>
-          <div className={styles.projMeta}>Year-to-date metrics across all clients</div>
+          <div className={styles.pageEyebrow}>ADMIN / ANALYTICS</div>
+          <h1 className={styles.pageTitle}>Performance Overview</h1>
+          <div className={styles.pageSub}>Year-to-date metrics across all clients</div>
         </div>
         <button type="button" className={`${styles.btnSm} ${styles.btnGhost}`}>Export Report</button>
       </div>
 
-      <div className={styles.topCardsStack}>
-        <div className={`${styles.statCard} ${styles.green}`}>
-          <div className={styles.statLabel}>Revenue YTD</div>
-          <div className={styles.statValue}>{formatMoney(revenueYtd, currency)}</div>
-          <div className={`${styles.statDelta} ${revenueDeltaPct >= 0 ? styles.deltaUp : styles.deltaDown}`}>
-            {revenueDeltaPct >= 0 ? "↑" : "↓"} {Math.abs(revenueDeltaPct)}% vs last year
-          </div>
-        </div>
-        <div className={`${styles.statCard} ${styles.purple}`}>
-          <div className={styles.statLabel}>Projects Delivered</div>
-          <div className={styles.statValue}>{projectsDelivered}</div>
-          <div className={`${styles.statDelta} ${styles.deltaUp}`}>Completed projects</div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Avg. Project Duration</div>
-          <div className={styles.statValue}>{avgProjectDurationWeeks.toFixed(1)}w</div>
-          <div className={`${styles.statDelta} ${styles.deltaUp}`}>Completed-project average</div>
-        </div>
-        <div className={`${styles.statCard} ${styles.amber}`}>
-          <div className={styles.statLabel}>Client NPS Proxy</div>
-          <div className={styles.statValue}>{clientNpsProxy}</div>
-          <div className={`${styles.statDelta} ${styles.deltaUp}`}>Based on engagement signals</div>
-        </div>
-      </div>
+      <WidgetGrid>
+        <StatWidget
+          label="Revenue YTD"
+          value={formatMoney(revenueYtd, currency)}
+          sub={`${revenueDeltaPct >= 0 ? "↑" : "↓"} ${Math.abs(revenueDeltaPct)}% vs last year`}
+          subTone={revenueDeltaPct >= 0 ? "up" : "down"}
+          tone="green"
+        />
+        <StatWidget
+          label="Projects Delivered"
+          value={projectsDelivered}
+          sub="Completed projects"
+          tone="accent"
+        />
+        <StatWidget
+          label="Avg. Project Duration"
+          value={`${avgProjectDurationWeeks.toFixed(1)}w`}
+          sub="Completed-project average"
+        />
+        <StatWidget
+          label="Client Win Rate"
+          value={`${clientNpsProxy}%`}
+          sub="Based on lead outcomes"
+          tone={clientNpsProxy >= 60 ? "green" : clientNpsProxy >= 30 ? "amber" : "red"}
+        />
+      </WidgetGrid>
 
-      {/* Section A — Date range filter */}
       <div className={styles.analyticsTabRow}>
         {(["3M", "6M", "12M", "All"] as DateRange[]).map((r) => (
           <button
@@ -352,202 +382,64 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
         ))}
       </div>
 
-      <div className={styles.twoCol}>
-        <article className={styles.card}>
-          <div className={styles.cardHd}><span className={styles.cardHdTitle}>Revenue by Month</span></div>
-          <div className={styles.chartWrap}>
-            <RevenueBars id="analytics" labels={revenueSeries.labels} values={revenueSeries.values} />
-          </div>
-        </article>
-        <article className={styles.card}>
-          <div className={styles.cardHd}><span className={styles.cardHdTitle}>Revenue by Tier</span></div>
-          <div className={`${styles.donutWrap} ${styles.donutWrapLg}`}>
-            <svg className={`${styles.donutSvg} ${styles.donutSvgLg}`} viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3.8" />
-              {/* Fix 3: use raw (unrounded) values for strokeDasharray/strokeDashoffset
-                  to prevent visible gaps from accumulated rounding errors.
-                  Pct variants are kept only for the legend labels below. */}
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--accent)" strokeWidth="3.8"
-                strokeDasharray={`${tierRevenue.enterpriseRaw} ${100 - tierRevenue.enterpriseRaw}`}
-                strokeDashoffset="25" />
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--purple)" strokeWidth="3.8"
-                strokeDasharray={`${tierRevenue.growthRaw} ${100 - tierRevenue.growthRaw}`}
-                strokeDashoffset={25 - tierRevenue.enterpriseRaw} />
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--amber)" strokeWidth="3.8"
-                strokeDasharray={`${tierRevenue.starterRaw} ${100 - tierRevenue.starterRaw}`}
-                strokeDashoffset={25 - tierRevenue.enterpriseRaw - tierRevenue.growthRaw} />
-              <text x="18" y="21" textAnchor="middle" fontSize="4.5" fill="var(--text)" fontFamily="var(--font-syne)">
-                {formatMoney(tierRevenue.total, currency)}
-              </text>
-            </svg>
-            <div className={styles.donutLegend}>
-              <div className={styles.donutItem}>
-                <span className={styles.donutLabel}><span className={`${styles.donutDot} ${styles.dotAccent}`} />Enterprise</span>
-                <span className={styles.donutVal}>{formatMoney(tierRevenue.enterprise, currency)} · {tierRevenue.enterprisePct}%</span>
-              </div>
-              <div className={styles.donutItem}>
-                <span className={styles.donutLabel}><span className={`${styles.donutDot} ${styles.dotPurple}`} />Growth</span>
-                <span className={styles.donutVal}>{formatMoney(tierRevenue.growth, currency)} · {tierRevenue.growthPct}%</span>
-              </div>
-              <div className={styles.donutItem}>
-                <span className={styles.donutLabel}><span className={`${styles.donutDot} ${styles.dotAmber}`} />Starter</span>
-                <span className={styles.donutVal}>{formatMoney(tierRevenue.starter, currency)} · {tierRevenue.starterPct}%</span>
-              </div>
-            </div>
-          </div>
-        </article>
-      </div>
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          title="Revenue by Month"
+          type="bar"
+          data={revenueChartData}
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          title="Lead Conversion Funnel"
+          stages={leadFunnelStages}
+        />
+      </WidgetGrid>
 
-      {/* Section B — Lead conversion funnel */}
-      <article className={styles.card}>
-        <div className={styles.cardHd}>
-          <span className={styles.cardHdTitle}>Lead Conversion Funnel</span>
-          <div className={styles.analyticsMetaPair}>
-            <span className={styles.analyticsMetaItem}>
-              Active: <strong>{leadFunnel.activeLeadCount}</strong>
-            </span>
-            <span className={styles.analyticsMetaItem}>
-              Win rate: <strong className={styles.analyticsAccentText}>{leadFunnel.winRate}%</strong>
-            </span>
-            <span className={styles.analyticsMetaItem}>
-              Lost: <strong className={styles.analyticsRedText}>{leadFunnel.lostCount}</strong>
-            </span>
-          </div>
-        </div>
-        <div className={styles.analyticsFunnelWrap}>
-          {LEAD_STAGES.map((stage) => {
-            const count = leadFunnel.stageCounts[stage] ?? 0;
-            const pct = Math.round((count / leadFunnel.maxCount) * 100);
-            return (
-              <div key={stage} className={styles.analyticsFunnelRow}>
-                <span className={styles.analyticsFunnelLabel}>{LEAD_STAGE_LABELS[stage]}</span>
-                <div className={styles.analyticsFunnelTrack}>
-                  <div
-                    className={cx("analyticsFunnelFill", stage === "WON" && "analyticsFunnelFillWon")}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <span className={styles.analyticsFunnelCount}>{count}</span>
-              </div>
-            );
-          })}
-        </div>
-      </article>
+      <WidgetGrid columns={2}>
+        <PipelineWidget
+          title="Project Status Breakdown"
+          stages={projectStagesPipeline}
+        />
+        <TableWidget
+          title="Top Clients by Revenue"
+          columns={[
+            { key: "rank", label: "#", width: 40 },
+            { key: "client", label: "Client" },
+            { key: "revenue", label: "Revenue" },
+            { key: "share", label: "Share" },
+          ]}
+          rows={topClientsRows}
+          emptyMessage="No paid invoices yet"
+        />
+      </WidgetGrid>
 
-      {/* Section C — Project status breakdown */}
-      <article className={styles.card}>
-        <div className={styles.cardHd}>
-          <span className={styles.cardHdTitle}>Project Status Breakdown</span>
-          <span className={styles.analyticsMetaItem}>{projectBreakdown.total} total</span>
-        </div>
-        <div className={styles.analyticsStripWrap}>
-          <div className={styles.analyticsStrip}>
-            {projectBreakdown.activePct > 0 && (
-              <div
-                className={cx("analyticsStripSeg", "analyticsStripAccent")}
-                style={{ width: `${projectBreakdown.activePct}%` }}
-                title={`Active: ${projectBreakdown.activePct}%`}
-              />
-            )}
-            {projectBreakdown.completedPct > 0 && (
-              <div
-                className={cx("analyticsStripSeg", "analyticsStripGreen")}
-                style={{ width: `${projectBreakdown.completedPct}%` }}
-                title={`Completed: ${projectBreakdown.completedPct}%`}
-              />
-            )}
-            {projectBreakdown.onHoldPct > 0 && (
-              <div
-                className={cx("analyticsStripSeg", "analyticsStripAmber")}
-                style={{ width: `${projectBreakdown.onHoldPct}%` }}
-                title={`On Hold: ${projectBreakdown.onHoldPct}%`}
-              />
-            )}
-            {projectBreakdown.overduePct > 0 && (
-              <div
-                className={cx("analyticsStripSeg", "analyticsStripRed")}
-                style={{ width: `${projectBreakdown.overduePct}%` }}
-                title={`Overdue: ${projectBreakdown.overduePct}%`}
-              />
-            )}
-          </div>
-        </div>
-        <div className={styles.analyticsStripLegend}>
-          <div className={styles.analyticsStripLegendItem}>
-            <span className={cx("analyticsStripDot", "analyticsStripDotAccent")} />
-            <span>Active</span>
-            <span className={styles.analyticsStripLegendCount}>{projectBreakdown.active} · {projectBreakdown.activePct}%</span>
-          </div>
-          <div className={styles.analyticsStripLegendItem}>
-            <span className={cx("analyticsStripDot", "analyticsStripDotGreen")} />
-            <span>Completed</span>
-            <span className={styles.analyticsStripLegendCount}>{projectBreakdown.completed} · {projectBreakdown.completedPct}%</span>
-          </div>
-          <div className={styles.analyticsStripLegendItem}>
-            <span className={cx("analyticsStripDot", "analyticsStripDotAmber")} />
-            <span>On Hold</span>
-            <span className={styles.analyticsStripLegendCount}>{projectBreakdown.onHold} · {projectBreakdown.onHoldPct}%</span>
-          </div>
-          <div className={styles.analyticsStripLegendItem}>
-            <span className={cx("analyticsStripDot", "analyticsStripDotRed")} />
-            <span>Overdue</span>
-            <span className={styles.analyticsStripLegendCount}>{projectBreakdown.overdue} · {projectBreakdown.overduePct}%</span>
-          </div>
-        </div>
-      </article>
+      <WidgetGrid>
+        <StatWidget
+          label="Collection Rate"
+          value={`${invoiceHealth.collectionRate}%`}
+          sub="Paid invoices / total"
+          tone={invoiceHealth.collectionRate >= 80 ? "green" : "amber"}
+        />
+        <StatWidget
+          label="Avg. Days to Payment"
+          value={`${invoiceHealth.avgDaysToPay}d`}
+          sub="From issued to paid"
+          tone={invoiceHealth.avgDaysToPay <= 14 ? "green" : invoiceHealth.avgDaysToPay <= 30 ? "amber" : "red"}
+        />
+        <StatWidget
+          label="Overdue Amount"
+          value={formatMoney(invoiceHealth.overdueAmount, currency)}
+          sub="Outstanding past due date"
+          tone={invoiceHealth.overdueAmount > 0 ? "red" : "green"}
+        />
+        <StatWidget
+          label="Win Rate"
+          value={`${leadFunnel.winRate}%`}
+          sub={`${leadFunnel.activeLeadCount} active leads`}
+          tone={leadFunnel.winRate >= 50 ? "green" : "amber"}
+        />
+      </WidgetGrid>
 
-      {/* Section D — Top clients by revenue */}
-      <article className={styles.card}>
-        <div className={styles.cardHd}>
-          <span className={styles.cardHdTitle}>Top Clients by Revenue</span>
-          <span className={styles.analyticsMetaItem}>All time · top 5</span>
-        </div>
-        <div className={styles.analyticsRankList}>
-          {topClients.length === 0 && (
-            <div className={styles.analyticsEmpty}>No paid invoices yet.</div>
-          )}
-          {/* Fix 4: key on clientId (stable unique id) instead of rank (positional) */}
-          {topClients.map((client) => (
-            <div key={client.clientId} className={styles.analyticsRankRow}>
-              <span className={styles.analyticsRankNum}>{client.rank}</span>
-              <div className={styles.analyticsRankInfo}>
-                <span className={styles.analyticsRankName}>{client.name}</span>
-                <div className={styles.analyticsRankBarTrack}>
-                  <div
-                    className={styles.analyticsRankBarFill}
-                    style={{ width: `${client.sharePct}%` }}
-                  />
-                </div>
-              </div>
-              <div className={styles.analyticsRankMeta}>
-                <span className={styles.analyticsRankRev}>{formatMoney(client.revenue, currency)}</span>
-                <span className={styles.analyticsRankShare}>{client.sharePct}%</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </article>
-
-      {/* Section E — Invoice health summary */}
-      <div className={styles.analyticsHealthGrid}>
-        <article className={styles.card}>
-          <div className={styles.analyticsHealthLabel}>Collection Rate</div>
-          <div className={styles.analyticsHealthValue}>{invoiceHealth.collectionRate}%</div>
-          <div className={styles.analyticsHealthSub}>Paid invoices / total</div>
-        </article>
-        <article className={styles.card}>
-          <div className={styles.analyticsHealthLabel}>Avg. Days to Payment</div>
-          <div className={styles.analyticsHealthValue}>{invoiceHealth.avgDaysToPay}d</div>
-          <div className={styles.analyticsHealthSub}>From issued to paid</div>
-        </article>
-        <article className={styles.card}>
-          <div className={styles.analyticsHealthLabel}>Overdue Amount</div>
-          <div className={cx("analyticsHealthValue", invoiceHealth.overdueAmount > 0 && "analyticsHealthValueRed")}>
-            {formatMoney(invoiceHealth.overdueAmount, currency)}
-          </div>
-          <div className={styles.analyticsHealthSub}>Outstanding past due date</div>
-        </article>
-      </div>
     </div>
   );
 }
