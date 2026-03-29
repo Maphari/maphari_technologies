@@ -334,7 +334,7 @@ export function AdminAnalyticsPageClient({ currency }: { currency: string }) {
         <div className={`${styles.statCard} ${styles.amber}`}>
           <div className={styles.statLabel}>Client NPS Proxy</div>
           <div className={styles.statValue}>{clientNpsProxy}</div>
-          <div className={`${styles.statDelta} ${styles.deltaUp}`}>Closed lead win rate</div>
+          <div className={`${styles.statDelta} ${styles.deltaUp}`}>Based on engagement signals</div>
         </div>
       </div>
 
