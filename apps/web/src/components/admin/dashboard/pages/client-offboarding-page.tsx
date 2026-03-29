@@ -4,6 +4,7 @@ import { useState } from "react";
 import { cx, styles } from "../style";
 import { AdminTabs } from "./shared";
 import { colorClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 type ReasonType = "natural" | "churn" | "paused";
 
@@ -190,16 +191,79 @@ export function ClientOffboardingPage({ onNotify }: Props) {
     onNotify?.("success", `Progress updated: ${done}/${total} tasks complete.`);
   }
 
+  const offboardingByReason = [
+    { label: "Natural", count: offboardings.filter(o => o.reasonType === "natural").length },
+    { label: "Churn", count: offboardings.filter(o => o.reasonType === "churn").length },
+    { label: "Paused", count: offboardings.filter(o => o.reasonType === "paused").length },
+  ];
+
+  const tableRows = offboardings.map(o => ({
+    client: o.client,
+    reason: o.reason,
+    stage: o.status === "complete" ? "Closed" : `${Math.round((o.checklist.filter(t => t.done).length / Math.max(o.checklist.length, 1)) * 100)}% done`,
+    started: o.startedDate,
+    status: o.status,
+  }));
+
   return (
     <div className={cx(styles.pageBody, styles.cobRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>EXPERIENCE / CLIENT OFFBOARDING</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / OFFBOARDING</div>
           <h1 className={styles.pageTitle}>Client Offboarding</h1>
-          <div className={styles.pageSub}>Structured exits, file handover, IP transfer, and post-mortems</div>
+          <div className={styles.pageSub}>Offboarding pipeline · Churn reasons · Exit analysis</div>
         </div>
         <button type="button" className={cx("btnSm", "btnAccent")} onClick={() => setStartModal(true)}>+ Start Offboarding</button>
       </div>
+
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Active Offboardings" value={active.length} sub="In progress" tone="amber" />
+        <StatWidget label="Completed This Month" value={complete.length} sub="Archived" tone="default" />
+        <StatWidget label="Avg Duration" value="30d" sub="Target window" tone="default" />
+        <StatWidget label="Saved / Recovered" value={0} sub="Prevented churn" tone="green" />
+      </WidgetGrid>
+
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Offboardings by Reason"
+          data={offboardingByReason}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color={["#34d98b", "#ff5f5f", "#f5a623"]}
+        />
+        <PipelineWidget
+          label="Offboarding Pipeline"
+          stages={[
+            { label: "Notice", count: active.length, total: Math.max(offboardings.length, 1), color: "#f5a623" },
+            { label: "Data Transfer", count: offboardings.filter(o => o.checklist.some(t => t.category === "Delivery" && t.done)).length, total: Math.max(offboardings.length, 1), color: "#8b6fff" },
+            { label: "Handover", count: offboardings.filter(o => o.checklist.some(t => t.category === "Legal" && t.done)).length, total: Math.max(offboardings.length, 1), color: "#34d98b" },
+            { label: "Closed", count: complete.length, total: Math.max(offboardings.length, 1), color: "#34d98b" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Offboardings"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "client", header: "Client" },
+            { key: "reason", header: "Reason" },
+            { key: "stage", header: "Stage" },
+            { key: "started", header: "Started", align: "right" },
+            { key: "status", header: "Status", align: "right", render: (v) => {
+              const val = v as string;
+              const cls = val === "complete" ? cx("badge", "badgeGreen") : cx("badge", "badgeAmber");
+              return <span className={cls}>{val === "complete" ? "Complete" : "In Progress"}</span>;
+            }},
+          ]}
+          emptyMessage="No offboardings found"
+        />
+      </WidgetGrid>
 
       {startModal ? (
         <div className={styles.cobModalOverlay}>
