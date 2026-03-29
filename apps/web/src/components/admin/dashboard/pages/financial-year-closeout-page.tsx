@@ -24,6 +24,7 @@ import {
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
 import { AdminTabs } from "./shared";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -228,6 +229,29 @@ export function FinancialYearCloseoutPage({
     }
   }, [session, onNotify]);
 
+  // ── Widget data ─────────────────────────────────────────────────────────────
+  const checklistDone = checklist.filter((i) => i.done).length;
+  const checklistPct = checklist.length > 0 ? Math.round((checklistDone / checklist.length) * 100) : 0;
+
+  const chartData = [
+    { label: "Invoiced", value: Math.round(totalInvoiced / 100) },
+    { label: "Collected", value: Math.round(totalCollected / 100) },
+    { label: "Outstanding", value: Math.round(totalOutstanding / 100) },
+  ];
+
+  const pipelineStages = [
+    { label: "Collected", count: Math.round(totalCollected / 100), total: Math.max(Math.round(totalInvoiced / 100), 1), color: "#34d98b" },
+    { label: "Outstanding", count: Math.round(totalOutstanding / 100), total: Math.max(Math.round(totalInvoiced / 100), 1), color: "#f5a623" },
+    { label: "Overdue", count: overdueCount, total: Math.max(fyInvoices.length, 1), color: "#ff5f5f" },
+  ];
+
+  const tableRows = fyInvoices.slice(0, 20).map((inv) => ({
+    number: inv.number,
+    amount: centsTozar(inv.amountCents),
+    status: inv.status,
+    issued: inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString("en-ZA", { month: "short", day: "numeric" }) : "—",
+  })) as Record<string, unknown>[];
+
   if (loading) {
     return (
       <div className={cx("pageBody")}>
@@ -242,6 +266,7 @@ export function FinancialYearCloseoutPage({
 
   return (
     <div className={cx(styles.pageBody, styles.fyRoot)}>
+      {/* ── Header ── */}
       <div className={cx("flexBetween", "mb28")}>
         <div>
           <div className={cx("pageEyebrow")}>FINANCE / FINANCIAL YEAR CLOSEOUT</div>
@@ -254,21 +279,72 @@ export function FinancialYearCloseoutPage({
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "gap16", "mb16")}>
-        {[
-          { label: "Total Invoiced", value: centsTozar(totalInvoiced), color: "var(--accent)", sub: `${fyInvoices.length} invoices in ${fy.label}` },
-          { label: "Collected", value: centsTozar(totalCollected), color: totalCollected > 0 ? "var(--accent)" : "var(--muted)", sub: `${collectionRate}% collection rate` },
-          { label: "Outstanding", value: centsTozar(totalOutstanding), color: totalOutstanding > 0 ? overdueCount > 0 ? "var(--red)" : "var(--amber)" : "var(--accent)", sub: overdueCount > 0 ? `${overdueCount} overdue` : "All current" },
-          { label: "Hours Logged", value: minutesToHours(totalMinutes), color: "var(--blue)", sub: `${fyTimeEntries.length} time entries` },
-        ].map((s) => (
-          <div key={s.label} className={cx("statCard")}>
-            <div className={cx("statLabel")}>{s.label}</div>
-            <div className={cx("statValue", styles.fyToneText, toneClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: KPI stats ── */}
+      <WidgetGrid>
+        <StatWidget
+          label="Total Invoiced"
+          value={centsTozar(totalInvoiced)}
+          sub={`${fyInvoices.length} invoices in ${fy.label}`}
+          tone="accent"
+        />
+        <StatWidget
+          label="Total Collected"
+          value={centsTozar(totalCollected)}
+          sub={`${collectionRate}% collection rate`}
+          tone={collectionRate >= 80 ? "green" : collectionRate >= 50 ? "amber" : "red"}
+          progressValue={collectionRate}
+        />
+        <StatWidget
+          label="Outstanding"
+          value={centsTozar(totalOutstanding)}
+          sub={overdueCount > 0 ? `${overdueCount} overdue` : "All current"}
+          tone={totalOutstanding > 0 ? (overdueCount > 0 ? "red" : "amber") : "green"}
+        />
+        <StatWidget
+          label="Hours Logged"
+          value={minutesToHours(totalMinutes)}
+          sub={`${fyTimeEntries.length} time entries`}
+          tone="default"
+        />
+      </WidgetGrid>
 
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label={`${fy.label} Revenue Overview`}
+          data={chartData}
+          dataKey="value"
+          type="bar"
+          color="#8b6fff"
+          xKey="label"
+        />
+        <PipelineWidget
+          label="FY Collection Status"
+          stages={pipelineStages}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Invoices table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label={`${fy.label} Invoices`}
+          rows={tableRows}
+          rowKey="number"
+          emptyMessage="No invoices in this financial year."
+          columns={[
+            { key: "number", header: "Invoice #", align: "left" },
+            { key: "amount", header: "Amount",    align: "right" },
+            { key: "status", header: "Status",    align: "left", render: (val) => {
+              const raw = String(val);
+              const cls = raw === "PAID" ? "badgeGreen" : raw === "OVERDUE" ? "badgeRed" : raw === "ISSUED" ? "badgeAmber" : "badgeMuted";
+              return <span className={cx(cls)}>{raw}</span>;
+            }},
+            { key: "issued", header: "Issued",    align: "right" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Tab views below widgets ── */}
       <AdminTabs
         tabs={tabs}
         activeTab={activeTab}
@@ -372,56 +448,64 @@ export function FinancialYearCloseoutPage({
               <div className={cx("skeletonBlock", "skeleH68")} />
             </div>
           ) : (
-            <div className={cx("grid2", "gap16")}>
-              {checklistSections.map((section) => {
-                const done = section.tasks.filter((t) => t.done).length;
-                const total = section.tasks.length;
-                const sectionPct = total > 0 ? Math.round((done / total) * 100) : 0;
-                return (
-                  <div key={section.category} className={cx("card", "p24", styles.fySectionCard, toneClass(section.config.color))}>
-                    <div className={cx("flexBetween", "mb16")}>
-                      <div className={cx("fw700", "uppercase", "text12", styles.fyToneText, toneClass(section.config.color))}>
-                        {section.config.label}
-                      </div>
-                      <span className={cx("fontMono", "text12", styles.fyToneText, sectionPct === 100 ? "toneAccent" : "toneAmber")}>
-                        {done}/{total}
-                      </span>
-                    </div>
-                    <div className={cx("progressBar", "mb16")}>
-                      <progress
-                        className={cx("barFill", "uiProgress", sectionPct === 100 ? "toneAccent" : toneClass(section.config.color))}
-                        max={100}
-                        value={sectionPct}
-                      />
-                    </div>
-                    {section.tasks.map((task) => {
-                      const isToggling = togglingIds.has(task.id);
-                      const note = TASK_NOTES[task.label] ?? null;
-                      return (
-                        <div
-                          key={task.id}
-                          className={cx("flexRow", "gap10", "mb10", styles.fyAlignStart)}
-                          style={{ opacity: isToggling ? 0.6 : 1 }}
-                        >
-                          <button
-                            type="button"
-                            disabled={isToggling}
-                            onClick={() => { void handleToggle(task); }}
-                            className={cx("flexCenter", "noShrink", styles.fyTaskBox, task.done && styles.fyTaskBoxDone)}
-                            aria-label={task.done ? `Uncheck ${task.label}` : `Check ${task.label}`}
-                          >
-                            {task.done ? <span className={styles.fyTaskCheck}>&#10003;</span> : null}
-                          </button>
-                          <div className={styles.fyFlex1}>
-                            <div className={cx("text12", task.done && styles.fyLineThrough)}>{task.label}</div>
-                            {note && <div className={cx("text10", "mt4", "colorMuted")}>{note}</div>}
-                          </div>
+            <div>
+              {checklistPct > 0 && (
+                <div className={cx("card", "p16", "mb16", "flexBetween")}>
+                  <span className={cx("text12", "colorMuted")}>Overall progress: {checklistDone}/{checklist.length} tasks complete</span>
+                  <span className={cx("fontMono", "fw700", checklistPct === 100 ? "colorAccent" : "colorAmber")}>{checklistPct}%</span>
+                </div>
+              )}
+              <div className={cx("grid2", "gap16")}>
+                {checklistSections.map((section) => {
+                  const done = section.tasks.filter((t) => t.done).length;
+                  const total = section.tasks.length;
+                  const sectionPct = total > 0 ? Math.round((done / total) * 100) : 0;
+                  return (
+                    <div key={section.category} className={cx("card", "p24", styles.fySectionCard, toneClass(section.config.color))}>
+                      <div className={cx("flexBetween", "mb16")}>
+                        <div className={cx("fw700", "uppercase", "text12", styles.fyToneText, toneClass(section.config.color))}>
+                          {section.config.label}
                         </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+                        <span className={cx("fontMono", "text12", styles.fyToneText, sectionPct === 100 ? "toneAccent" : "toneAmber")}>
+                          {done}/{total}
+                        </span>
+                      </div>
+                      <div className={cx("progressBar", "mb16")}>
+                        <progress
+                          className={cx("barFill", "uiProgress", sectionPct === 100 ? "toneAccent" : toneClass(section.config.color))}
+                          max={100}
+                          value={sectionPct}
+                        />
+                      </div>
+                      {section.tasks.map((task) => {
+                        const isToggling = togglingIds.has(task.id);
+                        const note = TASK_NOTES[task.label] ?? null;
+                        return (
+                          <div
+                            key={task.id}
+                            className={cx("flexRow", "gap10", "mb10", styles.fyAlignStart)}
+                            style={{ opacity: isToggling ? 0.6 : 1 }}
+                          >
+                            <button
+                              type="button"
+                              disabled={isToggling}
+                              onClick={() => { void handleToggle(task); }}
+                              className={cx("flexCenter", "noShrink", styles.fyTaskBox, task.done && styles.fyTaskBoxDone)}
+                              aria-label={task.done ? `Uncheck ${task.label}` : `Check ${task.label}`}
+                            >
+                              {task.done ? <span className={styles.fyTaskCheck}>&#10003;</span> : null}
+                            </button>
+                            <div className={styles.fyFlex1}>
+                              <div className={cx("text12", task.done && styles.fyLineThrough)}>{task.label}</div>
+                              {note && <div className={cx("text10", "mt4", "colorMuted")}>{note}</div>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )
         )}
