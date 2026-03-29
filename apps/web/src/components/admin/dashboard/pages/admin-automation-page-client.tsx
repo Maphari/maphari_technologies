@@ -15,6 +15,7 @@ import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { EmptyState, colorClass, formatDate, formatDateTime } from "./admin-page-utils";
 import { formatStatus } from "@/lib/utils/format-status";
+import { StatWidget, ChartWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 function readJsonObject(value: string | null | undefined): Record<string, unknown> | null {
   if (!value) return null;
@@ -205,13 +206,20 @@ export function AdminAutomationPageClient({
 
   void recentRuns;
 
+  // ── Widget chart/pipeline data ────────────────────────────────────────────
+  const triggerChartData = workflowStatus.map((w) => ({ name: w.workflow.split(" ")[0], value: w.successRate }));
+  const activeWorkflows  = workflowStatus.filter((w) => w.state === "ACTIVE").length;
+  const atRiskWorkflows  = workflowStatus.filter((w) => w.state === "AT_RISK").length;
+  const draftWorkflows   = workflowStatus.filter((w) => w.state === "DRAFT").length;
+
   return (
     <div className={cx(styles.pageBody, styles.autoRoot)}>
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>AUTOMATION / WORKFLOWS</div>
-          <h1 className={styles.pageTitle}>Workflows</h1>
-          <div className={styles.pageSub}>Orchestration health, trigger controls, and safe simulation for core automations.</div>
+          <div className={styles.pageEyebrow}>AI/ML / AUTOMATION</div>
+          <h1 className={styles.pageTitle}>Automation</h1>
+          <div className={styles.pageSub}>Active rules · Trigger health · Execution log</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" onClick={() => void onRunMaintenance()} className={cx("btnSm", "btnGhost")}>Run Maintenance Check</button>
@@ -219,20 +227,33 @@ export function AdminAutomationPageClient({
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Queued Jobs", value: queued.toString(), color: queued > 0 ? "var(--amber)" : "var(--accent)", sub: "Pending workflow dispatches" },
-          { label: "Sent Jobs", value: sent.toString(), color: "var(--blue)", sub: "Successful executions" },
-          { label: "Failed Jobs", value: failed.toString(), color: failed > 0 ? "var(--red)" : "var(--accent)", sub: "Needs retry attention" },
-          { label: "Success Rate", value: `${successRate}%`, color: successRate >= 90 ? "var(--accent)" : "var(--amber)", sub: analyticsPoints != null ? `${analyticsPoints} analytics points` : "No analytics data" }
-        ].map((k) => (
-          <div key={k.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{k.label}</div>
-            <div className={cx(styles.statValue, colorClass(k.color))}>{k.value}</div>
-            <div className={cx("text11", "colorMuted")}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Active Automations" value={activeWorkflows} tone="accent" sparkData={[1, 2, 2, 3, 3, 4, 4, activeWorkflows]} />
+        <StatWidget label="Triggered Today" value={sent} tone="green" progressValue={jobs.length > 0 ? Math.round((sent / jobs.length) * 100) : 0} />
+        <StatWidget label="Failed" value={failed} tone={failed > 0 ? "red" : "default"} progressValue={jobs.length > 0 ? Math.round((failed / jobs.length) * 100) : 0} />
+        <StatWidget label="Success Rate" value={`${successRate}%`} tone={successRate >= 90 ? "accent" : "amber"} progressValue={successRate} sub={analyticsPoints != null ? `${analyticsPoints} analytics pts` : undefined} />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Triggers by Rule"
+          type="bar"
+          data={triggerChartData.length > 0 ? triggerChartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Automation Status"
+          stages={[
+            { label: "Active", count: activeWorkflows, total: workflowStatus.length, color: "#34d98b" },
+            { label: "At Risk", count: atRiskWorkflows, total: workflowStatus.length, color: "#ff5f5f" },
+            { label: "Draft", count: draftWorkflows, total: workflowStatus.length, color: "#6b7280" },
+          ]}
+        />
+      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
