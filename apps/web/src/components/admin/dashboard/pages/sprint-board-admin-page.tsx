@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { cx, styles } from "../style";
-import { toneClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import type { AdminProject, ProjectTask } from "../../../../lib/api/admin/types";
@@ -225,21 +225,39 @@ export function SprintBoardAdminPage({ session, onNotify }: Props) {
         </div>
       )}
 
-      {/* ── KPI Grid ── */}
-      <div className={styles.cjKpiGrid}>
-        {[
-          { label: "Active Sprints", value: String(activeSprints.length), sub: "In progress", color: "var(--accent)" },
-          { label: "Tasks Overdue", value: String(overdueTasks), sub: "Need attention", color: "var(--red)" },
-          { label: "Completed Tasks", value: String(completedTasks), sub: "Tasks done", color: "var(--blue)" },
-          { label: "Blocked", value: String(blockedCount), sub: "Awaiting unblock", color: "var(--amber)" },
-        ].map((k) => (
-          <div key={k.label} className={cx(styles.cjKpiCard, toneClass(k.color))}>
-            <div className={styles.cjKpiLabel}>{k.label}</div>
-            <div className={cx(styles.cjKpiValue, toneClass(k.color))}>{k.value}</div>
-            <div className={styles.cjKpiMeta}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Active Sprints" value={String(activeSprints.length)} tone="accent" sub="In progress" />
+        <StatWidget label="Tasks Overdue" value={String(overdueTasks)} tone="red" sub="Need attention" />
+        <StatWidget label="Completed Tasks" value={String(completedTasks)} sub="Tasks done" />
+        <StatWidget label="Blocked" value={String(blockedCount)} tone="amber" sub="Awaiting unblock" />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Tasks by Status"
+          data={[
+            { status: "To Do", count: todoTasks.length },
+            { status: "In Progress", count: inProgressTasks.length },
+            { status: "Done", count: doneTasks.length },
+            { status: "Blocked", count: blockedCount },
+          ]}
+          dataKey="count"
+          xKey="status"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Sprint Health"
+          stages={[
+            { label: "Active", count: activeSprints.length, total: Math.max(sprints.length, 1), color: "#8b6fff" },
+            { label: "On Track", count: sprints.filter((s) => s.status.toLowerCase() === "on track").length, total: Math.max(sprints.length, 1), color: "#34d98b" },
+            { label: "At Risk", count: sprints.filter((s) => s.status.toLowerCase() === "at risk" || s.status.toLowerCase() === "at_risk").length, total: Math.max(sprints.length, 1), color: "#f5a623" },
+            { label: "Completed", count: sprints.filter((s) => s.status.toLowerCase() === "completed" || s.status.toLowerCase() === "done").length, total: Math.max(sprints.length, 1), color: "#34d98b" },
+          ]}
+        />
+      </WidgetGrid>
 
       {/* ── Tab bar ── */}
       <div className={styles.teamFilters}>
