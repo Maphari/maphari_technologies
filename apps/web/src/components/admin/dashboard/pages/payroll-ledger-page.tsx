@@ -19,6 +19,7 @@ import {
   rejectTimesheetEntryWithRefresh,
   type AdminPendingTimeEntry,
 } from "../../../../lib/api/admin/hr";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 const tabs = ["pending timesheets", "feb payroll", "payroll history", "compliance"] as const;
 type Tab = (typeof tabs)[number];
@@ -93,8 +94,42 @@ export function PayrollLedgerPage({ session }: { session: AuthSession | null }) 
     setLastActionMsg("Entry rejected.");
   };
 
+  // ── Widget data ────────────────────────────────────────────────────────────
+  const nextPayeDate = getNextPayeDate();
+  const daysUntilPaye = Math.ceil((nextPayeDate.getTime() - Date.now()) / 86_400_000);
+
+  const complianceItems = [
+    { label: "EMP201 (PAYE)", due: formatPayeDate(nextPayeDate), status: "upcoming" },
+    { label: "UIF Contribution", due: formatPayeDate(nextPayeDate), status: "upcoming" },
+    { label: "IRP5 (EMP501)", due: "31 May 2026", status: "future" },
+    { label: "EMP501 Half-Year", due: "31 Oct 2026", status: "future" },
+  ];
+
+  const chartData = [
+    { label: "Gross Payroll", value: 0 },
+    { label: "Net Pay",       value: 0 },
+    { label: "PAYE",          value: 0 },
+    { label: "UIF",           value: 0 },
+  ];
+
+  const pipelineStages = [
+    { label: "Approved",  count: pendingEntries.length === 0 ? 1 : 0,           total: 1, color: "#34d98b" },
+    { label: "Pending",   count: pendingEntries.length,                          total: Math.max(pendingEntries.length, 1), color: "#f5a623" },
+    { label: "Compliance", count: complianceItems.filter((c) => c.status === "upcoming").length, total: complianceItems.length, color: "#8b6fff" },
+  ];
+
+  const timesheetTableRows = pendingEntries.map((entry) => ({
+    task:      entry.taskLabel,
+    staff:     entry.staffName ?? entry.staffUserId ?? "Unknown",
+    week:      entry.submittedWeek ?? "—",
+    duration:  formatMinutes(entry.minutes),
+    submitted: entry.submittedAt ? new Date(entry.submittedAt).toLocaleDateString() : "—",
+    id:        entry.id,
+  })) as Record<string, unknown>[];
+
   return (
     <div className={cx(styles.pageBody, styles.payRoot)}>
+      {/* ── Header ── */}
       <div className={cx("flexBetween", "mb28")}>
         <div>
           <div className={cx("pageEyebrow")}>FINANCE / PAYROLL LEDGER</div>
@@ -107,21 +142,68 @@ export function PayrollLedgerPage({ session }: { session: AuthSession | null }) 
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "gap16", "mb16")}>
-        {[
-          { label: "Total Gross Payroll", value: "—",  color: "var(--amber)", sub: "Payroll system required" },
-          { label: "Total Net Pay",       value: "—",  color: "var(--accent)", sub: "After deductions" },
-          { label: "PAYE to SARS",        value: "—",  color: "var(--red)",    sub: `Due ${formatPayeDate(getNextPayeDate())}` },
-          { label: "Pending Timesheets",  value: String(pendingEntries.length), color: pendingEntries.length > 0 ? "var(--amber)" : "var(--accent)", sub: "Awaiting approval" },
-        ].map((s) => (
-          <div key={s.label} className={cx("statCard")}>
-            <div className={cx("statLabel")}>{s.label}</div>
-            <div className={cx("statValue", styles.payToneText, toneClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: KPI stats ── */}
+      <WidgetGrid>
+        <StatWidget
+          label="Total Gross Payroll"
+          value="—"
+          sub="Payroll system required"
+          tone="amber"
+        />
+        <StatWidget
+          label="Total Net Pay"
+          value="—"
+          sub="After deductions"
+          tone="default"
+        />
+        <StatWidget
+          label="PAYE Due"
+          value={`${daysUntilPaye}d`}
+          sub={`Due ${formatPayeDate(nextPayeDate)}`}
+          tone={daysUntilPaye <= 7 ? "red" : daysUntilPaye <= 14 ? "amber" : "default"}
+        />
+        <StatWidget
+          label="Pending Timesheets"
+          value={pendingEntries.length}
+          sub="Awaiting approval"
+          tone={pendingEntries.length > 0 ? "amber" : "default"}
+        />
+      </WidgetGrid>
 
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Payroll Breakdown"
+          data={chartData}
+          dataKey="value"
+          type="bar"
+          color="#8b6fff"
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Timesheet & Compliance Status"
+          stages={pipelineStages}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Timesheets table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Pending Timesheets"
+          rows={timesheetTableRows}
+          rowKey="id"
+          emptyMessage={loadingPending ? "Loading timesheets…" : "No pending timesheets."}
+          columns={[
+            { key: "task",      header: "Task",      align: "left" },
+            { key: "staff",     header: "Staff",     align: "left" },
+            { key: "week",      header: "Week",      align: "left" },
+            { key: "duration",  header: "Duration",  align: "right" },
+            { key: "submitted", header: "Submitted", align: "right" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Tab views ── */}
       <AdminTabs
         tabs={tabs}
         activeTab={activeTab}
