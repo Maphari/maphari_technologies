@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -173,141 +174,96 @@ export function CrisisCommandPage({ session }: { session: AuthSession | null }) 
     if (r.data) setAllCrises((prev) => prev.map((c) => (c.id === id ? r.data! : c)));
   }
 
+  const criticalCount = activeCrises.filter(c => c.severity === "critical").length;
+  const avgDaysOpen   = activeCrises.length > 0 ? Math.round(activeCrises.reduce((s, c) => s + c.daysOpen, 0) / activeCrises.length) : 0;
+  const avgDaysToResolve = resolved.length > 0 ? Math.round(resolved.reduce((s, c) => s + c.daysToResolve, 0) / resolved.length) : 0;
+
+  const crisisSeverityData = [
+    { label: "Critical", count: activeCrises.filter(c => c.severity === "critical").length },
+    { label: "High",     count: activeCrises.filter(c => c.severity === "high").length     },
+    { label: "Medium",   count: activeCrises.filter(c => c.severity === "medium").length   },
+    { label: "Low",      count: activeCrises.filter(c => c.severity === "low").length      },
+  ];
+
+  const crisisTableRows = activeCrises.map(c => ({
+    client:   c.client,
+    title:    c.title,
+    severity: c.severity,
+    daysOpen: `${c.daysOpen}d`,
+    stage:    c.stage,
+  }));
+
   return (
-    <div className={cx(styles.pageBody, styles.crisRoot)}>
+    <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.crisEyebrow}>ADMIN / CRISIS &amp; ESCALATION</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / CRISIS</div>
           <h1 className={styles.pageTitle}>Crisis Command</h1>
-          <div className={styles.pageSub}>Active crises - Escalation chains - Recovery playbooks</div>
+          <div className={styles.pageSub}>Active crises · Escalation chains · Recovery playbooks</div>
         </div>
         <div className={styles.pageActions}>
-          <button type="button" onClick={() => { void handleLogCrisis(); }} className={cx("btnSm", "btnAccent", styles.crisPrimaryBtn)}>+ Log New Crisis</button>
+          <button type="button" onClick={() => { void handleLogCrisis(); }} className={cx("btnSm", "btnAccent")}>+ Log New Crisis</button>
         </div>
       </div>
 
-      {loading ? (
-        <div className={cx(styles.card, "textCenter", "colorMuted", "text13")}>
-          <div className={styles.cardInner}>Loading crises…</div>
-        </div>
-      ) : error ? (
+      {error ? (
         <div className={cx(styles.card, "textCenter", "colorRed", "text13")}>
           <div className={styles.cardInner}>{error}</div>
         </div>
       ) : null}
 
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Active Crises", value: activeCrises.length.toString(), color: "var(--red)", sub: `${activeCrises.filter((c) => c.severity === "critical").length} critical` },
-          { label: "Revenue at Risk", value: `R${(activeCrises.reduce((s, c) => s + c.revenue, 0) / 1000).toFixed(0)}k`, color: "var(--amber)", sub: "Monthly retainer value" },
-          { label: "Avg Days Open", value: `${activeCrises.length > 0 ? Math.round(activeCrises.reduce((s, c) => s + c.daysOpen, 0) / activeCrises.length) : 0}d`, color: "var(--amber)", sub: "Active cases only" },
-          { label: "Resolved (90d)", value: resolved.length.toString(), color: "var(--accent)", sub: `Avg ${resolved.length > 0 ? Math.round(resolved.reduce((s, c) => s + c.daysToResolve, 0) / resolved.length) : 0}d to resolve` }
-        ].map((s) => (
-          <div key={s.label} className={cx("statCard", s.label === "Active Crises" && styles.crisRiskStat)}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Active Crises" value={activeCrises.length} sub={`${criticalCount} critical`} tone={activeCrises.length > 0 ? "red" : "default"} />
+        <StatWidget label="Revenue at Risk" value={`R${(activeCrises.reduce((s, c) => s + c.revenue, 0) / 1000).toFixed(0)}k`} sub="Monthly retainer value" tone="amber" />
+        <StatWidget label="Avg Days Open" value={`${avgDaysOpen}d`} sub="Active cases" tone={avgDaysOpen > 7 ? "red" : "default"} />
+        <StatWidget label="Resolved (90d)" value={resolved.length} sub={`Avg ${avgDaysToResolve}d to resolve`} subTone="up" tone="green" />
+      </WidgetGrid>
+
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Crises by Severity"
+          data={crisisSeverityData}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#ff5f5f"
+        />
+        <PipelineWidget
+          label="Crisis Status"
+          stages={[
+            { label: "Active",   count: activeCrises.length, total: Math.max(allCrises.length, 1), color: "#ff5f5f" },
+            { label: "Resolved", count: resolved.length,     total: Math.max(allCrises.length, 1), color: "#34d98b" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Active Crises"
+          rows={crisisTableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "client",   header: "Client" },
+            { key: "title",    header: "Title" },
+            { key: "severity", header: "Severity", render: (v) => {
+              const val = v as Severity;
+              const cls = val === "critical" || val === "high" ? cx("badge", "badgeRed") : val === "medium" ? cx("badge", "badgeAmber") : cx("badge", "badgeMuted");
+              return <span className={cls}>{val}</span>;
+            }},
+            { key: "daysOpen", header: "Days Open", align: "right" },
+            { key: "stage",    header: "Stage",     align: "right" },
+          ]}
+          emptyMessage="No active crises"
+        />
+      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select title="Filter by tab" value={activeTab} onChange={e => setActiveTab(e.target.value as CrisisTab)} className={styles.filterSelect}>
           {tabs.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
-
-      {activeTab === "active crises" ? (
-        <div className={styles.crisList16}>
-          {activeCrises.length === 0 ? (
-            <div className={cx(styles.card, "textCenter", "colorMuted", "text13")}>
-              <div className={styles.cardInner}>
-                <div className={cx("fw700", "text15", "mb8")}>No active crises</div>
-                <div>All client accounts are running smoothly. If a crisis is identified, use "+ Log New Crisis" to open a case.</div>
-              </div>
-            </div>
-          ) : null}
-          {activeCrises.map((crisis) => (
-            <div key={crisis.id} className={cx(styles.crisCard, severityCardClass(crisis.severity))}>
-              <div
-                role="button"
-                tabIndex={0}
-                className={styles.crisHead}
-                onClick={() => setExpanded(expanded === crisis.id ? null : crisis.id)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setExpanded(expanded === crisis.id ? null : crisis.id);
-                  }
-                }}
-              >
-                <div className={styles.crisHeadTop}>
-                  <div className={styles.crisHeadLeft}>
-                    <div className={cx(styles.crisSeverityBar, severityBarClass(crisis.severity))} />
-                    <div>
-                      <div className={styles.crisMetaLine}>
-                        <span className={styles.crisId}>{crisis.id}</span>
-                        <span className={cx(styles.crisSeverityTag, severityTagClass(crisis.severity))}>{crisis.severity}</span>
-                        <span className={cx(styles.crisClient, colorClass(crisis.color))}>{crisis.client}</span>
-                      </div>
-                      <div className={styles.crisTitle}>{crisis.title}</div>
-                      <div className={styles.crisInfoRow}>
-                        <span>Owner: <span className={styles.colorText}>{crisis.owner}</span></span>
-                        <span>Stage: <span className={styles.colorAmber}>{crisis.stage}</span></span>
-                        <span>Open: <span className={crisis.daysOpen >= 7 ? "colorRed" : "colorAmber"}>{crisis.daysOpen}d</span></span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className={styles.crisHeadRight}>
-                    <div className={styles.crisTiny}>Revenue at risk</div>
-                    <div className={styles.crisRevenue}>R{crisis.revenue.toLocaleString()}</div>
-                    <div className={styles.crisHealth}>Health: <span className={crisis.health < 50 ? "colorRed" : "colorAmber"}>{crisis.health}/100</span></div>
-                  </div>
-                </div>
-
-                <div className={styles.crisActionGrid}>
-                  <div className={styles.crisActionBox}>
-                    <div className={styles.crisTinyUpper}>Last Action</div>
-                    <div className={styles.text12}>{crisis.lastAction}</div>
-                  </div>
-                  <div className={styles.crisNextBox}>
-                    <div className={styles.crisNextUpper}>Next Action</div>
-                    <div className={styles.text12}>{crisis.nextAction}</div>
-                  </div>
-                </div>
-              </div>
-
-              {expanded === crisis.id ? (
-                <div className={styles.crisExpanded}>
-                  <div className={styles.crisExpandedInner}>
-                    <div className={styles.crisSectionTitle}>Crisis Timeline</div>
-                    <div className={styles.crisTimelineWrap}>
-                      <div className={styles.crisTimelineLine} />
-                      <div className={styles.crisTimelineList}>
-                        {crisis.timeline.map((event, i) => (
-                          <div key={i} className={styles.crisTimelineRow}>
-                            <span className={styles.crisTimelineDate}>{event.date}</span>
-                            <div className={cx(styles.crisTimelineDot, severityTimelineDotClass(crisis.severity))} />
-                            <div>
-                              <div className={styles.text13}>{event.event}</div>
-                              <div className={styles.text11 + " " + styles.colorMuted}>{event.who}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className={styles.crisBtnRow}>
-                      <button type="button" className={cx("btnSm", "btnAccent")}>Log Action</button>
-                      <button type="button" className={cx("btnSm", "btnGhost")}>Escalate</button>
-                      <button type="button" onClick={() => { void handleMarkResolved(crisis.id); }} className={cx("btnSm", "btnGhost", styles.crisResolveBtn)}>Mark Resolved</button>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      ) : null}
 
       {activeTab === "escalation chain" ? (
         <div className={styles.crisEscSplit}>
@@ -331,25 +287,6 @@ export function CrisisCommandPage({ session }: { session: AuthSession | null }) 
               ))}
             </div>
           </div>
-          <div className={styles.crisPolicyCard}>
-            <div className={styles.crisSectionTitle}>Escalation Policy</div>
-            {[
-              { threshold: "3 days silent", action: "AM sends personal message", level: 1 },
-              { threshold: "5 days silent", action: "AM logs alert + checks in", level: 1 },
-              { threshold: "7 days silent", action: "Escalate to Operations Admin", level: 2 },
-              { threshold: "Invoice 7+ days overdue", action: "Auto-escalate to Admin", level: 2 },
-              { threshold: "Churn risk > 60%", action: "Super Admin intervention", level: 3 },
-              { threshold: "Legal threat received", action: "Immediate Super Admin + legal review", level: 3 }
-            ].map((policy) => (
-              <div key={policy.threshold} className={styles.crisPolicyRow}>
-                <div className={cx(styles.crisPolicyLevel, levelToneClass(policy.level))}>{policy.level}</div>
-                <div>
-                  <div className={styles.crisThreshold}>{policy.threshold}</div>
-                  <div className={styles.text12 + " " + styles.colorText}>{policy.action}</div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       ) : null}
 
@@ -368,38 +305,6 @@ export function CrisisCommandPage({ session }: { session: AuthSession | null }) 
                 ))}
               </div>
               <button type="button" className={cx("btnSm", "btnGhost", styles.crisApplyBtn)}>Apply to Active Crisis</button>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {activeTab === "resolved" ? (
-        <div className={styles.crisResolvedList}>
-          {resolved.length === 0 ? (
-            <div className={cx(styles.card, "textCenter", "colorMuted", "text13")}>
-              <div className={styles.cardInner}>
-                No resolved crises in the last 90 days. Resolved cases will appear here for post-mortem review.
-              </div>
-            </div>
-          ) : null}
-          {resolved.map((r) => (
-            <div key={r.id} className={styles.crisResolvedRow}>
-              <span className={styles.crisId}>{r.id}</span>
-              <span className={cx(styles.crisSeverityTag, severityTagClass(r.severity))}>{r.severity}</span>
-              <div>
-                <div className={styles.fw600}>{r.client}</div>
-                <div className={styles.text12 + " " + styles.colorMuted}>{r.title}</div>
-              </div>
-              <div>
-                <div className={styles.crisTiny}>Days</div>
-                <div className={styles.crisDays}>{r.daysToResolve}d</div>
-              </div>
-              <div>
-                <div className={styles.crisTiny}>Resolved</div>
-                <div className={styles.text12}>{r.resolved}</div>
-              </div>
-              <div className={cx(styles.text12, r.outcome.includes("churned") ? "colorRed" : "colorAmber")}>{r.outcome}</div>
-              <button type="button" className={cx("btnSm", "btnGhost")}>View Post-Mortem</button>
             </div>
           ))}
         </div>
