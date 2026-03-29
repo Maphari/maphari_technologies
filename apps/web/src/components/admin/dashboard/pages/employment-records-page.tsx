@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { colorClass, toneClass } from "./admin-page-utils";
+import { StatWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { AdminTabs } from "./shared";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { loadAllStaffWithRefresh, type AdminStaffProfile } from "../../../../lib/api/admin";
@@ -143,20 +144,24 @@ export function EmploymentRecordsPage({ session }: { session: AuthSession | null
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Total Employees", value: employees.length.toString(), color: "var(--accent)", sub: "All active staff" },
-          { label: "Reviews Overdue", value: overdueReviews.length.toString(), color: overdueReviews.length > 0 ? "var(--red)" : "var(--accent)", sub: "Annual reviews past due" },
-          { label: "Missing Documents", value: missingDocs.length.toString(), color: missingDocs.length > 0 ? "var(--amber)" : "var(--accent)", sub: "Incomplete compliance files" },
-          { label: "Work Permits", value: workPermits.length.toString(), color: "var(--blue)", sub: "Foreign nationals on staff" }
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid>
+        <StatWidget label="Total Employees"   value={employees.length}        sub="All active staff"               tone="accent" />
+        <StatWidget label="Reviews Overdue"   value={overdueReviews.length}   sub="Annual reviews past due"        tone={overdueReviews.length > 0 ? "red" : "green"} />
+        <StatWidget label="Missing Documents" value={missingDocs.length}      sub="Incomplete compliance files"    tone={missingDocs.length > 0 ? "amber" : "green"} />
+        <StatWidget label="Work Permits"      value={workPermits.length}      sub="Foreign nationals on staff"     tone="accent" />
+      </WidgetGrid>
+
+      <WidgetGrid columns={1}>
+        <PipelineWidget
+          title="Contract Type Breakdown"
+          stages={[
+            { label: "Permanent",  count: employees.filter((e) => e.contractType === "Permanent").length,  total: employees.length || 1, color: "#34d98b" },
+            { label: "Contract",   count: employees.filter((e) => e.contractType === "Contract").length,   total: employees.length || 1, color: "#8b6fff" },
+            { label: "Part-time",  count: employees.filter((e) => e.contractType === "Part-time").length,  total: employees.length || 1, color: "#f5a623" },
+            { label: "Other",      count: employees.filter((e) => !["Permanent","Contract","Part-time"].includes(e.contractType)).length, total: employees.length || 1, color: "#8b6fff" },
+          ]}
+        />
+      </WidgetGrid>
 
       <AdminTabs
         tabs={tabs}
