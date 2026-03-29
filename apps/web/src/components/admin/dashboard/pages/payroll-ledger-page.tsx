@@ -29,6 +29,24 @@ function formatMinutes(minutes: number): string {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
+/**
+ * Returns the next upcoming PAYE due date.
+ * In South Africa, PAYE/UIF is due on the 7th of each month (or the last
+ * business day before the 7th when it falls on a weekend/public holiday).
+ * This implementation returns the 7th of the current month if it hasn't
+ * passed yet, otherwise the 7th of the next month.
+ */
+function getNextPayeDate(): Date {
+  const now = new Date();
+  const thisMonth7th = new Date(now.getFullYear(), now.getMonth(), 7);
+  if (now <= thisMonth7th) return thisMonth7th;
+  return new Date(now.getFullYear(), now.getMonth() + 1, 7);
+}
+
+function formatPayeDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-ZA", { day: "numeric", month: "short", year: "numeric" }).format(date);
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function PayrollLedgerPage({ session }: { session: AuthSession | null }) {
@@ -93,7 +111,7 @@ export function PayrollLedgerPage({ session }: { session: AuthSession | null }) 
         {[
           { label: "Total Gross Payroll", value: "—",  color: "var(--amber)", sub: "Payroll system required" },
           { label: "Total Net Pay",       value: "—",  color: "var(--accent)", sub: "After deductions" },
-          { label: "PAYE to SARS",        value: "—",  color: "var(--red)",    sub: "Due 7 Mar" },
+          { label: "PAYE to SARS",        value: "—",  color: "var(--red)",    sub: `Due ${formatPayeDate(getNextPayeDate())}` },
           { label: "Pending Timesheets",  value: String(pendingEntries.length), color: pendingEntries.length > 0 ? "var(--amber)" : "var(--accent)", sub: "Awaiting approval" },
         ].map((s) => (
           <div key={s.label} className={cx("statCard")}>
@@ -211,8 +229,8 @@ export function PayrollLedgerPage({ session }: { session: AuthSession | null }) 
             <div className={cx("card", "p24")}>
               <div className={cx("text13", "fw700", "mb20", "uppercase")}>SARS Submission Deadlines</div>
               {[
-                { task: "EMP201 — PAYE monthly return",         due: "7 Mar 2026",  status: "upcoming" },
-                { task: "UIF monthly contribution",             due: "7 Mar 2026",  status: "upcoming" },
+                { task: "EMP201 — PAYE monthly return",         due: formatPayeDate(getNextPayeDate()),  status: "upcoming" },
+                { task: "UIF monthly contribution",             due: formatPayeDate(getNextPayeDate()),  status: "upcoming" },
                 { task: "IRP5 certificates (EMP501)",           due: "31 May 2026", status: "future"   },
                 { task: "EMP501 half-year reconciliation",      due: "31 Oct 2026", status: "future"   },
               ].map((d) => (
