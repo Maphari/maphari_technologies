@@ -56,7 +56,7 @@ export function AIActionRecommendationsPage() {
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>AI / ML / AI ACTION RECOMMENDATIONS</div>
+          <div className={styles.pageEyebrow}>AI/ML / AI ACTION RECOMMENDATIONS</div>
           <h1 className={styles.pageTitle}>AI Action Recommendations</h1>
           <div className={styles.pageSub}>
             Organization-wide suggestions derived from health scores, overdue invoices, and delivery risk signals
