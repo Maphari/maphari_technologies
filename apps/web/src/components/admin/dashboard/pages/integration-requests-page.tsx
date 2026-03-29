@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -192,6 +193,14 @@ export function IntegrationRequestsPage({
     { id: "REJECTED",    label: "Rejected",   count: countRejected },
   ];
 
+  // Build chart data: requests by month
+  const monthCounts: Record<string, number> = {};
+  for (const r of requests) {
+    const m = r.requestedAt ? new Date(r.requestedAt).toLocaleDateString("en-ZA", { month: "short", year: "2-digit" }) : "Unknown";
+    monthCounts[m] = (monthCounts[m] ?? 0) + 1;
+  }
+  const requestsByMonth = Object.entries(monthCounts).map(([month, count]) => ({ month, count }));
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -203,19 +212,33 @@ export function IntegrationRequestsPage({
       </div>
 
       {/* ── KPI Row ────────────────────────────────────────────────────── */}
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Requested",  value: countRequested,  color: "var(--amber)" },
-          { label: "In Setup",   value: countInProgress, color: "var(--accent)" },
-          { label: "Completed",  value: countCompleted,  color: "var(--green)" },
-          { label: "Rejected",   value: countRejected,   color: "var(--red)" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={styles.statValue} style={{ color: s.color }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid columns={4}>
+        <StatWidget label="Pending Requests" value={String(countRequested)} tone="amber" />
+        <StatWidget label="Approved" value={String(countCompleted)} tone="green" />
+        <StatWidget label="Rejected" value={String(countRejected)} tone="red" />
+        <StatWidget label="Avg Review Time" value="—" sub="Days to complete" />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Requests by Month"
+          data={requestsByMonth}
+          dataKey="count"
+          xKey="month"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Request Stages"
+          stages={[
+            { label: "Requested", count: countRequested, total: Math.max(requests.length, 1), color: "#f5a623" },
+            { label: "In Setup", count: countInProgress, total: Math.max(requests.length, 1), color: "#8b6fff" },
+            { label: "Completed", count: countCompleted, total: Math.max(requests.length, 1), color: "#34d98b" },
+            { label: "Rejected", count: countRejected, total: Math.max(requests.length, 1), color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
 
       {/* ── Tab bar ────────────────────────────────────────────────────── */}
       <div className={cx("irTabBar", "mb16")}>
@@ -232,215 +255,135 @@ export function IntegrationRequestsPage({
         ))}
       </div>
 
-      {/* ── Main layout: table + detail panel ──────────────────────────── */}
-      <div className={cx(selected ? "irShellWithPanel" : "")}>
-        <article className={styles.card}>
-          <div className={styles.cardHd}>
-            <span className={styles.cardHdTitle}>
-              {tab === "ALL" ? "All Requests" : `${formatStatus(tab)} Requests`}
-              {" "}({filtered.length})
-            </span>
-          </div>
-          <div className={styles.cardInner}>
-            {filtered.length === 0 ? (
-              <div className={styles.emptyState}>
-                <div className={styles.emptyIcon}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <div className={styles.emptyTitle}>No requests found</div>
-                <div className={styles.emptySub}>No integration requests match this filter.</div>
-              </div>
-            ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th scope="col">Provider</th>
-                    <th scope="col">Client</th>
-                    <th scope="col">Requested By</th>
-                    <th scope="col">Requested</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Assigned To</th>
-                    <th scope="col">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((req) => (
-                    <tr
-                      key={req.id}
-                      className={cx("irRow", selected?.id === req.id ? "irRowSelected" : "")}
-                      onClick={() => openPanel(req)}
-                    >
-                      <td>
-                        <div className={cx("irProviderCell")}>
-                          <span className={cx("irProviderIcon")}>{providerIcon(req.providerKey)}</span>
-                          <span className={cx("fw600", "text13")}>{req.providerLabel || req.providerKey}</span>
-                        </div>
-                      </td>
-                      <td className={cx("text13")}>{req.clientName}</td>
-                      <td>
-                        <div className={cx("text12")}>
-                          <div>{req.requestedByName ?? "—"}</div>
-                          {req.requestedByEmail && (
-                            <div className={cx("colorMuted")}>{req.requestedByEmail}</div>
-                          )}
-                        </div>
-                      </td>
-                      <td className={cx("text12", "colorMuted")}>{fmtDate(req.requestedAt)}</td>
-                      <td>
-                        <span className={cx("badge", statusBadgeClass(req.status))}>
-                          {formatStatus(req.status)}
-                        </span>
-                      </td>
-                      <td className={cx("text12")}>{req.assignedToName ?? "Unassigned"}</td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <div className={cx("irActionBtns")}>
-                          {req.status === "REQUESTED" && (
-                            <button
-                              type="button"
-                              className={cx("btnXs", "btnPrimary")}
-                              onClick={() => { openPanel(req); void handleTransition(req, "IN_PROGRESS"); }}
-                            >
-                              Start Setup
-                            </button>
-                          )}
-                          {req.status === "IN_PROGRESS" && (
-                            <button
-                              type="button"
-                              className={cx("btnXs", "btnAccent")}
-                              onClick={() => { openPanel(req); void handleTransition(req, "COMPLETED"); }}
-                            >
-                              Complete
-                            </button>
-                          )}
-                          {(req.status === "REQUESTED" || req.status === "IN_PROGRESS") && (
-                            <button
-                              type="button"
-                              className={cx("btnXs", "btnGhost")}
-                              onClick={() => { openPanel(req); setShowRejectField(true); }}
-                            >
-                              Reject
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </article>
+      {/* ── Requests Table ─────────────────────────────────────────────── */}
+      <TableWidget
+        label={tab === "ALL" ? "All Requests" : `${formatStatus(tab)} Requests`}
+        rows={filtered}
+        rowKey="id"
+        emptyMessage="No integration requests match this filter."
+        columns={[
+          { key: "requester", header: "Requester", render: (_, row) => row.requestedByName ?? "—" },
+          { key: "integration", header: "Integration", render: (_, row) => (
+            <span>{providerIcon(row.providerKey)} {row.providerLabel || row.providerKey}</span>
+          )},
+          { key: "reason", header: "Client", render: (_, row) => row.clientName },
+          { key: "status", header: "Status", render: (_, row) => (
+            <span className={cx("badge", statusBadgeClass(row.status))}>{formatStatus(row.status)}</span>
+          )},
+          { key: "submitted", header: "Submitted", render: (_, row) => fmtDate(row.requestedAt) },
+          { key: "actions", header: "", render: (_, row) => (
+            <button type="button" className={cx("btnXs", "btnGhost")} onClick={() => openPanel(row)}>Review</button>
+          )},
+        ]}
+      />
 
-        {/* ── Detail panel ───────────────────────────────────────────── */}
-        {selected && (
-          <aside className={cx("irDetailPanel")}>
-            <div className={cx("irDetailHd")}>
-              <div className={cx("irDetailTitle")}>
-                <span>{providerIcon(selected.providerKey)}</span>
-                <span>{selected.providerLabel || selected.providerKey}</span>
+      {/* ── Detail panel ───────────────────────────────────────────── */}
+      {selected && (
+        <aside className={cx("irDetailPanel")}>
+          <div className={cx("irDetailHd")}>
+            <div className={cx("irDetailTitle")}>
+              <span>{providerIcon(selected.providerKey)}</span>
+              <span>{selected.providerLabel || selected.providerKey}</span>
+            </div>
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setSelected(null)}>✕</button>
+          </div>
+
+          <div className={cx("irDetailBody")}>
+            <div className={cx("irDetailMeta")}>
+              <div className={cx("irDetailMetaRow")}>
+                <span className={cx("irDetailMetaLabel")}>Client</span>
+                <span className={cx("irDetailMetaValue")}>{selected.clientName}</span>
               </div>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setSelected(null)}>✕</button>
+              <div className={cx("irDetailMetaRow")}>
+                <span className={cx("irDetailMetaLabel")}>Status</span>
+                <span className={cx("badge", statusBadgeClass(selected.status))}>{formatStatus(selected.status)}</span>
+              </div>
+              <div className={cx("irDetailMetaRow")}>
+                <span className={cx("irDetailMetaLabel")}>Requested By</span>
+                <span className={cx("irDetailMetaValue")}>{selected.requestedByName ?? "—"}</span>
+              </div>
+              <div className={cx("irDetailMetaRow")}>
+                <span className={cx("irDetailMetaLabel")}>Requested</span>
+                <span className={cx("irDetailMetaValue")}>{fmtDate(selected.requestedAt)}</span>
+              </div>
+              <div className={cx("irDetailMetaRow")}>
+                <span className={cx("irDetailMetaLabel")}>Assigned To</span>
+                <input
+                  className={cx("irDetailInput")}
+                  value={panelAssignee}
+                  onChange={(e) => setPanelAssignee(e.target.value)}
+                  placeholder="Assignee name or ID…"
+                />
+              </div>
             </div>
 
-            <div className={cx("irDetailBody")}>
-              <div className={cx("irDetailMeta")}>
-                <div className={cx("irDetailMetaRow")}>
-                  <span className={cx("irDetailMetaLabel")}>Client</span>
-                  <span className={cx("irDetailMetaValue")}>{selected.clientName}</span>
-                </div>
-                <div className={cx("irDetailMetaRow")}>
-                  <span className={cx("irDetailMetaLabel")}>Status</span>
-                  <span className={cx("badge", statusBadgeClass(selected.status))}>{formatStatus(selected.status)}</span>
-                </div>
-                <div className={cx("irDetailMetaRow")}>
-                  <span className={cx("irDetailMetaLabel")}>Requested By</span>
-                  <span className={cx("irDetailMetaValue")}>{selected.requestedByName ?? "—"}</span>
-                </div>
-                <div className={cx("irDetailMetaRow")}>
-                  <span className={cx("irDetailMetaLabel")}>Requested</span>
-                  <span className={cx("irDetailMetaValue")}>{fmtDate(selected.requestedAt)}</span>
-                </div>
-                <div className={cx("irDetailMetaRow")}>
-                  <span className={cx("irDetailMetaLabel")}>Assigned To</span>
-                  <input
-                    className={cx("irDetailInput")}
-                    value={panelAssignee}
-                    onChange={(e) => setPanelAssignee(e.target.value)}
-                    placeholder="Assignee name or ID…"
-                  />
-                </div>
-              </div>
+            <div className={cx("irDetailSection")}>
+              <label className={cx("irDetailLabel")}>Notes</label>
+              <textarea
+                className={cx("irDetailTextarea")}
+                value={panelNotes}
+                onChange={(e) => setPanelNotes(e.target.value)}
+                placeholder="Add setup notes…"
+                rows={4}
+              />
+              <button
+                type="button"
+                className={cx("btnSm", "btnGhost")}
+                disabled={saving}
+                onClick={() => void handleSaveNotes(selected)}
+              >
+                Save Notes
+              </button>
+            </div>
 
+            {showRejectField && (
               <div className={cx("irDetailSection")}>
-                <label className={cx("irDetailLabel")}>Notes</label>
+                <label className={cx("irDetailLabel")}>Rejection Reason</label>
                 <textarea
                   className={cx("irDetailTextarea")}
-                  value={panelNotes}
-                  onChange={(e) => setPanelNotes(e.target.value)}
-                  placeholder="Add setup notes…"
-                  rows={4}
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Explain why this request is being rejected…"
+                  rows={3}
                 />
+              </div>
+            )}
+
+            <div className={cx("irDetailActions")}>
+              {selected.status === "REQUESTED" && (
                 <button
                   type="button"
-                  className={cx("btnSm", "btnGhost")}
+                  className={cx("btnSm", "btnPrimary")}
                   disabled={saving}
-                  onClick={() => void handleSaveNotes(selected)}
+                  onClick={() => void handleTransition(selected, "IN_PROGRESS")}
                 >
-                  Save Notes
+                  Start Setup
                 </button>
-              </div>
-
-              {showRejectField && (
-                <div className={cx("irDetailSection")}>
-                  <label className={cx("irDetailLabel")}>Rejection Reason</label>
-                  <textarea
-                    className={cx("irDetailTextarea")}
-                    value={rejectReason}
-                    onChange={(e) => setRejectReason(e.target.value)}
-                    placeholder="Explain why this request is being rejected…"
-                    rows={3}
-                  />
-                </div>
               )}
-
-              <div className={cx("irDetailActions")}>
-                {selected.status === "REQUESTED" && (
-                  <button
-                    type="button"
-                    className={cx("btnSm", "btnPrimary")}
-                    disabled={saving}
-                    onClick={() => void handleTransition(selected, "IN_PROGRESS")}
-                  >
-                    Start Setup
-                  </button>
-                )}
-                {selected.status === "IN_PROGRESS" && (
-                  <button
-                    type="button"
-                    className={cx("btnSm", "btnAccent")}
-                    disabled={saving}
-                    onClick={() => void handleTransition(selected, "COMPLETED")}
-                  >
-                    Mark Completed
-                  </button>
-                )}
-                {(selected.status === "REQUESTED" || selected.status === "IN_PROGRESS") && (
-                  <button
-                    type="button"
-                    className={cx("btnSm", "btnDanger")}
-                    disabled={saving}
-                    onClick={() => void handleTransition(selected, "REJECTED")}
-                  >
-                    {showRejectField ? "Confirm Reject" : "Reject"}
-                  </button>
-                )}
-              </div>
+              {selected.status === "IN_PROGRESS" && (
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnAccent")}
+                  disabled={saving}
+                  onClick={() => void handleTransition(selected, "COMPLETED")}
+                >
+                  Mark Completed
+                </button>
+              )}
+              {(selected.status === "REQUESTED" || selected.status === "IN_PROGRESS") && (
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnDanger")}
+                  disabled={saving}
+                  onClick={() => void handleTransition(selected, "REJECTED")}
+                >
+                  {showRejectField ? "Confirm Reject" : "Reject"}
+                </button>
+              )}
             </div>
-          </aside>
-        )}
-      </div>
+          </div>
+        </aside>
+      )}
     </div>
   );
 }
