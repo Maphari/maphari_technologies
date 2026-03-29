@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { formatMoneyCents } from "@/lib/i18n/currency";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, PipelineWidget, TableWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -115,6 +116,21 @@ export function ChangeRequestManagerPage({
     );
   }
 
+  const pendingCount  = items.filter((cr) => cr.status === "SUBMITTED" || cr.status === "ESTIMATED").length;
+  const approvedCount = items.filter((cr) => cr.status === "ADMIN_APPROVED" || cr.status === "CLIENT_APPROVED").length;
+  const rejectedCount = items.filter((cr) => cr.status === "ADMIN_REJECTED" || cr.status === "CLIENT_REJECTED").length;
+  const draftCount    = items.filter((cr) => cr.status === "DRAFT").length;
+
+  const tableRows: Record<string, unknown>[] = items.slice(0, 50).map((cr) => ({
+    id:     shortId(cr.id),
+    title:  cr.title,
+    cost:   formatCost(cr.estimatedCostCents),
+    by:     cr.requestedByName ?? "—",
+    date:   formatDate(cr.requestedAt),
+    status: statusLabel(cr.status),
+    statusRaw: cr.status,
+  }));
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -124,6 +140,36 @@ export function ChangeRequestManagerPage({
           <div className={styles.pageSub}>Review and approve project scope change requests</div>
         </div>
       </div>
+
+      <WidgetGrid>
+        <StatWidget label="Pending"  value={pendingCount}  sub="Awaiting review"  tone={pendingCount > 0 ? "amber" : "default"} />
+        <StatWidget label="Approved" value={approvedCount} sub="Accepted changes"  tone="green" />
+        <StatWidget label="Rejected" value={rejectedCount} sub="Declined changes"  tone={rejectedCount > 0 ? "red" : "default"} />
+        <StatWidget label="Draft"    value={draftCount}    sub="Not yet submitted" tone="default" />
+      </WidgetGrid>
+
+      <WidgetGrid columns={2}>
+        <PipelineWidget
+          title="Change Request Pipeline"
+          stages={[
+            { label: "Draft",     count: draftCount,    total: items.length || 1, color: "#8b6fff" },
+            { label: "Pending",   count: pendingCount,  total: items.length || 1, color: "#f5a623" },
+            { label: "Approved",  count: approvedCount, total: items.length || 1, color: "#34d98b" },
+            { label: "Rejected",  count: rejectedCount, total: items.length || 1, color: "#ff5f5f" },
+          ]}
+        />
+        <TableWidget
+          title="Recent Change Requests"
+          columns={[
+            { key: "id",     label: "ID",     width: 80 },
+            { key: "title",  label: "Title" },
+            { key: "cost",   label: "Cost" },
+            { key: "status", label: "Status" },
+          ]}
+          rows={tableRows}
+          emptyMessage="No change requests yet"
+        />
+      </WidgetGrid>
 
       <article className={styles.card}>
         <div className={styles.cardHd}>
