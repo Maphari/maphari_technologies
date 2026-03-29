@@ -242,7 +242,7 @@ describe("SettingsPage — Security tab — 2FA status", () => {
     vi.mocked(getStaff2faStatusWithRefresh).mockImplementation(() => new Promise(() => {}));
     render(<SettingsPage {...makeProps()} />);
     fireEvent.click(screen.getByRole("tab", { name: /^security/i }));
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    expect(document.querySelector("[aria-busy='true']")).toBeInTheDocument();
   });
 
   it("shows Enable 2FA button when 2FA is disabled", async () => {
