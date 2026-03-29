@@ -210,7 +210,7 @@ export function AdminAutomationPageClient({
           { label: "Queued Jobs", value: queued.toString(), color: queued > 0 ? "var(--amber)" : "var(--accent)", sub: "Pending workflow dispatches" },
           { label: "Sent Jobs", value: sent.toString(), color: "var(--blue)", sub: "Successful executions" },
           { label: "Failed Jobs", value: failed.toString(), color: failed > 0 ? "var(--red)" : "var(--accent)", sub: "Needs retry attention" },
-          { label: "Success Rate", value: `${successRate}%`, color: successRate >= 90 ? "var(--accent)" : "var(--amber)", sub: `${analyticsPoints} analytics points` }
+          { label: "Success Rate", value: `${successRate}%`, color: successRate >= 90 ? "var(--accent)" : "var(--amber)", sub: analyticsPoints != null ? `${analyticsPoints} analytics points` : "No analytics data" }
         ].map((k) => (
           <div key={k.label} className={styles.statCard}>
             <div className={styles.statLabel}>{k.label}</div>
