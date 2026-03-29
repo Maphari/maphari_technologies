@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -179,6 +180,12 @@ export function IntegrationConnectionsPage({
     );
   }
 
+  // Build chart data: connections by provider
+  const providerCounts = uniqueProviders.map((k) => ({
+    name: providerLabel(k),
+    count: connections.filter((c) => c.providerKey === k).length,
+  }));
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
@@ -190,19 +197,33 @@ export function IntegrationConnectionsPage({
       </div>
 
       {/* ── KPI Row ────────────────────────────────────────────────────── */}
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Total Connections", value: total,        color: "var(--accent)"  },
-          { label: "Healthy",           value: healthy,      color: "var(--green)"   },
-          { label: "Action Needed",     value: actionNeeded, color: "var(--amber)"   },
-          { label: "Failed / Re-auth",  value: failed,       color: "var(--red)"     },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={styles.statValue} style={{ color: s.color }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid columns={4}>
+        <StatWidget label="Total Connections" value={String(total)} tone="accent" />
+        <StatWidget label="Active" value={String(healthy)} tone="green" />
+        <StatWidget label="Failing" value={String(failed)} tone="red" sub={failed > 0 ? "Needs attention" : undefined} subTone={failed > 0 ? "red" : undefined} />
+        <StatWidget label="Pending" value={String(actionNeeded)} tone="amber" />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Connections by Provider"
+          data={providerCounts}
+          dataKey="count"
+          xKey="name"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Connection Health"
+          stages={[
+            { label: "Healthy", count: healthy, total: Math.max(total, 1), color: "#34d98b" },
+            { label: "Action Needed", count: actionNeeded, total: Math.max(total, 1), color: "#f5a623" },
+            { label: "Failed / Re-auth", count: failed, total: Math.max(total, 1), color: "#ff5f5f" },
+            { label: "Unknown", count: connections.filter((c) => !c.healthStatus || c.healthStatus === "UNKNOWN").length, total: Math.max(total, 1), color: "#8b6fff" },
+          ]}
+        />
+      </WidgetGrid>
 
       {/* ── Filter bar ─────────────────────────────────────────────────── */}
       <div className={cx("icFilterBar", "mb16")}>
@@ -240,147 +261,92 @@ export function IntegrationConnectionsPage({
         <span className={cx("text12", "colorMuted")}>{filtered.length} connection{filtered.length !== 1 ? "s" : ""}</span>
       </div>
 
-      {/* ── Main layout: table + sync panel ────────────────────────────── */}
-      <div className={cx(selected ? "icShellWithPanel" : "")}>
-        <article className={styles.card}>
-          <div className={styles.cardHd}>
-            <span className={styles.cardHdTitle}>Connections</span>
+      {/* ── Connections Table ───────────────────────────────────────────── */}
+      <TableWidget
+        label="Connections"
+        rows={filtered}
+        rowKey="id"
+        emptyMessage="No integration connections match the current filters."
+        columns={[
+          { key: "client", header: "Client", render: (_, row) => row.clientName },
+          { key: "provider", header: "Provider", render: (_, row) => providerLabel(row.providerKey) },
+          { key: "type", header: "Type", render: (_, row) => (
+            <span className={cx("badge", connectionTypeBadge(row.connectionType))}>
+              {row.connectionType === "oauth" ? "OAuth" : row.connectionType === "assisted" ? "Assisted" : row.connectionType}
+            </span>
+          )},
+          { key: "status", header: "Status", render: (_, row) => (
+            <span className={cx("badge", statusBadgeClass(row.status))}>{statusLabel(row.status)}</span>
+          )},
+          { key: "health", header: "Health", render: (_, row) => (
+            <span className={cx("badge", healthBadgeClass(row.healthStatus))}>{healthLabel(row.healthStatus)}</span>
+          )},
+          { key: "lastSynced", header: "Last Synced", render: (_, row) => fmtDate(row.lastSyncedAt) },
+          { key: "events", header: "Events", render: (_, row) => (
+            <span className={cx("text12", "colorMuted")} style={{ cursor: "pointer" }} onClick={() => void openSyncPanel(row)}>View</span>
+          )},
+        ]}
+      />
+
+      {/* ── Sync history panel ──────────────────────────────────────── */}
+      {selected && (
+        <aside className={cx("icSyncPanel")}>
+          <div className={cx("icSyncPanelHd")}>
+            <div className={cx("icSyncPanelTitle")}>
+              <span className={cx("fw600")}>{providerLabel(selected.providerKey)}</span>
+              <span className={cx("colorMuted", "text12")}>{selected.clientName}</span>
+            </div>
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setSelected(null)}>✕</button>
           </div>
-          <div className={styles.cardInner}>
-            {filtered.length === 0 ? (
-              <div className={styles.emptyState}>
-                <div className={styles.emptyIcon}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <div className={styles.emptyTitle}>No connections found</div>
-                <div className={styles.emptySub}>No integration connections match the current filters.</div>
+
+          <div className={cx("icSyncPanelMeta")}>
+            <div className={cx("icSyncMetaRow")}>
+              <span className={cx("icSyncMetaLabel")}>Status</span>
+              <span className={cx("badge", statusBadgeClass(selected.status))}>{statusLabel(selected.status)}</span>
+            </div>
+            <div className={cx("icSyncMetaRow")}>
+              <span className={cx("icSyncMetaLabel")}>Health</span>
+              <span className={cx("badge", healthBadgeClass(selected.healthStatus))}>{healthLabel(selected.healthStatus)}</span>
+            </div>
+            <div className={cx("icSyncMetaRow")}>
+              <span className={cx("icSyncMetaLabel")}>Last Synced</span>
+              <span className={cx("text12")}>{fmtDate(selected.lastSyncedAt)}</span>
+            </div>
+            {selected.lastErrorMessage && (
+              <div className={cx("icSyncMetaRow")}>
+                <span className={cx("icSyncMetaLabel")}>Last Error</span>
+                <span className={cx("icSyncErrorMsg")}>{selected.lastErrorMessage}</span>
               </div>
-            ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th scope="col">Client</th>
-                    <th scope="col">Provider</th>
-                    <th scope="col">Type</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Health</th>
-                    <th scope="col">Connected By</th>
-                    <th scope="col">Connected</th>
-                    <th scope="col">Last Synced</th>
-                    <th scope="col">Last Error</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((conn) => (
-                    <tr
-                      key={conn.id}
-                      className={cx("icRow", selected?.id === conn.id ? "icRowSelected" : "")}
-                      onClick={() => void openSyncPanel(conn)}
-                    >
-                      <td className={cx("fw600", "text13")}>{conn.clientName}</td>
-                      <td className={cx("text13")}>{providerLabel(conn.providerKey)}</td>
-                      <td>
-                        <span className={cx("badge", connectionTypeBadge(conn.connectionType))}>
-                          {conn.connectionType === "oauth" ? "OAuth" : conn.connectionType === "assisted" ? "Assisted" : conn.connectionType}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={cx("badge", statusBadgeClass(conn.status))}>
-                          {statusLabel(conn.status)}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={cx("badge", healthBadgeClass(conn.healthStatus))}>
-                          {healthLabel(conn.healthStatus)}
-                        </span>
-                      </td>
-                      <td className={cx("text12")}>
-                        {conn.connectedByContactEmail ?? (conn.assignedOwnerUserId ? "Maphari" : "—")}
-                      </td>
-                      <td className={cx("text12", "colorMuted")}>{fmtDate(conn.connectedAt)}</td>
-                      <td className={cx("text12", "colorMuted")}>{fmtDate(conn.lastSyncedAt)}</td>
-                      <td>
-                        {conn.lastErrorMessage ? (
-                          <span
-                            className={cx("icErrorCell")}
-                            title={conn.lastErrorMessage}
-                          >
-                            {conn.lastErrorMessage.slice(0, 40)}{conn.lastErrorMessage.length > 40 ? "…" : ""}
-                          </span>
-                        ) : (
-                          <span className={cx("colorMuted", "text12")}>—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             )}
           </div>
-        </article>
 
-        {/* ── Sync history panel ──────────────────────────────────────── */}
-        {selected && (
-          <aside className={cx("icSyncPanel")}>
-            <div className={cx("icSyncPanelHd")}>
-              <div className={cx("icSyncPanelTitle")}>
-                <span className={cx("fw600")}>{providerLabel(selected.providerKey)}</span>
-                <span className={cx("colorMuted", "text12")}>{selected.clientName}</span>
-              </div>
-              <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setSelected(null)}>✕</button>
-            </div>
+          <div className={cx("icSyncHistoryHd")}>Sync History</div>
 
-            <div className={cx("icSyncPanelMeta")}>
-              <div className={cx("icSyncMetaRow")}>
-                <span className={cx("icSyncMetaLabel")}>Status</span>
-                <span className={cx("badge", statusBadgeClass(selected.status))}>{statusLabel(selected.status)}</span>
-              </div>
-              <div className={cx("icSyncMetaRow")}>
-                <span className={cx("icSyncMetaLabel")}>Health</span>
-                <span className={cx("badge", healthBadgeClass(selected.healthStatus))}>{healthLabel(selected.healthStatus)}</span>
-              </div>
-              <div className={cx("icSyncMetaRow")}>
-                <span className={cx("icSyncMetaLabel")}>Last Synced</span>
-                <span className={cx("text12")}>{fmtDate(selected.lastSyncedAt)}</span>
-              </div>
-              {selected.lastErrorMessage && (
-                <div className={cx("icSyncMetaRow")}>
-                  <span className={cx("icSyncMetaLabel")}>Last Error</span>
-                  <span className={cx("icSyncErrorMsg")}>{selected.lastErrorMessage}</span>
-                </div>
-              )}
-            </div>
-
-            <div className={cx("icSyncHistoryHd")}>Sync History</div>
-
-            {loadingSync ? (
-              <div className={cx("icSyncLoading")}>Loading sync events…</div>
-            ) : syncEvents.length === 0 ? (
-              <div className={cx("icSyncEmpty")}>No sync events recorded.</div>
-            ) : (
-              <div className={cx("icSyncList")}>
-                {syncEvents.map((ev) => (
-                  <div key={ev.id} className={cx("icSyncEvent")}>
-                    <div className={cx("icSyncEventTop")}>
-                      <span className={cx("icSyncChip", syncStatusClass(ev.status))}>{ev.status}</span>
-                      <span className={cx("text11", "colorMuted")}>{fmtDateTime(ev.startedAt)}</span>
-                      <span className={cx("text11", "colorMuted")}>{fmtDuration(ev.durationMs)}</span>
-                    </div>
-                    {ev.summary && (
-                      <div className={cx("icSyncSummary")}>{ev.summary}</div>
-                    )}
-                    {ev.errorMessage && (
-                      <div className={cx("icSyncEventError")}>{ev.errorMessage}</div>
-                    )}
+          {loadingSync ? (
+            <div className={cx("icSyncLoading")}>Loading sync events…</div>
+          ) : syncEvents.length === 0 ? (
+            <div className={cx("icSyncEmpty")}>No sync events recorded.</div>
+          ) : (
+            <div className={cx("icSyncList")}>
+              {syncEvents.map((ev) => (
+                <div key={ev.id} className={cx("icSyncEvent")}>
+                  <div className={cx("icSyncEventTop")}>
+                    <span className={cx("icSyncChip", syncStatusClass(ev.status))}>{ev.status}</span>
+                    <span className={cx("text11", "colorMuted")}>{fmtDateTime(ev.startedAt)}</span>
+                    <span className={cx("text11", "colorMuted")}>{fmtDuration(ev.durationMs)}</span>
                   </div>
-                ))}
-              </div>
-            )}
-          </aside>
-        )}
-      </div>
+                  {ev.summary && (
+                    <div className={cx("icSyncSummary")}>{ev.summary}</div>
+                  )}
+                  {ev.errorMessage && (
+                    <div className={cx("icSyncEventError")}>{ev.errorMessage}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </aside>
+      )}
     </div>
   );
 }
