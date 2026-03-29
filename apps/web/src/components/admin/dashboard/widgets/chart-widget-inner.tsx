@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   AreaChart, Area,
   BarChart, Bar,
@@ -24,11 +25,11 @@ const DEFAULT_COLORS = [
 // to avoid React unmounting the defs on every parent re-render (gradient flicker).
 // Rendered as a direct JSX child of <AreaChart> — Recharts passes unknown children
 // into the SVG, so <defs> placed here end up inside the chart's own <svg> element.
-function AreaGradientDefs({ keys, colors }: { keys: string[]; colors: string[] }) {
+function AreaGradientDefs({ keys, colors, uid }: { keys: string[]; colors: string[]; uid: string }) {
   return (
     <defs>
       {keys.map((k, i) => (
-        <linearGradient key={k} id={`${gradientId}_${i}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient key={k} id={`${uid}_${i}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={colors[i]} stopOpacity={0.35} />
           <stop offset="100%" stopColor={colors[i]} stopOpacity={0.02} />
         </linearGradient>
@@ -72,6 +73,7 @@ export function ChartWidgetInner({
   xKey = "label",
   className,
 }: ChartWidgetInnerProps) {
+  const uid = useId();
   const keys = Array.isArray(dataKey) ? dataKey : [dataKey];
   const resolvedColors = resolveColors(dataKey, color);
 
@@ -104,7 +106,7 @@ export function ChartWidgetInner({
       <ResponsiveContainer width="100%" height={height}>
         {type === "area" ? (
           <AreaChart data={data} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
-            <AreaGradientDefs keys={keys} colors={resolvedColors} />
+            <AreaGradientDefs keys={keys} colors={resolvedColors} uid={uid} />
             <CartesianGrid vertical={false} stroke={gridStroke} />
             <XAxis dataKey={xKey} tick={tickStyle} axisLine={false} tickLine={false} />
             <YAxis tick={tickStyle} axisLine={false} tickLine={false} width={40} />
@@ -116,7 +118,7 @@ export function ChartWidgetInner({
                 dataKey={k}
                 stroke={resolvedColors[i]}
                 strokeWidth={CHART_DEFAULTS.strokeWidth}
-                fill={`url(#${gradientId}_${i})`}
+                fill={`url(#${uid}_${i})`}
                 dot={false}
                 activeDot={{ r: CHART_DEFAULTS.dotRadius, fill: resolvedColors[i] }}
               />
@@ -146,7 +148,7 @@ export function ChartWidgetInner({
                 stroke={resolvedColors[i]}
                 strokeWidth={CHART_DEFAULTS.strokeWidth}
                 dot={false}
-                activeDot={{ r: CHART_DEFAULTS.dotRadius }}
+                activeDot={{ r: CHART_DEFAULTS.dotRadius, fill: resolvedColors[i] }}
               />
             ))}
           </LineChart>

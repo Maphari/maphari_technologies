@@ -14,6 +14,7 @@ interface TableWidgetProps<T extends Record<string, unknown>> {
   label: string;
   rows: T[];
   columns: TableColumn<T>[];
+  rowKey?: string;
   /** Override displayed count (e.g. "showing 10 of 247"). Defaults to rows.length. */
   rowCount?: number;
   emptyMessage?: string;
@@ -24,6 +25,7 @@ export function TableWidget<T extends Record<string, unknown>>({
   label,
   rows,
   columns,
+  rowKey,
   rowCount,
   emptyMessage = "No data",
   className,
@@ -55,7 +57,7 @@ export function TableWidget<T extends Record<string, unknown>>({
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i} className={styles.widgetTr}>
+              <tr key={rowKey ? String(row[rowKey]) : i} className={styles.widgetTr}>
                 {columns.map((col) => (
                   <td
                     key={col.key}
