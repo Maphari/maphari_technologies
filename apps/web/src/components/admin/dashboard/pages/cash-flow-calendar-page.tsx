@@ -4,7 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminTabs } from "./shared";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
-import { fetchCashFlowEvents, type CashFlowEvent } from "../../../../lib/api/admin/billing";
+import {
+  fetchCashFlowEvents,
+  loadCashFlowScenariosWithRefresh,
+  createCashFlowScenarioWithRefresh,
+  deleteCashFlowScenarioWithRefresh,
+  type CashFlowEvent,
+  type CashFlowScenario
+} from "../../../../lib/api/admin/billing";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 
 const statusConfig = {
@@ -47,6 +54,10 @@ export function CashFlowCalendarPage() {
   const [activeTab, setActiveTab] = useState<Tab>("90-day view");
   const [cashEvents, setCashEvents] = useState<CashFlowEvent[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
+  const [scenarios, setScenarios] = useState<CashFlowScenario[]>([]);
+  const [newScenarioName, setNewScenarioName] = useState("");
+  const [newScenarioDesc, setNewScenarioDesc] = useState("");
+  const [savingScenario, setSavingScenario] = useState(false);
 
   const loadCashEvents = useCallback(async () => {
     if (!session) { setLoadingEvents(false); return; }
@@ -59,9 +70,37 @@ export function CashFlowCalendarPage() {
     }
   }, [session]);
 
+  const loadScenarios = useCallback(async () => {
+    if (!session) return;
+    const result = await loadCashFlowScenariosWithRefresh(session);
+    if (result.data) setScenarios(result.data);
+  }, [session]);
+
   useEffect(() => {
     void loadCashEvents();
-  }, [loadCashEvents]);
+    void loadScenarios();
+  }, [loadCashEvents, loadScenarios]);
+
+  const handleSaveScenario = useCallback(async () => {
+    if (!session || !newScenarioName.trim()) return;
+    setSavingScenario(true);
+    const result = await createCashFlowScenarioWithRefresh(session, {
+      name: newScenarioName.trim(),
+      description: newScenarioDesc.trim() || undefined,
+    });
+    if (result.data) {
+      setScenarios((prev) => [result.data!, ...prev]);
+      setNewScenarioName("");
+      setNewScenarioDesc("");
+    }
+    setSavingScenario(false);
+  }, [session, newScenarioName, newScenarioDesc]);
+
+  const handleDeleteScenario = useCallback(async (id: string) => {
+    if (!session) return;
+    await deleteCashFlowScenarioWithRefresh(session, id);
+    setScenarios((prev) => prev.filter((s) => s.id !== id));
+  }, [session]);
 
   const inflows = cashEvents.filter((e) => e.type === "inflow");
   const outflows = cashEvents.filter((e) => e.type === "outflow");
@@ -246,39 +285,70 @@ export function CashFlowCalendarPage() {
         )}
 
         {activeTab === "scenario planner" && (
-          <div className={cx("grid2", "gap20")}>
-            {[
-              { label: "Best Case", desc: "All invoices paid on time plus one new client", inflow: totalExpected + 28000, color: "var(--accent)" },
-              { label: "Base Case", desc: "Invoices paid, overdue resolved by Mar", inflow: totalExpected, color: "var(--blue)" },
-              { label: "Worst Case", desc: "Two largest invoices unpaid this month", inflow: totalExpected - 37000, color: "var(--amber)" },
-              { label: "Crisis Case", desc: "Both clients churn and no new revenue", inflow: totalExpected - 72000, color: "var(--red)" }
-            ].map((scenario) => {
-              const net = scenario.inflow - totalOut;
-              const closing = openingBalance + net;
-              return (
-                <div key={scenario.label} className={cx("card", "p24", styles.cashFlowToneBorder, toneClass(scenario.color))}>
-                  <div className={cx("fw700", styles.cashFlowScenarioTitle, styles.cashFlowToneText, toneClass(scenario.color))}>{scenario.label}</div>
-                  <div className={cx("text12", "colorMuted", "mb20")}>{scenario.desc}</div>
-                  <div className={cx("flexCol", "gap10")}>
-                    {[
-                      { label: "Inflows", value: `R${(scenario.inflow / 1000).toFixed(0)}k`, color: "var(--accent)" },
-                      { label: "Outflows", value: `-R${(totalOut / 1000).toFixed(0)}k`, color: "var(--red)" },
-                      { label: "Net", value: `${net >= 0 ? "+" : ""}R${(net / 1000).toFixed(0)}k`, color: net >= 0 ? "var(--accent)" : "var(--red)" },
-                      { label: "Closing Balance", value: `R${(closing / 1000).toFixed(0)}k`, color: scenario.color }
-                    ].map((r) => (
-                      <div key={r.label} className={cx("flexBetween", "text13", "py10", "borderB")}>
-                        <span className={cx("colorMuted")}>{r.label}</span>
-                        <span className={cx("fontMono", "fw700", styles.cashFlowToneText, toneClass(r.color))}>{r.value}</span>
+          <div className={cx("flexCol", "gap20")}>
+            {/* ── Create new scenario form ─────────────────────────────── */}
+            <div className={cx("card", "p20")}>
+              <div className={cx("fw600", "text14", "mb12")}>Save a scenario</div>
+              <div className={cx("flexCol", "gap10")}>
+                <input
+                  type="text"
+                  placeholder="Scenario name (e.g. Best Case)"
+                  value={newScenarioName}
+                  onChange={(e) => setNewScenarioName(e.target.value)}
+                  className={cx("inputSm")}
+                />
+                <input
+                  type="text"
+                  placeholder="Description (optional)"
+                  value={newScenarioDesc}
+                  onChange={(e) => setNewScenarioDesc(e.target.value)}
+                  className={cx("inputSm")}
+                />
+                <button
+                  type="button"
+                  className={cx("btnSm", "btnAccent")}
+                  disabled={savingScenario || !newScenarioName.trim()}
+                  onClick={() => void handleSaveScenario()}
+                >
+                  {savingScenario ? "Saving…" : "Save scenario"}
+                </button>
+              </div>
+            </div>
+
+            {/* ── Persisted scenarios list ─────────────────────────────── */}
+            {scenarios.length === 0 ? (
+              <div className={cx("card", "p24", "textCenter", "colorMuted", "text13")}>
+                No saved scenarios yet. Create one above.
+              </div>
+            ) : (
+              <div className={cx("grid2", "gap20")}>
+                {scenarios.map((scenario, idx) => {
+                  const colors = ["var(--accent)", "var(--blue)", "var(--amber)", "var(--red)", "var(--purple)"];
+                  const color = colors[idx % colors.length]!;
+                  return (
+                    <div key={scenario.id} className={cx("card", "p24", styles.cashFlowToneBorder, toneClass(color))}>
+                      <div className={cx("flexBetween", "mb4")}>
+                        <div className={cx("fw700", styles.cashFlowScenarioTitle, styles.cashFlowToneText, toneClass(color))}>{scenario.name}</div>
+                        <button
+                          type="button"
+                          className={cx("btnXs", "btnGhost")}
+                          onClick={() => void handleDeleteScenario(scenario.id)}
+                          title="Delete scenario"
+                        >
+                          ×
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                  <div className={cx("mt12", "bgBg", "p12")}>
-                    <div className={cx("text10", "colorMuted")}>Months of runway at closing balance</div>
-                    <div className={cx("fontMono", "fw800", "mt4", styles.cashFlowAmount22, styles.cashFlowToneText, toneClass(scenario.color))}>{Math.max(0, (closing / (totalOut / 3))).toFixed(1)}mo</div>
-                  </div>
-                </div>
-              );
-            })}
+                      {scenario.description && (
+                        <div className={cx("text12", "colorMuted", "mb12")}>{scenario.description}</div>
+                      )}
+                      <div className={cx("text11", "colorMuted")}>
+                        Saved {new Date(scenario.createdAt).toLocaleDateString("en-ZA")}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

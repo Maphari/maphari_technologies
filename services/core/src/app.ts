@@ -143,6 +143,9 @@ import { registerBrandRoutes } from "./routes/brand.js";
 // ── Automation Job Metrics ─────────────────────────────────────────────────
 import { registerAutomationMetricRoutes } from "./routes/automation-metrics.js";
 
+// ── Cash Flow Scenarios ────────────────────────────────────────────────────
+import { registerCashFlowScenarioRoutes } from "./routes/cash-flow-scenarios.js";
+
 // ── Standup Crons ──────────────────────────────────────────────────────────
 import { scheduleStandupReminder, scheduleStandupDigest } from "./cron/standup-reminder.js";
 
@@ -335,6 +338,9 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── Automation Job Metrics ─────────────────────────────────────────────────
   await registerAutomationMetricRoutes(app);
+
+  // ── Cash Flow Scenarios ────────────────────────────────────────────────────
+  await registerCashFlowScenarioRoutes(app);
 
   // ── Standup Crons ──────────────────────────────────────────────────────────
   scheduleStandupReminder();

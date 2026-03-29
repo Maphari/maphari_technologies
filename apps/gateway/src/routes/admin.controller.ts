@@ -18,6 +18,7 @@ import {
   Post,
   Put,
   Query,
+  BadRequestException,
 } from "@nestjs/common";
 import { type ApiResponse, type Role } from "@maphari/contracts";
 import { Roles } from "../auth/roles.decorator.js";
@@ -1294,6 +1295,147 @@ export class AdminController {
       `${CORE()}/crises/playbooks/${id}`,
       "PATCH",
       body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CASH FLOW SCENARIOS
+
+  // ── GET /cash-flow/scenarios ───────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("cash-flow/scenarios")
+  async listCashFlowScenarios(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/cash-flow/scenarios`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── POST /cash-flow/scenarios ──────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Post("cash-flow/scenarios")
+  async createCashFlowScenario(
+    @Body() body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    if (!body || typeof (body as Record<string, unknown>).name !== "string") {
+      throw new BadRequestException("name is required");
+    }
+    return proxyRequest(
+      `${CORE()}/cash-flow/scenarios`,
+      "POST",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PUT /cash-flow/scenarios/:id ───────────────────────────────────────────
+  @Roles("ADMIN")
+  @Put("cash-flow/scenarios/:id")
+  async updateCashFlowScenario(
+    @Param("id")             id: string,
+    @Body()                  body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/cash-flow/scenarios/${id}`,
+      "PUT",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── DELETE /cash-flow/scenarios/:id ───────────────────────────────────────
+  @Roles("ADMIN")
+  @Delete("cash-flow/scenarios/:id")
+  async deleteCashFlowScenario(
+    @Param("id")             id: string,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/cash-flow/scenarios/${id}`,
+      "DELETE",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PROSPECTING CAMPAIGNS
+
+  // ── GET /prospecting/campaigns ─────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("prospecting/campaigns")
+  async listProspectingCampaigns(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/prospecting/campaigns`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── POST /prospecting/campaigns ────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Post("prospecting/campaigns")
+  async createProspectingCampaign(
+    @Body() body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/prospecting/campaigns`,
+      "POST",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── DELETE /prospecting/campaigns/:id ──────────────────────────────────────
+  @Roles("ADMIN")
+  @Delete("prospecting/campaigns/:id")
+  async deleteProspectingCampaign(
+    @Param("id")             id: string,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/prospecting/campaigns/${id}`,
+      "DELETE",
+      undefined,
       adminHeaders(userId, role, clientId, requestId, traceId)
     );
   }
