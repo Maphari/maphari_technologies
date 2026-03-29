@@ -23,6 +23,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
 } from "@nestjs/common";
 import { type ApiResponse, type Role } from "@maphari/contracts";
@@ -1299,6 +1300,83 @@ export class StaffController {
     return proxyRequest(
       `${CORE()}/staff-profiles/${id}/skills`,
       "PATCH",
+      body,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── GET /hr/learning-budgets ───────────────────────────────────────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("hr/learning-budgets")
+  async listLearningBudgets(
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/hr/learning-budgets`,
+      "GET",
+      undefined,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PUT /hr/learning-budgets/:staffId ──────────────────────────────────────
+  @Roles("ADMIN")
+  @Put("hr/learning-budgets/:staffId")
+  async upsertLearningBudget(
+    @Param("staffId")         staffId: string,
+    @Body()                   body: unknown,
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/hr/learning-budgets/${staffId}`,
+      "PUT",
+      body,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── GET /hr/skill-proficiency ──────────────────────────────────────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("hr/skill-proficiency")
+  async listSkillProficiency(
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/hr/skill-proficiency`,
+      "GET",
+      undefined,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PUT /hr/skill-proficiency/:staffId/:skill ──────────────────────────────
+  @Roles("ADMIN")
+  @Put("hr/skill-proficiency/:staffId/:skill")
+  async upsertSkillProficiency(
+    @Param("staffId")         staffId: string,
+    @Param("skill")           skill: string,
+    @Body()                   body: unknown,
+    @Headers("x-user-id")     userId?: string,
+    @Headers("x-user-role")   role?: Role,
+    @Headers("x-client-id")   clientId?: string,
+    @Headers("x-request-id")  requestId?: string,
+    @Headers("x-trace-id")    traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/hr/skill-proficiency/${staffId}/${encodeURIComponent(skill)}`,
+      "PUT",
       body,
       scopeHeaders(userId, role, clientId, requestId, traceId)
     );

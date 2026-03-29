@@ -24,7 +24,7 @@ export interface AuthorizedResult<T> {
 async function attemptGateway<T>(
   path: string,
   accessToken: string,
-  options: { method?: "GET" | "POST" | "PATCH" | "DELETE"; body?: unknown }
+  options: { method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE"; body?: unknown }
 ): Promise<RawGatewayResponse<T>> {
   try {
     const response = await fetch(`${gatewayBaseUrl}${path}`, {
@@ -72,7 +72,7 @@ function isTransient<T>(res: RawGatewayResponse<T>): boolean {
 export async function callGateway<T>(
   path: string,
   accessToken: string,
-  options: { method?: "GET" | "POST" | "PATCH" | "DELETE"; body?: unknown } = {}
+  options: { method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE"; body?: unknown } = {}
 ): Promise<RawGatewayResponse<T>> {
   const result = await attemptGateway<T>(path, accessToken, options);
   if (!isTransient(result)) return result;

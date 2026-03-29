@@ -134,6 +134,12 @@ import { registerChurnRiskRoutes } from "./routes/churn-risk.js";
 // ── EFT Verification ───────────────────────────────────────────────────────
 import { registerEftVerificationRoutes } from "./routes/eft-verification.js";
 
+// ── HR: L&D Budget & Skill Proficiency ────────────────────────────────────
+import { registerHrRoutes } from "./routes/hr.js";
+
+// ── Brand Control: Email Templates & Custom Domains ───────────────────────
+import { registerBrandRoutes } from "./routes/brand.js";
+
 // ── Standup Crons ──────────────────────────────────────────────────────────
 import { scheduleStandupReminder, scheduleStandupDigest } from "./cron/standup-reminder.js";
 
@@ -317,6 +323,12 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── EFT Verification ───────────────────────────────────────────────────────
   await registerEftVerificationRoutes(app);
+
+  // ── HR: L&D Budget & Skill Proficiency ────────────────────────────────────
+  await registerHrRoutes(app);
+
+  // ── Brand Control: Email Templates & Custom Domains ───────────────────────
+  await registerBrandRoutes(app);
 
   // ── Standup Crons ──────────────────────────────────────────────────────────
   scheduleStandupReminder();
