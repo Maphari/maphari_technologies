@@ -28,7 +28,7 @@ export function AdminBillingPageClient() {
                 {snapshot.invoices.map((invoice) => (
                   <div key={invoice.id} className={styles.tableRow}>
                     <span>{invoice.number}</span>
-                    <span>{invoice.status}</span>
+                    <span>{formatStatus(invoice.status)}</span>
                     <span>{formatMoneyCents(invoice.amountCents, { currency: invoice.currency, maximumFractionDigits: 0 })}</span>
                   </div>
                 ))}

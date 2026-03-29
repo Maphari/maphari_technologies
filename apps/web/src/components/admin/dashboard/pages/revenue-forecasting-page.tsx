@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
 import { formatMoneyK } from "@/lib/utils/format-money";
+import { formatStatus } from "@/lib/utils/format-status";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import type { AdminInvoice } from "../../../../lib/api/admin/types";
@@ -326,7 +327,7 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
                     styles.revfStageTag,
                     inv.status === "OVERDUE" ? styles.revfStageAmber : styles.revfStageBlue
                   )}>
-                    {inv.status}
+                    {formatStatus(inv.status)}
                   </span>
                 </div>
                 <div className={styles.revfCenterCol}>

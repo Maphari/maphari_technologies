@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatMoneyCents } from "@/lib/i18n/currency";
+import { formatStatus } from "@/lib/utils/format-status";
 import { cx, styles } from "../style";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
@@ -473,7 +474,7 @@ export function RequestInboxPage({
                               </div>
                               <div style={{ display: "flex", justifyContent: "space-between" }}>
                                 <span style={{ fontSize: 12, color: "var(--muted)" }}>Status</span>
-                                <span style={{ fontSize: 12.5, fontWeight: 600, color: isVerified ? "#4ade80" : isRejected ? "#f87171" : "#fbbf24" }}>{item.status}</span>
+                                <span style={{ fontSize: 12.5, fontWeight: 600, color: isVerified ? "#4ade80" : isRejected ? "#f87171" : "#fbbf24" }}>{formatStatus(item.status)}</span>
                               </div>
                             </div>
                           </div>
