@@ -21,7 +21,9 @@
 
 **Recharts** — added as a dependency to `apps/web/package.json`.
 
-Used for: AreaChart (trends), BarChart (comparisons), LineChart (multi-series), RadialBarChart (scores/percentages). All charts are responsive (`ResponsiveContainer`), lazy-loaded, and use the design token colours.
+Used for: AreaChart (trends), BarChart (comparisons), LineChart (multi-series), RadialBarChart (scores/percentages). All charts are responsive (`ResponsiveContainer`) and use the design token colours.
+
+**Lazy loading:** `ChartWidget` uses `next/dynamic` internally with `ssr: false` for the Recharts import. The dynamic boundary lives inside `ChartWidget` itself — callers import `ChartWidget` normally and get lazy-loading for free without adding `dynamic()` at every callsite.
 
 ---
 
@@ -49,30 +51,48 @@ Pages with less data use fewer rows. Pages with more complexity add additional r
 
 Located at `apps/web/src/components/admin/dashboard/widgets/`.
 
+Each widget component imports `widgets.module.css` **directly** — they do not go through `style.ts`. This keeps widget components self-contained and avoids class-name collisions in the merged `style.ts` namespace. Pages that use widgets do not need to import `widgets.module.css` themselves.
+
+**Column span:** widgets use CSS utility classes (`.span2`, `.span3`, `.span4`) defined in `widgets.module.css`. Callers apply these classes on the widget element via `className`. This is consistent with the existing CSS-module-only pattern throughout this codebase.
+
+```tsx
+// Example callsite
+<StatWidget className={widgetStyles.span2} label="MRR" value="R84,000" />
+```
+
 ### 4.1 StatWidget
 ```
-Props: label, value, sub?, trend?, toneVariant?, sparkData?, progressValue?
+Props: label, value, sub?, toneVariant?, sparkData?, progressValue?, className?
+toneVariant: 'default' | 'accent' | 'green' | 'amber' | 'red'
+sparkData: number[]   (8 values, normalised 0–100)
+progressValue: number (0–100)
 ```
 - Large number (1.5–2rem, `font-weight: 900`)
-- Optional sparkline (8-bar mini bar chart) or progress bar (4px)
+- Optional sparkline (8-bar mini bar chart) or progress bar (4px) — mutually exclusive; sparkData takes precedence
 - Tone variants: `default` (neutral border), `accent` (purple fill), `green`, `amber`, `red`
-- Trend indicator: `▲ X%` in green or `▼ X%` in red
+- Value colour follows `toneVariant` automatically
 
 ### 4.2 ChartWidget
 ```
-Props: label, currentValue?, data, dataKey, type ('area'|'bar'|'line'), color?, legend?
+Props: label, currentValue?, data, dataKey, type, color?, legend?, height?, className?
+dataKey: string | string[]          // single key or array for multi-series
+color?: string | string[]           // matches length of dataKey array
+type: 'area' | 'bar' | 'line'
+height?: number                     // default 120
+legend?: { key: string; label: string }[]
 ```
-- Wraps Recharts `AreaChart` / `BarChart` / `LineChart` in a `ResponsiveContainer`
-- Header row: label left, current value + optional legend right
-- Grid lines: subtle `rgba(255,255,255,0.04)` horizontal rules
-- Default colour: `#8b6fff`; override per-series with `color` prop
-- Height: 120px default, configurable
+- Wraps Recharts chart types in `ResponsiveContainer`
+- When `dataKey` is an array, renders one `<Line>` / `<Bar>` / `<Area>` per key, each with its corresponding `color`
+- Header row: label left, `currentValue` + optional legend right
+- Grid lines: `rgba(255,255,255,0.04)` horizontal rules via Recharts `<CartesianGrid>`
+- Default colour: `#8b6fff`
+- The purple area gradient (`#adminGradient`) is defined inline inside `ChartWidget`'s own `<defs>` block rendered as a Recharts `customized` child — self-contained, no external SVG required
 
 ### 4.3 TableWidget
 ```
-Props: label, rows, columns, rowCount?, emptyMessage?
+Props: label, rows, columns, rowCount?, emptyMessage?, className?
+columns: { key: string; header: string; align?: 'left'|'right'; render?: (val, row) => ReactNode }[]
 ```
-- Column definition: `{ key, header, align?, render? }`
 - `render` function handles badge cells, formatted numbers, truncated text
 - Empty state: muted "No data" message with icon
 - Header row: `0.58rem` uppercase labels, `rgba(255,255,255,0.25)` colour
@@ -80,55 +100,62 @@ Props: label, rows, columns, rowCount?, emptyMessage?
 
 ### 4.4 PipelineWidget
 ```
-Props: label, stages: { label, count, total, color? }[]
+Props: label, stages: { label: string; count: number; total: number; color?: string }[], className?
 ```
-- Horizontal bar per stage, proportional fill
+- Horizontal bar per stage, width = `(count / total) * 100%`
 - Stage label left (72px fixed), fill bar flex, count right
-- Colours: auto-assigned based on stage position or explicit `color` prop (accent → green → amber → red)
+- If no `color` given, auto-sequence: accent → green → amber → red
 
 ### 4.5 WidgetGrid (layout container)
 ```
-Props: children, columns?: 2|3|4 (default 4)
+Props: children, columns?: 2|3|4 (default 4), className?
 ```
 - CSS Grid with `gap: 10px`
 - Responsive: 2-col at ≤900px, 1-col at ≤480px
-- Each child widget declares its own `gridColumn: span N`
+- Children use `.span2` / `.span3` / `.span4` utility classes from `widgets.module.css` to declare their column span
 
 ---
 
 ## 5. Widget CSS
 
-New CSS file: `apps/web/src/app/style/admin/widgets.module.css`
+New file: `apps/web/src/app/style/admin/widgets.module.css`
 
-Extends the existing admin token system. No new tokens introduced — all values reference existing `--accent`, `--s1`, `--b1`, `--text`, `--muted`, etc.
+Imported directly by widget components — **not** added to `style.ts`. No new design tokens; all values reference existing `--accent`, `--s1`, `--b1`, `--text`, `--muted`, etc. from the admin root.
 
 Key classes:
-- `.widget` — base card (border, radius, padding)
+- `.widget` — base card (border, radius, padding, flex column)
 - `.widgetAccent` / `.widgetGreen` / `.widgetAmber` / `.widgetRed` — tone modifiers
-- `.widgetLabel` — small uppercase label
-- `.widgetValue` — big number
-- `.widgetSub` — secondary line
-- `.sparkBar` / `.sparkBarHi` — sparkline bars
+- `.widgetLabel` — `0.6rem` uppercase, `--muted2`
+- `.widgetValue` — big number, `font-weight: 900`
+- `.widgetValueAccent` / `.widgetValueGreen` / `.widgetValueAmber` / `.widgetValueRed` — value colour variants
+- `.widgetSub` — secondary descriptor line
+- `.sparkWrap` / `.sparkBar` / `.sparkBarHi` — sparkline bars
 - `.progWrap` / `.progFill` — progress bar
-- `.pipelineRow` / `.pipelineTrack` / `.pipelineFill` — pipeline bars
-- `.widgetTable` / `.widgetTableHead` / `.widgetTableRow` — table internals
+- `.pipelineRow` / `.pipelineLabel` / `.pipelineTrack` / `.pipelineFill` / `.pipelineCount` — pipeline bars
+- `.widgetTable` / `.widgetThead` / `.widgetTh` / `.widgetTr` / `.widgetTd` — table internals
+- `.widgetGrid` / `.widgetGrid2` / `.widgetGrid3` — grid containers
+- `.span2` / `.span3` / `.span4` — column span utilities
 
 ---
 
 ## 6. Page Header
 
-Each page gets a consistent header above the widget grid:
+Each page gets a consistent header above the widget grid. `pageDesc` and `pageDivider` are new classes added to `widgets.module.css`:
 
 ```tsx
-<div className={styles.pageHeader}>
-  <div className={styles.pageEyebrow}>{section} / {title}</div>
-  <h1 className={styles.pageTitle}>{title}</h1>
-  <p className={styles.pageDesc}>{description}</p>
+<div className={widgetStyles.pageHeader}>
+  <div className={styles.pageEyebrow}>{section} / {title}</div>  {/* existing class */}
+  <h1 className={styles.pageTitle}>{title}</h1>                   {/* existing class */}
+  <p className={widgetStyles.pageDesc}>{description}</p>          {/* new in widgets.module.css */}
 </div>
-<div className={styles.pageDivider} />
+<div className={widgetStyles.pageDivider} />                      {/* new in widgets.module.css */}
 ```
 
-Existing `pageEyebrow` + breadcrumb pattern already in place — this formalises it as a consistent component within the page body.
+- `pageDesc`: `0.68rem`, `--muted`, `margin-bottom: 18px`
+- `pageDivider`: `1px solid var(--b1)`, `margin-bottom: 18px`
+- `pageHeader`: `margin-bottom: 4px` wrapper div
+
+Existing `pageEyebrow` and `pageTitle` classes (already in `core.module.css`) are reused unchanged.
 
 ---
 
@@ -136,25 +163,45 @@ Existing `pageEyebrow` + breadcrumb pattern already in place — this formalises
 
 Install: `pnpm --filter @maphari/web add recharts`
 
-All Recharts components used with `"use client"` directive. Chart data comes from the page's existing API hooks — no new API calls needed for the widget redesign itself.
+All Recharts components used within `"use client"` components. Chart data comes from each page's existing API hooks — no new API calls for the redesign.
 
-Chart defaults applied globally via a `CHART_DEFAULTS` constant:
+**Dynamic import (inside ChartWidget):**
+```tsx
+// apps/web/src/components/admin/dashboard/widgets/chart-widget.tsx
+"use client";
+import dynamic from "next/dynamic";
+const ChartWidgetInner = dynamic(() => import("./chart-widget-inner"), { ssr: false });
+export function ChartWidget(props) { return <ChartWidgetInner {...props} />; }
+```
+
+`chart-widget-inner.tsx` contains all Recharts imports. This isolates the Recharts bundle from SSR and from the outer component tree.
+
+**Chart defaults constant** (`widgets/chart-defaults.ts`):
 ```ts
 export const CHART_DEFAULTS = {
   stroke: '#8b6fff',
-  fill: 'url(#adminGradient)',
+  gradientId: 'adminGradient',
   gridStroke: 'rgba(255,255,255,0.04)',
   tickStyle: { fill: 'rgba(240,237,232,0.25)', fontSize: 10, fontFamily: 'var(--font-dm-mono)' },
 }
 ```
 
-A shared `<AdminAreaGradient />` SVG `<defs>` component provides the purple gradient fill used across all area charts.
+**Gradient:** Defined inline inside `ChartWidgetInner` as a Recharts `customized` child:
+```tsx
+<defs>
+  <linearGradient id="adminGradient" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stopColor="#8b6fff" stopOpacity={0.35} />
+    <stop offset="100%" stopColor="#8b6fff" stopOpacity={0.02} />
+  </linearGradient>
+</defs>
+```
+Rendered once inside each chart's own SVG via Recharts' `customized` prop — self-contained, no page-level SVG required.
 
 ---
 
 ## 8. Implementation Order
 
-Pages are redesigned section by section. Within each section, all pages get the widget grid treatment in a single implementation batch.
+Pages redesigned section by section. Within each section, all pages are done in one batch.
 
 | Order | Section | Pages |
 |-------|---------|-------|
@@ -166,7 +213,7 @@ Pages are redesigned section by section. Within each section, all pages get the 
 | 6 | Lifecycle | Lifecycle, Stakeholders, AI Recs, Updates, Standup, EOD, Peer Review |
 | 7 | Communication | Messages, Notifications, Announcements, Content |
 | 8 | AI/ML | Automation, AI Actions, Webhook Hub, Proposed Actions |
-| 9 | Remaining | All remaining pages not covered above |
+| 9 | Remaining | All remaining pages not covered in sections 1–8 |
 
 ---
 
@@ -174,9 +221,10 @@ Pages are redesigned section by section. Within each section, all pages get the 
 
 - Routing, page IDs, and navigation — untouched
 - API hooks and data fetching — untouched
-- Existing CSS tokens and the 7-file CSS split — widgets.module.css is additive
+- Existing CSS tokens and the 7-file CSS split — `widgets.module.css` is purely additive
 - TypeScript types and Prisma schema — untouched
-- Tabs within pages — kept, widget grid applies within each tab view
+- Tabs within pages — kept; widget grid applies within each tab view
+- `style.ts` — not modified; widget components import their CSS directly
 
 ---
 
@@ -185,7 +233,7 @@ Pages are redesigned section by section. Within each section, all pages get the 
 - All 118 pages use the widget grid layout
 - All stat numbers have sparklines or progress indicators where data supports it
 - All trend data (time-series) has a Recharts area or bar chart
+- Multi-series charts use `dataKey: string[]` with matching `color` arrays
 - All tabular data uses `TableWidget` with badge cells
-- Zero raw `Math.random()`, hardcoded dates, or `undefined` renders
 - TypeScript clean (`pnpm --filter @maphari/web exec tsc --noEmit` passes)
 - Visually consistent across all pages — same grid, same widget shapes, same token usage
