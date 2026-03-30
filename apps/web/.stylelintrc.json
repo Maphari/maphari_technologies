@@ -1,0 +1,11 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "rules": {
+    "selector-class-pattern": null,
+    "max-nesting-depth": 2,
+    "declaration-block-no-duplicate-properties": true,
+    "no-duplicate-selectors": true,
+    "color-no-invalid-hex": true,
+    "unit-no-unknown": true
+  }
+}
