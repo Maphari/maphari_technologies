@@ -68,10 +68,10 @@ export async function revokeApiKey(
   });
 }
 
-export async function touchLastUsed(
+export function touchLastUsed(
   keyId: string,
   log: { error: (obj: object) => void }
-): Promise<void> {
+): void {
   prisma.publicApiKey
     .update({ where: { keyId }, data: { lastUsedAt: new Date() } })
     .catch((err) => log.error({ err, event: "lastUsedAt_update_failed" }));
